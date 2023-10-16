@@ -98,6 +98,15 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// List of regions to exclude routing a request to. If all regions are in the exclude list, then the request will be routed to the default endpoint.
+        /// </summary>
+        public List<string> ExcludeRegions
+        {
+            get => this.ExcludeRegionList;
+            set => this.ExcludeRegionList = value;
+        }
+
+        /// <summary>
         /// Gets or sets the boolean to only return the headers and status code in
         /// the Cosmos DB response for write item operation like Create, Upsert, Patch and Replace.
         /// Setting the option to false will cause the response to have a null resource. This reduces networking and CPU load by not sending

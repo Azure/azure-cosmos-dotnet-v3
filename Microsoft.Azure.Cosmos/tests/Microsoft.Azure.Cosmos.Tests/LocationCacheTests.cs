@@ -767,11 +767,182 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             }
         }
 
+        [TestMethod]
+        [DataRow(true, true, true, DisplayName = "Read request - Multi master - with preferred locations")]
+        [DataRow(true, true, false, DisplayName = "Read request - Multi master - no preferred locations")]
+        [DataRow(true, false, true, DisplayName =  "Read request - Single master - with preferred locations")]
+        [DataRow(true, false, false, DisplayName = "Read request - Single master - no preferred locations")]
+        [DataRow(false, true, true, DisplayName = "Write request - Multi master - with preferred locations")]
+        [DataRow(false, true, false, DisplayName = "Write request - Multi master - no preferred locations")]
+        [DataRow(false, false, true, DisplayName = "Write request - Single master - with preferred locations")]
+        [DataRow(false, false, false, DisplayName = "Write request - Single master - no preferred locations")]
+        public void VerifyRegionExcludedTest(
+            bool isReadRequest,
+            bool useMultipleWriteLocations,
+            bool usesPreferredLocations)
+        {
+            bool enableEndpointDiscovery = true;
+
+            ReadOnlyCollection<string> preferredList = usesPreferredLocations ? 
+                isReadRequest ?
+                    new List<string> {
+                        "location4",
+                        "location2",
+                        "location1"
+                    }.AsReadOnly() :
+                    new List<string> {
+                        "location3",
+                        "location2",
+                        "location1"
+                    }.AsReadOnly() :
+                isReadRequest ? 
+                    new List<string>() {
+                        "default",
+                        "location1",
+                        "location2",
+                        "location4"
+                    }.AsReadOnly() :
+                    new List<string>() {
+                        "default",
+                        "location1",
+                        "location2",
+                        "location3"
+                    }.AsReadOnly();
+
+            List<List<string>> excludeRegionCases = isReadRequest ?
+            new List<List<string>>() 
+            {
+                new List<string> {"default"}, new List<string> {"default", "location1"}, new List<string> {"default", "location2"}, new List<string> {"default", "location4"}, 
+                new List<string> {"default", "location1", "location2"}, new List<string> {"default", "location1", "location4"}, new List<string> {"default", "location2", "location4"}, 
+                new List<string> {"default", "location1", "location2", "location4"}, new List<string> { "location1" }, new List<string> {"location1", "location2"}, 
+                new List<string> {"location1", "location4"}, new List<string> {"location1", "location2", "location4"},new List<string> { "location2" },
+                new List<string> {"location2", "location4"},new List<string> { "location4" },
+            } :
+            new List<List<string>>()
+            {
+                new List<string> {"default" }, new List<string> {"default", "location1"}, new List<string> {"default", "location2"}, new List<string> {"default", "location3"}, 
+                new List<string> {"default", "location1", "location2"}, new List<string> {"default", "location1", "location3"}, new List<string> {"default", "location2", "location3"}, 
+                new List<string> {"default", "location1", "location2", "location3"}, new List<string> { "location1" }, new List<string> {"location1", "location2"}, 
+                new List<string> {"location1", "location3"}, new List<string> {"location1", "location2", "location3"},new List<string> { "location2" },
+                new List<string> {"location2", "location3"},new List<string> { "location3" },
+            };
+
+            foreach (List<string> excludeRegions in excludeRegionCases)
+            {
+                using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: useMultipleWriteLocations,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                preferedRegionListOverride: preferredList,
+                enforceSingleMasterSingleWriteLocation: true,
+                isExcludeRegionsTest: true);
+
+                endpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(this.databaseAccount);
+                ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery, endpointManager);
+
+                using (DocumentServiceRequest request = this.CreateRequest(isReadRequest: isReadRequest, isMasterResourceType: false))
+                {
+                    request.RequestContext.ExcludeRegions = excludeRegions;
+                    
+                    ReadOnlyCollection<Uri> applicableEndpoints = isReadRequest ? 
+                        endpointManager.GetApplicableReadEndpoints(request) : 
+                        endpointManager.GetApplicableWriteEndpoints(request);
+                    
+                    Uri endpoint = endpointManager.ResolveServiceEndpoint(request);
+                    ReadOnlyCollection<Uri> applicableRegions = this.GetApplicableRegions(isReadRequest, useMultipleWriteLocations, usesPreferredLocations, excludeRegions);
+
+                    Assert.AreEqual(applicableRegions.Count, applicableEndpoints.Count);
+                    for(int i = 0; i < applicableRegions.Count; i++)
+                    {
+                        Assert.AreEqual(applicableRegions[i], applicableEndpoints[i]);
+                    }
+
+                    Assert.AreEqual(applicableRegions[0], endpoint);
+                }
+            }
+            
+        }
+
+        private ReadOnlyCollection<Uri> GetApplicableRegions(bool isReadRequest, bool useMultipleWriteLocations, bool usesPreferredLocations, List<string> excludeRegions)
+        {
+            if(!isReadRequest && !useMultipleWriteLocations)
+            {
+                return new List<Uri>() {LocationCacheTests.DefaultEndpoint }.AsReadOnly();
+            }
+
+            Dictionary<string, Uri> readWriteLocations = usesPreferredLocations ? 
+                isReadRequest ?                    
+                    new Dictionary<string, Uri>()
+                    {
+                        {"location4", LocationCacheTests.Location4Endpoint },
+                        {"location2", LocationCacheTests.Location2Endpoint },
+                        {"location1", LocationCacheTests.Location1Endpoint },
+                    } : 
+                    useMultipleWriteLocations ?
+                        new Dictionary<string, Uri>()
+                        {
+                            {"location3", LocationCacheTests.Location3Endpoint },
+                            {"location2", LocationCacheTests.Location2Endpoint },
+                            {"location1", LocationCacheTests.Location1Endpoint },
+                        } :
+                        new Dictionary<string, Uri>()
+                        {
+                            {"default", LocationCacheTests.DefaultEndpoint },
+                        } :
+                isReadRequest ?
+                    new Dictionary<string, Uri>()
+                    {
+                        {"default", LocationCacheTests.DefaultEndpoint },
+                        {"location1", LocationCacheTests.Location1Endpoint },
+                        {"location2", LocationCacheTests.Location2Endpoint },
+                        {"location4", LocationCacheTests.Location4Endpoint },
+                    } :
+                    useMultipleWriteLocations ?                        
+                        new Dictionary<string, Uri>()
+                        {
+                            {"default", LocationCacheTests.DefaultEndpoint },
+                            {"location1", LocationCacheTests.Location1Endpoint },
+                            {"location2", LocationCacheTests.Location2Endpoint },
+                            {"location3", LocationCacheTests.Location3Endpoint },
+                        } :
+                        new Dictionary<string, Uri>()
+                        {
+                            {"default", LocationCacheTests.DefaultEndpoint}
+                        };
+
+            List<Uri> applicableRegions = new List<Uri>();
+
+            foreach (string region in readWriteLocations.Keys)
+            {
+                if(!excludeRegions.Contains(region))
+                {
+                    applicableRegions.Add(readWriteLocations[region]);
+                }
+            }
+
+            if (applicableRegions.Count == 0)
+            {
+                applicableRegions.Add(LocationCacheTests.DefaultEndpoint);
+            }
+
+            return applicableRegions.AsReadOnly();
+        }
+
         private static AccountProperties CreateDatabaseAccount(
             bool useMultipleWriteLocations,
-            bool enforceSingleMasterSingleWriteLocation)
+            bool enforceSingleMasterSingleWriteLocation,
+            bool isExcludeRegionsTest = false)
         {
-            Collection<AccountRegion> writeLocations = new Collection<AccountRegion>()
+            Collection<AccountRegion> writeLocations = isExcludeRegionsTest ?
+
+                new Collection<AccountRegion>()
+                {
+                    { new AccountRegion() { Name = "default", Endpoint = LocationCacheTests.DefaultEndpoint.ToString() } },
+                    { new AccountRegion() { Name = "location1", Endpoint = LocationCacheTests.Location1Endpoint.ToString() } },
+                    { new AccountRegion() { Name = "location2", Endpoint = LocationCacheTests.Location2Endpoint.ToString() } },
+                    { new AccountRegion() { Name = "location3", Endpoint = LocationCacheTests.Location3Endpoint.ToString() } },
+                } :
+                new Collection<AccountRegion>()
                 {
                     { new AccountRegion() { Name = "location1", Endpoint = LocationCacheTests.Location1Endpoint.ToString() } },
                     { new AccountRegion() { Name = "location2", Endpoint = LocationCacheTests.Location2Endpoint.ToString() } },
@@ -783,21 +954,34 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             {
                 // Some pre-existing tests depend on the account having multiple write locations even on single master setup
                 // Newer tests can correctly define a single master account (single write region) without breaking existing tests
-                writeLocations = new Collection<AccountRegion>()
-                {
-                    { new AccountRegion() { Name = "location1", Endpoint = LocationCacheTests.Location1Endpoint.ToString() } }
-                };
+                writeLocations = isExcludeRegionsTest ?
+                    new Collection<AccountRegion>()
+                    {
+                        { new AccountRegion() { Name = "default", Endpoint = LocationCacheTests.DefaultEndpoint.ToString() } }
+                    } : 
+                    new Collection<AccountRegion>()
+                    {
+                        { new AccountRegion() { Name = "location1", Endpoint = LocationCacheTests.Location1Endpoint.ToString() } }
+                    } ;
             }
 
             AccountProperties databaseAccount = new AccountProperties()
             {
                 EnableMultipleWriteLocations = useMultipleWriteLocations,
-                ReadLocationsInternal = new Collection<AccountRegion>()
-                {
-                    { new AccountRegion() { Name = "location1", Endpoint = LocationCacheTests.Location1Endpoint.ToString() } },
-                    { new AccountRegion() { Name = "location2", Endpoint = LocationCacheTests.Location2Endpoint.ToString() } },
-                    { new AccountRegion() { Name = "location4", Endpoint = LocationCacheTests.Location4Endpoint.ToString() } },
-                },
+                ReadLocationsInternal = isExcludeRegionsTest ?
+                    new Collection<AccountRegion>()
+                    {
+                        { new AccountRegion() { Name = "default", Endpoint = LocationCacheTests.DefaultEndpoint.ToString() } },
+                        { new AccountRegion() { Name = "location1", Endpoint = LocationCacheTests.Location1Endpoint.ToString() } },
+                        { new AccountRegion() { Name = "location2", Endpoint = LocationCacheTests.Location2Endpoint.ToString() } },
+                        { new AccountRegion() { Name = "location4", Endpoint = LocationCacheTests.Location4Endpoint.ToString() } },
+                    } :
+                    new Collection<AccountRegion>()
+                    {
+                        { new AccountRegion() { Name = "location1", Endpoint = LocationCacheTests.Location1Endpoint.ToString() } },
+                        { new AccountRegion() { Name = "location2", Endpoint = LocationCacheTests.Location2Endpoint.ToString() } },
+                        { new AccountRegion() { Name = "location4", Endpoint = LocationCacheTests.Location4Endpoint.ToString() } },
+                    },
                 WriteLocationsInternal = writeLocations
             };
 
@@ -810,11 +994,13 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             bool isPreferredLocationsListEmpty,
             bool enforceSingleMasterSingleWriteLocation = false, // Some tests depend on the Initialize to create an account with multiple write locations, even when not multi master
             ReadOnlyCollection<string> preferedRegionListOverride = null,
-            bool enablePartitionLevelFailover = false)
+            bool enablePartitionLevelFailover = false,
+            bool isExcludeRegionsTest = false)
         {
             this.databaseAccount = LocationCacheTests.CreateDatabaseAccount(
                 useMultipleWriteLocations,
-                enforceSingleMasterSingleWriteLocation);
+                enforceSingleMasterSingleWriteLocation,
+                isExcludeRegionsTest);
 
             if (isPreferredLocationsListEmpty)
             {
@@ -823,7 +1009,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             else
             {
                 // Allow for override at the test method level if needed
-                this.preferredLocations = preferedRegionListOverride != null ? preferedRegionListOverride : new List<string>()
+                this.preferredLocations = preferedRegionListOverride ?? new List<string>()
                 {
                     "location1",
                     "location2",
@@ -841,8 +1027,8 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             this.cache.OnDatabaseAccountRead(this.databaseAccount);
 
             this.mockedClient = new Mock<IDocumentClientInternal>();
-            mockedClient.Setup(owner => owner.ServiceEndpoint).Returns(LocationCacheTests.DefaultEndpoint);
-            mockedClient.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>())).ReturnsAsync(this.databaseAccount);
+            this.mockedClient.Setup(owner => owner.ServiceEndpoint).Returns(LocationCacheTests.DefaultEndpoint);
+            this.mockedClient.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>())).ReturnsAsync(this.databaseAccount);
 
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
@@ -857,14 +1043,9 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
             GlobalEndpointManager endpointManager = new GlobalEndpointManager(this.mockedClient.Object, connectionPolicy);
 
-            if (enablePartitionLevelFailover)
-            {
-                this.partitionKeyRangeLocationCache = new GlobalPartitionEndpointManagerCore(endpointManager);
-            }
-            else
-            {
-                this.partitionKeyRangeLocationCache = GlobalPartitionEndpointManagerNoOp.Instance;
-            }
+            this.partitionKeyRangeLocationCache = enablePartitionLevelFailover
+                ? new GlobalPartitionEndpointManagerCore(endpointManager)
+                : GlobalPartitionEndpointManagerNoOp.Instance;
 
             return endpointManager;
         }

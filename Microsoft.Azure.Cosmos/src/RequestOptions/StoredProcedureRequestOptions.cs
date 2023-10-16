@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Scripts
 {
+    using System.Collections.Generic;
     using Microsoft.Azure.Cosmos;
 
     /// <summary>
@@ -79,6 +80,15 @@ namespace Microsoft.Azure.Cosmos.Scripts
         {
             get => this.BaseConsistencyLevel;
             set => this.BaseConsistencyLevel = value;
+        }
+
+        /// <summary>
+        /// List of regions to exclude routing a request to. If all regions are in the exclude list, then the request will be routed to the default endpoint.
+        /// </summary>
+        public List<string> ExcludeRegions
+        {
+            get => this.ExcludeRegionList;
+            set => this.ExcludeRegionList = value;
         }
 
         /// <summary>

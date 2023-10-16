@@ -276,12 +276,78 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
             else
             {
-                ReadOnlyCollection<Uri> endpoints = request.OperationType.IsWriteOperation() ? this.WriteEndpoints : this.ReadEndpoints;
+                ReadOnlyCollection<Uri> endpoints = 
+                    request.OperationType.IsWriteOperation() ? this.GetApplicableWriteEndpoints(request) : this.GetApplicableReadEndpoints(request);
                 locationEndpointToRoute = endpoints[locationIndex % endpoints.Count];
             }
 
             request.RequestContext.RouteToLocation(locationEndpointToRoute);
             return locationEndpointToRoute;
+        }
+
+        public ReadOnlyCollection<Uri> GetApplicableWriteEndpoints(DocumentServiceRequest request)
+        {
+            ReadOnlyCollection<Uri> writeEndpoints = this.WriteEndpoints;
+
+            if (request.RequestContext.ExcludeRegions == null || request.RequestContext.ExcludeRegions.Count == 0)
+            {
+                return writeEndpoints;
+            }
+
+            return this.GetApplicableEndpoints(
+                writeEndpoints, 
+                this.locationInfo.AvailableWriteEndpointByLocation, 
+                this.defaultEndpoint, 
+                request.RequestContext.ExcludeRegions);
+        }
+
+        public ReadOnlyCollection<Uri> GetApplicableReadEndpoints(DocumentServiceRequest request)
+        {
+            ReadOnlyCollection<Uri> readEndpoints = this.ReadEndpoints;
+
+            if (request.RequestContext.ExcludeRegions == null || request.RequestContext.ExcludeRegions.Count == 0)
+            {
+                return readEndpoints;
+            }
+
+            return this.GetApplicableEndpoints(
+                readEndpoints, 
+                this.locationInfo.AvailableReadEndpointByLocation, 
+                this.defaultEndpoint, 
+                request.RequestContext.ExcludeRegions);
+        }
+
+        /// <summary>
+        /// Gets applicable endpoints for a request, if there are no applicable endpoints, returns the fallback endpoint
+        /// </summary>
+        /// <param name="endpoints"></param>
+        /// <param name="regionNameByEndpoint"></param>
+        /// <param name="fallbackEndpoint"></param>
+        /// <param name="excludeRegions"></param>
+        /// <returns>a list of applicable endpoints for a request</returns>
+        private ReadOnlyCollection<Uri> GetApplicableEndpoints(
+            IReadOnlyList<Uri> endpoints,
+            ReadOnlyDictionary<string, Uri> regionNameByEndpoint,
+            Uri fallbackEndpoint,
+            IReadOnlyList<string> excludeRegions)
+        {
+            List<Uri> applicableEndpoints = new List<Uri>();
+
+            foreach (Uri endpoint in endpoints)
+            {
+                IEnumerable<string> regionNames = regionNameByEndpoint.Where(pair => pair.Value == endpoint).Select(pair => pair.Key);
+                if (excludeRegions.Intersect(regionNames, StringComparer.OrdinalIgnoreCase).Count() == 0)
+                {
+                    applicableEndpoints.Add(endpoint);
+                }
+            }
+
+            if (applicableEndpoints.Count == 0)
+            {
+                applicableEndpoints.Add(fallbackEndpoint);
+            }
+
+            return new ReadOnlyCollection<Uri>(applicableEndpoints);
         }
 
         public bool ShouldRefreshEndpoints(out bool canRefreshInBackground)

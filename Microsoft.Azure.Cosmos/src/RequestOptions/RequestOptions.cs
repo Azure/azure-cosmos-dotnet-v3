@@ -90,6 +90,11 @@ namespace Microsoft.Azure.Cosmos
         internal bool DisablePointOperationDiagnostics { get; set; }
 
         /// <summary>
+        /// List of regions to be excluded routing the request to.
+        /// </summary>
+        internal List<string> ExcludeRegionList { get; set; }
+
+        /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
         /// <param name="request">The <see cref="RequestMessage"/></param>
