@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Scripts
 {
-    using System.Collections.Generic;
     using Microsoft.Azure.Cosmos;
 
     /// <summary>

@@ -4,8 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System.Collections.Generic;
-
     /// <summary>
     /// Cosmos batch request options.
     /// </summary>
