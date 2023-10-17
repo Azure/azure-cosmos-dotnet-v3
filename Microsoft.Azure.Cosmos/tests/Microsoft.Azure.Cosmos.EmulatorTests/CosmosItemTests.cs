@@ -3157,28 +3157,267 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <returns></returns>
         [TestMethod]
         [Owner("philipthomas")]
-        [Description("Fix: ReadItemAsync/ReadItemStreamAsync is yielding a Newtonsoft.Json.JsonSerializationException whenever " +
-            "the item is not found and the custom serializer has MissingMemberHandling set to MissingMemberHandling.Error. " +
-            "ReadItemAsync/ReadItemStreamAsync should yield a CosmosException with a NotFound StatusCode.")]
-        public async Task GivenReadItemAsyncSerializationExceptionWhenMissingMemberHandlingIsErrorThenExpectsCosmosExceptionTestAsync()
+        [Description("ReadItemStreamAsync is yielding a Newtonsoft.Json.JsonSerializationException whenever " +
+            "the item is not found and the MissingMemberHandling is set to MissingMemberHandling.Error. " +
+            "ReadItemStreamAsync should yield a CosmosException with a NotFound StatusCode.")]
+        public async Task GivenReadItemStreamAsyncWhenMissingMemberHandlingIsErrorThenExpectsCosmosExceptionTestAsync()
+        {
+            await CosmosItemTests.GivenItemStreamAsyncWhenMissingMemberHandlingIsErrorThenExpectsCosmosExceptionTestAsync(
+                itemStreamAsync: async (container, itemIdThatWillNotExist, partitionKeyValue, cancellationToken) => await container.ReadItemStreamAsync(
+                        id: itemIdThatWillNotExist,
+                        partitionKey: new Cosmos.PartitionKey(partitionKeyValue),
+                        cancellationToken: cancellationToken));
+        }
+
+        /// <summary>
+        /// <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4115"/>
+        /// </summary>
+        /// <returns></returns>
+        [TestMethod]
+        [Owner("philipthomas")]
+        [Description("ReadItemAsync is yielding a Newtonsoft.Json.JsonSerializationException whenever " +
+            "the item is not found and MissingMemberHandling is set to MissingMemberHandling.Error. " +
+            "ReadItemAsync should yield a CosmosException with a NotFound StatusCode.")]
+        public async Task GivenReadItemAsyncWhenMissingMemberHandlingIsErrorThenExpectsCosmosExceptionTestAsync()
+        {
+            await CosmosItemTests.GivenItemAsyncWhenMissingMemberHandlingIsErrorThenExpectsCosmosExceptionTestAsync(
+                itemAsync: async (container, itemIdThatWillNotExist, partitionKeyValue, toDoActivity, cancellationToken) => await container.ReadItemAsync<ToDoActivity>(
+                    id: itemIdThatWillNotExist,
+                    partitionKey: new Cosmos.PartitionKey(partitionKeyValue),
+                    cancellationToken: cancellationToken));
+        }
+
+        /// <summary>
+        /// <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4115"/>
+        /// </summary>
+        /// <returns></returns>
+        [TestMethod]
+        [Owner("philipthomas")]
+        [Description("DeleteItemStreamAsync is yielding a Newtonsoft.Json.JsonSerializationException whenever " +
+            "the item is not found and the MissingMemberHandling is set to MissingMemberHandling.Error. " +
+            "DeleteItemStreamAsync should yield a CosmosException with a NotFound StatusCode.")]
+        public async Task GivenDeleteItemStreamAsyncWhenMissingMemberHandlingIsErrorThenExpectsCosmosExceptionTestAsync()
+        {
+            await CosmosItemTests.GivenItemStreamAsyncWhenMissingMemberHandlingIsErrorThenExpectsCosmosExceptionTestAsync(
+                itemStreamAsync: async (container, itemIdThatWillNotExist, partitionKeyValue, cancellationToken) => await container.DeleteItemStreamAsync(
+                    id: itemIdThatWillNotExist,
+                    partitionKey: new Cosmos.PartitionKey(partitionKeyValue),
+                    cancellationToken: cancellationToken));
+        }
+
+        /// <summary>
+        /// <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4115"/>
+        /// </summary>
+        /// <returns></returns>
+        [TestMethod]
+        [Owner("philipthomas")]
+        [Description("DeleteItemAsync is yielding a Newtonsoft.Json.JsonSerializationException whenever " +
+            "the item is not found and MissingMemberHandling is set to MissingMemberHandling.Error. " +
+            "DeleteItemAsync should yield a CosmosException with a NotFound StatusCode.")]
+        public async Task GivenDeleteItemAsyncWhenMissingMemberHandlingIsErrorThenExpectsCosmosExceptionTestAsync()
+        {
+            await CosmosItemTests.GivenItemAsyncWhenMissingMemberHandlingIsErrorThenExpectsCosmosExceptionTestAsync(
+                itemAsync: async (container, itemIdThatWillNotExist, partitionKeyValue, toDoActivity, cancellationToken) => await container.DeleteItemAsync<ToDoActivity>(
+                    id: itemIdThatWillNotExist,
+                    partitionKey: new Cosmos.PartitionKey(partitionKeyValue),
+                    cancellationToken: cancellationToken));
+        }
+
+        /// <summary>
+        /// <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4115"/>
+        /// </summary>
+        /// <returns></returns>
+        [TestMethod]
+        [Owner("philipthomas")]
+        [Description("DeleteItemStreamAsync is yielding a Newtonsoft.Json.JsonSerializationException whenever " +
+            "the item is not found and the MissingMemberHandling is set to MissingMemberHandling.Error. " +
+            "DeleteItemStreamAsync should yield a CosmosException with a NotFound StatusCode.")]
+        public async Task GivenReplaceItemStreamAsyncWhenMissingMemberHandlingIsErrorThenExpectsCosmosExceptionTestAsync()
+        {
+            await CosmosItemTests.GivenItemStreamAsyncWhenMissingMemberHandlingIsErrorThenExpectsCosmosExceptionTestAsync(
+                itemStreamAsync: async (container, itemIdThatWillNotExist, partitionKeyValue, cancellationToken) => await container.ReplaceItemStreamAsync(
+                    streamPayload: new MemoryStream(),
+                    id: itemIdThatWillNotExist,
+                    partitionKey: new Cosmos.PartitionKey(partitionKeyValue),
+                    cancellationToken: cancellationToken));
+        }
+
+        /// <summary>
+        /// <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4115"/>
+        /// </summary>
+        /// <returns></returns>
+        [TestMethod]
+        [Owner("philipthomas")]
+        [Description("ReplaceItemAsync is yielding a Newtonsoft.Json.JsonSerializationException whenever " +
+            "the item is not found and MissingMemberHandling is set to MissingMemberHandling.Error. " +
+            "ReplaceItemAsync should yield a CosmosException with a NotFound StatusCode.")]
+        public async Task GivenReplaceItemAsyncWhenMissingMemberHandlingIsErrorThenExpectsCosmosExceptionTestAsync()
+        {
+            await CosmosItemTests.GivenItemAsyncWhenMissingMemberHandlingIsErrorThenExpectsCosmosExceptionTestAsync(
+                itemAsync: async (container, itemIdThatWillNotExist, partitionKeyValue, toDoActivity, cancellationToken) => await container.ReplaceItemAsync(
+                    item: toDoActivity,
+                    id: itemIdThatWillNotExist,
+                    partitionKey: new Cosmos.PartitionKey(partitionKeyValue),
+                    cancellationToken: cancellationToken));
+        }
+
+        /// <summary>
+        /// <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4115"/>
+        /// </summary>
+        /// <returns></returns>
+        [TestMethod]
+        [Owner("philipthomas")]
+        [Description("PatchItemStreamAsync is yielding a Newtonsoft.Json.JsonSerializationException whenever " +
+            "the item is not found and the MissingMemberHandling is set to MissingMemberHandling.Error. " +
+            "PatchItemStreamAsync should yield a CosmosException with a NotFound StatusCode.")]
+        public async Task GivenPatchItemStreamAsyncWhenMissingMemberHandlingIsErrorThenExpectsCosmosExceptionTestAsync()
+        {
+            List<PatchOperation> patchOperations = new()
+            {
+                PatchOperation.Add("/children/1/pk", "patched"),
+                PatchOperation.Remove("/description"),
+                PatchOperation.Replace("/taskNum", 1)
+            };
+
+            await CosmosItemTests.GivenItemStreamAsyncWhenMissingMemberHandlingIsErrorThenExpectsCosmosExceptionTestAsync(
+                itemStreamAsync: async (container, itemIdThatWillNotExist, partitionKeyValue, cancellationToken) => await container.PatchItemStreamAsync(
+                    patchOperations: patchOperations,
+                    id: itemIdThatWillNotExist,
+                    partitionKey: new Cosmos.PartitionKey(partitionKeyValue),
+                    cancellationToken: cancellationToken));
+        }
+
+        /// <summary>
+        /// <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4115"/>
+        /// </summary>
+        /// <returns></returns>
+        [TestMethod]
+        [Owner("philipthomas")]
+        [Description("PatchItemAsync is yielding a Newtonsoft.Json.JsonSerializationException whenever " +
+            "the item is not found and MissingMemberHandling is set to MissingMemberHandling.Error. " +
+            "PatchItemAsync should yield a CosmosException with a NotFound StatusCode.")]
+        public async Task GivenPatchItemAsyncWhenMissingMemberHandlingIsErrorThenExpectsCosmosExceptionTestAsync()
+        {
+            List<PatchOperation> patchOperations = new()
+            {
+                PatchOperation.Add("/children/1/pk", "patched"),
+                PatchOperation.Remove("/description"),
+                PatchOperation.Replace("/taskNum", 1)
+            };
+
+            await CosmosItemTests.GivenItemAsyncWhenMissingMemberHandlingIsErrorThenExpectsCosmosExceptionTestAsync(
+                itemAsync: async (container, itemIdThatWillNotExist, partitionKeyValue, toDoActivity, cancellationToken) => await container.PatchItemAsync<ToDoActivity>(
+                    patchOperations: patchOperations,
+                    id: itemIdThatWillNotExist,
+                    partitionKey: new Cosmos.PartitionKey(partitionKeyValue),
+                    cancellationToken: cancellationToken));
+        }
+
+        private static async Task GivenItemStreamAsyncWhenMissingMemberHandlingIsErrorThenExpectsCosmosExceptionTestAsync(
+            Func<Container, string, string, CancellationToken, Task<ResponseMessage>> itemStreamAsync)
         {
             // AAA
             //     Arrange
             CancellationTokenSource cancellationTokenSource = new();
             CancellationToken cancellationToken = cancellationTokenSource.Token;
 
-            int toStreamCount = 0;
-            int fromStreamCount = 0;
-            CosmosSerializerHelper serializer = new(
-                jsonSerializerSettings: new JsonSerializerSettings()
-                {
-                    NullValueHandling = NullValueHandling.Ignore,
-                    MissingMemberHandling = MissingMemberHandling.Error,
-                },
-                fromStreamCallback: item => fromStreamCount++,
-                toStreamCallBack: item => toStreamCount++);
+            JsonConvert.DefaultSettings = () => new JsonSerializerSettings
+            {
+                MissingMemberHandling = MissingMemberHandling.Error
+            };
 
-            CosmosClient cosmosClient = TestCommon.CreateCosmosClient(customizeClientBuilder: builder => builder.WithCustomSerializer(cosmosJsonSerializer: serializer));
+            CosmosClient cosmosClient = TestCommon.CreateCosmosClient();
+
+            string databaseId = Guid.NewGuid().ToString();
+            Cosmos.Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync(
+                id: databaseId,
+                cancellationToken: cancellationToken);
+
+            try
+            {
+                string containerId = Guid.NewGuid().ToString();
+                Container container = await database.CreateContainerIfNotExistsAsync(
+                    containerProperties: new ContainerProperties
+                    {
+                        Id = containerId,
+                        PartitionKeyPath = "/pk",
+                    },
+                    cancellationToken: cancellationToken);
+
+
+                //     Act
+                string itemIdThatWillNotExist = Guid.NewGuid().ToString();
+                string partitionKeyValue = Guid.NewGuid().ToString();
+
+                ResponseMessage response = await itemStreamAsync(container, itemIdThatWillNotExist, partitionKeyValue, cancellationToken);
+
+                //     Assert
+                Debug.Assert(
+                    condition: response != null,
+                    message: $"{response}");
+
+                Assert.AreEqual(
+                    expected: HttpStatusCode.NotFound,
+                    actual: response.StatusCode);
+
+                string content = JsonConvert.SerializeObject(response.Content);
+
+                Assert.AreEqual(
+                    expected: "null",
+                    actual: content);
+
+                string errorMessage = JsonConvert.SerializeObject(response.ErrorMessage);
+
+                Assert.IsNotNull(value: errorMessage);
+
+                Debug.Assert(
+                    condition: response.CosmosException != null,
+                    message: $"{response.CosmosException}");
+
+                Assert.AreEqual(
+                    expected: HttpStatusCode.NotFound,
+                    actual: response.StatusCode);
+
+                Debug.WriteLine(message: $"{nameof(response.CosmosException)}: {response.CosmosException}");
+
+                Assert.AreEqual(
+                    actual: response.CosmosException.StatusCode,
+                    expected: HttpStatusCode.NotFound);
+            }
+            catch (JsonSerializationException jsonSerializationException)
+            {
+                Assert.Fail(message: $"JsonSerializationException was caught, so fail the test. {jsonSerializationException}.");
+            }
+            catch (Exception otherException)
+            {
+                Assert.Fail(message: $"Any other exception is thrown before the Act, so fail the test. {otherException}.");
+            }
+            finally
+            {
+                if (database != null)
+                {
+                    // Remove the test database. Cleanup.
+                    _ = await database.DeleteAsync(cancellationToken: cancellationToken);
+
+                    Debug.WriteLine($"The {nameof(database)} with id '{databaseId}' was removed.");
+                }
+            }
+        }
+
+        private static async Task GivenItemAsyncWhenMissingMemberHandlingIsErrorThenExpectsCosmosExceptionTestAsync(
+            Func<Container, string, string, ToDoActivity, CancellationToken, Task<ItemResponse<ToDoActivity>>> itemAsync)
+        {
+            // AAA
+            //     Arrange
+            CancellationTokenSource cancellationTokenSource = new();
+            CancellationToken cancellationToken = cancellationTokenSource.Token;
+
+            JsonConvert.DefaultSettings = () => new JsonSerializerSettings
+            {
+                MissingMemberHandling = MissingMemberHandling.Error
+            };
+
+            CosmosClient cosmosClient = TestCommon.CreateCosmosClient();
 
             string databaseId = Guid.NewGuid().ToString();
             Cosmos.Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync(
@@ -3200,20 +3439,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 //     Act
                 // If any thing other than a CosmosException is thrown, the call to ReadItemAsync below will fail.
                 string itemIdThatWillNotExist = Guid.NewGuid().ToString();
-                string partitionKeyValue = "Washington";
+                string partitionKeyValue = Guid.NewGuid().ToString();
+
                 CosmosException cosmosException = await Assert.ThrowsExceptionAsync<CosmosException>(action:
-                    async () => await container.ReadItemAsync<ToDoActivity>(
-                        id: itemIdThatWillNotExist, 
-                        partitionKey: new Cosmos.PartitionKey(partitionKeyValue),
-                        cancellationToken: cancellationToken));
-                
+                    async () => await itemAsync(container, itemIdThatWillNotExist, partitionKeyValue, new ToDoActivity { id = Guid.NewGuid().ToString(), pk = "Georgia" }, cancellationToken)) ;
+
+                //     Assert
                 Debug.Assert(
                     condition: cosmosException != null,
                     message: $"{cosmosException}");
 
                 Debug.WriteLine(message: $"{nameof(cosmosException)}: {cosmosException}");
 
-                //     Assert
                 Assert.AreEqual(
                     actual: cosmosException.StatusCode,
                     expected: HttpStatusCode.NotFound);

@@ -159,6 +159,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                     using (StreamReader streamReader = new StreamReader(content))
                     {
                         string errorContent = streamReader.ReadToEnd();
+
                         try
                         {
                             JObject errorObj = JObject.Parse(errorContent);
@@ -179,14 +180,9 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                                 return (error, message.ToString());
                             }
                         }
-                        catch (Newtonsoft.Json.JsonReaderException)
+                        catch (Exception exception) when (CosmosExceptionFactory.ExceptionsToIgnore(exception))
                         {
                         }
-                        // Suggested resolution. However, for the purpose of TDD and failing a test, I am commenting this out.
-                        //////catch (Exception exception) when (exception is Newtonsoft.Json.JsonReaderException ||
-                        //////    exception is Newtonsoft.Json.JsonSerializationException)
-                        //////{
-                        //////}
 
                         // Content is not Json
                         content.Position = 0;
@@ -196,6 +192,12 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
 
                 return (null, null);
             }
+        }
+
+        private static bool ExceptionsToIgnore(Exception exception)
+        {
+            return exception is Newtonsoft.Json.JsonReaderException ||
+                exception is Newtonsoft.Json.JsonSerializationException;
         }
 
         internal static CosmosException CreateRequestTimeoutException(
