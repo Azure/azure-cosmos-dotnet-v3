@@ -1,6 +1,6 @@
 ## <a name="recommended-version"></a> Recommended version
 
-The **minimum recommended version is [3.35.4](#3.35.4)**.
+The **minimum recommended version is [3.36.0](#3.36.0)**.
 
 Make sure that your applications, when using the .NET V3 SDK, are using at least the version described here to have all the critical fixes.
 
@@ -13,8 +13,7 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-### <a name="3.36.0-preview"/> [3.356.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.36.0-preview) - 2023-10-16
-### <a name="3.36.0"/> [3.36.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.36.0) - 2023-10-16
+### <a name="3.36.0"/> [3.36.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.36.0) - 2023-10-17
 
 #### Fixed
 - [4039](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4039) GatewayAddressCache: Fixes Unobserved Exception During Background Address Refresh (#4039)
@@ -31,8 +30,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [4001](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4001) Query: Adds public backend metrics property to Diagnostics (#4001)
 - [4071](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4071) Telemetry : Adds logic to refresh telemetry switch state (#4071)
 - [4016](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4016) CosmosClientOptions: Adds support for multiple formats of Azure region names (#4016)
-- [4056](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4056) Client Telemetry: Adds new public APIs (#4056)
 
+
+### <a name="3.36.0-preview"/> [3.356.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.36.0-preview) - 2023-10-17
+
+#### Added
+  - [4056](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4056) Client Telemetry: Adds new public APIs (#4056). WARNING: This is breaking change for preview SDK
 
 ### <a name="3.35.4-preview"/> [3.35.4-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.35.4-preview) - 2023-09-15
 ### <a name="3.35.4"/> [3.35.4](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.35.4) - 2023-09-15
