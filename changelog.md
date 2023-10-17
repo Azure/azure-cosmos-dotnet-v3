@@ -26,7 +26,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [4009](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4009) Query: Adds ODE continuation token support for non-ODE pipelines (#4009)
 - [4078](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4078) Query: Adds LINQ RegexMatch Extension method (#4078)
 - [4001](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4001) Query: Adds public backend metrics property to Diagnostics (#4001)
-- [4071](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4071) Telemetry : Adds logic to refresh telemetry switch state (#4071)
 - [4016](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4016) CosmosClientOptions: Adds support for multiple formats of Azure region names (#4016)
 - [4056](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4056) Client Telemetry: Adds new public APIs (#4056)
 > Note: Refer this [3983](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/3983) for API signature and default values.
