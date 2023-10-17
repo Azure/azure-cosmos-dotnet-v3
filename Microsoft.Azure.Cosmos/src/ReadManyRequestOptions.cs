@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-
     /// <summary>
     /// The Cosmos query request options
     /// </summary>
