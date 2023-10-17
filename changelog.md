@@ -29,14 +29,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [4071](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4071) Telemetry : Adds logic to refresh telemetry switch state (#4071)
 - [4016](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4016) CosmosClientOptions: Adds support for multiple formats of Azure region names (#4016)
 - [4056](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4056) Client Telemetry: Adds new public APIs (#4056)
-> Note: Refer this [3983](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/3983) for API signature and default values
+> Note: Refer this [3983](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/3983) for API signature and default values.
 - [4119](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4119) TriggerOperation: Adds Upsert Operation Support(#4119)
 
 ### <a name="3.36.0-preview"/> [3.356.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.36.0-preview) - 2023-10-17
 
 #### Added
   - [4056](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4056) Client Telemetry: Adds new public APIs (#4056). WARNING: This is breaking change for preview SDK
-  > Note: Refer this [3983](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/3983) for API signature and default values
+  > Note: `isDistributedTracingEnabled` API is removed from `CosmosClientOptions` and `withDistributedTracing()` API is removed from `CosmosClientBuilder`.
+  > Refer this [3983](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/3983) for new API signature and default values
 
 ### <a name="3.35.4-preview"/> [3.35.4-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.35.4-preview) - 2023-09-15
 ### <a name="3.35.4"/> [3.35.4](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.35.4) - 2023-09-15
