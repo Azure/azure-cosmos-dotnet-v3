@@ -3321,6 +3321,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CancellationTokenSource cancellationTokenSource = new();
             CancellationToken cancellationToken = cancellationTokenSource.Token;
 
+            // Food for thought, actionable items.
+            //
+            // 1. Is there anything else that we should be concerned with that would give us the same behavior?
+            // 2. Are there other operations other than those that can yield an NotFound exception that we should be
+            //    concerned with?
+            // 3. Can we also reset the DefaultSettings before we make the call, and reset it back once it is done?
+
             JsonConvert.DefaultSettings = () => new JsonSerializerSettings
             {
                 MissingMemberHandling = MissingMemberHandling.Error
@@ -3411,6 +3418,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //     Arrange
             CancellationTokenSource cancellationTokenSource = new();
             CancellationToken cancellationToken = cancellationTokenSource.Token;
+
+            // Food for thought, actionable items.
+            //
+            // 1. Is there anything else that we should be concerned with that would give us the same behavior?
+            // 2. Are there other operations other than those that can yield an NotFound exception that we should be
+            //    concerned with?
+            // 3. Can we also reset the DefaultSettings before we make the call, and reset it back once it is done?
 
             JsonConvert.DefaultSettings = () => new JsonSerializerSettings
             {
