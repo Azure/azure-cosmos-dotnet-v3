@@ -70,6 +70,11 @@ namespace Microsoft.Azure.Cosmos
         public CosmosThresholdOptions CosmosThresholdOptions { get; set; }
 
         /// <summary>
+        /// List of regions to be excluded routing the request to.
+        /// </summary>
+        public List<string> ExcludeRegions { get; set; }
+
+        /// <summary>
         /// Gets or sets the boolean to use effective partition key routing in the cosmos db request.
         /// </summary>
         internal bool IsEffectivePartitionKeyRouting { get; set; }
@@ -88,11 +93,6 @@ namespace Microsoft.Azure.Cosmos
         internal virtual ConsistencyLevel? BaseConsistencyLevel { get; set; }
 
         internal bool DisablePointOperationDiagnostics { get; set; }
-
-        /// <summary>
-        /// List of regions to be excluded routing the request to.
-        /// </summary>
-        internal List<string> ExcludeRegionList { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties

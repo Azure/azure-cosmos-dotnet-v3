@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Globalization;
     using System.Linq;
     using System.Net;
+    using System.Runtime.CompilerServices;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
@@ -331,12 +332,18 @@ namespace Microsoft.Azure.Cosmos.Routing
             Uri fallbackEndpoint,
             IReadOnlyList<string> excludeRegions)
         {
+            RegionNameMapper mapper = new RegionNameMapper();
             List<Uri> applicableEndpoints = new List<Uri>();
+            HashSet<Uri> excludeUris = new HashSet<Uri>();
 
+            foreach (string region in excludeRegions)
+            {
+                excludeUris.Add(regionNameByEndpoint[mapper.GetCosmosDBRegionName(region)]);
+            }
+            
             foreach (Uri endpoint in endpoints)
             {
-                IEnumerable<string> regionNames = regionNameByEndpoint.Where(pair => pair.Value == endpoint).Select(pair => pair.Key);
-                if (excludeRegions.Intersect(regionNames, StringComparer.OrdinalIgnoreCase).Count() == 0)
+                if (!excludeUris.Contains(endpoint))
                 {
                     applicableEndpoints.Add(endpoint);
                 }

@@ -83,15 +83,6 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         /// <summary>
-        /// List of regions to exclude routing a request to. If all regions are in the exclude list, then the request will be routed to the default endpoint.
-        /// </summary>
-        public List<string> ExcludeRegions
-        {
-            get => this.ExcludeRegionList;
-            set => this.ExcludeRegionList = value;
-        }
-
-        /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
         /// <param name="request">The <see cref="RequestMessage"/></param>

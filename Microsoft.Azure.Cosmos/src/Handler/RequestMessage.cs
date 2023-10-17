@@ -283,7 +283,7 @@ namespace Microsoft.Azure.Cosmos
                 this.DocumentServiceRequest.RouteTo(this.PartitionKeyRangeId);
             }
             
-            this.DocumentServiceRequest.RequestContext.ExcludeRegions = this.RequestOptions?.ExcludeRegionList;
+            this.DocumentServiceRequest.RequestContext.ExcludeRegions = this.RequestOptions?.ExcludeRegions;
             this.OnBeforeRequestHandler(this.DocumentServiceRequest);
             return this.DocumentServiceRequest;
         }
@@ -300,7 +300,7 @@ namespace Microsoft.Azure.Cosmos
 
         private void OnBeforeRequestHandler(DocumentServiceRequest serviceRequest)
         {
-            serviceRequest.RequestContext.ExcludeRegions = this.RequestOptions?.ExcludeRegionList;
+            serviceRequest.RequestContext.ExcludeRegions = this.RequestOptions?.ExcludeRegions;
             this.OnBeforeSendRequestActions?.Invoke(serviceRequest);
         }
 
