@@ -36,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Added
   - [4056](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4056) Client Telemetry: Adds new public APIs (#4056). WARNING: This is breaking change for preview SDK
-  > Note: `isDistributedTracingEnabled` API is removed from `CosmosClientOptions` and `withDistributedTracing()` API is removed from `CosmosClientBuilder`.
+  > Note: `isDistributedTracingEnabled` is removed from `CosmosClientOptions` and `withDistributedTracing()` is removed from `CosmosClientBuilder`.
   > Refer this [3983](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/3983) for new API signature and default values
 
 ### <a name="3.35.4-preview"/> [3.35.4-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.35.4-preview) - 2023-09-15
