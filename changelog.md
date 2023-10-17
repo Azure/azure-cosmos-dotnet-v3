@@ -1,6 +1,6 @@
 ## <a name="recommended-version"></a> Recommended version
 
-The **minimum recommended version is [3.36.0](#3.36.0)**.
+The **minimum recommended version is [3.35.4](#3.35.4)**.
 
 Make sure that your applications, when using the .NET V3 SDK, are using at least the version described here to have all the critical fixes.
 
@@ -17,7 +17,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Fixed
 - [4039](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4039) GatewayAddressCache: Fixes Unobserved Exception During Background Address Refresh (#4039)
-- [4103](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4103) Documentation: LocalQuorum: Fixes request level consistency from Bounded to Strong on documentation (#4103)
 - [4108](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4108) Revert Query: Adds new system strings in JsonBinaryEncoding, replacing 1-byte user strings (#3400) (#4108)
 - [4098](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4098) Distributed Tracing: Fixes dependency failure on appinsights (#4098)
 - [4097](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4097) Distributed Tracing: Fixes SDK responses compatibility with opentelemetry response (#4097)
@@ -26,16 +25,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Added
 - [4009](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4009) Query: Adds ODE continuation token support for non-ODE pipelines (#4009)
 - [4078](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4078) Query: Adds LINQ RegexMatch Extension method (#4078)
-- [4042](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4042) Documentation: Adds additional note for GetContactedRegions method (#4042)
 - [4001](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4001) Query: Adds public backend metrics property to Diagnostics (#4001)
 - [4071](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4071) Telemetry : Adds logic to refresh telemetry switch state (#4071)
 - [4016](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4016) CosmosClientOptions: Adds support for multiple formats of Azure region names (#4016)
-
+- [4056](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4056) Client Telemetry: Adds new public APIs (#4056)
+> Note: Refer this [3983](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/3983) for API signature and default values
+- [4119](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4119) TriggerOperation: Adds Upsert Operation Support(#4119)
 
 ### <a name="3.36.0-preview"/> [3.356.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.36.0-preview) - 2023-10-17
 
 #### Added
   - [4056](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4056) Client Telemetry: Adds new public APIs (#4056). WARNING: This is breaking change for preview SDK
+  > Note: Refer this [3983](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/3983) for API signature and default values
 
 ### <a name="3.35.4-preview"/> [3.35.4-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.35.4-preview) - 2023-09-15
 ### <a name="3.35.4"/> [3.35.4](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.35.4) - 2023-09-15
