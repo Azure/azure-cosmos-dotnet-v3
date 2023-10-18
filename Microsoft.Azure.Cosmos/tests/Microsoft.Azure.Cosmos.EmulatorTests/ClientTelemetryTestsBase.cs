@@ -15,11 +15,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Telemetry;
-    using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json.Linq;
     using Newtonsoft.Json;
-    using Documents.Rntbd;
     using System.Globalization;
     using System.Linq;
     using Cosmos.Util;
@@ -27,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
     public abstract class ClientTelemetryTestsBase : BaseCosmosClientHelper
     {
-        protected static readonly Uri telemetryServiceEndpoint = new Uri("http://dummy.telemetry.service/api/url");
+        protected static readonly Uri telemetryServiceEndpoint = new Uri("https://tools.cosmos.azure.com/api/clienttelemetry/trace");
 
         private static readonly List<string> preferredRegionList = new List<string>
         {
@@ -71,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 RequestCallBack = (request, cancellation) =>
                 {
-                    if (request.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint.AbsoluteUri))
+                    if (request.RequestUri.AbsoluteUri.Contains(telemetryServiceEndpoint.PathAndQuery))
                     {
                         string jsonObject = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
 
@@ -84,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 },
                 ResponseIntercepter = (response) =>
                 {
-                    if (response.RequestMessage != null && response.RequestMessage.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint.AbsoluteUri))
+                    if (response.RequestMessage != null && response.RequestMessage.RequestUri.AbsoluteUri.Contains(telemetryServiceEndpoint.PathAndQuery))
                     {
                         Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
                     }
@@ -93,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 },
                 ExceptionIntercepter = (request, exception) =>
                 {
-                    if (request.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint.AbsoluteUri))
+                    if (request.RequestUri.AbsoluteUri.Contains(telemetryServiceEndpoint.PathAndQuery))
                     {
                         this.isClientTelemetryAPICallFailed = true;
                     }
@@ -110,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         return Task.FromResult(result);
                     }
 
-                    if (request.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint.AbsoluteUri))
+                    if (request.RequestUri.AbsoluteUri.Contains(telemetryServiceEndpoint.PathAndQuery))
                     {
                         string jsonObject = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
 
@@ -124,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 },
                 ResponseIntercepter = (response) =>
                 {
-                    if (response.RequestMessage != null && response.RequestMessage.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint.AbsoluteUri))
+                    if (response.RequestMessage != null && response.RequestMessage.RequestUri.AbsoluteUri.Contains(telemetryServiceEndpoint.PathAndQuery))
                     {
                         Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
                     }
@@ -132,7 +130,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 },
                 ExceptionIntercepter = (request, exception) =>
                 {
-                    if (request.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint.AbsoluteUri))
+                    if (request.RequestUri.AbsoluteUri.Contains(telemetryServiceEndpoint.PathAndQuery))
                     {
                         this.isClientTelemetryAPICallFailed = true;
                     }
