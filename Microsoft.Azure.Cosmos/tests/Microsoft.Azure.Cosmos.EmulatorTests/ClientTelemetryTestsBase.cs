@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 RequestCallBack = (request, cancellation) =>
                 {
-                    if (request.RequestUri.AbsoluteUri.Contains(telemetryServiceEndpoint.PathAndQuery))
+                    if (request.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint.AbsoluteUri))
                     {
                         string jsonObject = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
 
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 },
                 ResponseIntercepter = (response) =>
                 {
-                    if (response.RequestMessage != null && response.RequestMessage.RequestUri.AbsoluteUri.Contains(telemetryServiceEndpoint.PathAndQuery))
+                    if (response.RequestMessage != null && response.RequestMessage.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint.AbsoluteUri))
                     {
                         Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
                     }
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 },
                 ExceptionIntercepter = (request, exception) =>
                 {
-                    if (request.RequestUri.AbsoluteUri.Contains(telemetryServiceEndpoint.PathAndQuery))
+                    if (request.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint.AbsoluteUri))
                     {
                         this.isClientTelemetryAPICallFailed = true;
                     }
@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         return Task.FromResult(result);
                     }
 
-                    if (request.RequestUri.AbsoluteUri.Contains(telemetryServiceEndpoint.PathAndQuery))
+                    if (request.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint.AbsoluteUri))
                     {
                         string jsonObject = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
 
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 },
                 ResponseIntercepter = (response) =>
                 {
-                    if (response.RequestMessage != null && response.RequestMessage.RequestUri.AbsoluteUri.Contains(telemetryServiceEndpoint.PathAndQuery))
+                    if (response.RequestMessage != null && response.RequestMessage.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint.AbsoluteUri))
                     {
                         Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
                     }
@@ -130,7 +130,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 },
                 ExceptionIntercepter = (request, exception) =>
                 {
-                    if (request.RequestUri.AbsoluteUri.Contains(telemetryServiceEndpoint.PathAndQuery))
+                    if (request.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint.AbsoluteUri))
                     {
                         this.isClientTelemetryAPICallFailed = true;
                     }
