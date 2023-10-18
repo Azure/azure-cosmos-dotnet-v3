@@ -106,7 +106,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task ValidatePreTriggerTest()
+        [DataRow(TriggerOperation.Create)]
+        [DataRow(TriggerOperation.Upsert)]
+        public async Task ValidatePreTriggerTest(TriggerOperation triggerOperation)
         {
             string triggerId = "SetJobNumber";
 
@@ -124,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Id = triggerId,
                 TriggerType = TriggerType.Pre,
-                TriggerOperation = TriggerOperation.Create,
+                TriggerOperation = triggerOperation,
                 Body = @"function setJobNumber() {
                     var context = getContext();
                     var request = context.getRequest();      
@@ -150,15 +152,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Job value = new Job() { Id = Guid.NewGuid(), InvestigationKey = "investigation~1" };
 
-            // this should create the document successfully with jobnumber of 1
-            Job createdItem = await this.container.CreateItemAsync<Job>(item: value, partitionKey: null, requestOptions: new ItemRequestOptions
+            Job item = null;
+            if (triggerOperation == TriggerOperation.Create)
             {
-                PreTriggers = new List<string> { triggerId }
-            });
-
-            Assert.AreEqual(value.Id, createdItem.Id);
-            Assert.AreEqual(value.InvestigationKey, createdItem.InvestigationKey);
-            Assert.AreEqual(1, createdItem.JobNumber);
+                // this should create the document successfully with jobnumber of 1
+                item = await this.container.CreateItemAsync<Job>(item: value, partitionKey: null, requestOptions: new ItemRequestOptions
+                {
+                    PreTriggers = new List<string> { triggerId }
+                });
+            }
+            else if(triggerOperation == TriggerOperation.Upsert)
+            {
+                // this should create the document successfully with jobnumber of 1
+                item = await this.container.UpsertItemAsync<Job>(item: value, partitionKey: null, requestOptions: new ItemRequestOptions
+                {
+                    PreTriggers = new List<string> { triggerId }
+                });
+            }
+          
+            Assert.AreEqual(value.Id, item.Id);
+            Assert.AreEqual(value.InvestigationKey, item.InvestigationKey);
+            Assert.AreEqual(1, item.JobNumber);
 
             List<Job> result = this.container.GetItemLinqQueryable<Job>(allowSynchronousQueryExecution: true).Where(x => x.InvestigationKey == "investigation~1").ToList();
             Assert.IsNotNull(result);
@@ -171,15 +185,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             value.Id = Guid.NewGuid();
 
-            // this should create the document successfully with jobnumber of 2
-            Job createdItem2 = await this.container.CreateItemAsync<Job>(item: value, partitionKey: null, requestOptions:  new ItemRequestOptions
+            Job item2 = null;
+            if (triggerOperation == TriggerOperation.Create)
             {
-                PreTriggers = new List<string> { "SetJobNumber" }
-            });
+                // this should create the document successfully with jobnumber of 2
+                item2 = await this.container.CreateItemAsync<Job>(item: value, partitionKey: null, requestOptions: new ItemRequestOptions
+                {
+                    PreTriggers = new List<string> { "SetJobNumber" }
+                });
+            }
+            else if (triggerOperation == TriggerOperation.Upsert)
+            {
+                // this should create the document successfully with jobnumber of 1
+                item2 = await this.container.UpsertItemAsync<Job>(item: value, partitionKey: null, requestOptions: new ItemRequestOptions
+                {
+                    PreTriggers = new List<string> { "SetJobNumber" }
+                });
+            }
 
-            Assert.AreEqual(value.Id, createdItem2.Id);
-            Assert.AreEqual(value.InvestigationKey, createdItem2.InvestigationKey);
-            Assert.AreEqual(2, createdItem2.JobNumber);
+            Assert.AreEqual(value.Id, item2.Id);
+            Assert.AreEqual(value.InvestigationKey, item2.InvestigationKey);
+            Assert.AreEqual(2, item2.JobNumber);
 
             result = this.container.GetItemLinqQueryable<Job>(allowSynchronousQueryExecution: true).Where(x => x.InvestigationKey == "investigation~1").ToList();
             Assert.IsNotNull(result);
