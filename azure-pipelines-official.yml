@@ -7,7 +7,6 @@ variables:
   VmImage: windows-latest # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops 
   BuildConfiguration: Release
   Packaging.EnableSBOMSigning: true
-  ReleasePackage: true
   OS: 'Windows'
 
 stages:
@@ -61,8 +60,8 @@ stages:
   jobs:
     - template:  templates/nuget-pack.yml
       parameters:
-        BuildConfiguration: $(BuildConfiguration)
+        BuildConfiguration: Release
         VmImage: $(VmImage)
-        ReleasePackage: $(ReleasePackage)
+        ReleasePackage: true
         OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
         BlobVersion: $(BlobVersion)
