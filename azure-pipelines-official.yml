@@ -60,7 +60,7 @@ stages:
   jobs:
     - template:  templates/nuget-pack.yml
       parameters:
-        BuildConfiguration: $(BuildConfiguration)
+        BuildConfiguration: Release
         VmImage: $(VmImage)
         ReleasePackage: true
         OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
