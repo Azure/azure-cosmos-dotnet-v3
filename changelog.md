@@ -17,7 +17,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Fixed
 - [4039](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4039) GatewayAddressCache: Fixes Unobserved Exception During Background Address Refresh (#4039)
-- [4108](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4108) Revert Query: Adds new system strings in JsonBinaryEncoding, replacing 1-byte user strings (#3400) (#4108)
 - [4098](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4098) Distributed Tracing: Fixes dependency failure on appinsights (#4098)
 - [4097](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4097) Distributed Tracing: Fixes SDK responses compatibility with opentelemetry response (#4097)
 - [4111](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4111) Distributed Tracing: Fixes traceid null exception issue (#4111)
@@ -241,7 +240,6 @@ If you have a scenario where tokens generated from the newer SDKs are used by an
 - [#3433](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3433) CosmosOperationCanceledException: Adds serializable functionality
 - [#3419](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3419) Documentation: Removes mention of obsolete disableAutomaticIdGeneration
 - [#3404](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3404) Patch: Adds public to `PatchOperation<T>` class for testing
-- [#3400](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3400) Query: Adds new system strings in JsonBinaryEncoding, replacing 1-byte user strings
 - [#3380](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3380) Query: Adds aggressive prefetching for `GROUP BY` and `COUNT(DISTINCT)`
 
 ### <a name="3.30.1"/> [3.30.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.30.1) - 2022-09-01
