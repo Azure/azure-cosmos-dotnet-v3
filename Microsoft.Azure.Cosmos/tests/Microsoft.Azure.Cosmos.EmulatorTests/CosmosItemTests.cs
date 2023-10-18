@@ -3391,14 +3391,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     actual: response.CosmosException.StatusCode,
                     expected: HttpStatusCode.NotFound);
             }
-            catch (JsonSerializationException jsonSerializationException)
-            {
-                Assert.Fail(message: $"JsonSerializationException was caught, so fail the test. {jsonSerializationException}.");
-            }
-            catch (Exception otherException)
-            {
-                Assert.Fail(message: $"Any other exception is thrown before the Act, so fail the test. {otherException}.");
-            }
             finally
             {
                 if (database != null)
@@ -3472,14 +3464,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(
                     actual: cosmosException.StatusCode,
                     expected: HttpStatusCode.NotFound);
-            }
-            catch (JsonSerializationException jsonSerializationException)
-            {
-                Assert.Fail(message: $"JsonSerializationException was caught, so fail the test. {jsonSerializationException}.");
-            }
-            catch (Exception otherException)
-            {
-                Assert.Fail(message: $"Any other exception is thrown before the Act, so fail the test. {otherException}.");
             }
             finally
             {
