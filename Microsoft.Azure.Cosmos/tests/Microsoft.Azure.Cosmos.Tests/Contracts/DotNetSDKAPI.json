@@ -8799,6 +8799,11 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Scripts.TriggerOperation Update;IsInitOnly:False;IsStatic:True;"
+        },
+        "Microsoft.Azure.Cosmos.Scripts.TriggerOperation Upsert": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Scripts.TriggerOperation Upsert;IsInitOnly:False;IsStatic:True;"
         }
       },
       "NestedTypes": {}

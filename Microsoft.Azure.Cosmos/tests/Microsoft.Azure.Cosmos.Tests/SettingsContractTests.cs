@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void TriggerOperationMatchesDirect()
         {
-            this.AssertEnums<Cosmos.Scripts.TriggerOperation, Documents.TriggerOperation>();
+            this.AssertEnumsContains<Cosmos.Scripts.TriggerOperation, Documents.TriggerOperation>();
         }
 
         [TestMethod]
@@ -1146,6 +1146,17 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 Assert.AreEqual(Convert.ToInt32(documentssVersion), Convert.ToInt32(cosmosVersion));
             }
+        }
+
+        private void AssertEnumsContains<TFirstEnum, TSecondEnum>() where TFirstEnum : struct, IConvertible where TSecondEnum : struct, IConvertible
+        {
+            string[] allCosmosEntries = Enum.GetNames(typeof(TFirstEnum));
+            string[] allDocumentsEntries = Enum.GetNames(typeof(TSecondEnum));
+
+           foreach(string entry in allDocumentsEntries)
+           {
+                Assert.IsTrue(allCosmosEntries.Contains(entry));
+           }
         }
     }
 }
