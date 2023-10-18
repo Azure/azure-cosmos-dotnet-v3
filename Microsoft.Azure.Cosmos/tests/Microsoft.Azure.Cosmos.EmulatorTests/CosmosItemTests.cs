@@ -3408,6 +3408,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     Debug.WriteLine($"The {nameof(database)} with id '{databaseId}' was removed.");
                 }
+
+                // Setting this back because it blows up other serialization tests.
+
+                JsonConvert.DefaultSettings = () => default;
             }
         }
 
@@ -3486,6 +3490,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     Debug.WriteLine($"The {nameof(database)} with id '{databaseId}' was removed.");
                 }
+
+                // Setting this back because it blows up other serialization tests.
+
+                JsonConvert.DefaultSettings = () => default;
             }
         }
 
