@@ -10,15 +10,19 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Collections.ObjectModel;
     using System.Diagnostics;
     using System.Globalization;
+    using System.IO;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Serialization;
     using static Microsoft.Azure.Cosmos.Linq.FromParameterBindings;
 
     // ReSharper disable UnusedParameter.Local
@@ -169,7 +173,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
-        /// Get a paramter name to be binded to the a collection from the next lambda.
+        /// Get a parameter name to be binded to the a collection from the next lambda.
         /// It's merely for readability purpose. If that is not possible, use a default 
         /// parameter name.
         /// </summary>
@@ -189,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 }
             }
 
-            if (parameterName == null) parameterName = ExpressionToSql.DefaultParameterName;
+            parameterName ??= ExpressionToSql.DefaultParameterName;
 
             return parameterName;
         }
@@ -524,10 +528,16 @@ namespace Microsoft.Azure.Cosmos.Linq
                 // so we check both attributes and apply the same precedence rules
                 // JsonConverterAttribute doesn't allow duplicates so it's safe to
                 // use FirstOrDefault()
-                CustomAttributeData memberAttribute = memberExpression.Member.CustomAttributes.Where(ca => ca.AttributeType == typeof(JsonConverterAttribute)).FirstOrDefault();
-                CustomAttributeData typeAttribute = memberType.GetsCustomAttributes().Where(ca => ca.AttributeType == typeof(JsonConverterAttribute)).FirstOrDefault();
+                CustomAttributeData memberAttribute = memberExpression.Member.CustomAttributes.Where(ca => ca.AttributeType == typeof(Newtonsoft.Json.JsonConverterAttribute)).FirstOrDefault();
+                CustomAttributeData typeAttribute = memberType.GetsCustomAttributes().Where(ca => ca.AttributeType == typeof(Newtonsoft.Json.JsonConverterAttribute)).FirstOrDefault();
 
                 CustomAttributeData converterAttribute = memberAttribute ?? typeAttribute;
+                if (converterAttribute == null)
+                {
+                    CustomAttributeData memberAttributeDotNet = memberExpression.Member.CustomAttributes.Where(ca => ca.AttributeType == typeof(System.Text.Json.Serialization.JsonConverterAttribute)).FirstOrDefault();
+                    converterAttribute = memberAttributeDotNet;
+                }
+
                 if (converterAttribute != null)
                 {
                     Debug.Assert(converterAttribute.ConstructorArguments.Count > 0);
@@ -538,14 +548,21 @@ namespace Microsoft.Azure.Cosmos.Linq
                     // Enum
                     if (memberType.IsEnum())
                     {
-                        Number64 number64 = ((SqlNumberLiteral)right.Literal).Value;
-                        if (number64.IsDouble)
+                        try
                         {
-                            value = Enum.ToObject(memberType, Number64.ToDouble(number64));
+                            Number64 number64 = ((SqlNumberLiteral)right.Literal).Value;
+                            if (number64.IsDouble)
+                            {
+                                value = Enum.ToObject(memberType, Number64.ToDouble(number64));
+                            }
+                            else
+                            {
+                                value = Enum.ToObject(memberType, Number64.ToLong(number64));
+                            }
                         }
-                        else
+                        catch
                         {
-                            value = Enum.ToObject(memberType, Number64.ToLong(number64));
+                            value = ((SqlStringLiteral)right.Literal).Value;
                         }
 
                     }
@@ -562,7 +579,18 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                         if (converterType.GetConstructor(Type.EmptyTypes) != null)
                         {
-                            serializedValue = JsonConvert.SerializeObject(value, (JsonConverter)Activator.CreateInstance(converterType));
+                            if (converterAttribute.AttributeType == typeof(System.Text.Json.Serialization.JsonConverterAttribute))
+                            {
+                                // Handle dotnet
+                                JsonSerializerOptions options = new JsonSerializerOptions();
+                                options.Converters.Add(new JsonStringEnumConverter());
+                                serializedValue = System.Text.Json.JsonSerializer.Serialize(value, options);
+                            }
+                            else
+                            {
+                                // handle newtonsoft
+                                serializedValue = JsonConvert.SerializeObject(value, (Newtonsoft.Json.JsonConverter)Activator.CreateInstance(converterType));
+                            }
                         }
                         else
                         {
@@ -768,6 +796,47 @@ namespace Microsoft.Azure.Cosmos.Linq
                 }
 
                 return SqlArrayCreateScalarExpression.Create(arrayItems.ToImmutableArray());
+            }
+
+            // DataAttribute serialization
+            if (inputExpression.Type.CustomAttributes != null && inputExpression.Type.CustomAttributes.Count() > 0)
+            {
+                return CosmosElement.Parse(JsonConvert.SerializeObject(inputExpression.Value)).Accept(CosmosElementToSqlScalarExpressionVisitor.Singleton);
+            }
+
+            // if ANY property is serialized with newtonsoft serializer, we serialize newtonsoft properties
+            PropertyInfo[] propInfo = inputExpression.Value.GetType().GetProperties();
+            bool hasCustomAttributesNewtonsoft = propInfo.Any(p => p.GetCustomAttributes().Any(a => a.GetType() == typeof(JsonPropertyAttribute)));
+
+            if (hasCustomAttributesNewtonsoft)
+            {
+                if (context.linqSerializerOptions != null && context.linqSerializerOptions.PropertyNamingPolicy == CosmosPropertyNamingPolicy.CamelCase)
+                {
+                    JsonSerializerSettings serializerSettings = new JsonSerializerSettings
+                    {
+                        ContractResolver = new CamelCasePropertyNamesContractResolver()
+                    };
+
+                    return CosmosElement.Parse(JsonConvert.SerializeObject(inputExpression.Value, serializerSettings)).Accept(CosmosElementToSqlScalarExpressionVisitor.Singleton);
+                }
+
+                return CosmosElement.Parse(JsonConvert.SerializeObject(inputExpression.Value)).Accept(CosmosElementToSqlScalarExpressionVisitor.Singleton);
+            }
+
+            if (context.linqSerializerOptions?.CustomCosmosSerializer != null)
+            {
+                StringWriter writer = new StringWriter(CultureInfo.InvariantCulture);
+
+                // Use the user serializer for the parameter values so custom conversions are correctly handled
+                using (Stream stream = context.linqSerializerOptions.CustomCosmosSerializer.ToStream(inputExpression.Value))
+                {
+                    using (StreamReader streamReader = new StreamReader(stream))
+                    {
+                        string propertyValue = streamReader.ReadToEnd();
+                        writer.Write(propertyValue);
+                        return CosmosElement.Parse(writer.ToString()).Accept(CosmosElementToSqlScalarExpressionVisitor.Singleton);
+                    }
+                }
             }
 
             return CosmosElement.Parse(JsonConvert.SerializeObject(inputExpression.Value)).Accept(CosmosElementToSqlScalarExpressionVisitor.Singleton);

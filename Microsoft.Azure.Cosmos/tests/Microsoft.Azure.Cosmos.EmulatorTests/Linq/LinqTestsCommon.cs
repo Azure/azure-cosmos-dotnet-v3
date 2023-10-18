@@ -333,13 +333,13 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="count">number of test data to be created</param>
         /// <param name="container">the target container</param>
         /// <param name="camelCaseSerialization">if theCosmosLinqSerializerOption of camelCaseSerialization should be applied</param>
-        /// <returns>a lambda that takes a boolean which indicate where the query should run against CosmosDB or against original data, and return a query results as IQueryable. Also the serialized payload.</returns>
-        public static Func<bool, IQueryable<T>> GenerateSerializationTestCosmosData<T>(Func<int, bool, T> func, int count, Container container, bool camelCaseSerialization = false)
+        /// <returns>a lambda that takes a boolean which indicate where the query should run against CosmosDB or against original data, and return a query results as IQueryable.</returns>
+        public static Func<bool, IQueryable<T>> GenerateSerializationTestCosmosData<T>(Func<int, bool, T> func, int count, Container container, CosmosLinqSerializerOptions linqSerializerOptions)
         {
             List<T> data = new List<T>();
             for (int i = 0; i < count; i++)
             {
-                data.Add(func(i, camelCaseSerialization));
+                data.Add(func(i, linqSerializerOptions.PropertyNamingPolicy == CosmosPropertyNamingPolicy.CamelCase));
             }
 
             foreach (T obj in data)
@@ -355,7 +355,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 #endif
             };
 
-            CosmosLinqSerializerOptions linqSerializerOptions = new CosmosLinqSerializerOptions { PropertyNamingPolicy = camelCaseSerialization ? CosmosPropertyNamingPolicy.CamelCase : CosmosPropertyNamingPolicy.Default };
             IOrderedQueryable<T> query = container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution: true, requestOptions: requestOptions, linqSerializerOptions: linqSerializerOptions);
 
             IQueryable<T> getQuery(bool useQuery) => useQuery ? query : data.AsQueryable();

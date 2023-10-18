@@ -205,8 +205,19 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 return obj;
             }
 
-            Func<bool, IQueryable<T>> getQueryCamelCase = LinqTestsCommon.GenerateSerializationTestCosmosData(createDataObj, RecordCount, TestContainer, camelCaseSerialization: true);
-            Func<bool, IQueryable<T>> getQueryDefault = LinqTestsCommon.GenerateSerializationTestCosmosData(createDataObj, RecordCount, TestContainer, camelCaseSerialization: false);
+            CosmosLinqSerializerOptions linqSerializerOptionsCamelCase = new CosmosLinqSerializerOptions
+            {
+                PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase,
+                CustomCosmosSerializer = new SystemTextJsonSerializer(new JsonSerializerOptions())
+            };
+
+            CosmosLinqSerializerOptions linqSerializerOptionsDefault = new CosmosLinqSerializerOptions
+            {
+                CustomCosmosSerializer = new SystemTextJsonSerializer(new JsonSerializerOptions())
+            };
+
+            Func<bool, IQueryable<T>> getQueryCamelCase = LinqTestsCommon.GenerateSerializationTestCosmosData(createDataObj, RecordCount, TestContainer, linqSerializerOptionsCamelCase);
+            Func<bool, IQueryable<T>> getQueryDefault = LinqTestsCommon.GenerateSerializationTestCosmosData(createDataObj, RecordCount, TestContainer, linqSerializerOptionsDefault);
 
             return (getQueryCamelCase, getQueryDefault);
         }
@@ -248,7 +259,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             return insertedData;
         }
 
-        private class SystemTextJsonSerializer : CosmosSerializer
+        class SystemTextJsonSerializer : CosmosSerializer
         {
             private readonly JsonObjectSerializer systemTextJsonSerializer;
 

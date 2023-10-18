@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Reflection;
     using System.Runtime.CompilerServices;
     using System.Runtime.Serialization;
-    using Microsoft.Azure.Cosmos.Serializer;
+    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             string memberName = null;
 
             // Check if Newtonsoft JsonExtensionDataAttribute is present on the member, if so, return empty member name.
-            JsonExtensionDataAttribute jsonExtensionDataAttribute = memberInfo.GetCustomAttribute<JsonExtensionDataAttribute>(true);
+            Newtonsoft.Json.JsonExtensionDataAttribute jsonExtensionDataAttribute = memberInfo.GetCustomAttribute<Newtonsoft.Json.JsonExtensionDataAttribute>(true);
             if (jsonExtensionDataAttribute != null && jsonExtensionDataAttribute.ReadData)
             {
                 return null;
@@ -42,21 +42,26 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
             else
             {
-                DataContractAttribute dataContractAttribute = memberInfo.DeclaringType.GetCustomAttribute<DataContractAttribute>(true);
-                if (dataContractAttribute != null)
+                JsonPropertyNameAttribute jsonPropertyNameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(true);
+                if (jsonPropertyNameAttribute != null && !string.IsNullOrEmpty(jsonPropertyNameAttribute.Name))
                 {
-                    DataMemberAttribute dataMemberAttribute = memberInfo.GetCustomAttribute<DataMemberAttribute>(true);
-                    if (dataMemberAttribute != null && !string.IsNullOrEmpty(dataMemberAttribute.Name))
+                    memberName = jsonPropertyNameAttribute.Name;
+                }
+                else
+                {
+                    DataContractAttribute dataContractAttribute = memberInfo.DeclaringType.GetCustomAttribute<DataContractAttribute>(true);
+                    if (dataContractAttribute != null)
                     {
-                        memberName = dataMemberAttribute.Name;
+                        DataMemberAttribute dataMemberAttribute = memberInfo.GetCustomAttribute<DataMemberAttribute>(true);
+                        if (dataMemberAttribute != null && !string.IsNullOrEmpty(dataMemberAttribute.Name))
+                        {
+                            memberName = dataMemberAttribute.Name;
+                        }
                     }
                 }
             }
 
-            if (memberName == null)
-            {
-                memberName = memberInfo.Name;
-            }
+            memberName ??= memberInfo.Name;
 
             if (linqSerializerOptions != null)
             {

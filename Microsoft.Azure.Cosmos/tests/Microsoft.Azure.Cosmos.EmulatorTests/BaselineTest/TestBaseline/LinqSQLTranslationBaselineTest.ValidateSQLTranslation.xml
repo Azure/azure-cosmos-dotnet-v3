@@ -278,7 +278,7 @@ FROM root]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"dbl": 0, "str": null, "b": false, "dblArray": null, "inside": {"x": 0, "y": 0, "id": null, "pk": null}, "id": null, "pk": null, "NetExtensionData": {"OtherTest": 1.5}, "test": 1.5} 
+SELECT VALUE {"dbl": 0, "b": false, "inside": {"x": 0, "y": 0}, "NetExtensionData": {"OtherTest": 1.5}, "test": 1.5} 
 FROM root]]></SqlQuery>
     </Output>
   </Result>
