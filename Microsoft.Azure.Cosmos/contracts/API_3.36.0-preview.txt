@@ -1400,6 +1400,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         Delete = (short)3,
         Replace = (short)4,
         Update = (short)2,
+        Upsert = (short)5,
     }
     public class TriggerProperties
     {
