@@ -54,6 +54,7 @@ stages:
           testRunTitle: Microsoft.Azure.Cosmos.EmulatorTests
         env:
           COSMOSDB_ACCOUNT_CONNECTION_STRING: $(COSMOSDB_ACCOUNT_CONNECTION_STRING) # Real Account Connection String used by Integration Tests while running as part of release pipeline
+          CLIENT_TELEMETRY_SERVICE_ENDPOINT: $(CLIENT_TELEMETRY_SERVICE_ENDPOINT) # Client telemetry service url returned by configured account client config API
 
 - stage:
   displayName: Publish 
