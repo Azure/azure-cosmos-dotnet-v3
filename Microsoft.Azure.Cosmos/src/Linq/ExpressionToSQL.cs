@@ -173,7 +173,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
-        /// Get a parameter name to be binded to the a collection from the next lambda.
+        /// Get a parameter name to be binded to the collection from the next lambda.
         /// It's merely for readability purpose. If that is not possible, use a default 
         /// parameter name.
         /// </summary>
@@ -528,15 +528,9 @@ namespace Microsoft.Azure.Cosmos.Linq
                 // so we check both attributes and apply the same precedence rules
                 // JsonConverterAttribute doesn't allow duplicates so it's safe to
                 // use FirstOrDefault()
-                CustomAttributeData memberAttribute = memberExpression.Member.CustomAttributes.Where(ca => ca.AttributeType == typeof(Newtonsoft.Json.JsonConverterAttribute)).FirstOrDefault();
-                CustomAttributeData typeAttribute = memberType.GetsCustomAttributes().Where(ca => ca.AttributeType == typeof(Newtonsoft.Json.JsonConverterAttribute)).FirstOrDefault();
-
-                CustomAttributeData converterAttribute = memberAttribute ?? typeAttribute;
-                if (converterAttribute == null)
-                {
-                    CustomAttributeData memberAttributeDotNet = memberExpression.Member.CustomAttributes.Where(ca => ca.AttributeType == typeof(System.Text.Json.Serialization.JsonConverterAttribute)).FirstOrDefault();
-                    converterAttribute = memberAttributeDotNet;
-                }
+                CustomAttributeData converterAttribute = memberExpression.Member.CustomAttributes.Where(ca => ca.AttributeType == typeof(Newtonsoft.Json.JsonConverterAttribute)).FirstOrDefault();
+                converterAttribute ??= memberType.GetsCustomAttributes().Where(ca => ca.AttributeType == typeof(Newtonsoft.Json.JsonConverterAttribute)).FirstOrDefault();
+                converterAttribute ??= memberExpression.Member.CustomAttributes.Where(ca => ca.AttributeType == typeof(System.Text.Json.Serialization.JsonConverterAttribute)).FirstOrDefault();
 
                 if (converterAttribute != null)
                 {
@@ -578,17 +572,17 @@ namespace Microsoft.Azure.Cosmos.Linq
                         string serializedValue;
 
                         if (converterType.GetConstructor(Type.EmptyTypes) != null)
-                        {
+                        {                      
                             if (converterAttribute.AttributeType == typeof(System.Text.Json.Serialization.JsonConverterAttribute))
                             {
-                                // Handle dotnet
+                                // DotNet serializer
                                 JsonSerializerOptions options = new JsonSerializerOptions();
                                 options.Converters.Add(new JsonStringEnumConverter());
                                 serializedValue = System.Text.Json.JsonSerializer.Serialize(value, options);
                             }
                             else
                             {
-                                // handle newtonsoft
+                                // Newtonsoft serializer
                                 serializedValue = JsonConvert.SerializeObject(value, (Newtonsoft.Json.JsonConverter)Activator.CreateInstance(converterType));
                             }
                         }
@@ -798,15 +792,15 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return SqlArrayCreateScalarExpression.Create(arrayItems.ToImmutableArray());
             }
 
-            // DataAttribute serialization
+            // DataMember serialization
             if (inputExpression.Type.CustomAttributes != null && inputExpression.Type.CustomAttributes.Count() > 0)
             {
                 return CosmosElement.Parse(JsonConvert.SerializeObject(inputExpression.Value)).Accept(CosmosElementToSqlScalarExpressionVisitor.Singleton);
             }
 
-            // if ANY property is serialized with newtonsoft serializer, we serialize newtonsoft properties
+            // if ANY property is serialized with Newtonsoft serializer, we serialize all with this serializer
             PropertyInfo[] propInfo = inputExpression.Value.GetType().GetProperties();
-            bool hasCustomAttributesNewtonsoft = propInfo.Any(p => p.GetCustomAttributes().Any(a => a.GetType() == typeof(JsonPropertyAttribute)));
+            bool hasCustomAttributesNewtonsoft = propInfo.Any(property => property.GetCustomAttributes().Any(attribute => attribute.GetType() == typeof(JsonPropertyAttribute)));
 
             if (hasCustomAttributesNewtonsoft)
             {
@@ -823,11 +817,11 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return CosmosElement.Parse(JsonConvert.SerializeObject(inputExpression.Value)).Accept(CosmosElementToSqlScalarExpressionVisitor.Singleton);
             }
 
+            // Use DotNet custom serializer if provided
             if (context.linqSerializerOptions?.CustomCosmosSerializer != null)
             {
                 StringWriter writer = new StringWriter(CultureInfo.InvariantCulture);
 
-                // Use the user serializer for the parameter values so custom conversions are correctly handled
                 using (Stream stream = context.linqSerializerOptions.CustomCosmosSerializer.ToStream(inputExpression.Value))
                 {
                     using (StreamReader streamReader = new StreamReader(stream))

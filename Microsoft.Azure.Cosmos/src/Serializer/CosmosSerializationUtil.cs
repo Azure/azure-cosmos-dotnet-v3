@@ -17,7 +17,6 @@ namespace Microsoft.Azure.Cosmos
 
         internal static string GetStringWithPropertyNamingPolicy(CosmosLinqSerializerOptions options, string name)
         {
-            //mayapainter: not being applied on top of dotnet?
             if (options != null && options.PropertyNamingPolicy == CosmosPropertyNamingPolicy.CamelCase)
             {
                 return CosmosSerializationUtil.ToCamelCase(name);

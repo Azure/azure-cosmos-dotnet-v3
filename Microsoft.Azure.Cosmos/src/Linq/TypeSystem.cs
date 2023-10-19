@@ -33,8 +33,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return null;
             }
 
-            // Json.Net honors JsonPropertyAttribute more than DataMemberAttribute
-            // So we check for JsonPropertyAttribute first.
+            // TODO check this
+            // Precedence is (highest to lowest) : JsonPropertyAttribute, JsonPropertyNameAttribute, DataMemberAttribute
             JsonPropertyAttribute jsonPropertyAttribute = memberInfo.GetCustomAttribute<JsonPropertyAttribute>(true);
             if (jsonPropertyAttribute != null && !string.IsNullOrEmpty(jsonPropertyAttribute.PropertyName))
             {
@@ -63,6 +63,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             memberName ??= memberInfo.Name;
 
+            // Apply camel casing if specified
             if (linqSerializerOptions != null)
             {
                 memberName = CosmosSerializationUtil.GetStringWithPropertyNamingPolicy(linqSerializerOptions, memberName);
