@@ -215,6 +215,35 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             this.ExecuteTestSuite(inputs);
         }
 
+        [TestMethod]
+        public void TestMemberInitializerDotNetDataMemberSerializer()
+        {
+            Func<bool, IQueryable<DataObjectDotNetDataMemberSerializer>> getQueryCamelCase;
+            Func<bool, IQueryable<DataObjectDotNetDataMemberSerializer>> getQueryDefault;
+            (getQueryCamelCase, getQueryDefault) = this.InsertDataAndGetQueryables<DataObjectDotNetDataMemberSerializer>();
+
+            string insertedData = this.GetInsertedData().Result;
+
+            List<LinqTestInput> inputs = new List<LinqTestInput>();
+            foreach (bool useCamelCaseSerializer in new bool[] { true, false })
+            {
+                Func<bool, IQueryable<DataObjectDotNetDataMemberSerializer>> getQuery = useCamelCaseSerializer ? getQueryCamelCase : getQueryDefault;
+
+                List<LinqTestInput> camelCaseSettingInputs = new List<LinqTestInput>
+                {
+                    new LinqTestInput("Filter w/ constant value, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc.NumericField == 1), skipVerification : true, inputData: insertedData),
+                    new LinqTestInput("Filter w/ DataObject initializer with constant value, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc == new DataObjectDotNetDataMemberSerializer() { NumericField = 1, StringField = "1" }), skipVerification : true, inputData: insertedData),
+                    new LinqTestInput("Select w/ DataObject initializer, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Select(doc => new DataObjectDotNetDataMemberSerializer() { NumericField = 1, StringField = "1" }), skipVerification : true, inputData: insertedData),
+                    new LinqTestInput("Deeper than top level reference, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Select(doc => doc.NumericField > 1 ? new DataObjectDotNetDataMemberSerializer() { NumericField = 1, StringField = "1" } : new DataObjectDotNetDataMemberSerializer() { NumericField = 1, StringField = "1" }), skipVerification : true, inputData: insertedData),
+                    new LinqTestInput("Filter w/ DataObject initializer with member initialization, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc == new DataObjectDotNetDataMemberSerializer() { NumericField = doc.NumericField, StringField = doc.StringField }).Select(b => "A"), skipVerification : true, inputData: insertedData)
+                };
+
+                inputs.AddRange(camelCaseSettingInputs);
+            }
+
+            this.ExecuteTestSuite(inputs);
+        }
+
         private (Func<bool, IQueryable<T>>, Func<bool, IQueryable<T>>) InsertDataAndGetQueryables<T>() where T : LinqTestObject
         {
             static T createDataObj(int index, bool camelCase)
@@ -454,6 +483,37 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             public DataObjectNewtonsoftDataMemberSerializer() { }
 
             public DataObjectNewtonsoftDataMemberSerializer(double numericField, string stringField, string id, string pk)
+            {
+                this.NumericField = numericField;
+                this.StringField = stringField;
+                this.id = id;
+                this.Pk = pk;
+            }
+
+            public override string ToString()
+            {
+                return $"{{NumericField:{this.NumericField},StringField:{this.StringField},id:{this.id},Pk:{this.Pk}}}";
+            }
+        }
+
+        [DataContract]
+        private class DataObjectDotNetDataMemberSerializer : LinqTestObject
+        {
+            [DataMember(Name = "NumericFieldDataMember")]
+            [JsonPropertyName("numberValueDotNet")]
+            public double NumericField { get; set; }
+
+            [DataMember(Name = "StringFieldDataMember")]
+            [JsonPropertyName("stringValueDotNet")]
+            public string StringField { get; set; }
+
+            public string id { get; set; }
+
+            public string Pk { get; set; }
+
+            public DataObjectDotNetDataMemberSerializer() { }
+
+            public DataObjectDotNetDataMemberSerializer(double numericField, string stringField, string id, string pk)
             {
                 this.NumericField = numericField;
                 this.StringField = stringField;

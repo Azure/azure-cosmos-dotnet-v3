@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             // TODO check this
-            // Precedence is (highest to lowest) : JsonPropertyAttribute, JsonPropertyNameAttribute, DataMemberAttribute
+            // Precedence is (highest to lowest) : JsonPropertyAttribute, DataMemberAttribute, JsonPropertyNameAttribute
             JsonPropertyAttribute jsonPropertyAttribute = memberInfo.GetCustomAttribute<JsonPropertyAttribute>(true);
             if (jsonPropertyAttribute != null && !string.IsNullOrEmpty(jsonPropertyAttribute.PropertyName))
             {
@@ -42,21 +42,21 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
             else
             {
-                JsonPropertyNameAttribute jsonPropertyNameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(true);
-                if (jsonPropertyNameAttribute != null && !string.IsNullOrEmpty(jsonPropertyNameAttribute.Name))
+                DataContractAttribute dataContractAttribute = memberInfo.DeclaringType.GetCustomAttribute<DataContractAttribute>(true);
+                if (dataContractAttribute != null)
                 {
-                    memberName = jsonPropertyNameAttribute.Name;
+                    DataMemberAttribute dataMemberAttribute = memberInfo.GetCustomAttribute<DataMemberAttribute>(true);
+                    if (dataMemberAttribute != null && !string.IsNullOrEmpty(dataMemberAttribute.Name))
+                    {
+                        memberName = dataMemberAttribute.Name;
+                    }
                 }
                 else
                 {
-                    DataContractAttribute dataContractAttribute = memberInfo.DeclaringType.GetCustomAttribute<DataContractAttribute>(true);
-                    if (dataContractAttribute != null)
+                    JsonPropertyNameAttribute jsonPropertyNameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(true);
+                    if (jsonPropertyNameAttribute != null && !string.IsNullOrEmpty(jsonPropertyNameAttribute.Name))
                     {
-                        DataMemberAttribute dataMemberAttribute = memberInfo.GetCustomAttribute<DataMemberAttribute>(true);
-                        if (dataMemberAttribute != null && !string.IsNullOrEmpty(dataMemberAttribute.Name))
-                        {
-                            memberName = dataMemberAttribute.Name;
-                        }
+                        memberName = jsonPropertyNameAttribute.Name;
                     }
                 }
             }
