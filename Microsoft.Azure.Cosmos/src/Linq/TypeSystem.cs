@@ -33,7 +33,6 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return null;
             }
 
-            // TODO check this
             // Precedence is (highest to lowest) : JsonPropertyAttribute, DataMemberAttribute, JsonPropertyNameAttribute
             JsonPropertyAttribute jsonPropertyAttribute = memberInfo.GetCustomAttribute<JsonPropertyAttribute>(true);
             if (jsonPropertyAttribute != null && !string.IsNullOrEmpty(jsonPropertyAttribute.PropertyName))

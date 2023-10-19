@@ -792,13 +792,13 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return SqlArrayCreateScalarExpression.Create(arrayItems.ToImmutableArray());
             }
 
-            bool hasDataMemberSerialization = inputExpression.Type.CustomAttributes != null && inputExpression.Type.CustomAttributes.Count() > 0;
-
-            // if ANY property is serialized with Newtonsoft serializer, we serialize all with this serializer
+            // if ANY property is decorated with Newtonsoft JsonPropertyAttribute, we serialize all with this serializer
             PropertyInfo[] propInfo = inputExpression.Value.GetType().GetProperties();
             bool hasCustomAttributesNewtonsoft = propInfo.Any(property => property.GetCustomAttributes().Any(attribute => attribute.GetType() == typeof(JsonPropertyAttribute)));
 
-            if (hasDataMemberSerialization || hasCustomAttributesNewtonsoft)
+            bool hasCustomAttributesDataMember = inputExpression.Type.CustomAttributes != null && inputExpression.Type.CustomAttributes.Count() > 0;
+
+            if (hasCustomAttributesNewtonsoft || hasCustomAttributesDataMember )
             {
                 JsonSerializerSettings serializerSettings = new JsonSerializerSettings();
                 if (context.linqSerializerOptions != null && context.linqSerializerOptions.PropertyNamingPolicy == CosmosPropertyNamingPolicy.CamelCase)
