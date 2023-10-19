@@ -15,56 +15,56 @@ pr:
     - 'Microsoft.Azure.Cosmos/contracts/**/*'
 
 variables:
-  BuildConfiguration: "Release"
   DebugArguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional" --verbosity normal '
   ReleaseArguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional" --verbosity normal '
   VmImage: windows-latest # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
 
+
 jobs:
 - template:  templates/static-tools.yml
   parameters:
-    BuildConfiguration: '${{ variables.BuildConfiguration }}'
+    BuildConfiguration: Release
     VmImage: $(VmImage)
 
 - template:  templates/nuget-pack.yml
   parameters:
-    BuildConfiguration: '${{ variables.BuildConfiguration }}'
+    BuildConfiguration: Release
     VmImage: $(VmImage)
     ReleasePackage: false
     OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/Release/Microsoft.Azure.Cosmos'
 
 - template:  templates/build-ctl.yml
   parameters:
-    BuildConfiguration: '${{ variables.BuildConfiguration }}'
+    BuildConfiguration: Release
     Arguments: $(ReleaseArguments)
     VmImage: $(VmImage)
 
 - template:  templates/build-samples.yml
   parameters:
-    BuildConfiguration: '${{ variables.BuildConfiguration }}'
+    BuildConfiguration: Release
     Arguments: $(ReleaseArguments)
     VmImage: $(VmImage)
 
 - template:  templates/build-test.yml
   parameters:
-    BuildConfiguration: '${{ variables.BuildConfiguration }}'
+    BuildConfiguration: Release
     Arguments: $(ReleaseArguments)
     VmImage: $(VmImage)
 
 - template:  templates/build-internal.yml
   parameters:
-    BuildConfiguration: '${{ variables.BuildConfiguration }}'
+    BuildConfiguration: Release
     Arguments: $(ReleaseArguments)
     VmImage:  $(VmImage)
 
 - template:  templates/build-preview.yml
   parameters:
-    BuildConfiguration: '${{ variables.BuildConfiguration }}'
+    BuildConfiguration: Release
     Arguments: $(ReleaseArguments)
     VmImage:  $(VmImage)
 
 - template:  templates/build-benchmark.yml
   parameters:
-    BuildConfiguration: '${{ variables.BuildConfiguration }}'
+    BuildConfiguration: Release
     Arguments: $(ReleaseArguments)
     VmImage:  $(VmImage)

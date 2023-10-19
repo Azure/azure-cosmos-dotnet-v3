@@ -6,7 +6,6 @@ variables:
   ReleaseArguments: ' --filter "TestCategory!=Quarantine" --verbosity normal ' 
   BuildConfiguration: Release
   Packaging.EnableSBOMSigning: true
-  OS: 'Windows'
   VmImage: windows-latest # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops 
 
 stages:
@@ -15,17 +14,17 @@ stages:
   jobs:
     - template:  templates/static-tools.yml
       parameters:
-        BuildConfiguration: $(BuildConfiguration)
-        VmImage: $(VmImage)
+        BuildConfiguration: '${{ variables.BuildConfiguration }}'
+        VmImage: '${{ variables.VmImage }}'
 
     - template:  templates/build-test.yml
       parameters:
-        BuildConfiguration: $(BuildConfiguration)
-        Arguments: $(ReleaseArguments)
-        VmImage: $(VmImage)
+        BuildConfiguration: '${{ variables.BuildConfiguration }}'
+        Arguments: '${{ variables.ReleaseArguments }}'
+        VmImage: '${{ variables.VmImage }}'
         
     - job:
-      displayName: TelemetryToService $(BuildConfiguration)
+      displayName: TelemetryToService '${{ variables.BuildConfiguration }}'
       timeoutInMinutes: 120
       pool:
         vmImage: windows-2019
@@ -47,7 +46,7 @@ stages:
         inputs:
           command: test
           projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj'
-          arguments: --filter "TestCategory=ClientTelemetryRelease" --verbosity normal --configuration $(BuildConfiguration) /p:OS=$(OS)
+          arguments: --filter "TestCategory=ClientTelemetryRelease" --verbosity normal --configuration '${{ variables.BuildConfiguration }}' /p:OS=$(OS)
           nugetConfigPath: NuGet.config
           publishTestResults: true
           testRunTitle: Microsoft.Azure.Cosmos.EmulatorTests
@@ -61,7 +60,7 @@ stages:
     - template:  templates/nuget-pack.yml
       parameters:
         BuildConfiguration: Release
-        VmImage: $(VmImage)
+        VmImage: '${{ variables.VmImage }}'
         ReleasePackage: true
-        OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
+        OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/Release/Microsoft.Azure.Cosmos'
         BlobVersion: $(BlobVersion)
