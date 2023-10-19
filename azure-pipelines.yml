@@ -23,25 +23,25 @@ variables:
 jobs:
 - template:  templates/static-tools.yml
   parameters:
-    BuildConfiguration: $(BuildConfiguration)
+    BuildConfiguration: '${{ variables.BuildConfiguration }}'
     VmImage: $(VmImage)
 
 - template:  templates/nuget-pack.yml
   parameters:
-    BuildConfiguration: $(BuildConfiguration)
+    BuildConfiguration: '${{ variables.BuildConfiguration }}'
     VmImage: $(VmImage)
     ReleasePackage: false
     OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/Release/Microsoft.Azure.Cosmos'
 
 - template:  templates/build-ctl.yml
   parameters:
-    BuildConfiguration: $(BuildConfiguration)
+    BuildConfiguration: '${{ variables.BuildConfiguration }}'
     Arguments: $(ReleaseArguments)
     VmImage: $(VmImage)
 
 - template:  templates/build-samples.yml
   parameters:
-    BuildConfiguration: $(BuildConfiguration)
+    BuildConfiguration: '${{ variables.BuildConfiguration }}'
     Arguments: $(ReleaseArguments)
     VmImage: $(VmImage)
 
@@ -59,12 +59,12 @@ jobs:
 
 - template:  templates/build-preview.yml
   parameters:
-    BuildConfiguration: '$(BuildConfiguration)'
+    BuildConfiguration: '${{ variables.BuildConfiguration }}'
     Arguments: $(ReleaseArguments)
     VmImage:  $(VmImage)
 
 - template:  templates/build-benchmark.yml
   parameters:
-    BuildConfiguration: $(BuildConfiguration)
+    BuildConfiguration: '${{ variables.BuildConfiguration }}'
     Arguments: $(ReleaseArguments)
     VmImage:  $(VmImage)

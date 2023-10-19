@@ -1,27 +1,14 @@
 # File: templates/build-test.yml
 
 parameters:
-- name: BuildConfiguration
-  type: string
-- name: Arguments
-  type: string
-- name: VmImage
-  type: string
-- name: OS
-  type: string
-  default: 'Windows'
-- name: EmulatorPipeline1Arguments
-  type: string
-  default: ' --filter "TestCategory!=Quarantine"' 
-- name: EmulatorPipeline2Arguments
-  type: string
-  default: ' --filter "TestCategory!=Quarantine"'
-- name: EmulatorPipeline1CategoryListName
-  type: string
-  default: ' Client Telemetry'
-- name: EmulatorPipeline2CategoryListName
-  type: string
-  default: ' Others '
+  BuildConfiguration: ''
+  Arguments: ''
+  VmImage: '' # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
+  OS: 'Windows'
+  EmulatorPipeline1Arguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ClientTelemetryRelease & (TestCategory=ClientTelemetryEmulator|TestCategory=Query|TestCategory=ReadFeed|TestCategory=Batch|TestCategory=ChangeFeed)" --verbosity normal '
+  EmulatorPipeline2Arguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ClientTelemetryRelease & TestCategory!=ClientTelemetryEmulator & TestCategory!=Query & TestCategory!=ReadFeed & TestCategory!=Batch & TestCategory!=ChangeFeed" --verbosity normal '
+  EmulatorPipeline1CategoryListName: ' Client Telemetry, Query, ChangeFeed, ReadFeed, Batch ' # Divided in 2 categories to run them in parallel and reduce the PR feedback time
+  EmulatorPipeline2CategoryListName: ' Others '
 
 jobs:
 - job:
