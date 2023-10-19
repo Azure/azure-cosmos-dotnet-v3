@@ -15,7 +15,7 @@ pr:
     - 'Microsoft.Azure.Cosmos/contracts/**/*'
 
 variables:
-  BuildConfiguration: 'Release'
+  BuildConfiguration: "Release"
   DebugArguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional" --verbosity normal '
   ReleaseArguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional" --verbosity normal '
   VmImage: windows-latest # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
@@ -23,7 +23,7 @@ variables:
 jobs:
 - template:  templates/static-tools.yml
   parameters:
-    BuildConfiguration: $(variables.BuildConfiguration)
+    BuildConfiguration: $(BuildConfiguration)
     VmImage: $(VmImage)
 
 - template:  templates/nuget-pack.yml
@@ -47,19 +47,19 @@ jobs:
 
 - template:  templates/build-test.yml
   parameters:
-    BuildConfiguration: variables['BuildConfiguration']
+    BuildConfiguration: '${{ variables.BuildConfiguration }}'
     Arguments: $(ReleaseArguments)
     VmImage: $(VmImage)
 
 - template:  templates/build-internal.yml
   parameters:
-    BuildConfiguration: $(BuildConfiguration)
+    BuildConfiguration: ${{ BuildConfiguration }}
     Arguments: $(ReleaseArguments)
     VmImage:  $(VmImage)
 
 - template:  templates/build-preview.yml
   parameters:
-    BuildConfiguration: $(BuildConfiguration)
+    BuildConfiguration: '$(BuildConfiguration)'
     Arguments: $(ReleaseArguments)
     VmImage:  $(VmImage)
 
