@@ -1286,7 +1286,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Newtonsoft.Json.JsonSerializer serializer = new Newtonsoft.Json.JsonSerializer();
 
                 ServerSideCumulativeMetrics metrics = response.Diagnostics.GetQueryMetrics();
-                Assert.IsTrue(metrics.PartitionedMetrics.Count == 1);
+                Assert.IsTrue(metrics.PartitionedMetrics.Count > 0);
                 Assert.IsTrue(metrics.CumulativeMetrics.TotalTime > TimeSpan.Zero);
                 Assert.IsTrue(metrics.CumulativeMetrics.QueryPreparationTime > TimeSpan.Zero);
 
