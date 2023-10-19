@@ -53,7 +53,7 @@ jobs:
 
 - template:  templates/build-internal.yml
   parameters:
-    BuildConfiguration: ${{ BuildConfiguration }}
+    BuildConfiguration: '${{ variables.BuildConfiguration }}'
     Arguments: $(ReleaseArguments)
     VmImage:  $(VmImage)
 
