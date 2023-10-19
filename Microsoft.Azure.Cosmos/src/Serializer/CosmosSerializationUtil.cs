@@ -10,16 +10,11 @@ namespace Microsoft.Azure.Cosmos
     {
         private static readonly CamelCaseNamingStrategy camelCaseNamingStrategy = new CamelCaseNamingStrategy();
 
-        internal static string ToCamelCase(string name)
-        {
-            return CosmosSerializationUtil.camelCaseNamingStrategy.GetPropertyName(name, false);
-        }
-
         internal static string GetStringWithPropertyNamingPolicy(CosmosLinqSerializerOptions options, string name)
         {
             if (options != null && options.PropertyNamingPolicy == CosmosPropertyNamingPolicy.CamelCase)
             {
-                return CosmosSerializationUtil.ToCamelCase(name);
+                return CosmosSerializationUtil.camelCaseNamingStrategy.GetPropertyName(name, false);
             }
 
             return name;

@@ -792,29 +792,21 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return SqlArrayCreateScalarExpression.Create(arrayItems.ToImmutableArray());
             }
 
-            // DataMember serialization
-            if (inputExpression.Type.CustomAttributes != null && inputExpression.Type.CustomAttributes.Count() > 0)
-            {
-                return CosmosElement.Parse(JsonConvert.SerializeObject(inputExpression.Value)).Accept(CosmosElementToSqlScalarExpressionVisitor.Singleton);
-            }
+            bool hasDataMemberSerialization = inputExpression.Type.CustomAttributes != null && inputExpression.Type.CustomAttributes.Count() > 0;
 
             // if ANY property is serialized with Newtonsoft serializer, we serialize all with this serializer
             PropertyInfo[] propInfo = inputExpression.Value.GetType().GetProperties();
             bool hasCustomAttributesNewtonsoft = propInfo.Any(property => property.GetCustomAttributes().Any(attribute => attribute.GetType() == typeof(JsonPropertyAttribute)));
 
-            if (hasCustomAttributesNewtonsoft)
+            if (hasDataMemberSerialization || hasCustomAttributesNewtonsoft)
             {
+                JsonSerializerSettings serializerSettings = new JsonSerializerSettings();
                 if (context.linqSerializerOptions != null && context.linqSerializerOptions.PropertyNamingPolicy == CosmosPropertyNamingPolicy.CamelCase)
                 {
-                    JsonSerializerSettings serializerSettings = new JsonSerializerSettings
-                    {
-                        ContractResolver = new CamelCasePropertyNamesContractResolver()
-                    };
-
-                    return CosmosElement.Parse(JsonConvert.SerializeObject(inputExpression.Value, serializerSettings)).Accept(CosmosElementToSqlScalarExpressionVisitor.Singleton);
+                    serializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
                 }
 
-                return CosmosElement.Parse(JsonConvert.SerializeObject(inputExpression.Value)).Accept(CosmosElementToSqlScalarExpressionVisitor.Singleton);
+                return CosmosElement.Parse(JsonConvert.SerializeObject(inputExpression.Value, serializerSettings)).Accept(CosmosElementToSqlScalarExpressionVisitor.Singleton);
             }
 
             // Use DotNet custom serializer if provided

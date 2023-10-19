@@ -436,6 +436,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             }
         }
 
+        [DataContract]
         private class DataObjectNewtonsoftDataMemberSerializer : LinqTestObject
         {
             [Newtonsoft.Json.JsonProperty(PropertyName = "NumberValueNewtonsoft")]
