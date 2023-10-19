@@ -47,7 +47,7 @@ jobs:
 
 - template:  templates/build-test.yml
   parameters:
-    BuildConfiguration: $(variables.BuildConfiguration)
+    BuildConfiguration: variables['BuildConfiguration']
     Arguments: $(ReleaseArguments)
     VmImage: $(VmImage)
 
