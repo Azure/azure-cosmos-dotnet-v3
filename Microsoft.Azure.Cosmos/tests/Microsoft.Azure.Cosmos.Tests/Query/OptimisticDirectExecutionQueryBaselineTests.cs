@@ -396,14 +396,14 @@
         }
 
         // test checks that the Ode code path ensures that a query is valid before sending it to the backend
-        // these queries with previous ODE implementation would have succeeded. However, with the new query validity check, they should all throw an exception
+        // these queries with previous ODE implementation would have succedded. However, with the new query validity check, they should all throw an exception
         [TestMethod]
         public async Task TestQueryValidityCheckWithODEAsync()
         {
-            const string UnsupportedSelectStarInGroupBy = "'SELECT *' is not allowed with GROUP BY";
-            const string UnsupportedCompositeAggregate = "Compositions of aggregates and other expressions are not allowed.";
-            const string UnsupportedNestedAggregateExpression = "Cannot perform an aggregate function on an expression containing an aggregate or a subquery.";
-            const string UnsupportedSelectLisWithAggregateOrGroupByExpression = "invalid in the select list because it is not contained in either an aggregate function or the GROUP BY clause";
+            const string UnsupportedSelectStarInGroupBy = $"'SELECT *' is not allowed with GROUP BY";
+            const string UnsupportedCompositeAggregate = $"Compositions of aggregates and other expressions are not allowed.";
+            const string UnsupportedNestedAggregateExpression = $"Cannot perform an aggregate function on an expression containing an aggregate or a subquery.";
+            const string UnsupportedSelectLisWithAggregateOrGroupByExpression = $"invalid in the select list because it is not contained in either an aggregate function or the GROUP BY clause";
 
             List<(string Query, string ExpectedMessage)> testVariations = new List<(string Query, string ExpectedMessage)>
             {
@@ -428,7 +428,7 @@
             foreach ((string Query, string ExpectedMessage) testCase in testVariationsWithCaseSensitivity)
             {
                 OptimisticDirectExecutionTestInput input = CreateInput(
-                    description: @"Unsupported queries in CosmosDB that were previously supported by Ode pipeline and returning wrong results",
+                    description: @"Unsupported queries in CosmosDB that were previousely supported by Ode pipeline and returning wrong resutls",
                     query: testCase.Query,
                     expectedOptimisticDirectExecution: true,
                     partitionKeyPath: @"/pk",
@@ -442,13 +442,14 @@
                                     isMultiPartition: false,
                                     expectedContinuationTokenCount: 0,
                                     requiresDist: true);
-                    Assert.Fail("Invalid query being executed did not result in an exception");
                 }
                 catch (Exception ex)
                 {
                     Assert.IsTrue(ex.InnerException.Message.Contains(testCase.ExpectedMessage));
                     continue;
                 }
+
+                Assert.Fail();
             }
         }
 
