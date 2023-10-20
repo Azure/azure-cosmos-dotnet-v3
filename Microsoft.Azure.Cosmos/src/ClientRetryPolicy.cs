@@ -28,6 +28,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly GlobalEndpointManager globalEndpointManager;
         private readonly GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
         private readonly bool enableEndpointDiscovery;
+        private readonly bool isPertitionLevelFailoverEnabled;
         private int failoverRetryCount;
 
         private int sessionTokenRetryCount;
@@ -41,8 +42,9 @@ namespace Microsoft.Azure.Cosmos
         public ClientRetryPolicy(
             GlobalEndpointManager globalEndpointManager,
             GlobalPartitionEndpointManager partitionKeyRangeLocationCache,
+            RetryOptions retryOptions,
             bool enableEndpointDiscovery,
-            RetryOptions retryOptions)
+            bool isPertitionLevelFailoverEnabled)
         {
             this.throttlingRetry = new ResourceThrottleRetryPolicy(
                 retryOptions.MaxRetryAttemptsOnThrottledRequests,
@@ -55,6 +57,7 @@ namespace Microsoft.Azure.Cosmos
             this.sessionTokenRetryCount = 0;
             this.serviceUnavailableRetryCount = 0;
             this.canUseMultipleWriteLocations = false;
+            this.isPertitionLevelFailoverEnabled = isPertitionLevelFailoverEnabled;
         }
 
         /// <summary> 
@@ -390,6 +393,15 @@ namespace Microsoft.Azure.Cosmos
             if (this.serviceUnavailableRetryCount++ >= ClientRetryPolicy.MaxServiceUnavailableRetryCount)
             {
                 DefaultTrace.TraceInformation($"ClientRetryPolicy: ShouldRetryOnServiceUnavailable() Not retrying. Retry count = {this.serviceUnavailableRetryCount}.");
+                return ShouldRetryResult.NoRetry();
+            }
+
+            if (!this.canUseMultipleWriteLocations
+                    && !this.isReadRequest
+                    && !this.isPertitionLevelFailoverEnabled)
+            {
+                // Write requests on single master cannot be retried if partition level failover is disabled.
+                // This means there are no other regions available to serve the writes.
                 return ShouldRetryResult.NoRetry();
             }
 

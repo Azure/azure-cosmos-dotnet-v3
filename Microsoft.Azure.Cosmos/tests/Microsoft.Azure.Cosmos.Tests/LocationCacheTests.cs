@@ -180,8 +180,9 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             return new ClientRetryPolicy(
                 endpointManager, 
                 this.partitionKeyRangeLocationCache, 
-                enableEndpointDiscovery, 
-                new RetryOptions());
+                new RetryOptions(),
+                enableEndpointDiscovery,
+                isPertitionLevelFailoverEnabled: false);
         }
 
         [TestMethod]
