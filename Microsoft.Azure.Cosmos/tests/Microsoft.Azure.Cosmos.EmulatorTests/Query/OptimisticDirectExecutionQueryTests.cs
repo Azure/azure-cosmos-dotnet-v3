@@ -17,7 +17,7 @@
         private const string PartitionKeyField = "key";
         private const string NumberField = "numberField";
         private const string NullField = "nullField";
-        private const string AllowOptimisticDirectExecution = "allowOptimisticDirectExecution";
+        private const string ClientDisableOptimisticDirectExecution = "clientDisableOptimisticDirectExecution";
 
         private static class PageSizeOptions
         {
@@ -550,8 +550,8 @@
             CosmosClient client = new CosmosClient($"AccountEndpoint={endpoint};AccountKey={authKey}");
             AccountProperties properties = await client.ReadAccountAsync();
 
-            Assert.IsTrue(properties.QueryEngineConfigurationString.Contains(AllowOptimisticDirectExecution));
-            Assert.IsTrue(Convert.ToBoolean(properties.QueryEngineConfiguration[AllowOptimisticDirectExecution]));
+            Assert.IsTrue(properties.QueryEngineConfigurationString.Contains(ClientDisableOptimisticDirectExecution));
+            Assert.IsFalse(Convert.ToBoolean(properties.QueryEngineConfiguration[ClientDisableOptimisticDirectExecution]));
         }
 
         private static async Task RunTests(IEnumerable<DirectExecutionTestCase> testCases, Container container)

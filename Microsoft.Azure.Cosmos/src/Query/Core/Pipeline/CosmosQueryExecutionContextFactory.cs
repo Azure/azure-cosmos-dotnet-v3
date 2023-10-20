@@ -34,6 +34,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         private const string InternalPartitionKeyDefinitionProperty = "x-ms-query-partitionkey-definition";
         private const string AllowOptimisticDirectExecution = "allowOptimisticDirectExecution";
         private const string OptimisticDirectExecution = "OptimisticDirectExecution";
+        private const string ClientDisableOptimisticDirectExecution = "clientDisableOptimisticDirectExecution";
         private const string Passthrough = "Passthrough";
         private const string Specialized = "Specialized";
         private const int PageSizeFactorForTop = 5;
@@ -41,7 +42,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         public static IQueryPipelineStage Create(
             DocumentContainer documentContainer,
             CosmosQueryContext cosmosQueryContext,
-            CosmosClientContext clientContext,
             InputParameters inputParameters,
             ITrace trace)
         {
@@ -69,7 +69,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                         valueFactory: (trace, innerCancellationToken) => CosmosQueryExecutionContextFactory.TryCreateCoreContextAsync(
                             documentContainer,
                             cosmosQueryContext,
-                            clientContext,
                             inputParameters,
                             trace,
                             innerCancellationToken));
@@ -85,7 +84,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         private static async Task<TryCatch<IQueryPipelineStage>> TryCreateCoreContextAsync(
             DocumentContainer documentContainer,
             CosmosQueryContext cosmosQueryContext,
-            CosmosClientContext clientContext,
             InputParameters inputParameters,
             ITrace trace,
             CancellationToken cancellationToken)
@@ -145,7 +143,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     inputParameters,
                     queryPlanFromContinuationToken,
                     cosmosQueryContext,
-                    clientContext,
                     containerQueryProperties,
                     trace);
 
@@ -246,7 +243,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     partitionedQueryExecutionInfo,
                     containerQueryProperties,
                     cosmosQueryContext,
-                    clientContext,
                     inputParameters,
                     createQueryPipelineTrace,
                     cancellationToken);
@@ -258,7 +254,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
             ContainerQueryProperties containerQueryProperties,
             CosmosQueryContext cosmosQueryContext,
-            CosmosClientContext clientContext,
             InputParameters inputParameters,
             ITrace trace,
             CancellationToken cancellationToken)
@@ -298,7 +293,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 inputParameters,
                 partitionedQueryExecutionInfo,
                 cosmosQueryContext,
-                clientContext,
                 containerQueryProperties,
                 trace);
 
@@ -765,19 +759,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             InputParameters inputParameters,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
             CosmosQueryContext cosmosQueryContext,
-            CosmosClientContext clientContext,
             ContainerQueryProperties containerQueryProperties,
             ITrace trace)
         {
-            bool allowOdeGatewayFlag = false;
-            AccountProperties properties = await clientContext.Client.ReadAccountAsync();
-            if (properties.QueryEngineConfiguration.TryGetValue(AllowOptimisticDirectExecution, out object allowOptimisticDirectExecutionValue))
-            {
-                bool.TryParse(allowOptimisticDirectExecutionValue.ToString(), out allowOdeGatewayFlag);
-            }
+            object queryConfigValue = await cosmosQueryContext.QueryClient.GetQueryEngineConfigurationValueAsync(ClientDisableOptimisticDirectExecution);
+            bool.TryParse(queryConfigValue.ToString(), out bool clientDisableOptimisticDirectExecution);
 
-            // Use the Ode code path only if both AllowOdeGatewayFlag and EnableOptimisticDirectExecution are true
-            if (!allowOdeGatewayFlag || !inputParameters.EnableOptimisticDirectExecution)
+            // Use the Ode code path only if ClientDisableOptimisticDirectExecution is false and EnableOptimisticDirectExecution is true
+            if (clientDisableOptimisticDirectExecution || !inputParameters.EnableOptimisticDirectExecution)
             {
                 if (inputParameters.InitialUserContinuationToken != null
                           && OptimisticDirectExecutionContinuationToken.IsOptimisticDirectExecutionContinuationToken(inputParameters.InitialUserContinuationToken))

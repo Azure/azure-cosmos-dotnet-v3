@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             return new QueryIterator(
                 cosmosQueryContext,
-                CosmosQueryExecutionContextFactory.Create(documentContainer, cosmosQueryContext, clientContext, inputParameters, NoOpTrace.Singleton),
+                CosmosQueryExecutionContextFactory.Create(documentContainer, cosmosQueryContext, inputParameters, NoOpTrace.Singleton),
                 queryRequestOptions.CosmosSerializationFormatOptions,
                 queryRequestOptions,
                 clientContext,

@@ -209,6 +209,17 @@ namespace Microsoft.Azure.Cosmos
             return partitionedQueryExecutionInfo;
         }
 
+        public override async Task<object> GetQueryEngineConfigurationValueAsync(string key)
+        {
+            QueryPartitionProvider provider = await this.clientContext.DocumentClient.QueryPartitionProvider;
+            if (provider.QueryEngineConfigurationValues.TryGetValue(key, out object queryConfigProperty))
+            {
+                return queryConfigProperty;
+            }
+
+            throw new KeyNotFoundException($"The key '{key}' was not found in the QueryEngineConfiguration dictionary.");
+        }
+
         public override async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangeByFeedRangeAsync(
             string resourceLink,
             string collectionResourceId,

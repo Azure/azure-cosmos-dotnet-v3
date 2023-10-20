@@ -43,7 +43,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
         private IntPtr serviceProvider;
         private bool disposed;
-        private string queryengineConfiguration;
+        public string queryengineConfiguration;
+        public IDictionary<string, object> QueryEngineConfigurationValues;
 
         public QueryPartitionProvider(IDictionary<string, object> queryengineConfiguration)
         {
@@ -59,6 +60,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
             this.disposed = false;
             this.queryengineConfiguration = JsonConvert.SerializeObject(queryengineConfiguration);
+            this.QueryEngineConfigurationValues = queryengineConfiguration;
             this.serviceProvider = IntPtr.Zero;
 
             this.serviceProviderStateLock = new object();
@@ -91,6 +93,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                     if (!string.Equals(this.queryengineConfiguration, newConfiguration))
                     {
                         this.queryengineConfiguration = newConfiguration;
+                        this.QueryEngineConfigurationValues = queryengineConfiguration;
 
                         if (!this.disposed && this.serviceProvider != IntPtr.Zero)
                         {
