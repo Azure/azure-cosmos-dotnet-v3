@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Globalization;
     using System.Linq;
     using System.Net;
-    using System.Runtime.CompilerServices;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
