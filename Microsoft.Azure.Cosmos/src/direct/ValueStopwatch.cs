@@ -27,7 +27,9 @@ namespace Microsoft.Azure.Documents
         /// <seealso cref="Stopwatch.IsHighResolution"/>
         public static readonly bool IsHighResolution = Stopwatch.IsHighResolution;
 
-        /// <remarks>
+#pragma warning disable CS1570 // XML comment has badly formed XML
+#pragma warning disable CS1570 // XML comment has badly formed XML
+/// <remarks>
         /// We pack everything into a single long, so using this doesn't inflate any objects with it as a field.
         /// 
         /// State is interpreted as follows
@@ -45,6 +47,8 @@ namespace Microsoft.Azure.Documents
         /// to account for any existing duration.
         /// </remarks>
         private long state;
+#pragma warning restore CS1570 // XML comment has badly formed XML
+#pragma warning restore CS1570 // XML comment has badly formed XML
 
         /// <seealso cref="Stopwatch.IsRunning"/>
         public readonly bool IsRunning

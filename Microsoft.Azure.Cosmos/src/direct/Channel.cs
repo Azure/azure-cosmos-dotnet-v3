@@ -5,10 +5,10 @@ namespace Microsoft.Azure.Documents.Rntbd
 {
     using System;
     using System.Diagnostics;
-    using System.Net.NetworkInformation;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Documents.FaultInjection;
 
 #if NETSTANDARD15 || NETSTANDARD16
     using Trace = Microsoft.Azure.Documents.Trace;
@@ -32,8 +32,15 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private ChannelOpenArguments openArguments;
         private readonly SemaphoreSlim openingSlim;
+        private readonly IChaosInterceptor chaosInterceptor;
 
-        public Channel(Guid activityId, Uri serverUri, ChannelProperties channelProperties, bool localRegionRequest, SemaphoreSlim openingSlim)
+        public Channel(
+            Guid activityId, 
+            Uri serverUri, 
+            ChannelProperties channelProperties,
+            bool localRegionRequest, SemaphoreSlim openingSlim, 
+            IChaosInterceptor chaosInterceptor = null, 
+            Action<Guid, Uri, Channel> onChannelOpen = null)
         {
             Debug.Assert(channelProperties != null);
             this.dispatcher = new Dispatcher(serverUri,
@@ -47,11 +54,13 @@ namespace Microsoft.Azure.Documents.Rntbd
                 channelProperties.EnableChannelMultiplexing,
                 channelProperties.MemoryStreamPool,
                 channelProperties.RemoteCertificateValidationCallback,
-                channelProperties.DnsResolutionFunction);
+                channelProperties.DnsResolutionFunction,
+                chaosInterceptor);
             this.timerPool = channelProperties.RequestTimerPool;
             this.requestTimeoutSeconds = (int) channelProperties.RequestTimeout.TotalSeconds;
             this.serverUri = serverUri;
             this.localRegionRequest = localRegionRequest;
+            this.chaosInterceptor = chaosInterceptor;
 
             TimeSpan openTimeout = localRegionRequest ? channelProperties.LocalRegionOpenTimeout : channelProperties.OpenTimeout;
 
@@ -63,7 +72,21 @@ namespace Microsoft.Azure.Documents.Rntbd
                 channelProperties.CallerId);
 
             this.openingSlim = openingSlim;
-            this.Initialize();
+            this.Initialize(activityId, onChannelOpen);           
+        }
+
+        public void InjectFaultInjectionConnectionError(TransportException transportException)
+        {
+            if (!this.disposed)
+            {
+                this.dispatcher.InjectFaultInjectionConnectionError(transportException);
+            }
+        }
+
+        public Uri GetServerUri()
+        {
+            this.ThrowIfDisposed();
+            return this.serverUri;
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -111,7 +134,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private Guid ConnectionCorrelationId { get => this.dispatcher.ConnectionCorrelationId; }
 
-        private void Initialize()
+        private void Initialize(Guid activityId, Action<Guid, Uri, Channel> onChannelOpen = null)
         {
             this.ThrowIfDisposed();
             this.stateLock.EnterWriteLock();
@@ -133,7 +156,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                     Debug.Assert(this.openArguments != null);
                     Debug.Assert(this.openArguments.CommonArguments != null);
                     Trace.CorrelationManager.ActivityId = this.openArguments.CommonArguments.ActivityId;
-                    await this.InitializeAsync();
+                    await this.InitializeAsync(activityId, onChannelOpen);
                     this.isInitializationComplete = true;
                     this.TestOnInitializeComplete?.Invoke();
                 });
@@ -171,7 +194,9 @@ namespace Microsoft.Azure.Documents.Rntbd
             // be chattier:
             // - Serialization errors are handled differently from channel errors.
             // - Timeouts only apply to the call (send+recv), not to everything preceding it.
-            using ChannelCallArguments callArguments = new ChannelCallArguments(activityId);
+            using ChannelCallArguments callArguments = this.chaosInterceptor == null
+                ? new ChannelCallArguments(activityId) 
+                : new ChannelCallArguments(activityId, request.OperationType, request.ResourceType, request.RequestContext.ResolvedCollectionRid, request.Headers);
             try
             {
                 callArguments.PreparedCall = this.dispatcher.PrepareCall(
@@ -262,6 +287,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         void IDisposable.Dispose()
         {
+            this.chaosInterceptor?.OnChannelDispose(this.ConnectionCorrelationId);
             this.ThrowIfDisposed();
             this.disposed = true;
             DefaultTrace.TraceInformation("[RNTBD Channel {0}] Disposing RNTBD Channel {1}", this.ConnectionCorrelationId, this);
@@ -336,11 +362,13 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        private async Task InitializeAsync()
+        private async Task InitializeAsync(Guid activityId, Action<Guid, Uri, Channel> onChannelOpen = null)
         {
             bool slimAcquired = false;
             try
             {
+                onChannelOpen?.Invoke(activityId, this.serverUri, this);
+               
                 this.openArguments.CommonArguments.SetTimeoutCode(TransportErrorCode.ChannelWaitingToOpenTimeout);
                 slimAcquired = await this.openingSlim.WaitAsync(this.openArguments.OpenTimeout).ConfigureAwait(false);
                 if (!slimAcquired)

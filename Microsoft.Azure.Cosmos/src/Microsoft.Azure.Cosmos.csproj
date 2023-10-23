@@ -43,10 +43,11 @@
 		<Optimize Condition="'$(Configuration)'=='Release'">true</Optimize>
 		<LangVersion>$(LangVersion)</LangVersion>
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
+		<NoWarn>CS1572; CS1573; CS1574; CS1580</NoWarn>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<None Include="..\..\LICENSE" Pack="true" PackagePath="" Visible="false"/>
+		<None Include="..\..\LICENSE" Pack="true" PackagePath="" Visible="false" />
 	</ItemGroup>
 	
 	<ItemGroup>
@@ -106,7 +107,6 @@
 	</ItemGroup>
 
 	<ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
-		<PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" PrivateAssets="All" />
 		<PackageReference Include="Microsoft.HybridRow" Version="[$(HybridRowVersion)]" PrivateAssets="All" />
 		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
 	</ItemGroup>
@@ -114,6 +114,7 @@
 	<ItemGroup>
 		<PackageReference Include="Azure.Core" Version="1.19.0" />
 		<PackageReference Include="System.Collections.Immutable" Version="1.7.0" />
+		<PackageReference Include="System.Diagnostics.PerformanceCounter" Version="6.0.0" />
 		<PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
 		<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="1.0.0" />
 		<PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.0.102" PrivateAssets="All" />

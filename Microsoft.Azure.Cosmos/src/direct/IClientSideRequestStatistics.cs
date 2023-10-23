@@ -12,9 +12,9 @@ namespace Microsoft.Azure.Documents
     {
         List<TransportAddressUri> ContactedReplicas { get; set; }
 
-        HashSet<TransportAddressUri> FailedReplicas { get;}
+        HashSet<TransportAddressUri> FailedReplicas { get; }
 
-        HashSet<(string, Uri)> RegionsContacted { get;}
+        HashSet<(string, Uri)> RegionsContacted { get; }
 
         bool? IsCpuHigh { get; }
 
@@ -54,4 +54,3 @@ namespace Microsoft.Azure.Documents
                                 DateTime requestStartTimeUtc);
     }
 }
-

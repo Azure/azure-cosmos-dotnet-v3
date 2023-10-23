@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Documents.Rntbd
     using System;
     using System.Diagnostics;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Documents.FaultInjection;   
 
     // LoadBalancingChannel encapsulates the management of channels that connect to a single
     // back-end server. It assigns load to each channel, decides when to open more
@@ -22,7 +23,11 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private bool disposed = false;
 
-        public LoadBalancingChannel(Uri serverUri, ChannelProperties channelProperties, bool localRegionRequest)
+        public LoadBalancingChannel(
+            Uri serverUri,
+            ChannelProperties channelProperties,
+            bool localRegionRequest,
+            IChaosInterceptor chaosInterceptor = null)
         {
             this.serverUri = serverUri;
 
@@ -66,14 +71,20 @@ namespace Microsoft.Azure.Documents.Rntbd
                 for (int i = 0; i < this.partitions.Length; i++)
                 {
                     this.partitions[i] = new LoadBalancingPartition(
-                        serverUri, partitionProperties, localRegionRequest);
+                        serverUri,
+                        partitionProperties,
+                        localRegionRequest,
+                        chaosInterceptor: chaosInterceptor);
                 }
             }
             else
             {
                 Debug.Assert(channelProperties.PartitionCount == 1);
                 this.singlePartition = new LoadBalancingPartition(
-                    serverUri, channelProperties, localRegionRequest);
+                    serverUri,
+                    channelProperties,
+                    localRegionRequest,
+                    chaosInterceptor: chaosInterceptor);
             }
         }
 

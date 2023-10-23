@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Documents.Rntbd
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Documents.FaultInjection;
     using Microsoft.Azure.Documents.Telemetry;
 #if NETSTANDARD15 || NETSTANDARD16
     using Trace = Microsoft.Azure.Documents.Trace;
@@ -44,7 +45,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
 #endregion
 
-        public TransportClient(Options clientOptions)
+        public TransportClient(Options clientOptions, IChaosInterceptor chaosInterceptor = null)
         {
             if (clientOptions == null)
             {
@@ -96,10 +97,11 @@ namespace Microsoft.Azure.Documents.Rntbd
                     clientOptions.EnableChannelMultiplexing,
                     clientOptions.MemoryStreamPool,
                     clientOptions.RemoteCertificateValidationCallback,
-                    clientOptions.DnsResolutionFunction));
+                    clientOptions.DnsResolutionFunction),
+                chaosInterceptor);
         }
 
-        internal override Task<StoreResponse> InvokeStoreAsync(
+        internal override Task<StoreResponse> InvokeStoreAsync( 
             Uri physicalAddress,
             ResourceOperation resourceOperation,
             DocumentServiceRequest request)
@@ -342,11 +344,12 @@ namespace Microsoft.Azure.Documents.Rntbd
         internal override Task OpenConnectionAsync(
             Uri physicalAddress)
         {
-            Guid activityId = Trace.CorrelationManager.ActivityId;
-            return this.channelDictionary.OpenChannelAsync(
-                physicalAddress: physicalAddress,
-                localRegionRequest: false,
-                activityId: activityId);
+            IChannel channel = this.channelDictionary.GetChannel(
+                requestUri: physicalAddress,
+                localRegionRequest: false);
+
+            return channel.OpenChannelAsync(
+                    activityId: Trace.CorrelationManager.ActivityId);
         }
 
 #region RNTBD Transition

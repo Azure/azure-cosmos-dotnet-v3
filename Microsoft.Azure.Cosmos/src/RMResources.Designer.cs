@@ -4269,9 +4269,12 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-        ///   Looks up a localized string similar to Could not resolve DataTransfer state store account for region [{0}]..
+        
+#pragma warning disable CS1570 // XML comment has badly formed XML
+///   Looks up a localized string similar to Could not resolve DataTransfer state store account for region [{0}]..
         /// </summary>
         internal static string DataTransferStateStoreNotResolved
+#pragma warning restore CS1570 // XML comment has badly formed XML
         {
             get
             {
