@@ -74,6 +74,38 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
         }
 
         [TestMethod]
+        public void SetIntersect()
+        {
+            AssertEvaluation(
+                CosmosArray.Create(CosmosString.Create("apples"), CosmosString.Create("strawberries"), CosmosString.Create("bananas")),
+                SqlFunctionCallScalarExpression.CreateBuiltin(
+                    SqlFunctionCallScalarExpression.Identifiers.SetIntersect,
+                    JTokenToSqlScalarExpression.Convert(new JArray("apples", "strawberries", "bananas", "yyyy")),
+                    JTokenToSqlScalarExpression.Convert(new JArray("strawberries", "bananas", "apples", "xxxx"))));
+
+            AssertEvaluation(
+                CosmosArray.Create(),
+                SqlFunctionCallScalarExpression.CreateBuiltin(
+                    SqlFunctionCallScalarExpression.Identifiers.SetIntersect,
+                    JTokenToSqlScalarExpression.Convert(new JArray("a", "b", "c")),
+                    JTokenToSqlScalarExpression.Convert(new JArray("x", "y", "z"))));
+
+            AssertEvaluation(
+                CosmosArray.Create(),
+                SqlFunctionCallScalarExpression.CreateBuiltin(
+                    SqlFunctionCallScalarExpression.Identifiers.SetIntersect,
+                    JTokenToSqlScalarExpression.Convert(new JArray("a", "b", "c")),
+                    JTokenToSqlScalarExpression.Convert(new JArray())));
+
+            AssertEvaluation(
+                CosmosArray.Create(),
+                SqlFunctionCallScalarExpression.CreateBuiltin(
+                    SqlFunctionCallScalarExpression.Identifiers.SetIntersect,
+                    JTokenToSqlScalarExpression.Convert(new JArray()),
+                    JTokenToSqlScalarExpression.Convert(new JArray("x", "y", "z"))));
+        }
+
+        [TestMethod]
         public void ARRAY_CONTAINS()
         {
             // ARRAY_CONTAINS(["apples", "strawberries", "bananas"], "apples")

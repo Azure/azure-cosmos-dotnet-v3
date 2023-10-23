@@ -35,6 +35,29 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
         }
 
+        /// <summary>
+        /// Handles the <a href="https://learn.microsoft.com/en-us/dotnet/api/system.linq.enumerable.intersect?view=net-7.0">Enumerable.Intersect</a> Method, and the <a href="https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/setintersect">SetIntersect</a> cosmos equivalent.
+        /// </summary>
+        private class SetIntersectVisitor : SqlBuiltinFunctionVisitor
+        {
+            public SetIntersectVisitor()
+                : base("SetIntersect", true, null)
+            {
+            }
+
+            protected override SqlScalarExpression VisitImplicit(MethodCallExpression methodCallExpression, TranslationContext context)
+            {
+                if (methodCallExpression.Arguments.Count == 2)
+                {
+                    SqlScalarExpression array1 = ExpressionToSql.VisitScalarExpression(methodCallExpression.Arguments[0], context);
+                    SqlScalarExpression array2 = ExpressionToSql.VisitScalarExpression(methodCallExpression.Arguments[1], context);
+                    return SqlFunctionCallScalarExpression.CreateBuiltin(base.SqlName, array1, array2);
+                }
+
+                return null;
+            }
+        }
+
         private class ArrayContainsVisitor : SqlBuiltinFunctionVisitor
         {
             public ArrayContainsVisitor()
@@ -177,6 +200,10 @@ namespace Microsoft.Azure.Cosmos.Linq
                 {
                     "ToList",
                     new ArrayToArrayVisitor()
+                },
+                {
+                    "Intersect",
+                    new SetIntersectVisitor()
                 }
             };
         }
