@@ -104,20 +104,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <summary>
         /// Gets list of account level read endpoints.
         /// </summary>
-        public ReadOnlyCollection<Uri> AccountReadEndpoints
-        {
-            get
-            {
-                // Hot-path: avoid ConcurrentDictionary methods which acquire locks
-                if (DateTime.UtcNow - this.lastCacheUpdateTimestamp > this.unavailableLocationsExpirationTime
-                    && this.locationUnavailablityInfoByEndpoint.Any())
-                {
-                    this.UpdateLocationCache();
-                }
-
-                return this.locationInfo.AccountReadEndpoints;
-            }
-        }
+        public ReadOnlyCollection<Uri> AccountReadEndpoints => this.locationInfo.AccountReadEndpoints;
 
         /// <summary>
         /// Gets list of write endpoints ordered by
