@@ -92,7 +92,7 @@
   <Result>
     <Input>
       <Description><![CDATA[Increment]]></Description>
-      <Expression><![CDATA[Increment(1.5)]]></Expression>
+      <Expression><![CDATA[Increment(1,5)]]></Expression>
     </Input>
     <Output>
       <TranslationOutput><![CDATA[2.5]]></TranslationOutput>
@@ -102,7 +102,7 @@
   <Result>
     <Input>
       <Description><![CDATA[Decrement]]></Description>
-      <Expression><![CDATA[Decrement(1.5)]]></Expression>
+      <Expression><![CDATA[Decrement(1,5)]]></Expression>
     </Input>
     <Output>
       <TranslationOutput><![CDATA[0.5]]></TranslationOutput>
