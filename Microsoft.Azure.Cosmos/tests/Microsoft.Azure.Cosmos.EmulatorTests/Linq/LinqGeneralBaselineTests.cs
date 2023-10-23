@@ -437,6 +437,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 .Select(f => f.Children.Where(c => c.Grade > 90).Concat(f.Children.Where(c => c.Grade < 10)))));
 
             inputs.Add(new LinqTestInput(
+                "Select(tags -> Intersect([x, y]))",
+                b => getQuery(b)
+                .Select(f => f.Tags.Intersect(new string[] { "test" }))));
+
+            inputs.Add(new LinqTestInput(
                 "Select(Select -> Contains(Sum))", b => getQuery(b)
                 .Select(f => f.Children.Select(c => c.Grade).Contains(f.Children.Sum(c => c.Pets.Count())))));
 
