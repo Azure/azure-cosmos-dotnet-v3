@@ -55,16 +55,17 @@
     │       │       [System Info]
     │       │       Redacted To Not Change The Baselines From Run To Run
     │       │   )
-    │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │                   └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │                           (
-    │                               [Client Side Request Stats]
-    │                               Redacted To Not Change The Baselines From Run To Run
-    │                               [Point Operation Statistics]
-    │                               Redacted To Not Change The Baselines From Run To Run
-    │                           )
+    │       └── Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │                   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │                               (
+    │                                   [Client Side Request Stats]
+    │                                   Redacted To Not Change The Baselines From Run To Run
+    │                                   [Point Operation Statistics]
+    │                                   Redacted To Not Change The Baselines From Run To Run
+    │                               )
     └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
@@ -116,24 +117,30 @@
           },
           "children": [
             {
-              "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
+              "name": "Microsoft.Azure.Cosmos.Handlers.TelemetryHandler",
               "duration in milliseconds": 0,
               "children": [
                 {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
+                  "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
                   "duration in milliseconds": 0,
                   "children": [
                     {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                       "duration in milliseconds": 0,
                       "children": [
                         {
-                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                           "duration in milliseconds": 0,
-                          "data": {
-                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
-                            "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
-                          }
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
+                                "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
                         }
                       ]
                     }
@@ -183,9 +190,14 @@
     Guid exceptionActivityId = Guid.NewGuid();
     using CosmosClient throttleClient = TestCommon.CreateCosmosClient(builder =>
         builder
-         .WithDistributedTracingOptions(new DistributedTracingOptions()
+        .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
          {
-             LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
+            DisableDistributedTracing = false,
+            CosmosThresholdOptions = new CosmosThresholdOptions()
+            {
+                PointOperationLatencyThreshold = TimeSpan.Zero,
+                NonPointOperationLatencyThreshold = TimeSpan.Zero
+            }
          })
         .WithThrottlingRetryOptions(
             maxRetryWaitTimeOnThrottledRequests: TimeSpan.FromSeconds(1),
@@ -244,35 +256,36 @@
     │       │       [System Info]
     │       │       Redacted To Not Change The Baselines From Run To Run
     │       │   )
-    │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │           │               (
-    │           │                   [Client Side Request Stats]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │               )
-    │           ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │           │               (
-    │           │                   [Client Side Request Stats]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │               )
-    │           ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │           │               (
-    │           │                   [Client Side Request Stats]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │               )
-    │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │                   └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │                           (
-    │                               [Client Side Request Stats]
-    │                               Redacted To Not Change The Baselines From Run To Run
-    │                           )
+    │       └── Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │               │               (
+    │               │                   [Client Side Request Stats]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │               )
+    │               ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │               │               (
+    │               │                   [Client Side Request Stats]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │               )
+    │               ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │               │               (
+    │               │                   [Client Side Request Stats]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │               )
+    │               └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │                   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │                               (
+    │                                   [Client Side Request Stats]
+    │                                   Redacted To Not Change The Baselines From Run To Run
+    │                               )
     └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
@@ -324,80 +337,86 @@
           },
           "children": [
             {
-              "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
+              "name": "Microsoft.Azure.Cosmos.Handlers.TelemetryHandler",
               "duration in milliseconds": 0,
               "children": [
                 {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
+                  "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
                   "duration in milliseconds": 0,
                   "children": [
                     {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                       "duration in milliseconds": 0,
                       "children": [
                         {
-                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                           "duration in milliseconds": 0,
-                          "data": {
-                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                          }
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
                         }
                       ]
-                    }
-                  ]
-                },
-                {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                  "duration in milliseconds": 0,
-                  "children": [
+                    },
                     {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                       "duration in milliseconds": 0,
                       "children": [
                         {
-                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                           "duration in milliseconds": 0,
-                          "data": {
-                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                          }
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
                         }
                       ]
-                    }
-                  ]
-                },
-                {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                  "duration in milliseconds": 0,
-                  "children": [
+                    },
                     {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                       "duration in milliseconds": 0,
                       "children": [
                         {
-                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                           "duration in milliseconds": 0,
-                          "data": {
-                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                          }
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
                         }
                       ]
-                    }
-                  ]
-                },
-                {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                  "duration in milliseconds": 0,
-                  "children": [
+                    },
                     {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                       "duration in milliseconds": 0,
                       "children": [
                         {
-                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                           "duration in milliseconds": 0,
-                          "data": {
-                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                          }
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
                         }
                       ]
                     }
@@ -534,27 +553,28 @@
     │       │       [System Info]
     │       │       Redacted To Not Change The Baselines From Run To Run
     │       │   )
-    │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │           │               (
-    │           │                   [Client Side Request Stats]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │                   [AuthProvider LifeSpan InSec]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │                   [Point Operation Statistics]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │               )
-    │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │                   └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │                           (
-    │                               [Client Side Request Stats]
-    │                               Redacted To Not Change The Baselines From Run To Run
-    │                               [Point Operation Statistics]
-    │                               Redacted To Not Change The Baselines From Run To Run
-    │                           )
+    │       └── Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │               │               (
+    │               │                   [Client Side Request Stats]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │                   [AuthProvider LifeSpan InSec]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │                   [Point Operation Statistics]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │               )
+    │               └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │                   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │                               (
+    │                                   [Client Side Request Stats]
+    │                                   Redacted To Not Change The Baselines From Run To Run
+    │                                   [Point Operation Statistics]
+    │                                   Redacted To Not Change The Baselines From Run To Run
+    │                               )
     └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
@@ -606,45 +626,51 @@
           },
           "children": [
             {
-              "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
+              "name": "Microsoft.Azure.Cosmos.Handlers.TelemetryHandler",
               "duration in milliseconds": 0,
               "children": [
                 {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
+                  "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
                   "duration in milliseconds": 0,
                   "children": [
                     {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                       "duration in milliseconds": 0,
                       "children": [
                         {
-                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                           "duration in milliseconds": 0,
-                          "data": {
-                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
-                            "AuthProvider LifeSpan InSec": "Redacted To Not Change The Baselines From Run To Run",
-                            "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
-                          }
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
+                                "AuthProvider LifeSpan InSec": "Redacted To Not Change The Baselines From Run To Run",
+                                "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
                         }
                       ]
-                    }
-                  ]
-                },
-                {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                  "duration in milliseconds": 0,
-                  "children": [
+                    },
                     {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                       "duration in milliseconds": 0,
                       "children": [
                         {
-                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                           "duration in milliseconds": 0,
-                          "data": {
-                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
-                            "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
-                          }
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
+                                "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
                         }
                       ]
                     }
@@ -781,38 +807,39 @@
     │       │       [System Info]
     │       │       Redacted To Not Change The Baselines From Run To Run
     │       │   )
-    │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │           │               (
-    │           │                   [Client Side Request Stats]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │                   [AuthProvider LifeSpan InSec]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │                   [Point Operation Statistics]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │               )
-    │           ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │           │               (
-    │           │                   [Client Side Request Stats]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │                   [AuthProvider LifeSpan InSec]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │                   [Point Operation Statistics]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │               )
-    │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │                   └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │                           (
-    │                               [Client Side Request Stats]
-    │                               Redacted To Not Change The Baselines From Run To Run
-    │                               [Point Operation Statistics]
-    │                               Redacted To Not Change The Baselines From Run To Run
-    │                           )
+    │       └── Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │               │               (
+    │               │                   [Client Side Request Stats]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │                   [AuthProvider LifeSpan InSec]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │                   [Point Operation Statistics]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │               )
+    │               ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │               │               (
+    │               │                   [Client Side Request Stats]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │                   [AuthProvider LifeSpan InSec]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │                   [Point Operation Statistics]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │               )
+    │               └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │                   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │                               (
+    │                                   [Client Side Request Stats]
+    │                                   Redacted To Not Change The Baselines From Run To Run
+    │                                   [Point Operation Statistics]
+    │                                   Redacted To Not Change The Baselines From Run To Run
+    │                               )
     └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
@@ -864,66 +891,72 @@
           },
           "children": [
             {
-              "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
+              "name": "Microsoft.Azure.Cosmos.Handlers.TelemetryHandler",
               "duration in milliseconds": 0,
               "children": [
                 {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
+                  "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
                   "duration in milliseconds": 0,
                   "children": [
                     {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                       "duration in milliseconds": 0,
                       "children": [
                         {
-                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                           "duration in milliseconds": 0,
-                          "data": {
-                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
-                            "AuthProvider LifeSpan InSec": "Redacted To Not Change The Baselines From Run To Run",
-                            "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
-                          }
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
+                                "AuthProvider LifeSpan InSec": "Redacted To Not Change The Baselines From Run To Run",
+                                "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
                         }
                       ]
-                    }
-                  ]
-                },
-                {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                  "duration in milliseconds": 0,
-                  "children": [
+                    },
                     {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                       "duration in milliseconds": 0,
                       "children": [
                         {
-                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                           "duration in milliseconds": 0,
-                          "data": {
-                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
-                            "AuthProvider LifeSpan InSec": "Redacted To Not Change The Baselines From Run To Run",
-                            "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
-                          }
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
+                                "AuthProvider LifeSpan InSec": "Redacted To Not Change The Baselines From Run To Run",
+                                "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
                         }
                       ]
-                    }
-                  ]
-                },
-                {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                  "duration in milliseconds": 0,
-                  "children": [
+                    },
                     {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                       "duration in milliseconds": 0,
                       "children": [
                         {
-                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                           "duration in milliseconds": 0,
-                          "data": {
-                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
-                            "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
-                          }
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
+                                "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
                         }
                       ]
                     }
@@ -1060,60 +1093,61 @@
     │       │       [System Info]
     │       │       Redacted To Not Change The Baselines From Run To Run
     │       │   )
-    │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │           │               (
-    │           │                   [Client Side Request Stats]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │                   [AuthProvider LifeSpan InSec]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │                   [Point Operation Statistics]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │               )
-    │           ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │           │               (
-    │           │                   [Client Side Request Stats]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │                   [AuthProvider LifeSpan InSec]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │                   [Point Operation Statistics]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │               )
-    │           ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │           │               (
-    │           │                   [Client Side Request Stats]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │                   [AuthProvider LifeSpan InSec]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │                   [Point Operation Statistics]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │               )
-    │           ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │           │               (
-    │           │                   [Client Side Request Stats]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │                   [AuthProvider LifeSpan InSec]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │                   [Point Operation Statistics]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │               )
-    │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │                   └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │                           (
-    │                               [Client Side Request Stats]
-    │                               Redacted To Not Change The Baselines From Run To Run
-    │                               [Point Operation Statistics]
-    │                               Redacted To Not Change The Baselines From Run To Run
-    │                           )
+    │       └── Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │               │               (
+    │               │                   [Client Side Request Stats]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │                   [AuthProvider LifeSpan InSec]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │                   [Point Operation Statistics]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │               )
+    │               ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │               │               (
+    │               │                   [Client Side Request Stats]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │                   [AuthProvider LifeSpan InSec]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │                   [Point Operation Statistics]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │               )
+    │               ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │               │               (
+    │               │                   [Client Side Request Stats]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │                   [AuthProvider LifeSpan InSec]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │                   [Point Operation Statistics]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │               )
+    │               ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │               │               (
+    │               │                   [Client Side Request Stats]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │                   [AuthProvider LifeSpan InSec]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │                   [Point Operation Statistics]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │               )
+    │               └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │                   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │                               (
+    │                                   [Client Side Request Stats]
+    │                                   Redacted To Not Change The Baselines From Run To Run
+    │                                   [Point Operation Statistics]
+    │                                   Redacted To Not Change The Baselines From Run To Run
+    │                               )
     └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
@@ -1165,108 +1199,114 @@
           },
           "children": [
             {
-              "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
+              "name": "Microsoft.Azure.Cosmos.Handlers.TelemetryHandler",
               "duration in milliseconds": 0,
               "children": [
                 {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
+                  "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
                   "duration in milliseconds": 0,
                   "children": [
                     {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                       "duration in milliseconds": 0,
                       "children": [
                         {
-                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                           "duration in milliseconds": 0,
-                          "data": {
-                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
-                            "AuthProvider LifeSpan InSec": "Redacted To Not Change The Baselines From Run To Run",
-                            "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
-                          }
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
+                                "AuthProvider LifeSpan InSec": "Redacted To Not Change The Baselines From Run To Run",
+                                "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
                         }
                       ]
-                    }
-                  ]
-                },
-                {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                  "duration in milliseconds": 0,
-                  "children": [
+                    },
                     {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                       "duration in milliseconds": 0,
                       "children": [
                         {
-                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                           "duration in milliseconds": 0,
-                          "data": {
-                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
-                            "AuthProvider LifeSpan InSec": "Redacted To Not Change The Baselines From Run To Run",
-                            "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
-                          }
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
+                                "AuthProvider LifeSpan InSec": "Redacted To Not Change The Baselines From Run To Run",
+                                "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
                         }
                       ]
-                    }
-                  ]
-                },
-                {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                  "duration in milliseconds": 0,
-                  "children": [
+                    },
                     {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                       "duration in milliseconds": 0,
                       "children": [
                         {
-                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                           "duration in milliseconds": 0,
-                          "data": {
-                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
-                            "AuthProvider LifeSpan InSec": "Redacted To Not Change The Baselines From Run To Run",
-                            "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
-                          }
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
+                                "AuthProvider LifeSpan InSec": "Redacted To Not Change The Baselines From Run To Run",
+                                "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
                         }
                       ]
-                    }
-                  ]
-                },
-                {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                  "duration in milliseconds": 0,
-                  "children": [
+                    },
                     {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                       "duration in milliseconds": 0,
                       "children": [
                         {
-                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                           "duration in milliseconds": 0,
-                          "data": {
-                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
-                            "AuthProvider LifeSpan InSec": "Redacted To Not Change The Baselines From Run To Run",
-                            "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
-                          }
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
+                                "AuthProvider LifeSpan InSec": "Redacted To Not Change The Baselines From Run To Run",
+                                "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
                         }
                       ]
-                    }
-                  ]
-                },
-                {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                  "duration in milliseconds": 0,
-                  "children": [
+                    },
                     {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                       "duration in milliseconds": 0,
                       "children": [
                         {
-                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                           "duration in milliseconds": 0,
-                          "data": {
-                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
-                            "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
-                          }
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
+                                "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
                         }
                       ]
                     }
@@ -1364,16 +1404,17 @@
     │       │       [System Info]
     │       │       Redacted To Not Change The Baselines From Run To Run
     │       │   )
-    │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │                   └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │                           (
-    │                               [Client Side Request Stats]
-    │                               Redacted To Not Change The Baselines From Run To Run
-    │                               [Point Operation Statistics]
-    │                               Redacted To Not Change The Baselines From Run To Run
-    │                           )
+    │       └── Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │                   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │                               (
+    │                                   [Client Side Request Stats]
+    │                                   Redacted To Not Change The Baselines From Run To Run
+    │                                   [Point Operation Statistics]
+    │                                   Redacted To Not Change The Baselines From Run To Run
+    │                               )
     └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
@@ -1425,24 +1466,30 @@
           },
           "children": [
             {
-              "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
+              "name": "Microsoft.Azure.Cosmos.Handlers.TelemetryHandler",
               "duration in milliseconds": 0,
               "children": [
                 {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
+                  "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
                   "duration in milliseconds": 0,
                   "children": [
                     {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                       "duration in milliseconds": 0,
                       "children": [
                         {
-                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                           "duration in milliseconds": 0,
-                          "data": {
-                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
-                            "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
-                          }
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
+                                "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
                         }
                       ]
                     }

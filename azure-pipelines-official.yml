@@ -7,6 +7,7 @@ variables:
   VmImage: windows-latest # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops 
   BuildConfiguration: Release
   Packaging.EnableSBOMSigning: true
+  OS: 'Windows'
 
 stages:
 - stage:
@@ -22,6 +23,38 @@ stages:
         BuildConfiguration: $(BuildConfiguration)
         Arguments: $(ReleaseArguments)
         VmImage: $(VmImage)
+        
+    - job:
+      displayName: TelemetryToService $(BuildConfiguration)
+      timeoutInMinutes: 120
+      condition: and(succeeded(), eq('$(OS)', 'Windows'))
+      pool:
+        vmImage: windows-2019
+      
+      steps:
+      - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
+        clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
+
+      # Add this Command to Include the .NET 6 SDK
+      - task: UseDotNet@2
+        displayName: Use .NET 6.0
+        inputs:
+          packageType: 'sdk'
+          version: '6.x'
+
+      - task: DotNetCoreCLI@2
+        displayName: Integration Test With Client Telemetry Service
+        condition: succeeded()
+        inputs:
+          command: test
+          projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj'
+          arguments: --filter "TestCategory=ClientTelemetryRelease" --verbosity normal --configuration $(BuildConfiguration) /p:OS=$(OS)
+          nugetConfigPath: NuGet.config
+          publishTestResults: true
+          testRunTitle: Microsoft.Azure.Cosmos.EmulatorTests
+        env:
+          COSMOSDB_ACCOUNT_CONNECTION_STRING: $(COSMOSDB_ACCOUNT_CONNECTION_STRING) # Real Account Connection String used by Integration Tests while running as part of release pipeline
+          CLIENT_TELEMETRY_SERVICE_ENDPOINT: $(CLIENT_TELEMETRY_SERVICE_ENDPOINT) # Client telemetry service url returned by configured account client config API
 
 - stage:
   displayName: Publish 

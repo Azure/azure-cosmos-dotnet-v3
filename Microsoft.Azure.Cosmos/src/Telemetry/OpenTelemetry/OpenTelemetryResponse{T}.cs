@@ -4,7 +4,9 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.Net;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Telemetry;
 
     internal sealed class OpenTelemetryResponse<T> : OpenTelemetryAttributes
@@ -12,14 +14,14 @@ namespace Microsoft.Azure.Cosmos
         internal OpenTelemetryResponse(FeedResponse<T> responseMessage)
         : this(
                statusCode: responseMessage.StatusCode,
-               requestCharge: responseMessage.Headers?.RequestCharge,
-               responseContentLength: responseMessage?.Headers?.ContentLength,
+               requestCharge: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.RequestCharge,
+               responseContentLength: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.ContentLength,
                diagnostics: responseMessage.Diagnostics,
-               itemCount: responseMessage.Headers?.ItemCount,
+               itemCount: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.ItemCount,
                requestMessage: responseMessage.RequestMessage,
-               subStatusCode: (int)responseMessage.Headers?.SubStatusCode,
-               activityId: responseMessage.Headers?.ActivityId,
-               correlatedActivityId: responseMessage.Headers?.CorrelatedActivityId,
+               subStatusCode: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.SubStatusCode,
+               activityId: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.ActivityId,
+               correlatedActivityId: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.CorrelatedActivityId,
                operationType: responseMessage is QueryResponse<T> ? Documents.OperationType.Query : Documents.OperationType.Invalid)
         {
         }
@@ -27,14 +29,14 @@ namespace Microsoft.Azure.Cosmos
         internal OpenTelemetryResponse(Response<T> responseMessage)
            : this(
                   statusCode: responseMessage.StatusCode,
-                  requestCharge: responseMessage.Headers?.RequestCharge,
-                  responseContentLength: responseMessage?.Headers?.ContentLength,
+                  requestCharge: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.RequestCharge,
+                  responseContentLength: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.ContentLength,
                   diagnostics: responseMessage.Diagnostics,
-                  itemCount: responseMessage.Headers?.ItemCount,
+                  itemCount: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.ItemCount,
                   requestMessage: responseMessage.RequestMessage,
-                  subStatusCode: (int)responseMessage.Headers?.SubStatusCode,
-                  activityId: responseMessage.Headers?.ActivityId,
-                  correlatedActivityId: responseMessage.Headers?.CorrelatedActivityId,
+                  subStatusCode: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.SubStatusCode,
+                  activityId: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.ActivityId,
+                  correlatedActivityId: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.CorrelatedActivityId,
                   operationType: responseMessage is QueryResponse ? Documents.OperationType.Query : Documents.OperationType.Invalid)
         {
         }
@@ -46,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
            CosmosDiagnostics diagnostics,
            string itemCount,
            RequestMessage requestMessage,
-           int subStatusCode,
+           Documents.SubStatusCodes? subStatusCode,
            string activityId,
            string correlatedActivityId,
            Documents.OperationType operationType)
@@ -57,10 +59,36 @@ namespace Microsoft.Azure.Cosmos
             this.ResponseContentLength = responseContentLength;
             this.Diagnostics = diagnostics;
             this.ItemCount = itemCount;
-            this.SubStatusCode = subStatusCode;
+            this.SubStatusCode = (int)(subStatusCode ?? Documents.SubStatusCodes.Unknown);
             this.ActivityId = activityId;
             this.CorrelatedActivityId = correlatedActivityId;
             this.OperationType = operationType;
+        }
+
+        private static Headers GetHeader(FeedResponse<T> responseMessage)
+        {
+            try
+            {
+                return responseMessage?.Headers;
+            }
+            catch (NotImplementedException ex)
+            {
+                DefaultTrace.TraceWarning("Failed to get headers from FeedResponse<T>. Exception: {0}", ex);
+                return null;
+            }
+        }
+
+        private static Headers GetHeader(Response<T> responseMessage)
+        {
+            try
+            {
+                return responseMessage?.Headers;
+            }
+            catch (NotImplementedException ex)
+            {
+                DefaultTrace.TraceWarning("Failed to get headers from Response<T>. Exception: {0}", ex);
+                return null;
+            }
         }
     }
 }

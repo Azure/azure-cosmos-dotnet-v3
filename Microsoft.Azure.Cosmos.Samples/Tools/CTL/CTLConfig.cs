@@ -97,11 +97,14 @@ namespace CosmosCTL
         [Option("ctl_logging_context", Required = false, HelpText = "Defines a custom context to use on metrics")]
         public string LogginContext { get; set; } = string.Empty;
 
-        [Option("ctl_telemetry_endpoint", Required = false, HelpText = "telemetry juno end point")]
-        public string TelemetryEndpoint { get; set; }
+        [Option("ctl_reservoir_type", Required = false, HelpText = "Defines the reservoir type. Valid values are: Uniform, SlidingWindow and ExponentialDecay. The default value is SlidingWindow.")]
+        public ReservoirTypes ReservoirType { get; set; } = ReservoirTypes.SlidingWindow;
 
-        [Option("ctl_telemetry_schedule_in_sec", Required = false, HelpText = "telemetry task schedule time in sec")]
-        public string TelemetryScheduleInSeconds { get; set; }
+        [Option("ctl_reservoir_sample_size", Required = false, HelpText = "The reservoir sample size.")]
+        public int ReservoirSampleSize { get; set; } = 1028;
+
+        [Option("ctl_disable_client_telemetry", Required = false, HelpText = "Disable Client Telemetry Feature in SDK. Make sure you enable it from the portal also.")]
+        public bool DisableClientTelemetry { get; set; } = false;
 
         [Option("ctl_reservoir_type", Required = false, HelpText = "Defines the reservoir type. Valid values are: Uniform, SlidingWindow and ExponentialDecay. The default value is SlidingWindow.")]
         public ReservoirTypes ReservoirType { get; set; } = ReservoirTypes.SlidingWindow;
@@ -133,12 +136,19 @@ namespace CosmosCTL
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ApplicationName = CTLConfig.UserAgentSuffix,
-                EnableClientTelemetry = true
+                CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions()
+                {
+                    DisableSendingMetricsToService = this.DisableClientTelemetry,
+                }
             };
+
+            Console.WriteLine("ApplicationName = " + CTLConfig.UserAgentSuffix);
+            Console.WriteLine("DisableSendingMetricsToService = " + this.DisableClientTelemetry);
 
             if (this.UseGatewayMode)
             {
                 clientOptions.ConnectionMode = ConnectionMode.Gateway;
+                Console.WriteLine("ConnectionMode = " + ConnectionMode.Gateway);
             }
 
             if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))
@@ -146,6 +156,7 @@ namespace CosmosCTL
                 if (Enum.TryParse(this.ConsistencyLevel, out ConsistencyLevel consistencyLevel))
                 {
                     clientOptions.ConsistencyLevel = consistencyLevel;
+                    Console.WriteLine("ConsistencyLevel = " + consistencyLevel);
                 }
                 else
                 {

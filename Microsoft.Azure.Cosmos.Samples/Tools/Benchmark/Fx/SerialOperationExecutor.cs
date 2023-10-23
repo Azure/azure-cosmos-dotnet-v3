@@ -8,6 +8,7 @@ namespace CosmosBenchmark
     using System.Diagnostics;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using static CosmosBenchmark.TelemetrySpan;
 
     internal class SerialOperationExecutor : IExecutor
     {
@@ -34,7 +35,8 @@ namespace CosmosBenchmark
                 int iterationCount,
                 bool isWarmup,
                 bool traceFailures,
-                Action completionCallback)
+                Action completionCallback,
+                BenchmarkConfig benchmarkConfig)
         {
             Trace.TraceInformation($"Executor {this.executorId} started");
 
@@ -47,13 +49,15 @@ namespace CosmosBenchmark
 
                     await this.operation.PrepareAsync();
 
-                    using (IDisposable telemetrySpan = TelemetrySpan.StartNew(
+                    using (ITelemetrySpan telemetrySpan = TelemetrySpan.StartNew(
+                                benchmarkConfig,
                                 () => operationResult.Value,
                                 disableTelemetry: isWarmup))
                     {
                         try
                         {
                             operationResult = await this.operation.ExecuteOnceAsync();
+                            telemetrySpan.MarkSuccess();
 
                             // Success case
                             this.SuccessOperationCount++;
@@ -66,9 +70,10 @@ namespace CosmosBenchmark
                         }
                         catch (Exception ex)
                         {
+                            telemetrySpan.MarkFailed();
                             if (traceFailures)
                             {
-                                Console.WriteLine(ex.ToString());
+                                Trace.TraceInformation(ex.ToString());
                             }
 
                             // failure case
@@ -95,6 +100,11 @@ namespace CosmosBenchmark
                 } while (currentIterationCount < iterationCount);
 
                 Trace.TraceInformation($"Executor {this.executorId} completed");
+            }
+            catch (Exception e)
+            {
+                Utility.TraceError("Error:", e);
+                
             }
             finally
             {

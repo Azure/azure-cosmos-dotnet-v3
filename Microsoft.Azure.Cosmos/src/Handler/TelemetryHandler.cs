@@ -10,14 +10,15 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Telemetry.Collector;
 
     internal class TelemetryHandler : RequestHandler
     {
-        private readonly ClientTelemetry telemetry;
+        private readonly TelemetryToServiceHelper telemetryToServiceHelper;
 
-        public TelemetryHandler(ClientTelemetry telemetry)
+        public TelemetryHandler(TelemetryToServiceHelper telemetryToServiceHelper)
         {
-            this.telemetry = telemetry ?? throw new ArgumentNullException(nameof(telemetry));
+            this.telemetryToServiceHelper = telemetryToServiceHelper ?? throw new ArgumentNullException(nameof(telemetryToServiceHelper));
         }
 
         public override async Task<ResponseMessage> SendAsync(
@@ -29,19 +30,22 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 try
                 {
-                    this.telemetry
-                        .CollectOperationInfo(
-                                cosmosDiagnostics: response.Diagnostics,
-                                statusCode: response.StatusCode,
-                                responseSizeInBytes: this.GetPayloadSize(response),
-                                containerId: request.ContainerId,
-                                databaseId: request.DatabaseId,
-                                operationType: request.OperationType,
-                                resourceType: request.ResourceType,
-                                consistencyLevel: request.Headers?[Documents.HttpConstants.HttpHeaders.ConsistencyLevel],
-                                requestCharge: response.Headers.RequestCharge,
-                                subStatusCode: response.Headers.SubStatusCode,
-                                trace: response.Trace);
+                    this.telemetryToServiceHelper.GetCollector().CollectOperationAndNetworkInfo(
+                        () => new TelemetryInformation
+                        {
+                            RegionsContactedList = response.Diagnostics.GetContactedRegions(),
+                            RequestLatency = response.Diagnostics.GetClientElapsedTime(),
+                            StatusCode = response.StatusCode,
+                            ResponseSizeInBytes = TelemetryHandler.GetPayloadSize(response),
+                            ContainerId = request.ContainerId,
+                            DatabaseId = request.DatabaseId,
+                            OperationType = request.OperationType,
+                            ResourceType = request.ResourceType,
+                            ConsistencyLevel = request.Headers?[Documents.HttpConstants.HttpHeaders.ConsistencyLevel],
+                            RequestCharge = response.Headers.RequestCharge,
+                            SubStatusCode = response.Headers.SubStatusCode,
+                            Trace = response.Trace
+                        });
                 }
                 catch (Exception ex)
                 {
@@ -63,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         /// </summary>
         /// <param name="response"></param>
         /// <returns>Size of Payload</returns>
-        private long GetPayloadSize(ResponseMessage response)
+        private static long GetPayloadSize(ResponseMessage response)
         {
             if (response != null)
             {
