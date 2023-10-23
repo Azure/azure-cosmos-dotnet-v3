@@ -607,7 +607,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        override ChangeFeedProcessorBuilder GetAllVersionsChangeFeedProcessorBuilder<T>(
+        override ChangeFeedProcessorBuilder GetAllVersionsAndDeletesChangeFeedProcessorBuilder<T>(
             string processorName,
             ChangeFeedHandler<ChangeFeedItemChange<T>> onChangesDelegate)
         {

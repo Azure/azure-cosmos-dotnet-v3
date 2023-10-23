@@ -1321,7 +1321,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        virtual ChangeFeedProcessorBuilder GetAllVersionsChangeFeedProcessorBuilder<T>(
+        virtual ChangeFeedProcessorBuilder GetAllVersionsAndDeletesChangeFeedProcessorBuilder<T>(
             string processorName,
             ChangeFeedHandler<ChangeFeedItemChange<T>> onChangesHandler)
         {

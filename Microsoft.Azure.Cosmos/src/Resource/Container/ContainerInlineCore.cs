@@ -519,11 +519,11 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        override ChangeFeedProcessorBuilder GetAllVersionsChangeFeedProcessorBuilder<T>(
+        override ChangeFeedProcessorBuilder GetAllVersionsAndDeletesChangeFeedProcessorBuilder<T>(
             string processorName,
             ChangeFeedHandler<ChangeFeedItemChange<T>> onChangesDelegate)
         {
-            return base.GetAllVersionsChangeFeedProcessorBuilder<T>(processorName, onChangesDelegate);
+            return base.GetAllVersionsAndDeletesChangeFeedProcessorBuilder<T>(processorName, onChangesDelegate);
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
