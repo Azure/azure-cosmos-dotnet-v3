@@ -337,7 +337,11 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             foreach (string region in excludeRegions)
             {
-                excludeUris.Add(regionNameByEndpoint[mapper.GetCosmosDBRegionName(region)]);
+                string normalizedRegionName = mapper.GetCosmosDBRegionName(region);
+                if (regionNameByEndpoint.ContainsKey(normalizedRegionName))
+                {
+                    excludeUris.Add(regionNameByEndpoint[normalizedRegionName]);
+                }
             }
             
             foreach (Uri endpoint in endpoints)
