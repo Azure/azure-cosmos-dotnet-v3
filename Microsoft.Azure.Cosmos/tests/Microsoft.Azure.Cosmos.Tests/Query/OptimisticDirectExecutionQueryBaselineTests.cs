@@ -663,7 +663,7 @@
 
         internal static Tuple<PartitionedQueryExecutionInfo, QueryPartitionProvider> GetPartitionedQueryExecutionInfoAndPartitionProvider(string querySpecJsonString, PartitionKeyDefinition pkDefinition, bool clientDisableOde = false)
         {
-            QueryPartitionProvider queryPartitionProvider = QueryPartitionProviderTestInstance.CreateModifiedQueryConfigPartitionProviderObject("clientDisableOptimisticDirectExecution", clientDisableOde.ToString().ToLower());
+            QueryPartitionProvider queryPartitionProvider = CreateCustomQueryPartitionProvider("clientDisableOptimisticDirectExecution", clientDisableOde.ToString().ToLower());
             TryCatch<PartitionedQueryExecutionInfo> tryGetQueryPlan = queryPartitionProvider.TryGetPartitionedQueryExecutionInfo(
                 querySpecJsonString: querySpecJsonString,
                 partitionKeyDefinition: pkDefinition,
@@ -756,6 +756,44 @@
             }
 
             return documentContainer;
+        }
+
+        private static QueryPartitionProvider CreateCustomQueryPartitionProvider(string key, string value)
+        {
+            Dictionary<string, object> queryEngineConfiguration = new Dictionary<string, object>()
+            {
+                {"maxSqlQueryInputLength", 262144},
+                {"maxJoinsPerSqlQuery", 5},
+                {"maxLogicalAndPerSqlQuery", 2000},
+                {"maxLogicalOrPerSqlQuery", 2000},
+                {"maxUdfRefPerSqlQuery", 10},
+                {"maxInExpressionItemsCount", 16000},
+                {"queryMaxGroupByTableCellCount", 500000 },
+                {"queryMaxInMemorySortDocumentCount", 500},
+                {"maxQueryRequestTimeoutFraction", 0.90},
+                {"sqlAllowNonFiniteNumbers", false},
+                {"sqlAllowAggregateFunctions", true},
+                {"sqlAllowSubQuery", true},
+                {"sqlAllowScalarSubQuery", true},
+                {"allowNewKeywords", true},
+                {"sqlAllowLike", true},
+                {"sqlAllowGroupByClause", true},
+                {"maxSpatialQueryCells", 12},
+                {"spatialMaxGeometryPointCount", 256},
+                {"sqlDisableQueryILOptimization", false},
+                {"sqlDisableFilterPlanOptimization", false},
+                {"clientDisableOptimisticDirectExecution", false}
+            };
+
+            if (key != null && value != null)
+            {
+                if (queryEngineConfiguration.TryGetValue(key, out _))
+                {
+                    queryEngineConfiguration[key] = value;
+                }
+            }
+
+            return new QueryPartitionProvider(queryEngineConfiguration);
         }
 
         private static OptimisticDirectExecutionTestInput CreateInput(
