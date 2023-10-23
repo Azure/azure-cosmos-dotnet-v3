@@ -211,6 +211,11 @@ namespace Microsoft.Azure.Cosmos
 
         public override async Task<object> GetQueryEngineConfigurationValueAsync(string key)
         {
+            if (key == null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
             QueryPartitionProvider provider = await this.clientContext.DocumentClient.QueryPartitionProvider;
             if (provider.QueryEngineConfigurationValues.TryGetValue(key, out object queryConfigProperty))
             {

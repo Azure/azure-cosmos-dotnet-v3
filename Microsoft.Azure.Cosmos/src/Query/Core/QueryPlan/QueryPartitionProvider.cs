@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
         private IntPtr serviceProvider;
         private bool disposed;
-        public string queryengineConfiguration;
+        private string queryengineConfiguration;
         public IDictionary<string, object> QueryEngineConfigurationValues;
 
         public QueryPartitionProvider(IDictionary<string, object> queryengineConfiguration)

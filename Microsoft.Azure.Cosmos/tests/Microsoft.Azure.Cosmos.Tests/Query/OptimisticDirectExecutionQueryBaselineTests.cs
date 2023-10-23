@@ -480,7 +480,7 @@
         {
             ParallelContinuationToken parallelContinuationToken = new ParallelContinuationToken(
                     token: Guid.NewGuid().ToString(),
-                    range: new Documents.Routing.Range<string>("A", "B", true, false));
+                    range: new Range<string>("A", "B", true, false));
 
             OptimisticDirectExecutionContinuationToken optimisticDirectExecutionContinuationToken = new OptimisticDirectExecutionContinuationToken(parallelContinuationToken);
             CosmosElement cosmosElementContinuationToken = OptimisticDirectExecutionContinuationToken.ToCosmosElement(optimisticDirectExecutionContinuationToken);
@@ -494,14 +494,13 @@
                     continuationToken: cosmosElementContinuationToken);
 
             // All of these cases should throw the same exception message.
-            await this.ValidateErrorMessageWithModifiedOdeFlag(input, enableOde: true, clientDisableOde: true);
-            await this.ValidateErrorMessageWithModifiedOdeFlag(input, enableOde: false, clientDisableOde: true);
-            await this.ValidateErrorMessageWithModifiedOdeFlag(input, enableOde: false, clientDisableOde: false);
+            await this.ValidateErrorMessageWithModifiedOdeFlags(input, enableOde: true, clientDisableOde: true);
+            await this.ValidateErrorMessageWithModifiedOdeFlags(input, enableOde: false, clientDisableOde: true);
+            await this.ValidateErrorMessageWithModifiedOdeFlags(input, enableOde: false, clientDisableOde: false);
         }
 
-        private async Task ValidateErrorMessageWithModifiedOdeFlag(OptimisticDirectExecutionTestInput input, bool enableOde, bool clientDisableOde)
+        private async Task ValidateErrorMessageWithModifiedOdeFlags(OptimisticDirectExecutionTestInput input, bool enableOde, bool clientDisableOde)
         {
-            int numItems = 100;
             string expectedErrorMessage = "This query cannot be executed using the provided continuation token. " +
                         "Please ensure that the EnableOptimisticDirectExecution flag is enabled in the QueryRequestOptions. " +
                         "If after enabling this flag, you still see this error, contact the database administrator for assistance or retry the query without the continuation token.";
@@ -509,7 +508,7 @@
             {
                 int result = await this.GetPipelineAndDrainAsync(
                                     input,
-                                    numItems: numItems,
+                                    numItems: 100,
                                     isMultiPartition: false,
                                     expectedContinuationTokenCount: 10,
                                     requiresDist: false,
@@ -626,12 +625,12 @@
                 TryCatch<QueryPage> tryGetPage = queryPipelineStage.Current;
                 tryGetPage.ThrowIfFailed();
                 
-                if (clientDisableOde)
+                if (clientDisableOde || !enableOptimisticDirectExecution)
                 {
                     Assert.AreNotEqual(TestInjections.PipelineType.OptimisticDirectExecution, queryRequestOptions.TestSettings.Stats.PipelineType.Value);
                 }
 
-                if (!clientDisableOde && !requiresDist)
+                if (!clientDisableOde && enableOptimisticDirectExecution && !requiresDist)
                 {
                     Assert.AreEqual(TestInjections.PipelineType.OptimisticDirectExecution, queryRequestOptions.TestSettings.Stats.PipelineType.Value);
                 }
@@ -1069,6 +1068,7 @@
         { 
             this.queryPartitionProvider = queryPartitionProvider;
         }
+
         public override Action<IQueryable> OnExecuteScalarQueryCallback => throw new NotImplementedException();
 
         public override bool BypassQueryParsing()
@@ -1114,6 +1114,11 @@
 
         public override async Task<object> GetQueryEngineConfigurationValueAsync(string key)
         {
+            if (key == null)
+            { 
+                throw new ArgumentNullException(nameof(key));
+            }
+
             if (this.queryPartitionProvider.QueryEngineConfigurationValues.TryGetValue(key, out object queryConfigProperty))
             {
                 return queryConfigProperty;

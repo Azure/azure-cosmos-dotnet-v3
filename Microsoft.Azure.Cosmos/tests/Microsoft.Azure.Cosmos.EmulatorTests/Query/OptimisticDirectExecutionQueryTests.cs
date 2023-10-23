@@ -542,7 +542,7 @@
         }
 
         [TestMethod]
-        public async Task TestAllowOdeFlagInCosmosClient()
+        public async Task TestClientDisableOdeFlagInCosmosClient()
         {
             string authKey = Utils.ConfigurationManager.AppSettings["MasterKey"];
             string endpoint = Utils.ConfigurationManager.AppSettings["GatewayEndpoint"];
