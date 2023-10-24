@@ -1,3 +1,7 @@
+//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System.Collections.Generic;
@@ -31,4 +35,5 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         internal static readonly QueryPartitionProvider Object = new QueryPartitionProvider(DefaultQueryEngineConfiguration as IDictionary<string, object>);
     }
+
 }
