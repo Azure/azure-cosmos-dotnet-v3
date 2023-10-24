@@ -13,7 +13,7 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-### <a name="3.36.0"/> [3.36.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.36.0) - 2023-10-17
+### <a name="3.36.0"/> [3.36.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.36.0) - 2023-10-24
 
 #### Fixed
 - [4039](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4039) GatewayAddressCache: Fixes Unobserved Exception During Background Address Refresh (#4039)
@@ -30,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > Note: Refer this [3983](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/3983) for API signature and default values.
 - [4119](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4119) TriggerOperation: Adds Upsert Operation Support(#4119)
 
-### <a name="3.36.0-preview"/> [3.356.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.36.0-preview) - 2023-10-17
+### <a name="3.36.0-preview"/> [3.36.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.36.0-preview) - 2023-10-24
 
 #### Added
   - [4056](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4056) Client Telemetry: Adds new public APIs (#4056). WARNING: This is breaking change for preview SDK
