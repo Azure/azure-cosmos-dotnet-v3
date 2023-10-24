@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Documents.Rntbd
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Documents.FaultInjection;
 #if COSMOSCLIENT
     using Microsoft.Azure.Cosmos.Rntbd;
 #endif
@@ -64,6 +65,10 @@ namespace Microsoft.Azure.Documents.Rntbd
         private PooledTimer idleTimer; // Guarded by connectionLock
         private Task idleTimerTask;  // Guarded by connectionLock
 
+        private readonly IChaosInterceptor chaosInterceptor;
+        private TransportException faultInjectionTransportException;
+        private bool isFaultInjectionedConnectionError;
+
         public Guid ConnectionCorrelationId { get => this.connection.ConnectionCorrelationId; }
 
         public Dispatcher(
@@ -78,7 +83,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             bool enableChannelMultiplexing,
             MemoryStreamPool memoryStreamPool,
             RemoteCertificateValidationCallback remoteCertificateValidationCallback,
-            Func<string, Task<IPAddress>> dnsResolutionFunction)
+            Func<string, Task<IPAddress>> dnsResolutionFunction,
+            IChaosInterceptor chaosInterceptor)
         {
             this.connection = new Connection(
                 serverUri, hostNameCertificateOverride,
@@ -92,6 +98,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.serverUri = serverUri;
             this.idleTimerPool = idleTimerPool;
             this.enableChannelMultiplexing = enableChannelMultiplexing;
+            this.chaosInterceptor = chaosInterceptor;
         }
 
         #region Test hook.
@@ -228,6 +235,15 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
+        public void InjectFaultInjectionConnectionError(TransportException transportException)
+        {
+            if (!this.disposed)
+            {
+                this.isFaultInjectionedConnectionError = true;
+                this.faultInjectionTransportException = transportException;
+            }
+        }
+
         public sealed class PrepareCallResult : IDisposable
         {
             private bool disposed = false;
@@ -317,11 +333,19 @@ namespace Microsoft.Azure.Documents.Rntbd
                 {
                     try
                     {
+                        this.chaosInterceptor?.OnBeforeConnectionWrite(args);
+                        if (this.chaosInterceptor != null && this.chaosInterceptor.OnRequestCall(args, out StoreResponse faultyResponse))
+                        {
+                            return faultyResponse;
+                        }                       
+
                         await this.connection.WriteRequestAsync(
                             args.CommonArguments,
                             args.PreparedCall.SerializedRequest,
                             transportRequestStats);
                         transportRequestStats.RecordState(TransportRequestStats.RequestStage.Sent);
+                        this.chaosInterceptor?.OnAfterConnectionWrite(args);
+
                     }
                     catch (Exception e)
                     {
@@ -725,6 +749,12 @@ namespace Microsoft.Azure.Documents.Rntbd
                 bool hasTransportErrors = false;
                 while (!hasTransportErrors && !cancellationToken.IsCancellationRequested)
                 {
+                    if (this.isFaultInjectionedConnectionError)
+                    {
+                        hasTransportErrors = true;
+                        throw this.faultInjectionTransportException;
+                    }
+
                     args.ActivityId = Guid.Empty;
                     responseMd = await this.connection.ReadResponseMetadataAsync(args);
                     ArraySegment<byte> metadata = responseMd.Metadata;

@@ -15,12 +15,10 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Reflection;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
-    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
     using static Microsoft.Azure.Cosmos.Linq.FromParameterBindings;
 
     // ReSharper disable UnusedParameter.Local
@@ -77,10 +75,9 @@ namespace Microsoft.Azure.Cosmos.Linq
             public const string Where = "Where";
         }
 
-        private static string SqlRoot = "root";
-        private static string DefaultParameterName = "v";
-        private static bool usePropertyRef = false;
-        private static SqlIdentifier RootIdentifier = SqlIdentifier.Create(SqlRoot);
+        private static readonly string SqlRoot = "root";
+        private static readonly string DefaultParameterName = "v";
+        private static readonly bool usePropertyRef = false;
 
         /// <summary>
         /// Toplevel entry point.
@@ -455,12 +452,12 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 if (TryMatchStringCompareTo(methodCallExpression, constantExpression, inputExpression.NodeType))
                 {
-                    return ExpressionToSql.VisitStringCompareTo(methodCallExpression, constantExpression, inputExpression.NodeType, reverseNodeType, context);
+                    return ExpressionToSql.VisitStringCompareTo(methodCallExpression, inputExpression.NodeType, reverseNodeType, context);
                 }
 
                 if (TryMatchStringCompare(methodCallExpression, constantExpression, inputExpression.NodeType))
                 {
-                    return ExpressionToSql.VisitStringCompare(methodCallExpression, constantExpression, inputExpression.NodeType, reverseNodeType, context);
+                    return ExpressionToSql.VisitStringCompare(methodCallExpression, inputExpression.NodeType, reverseNodeType, context);
                 }
             }
 
@@ -613,7 +610,6 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private static SqlScalarExpression VisitStringCompareTo(
             MethodCallExpression left,
-            ConstantExpression right,
             ExpressionType compareOperator,
             bool reverseNodeType,
             TranslationContext context)
@@ -690,7 +686,6 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private static SqlScalarExpression VisitStringCompare(
             MethodCallExpression left,
-            ConstantExpression right,
             ExpressionType compareOperator,
             bool reverseNodeType,
             TranslationContext context)

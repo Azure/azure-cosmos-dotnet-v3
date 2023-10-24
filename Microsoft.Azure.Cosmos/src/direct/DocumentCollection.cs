@@ -285,10 +285,12 @@ namespace Microsoft.Azure.Documents
             }
             set
             {
+#pragma warning disable CS0472 // The result of the expression is always the same since a value of this type is never equal to 'null'
                 if(value == null)
                 {
                     throw new ArgumentNullException(string.Format(CultureInfo.CurrentCulture, RMResources.PropertyCannotBeNull, "UniqueIndexNameEncodingMode"));
                 }
+#pragma warning restore CS0472 // The result of the expression is always the same since a value of this type is never equal to 'null'
                 this.uniqueIndexNameEncodingMode = value;
                 this.SetValue(Constants.Properties.UniqueIndexNameEncodingMode, value);
             }

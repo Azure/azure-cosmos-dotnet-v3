@@ -107,6 +107,11 @@ namespace Microsoft.Azure.Documents
         public bool IsRetry { get; set; }
 
         /// <summary>
+        /// A list of regions to exclude routing to, used for per-request level routing exclusion
+        /// </summary>
+        public List<string> ExcludeRegions { get; set; }
+
+        /// <summary>
         /// Set of all failed enpoints for a DSR. Used for prioritizing replica selection
         /// </summary>
         public Lazy<HashSet<TransportAddressUri>> FailedEndpoints { get; private set; }
@@ -231,6 +236,7 @@ namespace Microsoft.Azure.Documents
             requestContext.LocalRegionRequest = this.LocalRegionRequest;
             requestContext.FailedEndpoints = this.FailedEndpoints;
             requestContext.LastPartitionAddressInformationHashCode = this.LastPartitionAddressInformationHashCode;
+            requestContext.ExcludeRegions = this.ExcludeRegions;
 
             return requestContext;
         }

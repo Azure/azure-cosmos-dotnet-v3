@@ -534,4 +534,3 @@ namespace Microsoft.Azure.Documents
         }
     }
 }
-

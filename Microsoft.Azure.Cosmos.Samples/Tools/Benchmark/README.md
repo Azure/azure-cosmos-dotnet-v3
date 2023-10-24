@@ -54,6 +54,7 @@ cd 'azure-cosmos-dotnet-v3/Microsoft.Azure.Cosmos.Samples/Tools/Benchmark'
 dotnet build --configuration Release -p:"OSSProjectRef=true;ShouldUnsetParentConfigurationAndPlatform=false"
 
 ```
+
 For PerfRuns with reports (INTERNAL)
 ```
 
@@ -113,9 +114,9 @@ Copyright (C) 2019 CosmosBenchmark
   --branchname                      Branch name, only for publish
   --resultspartitionkeyvalue        Partitionkey, only for publish
   --disablecoresdklogging           Disable core SDK logging
-  --enabletelemetry                 Enable Telemetry
+  --enabletelemetry                 Enable Telemetry Feature 
   --telemetryscheduleinsec          Telemetry Schedule in Seconds
-  --telemetryendpoint               Telemetry Endpoint
+  --enableDistributedTracing        Enable Distributed Tracing Feature
   --resultsendpoint                 Endpoint to publish results to
   --resultskey                      Key to publish results to
   --resultsdatabase                 Database to publish results to
@@ -127,3 +128,7 @@ Copyright (C) 2019 CosmosBenchmark
 ## Running on Azure
 
 If you want to quickly get results, you can use our [guide to leverage Azure Container Instances](./AzureContainerInstances/README.md) to execute the benchmarks in any number of Azure regions with very little setup required.
+
+## Running on Azure VM
+
+If you want to execute benchmarking on multiple machines with one ARM Template, you can use our [guide to leverage Azure Virtual Machines](./AzureVmBenchmark/README.md).

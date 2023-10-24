@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Documents.Rntbd
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Documents.FaultInjection;
 
     internal sealed class LoadBalancingPartition : IDisposable
     {
@@ -31,15 +32,18 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private readonly SemaphoreSlim concurrentOpeningChannelSlim;
 
+        private readonly IChaosInterceptor chaosInterceptor;
+
         // This channel factory delegate is meant for unit testing only and a default implementation is provided.
         // However it can be extended to support the main line code path if needed.
-        private readonly Func<Guid, Uri, ChannelProperties, bool, SemaphoreSlim, IChannel> channelFactory;
+        private readonly Func<Guid, Uri, ChannelProperties, bool, SemaphoreSlim, IChaosInterceptor, Action<Guid, Uri, Channel>, IChannel> channelFactory;
 
         public LoadBalancingPartition(
             Uri serverUri,
             ChannelProperties channelProperties,
             bool localRegionRequest,
-            Func<Guid, Uri, ChannelProperties, bool, SemaphoreSlim, IChannel> channelFactory = null)
+            Func<Guid, Uri, ChannelProperties, bool, SemaphoreSlim, IChaosInterceptor, Action<Guid, Uri, Channel>, IChannel> channelFactory = null,
+            IChaosInterceptor chaosInterceptor = null)
         {
             Debug.Assert(serverUri != null);
             this.serverUri = serverUri;
@@ -56,6 +60,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.channelFactory = channelFactory != null
                 ? channelFactory
                 : CreateAndInitializeChannel;
+
+            this.chaosInterceptor = chaosInterceptor;
         }
 
         public async Task<StoreResponse> RequestAsync(
@@ -181,11 +187,15 @@ namespace Microsoft.Azure.Documents.Rntbd
                             {
                                 channelsCreated = targetChannels - this.openChannels.Count;
                             }
+
+                           Action<Guid, Uri, Channel> onChannelOpen = 
+                                (Guid createId, Uri serverUri, Channel createdChannel) => this.chaosInterceptor?.OnChannelOpen(createId, serverUri, request, createdChannel);
+
                             while (this.openChannels.Count < targetChannels)
-                            {
-                                await this.OpenChannelAndIncrementCapacity(
+                            {                              
+                                this.OpenChannelAndIncrementCapacity(
                                     activityId: activityId,
-                                    waitForBackgroundInitializationComplete: false);
+                                    onChannelOpen: onChannelOpen);
                             }
                             Debug.Assert(
                                 this.capacity ==
@@ -219,15 +229,30 @@ namespace Microsoft.Azure.Documents.Rntbd
         /// <param name="activityId">An unique identifier indicating the current activity id.</param>
         internal Task OpenChannelAsync(Guid activityId)
         {
-            this.capacityLock.EnterWriteLock();
+            IChannel channel = null;
+            this.capacityLock.EnterUpgradeableReadLock();
             try
             {
                 if (this.capacity < this.maxCapacity)
                 {
-                    return this.OpenChannelAndIncrementCapacity(
-                        activityId: activityId,
-                        waitForBackgroundInitializationComplete: true);
+                    foreach (LbChannelState channelState in this.openChannels)
+                    {
+                        if (channelState.DeepHealthy)
+                        {
+                            return Task.FromResult(0);
+                        }
+                    }
 
+                    this.capacityLock.EnterWriteLock();
+                    try
+                    {
+                        channel = this.OpenChannelAndIncrementCapacity(
+                            activityId: activityId);
+                    }
+                    finally
+                    {
+                        this.capacityLock.ExitWriteLock();
+                    }
                 }
                 else
                 {
@@ -243,8 +268,16 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
             finally
             {
-                this.capacityLock.ExitWriteLock();
+                this.capacityLock.ExitUpgradeableReadLock();
             }
+
+            if (channel == null)
+            {
+                throw new InvalidOperationException(
+                    message: $"Could not open a channel to server {this.serverUri} because a channel instance didn't get created.");
+            }
+
+            return channel.OpenChannelAsync(activityId);
         }
 
         public void Dispose()
@@ -280,11 +313,11 @@ namespace Microsoft.Azure.Documents.Rntbd
         /// and increment the currrent channel capacity.
         /// </summary>
         /// <param name="activityId">An unique identifier indicating the current activity id.</param>
-        /// <param name="waitForBackgroundInitializationComplete">A boolean flag to indicate if the caller thread should
-        /// wait until all the background tasks have finished.</param>
-        private async Task OpenChannelAndIncrementCapacity(
+        /// <param name="onChannelOpen">An action to be invoked when the channel is opened.</param>
+        /// <returns>An instance of <see cref="IChannel"/>.</returns>
+        private IChannel OpenChannelAndIncrementCapacity(
             Guid activityId,
-            bool waitForBackgroundInitializationComplete)
+            Action<Guid, Uri, Channel> onChannelOpen = null)
         {
             Debug.Assert(this.capacityLock.IsWriteLockHeld);
 
@@ -293,7 +326,9 @@ namespace Microsoft.Azure.Documents.Rntbd
                 this.serverUri,
                 this.channelProperties,
                 this.localRegionRequest,
-                this.concurrentOpeningChannelSlim);
+                this.concurrentOpeningChannelSlim,
+                this.chaosInterceptor,
+                onChannelOpen);
 
             if (newChannel == null)
             {
@@ -302,16 +337,13 @@ namespace Microsoft.Azure.Documents.Rntbd
                     message: "Channel can't be null.");
             }
 
-            if (waitForBackgroundInitializationComplete)
-            {
-                await newChannel.OpenChannelAsync(activityId);
-            }
-
             this.openChannels.Add(
                 new LbChannelState(
                     newChannel,
                     this.channelProperties.MaxRequestsPerChannel));
             this.capacity += this.channelProperties.MaxRequestsPerChannel;
+
+            return newChannel;
         }
 
         /// <summary>
@@ -322,20 +354,26 @@ namespace Microsoft.Azure.Documents.Rntbd
         /// <param name="channelProperties">An instance of <see cref="ChannelProperties"/>.</param>
         /// <param name="localRegionRequest">A boolean flag indicating if the request is intendent for local region.</param>
         /// <param name="concurrentOpeningChannelSlim">An instance of <see cref="SemaphoreSlim"/>.</param>
-        /// <returns></returns>
+        /// <param name="chaosInterceptor">The Interceptor for fault injection. Null if not using fault injection</param>
+        /// <param name="onChannelOpen">An action to be invoked when the channel is opened.</param>
+        /// <returns>An instance of <see cref="IChannel"/>.</returns>
         private static IChannel CreateAndInitializeChannel(
             Guid activityId,
             Uri serverUri,
             ChannelProperties channelProperties,
             bool localRegionRequest,
-            SemaphoreSlim concurrentOpeningChannelSlim)
+            SemaphoreSlim concurrentOpeningChannelSlim,
+            IChaosInterceptor chaosInterceptor = null,
+            Action<Guid, Uri, Channel> onChannelOpen = null)
         {
             return new Channel(
                 activityId,
                 serverUri,
                 channelProperties,
                 localRegionRequest,
-                concurrentOpeningChannelSlim);
+                concurrentOpeningChannelSlim,
+                chaosInterceptor,
+                onChannelOpen);
         }
 
         private sealed class SequenceGenerator
