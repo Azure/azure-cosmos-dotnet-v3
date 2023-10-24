@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Runtime.InteropServices;
     using System.Text;
     using Microsoft.Azure.Cosmos.Core.Trace;
@@ -143,20 +144,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             return TryCatch<PartitionedQueryExecutionInfo>.FromResult(queryInfo);
         }
 
-        public bool GetClientDisableOptimisticDirectExecution(IDictionary<string, object> queryengineConfiguration)
+        private bool GetClientDisableOptimisticDirectExecution(IDictionary<string, object> queryengineConfiguration)
         {
-            if (queryengineConfiguration == null)
-            {
-                throw new ArgumentNullException(nameof(queryengineConfiguration));
-            }
-
             if (queryengineConfiguration.TryGetValue("clientDisableOptimisticDirectExecution", out object queryConfigProperty))
             {
-                bool.TryParse(queryConfigProperty.ToString(), out bool clientDisableOptimisticDirectExecution);
+                bool success = bool.TryParse(queryConfigProperty.ToString(), out bool clientDisableOptimisticDirectExecution);
+                Debug.Assert(success);
+
                 return clientDisableOptimisticDirectExecution;
             }
 
-            throw new KeyNotFoundException($"ClientDisableOptimisticDirectExecution flag was not found in the QueryEngineConfiguration dictionary.");
+            return true;
         }
 
         internal PartitionedQueryExecutionInfo ConvertPartitionedQueryExecutionInfo(
