@@ -259,7 +259,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 ArgumentException exception = Assert.ThrowsException<ArgumentException>(() => cosmosClientBuilder.Build());
 
                 Assert.AreEqual(
-                    expected: "ApplicationPreferredRegions is required when EnablePartitionLevelFailover is enabled.",
+                    expected: "Either ApplicationPreferredRegions or ApplicationRegion is required when EnablePartitionLevelFailover is enabled.",
                     actual: exception.Message);
             }
             finally
