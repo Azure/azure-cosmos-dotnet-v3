@@ -1150,19 +1150,9 @@
                 Cosmos.GeospatialType.Geometry));
         }
 
-        public override async Task<object> GetQueryEngineConfigurationValueAsync(string key)
+        public override async Task<bool> GetClientDisableOptimisticDirectExecutionAsync()
         {
-            if (key == null)
-            { 
-                throw new ArgumentNullException(nameof(key));
-            }
-
-            if (this.queryPartitionProvider.QueryEngineConfigurationValues.TryGetValue(key, out object queryConfigProperty))
-            {
-                return queryConfigProperty;
-            }
-
-            throw new KeyNotFoundException($"The key '{key}' was not found in the QueryEngineConfiguration dictionary.");
+            return this.queryPartitionProvider.ClientDisableOptimisticDirectExecution;
         }
 
         public override Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangeByFeedRangeAsync(string resourceLink, string collectionResourceId, PartitionKeyDefinition partitionKeyDefinition, FeedRangeInternal feedRangeInternal, bool forceRefresh, ITrace trace)

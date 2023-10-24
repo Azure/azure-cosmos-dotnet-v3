@@ -761,8 +761,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             ContainerQueryProperties containerQueryProperties,
             ITrace trace)
         {
-            object queryConfigValue = await cosmosQueryContext.QueryClient.GetQueryEngineConfigurationValueAsync(ClientDisableOptimisticDirectExecution);
-            bool.TryParse(queryConfigValue.ToString(), out bool clientDisableOptimisticDirectExecution);
+            bool clientDisableOptimisticDirectExecution = await cosmosQueryContext.QueryClient.GetClientDisableOptimisticDirectExecutionAsync();
 
             // Use the Ode code path only if ClientDisableOptimisticDirectExecution is false and EnableOptimisticDirectExecution is true
             if (clientDisableOptimisticDirectExecution || !inputParameters.EnableOptimisticDirectExecution)

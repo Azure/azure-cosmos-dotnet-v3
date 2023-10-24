@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             ITrace trace,
             CancellationToken cancellationToken);
 
-        public abstract Task<object> GetQueryEngineConfigurationValueAsync(string key);
+        public abstract Task<bool> GetClientDisableOptimisticDirectExecutionAsync();
 
         public abstract Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
             string resourceUri,

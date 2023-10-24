@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Runtime.InteropServices;
     using System.Text;
     using Microsoft.Azure.Cosmos.Core.Trace;
@@ -44,7 +43,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         private IntPtr serviceProvider;
         private bool disposed;
         private string queryengineConfiguration;
-        public IDictionary<string, object> QueryEngineConfigurationValues;
+
+        public bool ClientDisableOptimisticDirectExecution { get; private set; }
 
         public QueryPartitionProvider(IDictionary<string, object> queryengineConfiguration)
         {
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
             this.disposed = false;
             this.queryengineConfiguration = JsonConvert.SerializeObject(queryengineConfiguration);
-            this.QueryEngineConfigurationValues = queryengineConfiguration;
+            this.ClientDisableOptimisticDirectExecution = this.GetClientDisableOptimisticDirectExecution(queryengineConfiguration);
             this.serviceProvider = IntPtr.Zero;
 
             this.serviceProviderStateLock = new object();
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                     if (!string.Equals(this.queryengineConfiguration, newConfiguration))
                     {
                         this.queryengineConfiguration = newConfiguration;
-                        this.QueryEngineConfigurationValues = queryengineConfiguration;
+                        this.ClientDisableOptimisticDirectExecution = this.GetClientDisableOptimisticDirectExecution(queryengineConfiguration);
 
                         if (!this.disposed && this.serviceProvider != IntPtr.Zero)
                         {
@@ -141,6 +141,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
             PartitionedQueryExecutionInfo queryInfo = this.ConvertPartitionedQueryExecutionInfo(tryGetInternalQueryInfo.Result, partitionKeyDefinition);
             return TryCatch<PartitionedQueryExecutionInfo>.FromResult(queryInfo);
+        }
+
+        public bool GetClientDisableOptimisticDirectExecution(IDictionary<string, object> queryengineConfiguration)
+        {
+            if (queryengineConfiguration == null)
+            {
+                throw new ArgumentNullException(nameof(queryengineConfiguration));
+            }
+
+            if (queryengineConfiguration.TryGetValue("clientDisableOptimisticDirectExecution", out object queryConfigProperty))
+            {
+                bool.TryParse(queryConfigProperty.ToString(), out bool clientDisableOptimisticDirectExecution);
+                return clientDisableOptimisticDirectExecution;
+            }
+
+            throw new KeyNotFoundException($"ClientDisableOptimisticDirectExecution flag was not found in the QueryEngineConfiguration dictionary.");
         }
 
         internal PartitionedQueryExecutionInfo ConvertPartitionedQueryExecutionInfo(
