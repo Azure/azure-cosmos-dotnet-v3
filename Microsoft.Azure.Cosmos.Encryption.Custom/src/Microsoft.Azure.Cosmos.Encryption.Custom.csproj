@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>Microsoft.Azure.Cosmos.Encryption.Custom</AssemblyName>
@@ -36,7 +36,7 @@
 	
   <ItemGroup>
      <PackageReference Include="Azure.Core" Version="1.19.0" />
-     <PackageReference Include="Azure.Identity" Version="1.1.1" />
+     <PackageReference Include="Azure.Identity" Version="1.10.2" />
      <PackageReference Include="Microsoft.Data.Encryption.Cryptography" Version="0.2.0-pre" />
      <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />     
   </ItemGroup>
