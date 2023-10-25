@@ -110,7 +110,6 @@ namespace Microsoft.Azure.Cosmos.Test.BaselineTest
 
             // Compare the output to the baseline and fail if they differ.
             string outputText = Regex.Replace(File.ReadAllText(outputPath), @"\s+", "");
-            Console.WriteLine(outputText);
             string baselineText = Regex.Replace(File.ReadAllText(baselinePath), @"\s+", "");
             int commonPrefixLength = 0;
             foreach (Tuple<char, char> characters in outputText.Zip(baselineText, (first, second) => new Tuple<char, char>(first, second)))
@@ -126,7 +125,6 @@ namespace Microsoft.Azure.Cosmos.Test.BaselineTest
             }
 
             string baselineTextSuffix = new string(baselineText.Skip(Math.Max(commonPrefixLength - 30, 0)).Take(100).ToArray());
-            Console.WriteLine(baselineTextSuffix);
             string outputTextSuffix = new string(outputText.Skip(Math.Max(commonPrefixLength - 30, 0)).Take(100).ToArray());
 
             bool matched = baselineText.Equals(outputText);
