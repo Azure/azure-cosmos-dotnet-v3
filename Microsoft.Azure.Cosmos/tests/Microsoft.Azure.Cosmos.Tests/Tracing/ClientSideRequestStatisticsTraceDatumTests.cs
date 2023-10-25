@@ -46,9 +46,56 @@
         }
 
         [TestMethod]
-        public void DuplicateContactedReplicasTests()
+        [Owner("philipthomas")]
+        public void NullContactedReplicasExpectsZeroCountTests()
         {
-            ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, Trace.GetRootTrace(nameof(DuplicateContactedReplicasTests)));
+            ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, Trace.GetRootTrace(nameof(NullContactedReplicasExpectsZeroCountTests)));
+            clientSideRequestStatisticsTraceDatum.ContactedReplicas.Add(default);
+            ITrace trace = Trace.GetRootTrace("test");
+            trace.AddDatum("stats", clientSideRequestStatisticsTraceDatum);
+            string json = new CosmosTraceDiagnostics(trace).ToString();
+            JObject jobject = JObject.Parse(json);
+            JToken contactedReplicas = jobject["data"]["stats"]["ContactedReplicas"];
+            Assert.AreEqual(0, contactedReplicas.Count());
+        }
+
+        [TestMethod]
+        [Owner("philipthomas")]
+        public void NoContactedReplicasExpectsZeroCountTests()
+        {
+            ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, Trace.GetRootTrace(nameof(NoContactedReplicasExpectsZeroCountTests)));
+            ITrace trace = Trace.GetRootTrace("test");
+            trace.AddDatum("stats", clientSideRequestStatisticsTraceDatum);
+            string json = new CosmosTraceDiagnostics(trace).ToString();
+            JObject jobject = JObject.Parse(json);
+            JToken contactedReplicas = jobject["data"]["stats"]["ContactedReplicas"];
+            Assert.AreEqual(0, contactedReplicas.Count());
+        }
+
+        [TestMethod]
+        [Owner("philipthomas")]
+        public void NoDuplicateContactedReplicasExpectsLastContactedReplicasTests()
+        {
+            ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, Trace.GetRootTrace(nameof(NoDuplicateContactedReplicasExpectsLastContactedReplicasTests)));
+            clientSideRequestStatisticsTraceDatum.ContactedReplicas.Add(new TransportAddressUri(new Uri("http://storephysicaladdress1.com")));
+            clientSideRequestStatisticsTraceDatum.ContactedReplicas.Add(new TransportAddressUri(new Uri("http://storephysicaladdress2.com")));
+            clientSideRequestStatisticsTraceDatum.ContactedReplicas.Add(new TransportAddressUri(new Uri("http://storephysicaladdress3.com")));
+            ITrace trace = Trace.GetRootTrace("test");
+            trace.AddDatum("stats", clientSideRequestStatisticsTraceDatum);
+            string json = new CosmosTraceDiagnostics(trace).ToString();
+            JObject jobject = JObject.Parse(json);
+            JToken contactedReplicas = jobject["data"]["stats"]["ContactedReplicas"];
+            Assert.AreEqual(1, contactedReplicas.Count());
+            int count = contactedReplicas[0]["Count"].Value<int>();
+            Assert.AreEqual(1, count);
+            string uri = contactedReplicas[0]["Uri"].Value<string>();
+            Assert.AreEqual("http://storephysicaladdress3.com/", uri);
+        }
+
+        [TestMethod]
+        public void DuplicateContactedReplicasExpectsLastContactedReplicasTests()
+        {
+            ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, Trace.GetRootTrace(nameof(DuplicateContactedReplicasExpectsLastContactedReplicasTests)));
             clientSideRequestStatisticsTraceDatum.ContactedReplicas.Add(new TransportAddressUri(new Uri("http://storephysicaladdress1.com")));
             clientSideRequestStatisticsTraceDatum.ContactedReplicas.Add(new TransportAddressUri(new Uri("http://storephysicaladdress2.com")));
             clientSideRequestStatisticsTraceDatum.ContactedReplicas.Add(new TransportAddressUri(new Uri("http://storephysicaladdress2.com")));
@@ -58,22 +105,13 @@
             ITrace trace = Trace.GetRootTrace("test");
             trace.AddDatum("stats", clientSideRequestStatisticsTraceDatum);
             string json = new CosmosTraceDiagnostics(trace).ToString();
+            Console.WriteLine(json);
             JObject jobject = JObject.Parse(json);
             JToken contactedReplicas = jobject["data"]["stats"]["ContactedReplicas"];
-            Assert.AreEqual(3, contactedReplicas.Count());
+            Assert.AreEqual(1, contactedReplicas.Count());
             int count = contactedReplicas[0]["Count"].Value<int>();
             Assert.AreEqual(1, count);
             string uri = contactedReplicas[0]["Uri"].Value<string>();
-            Assert.AreEqual("http://storephysicaladdress1.com/", uri);
-
-            count = contactedReplicas[1]["Count"].Value<int>();
-            Assert.AreEqual(4, count);
-            uri = contactedReplicas[1]["Uri"].Value<string>();
-            Assert.AreEqual("http://storephysicaladdress2.com/", uri);
-
-            count = contactedReplicas[2]["Count"].Value<int>();
-            Assert.AreEqual(1, count);
-            uri = contactedReplicas[2]["Uri"].Value<string>();
             Assert.AreEqual("http://storephysicaladdress3.com/", uri);
         }
 
