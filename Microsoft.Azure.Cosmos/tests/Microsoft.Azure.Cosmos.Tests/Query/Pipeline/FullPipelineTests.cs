@@ -27,6 +27,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
     using Newtonsoft.Json;
 
     [TestClass]
@@ -53,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             MergeTestUtil mergeTest = new MergeTestUtil();
             mergeTest.DocumentContainer = await CreateDocumentContainerAsync(
                 documents: documents,
-                numPartitions: 2,
+                numSplits: 2,
                 failureConfigs: new FlakyDocumentContainer.FailureConfigs(
                     inject429s: false,
                     injectEmptyPages: false,
@@ -260,45 +261,44 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         public async Task OffsetLimitPageSize()
         {
             List<CosmosObject> documents = new List<CosmosObject>();
-            for (int i = 0; i < 250; i++)
+            for (int i = 0; i < 1100; i++)
             {
                 documents.Add(CosmosObject.Parse($"{{\"pk\" : {i} }}"));
             }
 
             MockInMemoryContainer mockInMemoryContainer = new MockInMemoryContainer(new InMemoryContainer(partitionKeyDefinition));
-            DocumentContainer documentContainer = await CreateDocumentContainerAsync(documents, mockInMemoryContainer, numPartitions: 5);
+            DocumentContainer documentContainer = await CreateDocumentContainerAsync(documents, mockInMemoryContainer, numSplits: 4);
 
             // OFFSET/LIMIT with ORDER BY
-            await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 0 LIMIT 500", 40, mockInMemoryContainer, documentContainer);
-            await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 10000 LIMIT 5000", 1000, mockInMemoryContainer, documentContainer);
-            await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 10 LIMIT 100", 10, mockInMemoryContainer, documentContainer);
-            await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 0 LIMIT 100", 10, mockInMemoryContainer, documentContainer);
-            await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 100 LIMIT 0", 10, mockInMemoryContainer, documentContainer);
+            await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 0 LIMIT 500", expectedPageSize: 315, expectedResults: 500, mockInMemoryContainer, documentContainer);
+            await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 10000 LIMIT 5000", expectedPageSize: 1000, expectedResults: 0, mockInMemoryContainer, documentContainer);
+            await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 10 LIMIT 100", expectedPageSize: 70, expectedResults: 100, mockInMemoryContainer, documentContainer);
+            await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 0 LIMIT 100", expectedPageSize: 65, expectedResults: 100, mockInMemoryContainer, documentContainer);
+            await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 100 LIMIT 0", expectedPageSize: 65, expectedResults: 0, mockInMemoryContainer, documentContainer);
 
             // OFFSET/LIMIT without ORDER BY
-            await this.TestPageSizeAsync("SELECT c.pk FROM c OFFSET 10 LIMIT 100", 1000, mockInMemoryContainer, documentContainer);
-            await this.TestPageSizeAsync("SELECT c.pk FROM c OFFSET 0 LIMIT 100", 1000, mockInMemoryContainer, documentContainer);
-            await this.TestPageSizeAsync("SELECT c.pk FROM c OFFSET 100 LIMIT 0", 1000, mockInMemoryContainer, documentContainer);
+            await this.TestPageSizeAsync("SELECT c.pk FROM c OFFSET 10 LIMIT 100", expectedPageSize: 1000, expectedResults: 100, mockInMemoryContainer, documentContainer);
+            await this.TestPageSizeAsync("SELECT c.pk FROM c OFFSET 0 LIMIT 100", expectedPageSize: 1000, expectedResults: 100, mockInMemoryContainer, documentContainer);
+            await this.TestPageSizeAsync("SELECT c.pk FROM c OFFSET 100 LIMIT 0", expectedPageSize: 1000, expectedResults: 0, mockInMemoryContainer, documentContainer);
 
             // TOP with ORDER BY
-            await this.TestPageSizeAsync("SELECT TOP 5 c.pk FROM c ORDER BY c.pk", 5, mockInMemoryContainer, documentContainer);
-            await this.TestPageSizeAsync("SELECT TOP 100 c.pk FROM c ORDER BY c.pk", 10, mockInMemoryContainer, documentContainer);
-            await this.TestPageSizeAsync("SELECT TOP 5000 c.pk FROM c ORDER BY c.pk", 395, mockInMemoryContainer, documentContainer);
-            await this.TestPageSizeAsync("SELECT TOP 15000 c.pk FROM c ORDER BY c.pk", 1000, mockInMemoryContainer, documentContainer);
+            await this.TestPageSizeAsync("SELECT TOP 5 c.pk FROM c ORDER BY c.pk", expectedPageSize: 5, expectedResults: 5, mockInMemoryContainer, documentContainer);
+            await this.TestPageSizeAsync("SELECT TOP 100 c.pk FROM c ORDER BY c.pk", expectedPageSize: 65, expectedResults: 100, mockInMemoryContainer, documentContainer);
+            await this.TestPageSizeAsync("SELECT TOP 5000 c.pk FROM c ORDER BY c.pk", expectedPageSize: 1000, expectedResults: 1100, mockInMemoryContainer, documentContainer);
+            await this.TestPageSizeAsync("SELECT TOP 15000 c.pk FROM c ORDER BY c.pk", expectedPageSize: 1000, expectedResults: 1100, mockInMemoryContainer, documentContainer);
 
             // TOP without ORDER BY
-            await this.TestPageSizeAsync("SELECT TOP 5 c.pk FROM c", 1000, mockInMemoryContainer, documentContainer);
-            await this.TestPageSizeAsync("SELECT TOP 5000 c.pk FROM c", 1000, mockInMemoryContainer, documentContainer);
-            await this.TestPageSizeAsync("SELECT TOP 15000 c.pk FROM c", 1000, mockInMemoryContainer, documentContainer);
+            await this.TestPageSizeAsync("SELECT TOP 5 c.pk FROM c", expectedPageSize: 1000, expectedResults: 5, mockInMemoryContainer, documentContainer);
+            await this.TestPageSizeAsync("SELECT TOP 5000 c.pk FROM c", expectedPageSize: 1000, expectedResults: 1100, mockInMemoryContainer, documentContainer);
+            await this.TestPageSizeAsync("SELECT TOP 15000 c.pk FROM c", expectedPageSize: 1000, expectedResults: 1100, mockInMemoryContainer, documentContainer);
         }
 
-        private async Task TestPageSizeAsync(string query, int expectedPageSize, MockInMemoryContainer inMemoryContainer, DocumentContainer documentContainer)
+        private async Task TestPageSizeAsync(string query, int expectedPageSize, int expectedResults, MockInMemoryContainer inMemoryContainer, DocumentContainer documentContainer)
         {
             (CosmosQueryExecutionContextFactory.InputParameters inputParameters, CosmosQueryContextCore cosmosQueryContextCore) = CreateInputParamsAndQueryContext(
                 query,
                 partitionKeyDefinition,
                 null,
-                64,
                 new QueryRequestOptions());
 
             IQueryPipelineStage queryPipelineStage = CosmosQueryExecutionContextFactory.Create(
@@ -317,13 +317,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             }
 
             Assert.AreEqual(expected: expectedPageSize, actual: inMemoryContainer.PageSizeSpecified);
+            Assert.AreEqual(expected: expectedResults, actual: elements.Count);
         }
 
         private static Tuple<CosmosQueryExecutionContextFactory.InputParameters, CosmosQueryContextCore> CreateInputParamsAndQueryContext(
             string query,
             PartitionKeyDefinition partitionKeyDefinition,
             Cosmos.PartitionKey? partitionKeyValue,
-            int targetPartitions,
             QueryRequestOptions queryRequestOptions)
         {
             CosmosSerializerCore serializerCore = new();
@@ -348,8 +348,57 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             string databaseId = "db1234";
             string resourceLink = $"dbs/{databaseId}/colls";
+
+            const string suffix = "-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF";
+
+            List<PartitionKeyRange> partitionKeyRanges = new List<PartitionKeyRange>
+            {
+                new PartitionKeyRange() { MinInclusive = Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey, MaxExclusive = "1F" + suffix },
+                new PartitionKeyRange() { MinInclusive = "1F" + suffix, MaxExclusive = "3F" + suffix },
+                new PartitionKeyRange() { MinInclusive = "3F" + suffix, MaxExclusive = "5F" + suffix },
+                new PartitionKeyRange() { MinInclusive = "5F" + suffix, MaxExclusive = "7F" + suffix },
+                new PartitionKeyRange() { MinInclusive = "7F" + suffix, MaxExclusive = "9F" + suffix },
+                new PartitionKeyRange() { MinInclusive = "9F" + suffix, MaxExclusive = "BF" + suffix },
+                new PartitionKeyRange() { MinInclusive = "BF" + suffix, MaxExclusive = "DF" + suffix },
+                new PartitionKeyRange() { MinInclusive = "DF" + suffix, MaxExclusive = Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey },
+            };
+
+            Mock<CosmosQueryClient> mockClient = new Mock<CosmosQueryClient>();
+
+            mockClient.Setup(x => x.GetTargetPartitionKeyRangesAsync(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<IReadOnlyList<Documents.Routing.Range<string>>>(),
+                It.IsAny<bool>(),
+                It.IsAny<ITrace>()))
+                .Returns((string resourceLink, string collectionResourceId, IReadOnlyList<Documents.Routing.Range<string>> providedRanges, bool forceRefresh, ITrace trace) => Task.FromResult(partitionKeyRanges));
+
+            mockClient.Setup(x => x.TryGetPartitionedQueryExecutionInfoAsync(
+                It.IsAny<SqlQuerySpec>(),
+                It.IsAny<ResourceType>(),
+                It.IsAny<PartitionKeyDefinition>(),
+                It.IsAny<bool>(),
+                It.IsAny<bool>(),
+                It.IsAny<bool>(),
+                It.IsAny<bool>(),
+                It.IsAny<bool>(),
+                It.IsAny<bool>(),
+                It.IsAny<Cosmos.GeospatialType>(),
+                It.IsAny<CancellationToken>()))
+                .Returns((SqlQuerySpec sqlQuerySpec, ResourceType resourceType, PartitionKeyDefinition partitionKeyDefinition, bool requireFormattableOrderByQuery, bool isContinuationExpected, bool allowNonValueAggregateQuery, bool hasLogicalPartitionKey, bool allowDCount, bool useSystemPrefix, Cosmos.GeospatialType geospatialType, CancellationToken cancellationToken) =>
+                {
+                    CosmosSerializerCore serializerCore = new();
+                    using StreamReader streamReader = new(serializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, Documents.ResourceType.Document));
+                    string sqlQuerySpecJsonString = streamReader.ReadToEnd();
+
+                    TryCatch<PartitionedQueryExecutionInfo> queryPlan = OptimisticDirectExecutionQueryBaselineTests.TryGetPartitionedQueryExecutionInfo(sqlQuerySpecJsonString, partitionKeyDefinition);
+                    PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = queryPlan.Succeeded ? queryPlan.Result : throw queryPlan.Exception;
+                    return Task.FromResult(TryCatch<PartitionedQueryExecutionInfo>.FromResult(partitionedQueryExecutionInfo));
+                }
+                );
+
             CosmosQueryContextCore cosmosQueryContextCore = new CosmosQueryContextCore(
-                client: new TestCosmosQueryClient(targetPartitions),
+                client: mockClient.Object,
                 resourceTypeEnum: Documents.ResourceType.Document,
                 operationType: Documents.OperationType.Query,
                 resourceType: typeof(QueryResponseCore),
@@ -444,11 +493,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         internal static Task<DocumentContainer> CreateDocumentContainerAsync(
             IReadOnlyList<CosmosObject> documents,
-            int numPartitions = 3,
+            int numSplits = 3,
             FlakyDocumentContainer.FailureConfigs failureConfigs = null)
         {
             IMonadicDocumentContainer monadicDocumentContainer = CreateMonadicDocumentContainerAsync(failureConfigs);
-            return CreateDocumentContainerAsync(documents, monadicDocumentContainer, numPartitions);
+            return CreateDocumentContainerAsync(documents, monadicDocumentContainer, numSplits);
         }
 
         internal static IMonadicDocumentContainer CreateMonadicDocumentContainerAsync(FlakyDocumentContainer.FailureConfigs failureConfigs)
@@ -465,11 +514,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         internal static async Task<DocumentContainer> CreateDocumentContainerAsync(
             IReadOnlyList<CosmosObject> documents,
             IMonadicDocumentContainer monadicDocumentContainer,
-            int numPartitions)
+            int numSplits)
         {
             DocumentContainer documentContainer = new DocumentContainer(monadicDocumentContainer);
 
-            for (int i = 0; i < numPartitions; i++)
+            for (int i = 0; i < numSplits; i++)
             {
                 IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(
                     trace: NoOpTrace.Singleton,
@@ -578,6 +627,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         private class MockInMemoryContainer : IMonadicDocumentContainer
         {
             public int? PageSizeSpecified { get; private set; }
+            public IMonadicDocumentContainer MonadicDocumentContainer { get; }
 
             public MockInMemoryContainer(IMonadicDocumentContainer documentContainer)
             {
@@ -589,8 +639,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             {
                 this.PageSizeSpecified = null;
             }
-
-            public IMonadicDocumentContainer MonadicDocumentContainer { get; }
 
             public Task<TryCatch<ChangeFeedPage>> MonadicChangeFeedAsync(FeedRangeState<ChangeFeedState> feedRangeState, ChangeFeedPaginationOptions changeFeedPaginationOptions, ITrace trace, CancellationToken cancellationToken)
             {
