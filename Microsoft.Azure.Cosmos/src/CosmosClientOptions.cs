@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Security;
     using System.Security.Cryptography.X509Certificates;
     using Microsoft.Azure.Cosmos.Fluent;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Newtonsoft.Json;
@@ -604,6 +605,11 @@ namespace Microsoft.Azure.Cosmos
                 this.httpClientFactory = value;
             }
         }
+
+        /// <summary>
+        /// Availability Stragey Options to be used for periods of high latency
+        /// </summary>
+        public AvailabilityStrategyOptions AvailabilityStrategyOptions { get; set; }
 
         /// <summary>
         /// Enable partition key level failover

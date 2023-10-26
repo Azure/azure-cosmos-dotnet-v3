@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Telemetry;
 
@@ -87,6 +88,8 @@ namespace Microsoft.Azure.Cosmos
         internal virtual ConsistencyLevel? BaseConsistencyLevel { get; set; }
 
         internal bool DisablePointOperationDiagnostics { get; set; }
+
+        internal AvailabilityStrategyOptions AvailabilityStrategyOptions { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties

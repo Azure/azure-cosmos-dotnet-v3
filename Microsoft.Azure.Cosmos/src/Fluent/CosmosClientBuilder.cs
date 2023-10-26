@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
     using global::Azure;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 
@@ -654,6 +655,19 @@ namespace Microsoft.Azure.Cosmos.Fluent
         internal CosmosClientBuilder WithApiType(ApiType apiType)
         {
             this.clientOptions.ApiType = apiType;
+            return this;
+        }
+
+        /// <summary>
+        /// Availability Stragey Options to be used for periods of high latency
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="threshold"></param>
+        /// <param name="step"></param>
+        /// <returns>The CosmosClientBuilder</returns>
+        public CosmosClientBuilder WithAvailibilityStrategy(AvailabilityStrategyType type, TimeSpan threshold, TimeSpan? step)
+        {
+            this.clientOptions.AvailabilityStrategyOptions = new AvailabilityStrategyOptions(type, threshold, step);
             return this;
         }
 

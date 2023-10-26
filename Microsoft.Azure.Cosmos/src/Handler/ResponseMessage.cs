@@ -170,6 +170,11 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public virtual bool IsSuccessStatusCode => this.StatusCode.IsSuccess();
 
+        public bool IsSuccessOrTransientFailureStatusCode()
+        {
+            return this.StatusCode.IsSuccess() || this.IsTransientFailure(this.StatusCode);
+        }
+
         /// <summary>
         /// Checks if the current <see cref="ResponseMessage"/> has a successful status code, otherwise, throws.
         /// </summary>

@@ -230,6 +230,11 @@ namespace Microsoft.Azure.Cosmos.Routing
             return locationEndpointToRoute;
         }
 
+        public ReadOnlyCollection<string> GetAvailableReadLocations()
+        {
+            return this.locationInfo.AvailableReadLocations;
+        }
+
         /// <summary>
         /// Resolves request to service endpoint. 
         /// 1. If this is a write request

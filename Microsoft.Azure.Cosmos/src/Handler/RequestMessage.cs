@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.Globalization;
     using System.IO;
+    using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Threading;
@@ -62,6 +63,28 @@ namespace Microsoft.Azure.Cosmos
             this.Method = method;
             this.RequestUriString = requestUriString;
             this.Trace = trace ?? throw new ArgumentNullException(nameof(trace));
+        }
+
+        /// <summary>
+        /// Create a <see cref="RequestMessage"/>, used for Clone() method. 
+        /// </summary>
+        /// <param name="method">The http method</param>
+        /// <param name="requestUriString">The requested URI</param>
+        /// <param name="trace">The trace node to append traces to.</param>
+        /// <param name="headers">The headers to use.</param>
+        /// <param name="properties">The properties to use.</param>
+        private RequestMessage(
+            HttpMethod method,
+            string requestUriString,
+            ITrace trace,
+            Headers headers,
+            Dictionary<string, object> properties)
+        {
+            this.Method = method;
+            this.RequestUriString = requestUriString;
+            this.Trace = trace ?? throw new ArgumentNullException(nameof(trace));
+            this.headers = new Lazy<Headers>(() => headers);
+            this.properties = new Lazy<Dictionary<string, object>>(() => properties);
         }
 
         /// <summary>
@@ -285,6 +308,32 @@ namespace Microsoft.Azure.Cosmos
 
             this.OnBeforeRequestHandler(this.DocumentServiceRequest);
             return this.DocumentServiceRequest;
+        }
+
+        /// <summary>
+        /// Clone the request message
+        /// </summary>
+        /// <returns>a cloned copy of the RequestMessage</returns>
+        public RequestMessage Clone()
+        {
+            return new RequestMessage(
+                this.Method, 
+                this.RequestUriString, 
+                this.Trace, 
+                this.Headers.Clone(), 
+                this.Properties.ToDictionary(entry => entry.Key, entry => entry.Value))
+            {
+               Content = this.Content,
+               RequestOptions = this.RequestOptions.ShallowCopy(),
+               ResourceType = this.ResourceType,
+               OperationType = this.OperationType,
+               PartitionKeyRangeId = this.PartitionKeyRangeId,
+               UseGatewayMode = this.UseGatewayMode,
+               DocumentServiceRequest = this.DocumentServiceRequest.Clone(),
+               OnBeforeSendRequestActions = this.OnBeforeSendRequestActions,
+               ContainerId = this.ContainerId,
+               DatabaseId = this.DatabaseId,
+            };
         }
 
         private static Dictionary<string, object> CreateDictionary()

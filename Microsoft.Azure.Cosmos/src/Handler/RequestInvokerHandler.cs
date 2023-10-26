@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Diagnostics;
     using System.Globalization;
     using System.IO;
+    using System.Linq;
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
@@ -74,7 +75,119 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             await request.AssertPartitioningDetailsAsync(this.client, cancellationToken, request.Trace);
             this.FillMultiMasterContext(request);
+            if (this.ShouldSpeculate(request))
+            {
+                return await this.SendAsyncWithAvailabilityStrategy(request, cancellationToken);
+            }
             return await base.SendAsync(request, cancellationToken);
+        }
+
+        private bool ShouldSpeculate(RequestMessage request)
+        {
+            //No availability strategy options
+            if (request.RequestOptions.AvailabilityStrategyOptions == null && this.client.ClientOptions.AvailabilityStrategyOptions == null)
+            {
+                return false;
+            }
+
+            //Request level availability strategy options override client level
+            if (request.RequestOptions.AvailabilityStrategyOptions != null && !request.RequestOptions.AvailabilityStrategyOptions.Enabled)
+            {
+                return false;
+            }
+            
+            //Client level availability strategy options are not enabled + no request level availability strategy options
+            if (request.RequestOptions.AvailabilityStrategyOptions == null && !this.client.ClientOptions.AvailabilityStrategyOptions.Enabled)
+            {
+                return false;
+            }
+
+            //Only use availability strategy for document point operations
+            if (request.ResourceType != ResourceType.Document)
+            {
+                return false;
+            }
+
+            //check to see if it is a not a read-only request
+            if (!(request.OperationType != OperationType.Read && request.OperationType != OperationType.ReadFeed && request.OperationType != OperationType.Head 
+                && request.OperationType != OperationType.HeadFeed && request.OperationType != OperationType.Query && request.OperationType != OperationType.SqlQuery)
+                && request.OperationType != OperationType.QueryPlan)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private async Task<ResponseMessage> SendAsyncWithAvailabilityStrategy(RequestMessage request, CancellationToken cancellationToken)
+        {
+            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+            CancellationToken parallelRequestCancellationToken = cancellationTokenSource.Token;
+
+            List<RequestMessage> requestMessages = new List<RequestMessage> { request };
+            IReadOnlyCollection<string> availableRegions = this.client.DocumentClient.GlobalEndpointManager.AvailableReadLocations;
+            
+            for (int i = 1; i < availableRegions.Count; i++)
+            {
+                RequestMessage clonedRequest = request.Clone();
+                clonedRequest.RequestOptions.ExcludeRegions = request.RequestOptions.ExcludeRegions == null 
+                    ? availableRegions.Skip(i)
+                    : availableRegions.Skip(i).Except(request.RequestOptions.ExcludeRegions);
+
+                requestMessages.Add(clonedRequest);
+            }
+            List<Task<Task<ResponseMessage>>> tasks = this.RequestTaskBuilder(requestMessages, cancellationToken, parallelRequestCancellationToken, cancellationTokenSource)
+            Task<ResponseMessage>[] completedTasks = await Task.WhenAll(tasks.ToArray());
+            return this.ParseResults(completedTasks);
+        }
+
+        private List<Task<Task<ResponseMessage>>> RequestTaskBuilder(
+            List<RequestMessage> requests, 
+            CancellationToken cancellationToken, 
+            CancellationToken parallelRequestCancellationToken, 
+            CancellationTokenSource cancellationTokenSource)
+        {
+            TimeSpan threshold = requests[0].RequestOptions.AvailabilityStrategyOptions == null
+                ? requests[0].RequestOptions.AvailabilityStrategyOptions.Threshold 
+                : this.client.ClientOptions.AvailabilityStrategyOptions.Threshold;
+
+            int step = requests[0].RequestOptions.AvailabilityStrategyOptions == null
+                ? requests[0].RequestOptions.AvailabilityStrategyOptions.Step.Milliseconds
+                : this.client.ClientOptions.AvailabilityStrategyOptions.Step.Milliseconds;
+
+            List<Task<Task<ResponseMessage>>> tasks = new List<Task<Task<ResponseMessage>>>();
+            for (int i = 0; i < requests.Count; i++)
+            {
+                if (i == 0)
+                {
+                    tasks.Add(
+                        new Task<Task<ResponseMessage>>(async () =>
+                        {
+                            ResponseMessage response = await base.SendAsync(requests[i], parallelRequestCancellationToken);
+                            if (response.IsSuccessStatusCodeOrTransient)
+                            {
+                                cancellationTokenSource.Cancel();
+                            }
+                            return response;
+                        }));
+                }
+                else
+                {
+                    tasks.Add(
+                        Task.Delay(threshold + TimeSpan.FromMilliseconds((i - 1) * step), parallelRequestCancellationToken)
+                        .ContinueWith(async (t) =>
+                        {
+                            ResponseMessage response = await base.SendAsync(requests[i], parallelRequestCancellationToken);
+                            if (response.IsSuccessStatusCodeOrTransient)
+                            {
+                                cancellationTokenSource.Cancel();
+                            }
+                            return response;
+                        }, cancellationToken));
+                }
+            }
+
+            return tasks;
         }
 
         public virtual async Task<T> SendAsync<T>(
