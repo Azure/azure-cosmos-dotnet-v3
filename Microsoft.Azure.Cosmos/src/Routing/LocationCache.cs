@@ -297,7 +297,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             return this.GetApplicableEndpoints(
                 endpoints,
-                this.locationInfo.AvailableWriteEndpointByLocation,
+                isReadRequest ? this.locationInfo.AvailableReadEndpointByLocation : this.locationInfo.AvailableWriteEndpointByLocation,
                 this.defaultEndpoint,
                 request.RequestContext.ExcludeRegions);
         }
