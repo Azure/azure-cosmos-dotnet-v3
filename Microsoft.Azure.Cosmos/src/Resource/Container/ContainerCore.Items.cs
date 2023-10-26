@@ -359,28 +359,6 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(requestOptions));
             }
 
-            if (feedRangeInternal != null)
-            {
-                // The user has scoped down to a physical partition or logical partition.
-                // In either case let the query execute as a passthrough.
-                QueryIterator passthroughQueryIterator = QueryIterator.Create(
-                    containerCore: this,
-                    client: this.queryClient,
-                    clientContext: this.ClientContext,
-                    sqlQuerySpec: queryDefinition.ToSqlQuerySpec(),
-                    continuationToken: continuationToken,
-                    feedRangeInternal: feedRangeInternal,
-                    queryRequestOptions: requestOptions,
-                    resourceLink: this.LinkUri,
-                    isContinuationExpected: false,
-                    allowNonValueAggregateQuery: true,
-                    forcePassthrough: true, // Forcing a passthrough, since we don't want to get the query plan nor try to rewrite it.
-                    partitionedQueryExecutionInfo: null,
-                    resourceType: ResourceType.Document);
-
-                return new QueryPlanIsSupportedResult(passthroughQueryIterator);
-            }
-
             cancellationToken.ThrowIfCancellationRequested();
 
             Documents.PartitionKeyDefinition partitionKeyDefinition;
@@ -438,7 +416,6 @@ namespace Microsoft.Azure.Cosmos
                     resourceLink: this.LinkUri,
                     isContinuationExpected: false,
                     allowNonValueAggregateQuery: true,
-                    forcePassthrough: false,
                     partitionedQueryExecutionInfo: queryPlan,
                     resourceType: ResourceType.Document);
 
@@ -835,7 +812,6 @@ namespace Microsoft.Azure.Cosmos
                 resourceLink: this.LinkUri,
                 isContinuationExpected: isContinuationExcpected,
                 allowNonValueAggregateQuery: true,
-                forcePassthrough: false,
                 partitionedQueryExecutionInfo: null,
                 resourceType: ResourceType.Document);
         }
@@ -874,7 +850,6 @@ namespace Microsoft.Azure.Cosmos
                     resourceLink: resourceLink,
                     isContinuationExpected: false,
                     allowNonValueAggregateQuery: true,
-                    forcePassthrough: false,
                     partitionedQueryExecutionInfo: null,
                     resourceType: resourceType);
             }

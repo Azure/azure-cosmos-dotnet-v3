@@ -51,7 +51,7 @@
                     partitionKey: partitionKeyValue,
                     enableOptimisticDirectExecution: false,
                     pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
-                    expectedPipelineType: TestInjections.PipelineType.Passthrough),
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
                 
                 // Simple query (requiresDist = false)
                 CreateInput(
@@ -277,14 +277,14 @@
                     partitionKey: null,
                     enableOptimisticDirectExecution: true,
                     pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
-                    expectedPipelineType: TestInjections.PipelineType.Passthrough),
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
                 CreateInput(
                     query: $"SELECT VALUE r.numberField FROM r",
                     expectedResult: first7Integers,
                     partitionKey: null,
                     enableOptimisticDirectExecution: true,
                     pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
-                    expectedPipelineType: TestInjections.PipelineType.Passthrough),
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
 
                 // DISTINCT with ORDER BY (requiresDist = true)
                 CreateInput(
@@ -445,28 +445,28 @@
                     partitionKey: PartitionKey.None,
                     enableOptimisticDirectExecution: false,
                     pageSizeOptions: PageSizeOptions.PageSize100,
-                    expectedPipelineType: TestInjections.PipelineType.Passthrough),
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
                 CreateInput(
                     query: $"SELECT VALUE r.{NumberField} FROM r ORDER BY r.{NumberField} ASC",
                     expectedResult: first400Integers,
                     partitionKey: PartitionKey.None,
                     enableOptimisticDirectExecution: false,
                     pageSizeOptions: PageSizeOptions.PageSize100,
-                    expectedPipelineType: TestInjections.PipelineType.Passthrough),
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
                 CreateInput(
                     query: $"SELECT VALUE r.{NumberField} FROM r ORDER BY r.{NumberField} DESC",
                     expectedResult: first400IntegersReversed,
                     partitionKey: PartitionKey.None,
                     enableOptimisticDirectExecution: false,
                     pageSizeOptions: PageSizeOptions.PageSize100,
-                    expectedPipelineType: TestInjections.PipelineType.Passthrough),
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
                 CreateInput(
                     query: $"SELECT VALUE r.numberField FROM r WHERE r.{NumberField} BETWEEN 0 AND {NumberOfDocuments} OFFSET 1 LIMIT 1",
                     expectedResult: new List<int> { 1 },
                     partitionKey: PartitionKey.None,
                     enableOptimisticDirectExecution: false,
                     pageSizeOptions: PageSizeOptions.PageSize100,
-                    expectedPipelineType: TestInjections.PipelineType.Passthrough),
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
                 
                 //TODO: Change expectedPipelineType to OptimisticDirectExecution once emulator is updated to 0415
                 CreateInput(

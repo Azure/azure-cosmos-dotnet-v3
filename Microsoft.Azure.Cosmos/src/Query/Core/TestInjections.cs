@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     {
         public enum PipelineType
         {
-            Passthrough,
             Specialized,
             OptimisticDirectExecution,
         }
