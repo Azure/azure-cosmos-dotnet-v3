@@ -45,6 +45,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         private bool disposed;
         private string queryengineConfiguration;
 
+        // TODO: Move this into a config class of its own
         public bool ClientDisableOptimisticDirectExecution { get; private set; }
 
         public QueryPartitionProvider(IDictionary<string, object> queryengineConfiguration)
@@ -149,12 +150,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             if (queryengineConfiguration.TryGetValue("clientDisableOptimisticDirectExecution", out object queryConfigProperty))
             {
                 bool success = bool.TryParse(queryConfigProperty.ToString(), out bool clientDisableOptimisticDirectExecution);
-                Debug.Assert(success);
+                Debug.Assert(success, "QueryPartitionProvider.cs", $"Parsing must succeed. Value supplied '{queryConfigProperty}'");
 
                 return clientDisableOptimisticDirectExecution;
             }
 
-            return true;
+            return false;
         }
 
         internal PartitionedQueryExecutionInfo ConvertPartitionedQueryExecutionInfo(

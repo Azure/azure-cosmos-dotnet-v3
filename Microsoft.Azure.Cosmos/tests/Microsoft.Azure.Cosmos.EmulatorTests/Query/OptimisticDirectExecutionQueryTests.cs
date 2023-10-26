@@ -550,8 +550,9 @@
             CosmosClient client = new CosmosClient($"AccountEndpoint={endpoint};AccountKey={authKey}");
             AccountProperties properties = await client.ReadAccountAsync();
 
-            Assert.IsTrue(properties.QueryEngineConfigurationString.Contains(ClientDisableOptimisticDirectExecution));
-            Assert.IsFalse(Convert.ToBoolean(properties.QueryEngineConfiguration[ClientDisableOptimisticDirectExecution]));
+            bool success = bool.TryParse(properties.QueryEngineConfiguration[ClientDisableOptimisticDirectExecution].ToString(), out bool clientDisablOde);
+            Assert.IsTrue(success, $"Parsing must succeed. Value supplied '{ClientDisableOptimisticDirectExecution}'");
+            Assert.IsFalse(clientDisablOde);
         }
 
         private static async Task RunTests(IEnumerable<DirectExecutionTestCase> testCases, Container container)

@@ -221,9 +221,8 @@
                       inputParameters,
                       NoOpTrace.Singleton);
 
-            string expectedErrorMessage = "This query cannot be executed using the provided continuation token. " +
-                        "Please ensure that the EnableOptimisticDirectExecution flag is enabled in the QueryRequestOptions. " +
-                        "If after enabling this flag, you still see this error, contact the database administrator for assistance or retry the query without the continuation token.";
+            string expectedErrorMessage = "Execution of the query using supplied continuation token requires EnableOptimisticDirectExecution to be set in QueryRequestOptions. " +
+                "If the error persists after that, contact system administrator.";
 
             while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton))
             {
@@ -501,9 +500,8 @@
 
         private async Task ValidateErrorMessageWithModifiedOdeFlags(OptimisticDirectExecutionTestInput input, bool enableOde, bool clientDisableOde)
         {
-            string expectedErrorMessage = "This query cannot be executed using the provided continuation token. " +
-                        "Please ensure that the EnableOptimisticDirectExecution flag is enabled in the QueryRequestOptions. " +
-                        "If after enabling this flag, you still see this error, contact the database administrator for assistance or retry the query without the continuation token.";
+            string expectedErrorMessage = "Execution of the query using supplied continuation token requires EnableOptimisticDirectExecution to be set in QueryRequestOptions. " +
+                "If the error persists after that, contact system administrator.";
             try
             {
                 int result = await this.GetPipelineAndDrainAsync(
@@ -514,7 +512,8 @@
                                     requiresDist: false,
                                     enableOde,
                                     clientDisableOde);
-                Assert.Fail();
+
+                Assert.Fail("A MalformedContinuationTokenException was expected in this scenario");
             }
             catch (Exception ex)
             {
@@ -782,16 +781,10 @@
                 {"spatialMaxGeometryPointCount", 256},
                 {"sqlDisableQueryILOptimization", false},
                 {"sqlDisableFilterPlanOptimization", false},
-                {"clientDisableOptimisticDirectExecution", false}
+                {"clientDisableOptimisticDirectExecution", "false"}
             };
 
-            if (key != null && value != null)
-            {
-                if (queryEngineConfiguration.TryGetValue(key, out _))
-                {
-                    queryEngineConfiguration[key] = value;
-                }
-            }
+            queryEngineConfiguration[key] = value;
 
             return new QueryPartitionProvider(queryEngineConfiguration);
         }

@@ -769,9 +769,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 if (inputParameters.InitialUserContinuationToken != null
                           && OptimisticDirectExecutionContinuationToken.IsOptimisticDirectExecutionContinuationToken(inputParameters.InitialUserContinuationToken))
                 {
-                    string errorMessage = "This query cannot be executed using the provided continuation token. " +
-                        "Please ensure that the EnableOptimisticDirectExecution flag is enabled in the QueryRequestOptions. " +
-                        "If after enabling this flag, you still see this error, contact the database administrator for assistance or retry the query without the continuation token.";
+                    string errorMessage = "Execution of the query using supplied continuation token requires EnableOptimisticDirectExecution to be set in QueryRequestOptions. " +
+                        "If the error persists after that, contact system administrator.";
 
                     throw new MalformedContinuationTokenException($"{errorMessage} Continuation Token: {inputParameters.InitialUserContinuationToken}");
                 }
