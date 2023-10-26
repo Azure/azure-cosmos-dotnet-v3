@@ -843,10 +843,8 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 using (DocumentServiceRequest request = this.CreateRequest(isReadRequest: isReadRequest, isMasterResourceType: false))
                 {
                     request.RequestContext.ExcludeRegions = excludeRegions;
-                    
-                    ReadOnlyCollection<Uri> applicableEndpoints = isReadRequest ? 
-                        endpointManager.GetApplicableReadEndpoints(request) : 
-                        endpointManager.GetApplicableWriteEndpoints(request);
+
+                    ReadOnlyCollection<Uri> applicableEndpoints = endpointManager.GetApplicableEndpoints(request, isReadRequest); 
                     
                     Uri endpoint = endpointManager.ResolveServiceEndpoint(request);
                     ReadOnlyCollection<Uri> applicableRegions = this.GetApplicableRegions(isReadRequest, useMultipleWriteLocations, usesPreferredLocations, excludeRegions);

@@ -31,6 +31,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly TimeSpan unavailableLocationsExpirationTime;
         private readonly int connectionLimit;
         private readonly ConcurrentDictionary<Uri, LocationUnavailabilityInfo> locationUnavailablityInfoByEndpoint;
+        private readonly RegionNameMapper regionNameMapper;
 
         private DatabaseAccountLocationsInfo locationInfo;
         private DateTime lastCacheUpdateTimestamp;
@@ -54,6 +55,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.lastCacheUpdateTimestamp = DateTime.MinValue;
             this.enableMultipleWriteLocations = false;
             this.unavailableLocationsExpirationTime = TimeSpan.FromSeconds(LocationCache.DefaultUnavailableLocationsExpirationTimeInSeconds);
+            this.regionNameMapper = new RegionNameMapper();
 
 #if !(NETSTANDARD15 || NETSTANDARD16)
 #if NETSTANDARD20
@@ -276,8 +278,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
             else
             {
-                ReadOnlyCollection<Uri> endpoints = 
-                    request.OperationType.IsWriteOperation() ? this.GetApplicableWriteEndpoints(request) : this.GetApplicableReadEndpoints(request);
+                ReadOnlyCollection<Uri> endpoints = this.GetApplicableEndpoints(request, !request.OperationType.IsWriteOperation());
                 locationEndpointToRoute = endpoints[locationIndex % endpoints.Count];
             }
 
@@ -285,35 +286,19 @@ namespace Microsoft.Azure.Cosmos.Routing
             return locationEndpointToRoute;
         }
 
-        public ReadOnlyCollection<Uri> GetApplicableWriteEndpoints(DocumentServiceRequest request)
+        public ReadOnlyCollection<Uri> GetApplicableEndpoints(DocumentServiceRequest request, bool isReadRequest)
         {
-            ReadOnlyCollection<Uri> writeEndpoints = this.WriteEndpoints;
+            ReadOnlyCollection<Uri> endpoints = isReadRequest ? this.ReadEndpoints : this.WriteEndpoints;
 
             if (request.RequestContext.ExcludeRegions == null || request.RequestContext.ExcludeRegions.Count == 0)
             {
-                return writeEndpoints;
+                return endpoints;
             }
 
             return this.GetApplicableEndpoints(
-                writeEndpoints, 
-                this.locationInfo.AvailableWriteEndpointByLocation, 
-                this.defaultEndpoint, 
-                request.RequestContext.ExcludeRegions);
-        }
-
-        public ReadOnlyCollection<Uri> GetApplicableReadEndpoints(DocumentServiceRequest request)
-        {
-            ReadOnlyCollection<Uri> readEndpoints = this.ReadEndpoints;
-
-            if (request.RequestContext.ExcludeRegions == null || request.RequestContext.ExcludeRegions.Count == 0)
-            {
-                return readEndpoints;
-            }
-
-            return this.GetApplicableEndpoints(
-                readEndpoints, 
-                this.locationInfo.AvailableReadEndpointByLocation, 
-                this.defaultEndpoint, 
+                endpoints,
+                this.locationInfo.AvailableWriteEndpointByLocation,
+                this.defaultEndpoint,
                 request.RequestContext.ExcludeRegions);
         }
 
@@ -331,13 +316,12 @@ namespace Microsoft.Azure.Cosmos.Routing
             Uri fallbackEndpoint,
             IReadOnlyList<string> excludeRegions)
         {
-            RegionNameMapper mapper = new RegionNameMapper();
-            List<Uri> applicableEndpoints = new List<Uri>();
+            List<Uri> applicableEndpoints = new List<Uri>(endpoints.Count);
             HashSet<Uri> excludeUris = new HashSet<Uri>();
 
             foreach (string region in excludeRegions)
             {
-                string normalizedRegionName = mapper.GetCosmosDBRegionName(region);
+                string normalizedRegionName = this.regionNameMapper.GetCosmosDBRegionName(region);
                 if (regionNameByEndpoint.ContainsKey(normalizedRegionName))
                 {
                     excludeUris.Add(regionNameByEndpoint[normalizedRegionName]);
