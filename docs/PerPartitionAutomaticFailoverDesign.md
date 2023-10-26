@@ -9,7 +9,7 @@
 
 ## Scope
 
-The scope of the per partition automatic failover design document is applicable for the Cosmos .NET SDK configured for both `Gateway` and `Direct` mode.
+The scope of the per partition automatic failover design document is applicable for the Cosmos .NET SDK configured only for `Direct` mode at the moment.
 
 ## Background
 
