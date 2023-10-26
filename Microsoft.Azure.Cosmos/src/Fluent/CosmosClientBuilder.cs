@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
     using global::Azure;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.FaultInjection;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 
@@ -655,6 +656,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
         internal CosmosClientBuilder WithPartitionLevelFailoverEnabled()
         {
             this.clientOptions.EnablePartitionLevelFailover = true;
+            return this;
+        }
+
+        internal CosmosClientBuilder WithFaultInjection(FaultInjectorProvider faultInjectorProvider)
+        {
+            this.clientOptions.FaultIjectorProvidor = faultInjectorProvider;
             return this;
         }
 

@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.FaultInjection;
 
     internal class ClientContextCore : CosmosClientContext
     {
@@ -82,7 +83,8 @@ namespace Microsoft.Azure.Cosmos
                sessionContainer: clientOptions.SessionContainer,
                cosmosClientId: cosmosClient.Id,
                remoteCertificateValidationCallback: ClientContextCore.SslCustomValidationCallBack(clientOptions.ServerCertificateCustomValidationCallback),
-               cosmosClientTelemetryOptions: clientOptions.CosmosClientTelemetryOptions);
+               cosmosClientTelemetryOptions: clientOptions.CosmosClientTelemetryOptions,
+               chaosInterceptor: clientOptions.FaultIjectorProvidor.ChaosInterceptor);
 
             return ClientContextCore.Create(
                 cosmosClient,
