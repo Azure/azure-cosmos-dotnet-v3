@@ -528,9 +528,9 @@ namespace Microsoft.Azure.Cosmos.Linq
                 // so we check both attributes and apply the same precedence rules
                 // JsonConverterAttribute doesn't allow duplicates so it's safe to
                 // use FirstOrDefault()
-                CustomAttributeData converterAttribute = memberExpression.Member.CustomAttributes.Where(ca => ca.AttributeType == typeof(Newtonsoft.Json.JsonConverterAttribute)).FirstOrDefault();
-                converterAttribute ??= memberType.GetsCustomAttributes().Where(ca => ca.AttributeType == typeof(Newtonsoft.Json.JsonConverterAttribute)).FirstOrDefault();
-                converterAttribute ??= memberExpression.Member.CustomAttributes.Where(ca => ca.AttributeType == typeof(System.Text.Json.Serialization.JsonConverterAttribute)).FirstOrDefault();
+                CustomAttributeData converterAttribute = memberExpression.Member.CustomAttributes.FirstOrDefault(ca => ca.AttributeType == typeof(Newtonsoft.Json.JsonConverterAttribute));
+                converterAttribute ??= memberType.GetsCustomAttributes().FirstOrDefault(ca => ca.AttributeType == typeof(Newtonsoft.Json.JsonConverterAttribute));
+                converterAttribute ??= memberExpression.Member.CustomAttributes.FirstOrDefault(ca => ca.AttributeType == typeof(System.Text.Json.Serialization.JsonConverterAttribute));
 
                 if (converterAttribute != null)
                 {
