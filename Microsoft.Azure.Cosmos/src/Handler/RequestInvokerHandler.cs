@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                 requestMessages.Add(clonedRequest);
             }
-            List<Task<Task<ResponseMessage>>> tasks = this.RequestTaskBuilder(requestMessages, cancellationToken, parallelRequestCancellationToken, cancellationTokenSource)
+            List<Task<Task<ResponseMessage>>> tasks = this.RequestTaskBuilder(requestMessages, cancellationToken, parallelRequestCancellationToken, cancellationTokenSource);
             Task<ResponseMessage>[] completedTasks = await Task.WhenAll(tasks.ToArray());
             return this.ParseResults(completedTasks);
         }
