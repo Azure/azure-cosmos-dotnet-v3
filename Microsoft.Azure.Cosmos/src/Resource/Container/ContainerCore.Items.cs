@@ -16,8 +16,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
-    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Linq;
@@ -29,11 +27,8 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.ReadFeed;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
-    using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
     /// Used to perform operations on items. There are two different types of operations.
@@ -380,7 +375,8 @@ namespace Microsoft.Azure.Cosmos
                     isContinuationExpected: false,
                     allowNonValueAggregateQuery: true,
                     forcePassthrough: true, // Forcing a passthrough, since we don't want to get the query plan nor try to rewrite it.
-                    partitionedQueryExecutionInfo: null);
+                    partitionedQueryExecutionInfo: null,
+                    resourceType: ResourceType.Document);
 
                 return new QueryPlanIsSupportedResult(passthroughQueryIterator);
             }
@@ -443,7 +439,8 @@ namespace Microsoft.Azure.Cosmos
                     isContinuationExpected: false,
                     allowNonValueAggregateQuery: true,
                     forcePassthrough: false,
-                    partitionedQueryExecutionInfo: queryPlan);
+                    partitionedQueryExecutionInfo: queryPlan,
+                    resourceType: ResourceType.Document);
 
                 tryExecuteQueryResult = new QueryPlanIsSupportedResult(queryIterator);
             }
@@ -839,7 +836,8 @@ namespace Microsoft.Azure.Cosmos
                 isContinuationExpected: isContinuationExcpected,
                 allowNonValueAggregateQuery: true,
                 forcePassthrough: false,
-                partitionedQueryExecutionInfo: null);
+                partitionedQueryExecutionInfo: null,
+                resourceType: ResourceType.Document);
         }
 
         public override FeedIteratorInternal GetReadFeedIterator(
@@ -877,7 +875,8 @@ namespace Microsoft.Azure.Cosmos
                     isContinuationExpected: false,
                     allowNonValueAggregateQuery: true,
                     forcePassthrough: false,
-                    partitionedQueryExecutionInfo: null);
+                    partitionedQueryExecutionInfo: null,
+                    resourceType: resourceType);
             }
             else
             {
