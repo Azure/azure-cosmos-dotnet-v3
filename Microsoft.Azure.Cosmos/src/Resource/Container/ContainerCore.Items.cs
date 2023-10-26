@@ -375,7 +375,8 @@ namespace Microsoft.Azure.Cosmos
                     isContinuationExpected: false,
                     allowNonValueAggregateQuery: true,
                     forcePassthrough: true, // Forcing a passthrough, since we don't want to get the query plan nor try to rewrite it.
-                    partitionedQueryExecutionInfo: null);
+                    partitionedQueryExecutionInfo: null,
+                    resourceType: ResourceType.Document);
 
                 return new QueryPlanIsSupportedResult(passthroughQueryIterator);
             }
@@ -438,7 +439,8 @@ namespace Microsoft.Azure.Cosmos
                     isContinuationExpected: false,
                     allowNonValueAggregateQuery: true,
                     forcePassthrough: false,
-                    partitionedQueryExecutionInfo: queryPlan);
+                    partitionedQueryExecutionInfo: queryPlan,
+                    resourceType: ResourceType.Document);
 
                 tryExecuteQueryResult = new QueryPlanIsSupportedResult(queryIterator);
             }
@@ -837,7 +839,8 @@ namespace Microsoft.Azure.Cosmos
                 isContinuationExpected: isContinuationExcpected,
                 allowNonValueAggregateQuery: true,
                 forcePassthrough: false,
-                partitionedQueryExecutionInfo: null);
+                partitionedQueryExecutionInfo: null,
+                resourceType: ResourceType.Document);
         }
 
         public override FeedIteratorInternal GetReadFeedIterator(
@@ -875,7 +878,8 @@ namespace Microsoft.Azure.Cosmos
                     isContinuationExpected: false,
                     allowNonValueAggregateQuery: true,
                     forcePassthrough: false,
-                    partitionedQueryExecutionInfo: null);
+                    partitionedQueryExecutionInfo: null,
+                    resourceType: resourceType);
             }
             else
             {

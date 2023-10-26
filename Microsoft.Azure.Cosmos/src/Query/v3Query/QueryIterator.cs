@@ -67,7 +67,8 @@ namespace Microsoft.Azure.Cosmos.Query
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
             bool forcePassthrough,
-            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo)
+            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
+            Documents.ResourceType resourceType)
         {
             if (queryRequestOptions == null)
             {
@@ -77,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Query
             Guid correlatedActivityId = Guid.NewGuid();
             CosmosQueryContextCore cosmosQueryContext = new CosmosQueryContextCore(
                 client: client,
-                resourceTypeEnum: Documents.ResourceType.Document,
+                resourceTypeEnum: resourceType,
                 operationType: Documents.OperationType.Query,
                 resourceType: typeof(QueryResponseCore),
                 resourceLink: resourceLink,
@@ -90,7 +91,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 containerCore,
                 client,
                 correlatedActivityId,
-                queryRequestOptions);
+                queryRequestOptions,
+                resourceType: resourceType);
             DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
 
             CosmosElement requestContinuationToken;
