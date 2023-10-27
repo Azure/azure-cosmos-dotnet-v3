@@ -271,6 +271,9 @@
     <None Update="Contracts\DotNetSDKAPI.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="Contracts\DotNetSDKTelemetryAPI.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Routing\resources\BaselineTest.PartitionRoutingHelper.AddFormattedContinuationToHeader.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

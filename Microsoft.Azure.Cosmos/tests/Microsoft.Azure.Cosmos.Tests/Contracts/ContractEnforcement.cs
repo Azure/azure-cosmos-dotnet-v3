@@ -130,7 +130,7 @@
                 $"{nameof(fieldInfo.IsStatic)}:{(fieldInfo.IsStatic ? bool.TrueString : bool.FalseString)};";
         }
 
-        private static TypeTree BuildTypeTree(TypeTree root, Type[] types)
+        private static TypeTree BuildTypeTree(TypeTree root, Type[] types, BindingFlags bindingflags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)
         {
             IEnumerable<Type> subclassTypes = types.Where((type) => type.IsSubclassOf(root.Type)).OrderBy(o => o.FullName, invariantComparer);
             foreach (Type subclassType in subclassTypes)
@@ -139,7 +139,7 @@
             }
 
             IEnumerable<KeyValuePair<string, MemberInfo>> memberInfos =
-                root.Type.GetMembers(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)
+                root.Type.GetMembers(bindingflags)
                     .Select(memberInfo => new KeyValuePair<string, MemberInfo>($"{memberInfo}{string.Join("-", ContractEnforcement.RemoveDebugSpecificAttributes(memberInfo.CustomAttributes))}", memberInfo))
                     .OrderBy(o => o.Key, invariantComparer);
             foreach (KeyValuePair<string, MemberInfo> memberInfo in memberInfos)
@@ -203,6 +203,18 @@
             ContractEnforcement.ValidateJsonAreSame(localJson, baselineJson);
         }
 
+        public static void ValidateTelemetryContractContainBreakingChanges(
+          string dllName,
+          string baselinePath,
+          string breakingChangesPath)
+        {
+            string localTelemetryJson = GetCurrentTelemetryContract(dllName);
+            File.WriteAllText($"Contracts/{breakingChangesPath}", localTelemetryJson);
+
+            string telemetryBaselineJson = GetBaselineContract(baselinePath);
+            ContractEnforcement.ValidateJsonAreSame(localTelemetryJson, telemetryBaselineJson);
+        }
+
         public static void ValidatePreviewContractContainBreakingChanges(
             string dllName,
             string officialBaselinePath,
@@ -233,6 +245,22 @@
             Assembly assembly = ContractEnforcement.GetAssemblyLocally(dllName);
             Type[] exportedTypes = assembly.GetExportedTypes();
             ContractEnforcement.BuildTypeTree(locally, exportedTypes);
+
+            string localJson = JsonConvert.SerializeObject(locally, Formatting.Indented);
+            return localJson;
+        }
+
+        public static string GetCurrentTelemetryContract(string dllName)
+        {
+            TypeTree locally = new TypeTree(typeof(object));
+            Assembly assembly = ContractEnforcement.GetAssemblyLocally(dllName);
+            Type[] exportedTypes = assembly.GetTypes().Where(t => 
+                                                                t!= null && 
+                                                                t.Namespace != null && 
+                                                                t.Namespace.Contains("Microsoft.Azure.Cosmos.Telemetry.Models"))
+                                                       .ToArray();
+
+            ContractEnforcement.BuildTypeTree(locally, exportedTypes, BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
 
             string localJson = JsonConvert.SerializeObject(locally, Formatting.Indented);
             return localJson;
