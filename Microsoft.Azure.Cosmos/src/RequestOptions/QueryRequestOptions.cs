@@ -269,6 +269,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.PopulateIndexMetrics.HasValue)
             {
+                // TODO: Switch to V2
                 request.Headers.CosmosMessageHeaders.Add(HttpConstants.HttpHeaders.PopulateIndexMetrics, this.PopulateIndexMetrics.ToString());
             }
 

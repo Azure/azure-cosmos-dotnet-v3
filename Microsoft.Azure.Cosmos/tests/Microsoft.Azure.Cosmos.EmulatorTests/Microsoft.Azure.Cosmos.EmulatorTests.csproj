@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IsTestProject>true</IsTestProject>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
@@ -38,6 +38,10 @@
 	<None Remove="BaselineTest\TestBaseline\LinqGeneralBaselineTests.TestLambdaReuse.xml" />
     <None Remove="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestDateTimeJsonConverterTimezones.xml" />
     <None Remove="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestMemberAccessWithNullableTypes.xml" />
+    <None Remove="BaselineTest\TestBaseline\LinqTranslationWithCustomSerializerBaseline.TestMemberInitializerDataMember.xml" />
+    <None Remove="BaselineTest\TestBaseline\LinqTranslationWithCustomSerializerBaseline.TestMemberInitializerDotNet.xml" />
+    <None Remove="BaselineTest\TestBaseline\LinqTranslationWithCustomSerializerBaseline.TestMemberInitializerMultiSerializer.xml" />
+    <None Remove="BaselineTest\TestBaseline\LinqTranslationWithCustomSerializerBaseline.TestMemberInitializerNewtonsoft.xml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -202,6 +206,9 @@
     <Content Include="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestMemberAccessWithNullableTypes.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+	<Content Include="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestRegexMatchFunction.xml">
+		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	</Content>
     <Content Include="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestSelectTop.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -248,7 +255,19 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestMemberAccess.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="BaselineTest\TestBaseline\LinqTranslationWithCustomSerializerBaseline.TestMemberInitializerDataMember.xml">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="BaselineTest\TestBaseline\LinqTranslationWithCustomSerializerBaseline.TestMemberInitializerDotNet.xml">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="BaselineTest\TestBaseline\LinqTranslationWithCustomSerializerBaseline.TestMemberInitializerMultiSerializer.xml">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="BaselineTest\TestBaseline\LinqTranslationWithCustomSerializerBaseline.TestMemberInitializerNewtonsoft.xml">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Query\AggregateQueryTests.AggregateMixedTypes_baseline.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
