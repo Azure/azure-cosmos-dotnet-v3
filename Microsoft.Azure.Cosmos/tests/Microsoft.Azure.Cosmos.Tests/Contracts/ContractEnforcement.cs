@@ -252,12 +252,19 @@
 
         public static string GetCurrentTelemetryContract(string dllName)
         {
+            List<string> nonTelemetryModels = new List<string>
+            {
+                "AzureVMMetadata",
+                "Compute"
+            };
+
             TypeTree locally = new TypeTree(typeof(object));
             Assembly assembly = ContractEnforcement.GetAssemblyLocally(dllName);
             Type[] exportedTypes = assembly.GetTypes().Where(t => 
                                                                 t!= null && 
                                                                 t.Namespace != null && 
-                                                                t.Namespace.Contains("Microsoft.Azure.Cosmos.Telemetry.Models"))
+                                                                t.Namespace.Contains("Microsoft.Azure.Cosmos.Telemetry.Models") &&
+                                                                !nonTelemetryModels.Contains(t.Name))
                                                        .ToArray();
 
             ContractEnforcement.BuildTypeTree(locally, exportedTypes, BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
