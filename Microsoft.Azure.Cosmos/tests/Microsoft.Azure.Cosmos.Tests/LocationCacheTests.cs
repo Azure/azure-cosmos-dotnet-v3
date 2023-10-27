@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 useMultipleWriteLocations: useMultipleWriteLocations,
                 enableEndpointDiscovery: enableEndpointDiscovery,
                 isPreferredLocationsListEmpty: isPreferredLocationsListEmpty);
-            ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery, endpointManager);
+            ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery, partitionLevelFailoverEnabled: false, endpointManager);
 
             using (DocumentServiceRequest request = this.CreateRequest(isReadRequest: isReadRequest, isMasterResourceType: false))
             {
@@ -175,13 +175,15 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
         private ClientRetryPolicy CreateClientRetryPolicy(
             bool enableEndpointDiscovery,
+            bool partitionLevelFailoverEnabled,
             GlobalEndpointManager endpointManager)
         {
             return new ClientRetryPolicy(
                 endpointManager, 
                 this.partitionKeyRangeLocationCache, 
-                enableEndpointDiscovery, 
-                new RetryOptions());
+                new RetryOptions(),
+                enableEndpointDiscovery,
+                isPertitionLevelFailoverEnabled: partitionLevelFailoverEnabled);
         }
 
         [TestMethod]
@@ -203,7 +205,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 isPreferredLocationsListEmpty: isPreferredLocationsListEmpty);
 
             endpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(this.databaseAccount);
-            ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery, endpointManager);
+            ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery, partitionLevelFailoverEnabled: false, endpointManager);
 
             using (DocumentServiceRequest request = this.CreateRequest(isReadRequest: true, isMasterResourceType: false))
             {
@@ -281,7 +283,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 preferedRegionListOverride: preferredList);
 
             endpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(this.databaseAccount);
-            ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery, endpointManager);
+            ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery, partitionLevelFailoverEnabled: false, endpointManager);
 
             using (DocumentServiceRequest request = this.CreateRequest(isReadRequest: true, isMasterResourceType: false))
             {
@@ -357,7 +359,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 preferedRegionListOverride: preferredList);
 
             endpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(this.databaseAccount);
-            ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery, endpointManager);
+            ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery, partitionLevelFailoverEnabled: false, endpointManager);
 
             using (DocumentServiceRequest request = this.CreateRequest(isReadRequest: false, isMasterResourceType: false))
             {
@@ -429,7 +431,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 isPreferredLocationsListEmpty: false);
 
             endpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(this.databaseAccount);
-            ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery: true, endpointManager: endpointManager);
+            ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery: true, partitionLevelFailoverEnabled: false, endpointManager: endpointManager);
 
             using (DocumentServiceRequest request = this.CreateRequest(isReadRequest: false, isMasterResourceType: false))
             {
@@ -501,7 +503,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 isPreferredLocationsListEmpty: false);
 
             endpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(this.databaseAccount);
-            ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery: true, endpointManager: endpointManager);
+            ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery: true, partitionLevelFailoverEnabled: false, endpointManager: endpointManager);
 
             int expectedRetryCount = isReadRequest || enableMultipleWriteLocations ? 2 : 1;
 
@@ -606,7 +608,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 enforceSingleMasterSingleWriteLocation: true);
 
             endpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(this.databaseAccount);
-            ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery: true, endpointManager: endpointManager);
+            ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery: true, partitionLevelFailoverEnabled: false, endpointManager: endpointManager);
 
             using (DocumentServiceRequest request = this.CreateRequest(isReadRequest: isReadRequest, isMasterResourceType: false))
             {
@@ -676,22 +678,22 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         }
 
         [DataTestMethod]
-        [DataRow(true, false, false, false, false, DisplayName = "Read request - Single master - no preferred locations - should NOT retry")]
-        [DataRow(false, false, false, false, false, DisplayName = "Write request - Single master - no preferred locations - should NOT retry")]
-        [DataRow(true, true, false, false, false, DisplayName = "Read request - Multi master - no preferred locations - should NOT retry")]
-        [DataRow(false, true, false, false, false, DisplayName = "Write request - Multi master - no preferred locations - should NOT retry")]
-        [DataRow(true, false, true, true, false, DisplayName = "Read request - Single master - with preferred locations - should retry")]
-        [DataRow(false, false, true, false, false, DisplayName = "Write request - Single master - with preferred locations - should NOT retry")]
-        [DataRow(true, true, true, true, false, DisplayName = "Read request - Multi master - with preferred locations - should retry")]
-        [DataRow(false, true, true, true, false, DisplayName = "Write request - Multi master - with preferred locations - should retry")]
-        [DataRow(true, false, false, false, true, DisplayName = "Read request - Single master - no preferred locations - should NOT retry")]
-        [DataRow(false, false, false, false, true, DisplayName = "Write request - Single master - no preferred locations - should NOT retry")]
-        [DataRow(true, true, false, false, true, DisplayName = "Read request - Multi master - no preferred locations - should NOT retry")]
-        [DataRow(false, true, false, false, true, DisplayName = "Write request - Multi master - no preferred locations - should NOT retry")]
-        [DataRow(true, false, true, true, true, DisplayName = "Read request - Single master - with preferred locations - should retry")]
-        [DataRow(false, false, true, false, true, DisplayName = "Write request - Single master - with preferred locations - should NOT retry")]
-        [DataRow(true, true, true, true, true, DisplayName = "Read request - Multi master - with preferred locations - should retry")]
-        [DataRow(false, true, true, true, true, DisplayName = "Write request - Multi master - with preferred locations - should retry")]
+        [DataRow(true, false, false, false, false, DisplayName = "Read request - Single master - no preferred locations - without partition level failover - should NOT retry")]
+        [DataRow(false, false, false, false, false, DisplayName = "Write request - Single master - no preferred locations - without partition level failover - should NOT retry")]
+        [DataRow(true, true, false, false, false, DisplayName = "Read request - Multi master - no preferred locations - without partition level failover - should NOT retry")]
+        [DataRow(false, true, false, false, false, DisplayName = "Write request - Multi master - no preferred locations - without partition level failover - should NOT retry")]
+        [DataRow(true, false, true, true, false, DisplayName = "Read request - Single master - with preferred locations - without partition level failover - should retry")]
+        [DataRow(false, false, true, false, false, DisplayName = "Write request - Single master - with preferred locations - without partition level failover - should NOT retry")]
+        [DataRow(true, true, true, true, false, DisplayName = "Read request - Multi master - with preferred locations - without partition level failover - should retry")]
+        [DataRow(false, true, true, true, false, DisplayName = "Write request - Multi master - with preferred locations - without partition level failover - should retry")]
+        [DataRow(true, false, false, false, true, DisplayName = "Read request - Single master - no preferred locations - with partition level failover - should NOT retry")]
+        [DataRow(false, false, false, false, true, DisplayName = "Write request - Single master - no preferred locations - with partition level failover - should NOT retry")]
+        [DataRow(true, true, false, false, true, DisplayName = "Read request - Multi master - no preferred locations - with partition level failover - should NOT retry")]
+        [DataRow(false, true, false, false, true, DisplayName = "Write request - Multi master - no preferred locations - with partition level failover - should NOT retry")]
+        [DataRow(true, false, true, true, true, DisplayName = "Read request - Single master - with preferred locations - with partition level failover - should NOT retry")]
+        [DataRow(false, false, true, true, true, DisplayName = "Write request - Single master - with preferred locations - with partition level failover - should retry")]
+        [DataRow(true, true, true, true, true, DisplayName = "Read request - Multi master - with preferred locations - with partition level failover - should retry")]
+        [DataRow(false, true, true, true, true, DisplayName = "Write request - Multi master - with preferred locations - with partition level failover - should retry")]
         public async Task ClientRetryPolicy_ValidateRetryOnServiceUnavailable(
             bool isReadRequest,
             bool useMultipleWriteLocations,
@@ -715,7 +717,8 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 enforceSingleMasterSingleWriteLocation: true);
 
             endpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(this.databaseAccount);
-            ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery, endpointManager);
+
+            ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery, partitionLevelFailoverEnabled: enablePartitionLevelFailover, endpointManager);
 
             using (DocumentServiceRequest request = this.CreateRequest(isReadRequest: isReadRequest, isMasterResourceType: false))
             {
