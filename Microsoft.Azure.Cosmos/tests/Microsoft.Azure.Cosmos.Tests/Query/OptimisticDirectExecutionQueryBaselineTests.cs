@@ -623,7 +623,7 @@
             {
                 TryCatch<QueryPage> tryGetPage = queryPipelineStage.Current;
                 tryGetPage.ThrowIfFailed();
-                
+
                 if (clientDisableOde || !enableOptimisticDirectExecution)
                 {
                     Assert.AreNotEqual(TestInjections.PipelineType.OptimisticDirectExecution, queryRequestOptions.TestSettings.Stats.PipelineType.Value);
@@ -781,10 +781,10 @@
                 {"spatialMaxGeometryPointCount", 256},
                 {"sqlDisableQueryILOptimization", false},
                 {"sqlDisableFilterPlanOptimization", false},
-                {"clientDisableOptimisticDirectExecution", "false"}
+                {"clientDisableOptimisticDirectExecution", false}
             };
 
-            queryEngineConfiguration[key] = value;
+            queryEngineConfiguration[key] = bool.TryParse(value, out bool boolValue) ? boolValue : value;
 
             return new QueryPartitionProvider(queryEngineConfiguration);
         }

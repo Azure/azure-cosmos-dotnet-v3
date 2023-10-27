@@ -150,10 +150,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         {
             if (queryengineConfiguration.TryGetValue(CosmosQueryExecutionContextFactory.ClientDisableOptimisticDirectExecution, out object queryConfigProperty))
             {
-                bool success = bool.TryParse(queryConfigProperty.ToString(), out bool clientDisableOptimisticDirectExecution);
-                Debug.Assert(success, "QueryPartitionProvider.cs", $"Parsing must succeed. Value supplied '{queryConfigProperty}'");
-
-                return clientDisableOptimisticDirectExecution;
+                return (bool)queryConfigProperty;
             }
 
             return false;
