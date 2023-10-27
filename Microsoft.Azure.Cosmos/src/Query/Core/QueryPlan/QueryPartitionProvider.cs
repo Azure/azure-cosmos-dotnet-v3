@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
     using System.Text;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -62,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
             this.disposed = false;
             this.queryengineConfiguration = JsonConvert.SerializeObject(queryengineConfiguration);
-            this.ClientDisableOptimisticDirectExecution = this.GetClientDisableOptimisticDirectExecution(queryengineConfiguration);
+            this.ClientDisableOptimisticDirectExecution = GetClientDisableOptimisticDirectExecution((IReadOnlyDictionary<string, object>)queryengineConfiguration);
             this.serviceProvider = IntPtr.Zero;
 
             this.serviceProviderStateLock = new object();
@@ -95,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                     if (!string.Equals(this.queryengineConfiguration, newConfiguration))
                     {
                         this.queryengineConfiguration = newConfiguration;
-                        this.ClientDisableOptimisticDirectExecution = this.GetClientDisableOptimisticDirectExecution(queryengineConfiguration);
+                        this.ClientDisableOptimisticDirectExecution = GetClientDisableOptimisticDirectExecution((IReadOnlyDictionary<string, object>)queryengineConfiguration);
 
                         if (!this.disposed && this.serviceProvider != IntPtr.Zero)
                         {
@@ -145,9 +146,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             return TryCatch<PartitionedQueryExecutionInfo>.FromResult(queryInfo);
         }
 
-        private bool GetClientDisableOptimisticDirectExecution(IDictionary<string, object> queryengineConfiguration)
+        private static bool GetClientDisableOptimisticDirectExecution(IReadOnlyDictionary<string, object> queryengineConfiguration)
         {
-            if (queryengineConfiguration.TryGetValue("clientDisableOptimisticDirectExecution", out object queryConfigProperty))
+            if (queryengineConfiguration.TryGetValue(CosmosQueryExecutionContextFactory.ClientDisableOptimisticDirectExecution, out object queryConfigProperty))
             {
                 bool success = bool.TryParse(queryConfigProperty.ToString(), out bool clientDisableOptimisticDirectExecution);
                 Debug.Assert(success, "QueryPartitionProvider.cs", $"Parsing must succeed. Value supplied '{queryConfigProperty}'");

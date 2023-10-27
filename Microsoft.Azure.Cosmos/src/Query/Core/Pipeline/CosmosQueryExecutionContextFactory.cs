@@ -31,9 +31,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
     internal static class CosmosQueryExecutionContextFactory
     {
+        internal const string ClientDisableOptimisticDirectExecution = "clientDisableOptimisticDirectExecution";
         private const string InternalPartitionKeyDefinitionProperty = "x-ms-query-partitionkey-definition";
         private const string OptimisticDirectExecution = "OptimisticDirectExecution";
-        private const string ClientDisableOptimisticDirectExecution = "clientDisableOptimisticDirectExecution";
         private const string Passthrough = "Passthrough";
         private const string Specialized = "Specialized";
         private const int PageSizeFactorForTop = 5;
