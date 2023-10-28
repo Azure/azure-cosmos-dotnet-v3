@@ -550,7 +550,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             long optimalPageSize = inputParameters.MaxItemCount;
             if (queryInfo.HasOrderBy)
             {
-                int top = 0;
+                int top;
                 if (queryInfo.HasTop && (partitionedQueryExecutionInfo.QueryInfo.Top.Value > 0))
                 {
                     top = partitionedQueryExecutionInfo.QueryInfo.Top.Value;
@@ -558,6 +558,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 else if (queryInfo.HasLimit && (partitionedQueryExecutionInfo.QueryInfo.Limit.Value > 0))
                 {
                     top = (partitionedQueryExecutionInfo.QueryInfo.Offset ?? 0) + partitionedQueryExecutionInfo.QueryInfo.Limit.Value;
+                }
+                else
+                {
+                    top = 0;
                 }
 
                 if (top > 0)
