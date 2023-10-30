@@ -648,10 +648,10 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             }
 
             {
-                // Test that the force passthrough mechanism works
+                // Test that Ode flags this query as unsupported
                 ContainerInternal.TryExecuteQueryResult tryExecuteQueryResult = await conatinerCore.TryExecuteQueryAsync(
                     supportedQueryFeatures: QueryFeatures.None, // Not supporting any features
-                    queryDefinition: new QueryDefinition("SELECT VALUE [{\"item\": {\"sum\": SUM(c.blah), \"count\": COUNT(c.blah)}}] FROM c"), // Query has aggregates
+                    queryDefinition: new QueryDefinition("SELECT VALUE [{\"item\": {\"sum\": SUM(c.blah), \"count\": COUNT(c.blah)}}] FROM c"), // Query has composition of aggregates
                     requestOptions: new QueryRequestOptions()
                     {
                         MaxConcurrency = 1,
@@ -661,10 +661,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     continuationToken: null,
                     geospatialType: Cosmos.GeospatialType.Geography);
 
-                Assert.IsTrue(tryExecuteQueryResult is ContainerInternal.QueryPlanIsSupportedResult);
-                ContainerInternal.QueryPlanIsSupportedResult queryPlanIsSupportedResult = (ContainerInternal.QueryPlanIsSupportedResult)tryExecuteQueryResult;
-                ResponseMessage response = await queryPlanIsSupportedResult.QueryIterator.ReadNextAsync();
-                Assert.IsFalse(response.IsSuccessStatusCode, response.ErrorMessage);
+                Assert.IsTrue(tryExecuteQueryResult is ContainerInternal.FailedToGetQueryPlanResult);
             }
         }
 
@@ -740,8 +737,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             Assert.IsFalse(CustomTypeExtensions.ByPassQueryParsing());
         }
 
-        /*[TestMethod]
-        public async Task TestPassthroughQueryAsync()
+        [TestMethod]
+        public async Task TestOptimisticDirectExecutionQueryAsync()
         {
             string[] inputDocs = new[]
             {
@@ -759,7 +756,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             ConnectionModes connectionModes = ConnectionModes.Direct;
             await this.CreateIngestQueryDeleteAsync(
                 connectionModes,
-                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                CollectionTypes.MultiPartition,
                 inputDocs,
                 ImplementationAsync,
                 "/key");
@@ -767,13 +764,15 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             connectionModes = ConnectionModes.Gateway;
             await this.CreateIngestQueryDeleteAsync(
                 connectionModes,
-                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                CollectionTypes.MultiPartition,
                 inputDocs,
                 ImplementationAsync,
                 "/key");
 
             async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
             {
+                Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey(5);
+
                 foreach (int maxDegreeOfParallelism in new int[] { 1, 100 })
                 {
                     foreach (int maxItemCount in new int[] { 10, 100 })
@@ -788,227 +787,217 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
                         foreach (bool isGatewayQueryPlan in isGatewayQueryPlanOptions)
                         {
-                            foreach (Cosmos.PartitionKey? partitionKey in new Cosmos.PartitionKey?[] { new Cosmos.PartitionKey(5), default })
+                            QueryRequestOptions feedOptions = new QueryRequestOptions
                             {
-                                QueryRequestOptions feedOptions = new QueryRequestOptions
+                                MaxBufferedItemCount = 7000,
+                                MaxConcurrency = maxDegreeOfParallelism,
+                                MaxItemCount = maxItemCount,
+                                EnableOptimisticDirectExecution = true
+                            };
+
+                            async Task<List<CosmosElement>> AssertOptimisticDirectExecuteAsync(string query, Cosmos.PartitionKey? pk = default)
+                            {
+                                MockCosmosQueryClient cosmosQueryClientCore = new MockCosmosQueryClient(
+                                    containerCore.ClientContext,
+                                    containerCore,
+                                    isGatewayQueryPlan);
+
+                                ContainerInternal containerWithForcedPlan = new ContainerInlineCore(
+                                    containerCore.ClientContext,
+                                    (DatabaseCore)containerCore.Database,
+                                    containerCore.Id,
+                                    cosmosQueryClientCore);
+
+                                feedOptions.TestSettings = new TestInjections(
+                                    simulate429s: false,
+                                    simulateEmptyPages: false,
+                                    responseStats: new TestInjections.ResponseStats());
+                                feedOptions.PartitionKey = pk;
+
+                                List<CosmosElement> queryResults = await QueryTestsBase.RunQueryCombinationsAsync(
+                                    containerWithForcedPlan,
+                                    query,
+                                    feedOptions,
+                                    QueryDrainingMode.HoldState | QueryDrainingMode.CosmosElementContinuationToken);
+
+                                Assert.IsTrue(feedOptions.TestSettings.Stats.PipelineType.HasValue);
+                                Assert.AreEqual(TestInjections.PipelineType.OptimisticDirectExecution, feedOptions.TestSettings.Stats.PipelineType.Value);
+
+                                return queryResults;
+                            }
+
+                            async Task<List<CosmosElement>> AssertSpecializedAsync(string query, Cosmos.PartitionKey? pk = default)
+                            {
+                                MockCosmosQueryClient cosmosQueryClientCore = new MockCosmosQueryClient(
+                                    containerCore.ClientContext,
+                                    containerCore,
+                                    isGatewayQueryPlan);
+
+                                ContainerInternal containerWithForcedPlan = new ContainerInlineCore(
+                                    containerCore.ClientContext,
+                                    (DatabaseCore)containerCore.Database,
+                                    containerCore.Id,
+                                    cosmosQueryClientCore);
+
+                                feedOptions.TestSettings = new TestInjections(
+                                    simulate429s: false,
+                                    simulateEmptyPages: false,
+                                    responseStats: new TestInjections.ResponseStats());
+                                feedOptions.PartitionKey = pk;
+
+                                List<CosmosElement> queryResults = await QueryTestsBase.RunQueryCombinationsAsync(
+                                    containerWithForcedPlan,
+                                    query,
+                                    feedOptions,
+                                    QueryDrainingMode.HoldState | QueryDrainingMode.CosmosElementContinuationToken);
+
+                                Assert.IsTrue(feedOptions.TestSettings.Stats.PipelineType.HasValue);
+                                Assert.AreEqual(TestInjections.PipelineType.Specialized, feedOptions.TestSettings.Stats.PipelineType.Value);
+
+                                return queryResults;
+                            }
+
+                            await AssertOptimisticDirectExecuteAsync("SELECT * FROM c", partitionKey);
+
+                            await AssertSpecializedAsync("SELECT * FROM c ORDER BY c._ts");
+
+                            // Parallel and ORDER BY with partition key
+                            foreach (string query in new string[]
+                            {
+                                "SELECT * FROM c WHERE c.key = 5",
+                                "SELECT * FROM c WHERE c.key = 5 ORDER BY c._ts",
+                            })
+                            {
+                                List<CosmosElement> queryResults = await AssertOptimisticDirectExecuteAsync(query, partitionKey);
+                                Assert.AreEqual(
+                                    3,
+                                    queryResults.Count,
+                                    $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
+                            }
+
+                            // TOP 
+                            {
+                                // Top + Partition key => Ode
                                 {
-                                    MaxBufferedItemCount = 7000,
-                                    MaxConcurrency = maxDegreeOfParallelism,
-                                    MaxItemCount = maxItemCount,
-#if PREVIEW
-                                    EnableOptimisticDirectExecution = false
-#endif
-                                };
+                                    string query = "SELECT TOP 2 c.id FROM c WHERE c.key = 5";
+                                    List<CosmosElement> queryResults = await AssertOptimisticDirectExecuteAsync(query, partitionKey);
 
-                                async Task<List<CosmosElement>> AssertPassthroughAsync(string query, Cosmos.PartitionKey? pk = default)
-                                {
-                                    MockCosmosQueryClient cosmosQueryClientCore = new MockCosmosQueryClient(
-                                        containerCore.ClientContext,
-                                        containerCore,
-                                        isGatewayQueryPlan);
-
-                                    ContainerInternal containerWithForcedPlan = new ContainerInlineCore(
-                                        containerCore.ClientContext,
-                                        (DatabaseCore)containerCore.Database,
-                                        containerCore.Id,
-                                        cosmosQueryClientCore);
-
-                                    feedOptions.TestSettings = new TestInjections(
-                                        simulate429s: false,
-                                        simulateEmptyPages: false,
-                                        responseStats: new TestInjections.ResponseStats());
-                                    feedOptions.PartitionKey = pk;
-
-                                    List<CosmosElement> queryResults = await QueryTestsBase.RunQueryCombinationsAsync(
-                                        containerWithForcedPlan,
-                                        query,
-                                        feedOptions,
-                                        QueryDrainingMode.HoldState | QueryDrainingMode.CosmosElementContinuationToken);
-
-                                    Assert.IsTrue(feedOptions.TestSettings.Stats.PipelineType.HasValue);
-                                    Assert.AreEqual(TestInjections.PipelineType.Passthrough, feedOptions.TestSettings.Stats.PipelineType.Value);
-
-                                    if (pk.HasValue)
-                                    {
-                                        Assert.AreEqual(0, cosmosQueryClientCore.QueryPlanCalls);
-                                    }
-
-                                    return queryResults;
-                                }
-
-                                async Task<List<CosmosElement>> AssertSpecializedAsync(string query, Cosmos.PartitionKey? pk = default)
-                                {
-                                    MockCosmosQueryClient cosmosQueryClientCore = new MockCosmosQueryClient(
-                                        containerCore.ClientContext,
-                                        containerCore,
-                                        isGatewayQueryPlan);
-
-                                    ContainerInternal containerWithForcedPlan = new ContainerInlineCore(
-                                        containerCore.ClientContext,
-                                        (DatabaseCore)containerCore.Database,
-                                        containerCore.Id,
-                                        cosmosQueryClientCore);
-
-                                    feedOptions.TestSettings = new TestInjections(
-                                        simulate429s: false,
-                                        simulateEmptyPages: false,
-                                        responseStats: new TestInjections.ResponseStats());
-                                    feedOptions.PartitionKey = pk;
-
-                                    List<CosmosElement> queryResults = await QueryTestsBase.RunQueryCombinationsAsync(
-                                        containerWithForcedPlan,
-                                        query,
-                                        feedOptions,
-                                        QueryDrainingMode.HoldState | QueryDrainingMode.CosmosElementContinuationToken);
-
-                                    Assert.IsTrue(feedOptions.TestSettings.Stats.PipelineType.HasValue);
-                                    Assert.AreEqual(TestInjections.PipelineType.Specialized, feedOptions.TestSettings.Stats.PipelineType.Value);
-
-                                    return queryResults;
-                                }
-
-                                await AssertPassthroughAsync("SELECT * FROM c", partitionKey);
-
-                                await AssertSpecializedAsync("SELECT * FROM c ORDER BY c._ts");
-
-                                // Parallel and ORDER BY with partition key
-                                foreach (string query in new string[]
-                                {
-                                    "SELECT * FROM c WHERE c.key = 5",
-                                    "SELECT * FROM c WHERE c.key = 5 ORDER BY c._ts",
-                                })
-                                {
-                                    List<CosmosElement> queryResults = await AssertPassthroughAsync(query, partitionKey);
                                     Assert.AreEqual(
-                                        3,
+                                        2,
                                         queryResults.Count,
                                         $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
                                 }
 
-                                // TOP 
+                                // Top without partition => !Ode
                                 {
-                                    // Top + Partition key => passthrough
-                                    {
-                                        string query = "SELECT TOP 2 c.id FROM c WHERE c.key = 5";
-                                        List<CosmosElement> queryResults = await AssertPassthroughAsync(query, partitionKey);
+                                    string query = "SELECT TOP 2 c.id FROM c";
+                                    List<CosmosElement> queryResults = await AssertSpecializedAsync(query);
+                                }
+                            }
 
-                                        Assert.AreEqual(
-                                            2,
-                                            queryResults.Count,
-                                            $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
-                                    }
+                            // OFFSET / LIMIT 
+                            {
+                                // With Partition Key => Ode
+                                {
+                                    string query = "SELECT c.id FROM c WHERE c.key = 5 OFFSET 1 LIMIT 1";
+                                    List<CosmosElement> queryResults = await AssertOptimisticDirectExecuteAsync(query, partitionKey);
 
-                                    // Top without partition => !passthrough
-                                    {
-                                        string query = "SELECT TOP 2 c.id FROM c";
-                                        List<CosmosElement> queryResults = await AssertSpecializedAsync(query);
-                                    }
+                                    Assert.AreEqual(
+                                        1,
+                                        queryResults.Count,
+                                        $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
                                 }
 
-                                // OFFSET / LIMIT 
+                                // Without Partition Key => specialized
                                 {
-                                    // With Partition Key => passthrough
-                                    {
-                                        string query = "SELECT c.id FROM c WHERE c.key = 5 OFFSET 1 LIMIT 1";
-                                        List<CosmosElement> queryResults = await AssertPassthroughAsync(query, partitionKey);
+                                    string query = "SELECT c.id FROM c OFFSET 1 LIMIT 1";
+                                    List<CosmosElement> queryResults = await AssertSpecializedAsync(query);
+                                }
+                            }
 
-                                        Assert.AreEqual(
-                                            1,
-                                            queryResults.Count,
-                                            $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
-                                    }
+                            // AGGREGATES
+                            {
+                                // With partition key => Ode
+                                {
+                                    string query = "SELECT VALUE COUNT(1) FROM c WHERE c.key = 5";
+                                    List<CosmosElement> queryResults = await AssertOptimisticDirectExecuteAsync(query, partitionKey);
 
-                                    // Without Partition Key => specialized
-                                    {
-                                        string query = "SELECT c.id FROM c OFFSET 1 LIMIT 1";
-                                        List<CosmosElement> queryResults = await AssertSpecializedAsync(query);
-                                    }
+                                    Assert.AreEqual(
+                                        1,
+                                        queryResults.Count,
+                                        $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
+
+                                    Assert.AreEqual(
+                                        3,
+                                        Number64.ToLong((queryResults.First() as CosmosNumber64).GetValue()),
+                                        $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
                                 }
 
-                                // AGGREGATES
+                                // Without partitoin key => specialized
                                 {
-                                    // With partition key => specialized
-                                    {
-                                        string query = "SELECT VALUE COUNT(1) FROM c WHERE c.key = 5";
-                                        List<CosmosElement> queryResults = await AssertSpecializedAsync(query, partitionKey);
+                                    string query = "SELECT VALUE COUNT(1) FROM c";
+                                    List<CosmosElement> queryResults = await AssertSpecializedAsync(query);
+                                }
+                            }
 
-                                        Assert.AreEqual(
-                                            1,
-                                            queryResults.Count,
-                                            $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
+                            // GROUP BY 
+                            {
+                                // With Partition Key => Ode
+                                {
+                                    string query = "SELECT VALUE c.key FROM c WHERE c.key = 5 GROUP BY c.key";
+                                    List<CosmosElement> queryResults = await AssertOptimisticDirectExecuteAsync(query, partitionKey);
 
-                                        Assert.AreEqual(
-                                            3,
-                                            Number64.ToLong((queryResults.First() as CosmosNumber64).GetValue()),
-                                            $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
-                                    }
-
-                                    // Without partitoin key => specialized
-                                    {
-                                        string query = "SELECT VALUE COUNT(1) FROM c";
-                                        List<CosmosElement> queryResults = await AssertSpecializedAsync(query);
-                                    }
+                                    Assert.AreEqual(
+                                        1,
+                                        queryResults.Count,
+                                        $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
                                 }
 
-                                // GROUP BY 
+                                // Without Partition Key => Specialized
                                 {
-                                    // With Partition Key => Specialized
-                                    {
-                                        string query = "SELECT VALUE c.key FROM c WHERE c.key = 5 GROUP BY c.key";
-                                        List<CosmosElement> queryResults = await AssertSpecializedAsync(query, partitionKey);
+                                    string query = "SELECT VALUE c.key FROM c GROUP BY c.key";
+                                    List<CosmosElement> queryResults = await AssertSpecializedAsync(query);
+                                }
+                            }
 
-                                        Assert.AreEqual(
-                                            1,
-                                            queryResults.Count,
-                                            $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
-                                    }
+                            // DISTINCT 
+                            {
+                                // With Partition Key => Ode
+                                {
+                                    string query = "SELECT DISTINCT VALUE c.key FROM c WHERE c.key = 5";
+                                    List<CosmosElement> queryResults = await AssertOptimisticDirectExecuteAsync(query, partitionKey);
 
-                                    // Without Partition Key => Specialized
-                                    {
-                                        string query = "SELECT VALUE c.key FROM c GROUP BY c.key";
-                                        List<CosmosElement> queryResults = await AssertSpecializedAsync(query, partitionKey);
-                                    }
+                                    Assert.AreEqual(
+                                        1,
+                                        queryResults.Count,
+                                        $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
                                 }
 
-                                // DISTINCT 
+                                // Without Partition Key => specialized
                                 {
-                                    // With Partition Key => specialized
-                                    {
-                                        string query = "SELECT DISTINCT VALUE c.key FROM c WHERE c.key = 5";
-                                        List<CosmosElement> queryResults = await AssertSpecializedAsync(query, partitionKey);
-
-                                        Assert.AreEqual(
-                                            1,
-                                            queryResults.Count,
-                                            $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
-                                    }
-
-                                    // Without Partition Key => specialized
-                                    {
-                                        string query = "SELECT DISTINCT VALUE c.key FROM c";
-                                        List<CosmosElement> queryResults = await AssertSpecializedAsync(query, partitionKey);
-                                    }
+                                    string query = "SELECT DISTINCT VALUE c.key FROM c";
+                                    List<CosmosElement> queryResults = await AssertSpecializedAsync(query);
                                 }
+                            }
 
-                                // Syntax Error
+                            // Syntax Error
+                            {
+                                string query = "this is not a valid query";
+                                try
                                 {
-                                    string query = "this is not a valid query";
-                                    try
-                                    {
-                                        List<CosmosElement> queryResults = await AssertSpecializedAsync(query, partitionKey);
+                                    List<CosmosElement> queryResults = await AssertOptimisticDirectExecuteAsync(query, partitionKey);
 
-                                        Assert.Fail("Expected an exception.");
-                                    }
-                                    catch (CosmosException e) when (e.StatusCode == HttpStatusCode.BadRequest)
-                                    {
-                                    }
+                                    Assert.Fail("Expected an exception.");
+                                }
+                                catch (CosmosException e) when (e.StatusCode == HttpStatusCode.BadRequest)
+                                {
                                 }
                             }
                         }
                     }
                 }
             }
-        }*/
+        }
 
         [TestMethod]
         public async Task TestTracingAsync()
