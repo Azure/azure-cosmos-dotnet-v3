@@ -263,11 +263,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 && !partitionedQueryExecutionInfo.QueryInfo.HasLimit
                 && !partitionedQueryExecutionInfo.QueryInfo.HasOffset;
             bool streamingCrossContinuationQuery = !singleLogicalPartitionKeyQuery && clientStreamingQuery;
-
             bool createPassthroughQuery = streamingSinglePartitionQuery || streamingCrossContinuationQuery;
 
             TryCatch<IQueryPipelineStage> tryCreatePipelineStage;
-
             Documents.PartitionKeyRange targetRange = await TryGetTargetRangeOptimisticDirectExecutionAsync(
                 inputParameters, 
                 partitionedQueryExecutionInfo, 
