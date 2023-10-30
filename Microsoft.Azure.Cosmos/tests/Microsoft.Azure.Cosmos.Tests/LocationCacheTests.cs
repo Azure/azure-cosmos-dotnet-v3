@@ -841,7 +841,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 isExcludeRegionsTest: true);
 
                 endpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(this.databaseAccount);
-                ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery, endpointManager);
+                ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery: true, partitionLevelFailoverEnabled: false, endpointManager: endpointManager);
 
                 using (DocumentServiceRequest request = this.CreateRequest(isReadRequest: isReadRequest, isMasterResourceType: false))
                 {
