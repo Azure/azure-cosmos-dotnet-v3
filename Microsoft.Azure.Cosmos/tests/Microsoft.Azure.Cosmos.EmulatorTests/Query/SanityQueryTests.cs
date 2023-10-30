@@ -648,7 +648,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             }
 
             {
-                // Test that Ode marks this query as unsupported
+                // Test that this query is unsupported
                 ContainerInternal.TryExecuteQueryResult tryExecuteQueryResult = await conatinerCore.TryExecuteQueryAsync(
                     supportedQueryFeatures: QueryFeatures.None, // Not supporting any features
                     queryDefinition: new QueryDefinition("SELECT VALUE [{\"item\": {\"sum\": SUM(c.blah), \"count\": COUNT(c.blah)}}] FROM c"), // Query has composition of aggregates
