@@ -359,6 +359,27 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(requestOptions));
             }
 
+            if (feedRangeInternal != null)
+            {
+                // The user has scoped down to a physical partition or logical partition.
+                // In either case, Ode pipeline should be able to execute this query if Ode has been enabled by the user.
+                QueryIterator passthroughQueryIterator = QueryIterator.Create(
+                    containerCore: this,
+                    client: this.queryClient,
+                    clientContext: this.ClientContext,
+                    sqlQuerySpec: queryDefinition.ToSqlQuerySpec(),
+                    continuationToken: continuationToken,
+                    feedRangeInternal: feedRangeInternal,
+                    queryRequestOptions: requestOptions,
+                    resourceLink: this.LinkUri,
+                    isContinuationExpected: false,
+                    allowNonValueAggregateQuery: true,
+                    partitionedQueryExecutionInfo: null,
+                    resourceType: ResourceType.Document);
+
+                return new QueryPlanIsSupportedResult(passthroughQueryIterator);
+            }
+
             cancellationToken.ThrowIfCancellationRequested();
 
             Documents.PartitionKeyDefinition partitionKeyDefinition;
