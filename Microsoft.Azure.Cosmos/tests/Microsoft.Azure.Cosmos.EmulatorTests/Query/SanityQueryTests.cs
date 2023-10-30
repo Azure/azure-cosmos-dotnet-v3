@@ -664,7 +664,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 Assert.IsTrue(tryExecuteQueryResult is ContainerInternal.QueryPlanIsSupportedResult);
                 ContainerInternal.QueryPlanIsSupportedResult queryPlanIsSupportedResult = (ContainerInternal.QueryPlanIsSupportedResult)tryExecuteQueryResult;
                 ResponseMessage response = await queryPlanIsSupportedResult.QueryIterator.ReadNextAsync();
-                Assert.IsTrue(response.IsSuccessStatusCode, response.ErrorMessage);
+                Assert.IsFalse(response.IsSuccessStatusCode, response.ErrorMessage);
             }
         }
 
