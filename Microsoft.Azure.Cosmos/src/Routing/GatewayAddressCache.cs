@@ -50,6 +50,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly ICosmosAuthorizationTokenProvider tokenProvider;
         private readonly bool enableTcpConnectionEndpointRediscovery;
 
+        private readonly SemaphoreSlim semaphore;
         private readonly CosmosHttpClient httpClient;
         private readonly bool isReplicaAddressValidationEnabled;
 
@@ -91,6 +92,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 Constants.Properties.Protocol,
                 GatewayAddressCache.ProtocolString(this.protocol));
 
+            this.semaphore = new SemaphoreSlim(1, 1);
             this.openConnectionsHandler = openConnectionsHandler;
             this.isReplicaAddressValidationEnabled = replicaAddressValidationEnabled;
             this.validateUnknownReplicas = false;
@@ -312,23 +314,27 @@ namespace Microsoft.Azure.Cosmos.Routing
                     .ReplicaTransportAddressUris
                     .Any(x => x.ShouldRefreshHealthStatus()))
                 {
+                    bool slimAcquired = await this.semaphore.WaitAsync(0);
                     try
                     {
-                        this.serverPartitionAddressCache.Refresh(
-                            key: partitionKeyRangeIdentity,
-                            singleValueInitFunc: (currentCachedValue) => this.GetAddressesForRangeIdAsync(
-                                    request,
-                                    cachedAddresses: currentCachedValue,
-                                    partitionKeyRangeIdentity.CollectionRid,
-                                    partitionKeyRangeIdentity.PartitionKeyRangeId,
-                                    forceRefresh: true));
+                        if (slimAcquired)
+                        {
+                            this.Refresh(request, partitionKeyRangeIdentity);
+                        }
+                        else
+                        {
+                            DefaultTrace.TraceVerbose("Failed to refresh addresses in the background for the collection rid: {0}, partition key range id: {1}, because the semaphore is already acquired. '{2}'",
+                                partitionKeyRangeIdentity.CollectionRid,
+                                partitionKeyRangeIdentity.PartitionKeyRangeId,
+                                System.Diagnostics.Trace.CorrelationManager.ActivityId);
+                        }
                     }
-                    catch (Exception ex)
+                    finally
                     {
-                        DefaultTrace.TraceWarning("Failed to refresh addresses in the background for the collection rid: {0} with exception: {1}. '{2}'",
-                            partitionKeyRangeIdentity.CollectionRid,
-                            ex,
-                            System.Diagnostics.Trace.CorrelationManager.ActivityId);
+                        if (slimAcquired)
+                        {
+                            this.semaphore.Release();
+                        }
                     }
                 }
 
@@ -355,6 +361,37 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
 
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// Refreshes the async non blocking cache on-demand for the given <paramref name="partitionKeyRangeIdentity"/>
+        /// and caches the result for later usage.
+        /// </summary>
+        /// <param name="request">An instance of <see cref="DocumentServiceRequest"/>.</param>
+        /// <param name="partitionKeyRangeIdentity">An instance of the <see cref="PartitionKeyRangeIdentity"/>.</param>
+        private void Refresh(
+            DocumentServiceRequest request,
+            PartitionKeyRangeIdentity partitionKeyRangeIdentity)
+        {
+            try
+            {
+                Task unused = this.serverPartitionAddressCache.GetAsync(
+                    key: partitionKeyRangeIdentity,
+                    singleValueInitFunc: (currentCachedValue) => this.GetAddressesForRangeIdAsync(
+                            request,
+                            cachedAddresses: currentCachedValue,
+                            partitionKeyRangeIdentity.CollectionRid,
+                            partitionKeyRangeIdentity.PartitionKeyRangeId,
+                            forceRefresh: true),
+                    forceRefresh: (_) => true);
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceWarning("Failed to refresh addresses in the background for the collection rid: {0} with exception: {1}. '{2}'",
+                    partitionKeyRangeIdentity.CollectionRid,
+                    ex,
+                    System.Diagnostics.Trace.CorrelationManager.ActivityId);
             }
         }
 
