@@ -50,6 +50,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly ICosmosAuthorizationTokenProvider tokenProvider;
         private readonly bool enableTcpConnectionEndpointRediscovery;
 
+        private readonly SemaphoreSlim semaphore;
         private readonly CosmosHttpClient httpClient;
         private readonly bool isReplicaAddressValidationEnabled;
 
@@ -91,6 +92,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 Constants.Properties.Protocol,
                 GatewayAddressCache.ProtocolString(this.protocol));
 
+            this.semaphore = new SemaphoreSlim(1, 1);
             this.openConnectionsHandler = openConnectionsHandler;
             this.isReplicaAddressValidationEnabled = replicaAddressValidationEnabled;
             this.validateUnknownReplicas = false;
@@ -312,14 +314,28 @@ namespace Microsoft.Azure.Cosmos.Routing
                     .ReplicaTransportAddressUris
                     .Any(x => x.ShouldRefreshHealthStatus()))
                 {
-                    this.serverPartitionAddressCache.Refresh(
-                        key: partitionKeyRangeIdentity,
-                        singleValueInitFunc: (currentCachedValue) => this.GetAddressesForRangeIdAsync(
-                                request,
-                                cachedAddresses: currentCachedValue,
+                    bool slimAcquired = await this.semaphore.WaitAsync(0);
+                    try
+                    {
+                        if (slimAcquired)
+                        {
+                            this.Refresh(request, partitionKeyRangeIdentity);
+                        }
+                        else
+                        {
+                            DefaultTrace.TraceVerbose("Failed to refresh addresses in the background for the collection rid: {0}, partition key range id: {1}, because the semaphore is already acquired. '{2}'",
                                 partitionKeyRangeIdentity.CollectionRid,
                                 partitionKeyRangeIdentity.PartitionKeyRangeId,
-                                forceRefresh: true));
+                                System.Diagnostics.Trace.CorrelationManager.ActivityId);
+                        }
+                    }
+                    finally
+                    {
+                        if (slimAcquired)
+                        {
+                            this.semaphore.Release();
+                        }
+                    }
                 }
 
                 return addresses;
@@ -345,6 +361,37 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
 
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// Refreshes the async non blocking cache on-demand for the given <paramref name="partitionKeyRangeIdentity"/>
+        /// and caches the result for later usage.
+        /// </summary>
+        /// <param name="request">An instance of <see cref="DocumentServiceRequest"/>.</param>
+        /// <param name="partitionKeyRangeIdentity">An instance of the <see cref="PartitionKeyRangeIdentity"/>.</param>
+        private void Refresh(
+            DocumentServiceRequest request,
+            PartitionKeyRangeIdentity partitionKeyRangeIdentity)
+        {
+            try
+            {
+                Task unused = this.serverPartitionAddressCache.GetAsync(
+                    key: partitionKeyRangeIdentity,
+                    singleValueInitFunc: (currentCachedValue) => this.GetAddressesForRangeIdAsync(
+                            request,
+                            cachedAddresses: currentCachedValue,
+                            partitionKeyRangeIdentity.CollectionRid,
+                            partitionKeyRangeIdentity.PartitionKeyRangeId,
+                            forceRefresh: true),
+                    forceRefresh: (_) => true);
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceWarning("Failed to refresh addresses in the background for the collection rid: {0} with exception: {1}. '{2}'",
+                    partitionKeyRangeIdentity.CollectionRid,
+                    ex,
+                    System.Diagnostics.Trace.CorrelationManager.ActivityId);
             }
         }
 
@@ -626,9 +673,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         }
                     }
 
-                    this.ValidateReplicaAddresses(
-                        addresses: transportAddressUris);
-
+                    this.ValidateReplicaAddresses(transportAddressUris);
                     this.CaptureTransportAddressUriHealthStates(
                         partitionAddressInformation: mergedAddresses,
                         transportAddressUris: transportAddressUris);
@@ -1007,7 +1052,9 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// Returns a list of <see cref="TransportAddressUri"/> needed to validate their health status. Validating
         /// a uri is done by opening Rntbd connection to the backend replica, which is a costly operation by nature. Therefore
         /// vaidating both Unhealthy and Unknown replicas at the same time could impose a high CPU utilization. To avoid this
-        /// situation, the RntbdOpenConnectionHandler has good concurrency control mechanism to open the connections gracefully/>.
+        /// situation, the RntbdOpenConnectionHandler has good concurrency control mechanism to open the connections gracefully.
+        /// By default, this method only returns the Unhealthy replicas that requires to validate it's connectivity status. The
+        /// Unknown replicas are validated only when the CosmosClient is initiated using the CreateAndInitializaAsync() flow.
         /// </summary>
         /// <param name="transportAddresses">A read only list of <see cref="TransportAddressUri"/>s.</param>
         /// <returns>A list of <see cref="TransportAddressUri"/> that needs to validate their status.</returns>

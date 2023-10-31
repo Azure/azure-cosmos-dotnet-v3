@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
     /// <summary>
     /// This is a thread safe AsyncCache that allows refreshing values in the background.
@@ -177,35 +178,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Refreshes the async non blocking cache on-demand for the given <paramref name="key"/>
-        /// and caches the result for later usage.
-        /// </summary>
-        /// <param name="key">The requested key to be refreshed.</param>
-        /// <param name="singleValueInitFunc">A func delegate to be invoked at a later point of time.</param>
-        public void Refresh(
-           TKey key,
-           Func<TValue, Task<TValue>> singleValueInitFunc)
-        {
-            if (this.values.TryGetValue(key, out AsyncLazyWithRefreshTask<TValue> initialLazyValue))
-            {
-                Task backgroundRefreshTask = initialLazyValue.Refresh(
-                    createRefreshTask: singleValueInitFunc);
-
-                backgroundRefreshTask.ContinueWith(task =>
-                {
-                    if (task.IsFaulted)
-                    {
-                        this.RemoveKeyForBackgroundExceptions(
-                            key,
-                            initialLazyValue,
-                            task?.Exception?.InnerException,
-                            nameof(Refresh));
-                    }
-                });
-            }
-        }
-
-        /// <summary>
         /// Creates a background task to invoke the callback delegate and updates the cache with the value returned from the delegate.
         /// </summary>
         /// <param name="key">The requested key to be updated.</param>
@@ -280,8 +252,6 @@ namespace Microsoft.Azure.Cosmos
             private readonly Func<T, Task<T>> createValueFunc;
             private readonly object valueLock = new ();
             private readonly object removedFromCacheLock = new ();
-            private readonly object refreshLock = new ();
-            private Task<T> backgroundRefreshTask;
 
             private bool removedFromCache = false;
             private Task<T> value;
@@ -295,7 +265,6 @@ namespace Microsoft.Azure.Cosmos
                 this.createValueFunc = null;
                 this.value = Task.FromResult(value);
                 this.refreshInProgress = null;
-                this.backgroundRefreshTask = null;
             }
 
             public AsyncLazyWithRefreshTask(
@@ -306,7 +275,6 @@ namespace Microsoft.Azure.Cosmos
                 this.createValueFunc = taskFactory;
                 this.value = null;
                 this.refreshInProgress = null;
-                this.backgroundRefreshTask = null;
             }
 
             public bool IsValueCreated => this.value != null;
@@ -418,31 +386,6 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            public Task Refresh(
-                Func<T, Task<T>> createRefreshTask)
-            {
-                lock (this.refreshLock)
-                {
-                    if (AsyncLazyWithRefreshTask<T>.IsTaskRunning(this.backgroundRefreshTask))
-                    {
-                        DefaultTrace.TraceInformation(
-                            message: "Background refresh task is already in progress, skip creating a new one.");
-
-                        return Task.CompletedTask;
-                    }
-                    else
-                    {
-                        DefaultTrace.TraceInformation(
-                            message: "Started a new background refresh task.");
-
-                        this.backgroundRefreshTask = Task.Run(async () => await this.CreateAndWaitForBackgroundRefreshTaskAsync(
-                            createRefreshTask));
-
-                        return this.backgroundRefreshTask;
-                    }
-                }
-            }
-
             private static bool IsTaskRunning(Task t)
             {
                 if (t == null)
@@ -450,7 +393,7 @@ namespace Microsoft.Azure.Cosmos
                     return false;
                 }
 
-                return !t.IsCompleted && !t.IsFaulted;
+                return !t.IsCompleted;
             }
         }
 
