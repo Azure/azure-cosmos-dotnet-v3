@@ -15,11 +15,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Telemetry;
-    using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json.Linq;
     using Newtonsoft.Json;
-    using Documents.Rntbd;
     using System.Globalization;
     using System.Linq;
     using Cosmos.Util;
@@ -27,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
     public abstract class ClientTelemetryTestsBase : BaseCosmosClientHelper
     {
-        protected static readonly Uri telemetryServiceEndpoint = new Uri("http://dummy.telemetry.service/api/url");
+        protected static readonly Uri telemetryServiceEndpoint = new Uri(ConfigurationManager.GetEnvironmentVariable<string>("CLIENT_TELEMETRY_SERVICE_ENDPOINT", "https://dummy.url/api/clienttelemetry"));
 
         private static readonly List<string> preferredRegionList = new List<string>
         {
