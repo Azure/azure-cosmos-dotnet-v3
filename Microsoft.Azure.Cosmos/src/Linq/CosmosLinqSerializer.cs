@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             return right;
         }
 
-        public SqlScalarExpression VisitConstant(ConstantExpression inputExpression, TranslationContext context)
+        public SqlScalarExpression VisitConstant(ConstantExpression inputExpression, IDictionary<object, string> parameters)
         {
             if (inputExpression.Value == null)
             {
@@ -124,10 +124,10 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             if (inputExpression.Type.IsNullable())
             {
-                return this.VisitConstant(Expression.Constant(inputExpression.Value, Nullable.GetUnderlyingType(inputExpression.Type)), context);
+                return this.VisitConstant(Expression.Constant(inputExpression.Value, Nullable.GetUnderlyingType(inputExpression.Type)), parameters);
             }
 
-            if (context.Parameters != null && context.Parameters.TryGetValue(inputExpression.Value, out string paramName))
+            if (parameters != null && parameters.TryGetValue(inputExpression.Value, out string paramName))
             {
                 SqlParameter sqlParameter = SqlParameter.Create(paramName);
                 return SqlParameterRefScalarExpression.Create(sqlParameter);
@@ -171,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                 foreach (object item in enumerable)
                 {
-                    arrayItems.Add(this.VisitConstant(Expression.Constant(item), context));
+                    arrayItems.Add(this.VisitConstant(Expression.Constant(item), parameters));
                 }
 
                 return SqlArrayCreateScalarExpression.Create(arrayItems.ToImmutableArray());
