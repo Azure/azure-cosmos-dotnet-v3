@@ -4,7 +4,6 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Collections.ObjectModel;
@@ -13,12 +12,8 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
-    using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.Azure.Cosmos.SqlObjects;
-    using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
     using static Microsoft.Azure.Cosmos.Linq.FromParameterBindings;
 
     // ReSharper disable UnusedParameter.Local
@@ -169,7 +164,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
-        /// Get a paramter name to be binded to the a collection from the next lambda.
+        /// Get a parameter name to be binded to the collection from the next lambda.
         /// It's merely for readability purpose. If that is not possible, use a default 
         /// parameter name.
         /// </summary>
@@ -189,7 +184,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 }
             }
 
-            if (parameterName == null) parameterName = ExpressionToSql.DefaultParameterName;
+            parameterName ??= ExpressionToSql.DefaultParameterName;
 
             return parameterName;
         }
@@ -249,7 +244,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 case ExpressionType.Conditional:
                     return ExpressionToSql.VisitConditional((ConditionalExpression)inputExpression, context);
                 case ExpressionType.Constant:
-                    return ExpressionToSql.VisitConstant((ConstantExpression)inputExpression, context);
+                    return CosmosLinqSerializer.VisitConstant((ConstantExpression)inputExpression, context);
                 case ExpressionType.Parameter:
                     return ExpressionToSql.VisitParameter((ParameterExpression)inputExpression, context);
                 case ExpressionType.MemberAccess:
@@ -305,7 +300,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                         object[] argumentsExpressions = (object[])((ConstantExpression)methodCallExpression.Arguments[1]).Value;
                         foreach (object argument in argumentsExpressions)
                         {
-                            arguments.Add(ExpressionToSql.VisitConstant(Expression.Constant(argument), context));
+                            arguments.Add(CosmosLinqSerializer.VisitConstant(Expression.Constant(argument), context));
                         }
                     }
                     else
@@ -474,107 +469,14 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             if (left is SqlMemberIndexerScalarExpression && right is SqlLiteralScalarExpression literalScalarExpression)
             {
-                right = ExpressionToSql.ApplyCustomConverters(inputExpression.Left, literalScalarExpression);
+                right = CosmosLinqSerializer.ApplyCustomConverters(inputExpression.Left, literalScalarExpression);
             }
             else if (right is SqlMemberIndexerScalarExpression && left is SqlLiteralScalarExpression sqlLiteralScalarExpression)
             {
-                left = ExpressionToSql.ApplyCustomConverters(inputExpression.Right, sqlLiteralScalarExpression);
+                left = CosmosLinqSerializer.ApplyCustomConverters(inputExpression.Right, sqlLiteralScalarExpression);
             }
 
             return SqlBinaryScalarExpression.Create(op, left, right);
-        }
-
-        private static SqlScalarExpression ApplyCustomConverters(Expression left, SqlLiteralScalarExpression right)
-        {
-            MemberExpression memberExpression;
-            if (left is UnaryExpression unaryExpression)
-            {
-                memberExpression = unaryExpression.Operand as MemberExpression;
-            }
-            else
-            {
-                memberExpression = left as MemberExpression;
-            }
-
-            if (memberExpression != null)
-            {
-                Type memberType = memberExpression.Type;
-                if (memberType.IsNullable())
-                {
-                    memberType = memberType.NullableUnderlyingType();
-                }
-
-                // There are two ways to specify a custom attribute
-                // 1- by specifying the JsonConverterAttribute on a Class/Enum
-                //      [JsonConverter(typeof(StringEnumConverter))]
-                //      Enum MyEnum
-                //      {
-                //           ...
-                //      }
-                //
-                // 2- by specifying the JsonConverterAttribute on a property
-                //      class MyClass
-                //      {
-                //           [JsonConverter(typeof(StringEnumConverter))]
-                //           public MyEnum MyEnum;
-                //      }
-                //
-                // Newtonsoft gives high precedence to the attribute specified
-                // on a property over on a type (class/enum)
-                // so we check both attributes and apply the same precedence rules
-                // JsonConverterAttribute doesn't allow duplicates so it's safe to
-                // use FirstOrDefault()
-                CustomAttributeData memberAttribute = memberExpression.Member.CustomAttributes.Where(ca => ca.AttributeType == typeof(JsonConverterAttribute)).FirstOrDefault();
-                CustomAttributeData typeAttribute = memberType.GetsCustomAttributes().Where(ca => ca.AttributeType == typeof(JsonConverterAttribute)).FirstOrDefault();
-
-                CustomAttributeData converterAttribute = memberAttribute ?? typeAttribute;
-                if (converterAttribute != null)
-                {
-                    Debug.Assert(converterAttribute.ConstructorArguments.Count > 0);
-
-                    Type converterType = (Type)converterAttribute.ConstructorArguments[0].Value;
-
-                    object value = default(object);
-                    // Enum
-                    if (memberType.IsEnum())
-                    {
-                        Number64 number64 = ((SqlNumberLiteral)right.Literal).Value;
-                        if (number64.IsDouble)
-                        {
-                            value = Enum.ToObject(memberType, Number64.ToDouble(number64));
-                        }
-                        else
-                        {
-                            value = Enum.ToObject(memberType, Number64.ToLong(number64));
-                        }
-
-                    }
-                    // DateTime
-                    else if (memberType == typeof(DateTime))
-                    {
-                        SqlStringLiteral serializedDateTime = (SqlStringLiteral)right.Literal;
-                        value = DateTime.Parse(serializedDateTime.Value, provider: null, DateTimeStyles.RoundtripKind);
-                    }
-
-                    if (value != default(object))
-                    {
-                        string serializedValue;
-
-                        if (converterType.GetConstructor(Type.EmptyTypes) != null)
-                        {
-                            serializedValue = JsonConvert.SerializeObject(value, (JsonConverter)Activator.CreateInstance(converterType));
-                        }
-                        else
-                        {
-                            serializedValue = JsonConvert.SerializeObject(value);
-                        }
-
-                        return CosmosElement.Parse(serializedValue).Accept(CosmosElementToSqlScalarExpressionVisitor.Singleton);
-                    }
-                }
-            }
-
-            return right;
         }
 
         private static bool TryMatchStringCompareTo(MethodCallExpression left, ConstantExpression right, ExpressionType compareOperator)
@@ -706,71 +608,6 @@ namespace Microsoft.Azure.Cosmos.Linq
         private static SqlScalarExpression VisitTypeIs(TypeBinaryExpression inputExpression, TranslationContext context)
         {
             throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.ExpressionTypeIsNotSupported, inputExpression.NodeType));
-        }
-
-        public static SqlScalarExpression VisitConstant(ConstantExpression inputExpression, TranslationContext context)
-        {
-            if (inputExpression.Value == null)
-            {
-                return SqlLiteralScalarExpression.SqlNullLiteralScalarExpression;
-            }
-
-            if (inputExpression.Type.IsNullable())
-            {
-                return ExpressionToSql.VisitConstant(Expression.Constant(inputExpression.Value, Nullable.GetUnderlyingType(inputExpression.Type)), context);
-            }
-
-            if (context.parameters != null && context.parameters.TryGetValue(inputExpression.Value, out string paramName))
-            {
-                SqlParameter sqlParameter = SqlParameter.Create(paramName);
-                return SqlParameterRefScalarExpression.Create(sqlParameter);
-            }
-
-            Type constantType = inputExpression.Value.GetType();
-            if (constantType.IsValueType())
-            {
-                if (inputExpression.Value is bool boolValue)
-                {
-                    SqlBooleanLiteral literal = SqlBooleanLiteral.Create(boolValue);
-                    return SqlLiteralScalarExpression.Create(literal);
-                }
-
-                if (ExpressionToSql.TryGetSqlNumberLiteral(inputExpression.Value, out SqlNumberLiteral numberLiteral))
-                {
-                    return SqlLiteralScalarExpression.Create(numberLiteral);
-                }
-
-                if (inputExpression.Value is Guid guidValue)
-                {
-                    SqlStringLiteral literal = SqlStringLiteral.Create(guidValue.ToString());
-                    return SqlLiteralScalarExpression.Create(literal);
-                }
-            }
-
-            if (inputExpression.Value is string stringValue)
-            {
-                SqlStringLiteral literal = SqlStringLiteral.Create(stringValue);
-                return SqlLiteralScalarExpression.Create(literal);
-            }
-
-            if (typeof(Geometry).IsAssignableFrom(constantType))
-            {
-                return GeometrySqlExpressionFactory.Construct(inputExpression);
-            }
-
-            if (inputExpression.Value is IEnumerable enumerable)
-            {
-                List<SqlScalarExpression> arrayItems = new List<SqlScalarExpression>();
-
-                foreach (object item in enumerable)
-                {
-                    arrayItems.Add(ExpressionToSql.VisitConstant(Expression.Constant(item), context));
-                }
-
-                return SqlArrayCreateScalarExpression.Create(arrayItems.ToImmutableArray());
-            }
-
-            return CosmosElement.Parse(JsonConvert.SerializeObject(inputExpression.Value)).Accept(CosmosElementToSqlScalarExpressionVisitor.Singleton);
         }
 
         private static SqlScalarExpression VisitConditional(ConditionalExpression inputExpression, TranslationContext context)
@@ -2004,83 +1841,6 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         #endregion LINQ Specific Visitors
 
-        private sealed class CosmosElementToSqlScalarExpressionVisitor : ICosmosElementVisitor<SqlScalarExpression>
-        {
-            public static readonly CosmosElementToSqlScalarExpressionVisitor Singleton = new CosmosElementToSqlScalarExpressionVisitor();
-
-            private CosmosElementToSqlScalarExpressionVisitor()
-            {
-                // Private constructor, since this class is a singleton.
-            }
-
-            public SqlScalarExpression Visit(CosmosArray cosmosArray)
-            {
-                List<SqlScalarExpression> items = new List<SqlScalarExpression>();
-                foreach (CosmosElement item in cosmosArray)
-                {
-                    items.Add(item.Accept(this));
-                }
-
-                return SqlArrayCreateScalarExpression.Create(items.ToImmutableArray());
-            }
-
-            public SqlScalarExpression Visit(CosmosBinary cosmosBinary)
-            {
-                // Can not convert binary to scalar expression without knowing the API type.
-                throw new NotImplementedException();
-            }
-
-            public SqlScalarExpression Visit(CosmosBoolean cosmosBoolean)
-            {
-                return SqlLiteralScalarExpression.Create(SqlBooleanLiteral.Create(cosmosBoolean.Value));
-            }
-
-            public SqlScalarExpression Visit(CosmosGuid cosmosGuid)
-            {
-                // Can not convert guid to scalar expression without knowing the API type.
-                throw new NotImplementedException();
-            }
-
-            public SqlScalarExpression Visit(CosmosNull cosmosNull)
-            {
-                return SqlLiteralScalarExpression.Create(SqlNullLiteral.Create());
-            }
-
-            public SqlScalarExpression Visit(CosmosNumber cosmosNumber)
-            {
-                if (!(cosmosNumber is CosmosNumber64 cosmosNumber64))
-                {
-                    throw new ArgumentException($"Unknown {nameof(CosmosNumber)} type: {cosmosNumber.GetType()}.");
-                }
-
-                return SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(cosmosNumber64.GetValue()));
-            }
-
-            public SqlScalarExpression Visit(CosmosObject cosmosObject)
-            {
-                List<SqlObjectProperty> properties = new List<SqlObjectProperty>();
-                foreach (KeyValuePair<string, CosmosElement> prop in cosmosObject)
-                {
-                    SqlPropertyName name = SqlPropertyName.Create(prop.Key);
-                    CosmosElement value = prop.Value;
-                    SqlScalarExpression expression = value.Accept(this);
-                    SqlObjectProperty property = SqlObjectProperty.Create(name, expression);
-                    properties.Add(property);
-                }
-
-                return SqlObjectCreateScalarExpression.Create(properties.ToImmutableArray());
-            }
-
-            public SqlScalarExpression Visit(CosmosString cosmosString)
-            {
-                return SqlLiteralScalarExpression.Create(SqlStringLiteral.Create(cosmosString.Value));
-            }
-
-            public SqlScalarExpression Visit(CosmosUndefined cosmosUndefined)
-            {
-                return SqlLiteralScalarExpression.Create(SqlUndefinedLiteral.Create());
-            }
-        }
         private enum SubqueryKind
         {
             ArrayScalarExpression,

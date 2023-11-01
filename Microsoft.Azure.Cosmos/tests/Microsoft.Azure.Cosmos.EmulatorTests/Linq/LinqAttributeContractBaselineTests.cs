@@ -173,10 +173,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public void TestAttributePriority()
         {
-            Assert.AreEqual("jsonProperty", TypeSystem.GetMemberName(typeof(Datum).GetMember("JsonProperty").First()));
-            Assert.AreEqual("dataMember", TypeSystem.GetMemberName(typeof(Datum).GetMember("DataMember").First()));
-            Assert.AreEqual("Default", TypeSystem.GetMemberName(typeof(Datum).GetMember("Default").First()));
-            Assert.AreEqual("jsonPropertyHasHigherPriority", TypeSystem.GetMemberName(typeof(Datum).GetMember("JsonPropertyAndDataMember").First()));
+            Assert.AreEqual("jsonProperty", CosmosLinqSerializer.GetMemberName(typeof(Datum).GetMember("JsonProperty").First()));
+            Assert.AreEqual("dataMember", CosmosLinqSerializer.GetMemberName(typeof(Datum).GetMember("DataMember").First()));
+            Assert.AreEqual("Default", CosmosLinqSerializer.GetMemberName(typeof(Datum).GetMember("Default").First()));
+            Assert.AreEqual("jsonPropertyHasHigherPriority", CosmosLinqSerializer.GetMemberName(typeof(Datum).GetMember("JsonPropertyAndDataMember").First()));
         }
 
         /// <summary>
