@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 List<SqlScalarExpression> items = new List<SqlScalarExpression>();
                 foreach (object item in (IEnumerable)constantExpressionList.Value)
                 {
-                    items.Add(CosmosLinqSerializer.VisitConstant(Expression.Constant(item), context));
+                    items.Add(context.CosmosLinqSerializer.VisitConstant(Expression.Constant(item), context));
                 }
 
                 // if the items list empty, then just return false expression

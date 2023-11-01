@@ -19,6 +19,11 @@ namespace Microsoft.Azure.Cosmos.Linq
             return GetElementType(type, new HashSet<Type>());
         }
 
+        public static string GetMemberName(this MemberInfo memberInfo, ICosmosLinqSerializer serializer, CosmosLinqSerializerOptions linqSerializerOptions = null)
+        {
+            return serializer.GetMemberName(memberInfo, linqSerializerOptions);
+        }
+
         private static Type GetElementType(Type type, HashSet<Type> visitedSet)
         {
             Debug.Assert(type != null);

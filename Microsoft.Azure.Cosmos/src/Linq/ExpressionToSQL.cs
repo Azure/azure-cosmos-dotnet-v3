@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             TranslationContext context = new TranslationContext(linqSerializerOptions, parameters);
             ExpressionToSql.Translate(inputExpression, context); // ignore result here
 
-            QueryUnderConstruction query = context.currentQuery;
+            QueryUnderConstruction query = context.CurrentQuery;
             query = query.FlattenAsPossible();
             SqlQuery result = query.GetSqlQuery();
 
@@ -154,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 throw new DocumentQueryException(ClientResources.InputIsNotIDocumentQuery);
             }
 
-            context.currentQuery = new QueryUnderConstruction(context.GetGenFreshParameterFunc());
+            context.CurrentQuery = new QueryUnderConstruction(context.GetGenFreshParameterFunc());
             Type elemType = TypeSystem.GetElementType(inputExpression.Type);
             context.SetInputParameter(elemType, ParameterSubstitution.InputParameterName); // ignore result
 
@@ -244,7 +244,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 case ExpressionType.Conditional:
                     return ExpressionToSql.VisitConditional((ConditionalExpression)inputExpression, context);
                 case ExpressionType.Constant:
-                    return CosmosLinqSerializer.VisitConstant((ConstantExpression)inputExpression, context);
+                    return context.CosmosLinqSerializer.VisitConstant((ConstantExpression)inputExpression, context);
                 case ExpressionType.Parameter:
                     return ExpressionToSql.VisitParameter((ParameterExpression)inputExpression, context);
                 case ExpressionType.MemberAccess:
@@ -300,7 +300,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                         object[] argumentsExpressions = (object[])((ConstantExpression)methodCallExpression.Arguments[1]).Value;
                         foreach (object argument in argumentsExpressions)
                         {
-                            arguments.Add(CosmosLinqSerializer.VisitConstant(Expression.Constant(argument), context));
+                            arguments.Add(context.CosmosLinqSerializer.VisitConstant(Expression.Constant(argument), context));
                         }
                     }
                     else
@@ -469,11 +469,11 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             if (left is SqlMemberIndexerScalarExpression && right is SqlLiteralScalarExpression literalScalarExpression)
             {
-                right = CosmosLinqSerializer.ApplyCustomConverters(inputExpression.Left, literalScalarExpression);
+                right = context.CosmosLinqSerializer.ApplyCustomConverters(inputExpression.Left, literalScalarExpression);
             }
             else if (right is SqlMemberIndexerScalarExpression && left is SqlLiteralScalarExpression sqlLiteralScalarExpression)
             {
-                left = CosmosLinqSerializer.ApplyCustomConverters(inputExpression.Right, sqlLiteralScalarExpression);
+                left = context.CosmosLinqSerializer.ApplyCustomConverters(inputExpression.Right, sqlLiteralScalarExpression);
             }
 
             return SqlBinaryScalarExpression.Create(op, left, right);
@@ -635,7 +635,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         private static SqlScalarExpression VisitMemberAccess(MemberExpression inputExpression, TranslationContext context)
         {
             SqlScalarExpression memberExpression = ExpressionToSql.VisitScalarExpression(inputExpression.Expression, context);
-            string memberName = inputExpression.Member.GetMemberName(context.linqSerializerOptions);
+            string memberName = inputExpression.Member.GetMemberName(context.CosmosLinqSerializer, context.LinqSerializerOptions);
 
             // If the resulting memberName is null, then the indexer should be on the root of the object.
             if (memberName == null)
@@ -690,7 +690,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         private static SqlObjectProperty VisitMemberAssignment(MemberAssignment inputExpression, TranslationContext context)
         {
             SqlScalarExpression assign = ExpressionToSql.VisitScalarExpression(inputExpression.Expression, context);
-            string memberName = inputExpression.Member.GetMemberName(context?.linqSerializerOptions);
+            string memberName = inputExpression.Member.GetMemberName(context.CosmosLinqSerializer, context?.LinqSerializerOptions);
             SqlPropertyName propName = SqlPropertyName.Create(memberName);
             SqlObjectProperty prop = SqlObjectProperty.Create(propName, assign);
             return prop;
@@ -732,7 +732,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 MemberInfo member = members[i];
                 SqlScalarExpression value = ExpressionToSql.VisitScalarExpression(arg, context);
 
-                string memberName = member.GetMemberName(context?.linqSerializerOptions);
+                string memberName = member.GetMemberName(context.CosmosLinqSerializer, context?.LinqSerializerOptions);
                 SqlPropertyName propName = SqlPropertyName.Create(memberName);
                 SqlObjectProperty prop = SqlObjectProperty.Create(propName, value);
                 result[i] = prop;
@@ -852,14 +852,14 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <returns>The scalar Any collection</returns>
         private static Collection ConvertToScalarAnyCollection(TranslationContext context)
         {
-            SqlQuery query = context.currentQuery.FlattenAsPossible().GetSqlQuery();
+            SqlQuery query = context.CurrentQuery.FlattenAsPossible().GetSqlQuery();
             SqlCollection subqueryCollection = SqlSubqueryCollection.Create(query);
 
             ParameterExpression parameterExpression = context.GenFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
             Binding binding = new Binding(parameterExpression, subqueryCollection, isInCollection: false, isInputParameter: true);
 
-            context.currentQuery = new QueryUnderConstruction(context.GetGenFreshParameterFunc());
-            context.currentQuery.AddBinding(binding);
+            context.CurrentQuery = new QueryUnderConstruction(context.GetGenFreshParameterFunc());
+            context.CurrentQuery.AddBinding(binding);
 
             SqlSelectSpec selectSpec = SqlSelectValueSpec.Create(
                 SqlBinaryScalarExpression.Create(
@@ -869,7 +869,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                         SqlPropertyRefScalarExpression.Create(null, SqlIdentifier.Create(parameterExpression.Name))),
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(0))));
             SqlSelectClause selectClause = SqlSelectClause.Create(selectSpec);
-            context.currentQuery.AddSelectClause(selectClause);
+            context.CurrentQuery.AddSelectClause(selectClause);
 
             return new Collection(LinqMethods.Any);
         }
@@ -1010,106 +1010,106 @@ namespace Microsoft.Azure.Cosmos.Linq
             context.PushCollection(collection);
 
             Collection result = new Collection(inputExpression.Method.Name);
-            bool shouldBeOnNewQuery = context.currentQuery.ShouldBeOnNewQuery(inputExpression.Method.Name, inputExpression.Arguments.Count);
+            bool shouldBeOnNewQuery = context.CurrentQuery.ShouldBeOnNewQuery(inputExpression.Method.Name, inputExpression.Arguments.Count);
             context.PushSubqueryBinding(shouldBeOnNewQuery);
             switch (inputExpression.Method.Name)
             {
                 case LinqMethods.Select:
                     {
                         SqlSelectClause select = ExpressionToSql.VisitSelect(inputExpression.Arguments, context);
-                        context.currentQuery = context.currentQuery.AddSelectClause(select, context);
+                        context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
                         break;
                     }
                 case LinqMethods.Where:
                     {
                         SqlWhereClause where = ExpressionToSql.VisitWhere(inputExpression.Arguments, context);
-                        context.currentQuery = context.currentQuery.AddWhereClause(where, context);
+                        context.CurrentQuery = context.CurrentQuery.AddWhereClause(where, context);
                         break;
                     }
                 case LinqMethods.SelectMany:
                     {
-                        context.currentQuery = context.PackageCurrentQueryIfNeccessary();
+                        context.CurrentQuery = context.PackageCurrentQueryIfNeccessary();
                         result = ExpressionToSql.VisitSelectMany(inputExpression.Arguments, context);
                         break;
                     }
                 case LinqMethods.OrderBy:
                     {
                         SqlOrderByClause orderBy = ExpressionToSql.VisitOrderBy(inputExpression.Arguments, false, context);
-                        context.currentQuery = context.currentQuery.AddOrderByClause(orderBy, context);
+                        context.CurrentQuery = context.CurrentQuery.AddOrderByClause(orderBy, context);
                         break;
                     }
                 case LinqMethods.OrderByDescending:
                     {
                         SqlOrderByClause orderBy = ExpressionToSql.VisitOrderBy(inputExpression.Arguments, true, context);
-                        context.currentQuery = context.currentQuery.AddOrderByClause(orderBy, context);
+                        context.CurrentQuery = context.CurrentQuery.AddOrderByClause(orderBy, context);
                         break;
                     }
                 case LinqMethods.ThenBy:
                     {
                         SqlOrderByClause thenBy = ExpressionToSql.VisitOrderBy(inputExpression.Arguments, false, context);
-                        context.currentQuery = context.currentQuery.UpdateOrderByClause(thenBy, context);
+                        context.CurrentQuery = context.CurrentQuery.UpdateOrderByClause(thenBy, context);
                         break;
                     }
                 case LinqMethods.ThenByDescending:
                     {
                         SqlOrderByClause thenBy = ExpressionToSql.VisitOrderBy(inputExpression.Arguments, true, context);
-                        context.currentQuery = context.currentQuery.UpdateOrderByClause(thenBy, context);
+                        context.CurrentQuery = context.CurrentQuery.UpdateOrderByClause(thenBy, context);
                         break;
                     }
                 case LinqMethods.Skip:
                     {
                         SqlOffsetSpec offsetSpec = ExpressionToSql.VisitSkip(inputExpression.Arguments, context);
-                        context.currentQuery = context.currentQuery.AddOffsetSpec(offsetSpec, context);
+                        context.CurrentQuery = context.CurrentQuery.AddOffsetSpec(offsetSpec, context);
                         break;
                     }
                 case LinqMethods.Take:
                     {
-                        if (context.currentQuery.HasOffsetSpec())
+                        if (context.CurrentQuery.HasOffsetSpec())
                         {
                             SqlLimitSpec limitSpec = ExpressionToSql.VisitTakeLimit(inputExpression.Arguments, context);
-                            context.currentQuery = context.currentQuery.AddLimitSpec(limitSpec, context);
+                            context.CurrentQuery = context.CurrentQuery.AddLimitSpec(limitSpec, context);
                         }
                         else
                         {
                             SqlTopSpec topSpec = ExpressionToSql.VisitTakeTop(inputExpression.Arguments, context);
-                            context.currentQuery = context.currentQuery.AddTopSpec(topSpec);
+                            context.CurrentQuery = context.CurrentQuery.AddTopSpec(topSpec);
                         }
                         break;
                     }
                 case LinqMethods.Distinct:
                     {
                         SqlSelectClause select = ExpressionToSql.VisitDistinct(inputExpression.Arguments, context);
-                        context.currentQuery = context.currentQuery.AddSelectClause(select, context);
+                        context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
                         break;
                     }
                 case LinqMethods.Max:
                     {
                         SqlSelectClause select = ExpressionToSql.VisitAggregateFunction(inputExpression.Arguments, context, SqlFunctionCallScalarExpression.Names.Max);
-                        context.currentQuery = context.currentQuery.AddSelectClause(select, context);
+                        context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
                         break;
                     }
                 case LinqMethods.Min:
                     {
                         SqlSelectClause select = ExpressionToSql.VisitAggregateFunction(inputExpression.Arguments, context, SqlFunctionCallScalarExpression.Names.Min);
-                        context.currentQuery = context.currentQuery.AddSelectClause(select, context);
+                        context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
                         break;
                     }
                 case LinqMethods.Average:
                     {
                         SqlSelectClause select = ExpressionToSql.VisitAggregateFunction(inputExpression.Arguments, context, SqlFunctionCallScalarExpression.Names.Avg);
-                        context.currentQuery = context.currentQuery.AddSelectClause(select, context);
+                        context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
                         break;
                     }
                 case LinqMethods.Count:
                     {
                         SqlSelectClause select = ExpressionToSql.VisitCount(inputExpression.Arguments, context);
-                        context.currentQuery = context.currentQuery.AddSelectClause(select, context);
+                        context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
                         break;
                     }
                 case LinqMethods.Sum:
                     {
                         SqlSelectClause select = ExpressionToSql.VisitAggregateFunction(inputExpression.Arguments, context, SqlFunctionCallScalarExpression.Names.Sum);
-                        context.currentQuery = context.currentQuery.AddSelectClause(select, context);
+                        context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
                         break;
                     }
                 case LinqMethods.Any:
@@ -1119,7 +1119,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                         {
                             // Any is translated to an SELECT VALUE EXISTS() where Any operation itself is treated as a Where.
                             SqlWhereClause where = ExpressionToSql.VisitWhere(inputExpression.Arguments, context);
-                            context.currentQuery = context.currentQuery.AddWhereClause(where, context);
+                            context.CurrentQuery = context.CurrentQuery.AddWhereClause(where, context);
                         }
                         break;
                     }
@@ -1420,18 +1420,18 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             bool shouldBeOnNewQuery = context.CurrentSubqueryBinding.ShouldBeOnNewQuery;
 
-            QueryUnderConstruction queryBeforeVisit = context.currentQuery;
-            QueryUnderConstruction packagedQuery = new QueryUnderConstruction(context.GetGenFreshParameterFunc(), context.currentQuery);
-            packagedQuery.fromParameters.SetInputParameter(typeof(object), context.currentQuery.GetInputParameterInContext(shouldBeOnNewQuery).Name, context.InScope);
-            context.currentQuery = packagedQuery;
+            QueryUnderConstruction queryBeforeVisit = context.CurrentQuery;
+            QueryUnderConstruction packagedQuery = new QueryUnderConstruction(context.GetGenFreshParameterFunc(), context.CurrentQuery);
+            packagedQuery.fromParameters.SetInputParameter(typeof(object), context.CurrentQuery.GetInputParameterInContext(shouldBeOnNewQuery).Name, context.InScope);
+            context.CurrentQuery = packagedQuery;
 
             if (shouldBeOnNewQuery) context.CurrentSubqueryBinding.ShouldBeOnNewQuery = false;
 
             Collection collection = ExpressionToSql.VisitCollectionExpression(expression, parameters, context);
 
-            QueryUnderConstruction subquery = context.currentQuery.GetSubquery(queryBeforeVisit);
+            QueryUnderConstruction subquery = context.CurrentQuery.GetSubquery(queryBeforeVisit);
             context.CurrentSubqueryBinding.ShouldBeOnNewQuery = shouldBeOnNewQuery;
-            context.currentQuery = queryBeforeVisit;
+            context.CurrentQuery = queryBeforeVisit;
 
             SqlQuery sqlSubquery = subquery.FlattenAsPossible().GetSqlQuery();
             return sqlSubquery;
@@ -1502,7 +1502,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 SqlCollection subqueryCollection = SqlSubqueryCollection.Create(query);
                 ParameterExpression parameterExpression = context.GenFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
                 binding = new Binding(parameterExpression, subqueryCollection, isInCollection: false, isInputParameter: true);
-                context.currentQuery.fromParameters.Add(binding);
+                context.CurrentQuery.fromParameters.Add(binding);
             }
 
             return collection;
@@ -1739,7 +1739,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             if (arguments.Count == 2)
             {
                 SqlWhereClause whereClause = ExpressionToSql.VisitWhere(arguments, context);
-                context.currentQuery = context.currentQuery.AddWhereClause(whereClause, context);
+                context.CurrentQuery = context.CurrentQuery.AddWhereClause(whereClause, context);
             }
             else if (arguments.Count != 1)
             {

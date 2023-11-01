@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System;
     using System.Collections.Generic;
     using System.Linq.Expressions;
-    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using static Microsoft.Azure.Cosmos.Linq.ExpressionToSql;
     using static Microsoft.Azure.Cosmos.Linq.FromParameterBindings;
@@ -29,30 +28,39 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <summary>
         /// Query that is being assembled.
         /// </summary>
-        public QueryUnderConstruction currentQuery;
+        public QueryUnderConstruction CurrentQuery;
 
         /// <summary>
         /// Dictionary for parameter name and value
         /// </summary>
-        public IDictionary<object, string> parameters;
+        public IDictionary<object, string> Parameters;
+
+        /// <summary>
+        /// The LINQ serializer 
+        /// </summary>
+        public ICosmosLinqSerializer CosmosLinqSerializer;
 
         /// <summary>
         /// If the FROM clause uses a parameter name, it will be substituted for the parameter used in 
         /// the lambda expressions for the WHERE and SELECT clauses.
         /// </summary>
         private ParameterSubstitution substitutions;
+
         /// <summary>
         /// We are currently visiting these methods.
         /// </summary>
         private List<MethodCallExpression> methodStack;
+
         /// <summary>
         /// Stack of parameters from lambdas currently in scope.
         /// </summary>
         private List<ParameterExpression> lambdaParametersStack;
+
         /// <summary>
         /// Stack of collection-valued inputs.
         /// </summary>
         private List<Collection> collectionStack;
+
         /// <summary>
         /// The stack of subquery binding information.
         /// </summary>
@@ -65,14 +73,15 @@ namespace Microsoft.Azure.Cosmos.Linq
             this.methodStack = new List<MethodCallExpression>();
             this.lambdaParametersStack = new List<ParameterExpression>();
             this.collectionStack = new List<Collection>();
-            this.currentQuery = new QueryUnderConstruction(this.GetGenFreshParameterFunc());
+            this.CurrentQuery = new QueryUnderConstruction(this.GetGenFreshParameterFunc());
             this.subqueryBindingStack = new Stack<SubqueryBinding>();
-            this.linqSerializerOptions = linqSerializerOptions;
-            this.parameters = parameters;
+            this.LinqSerializerOptions = linqSerializerOptions;
+            this.Parameters = parameters;
             this.memberNames = new MemberNames(linqSerializerOptions);
+            this.CosmosLinqSerializer = new CosmosLinqSerializer();
         }
 
-        public CosmosLinqSerializerOptions linqSerializerOptions;
+        public CosmosLinqSerializerOptions LinqSerializerOptions;
 
         public Expression LookupSubstitution(ParameterExpression parameter)
         {
@@ -103,12 +112,12 @@ namespace Microsoft.Azure.Cosmos.Linq
             if (last.isOuter)
             {
                 // substitute
-                ParameterExpression inputParam = this.currentQuery.GetInputParameterInContext(shouldBeOnNewQuery);
+                ParameterExpression inputParam = this.CurrentQuery.GetInputParameterInContext(shouldBeOnNewQuery);
                 this.substitutions.AddSubstitution(parameter, inputParam);
             }
             else
             {
-                this.currentQuery.Bind(parameter, last.inner);
+                this.CurrentQuery.Bind(parameter, last.inner);
             }
         }
 
@@ -182,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="name">Suggested name for the input parameter.</param>
         public ParameterExpression SetInputParameter(Type type, string name)
         {
-            return this.currentQuery.fromParameters.SetInputParameter(type, name, this.InScope);
+            return this.CurrentQuery.fromParameters.SetInputParameter(type, name, this.InScope);
         }
 
         /// <summary>
@@ -193,7 +202,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         public void SetFromParameter(ParameterExpression parameter, SqlCollection collection)
         {
             Binding binding = new Binding(parameter, collection, isInCollection: true);
-            this.currentQuery.fromParameters.Add(binding);
+            this.CurrentQuery.fromParameters.Add(binding);
         }
 
         /// <summary>
@@ -258,11 +267,11 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             if (this.CurrentSubqueryBinding.ShouldBeOnNewQuery)
             {
-                this.currentQuery = this.currentQuery.PackageQuery(this.InScope);
+                this.CurrentQuery = this.CurrentQuery.PackageQuery(this.InScope);
                 this.CurrentSubqueryBinding.ShouldBeOnNewQuery = false;
             }
 
-            return this.currentQuery;
+            return this.CurrentQuery;
         }
 
         public class SubqueryBinding

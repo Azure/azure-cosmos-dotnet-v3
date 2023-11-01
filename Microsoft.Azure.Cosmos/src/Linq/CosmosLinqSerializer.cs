@@ -20,9 +20,9 @@ namespace Microsoft.Azure.Cosmos.Linq
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
-    internal static class CosmosLinqSerializer
+    internal class CosmosLinqSerializer : ICosmosLinqSerializer
     {
-        public static SqlScalarExpression ApplyCustomConverters(Expression left, SqlLiteralScalarExpression right)
+        public SqlScalarExpression ApplyCustomConverters(Expression left, SqlLiteralScalarExpression right)
         {
             MemberExpression memberExpression;
             if (left is UnaryExpression unaryExpression)
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             return right;
         }
 
-        public static SqlScalarExpression VisitConstant(ConstantExpression inputExpression, TranslationContext context)
+        public SqlScalarExpression VisitConstant(ConstantExpression inputExpression, TranslationContext context)
         {
             if (inputExpression.Value == null)
             {
@@ -124,10 +124,10 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             if (inputExpression.Type.IsNullable())
             {
-                return CosmosLinqSerializer.VisitConstant(Expression.Constant(inputExpression.Value, Nullable.GetUnderlyingType(inputExpression.Type)), context);
+                return this.VisitConstant(Expression.Constant(inputExpression.Value, Nullable.GetUnderlyingType(inputExpression.Type)), context);
             }
 
-            if (context.parameters != null && context.parameters.TryGetValue(inputExpression.Value, out string paramName))
+            if (context.Parameters != null && context.Parameters.TryGetValue(inputExpression.Value, out string paramName))
             {
                 SqlParameter sqlParameter = SqlParameter.Create(paramName);
                 return SqlParameterRefScalarExpression.Create(sqlParameter);
@@ -171,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                 foreach (object item in enumerable)
                 {
-                    arrayItems.Add(CosmosLinqSerializer.VisitConstant(Expression.Constant(item), context));
+                    arrayItems.Add(this.VisitConstant(Expression.Constant(item), context));
                 }
 
                 return SqlArrayCreateScalarExpression.Create(arrayItems.ToImmutableArray());
@@ -180,7 +180,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             return CosmosElement.Parse(JsonConvert.SerializeObject(inputExpression.Value)).Accept(CosmosElementToSqlScalarExpressionVisitor.Singleton);
         }
 
-        public static string GetMemberName(this MemberInfo memberInfo, CosmosLinqSerializerOptions linqSerializerOptions = null)
+        public string GetMemberName(MemberInfo memberInfo, CosmosLinqSerializerOptions linqSerializerOptions = null)
         {
             string memberName = null;
 
