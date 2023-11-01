@@ -27,9 +27,15 @@ namespace Microsoft.Azure.Cosmos.Linq
         public readonly ICosmosLinqSerializer CosmosLinqSerializer;
 
         /// <summary>
+        /// User-provided LINQ serializer options
+        /// </summary>
+        public CosmosLinqSerializerOptions LinqSerializerOptions;
+
+        /// <summary>
         /// Set of parameters in scope at any point; used to generate fresh parameter names if necessary.
         /// </summary>
         public HashSet<ParameterExpression> InScope;
+
         /// <summary>
         /// Query that is being assembled.
         /// </summary>
@@ -39,8 +45,6 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// Dictionary for parameter name and value
         /// </summary>
         public IDictionary<object, string> Parameters;
-
-        public CosmosLinqSerializerOptions LinqSerializerOptions;
 
         /// <summary>
         /// If the FROM clause uses a parameter name, it will be substituted for the parameter used in 
@@ -80,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             this.LinqSerializerOptions = linqSerializerOptions;
             this.Parameters = parameters;
             this.MemberNames = new MemberNames(linqSerializerOptions);
-            this.CosmosLinqSerializer = new CosmosLinqSerializer();
+            this.CosmosLinqSerializer = new DefaultCosmosLinqSerializer();
         }
 
         public Expression LookupSubstitution(ParameterExpression parameter)

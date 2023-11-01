@@ -9,14 +9,13 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using System.Collections.Generic;
     using System.Linq;
     using System.Runtime.Serialization;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
-    using VisualStudio.TestTools.UnitTesting;
+    using System.Threading.Tasks;
     using BaselineTest;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Documents;
-    using System.Threading.Tasks;
+    using Newtonsoft.Json;
+    using VisualStudio.TestTools.UnitTesting;
 
     /// <summary>
     /// Class that tests to see that we honor the attributes for members in a class / struct when we create LINQ queries.
@@ -173,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public void TestAttributePriority()
         {
-            ICosmosLinqSerializer cosmosLinqSerializer = new CosmosLinqSerializer();
+            ICosmosLinqSerializer cosmosLinqSerializer = new DefaultCosmosLinqSerializer();
             Assert.AreEqual("jsonProperty", cosmosLinqSerializer.GetMemberName(typeof(Datum).GetMember("JsonProperty").First()));
             Assert.AreEqual("dataMember", cosmosLinqSerializer.GetMemberName(typeof(Datum).GetMember("DataMember").First()));
             Assert.AreEqual("Default", cosmosLinqSerializer.GetMemberName(typeof(Datum).GetMember("Default").First()));

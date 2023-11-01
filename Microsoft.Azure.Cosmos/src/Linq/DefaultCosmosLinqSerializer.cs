@@ -14,13 +14,12 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Reflection;
     using System.Runtime.Serialization;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
-    internal class CosmosLinqSerializer : ICosmosLinqSerializer
+    internal class DefaultCosmosLinqSerializer : ICosmosLinqSerializer
     {
         public SqlScalarExpression ApplyCustomConverters(Expression left, SqlLiteralScalarExpression right)
         {
@@ -115,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             return right;
         }
 
-        public SqlScalarExpression VisitConstant(ConstantExpression inputExpression, IDictionary<object, string> parameters)
+        public SqlScalarExpression ConvertToSqlScalarExpression(ConstantExpression inputExpression, IDictionary<object, string> parameters)
         {
             if (inputExpression.Value == null)
             {
@@ -124,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             if (inputExpression.Type.IsNullable())
             {
-                return this.VisitConstant(Expression.Constant(inputExpression.Value, Nullable.GetUnderlyingType(inputExpression.Type)), parameters);
+                return this.ConvertToSqlScalarExpression(Expression.Constant(inputExpression.Value, Nullable.GetUnderlyingType(inputExpression.Type)), parameters);
             }
 
             if (parameters != null && parameters.TryGetValue(inputExpression.Value, out string paramName))
@@ -171,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                 foreach (object item in enumerable)
                 {
-                    arrayItems.Add(this.VisitConstant(Expression.Constant(item), parameters));
+                    arrayItems.Add(this.ConvertToSqlScalarExpression(Expression.Constant(item), parameters));
                 }
 
                 return SqlArrayCreateScalarExpression.Create(arrayItems.ToImmutableArray());
@@ -222,84 +221,6 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             return memberName;
-        }
-
-        private sealed class CosmosElementToSqlScalarExpressionVisitor : ICosmosElementVisitor<SqlScalarExpression>
-        {
-            public static readonly CosmosElementToSqlScalarExpressionVisitor Singleton = new CosmosElementToSqlScalarExpressionVisitor();
-
-            private CosmosElementToSqlScalarExpressionVisitor()
-            {
-                // Private constructor, since this class is a singleton.
-            }
-
-            public SqlScalarExpression Visit(CosmosArray cosmosArray)
-            {
-                List<SqlScalarExpression> items = new List<SqlScalarExpression>();
-                foreach (CosmosElement item in cosmosArray)
-                {
-                    items.Add(item.Accept(this));
-                }
-
-                return SqlArrayCreateScalarExpression.Create(items.ToImmutableArray());
-            }
-
-            public SqlScalarExpression Visit(CosmosBinary cosmosBinary)
-            {
-                // Can not convert binary to scalar expression without knowing the API type.
-                throw new NotImplementedException();
-            }
-
-            public SqlScalarExpression Visit(CosmosBoolean cosmosBoolean)
-            {
-                return SqlLiteralScalarExpression.Create(SqlBooleanLiteral.Create(cosmosBoolean.Value));
-            }
-
-            public SqlScalarExpression Visit(CosmosGuid cosmosGuid)
-            {
-                // Can not convert guid to scalar expression without knowing the API type.
-                throw new NotImplementedException();
-            }
-
-            public SqlScalarExpression Visit(CosmosNull cosmosNull)
-            {
-                return SqlLiteralScalarExpression.Create(SqlNullLiteral.Create());
-            }
-
-            public SqlScalarExpression Visit(CosmosNumber cosmosNumber)
-            {
-                if (!(cosmosNumber is CosmosNumber64 cosmosNumber64))
-                {
-                    throw new ArgumentException($"Unknown {nameof(CosmosNumber)} type: {cosmosNumber.GetType()}.");
-                }
-
-                return SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(cosmosNumber64.GetValue()));
-            }
-
-            public SqlScalarExpression Visit(CosmosObject cosmosObject)
-            {
-                List<SqlObjectProperty> properties = new List<SqlObjectProperty>();
-                foreach (KeyValuePair<string, CosmosElement> prop in cosmosObject)
-                {
-                    SqlPropertyName name = SqlPropertyName.Create(prop.Key);
-                    CosmosElement value = prop.Value;
-                    SqlScalarExpression expression = value.Accept(this);
-                    SqlObjectProperty property = SqlObjectProperty.Create(name, expression);
-                    properties.Add(property);
-                }
-
-                return SqlObjectCreateScalarExpression.Create(properties.ToImmutableArray());
-            }
-
-            public SqlScalarExpression Visit(CosmosString cosmosString)
-            {
-                return SqlLiteralScalarExpression.Create(SqlStringLiteral.Create(cosmosString.Value));
-            }
-
-            public SqlScalarExpression Visit(CosmosUndefined cosmosUndefined)
-            {
-                return SqlLiteralScalarExpression.Create(SqlUndefinedLiteral.Create());
-            }
         }
     }
 }

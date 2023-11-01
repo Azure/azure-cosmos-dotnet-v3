@@ -617,7 +617,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public static SqlScalarExpression VisitConstant(ConstantExpression inputExpression, TranslationContext context)
         {
-            return context.CosmosLinqSerializer.VisitConstant(inputExpression, context.Parameters);
+            return context.CosmosLinqSerializer.ConvertToSqlScalarExpression(inputExpression, context.Parameters);
         }
 
         private static SqlScalarExpression VisitConditional(ConditionalExpression inputExpression, TranslationContext context)
