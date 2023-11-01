@@ -19,7 +19,12 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <summary>
         /// Member names for special mapping cases
         /// </summary>
-        internal readonly MemberNames memberNames;
+        public readonly MemberNames MemberNames;
+
+        /// <summary>
+        /// The LINQ serializer 
+        /// </summary>
+        public readonly ICosmosLinqSerializer CosmosLinqSerializer;
 
         /// <summary>
         /// Set of parameters in scope at any point; used to generate fresh parameter names if necessary.
@@ -35,10 +40,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </summary>
         public IDictionary<object, string> Parameters;
 
-        /// <summary>
-        /// The LINQ serializer 
-        /// </summary>
-        public ICosmosLinqSerializer CosmosLinqSerializer;
+        public CosmosLinqSerializerOptions LinqSerializerOptions;
 
         /// <summary>
         /// If the FROM clause uses a parameter name, it will be substituted for the parameter used in 
@@ -77,11 +79,9 @@ namespace Microsoft.Azure.Cosmos.Linq
             this.subqueryBindingStack = new Stack<SubqueryBinding>();
             this.LinqSerializerOptions = linqSerializerOptions;
             this.Parameters = parameters;
-            this.memberNames = new MemberNames(linqSerializerOptions);
+            this.MemberNames = new MemberNames(linqSerializerOptions);
             this.CosmosLinqSerializer = new CosmosLinqSerializer();
         }
-
-        public CosmosLinqSerializerOptions LinqSerializerOptions;
 
         public Expression LookupSubstitution(ParameterExpression parameter)
         {

@@ -244,7 +244,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 case ExpressionType.Conditional:
                     return ExpressionToSql.VisitConditional((ConditionalExpression)inputExpression, context);
                 case ExpressionType.Constant:
-                    return context.CosmosLinqSerializer.VisitConstant((ConstantExpression)inputExpression, context);
+                    return ExpressionToSql.VisitConstant((ConstantExpression)inputExpression, context);
                 case ExpressionType.Parameter:
                     return ExpressionToSql.VisitParameter((ParameterExpression)inputExpression, context);
                 case ExpressionType.MemberAccess:
@@ -300,7 +300,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                         object[] argumentsExpressions = (object[])((ConstantExpression)methodCallExpression.Arguments[1]).Value;
                         foreach (object argument in argumentsExpressions)
                         {
-                            arguments.Add(context.CosmosLinqSerializer.VisitConstant(Expression.Constant(argument), context));
+                            arguments.Add(ExpressionToSql.VisitConstant(Expression.Constant(argument), context));
                         }
                     }
                     else
@@ -469,14 +469,19 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             if (left is SqlMemberIndexerScalarExpression && right is SqlLiteralScalarExpression literalScalarExpression)
             {
-                right = context.CosmosLinqSerializer.ApplyCustomConverters(inputExpression.Left, literalScalarExpression);
+                right = ExpressionToSql.ApplyCustomConverters(inputExpression.Left, literalScalarExpression, context);
             }
             else if (right is SqlMemberIndexerScalarExpression && left is SqlLiteralScalarExpression sqlLiteralScalarExpression)
             {
-                left = context.CosmosLinqSerializer.ApplyCustomConverters(inputExpression.Right, sqlLiteralScalarExpression);
+                left = ExpressionToSql.ApplyCustomConverters(inputExpression.Right, sqlLiteralScalarExpression, context);
             }
 
             return SqlBinaryScalarExpression.Create(op, left, right);
+        }
+
+        private static SqlScalarExpression ApplyCustomConverters(Expression left, SqlLiteralScalarExpression right, TranslationContext context)
+        {
+            return context.CosmosLinqSerializer.ApplyCustomConverters(left, right);
         }
 
         private static bool TryMatchStringCompareTo(MethodCallExpression left, ConstantExpression right, ExpressionType compareOperator)
@@ -610,6 +615,11 @@ namespace Microsoft.Azure.Cosmos.Linq
             throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.ExpressionTypeIsNotSupported, inputExpression.NodeType));
         }
 
+        public static SqlScalarExpression VisitConstant(ConstantExpression inputExpression, TranslationContext context)
+        {
+            return context.CosmosLinqSerializer.VisitConstant(inputExpression, context);
+        }
+
         private static SqlScalarExpression VisitConditional(ConditionalExpression inputExpression, TranslationContext context)
         {
             SqlScalarExpression conditionExpression = ExpressionToSql.VisitScalarExpression(inputExpression.Test, context);
@@ -646,7 +656,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             // if expression is nullable
             if (inputExpression.Expression.Type.IsNullable())
             {
-                MemberNames memberNames = context.memberNames;
+                MemberNames memberNames = context.MemberNames;
 
                 // ignore .Value 
                 if (memberName == memberNames.Value)
