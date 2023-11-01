@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
     /// <summary>
     /// This is a thread safe AsyncCache that allows refreshing values in the background.
@@ -175,6 +174,37 @@ namespace Microsoft.Azure.Cosmos
         public bool TryRemove(TKey key)
         {
             return this.values.TryRemove(key, out _);
+        }
+
+        /// <summary>
+        /// Refreshes the async non blocking cache on-demand for the given <paramref name="key"/>
+        /// and caches the result for later usage.
+        /// </summary>
+        /// <param name="key">The requested key to be refreshed.</param>
+        /// <param name="singleValueInitFunc">A func delegate to be invoked at a later point of time.</param>
+        public void Refresh(
+           TKey key,
+           Func<TValue, Task<TValue>> singleValueInitFunc)
+        {
+            if (this.values.TryGetValue(key, out AsyncLazyWithRefreshTask<TValue> initialLazyValue))
+            {
+                Task backgroundRefreshTask = this.GetAsync(
+                        key: key,
+                        singleValueInitFunc: singleValueInitFunc,
+                        forceRefresh: (_) => true);
+
+                Task continuationTask = backgroundRefreshTask.ContinueWith(task =>
+                {
+                    if (task.IsFaulted)
+                    {
+                        this.RemoveKeyForBackgroundExceptions(
+                            key,
+                            initialLazyValue,
+                            task?.Exception?.InnerException,
+                            nameof(Refresh));
+                    }
+                });
+            }
         }
 
         /// <summary>

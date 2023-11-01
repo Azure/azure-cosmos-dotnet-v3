@@ -319,7 +319,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                     {
                         if (slimAcquired)
                         {
-                            this.Refresh(request, partitionKeyRangeIdentity);
+                            this.serverPartitionAddressCache.Refresh(
+                                key: partitionKeyRangeIdentity,
+                                singleValueInitFunc: (currentCachedValue) => this.GetAddressesForRangeIdAsync(
+                                    request,
+                                    cachedAddresses: currentCachedValue,
+                                    partitionKeyRangeIdentity.CollectionRid,
+                                    partitionKeyRangeIdentity.PartitionKeyRangeId,
+                                    forceRefresh: true));
                         }
                         else
                         {
@@ -361,37 +368,6 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
 
                 throw;
-            }
-        }
-
-        /// <summary>
-        /// Refreshes the async non blocking cache on-demand for the given <paramref name="partitionKeyRangeIdentity"/>
-        /// and caches the result for later usage.
-        /// </summary>
-        /// <param name="request">An instance of <see cref="DocumentServiceRequest"/>.</param>
-        /// <param name="partitionKeyRangeIdentity">An instance of the <see cref="PartitionKeyRangeIdentity"/>.</param>
-        private void Refresh(
-            DocumentServiceRequest request,
-            PartitionKeyRangeIdentity partitionKeyRangeIdentity)
-        {
-            try
-            {
-                Task unused = this.serverPartitionAddressCache.GetAsync(
-                    key: partitionKeyRangeIdentity,
-                    singleValueInitFunc: (currentCachedValue) => this.GetAddressesForRangeIdAsync(
-                            request,
-                            cachedAddresses: currentCachedValue,
-                            partitionKeyRangeIdentity.CollectionRid,
-                            partitionKeyRangeIdentity.PartitionKeyRangeId,
-                            forceRefresh: true),
-                    forceRefresh: (_) => true);
-            }
-            catch (Exception ex)
-            {
-                DefaultTrace.TraceWarning("Failed to refresh addresses in the background for the collection rid: {0} with exception: {1}. '{2}'",
-                    partitionKeyRangeIdentity.CollectionRid,
-                    ex,
-                    System.Diagnostics.Trace.CorrelationManager.ActivityId);
             }
         }
 
