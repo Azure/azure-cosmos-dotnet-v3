@@ -599,7 +599,7 @@ namespace Microsoft.Azure.Cosmos
                 new ChangeFeedObserverFactoryCore<T>(onChangesDelegate, this.ClientContext.SerializerCore),
                 withManualCheckpointing: false);
             return this.GetChangeFeedProcessorBuilderPrivate(processorName,
-                observerFactory, ChangeFeedMode.Incremental);
+                observerFactory, ChangeFeedMode.LatestVersion);
         }
 
 #if PREVIEW
@@ -646,7 +646,7 @@ namespace Microsoft.Azure.Cosmos
                 new ChangeFeedObserverFactoryCore<T>(onChangesDelegate, this.ClientContext.SerializerCore),
                 withManualCheckpointing: true);
             return this.GetChangeFeedProcessorBuilderPrivate(processorName,
-                observerFactory, ChangeFeedMode.Incremental);
+                observerFactory, ChangeFeedMode.LatestVersion);
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder(
@@ -667,7 +667,7 @@ namespace Microsoft.Azure.Cosmos
                 new ChangeFeedObserverFactoryCore(onChangesDelegate),
                 withManualCheckpointing: false);
             return this.GetChangeFeedProcessorBuilderPrivate(processorName,
-                observerFactory, ChangeFeedMode.Incremental);
+                observerFactory, ChangeFeedMode.LatestVersion);
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint(
@@ -689,7 +689,7 @@ namespace Microsoft.Azure.Cosmos
                 withManualCheckpointing: true);
             return this.GetChangeFeedProcessorBuilderPrivate(processorName,
                 observerFactory,
-                ChangeFeedMode.Incremental);
+                ChangeFeedMode.LatestVersion);
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(
@@ -1367,12 +1367,12 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedObserverFactory observerFactory,
             ChangeFeedMode mode)
         {
-            ChangeFeedProcessorCore changeFeedProcessor = new ChangeFeedProcessorCore(observerFactory, mode);
+            ChangeFeedProcessorCore changeFeedProcessor = new ChangeFeedProcessorCore(observerFactory);
             return new ChangeFeedProcessorBuilder(
                 processorName: processorName,
                 container: this,
                 changeFeedProcessor: changeFeedProcessor,
-                applyBuilderConfiguration: changeFeedProcessor.ApplyBuildConfiguration);
+                applyBuilderConfiguration: changeFeedProcessor.ApplyBuildConfiguration).WithChangeFeedMode(mode);
         }
     }
 }
