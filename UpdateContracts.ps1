@@ -13,6 +13,14 @@ if(!(Test-Path -Path $updatedContractFile)){
     Write-Output ("Updated contract " + $updatedContractFile)
 }
 
+$updatedContractFile = ".\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\bin\Release\net6.0\Contracts\DotNetSDKTelemetryAPIChanges.json"
+if(!(Test-Path -Path $updatedContractFile)){
+    Write-Error ("The contract file did not get updated with the build. Please fix the test to output the contract file: " + $updatedContractFile)
+}else{
+    Copy-Item -Path $updatedContractFile -Destination ".\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\Contracts\DotNetSDKTelemetryAPI.json"
+    Write-Output ("Updated contract " + $updatedContractFile)
+}
+
 $updatedContractFolder = ".\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\bin\Release\net6.0\BaselineTest\TestOutput\*"
 if(!(Test-Path -Path $updatedContractFolder)){
     Write-Error ("The contract file did not get updated with the build. Please fix the test to output the contract file: " + $updatedContractFile)
