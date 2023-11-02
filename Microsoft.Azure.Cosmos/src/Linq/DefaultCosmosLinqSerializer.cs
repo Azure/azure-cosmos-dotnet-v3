@@ -4,9 +4,7 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
-    using System.Collections.Immutable;
     using System.Diagnostics;
     using System.Globalization;
     using System.Linq;
@@ -14,168 +12,88 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Reflection;
     using System.Runtime.Serialization;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
     internal class DefaultCosmosLinqSerializer : ICosmosLinqSerializer
     {
-        public SqlScalarExpression ApplyCustomConverters(Expression left, SqlLiteralScalarExpression right)
+        public SqlScalarExpression ApplyCustomConverters(MemberExpression memberExpression, Type memberType, SqlLiteralScalarExpression sqlLiteralScalarExpression)
         {
-            MemberExpression memberExpression;
-            if (left is UnaryExpression unaryExpression)
-            {
-                memberExpression = unaryExpression.Operand as MemberExpression;
-            }
-            else
-            {
-                memberExpression = left as MemberExpression;
-            }
+            // There are two ways to specify a custom attribute
+            // 1- by specifying the JsonConverterAttribute on a Class/Enum
+            //      [JsonConverter(typeof(StringEnumConverter))]
+            //      Enum MyEnum
+            //      {
+            //           ...
+            //      }
+            //
+            // 2- by specifying the JsonConverterAttribute on a property
+            //      class MyClass
+            //      {
+            //           [JsonConverter(typeof(StringEnumConverter))]
+            //           public MyEnum MyEnum;
+            //      }
+            //
+            // Newtonsoft gives high precedence to the attribute specified
+            // on a property over on a type (class/enum)
+            // so we check both attributes and apply the same precedence rules
+            // JsonConverterAttribute doesn't allow duplicates so it's safe to
+            // use FirstOrDefault()
+            CustomAttributeData memberAttribute = memberExpression.Member.CustomAttributes.Where(ca => ca.AttributeType == typeof(Newtonsoft.Json.JsonConverterAttribute)).FirstOrDefault();
+            CustomAttributeData typeAttribute = memberType.GetsCustomAttributes().Where(ca => ca.AttributeType == typeof(Newtonsoft.Json.JsonConverterAttribute)).FirstOrDefault();
 
-            if (memberExpression != null)
+            CustomAttributeData converterAttribute = memberAttribute ?? typeAttribute;
+            if (converterAttribute != null)
             {
-                Type memberType = memberExpression.Type;
-                if (memberType.IsNullable())
+                Debug.Assert(converterAttribute.ConstructorArguments.Count > 0);
+
+                Type converterType = (Type)converterAttribute.ConstructorArguments[0].Value;
+
+                object value = default(object);
+                // Enum
+                if (memberType.IsEnum())
                 {
-                    memberType = memberType.NullableUnderlyingType();
+                    Number64 number64 = ((SqlNumberLiteral)sqlLiteralScalarExpression.Literal).Value;
+                    if (number64.IsDouble)
+                    {
+                        value = Enum.ToObject(memberType, Number64.ToDouble(number64));
+                    }
+                    else
+                    {
+                        value = Enum.ToObject(memberType, Number64.ToLong(number64));
+                    }
+
+                }
+                // DateTime
+                else if (memberType == typeof(DateTime))
+                {
+                    SqlStringLiteral serializedDateTime = (SqlStringLiteral)sqlLiteralScalarExpression.Literal;
+                    value = DateTime.Parse(serializedDateTime.Value, provider: null, DateTimeStyles.RoundtripKind);
                 }
 
-                // There are two ways to specify a custom attribute
-                // 1- by specifying the JsonConverterAttribute on a Class/Enum
-                //      [JsonConverter(typeof(StringEnumConverter))]
-                //      Enum MyEnum
-                //      {
-                //           ...
-                //      }
-                //
-                // 2- by specifying the JsonConverterAttribute on a property
-                //      class MyClass
-                //      {
-                //           [JsonConverter(typeof(StringEnumConverter))]
-                //           public MyEnum MyEnum;
-                //      }
-                //
-                // Newtonsoft gives high precedence to the attribute specified
-                // on a property over on a type (class/enum)
-                // so we check both attributes and apply the same precedence rules
-                // JsonConverterAttribute doesn't allow duplicates so it's safe to
-                // use FirstOrDefault()
-                CustomAttributeData memberAttribute = memberExpression.Member.CustomAttributes.Where(ca => ca.AttributeType == typeof(Newtonsoft.Json.JsonConverterAttribute)).FirstOrDefault();
-                CustomAttributeData typeAttribute = memberType.GetsCustomAttributes().Where(ca => ca.AttributeType == typeof(Newtonsoft.Json.JsonConverterAttribute)).FirstOrDefault();
-
-                CustomAttributeData converterAttribute = memberAttribute ?? typeAttribute;
-                if (converterAttribute != null)
+                if (value != default(object))
                 {
-                    Debug.Assert(converterAttribute.ConstructorArguments.Count > 0);
+                    string serializedValue;
 
-                    Type converterType = (Type)converterAttribute.ConstructorArguments[0].Value;
-
-                    object value = default(object);
-                    // Enum
-                    if (memberType.IsEnum())
+                    if (converterType.GetConstructor(Type.EmptyTypes) != null)
                     {
-                        Number64 number64 = ((SqlNumberLiteral)right.Literal).Value;
-                        if (number64.IsDouble)
-                        {
-                            value = Enum.ToObject(memberType, Number64.ToDouble(number64));
-                        }
-                        else
-                        {
-                            value = Enum.ToObject(memberType, Number64.ToLong(number64));
-                        }
-
+                        serializedValue = JsonConvert.SerializeObject(value, (Newtonsoft.Json.JsonConverter)Activator.CreateInstance(converterType));
                     }
-                    // DateTime
-                    else if (memberType == typeof(DateTime))
+                    else
                     {
-                        SqlStringLiteral serializedDateTime = (SqlStringLiteral)right.Literal;
-                        value = DateTime.Parse(serializedDateTime.Value, provider: null, DateTimeStyles.RoundtripKind);
+                        serializedValue = JsonConvert.SerializeObject(value);
                     }
 
-                    if (value != default(object))
-                    {
-                        string serializedValue;
-
-                        if (converterType.GetConstructor(Type.EmptyTypes) != null)
-                        {
-                            serializedValue = JsonConvert.SerializeObject(value, (Newtonsoft.Json.JsonConverter)Activator.CreateInstance(converterType));
-                        }
-                        else
-                        {
-                            serializedValue = JsonConvert.SerializeObject(value);
-                        }
-
-                        return CosmosElement.Parse(serializedValue).Accept(CosmosElementToSqlScalarExpressionVisitor.Singleton);
-                    }
+                    return CosmosElement.Parse(serializedValue).Accept(CosmosElementToSqlScalarExpressionVisitor.Singleton);
                 }
             }
 
-            return right;
+            return sqlLiteralScalarExpression;
         }
 
         public SqlScalarExpression ConvertToSqlScalarExpression(ConstantExpression inputExpression, IDictionary<object, string> parameters)
         {
-            if (inputExpression.Value == null)
-            {
-                return SqlLiteralScalarExpression.SqlNullLiteralScalarExpression;
-            }
-
-            if (inputExpression.Type.IsNullable())
-            {
-                return this.ConvertToSqlScalarExpression(Expression.Constant(inputExpression.Value, Nullable.GetUnderlyingType(inputExpression.Type)), parameters);
-            }
-
-            if (parameters != null && parameters.TryGetValue(inputExpression.Value, out string paramName))
-            {
-                SqlParameter sqlParameter = SqlParameter.Create(paramName);
-                return SqlParameterRefScalarExpression.Create(sqlParameter);
-            }
-
-            Type constantType = inputExpression.Value.GetType();
-            if (constantType.IsValueType())
-            {
-                if (inputExpression.Value is bool boolValue)
-                {
-                    SqlBooleanLiteral literal = SqlBooleanLiteral.Create(boolValue);
-                    return SqlLiteralScalarExpression.Create(literal);
-                }
-
-                if (ExpressionToSql.TryGetSqlNumberLiteral(inputExpression.Value, out SqlNumberLiteral numberLiteral))
-                {
-                    return SqlLiteralScalarExpression.Create(numberLiteral);
-                }
-
-                if (inputExpression.Value is Guid guidValue)
-                {
-                    SqlStringLiteral literal = SqlStringLiteral.Create(guidValue.ToString());
-                    return SqlLiteralScalarExpression.Create(literal);
-                }
-            }
-
-            if (inputExpression.Value is string stringValue)
-            {
-                SqlStringLiteral literal = SqlStringLiteral.Create(stringValue);
-                return SqlLiteralScalarExpression.Create(literal);
-            }
-
-            if (typeof(Geometry).IsAssignableFrom(constantType))
-            {
-                return GeometrySqlExpressionFactory.Construct(inputExpression);
-            }
-
-            if (inputExpression.Value is IEnumerable enumerable)
-            {
-                List<SqlScalarExpression> arrayItems = new List<SqlScalarExpression>();
-
-                foreach (object item in enumerable)
-                {
-                    arrayItems.Add(this.ConvertToSqlScalarExpression(Expression.Constant(item), parameters));
-                }
-
-                return SqlArrayCreateScalarExpression.Create(arrayItems.ToImmutableArray());
-            }
-
             return CosmosElement.Parse(JsonConvert.SerializeObject(inputExpression.Value)).Accept(CosmosElementToSqlScalarExpressionVisitor.Singleton);
         }
 

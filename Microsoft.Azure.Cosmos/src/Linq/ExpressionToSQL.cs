@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Collections.ObjectModel;
@@ -481,7 +482,28 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private static SqlScalarExpression ApplyCustomConverters(Expression left, SqlLiteralScalarExpression right, TranslationContext context)
         {
-            return context.CosmosLinqSerializer.ApplyCustomConverters(left, right);
+            MemberExpression memberExpression;
+            if (left is UnaryExpression unaryExpression)
+            {
+                memberExpression = unaryExpression.Operand as MemberExpression;
+            }
+            else
+            {
+                memberExpression = left as MemberExpression;
+            }
+
+            Type memberType = memberExpression.Type;
+            if (memberType.IsNullable())
+            {
+                memberType = memberType.NullableUnderlyingType();
+            }
+
+            if (memberExpression != null)
+            {
+                return context.CosmosLinqSerializer.ApplyCustomConverters(memberExpression, memberType, right);
+            }
+
+            return right;
         }
 
         private static bool TryMatchStringCompareTo(MethodCallExpression left, ConstantExpression right, ExpressionType compareOperator)
@@ -617,6 +639,66 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public static SqlScalarExpression VisitConstant(ConstantExpression inputExpression, TranslationContext context)
         {
+            if (inputExpression.Value == null)
+            {
+                return SqlLiteralScalarExpression.SqlNullLiteralScalarExpression;
+            }
+
+            if (inputExpression.Type.IsNullable())
+            {
+                return VisitConstant(Expression.Constant(inputExpression.Value, Nullable.GetUnderlyingType(inputExpression.Type)), context);
+            }
+
+            if (context.Parameters != null && context.Parameters.TryGetValue(inputExpression.Value, out string paramName))
+            {
+                SqlParameter sqlParameter = SqlParameter.Create(paramName);
+                return SqlParameterRefScalarExpression.Create(sqlParameter);
+            }
+
+            Type constantType = inputExpression.Value.GetType();
+            if (constantType.IsValueType)
+            {
+                if (inputExpression.Value is bool boolValue)
+                {
+                    SqlBooleanLiteral literal = SqlBooleanLiteral.Create(boolValue);
+                    return SqlLiteralScalarExpression.Create(literal);
+                }
+
+                if (ExpressionToSql.TryGetSqlNumberLiteral(inputExpression.Value, out SqlNumberLiteral numberLiteral))
+                {
+                    return SqlLiteralScalarExpression.Create(numberLiteral);
+                }
+
+                if (inputExpression.Value is Guid guidValue)
+                {
+                    SqlStringLiteral literal = SqlStringLiteral.Create(guidValue.ToString());
+                    return SqlLiteralScalarExpression.Create(literal);
+                }
+            }
+
+            if (inputExpression.Value is string stringValue)
+            {
+                SqlStringLiteral literal = SqlStringLiteral.Create(stringValue);
+                return SqlLiteralScalarExpression.Create(literal);
+            }
+
+            if (typeof(Geometry).IsAssignableFrom(constantType))
+            {
+                return GeometrySqlExpressionFactory.Construct(inputExpression);
+            }
+
+            if (inputExpression.Value is IEnumerable enumerable)
+            {
+                List<SqlScalarExpression> arrayItems = new List<SqlScalarExpression>();
+
+                foreach (object item in enumerable)
+                {
+                    arrayItems.Add(VisitConstant(Expression.Constant(item), context));
+                }
+
+                return SqlArrayCreateScalarExpression.Create(arrayItems.ToImmutableArray());
+            }
+
             return context.CosmosLinqSerializer.ConvertToSqlScalarExpression(inputExpression, context.Parameters);
         }
 

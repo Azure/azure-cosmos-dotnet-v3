@@ -3,6 +3,7 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Linq
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq.Expressions;
     using System.Reflection;
@@ -13,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <summary>
         /// Applies specified custom converters to an expression.
         /// </summary>
-        SqlScalarExpression ApplyCustomConverters(Expression left, SqlLiteralScalarExpression right);
+        SqlScalarExpression ApplyCustomConverters(MemberExpression memberExpression, Type memberType, SqlLiteralScalarExpression sqlLiteralScalarExpression);
 
         /// <summary>
         /// Serializes a ConstantExpression as a SqlScalarExpression.
