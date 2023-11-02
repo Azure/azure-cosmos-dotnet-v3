@@ -12,9 +12,14 @@ namespace Microsoft.Azure.Cosmos.Linq
     internal interface ICosmosLinqSerializer
     {
         /// <summary>
-        /// Applies specified custom converters to an expression.
+        /// Gets custom attributes on a member expression. Returns null if none exist.
         /// </summary>
-        SqlScalarExpression ApplyCustomConverters(MemberExpression memberExpression, Type memberType, SqlLiteralScalarExpression sqlLiteralScalarExpression);
+        CustomAttributeData GetConverterAttribute(MemberExpression memberExpression, Type memberType);
+
+        /// <summary>
+        /// Applies specified custom converter to an object.
+        /// </summary>
+        string SerializeWithConverter(object value, Type converterType);
 
         /// <summary>
         /// Serializes a ConstantExpression as a SqlScalarExpression.

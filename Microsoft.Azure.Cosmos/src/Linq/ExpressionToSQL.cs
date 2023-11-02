@@ -13,8 +13,11 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.Azure.Cosmos.SqlObjects;
+    using Microsoft.Azure.Documents;
+    using Newtonsoft.Json;
     using static Microsoft.Azure.Cosmos.Linq.FromParameterBindings;
 
     // ReSharper disable UnusedParameter.Local
@@ -492,15 +495,56 @@ namespace Microsoft.Azure.Cosmos.Linq
                 memberExpression = left as MemberExpression;
             }
 
-            Type memberType = memberExpression.Type;
-            if (memberType.IsNullable())
-            {
-                memberType = memberType.NullableUnderlyingType();
-            }
-
             if (memberExpression != null)
             {
-                return context.CosmosLinqSerializer.ApplyCustomConverters(memberExpression, memberType, right);
+                Type memberType = memberExpression.Type;
+                if (memberType.IsNullable())
+                {
+                    memberType = memberType.NullableUnderlyingType();
+                }
+
+                CustomAttributeData converterAttribute = context.CosmosLinqSerializer.GetConverterAttribute(memberExpression, memberType);
+                if (converterAttribute != null)
+                {
+                    Debug.Assert(converterAttribute.ConstructorArguments.Count > 0);
+
+                    Type converterType = (Type)converterAttribute.ConstructorArguments[0].Value;
+
+                    object value = default(object);
+                    // Enum
+                    if (memberType.IsEnum())
+                    {
+                        try
+                        {
+                            Number64 number64 = ((SqlNumberLiteral)right.Literal).Value;
+                            if (number64.IsDouble)
+                            {
+                                value = Enum.ToObject(memberType, Number64.ToDouble(number64));
+                            }
+                            else
+                            {
+                                value = Enum.ToObject(memberType, Number64.ToLong(number64));
+                            }
+                        }
+                        catch
+                        {
+                            value = ((SqlStringLiteral)right.Literal).Value;
+                        }
+
+                    }
+                    // DateTime
+                    else if (memberType == typeof(DateTime))
+                    {
+                        SqlStringLiteral serializedDateTime = (SqlStringLiteral)right.Literal;
+                        value = DateTime.Parse(serializedDateTime.Value, provider: null, DateTimeStyles.RoundtripKind);
+                    }
+
+                    if (value != default(object))
+                    {
+                        string serializedValue = context.CosmosLinqSerializer.SerializeWithConverter(value, converterType);
+                        return CosmosElement.Parse(serializedValue).Accept(CosmosElementToSqlScalarExpressionVisitor.Singleton);
+                    }
+                }
             }
 
             return right;

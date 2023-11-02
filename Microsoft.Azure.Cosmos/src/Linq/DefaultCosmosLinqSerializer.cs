@@ -5,8 +5,6 @@ namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Globalization;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
@@ -18,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
     internal class DefaultCosmosLinqSerializer : ICosmosLinqSerializer
     {
-        public SqlScalarExpression ApplyCustomConverters(MemberExpression memberExpression, Type memberType, SqlLiteralScalarExpression sqlLiteralScalarExpression)
+        public CustomAttributeData GetConverterAttribute(MemberExpression memberExpression, Type memberType)
         {
             // There are two ways to specify a custom attribute
             // 1- by specifying the JsonConverterAttribute on a Class/Enum
@@ -40,56 +38,18 @@ namespace Microsoft.Azure.Cosmos.Linq
             // so we check both attributes and apply the same precedence rules
             // JsonConverterAttribute doesn't allow duplicates so it's safe to
             // use FirstOrDefault()
-            CustomAttributeData memberAttribute = memberExpression.Member.CustomAttributes.Where(ca => ca.AttributeType == typeof(Newtonsoft.Json.JsonConverterAttribute)).FirstOrDefault();
-            CustomAttributeData typeAttribute = memberType.GetsCustomAttributes().Where(ca => ca.AttributeType == typeof(Newtonsoft.Json.JsonConverterAttribute)).FirstOrDefault();
+            CustomAttributeData memberAttribute = memberExpression.Member.CustomAttributes.FirstOrDefault(ca => ca.AttributeType == typeof(Newtonsoft.Json.JsonConverterAttribute));
+            CustomAttributeData typeAttribute = memberType.GetsCustomAttributes().FirstOrDefault(ca => ca.AttributeType == typeof(Newtonsoft.Json.JsonConverterAttribute));
+            return memberAttribute ?? typeAttribute;
+        }
 
-            CustomAttributeData converterAttribute = memberAttribute ?? typeAttribute;
-            if (converterAttribute != null)
-            {
-                Debug.Assert(converterAttribute.ConstructorArguments.Count > 0);
+        public string SerializeWithConverter(object value, Type converterType)
+        {
+            string serializedValue = converterType.GetConstructor(Type.EmptyTypes) != null
+                ? JsonConvert.SerializeObject(value, (Newtonsoft.Json.JsonConverter)Activator.CreateInstance(converterType))
+                : JsonConvert.SerializeObject(value);
 
-                Type converterType = (Type)converterAttribute.ConstructorArguments[0].Value;
-
-                object value = default(object);
-                // Enum
-                if (memberType.IsEnum())
-                {
-                    Number64 number64 = ((SqlNumberLiteral)sqlLiteralScalarExpression.Literal).Value;
-                    if (number64.IsDouble)
-                    {
-                        value = Enum.ToObject(memberType, Number64.ToDouble(number64));
-                    }
-                    else
-                    {
-                        value = Enum.ToObject(memberType, Number64.ToLong(number64));
-                    }
-
-                }
-                // DateTime
-                else if (memberType == typeof(DateTime))
-                {
-                    SqlStringLiteral serializedDateTime = (SqlStringLiteral)sqlLiteralScalarExpression.Literal;
-                    value = DateTime.Parse(serializedDateTime.Value, provider: null, DateTimeStyles.RoundtripKind);
-                }
-
-                if (value != default(object))
-                {
-                    string serializedValue;
-
-                    if (converterType.GetConstructor(Type.EmptyTypes) != null)
-                    {
-                        serializedValue = JsonConvert.SerializeObject(value, (Newtonsoft.Json.JsonConverter)Activator.CreateInstance(converterType));
-                    }
-                    else
-                    {
-                        serializedValue = JsonConvert.SerializeObject(value);
-                    }
-
-                    return CosmosElement.Parse(serializedValue).Accept(CosmosElementToSqlScalarExpressionVisitor.Singleton);
-                }
-            }
-
-            return sqlLiteralScalarExpression;
+            return serializedValue;
         }
 
         public SqlScalarExpression ConvertToSqlScalarExpression(ConstantExpression inputExpression, IDictionary<object, string> parameters)
