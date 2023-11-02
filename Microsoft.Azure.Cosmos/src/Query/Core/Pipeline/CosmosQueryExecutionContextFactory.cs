@@ -271,15 +271,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             else
             {
                 bool singleLogicalPartitionKeyQuery = inputParameters.PartitionKey.HasValue
-                || ((partitionedQueryExecutionInfo.QueryRanges.Count == 1)
-                && partitionedQueryExecutionInfo.QueryRanges[0].IsSingleValue);
+                    || ((partitionedQueryExecutionInfo.QueryRanges.Count == 1)
+                    && partitionedQueryExecutionInfo.QueryRanges[0].IsSingleValue);
                 bool serverStreamingQuery = !partitionedQueryExecutionInfo.QueryInfo.HasAggregates
                     && !partitionedQueryExecutionInfo.QueryInfo.HasDistinct
                     && !partitionedQueryExecutionInfo.QueryInfo.HasGroupBy;
                 bool streamingSinglePartitionQuery = singleLogicalPartitionKeyQuery && serverStreamingQuery;
 
-                bool clientStreamingQuery =
-                    serverStreamingQuery
+                bool clientStreamingQuery = serverStreamingQuery
                     && !partitionedQueryExecutionInfo.QueryInfo.HasOrderBy
                     && !partitionedQueryExecutionInfo.QueryInfo.HasTop
                     && !partitionedQueryExecutionInfo.QueryInfo.HasLimit
