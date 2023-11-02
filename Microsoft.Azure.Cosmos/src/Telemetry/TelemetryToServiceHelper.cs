@@ -177,6 +177,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             return this.collector;
         }
 
+        public Exception GetJobException()
+        {
+            return this.clientTelemetry?.telemetryJobException;
+        }
+
         public bool IsClientTelemetryJobRunning()
         {
             return this.clientTelemetry != null;

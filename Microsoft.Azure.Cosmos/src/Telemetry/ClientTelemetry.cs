@@ -37,6 +37,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private readonly CancellationTokenSource cancellationTokenSource;
         private readonly GlobalEndpointManager globalEndpointManager;
 
+        public Exception telemetryJobException { get; set; }
+
         private Task telemetryTask;
 
         private ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoMap 
@@ -185,6 +187,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                                                             cacheRefreshInfoSnapshot: cacheRefreshInfoSnapshot,
                                                                             requestInfoSnapshot: requestInfoSnapshot,
                                                                             endpointUrl: this.endpointUrl,
+                                                                            telemetryException: this.telemetryJobException,
                                                                             cancellationToken: cancellationToken.Token), cancellationToken.Token);
 
                         // Initiating Telemetry Data Processor task which will serialize and send telemetry information to Client Telemetry Service
@@ -194,12 +197,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     }
                     catch (Exception ex)
                     {
+                        this.telemetryJobException = ex;
                         DefaultTrace.TraceError("Exception while initiating processing task : {0} with telemetry date as {1}", ex.Message, this.clientTelemetryInfo.DateTimeUtc);
                     }
                 }
             }
             catch (Exception ex)
             {
+                this.telemetryJobException = ex;
                 DefaultTrace.TraceError("Exception in EnrichAndSendAsync() : {0}", ex);
             }
 
@@ -236,7 +241,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Collects Cache Telemetry Information.
         /// </summary>
-        internal void PushCacheDatapoint(string cacheName, TelemetryInformation data)
+        internal virtual void PushCacheDatapoint(string cacheName, TelemetryInformation data)
         {
             if (string.IsNullOrEmpty(cacheName))
             {
@@ -284,7 +289,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Collects Telemetry Information.
         /// </summary>
-        internal void PushOperationDatapoint(TelemetryInformation data)
+        internal virtual void PushOperationDatapoint(TelemetryInformation data)
         {
             DefaultTrace.TraceVerbose("Collecting Operation data for Telemetry.");
 
@@ -344,7 +349,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="storeResponseStatistics"></param>
         /// <param name="databaseId"></param>
         /// <param name="containerId"></param>
-        public void PushNetworkDataPoint(List<StoreResponseStatistics> storeResponseStatistics, string databaseId, string containerId)
+        internal virtual void PushNetworkDataPoint(List<StoreResponseStatistics> storeResponseStatistics, string databaseId, string containerId)
         {
             // Record Network/Replica Information
             this.networkDataRecorder.Record(storeResponseStatistics, databaseId, containerId);

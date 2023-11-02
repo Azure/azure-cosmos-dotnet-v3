@@ -51,6 +51,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 {
                     DefaultTrace.TraceError("Error while collecting telemetry information : {0}", ex);
                 }
+
+                if (this.telemetryToServiceHelper.GetJobException() != null)
+                {
+                    response.Trace.AddDatum("Telemetry To Service Job Exception", this.telemetryToServiceHelper.GetJobException()?.ToString());
+                }
             }
             return response;
         }

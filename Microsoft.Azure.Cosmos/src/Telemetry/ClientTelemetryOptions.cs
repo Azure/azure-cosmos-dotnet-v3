@@ -5,7 +5,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
     using System.Collections.Generic;
-    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
@@ -18,7 +17,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal const int KbToMbFactor = 1024;
 
         internal const int OneKbToBytes = 1024;
-            
+
+        internal const string TelemetryCollectFailedKeyPrefix = "TelemetryCollectFailed";
+
         // Expecting histogram to have Minimum Latency of 1 and Maximum Latency of 1 hour (which is never going to happen)
         internal const long RequestLatencyMax = TimeSpan.TicksPerHour;
         internal const long RequestLatencyMin = 1;
