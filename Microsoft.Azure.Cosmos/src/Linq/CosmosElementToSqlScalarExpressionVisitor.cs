@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
+    using System.Diagnostics;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.SqlObjects;
@@ -33,7 +34,8 @@ namespace Microsoft.Azure.Cosmos.Linq
         public SqlScalarExpression Visit(CosmosBinary cosmosBinary)
         {
             // Can not convert binary to scalar expression without knowing the API type.
-            throw new NotImplementedException();
+            Debug.Fail("CosmosElementToSqlScalarExpressionVisitor Assert", "Unreachable");
+            throw new InvalidOperationException();
         }
 
         public SqlScalarExpression Visit(CosmosBoolean cosmosBoolean)
@@ -44,7 +46,8 @@ namespace Microsoft.Azure.Cosmos.Linq
         public SqlScalarExpression Visit(CosmosGuid cosmosGuid)
         {
             // Can not convert guid to scalar expression without knowing the API type.
-            throw new NotImplementedException();
+            Debug.Fail("CosmosElementToSqlScalarExpressionVisitor Assert", "Unreachable");
+            throw new InvalidOperationException();
         }
 
         public SqlScalarExpression Visit(CosmosNull cosmosNull)

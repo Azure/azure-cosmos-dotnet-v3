@@ -1356,7 +1356,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                 ParameterExpression parameterExpression = context.GenFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
                 SqlCollection subqueryCollection = ExpressionToSql.CreateSubquerySqlCollection(
-                    query, context,
+                    query,
                     isMinMaxAvgMethod ? SubqueryKind.ArrayScalarExpression : expressionObjKind.Value);
 
                 Binding newBinding = new Binding(parameterExpression, subqueryCollection,
@@ -1383,9 +1383,8 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// Create a subquery SQL collection object for a SQL query
         /// </summary>
         /// <param name="query">The SQL query object</param>
-        /// <param name="context">The translation context</param>
         /// <param name="subqueryType">The subquery type</param>
-        private static SqlCollection CreateSubquerySqlCollection(SqlQuery query, TranslationContext context, SubqueryKind subqueryType)
+        private static SqlCollection CreateSubquerySqlCollection(SqlQuery query, SubqueryKind subqueryType)
         {
             SqlCollection subqueryCollection;
             switch (subqueryType)

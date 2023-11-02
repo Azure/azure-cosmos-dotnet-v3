@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         SqlScalarExpression ConvertToSqlScalarExpression(ConstantExpression inputExpression, IDictionary<object, string> parameters);
 
         /// <summary>
-        /// Gets a member name with any LINQ serializer options applied.
+        /// Gets a member name with LINQ serializer options applied.
         /// </summary>
         string GetMemberName(MemberInfo memberInfo, CosmosLinqSerializerOptions linqSerializerOptions = null);
     }
