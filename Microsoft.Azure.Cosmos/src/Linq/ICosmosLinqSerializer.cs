@@ -17,12 +17,12 @@ namespace Microsoft.Azure.Cosmos.Linq
         CustomAttributeData GetConverterAttribute(MemberExpression memberExpression, Type memberType);
 
         /// <summary>
-        /// Applies specified custom converter to an object.
+        /// Serializes object with provided custom converter.
         /// </summary>
         string SerializeWithConverter(object value, Type converterType);
 
         /// <summary>
-        /// Serializes a ConstantExpression as a SqlScalarExpression.
+        /// Serializes a ConstantExpression.
         /// </summary>
         string SerializeScalarExpression(ConstantExpression inputExpression);
 
