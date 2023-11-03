@@ -193,17 +193,10 @@ namespace Microsoft.Azure.Cosmos
                         singleValueInitFunc: singleValueInitFunc,
                         forceRefresh: (_) => true);
 
-                Task continuationTask = backgroundRefreshTask.ContinueWith(task =>
-                {
-                    if (task.IsFaulted)
-                    {
-                        this.RemoveKeyForBackgroundExceptions(
-                            key,
-                            initialLazyValue,
-                            task?.Exception?.InnerException,
-                            nameof(Refresh));
-                    }
-                });
+                Task continuationTask = backgroundRefreshTask
+                    .ContinueWith(
+                        task => DefaultTrace.TraceVerbose("Failed to refresh addresses in the background with exception: {0}", task.Exception),
+                        TaskContinuationOptions.OnlyOnFaulted);
             }
         }
 
@@ -228,46 +221,26 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (Exception ex)
             {
-                this.RemoveKeyForBackgroundExceptions(
-                    key,
-                    initialValue,
-                    ex,
-                    operationName);
-
-                throw;
-            }
-        }
-
-        /// <summary>
-        /// Removes the specified key from the async non blocking cache for specific exception types.
-        /// </summary>
-        /// <param name="key">The requested key to be updated.</param>
-        /// <param name="initialValue">An instance of <see cref="AsyncLazyWithRefreshTask{T}"/> containing the initial cached value.</param>
-        /// <param name="ex">A func callback delegate to be invoked at a later point of time.</param>
-        /// <param name="operationName">A string indicating the operation on the cache.</param>
-        private void RemoveKeyForBackgroundExceptions(
-            TKey key,
-            AsyncLazyWithRefreshTask<TValue> initialValue,
-            Exception ex,
-            string operationName)
-        {
-            if (initialValue.ShouldRemoveFromCacheThreadSafe())
-            {
-                bool removed = false;
-
-                // In some scenarios when a background failure occurs like a 404
-                // the initial cache value should be removed.
-                if (this.removeFromCacheOnBackgroundRefreshException(ex))
+                if (initialValue.ShouldRemoveFromCacheThreadSafe())
                 {
-                    removed = this.TryRemove(key);
+                    bool removed = false;
+
+                    // In some scenarios when a background failure occurs like a 404
+                    // the initial cache value should be removed.
+                    if (this.removeFromCacheOnBackgroundRefreshException(ex))
+                    {
+                        removed = this.TryRemove(key);
+                    }
+
+                    DefaultTrace.TraceError(
+                        "AsyncCacheNonBlocking Failed. key: {0}, operation: {1}, tryRemoved: {2}, Exception: {3}",
+                        key,
+                        operationName,
+                        removed,
+                        ex);
                 }
 
-                DefaultTrace.TraceError(
-                    "AsyncCacheNonBlocking Failed. key: {0}, operation: {1}, tryRemoved: {2}, Exception: {3}",
-                    key,
-                    operationName,
-                    removed,
-                    ex);
+                throw;
             }
         }
 
