@@ -743,7 +743,9 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return SqlArrayCreateScalarExpression.Create(arrayItems.ToImmutableArray());
             }
 
-            return context.CosmosLinqSerializer.ConvertToSqlScalarExpression(inputExpression, context.Parameters);
+            string serializedConstant = context.CosmosLinqSerializer.SerializeScalarExpression(inputExpression);
+            
+            return CosmosElement.Parse(serializedConstant).Accept(CosmosElementToSqlScalarExpressionVisitor.Singleton);
         }
 
         private static SqlScalarExpression VisitConditional(ConditionalExpression inputExpression, TranslationContext context)

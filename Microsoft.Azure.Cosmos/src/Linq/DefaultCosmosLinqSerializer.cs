@@ -52,9 +52,9 @@ namespace Microsoft.Azure.Cosmos.Linq
             return serializedValue;
         }
 
-        public SqlScalarExpression ConvertToSqlScalarExpression(ConstantExpression inputExpression, IDictionary<object, string> parameters)
+        public string SerializeScalarExpression(ConstantExpression inputExpression)
         {
-            return CosmosElement.Parse(JsonConvert.SerializeObject(inputExpression.Value)).Accept(CosmosElementToSqlScalarExpressionVisitor.Singleton);
+            return JsonConvert.SerializeObject(inputExpression.Value);
         }
 
         public string GetMemberName(MemberInfo memberInfo, CosmosLinqSerializerOptions linqSerializerOptions = null)

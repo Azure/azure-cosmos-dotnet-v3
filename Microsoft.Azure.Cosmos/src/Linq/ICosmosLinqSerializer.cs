@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <summary>
         /// Serializes a ConstantExpression as a SqlScalarExpression.
         /// </summary>
-        SqlScalarExpression ConvertToSqlScalarExpression(ConstantExpression inputExpression, IDictionary<object, string> parameters);
+        string SerializeScalarExpression(ConstantExpression inputExpression);
 
         /// <summary>
         /// Gets a member name with LINQ serializer options applied.
