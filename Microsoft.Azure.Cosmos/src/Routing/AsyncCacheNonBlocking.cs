@@ -178,7 +178,8 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Refreshes the async non blocking cache on-demand for the given <paramref name="key"/>
-        /// and caches the result for later usage.
+        /// and caches the result for later usage. Note that this method doesn't control the number
+        /// of tasks created in parallel, and the concurrency needed to be controlled at the caller.
         /// </summary>
         /// <param name="key">The requested key to be refreshed.</param>
         /// <param name="singleValueInitFunc">A func delegate to be invoked at a later point of time.</param>
