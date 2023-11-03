@@ -342,7 +342,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 partitionedQueryExecutionInfo: null,
                 executionEnvironment: null,
                 returnResultsInDeterministicOrder: null,
-                forcePassthrough: false,
                 enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
                 testInjections: queryRequestOptions.TestSettings);
 
