@@ -177,19 +177,19 @@
     // <Model>
     public class ToDoActivity
     {
-        // Note: JsonPropertyName is currently applied on item CRUD operations, but not on LINQ queries
+        // Note: JsonPropertyName is currently applied on item CRUD operations and non-LINQ queries, but not on LINQ queries
         [JsonPropertyName("id")]
         public string Id { get; set; }
 
-        // See above note
+        // Note: JsonPropertyName is currently applied on item CRUD operations and non-LINQ queries, but not on LINQ queries
         [JsonPropertyName("partitionKey")]
         public string PartitionKey { get; set; }
 
-        // See above note
+        // Note: JsonPropertyName is currently applied on item CRUD operations and non-LINQ queries, but not on LINQ queries
         [JsonPropertyName("activityId")]
         public string ActivityId { get; set; }
 
-        // See above note
+        // Note: JsonPropertyName is currently applied on item CRUD operations and non-LINQ queries, but not on LINQ queries
         [JsonPropertyName("status")]
         public string Status { get; set; }
     }
