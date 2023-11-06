@@ -157,6 +157,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                     await Task.Delay(observingWindow, this.cancellationTokenSource.Token);
 
+                    this.telemetryJobException = null; // Resetting exception reported during last cycle of job
+
                     this.clientTelemetryInfo.DateTimeUtc = DateTime.UtcNow.ToString(ClientTelemetryOptions.DateFormat);
                     this.clientTelemetryInfo.MachineId = VmMetadataApiHandler.GetMachineId();
 

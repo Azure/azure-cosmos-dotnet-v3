@@ -54,9 +54,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 }
             }
 
-            if (this.telemetryToServiceHelper.GetJobException() != null)
+            // If there is any exception, only then log the exception is request diagnostics
+            Exception exception = this.telemetryToServiceHelper.GetJobException();
+            if (exception != null)
             {
-                request.Trace.AddDatum(ClientTelemetryOptions.TelemetryToServiceJobException, this.telemetryToServiceHelper.GetJobException()?.ToString());
+                request.Trace.AddDatum(ClientTelemetryOptions.TelemetryToServiceJobException, exception.ToString());
             }
 
             return response;
