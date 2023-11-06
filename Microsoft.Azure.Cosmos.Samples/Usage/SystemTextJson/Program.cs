@@ -177,7 +177,7 @@
     // <Model>
     public class ToDoActivity
     {
-        [JsonPropertyName("id")]
+        [JsonPropertyName("id")] // Note: JsonPropertyName is currently applied on CRUD operations, but not on LINQ queries
         public string Id { get; set; }
 
         [JsonPropertyName("partitionKey")]
