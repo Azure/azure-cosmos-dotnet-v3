@@ -177,15 +177,19 @@
     // <Model>
     public class ToDoActivity
     {
-        [JsonPropertyName("id")] // Note: JsonPropertyName is currently applied on CRUD operations, but not on LINQ queries
+        // Note: JsonPropertyName is currently applied on item CRUD operations, but not on LINQ queries
+        [JsonPropertyName("id")]
         public string Id { get; set; }
 
+        // See above note
         [JsonPropertyName("partitionKey")]
         public string PartitionKey { get; set; }
 
+        // See above note
         [JsonPropertyName("activityId")]
         public string ActivityId { get; set; }
 
+        // See above note
         [JsonPropertyName("status")]
         public string Status { get; set; }
     }
