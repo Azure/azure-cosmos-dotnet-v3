@@ -5,11 +5,13 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Scripts;
+    using Microsoft.Azure.Cosmos.Serialization.HybridRow.Schemas;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
@@ -83,6 +85,110 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             Assert.AreEqual("0.1.2.3.4.5.6.7.8.9.", accumulator);
         }
 
+        async Task CreateItems(int count, int partitionKey)
+        {
+            foreach (int id in Enumerable.Range(0, count))
+            {
+                await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString(), pk = partitionKey, test = "test" });
+            }
+        }
+
+        [TestMethod]
+        public async Task TestFFCFProcessorCreate()
+        {
+            ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
+
+            int processedDocCount = 0;
+            string accumulator = string.Empty;
+
+            ChangeFeedProcessor processor = this.Container
+                .GetAllVersionsAndDeletesChangeFeedProcessorBuilder("test", (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItemChange<dynamic>> docs, CancellationToken token) =>
+                {
+                    this.ValidateContext(context);
+                    processedDocCount += docs.Count;
+
+                    foreach (ChangeFeedItemChange<dynamic> change in docs)
+                    {
+                        Assert.IsTrue(change.Metadata.OperationType == ChangeFeedOperationType.Create);
+
+                        int id = change.Current.id;
+
+                        accumulator += id.ToString() + ".";
+                    }
+
+                    if (processedDocCount == 10)
+                    {
+                        allDocsProcessed.Set();
+                    }
+
+                    return Task.CompletedTask;
+                })
+                .WithInstanceName("ffcftest")
+                .WithLeaseContainer(this.LeaseContainer).Build();
+
+            // Start the processor, insert 1 document to generate a checkpoint
+            await processor.StartAsync();
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+
+            await this.CreateItems(10, partitionKey: 0);
+
+            bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+
+            Assert.IsTrue(isStartOk, "Timed out waiting for create to process");
+            Assert.AreEqual("0.1.2.3.4.5.6.7.8.9.", accumulator);
+        }
+
+        public async Task TestFFCFProcessorReplace()
+        {
+            // Create ten items
+            await this.CreateItems(10, partitionKey: 0);
+
+            ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
+
+            int partitionKey = 0;
+            int processedDocCount = 0;
+            string accumulator = string.Empty;
+
+            ChangeFeedProcessor processor = this.Container
+                .GetAllVersionsAndDeletesChangeFeedProcessorBuilder("test", (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItemChange<dynamic>> docs, CancellationToken token) =>
+                {
+                    this.ValidateContext(context);
+                    processedDocCount += docs.Count;
+
+                    foreach (ChangeFeedItemChange<dynamic> change in docs)
+                    {
+                        Assert.IsTrue(change.Metadata.OperationType == ChangeFeedOperationType.Replace);
+
+                        int id = change.Current.id;
+
+                        accumulator += id.ToString() + ".";
+                    }
+
+                    if (processedDocCount == 10)
+                    {
+                        allDocsProcessed.Set();
+                    }
+
+                    return Task.CompletedTask;
+                })
+                .WithInstanceName("ffcftest")
+                .WithLeaseContainer(this.LeaseContainer).Build();
+
+            await processor.StartAsync();
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+
+            foreach (int id in Enumerable.Range(0, 10))
+            {
+                //items[id].test = "update-test";
+                await this.Container.UpsertItemAsync<dynamic>(new { id = id.ToString(), pk = partitionKey, update = "true" });
+            }
+
+            bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+
+            Assert.IsTrue(isStartOk, "Timed out waiting for create to process");
+            Assert.AreEqual("0.1.2.3.4.5.6.7.8.9.", accumulator);
+        }
+
         [TestMethod]
         public async Task TestWithRunningFFCFProcessor()
         {
@@ -93,7 +199,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             string accumulator = string.Empty;
 
             ChangeFeedProcessor processor = this.Container
-                .GetAllVersionsChangeFeedProcessorBuilder("test", (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItemChange<dynamic>> docs, CancellationToken token) =>
+                .GetAllVersionsAndDeletesChangeFeedProcessorBuilder("test", (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItemChange<dynamic>> docs, CancellationToken token) =>
                 {
                     this.ValidateContext(context);
                     processedDocCount += docs.Count;
@@ -128,11 +234,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             // Start the processor, insert 1 document to generate a checkpoint
             await processor.StartAsync();
             await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
-            foreach (int id in Enumerable.Range(0, 10))
-            {
-                //items[id] = new { id = id.ToString(), pk = partitionKey, test = "test" };
-                await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString(), pk = partitionKey, test = "test" });
-            }
+            
+            // Add
 
             bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
             
