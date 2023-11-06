@@ -176,17 +176,33 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
 
         [TestMethod]
-        [DataRow(ConnectionMode.Direct)]
-        [DataRow(ConnectionMode.Gateway)]
-        public async Task CheckDiagnostics(ConnectionMode mode)
+        [DataRow("SystemUsageCollectionFailure")]
+        [DataRow("RequestChargeCollectionFailure")]
+        [DataRow("LatencyCollectionFailure")]
+        [DataRow("TelemetryServiceApiCallFailure")]
+        public async Task TelemetryFailuresInDiagnosticsTest(string failureType)
         {
-            ClientTelemetryOptions.RequestLatencyMax = 1;
+            ClientTelemetryOptions.RequestChargeMax = TimeSpan.TicksPerHour;
+            ClientTelemetryOptions.RequestLatencyMax = 9999900;
+            ClientTelemetryOptions.CpuMax = 99999;
+
+            if (failureType == "SystemUsageCollectionFailure")
+            {
+                ClientTelemetryOptions.CpuMax = 1;
+            }
+            else if (failureType == "RequestChargeCollectionFailure")
+            {
+                ClientTelemetryOptions.RequestChargeMax = 1;
+            }
+            else if (failureType == "LatencyCollectionFailure")
+            {
+                ClientTelemetryOptions.RequestLatencyMax = 1;
+            }
 
             this.httpHandlerForNonAzureInstance = new HttpClientHandlerHelper
             {
                 RequestCallBack = (request, cancellation) =>
                 {
-                    Console.WriteLine(request.RequestUri.AbsoluteUri);
                     if (request.RequestUri.AbsoluteUri.Contains(Paths.ClientConfigPathSegment))
                     {
                         HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
@@ -204,14 +220,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
                     else if (request.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint.AbsoluteUri))
                     {
-                        return Task.FromResult(new HttpResponseMessage(HttpStatusCode.BadGateway));
+                        if (failureType == "TelemetryServiceApiCallFailure")
+                        {
+                            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.BadGateway));
+                        }
+                        else
+                        {
+                            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
+                        }
                     }
                     return null;
                 }
             };
 
             Container container = await base.CreateClientAndContainer(
-               mode: mode,
+               mode: ConnectionMode.Direct,
                isAzureInstance: false);
 
             // Create an item
@@ -219,12 +242,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             
             await container.CreateItemAsync<ToDoActivity>(testItem);
 
-            await Task.Delay(2000);
+            await Task.Delay(1500); // Wait for one telemetry service call
 
             // Read an Item
             ItemResponse<ToDoActivity> response = await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
 
-            Console.WriteLine(response.Diagnostics.ToString());
+            if (failureType == "TelemetryServiceApiCallFailure" || failureType == "SystemUsageCollectionFailure")
+            {
+                Assert.IsTrue(response.Diagnostics.ToString().Contains(ClientTelemetryOptions.TelemetryToServiceJobException));
+            }
+            else
+            {
+                Assert.IsTrue(response.Diagnostics.ToString().Contains(ClientTelemetryOptions.TelemetryCollectFailedKeyPrefix));
+            }
         }
     }
 }

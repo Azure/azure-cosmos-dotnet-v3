@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal const int OneKbToBytes = 1024;
 
         internal const string TelemetryCollectFailedKeyPrefix = "TelemetryCollectFailed";
+        internal const string TelemetryToServiceJobException = "TelemetryToServiceJobException";
 
         // Expecting histogram to have Minimum Latency of 1 and Maximum Latency of 1 hour (which is never going to happen)
         internal const long RequestLatencyMin = 1;

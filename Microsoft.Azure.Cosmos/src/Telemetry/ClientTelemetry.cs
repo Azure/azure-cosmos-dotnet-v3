@@ -165,9 +165,18 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     this.clientTelemetryInfo.ApplicationRegion = vmInformation?.Location;
                     this.clientTelemetryInfo.HostEnvInfo = ClientTelemetryOptions.GetHostInformation(vmInformation);
 
-                    this.clientTelemetryInfo.SystemInfo = ClientTelemetryHelper.RecordSystemUtilization(this.diagnosticsHelper,
-                        this.clientTelemetryInfo.IsDirectConnectionMode);
-
+                    try
+                    {
+                        this.clientTelemetryInfo.SystemInfo = ClientTelemetryHelper.RecordSystemUtilization(
+                                                                                       helper: this.diagnosticsHelper,
+                                                                                       isDirectMode: this.clientTelemetryInfo.IsDirectConnectionMode);
+                    }
+                    catch (Exception ex)
+                    {
+                        this.telemetryJobException = ex;
+                        DefaultTrace.TraceError(" Error while collecting system usage information {0}", ex);
+                    }
+                   
                     // Take the copy for further processing i.e. serializing and dividing into chunks
                     ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot
                         = Interlocked.Exchange(ref this.operationInfoMap, new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>());
