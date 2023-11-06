@@ -223,7 +223,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             observer = new Mock<ChangeFeedObserver>();
             factory.Setup(f => f.CreateObserver()).Returns(observer.Object);
 
-            return new ChangeFeedProcessorCore(factory.Object, ChangeFeedMode.Incremental);
+            return new ChangeFeedProcessorCore(factory.Object);
         }
 
         public class MyDocument
