@@ -22,5 +22,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan.Cql
         public ulong KeyCount { get; }
         
         public IReadOnlyList<CqlAggregate> Aggregates { get; }
+
+        public override void Accept(ICqlVisitor cqlVisitor) => cqlVisitor.Visit(this);
     }
 }
