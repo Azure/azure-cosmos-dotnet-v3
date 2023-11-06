@@ -290,6 +290,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [TestMethod]
+        public async Task ValidateTryGetAccountProperties()
+        {
+            using CosmosClient cosmosClient = new CosmosClient(
+                ConfigurationManager.AppSettings["GatewayEndpoint"],
+                ConfigurationManager.AppSettings["MasterKey"]
+            );
+
+            Assert.IsFalse(cosmosClient.DocumentClient.TryGetCachedAccountProperties(out AccountProperties propertiesFromMethod));
+
+            AccountProperties accountProperties = await cosmosClient.ReadAccountAsync();
+
+            Assert.IsTrue(cosmosClient.DocumentClient.TryGetCachedAccountProperties(out propertiesFromMethod));
+
+            Assert.AreEqual(accountProperties.Consistency.DefaultConsistencyLevel, propertiesFromMethod.Consistency.DefaultConsistencyLevel);
+            Assert.AreEqual(accountProperties.Id, propertiesFromMethod.Id);
+        }
+
         private int TaskStartedCount = 0;
 
         private async Task<Exception> ReadNotFound(Container container)
