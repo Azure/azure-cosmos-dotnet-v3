@@ -26,6 +26,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Collector
         internal double RequestCharge { get; set; } // Required only for operation level telemetry
         internal string CollectionLink { get; set; } = null; // Required only for collection cache telemetry
         internal ITrace Trace { get; set; } // Required to fetch network level telemetry out of the trace object
-        internal ITrace RequestTrace { get; set; }
+        internal ITrace TraceToLog { get; set; }
     }
 }

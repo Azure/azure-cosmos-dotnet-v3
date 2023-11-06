@@ -26,7 +26,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
             CancellationToken cancellationToken)
         {
             ResponseMessage response = await base.SendAsync(request, cancellationToken);
-
             if (this.IsAllowed(request))
             {
                 try
@@ -46,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             RequestCharge = response.Headers.RequestCharge,
                             SubStatusCode = response.Headers.SubStatusCode,
                             Trace = response.Trace,
-                            RequestTrace = request.Trace
+                            TraceToLog = request.Trace
                         });
                 }
                 catch (Exception ex)

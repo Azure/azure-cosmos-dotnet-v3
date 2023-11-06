@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Newtonsoft.Json;
     using System.Text;
     using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Cosmos.Telemetry.Models;
     using System;
     using Microsoft.Azure.Cosmos.Telemetry;
 

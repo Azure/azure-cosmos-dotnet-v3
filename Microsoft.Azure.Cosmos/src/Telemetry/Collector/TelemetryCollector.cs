@@ -40,12 +40,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Collector
             }
             catch (Exception ex)
             {
-                data.RequestTrace.AddDatum($"{ClientTelemetryOptions.TelemetryCollectFailedKeyPrefix}-{cacheName}", ex);
+                data.TraceToLog.AddDatum($"{ClientTelemetryOptions.TelemetryCollectFailedKeyPrefix}-{cacheName}", ex);
                 DefaultTrace.TraceError($"Error while collecting cache {0} telemetry. Exception : {1}", cacheName, ex);
             }
         }
 
-        public virtual void CollectOperationAndNetworkInfo(Func<TelemetryInformation> functionFordata)
+        public void CollectOperationAndNetworkInfo(Func<TelemetryInformation> functionFordata)
         {
             TelemetryInformation data = functionFordata();
             try
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Collector
             }
             catch (Exception ex)
             {
-                data.RequestTrace.AddDatum($"{ClientTelemetryOptions.TelemetryCollectFailedKeyPrefix}-Operation", ex);
+                data.TraceToLog.AddDatum($"{ClientTelemetryOptions.TelemetryCollectFailedKeyPrefix}-Operation", ex);
                 DefaultTrace.TraceError($"Error while collecting operation telemetry. Exception : {1}", ex);
             }
 
@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Collector
                 }
                 catch (Exception ex)
                 {
-                    data.RequestTrace.AddDatum($"{ClientTelemetryOptions.TelemetryCollectFailedKeyPrefix}-Network", ex);
+                    data.TraceToLog.AddDatum($"{ClientTelemetryOptions.TelemetryCollectFailedKeyPrefix}-Network", ex);
                     DefaultTrace.TraceError($"Error while collecting network telemetry. Exception : {1}", ex);
                 }
             }

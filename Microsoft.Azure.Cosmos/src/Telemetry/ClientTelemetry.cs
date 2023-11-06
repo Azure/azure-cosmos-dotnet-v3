@@ -193,6 +193,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         // Initiating Telemetry Data Processor task which will serialize and send telemetry information to Client Telemetry Service
                         // Not disposing this task. If we dispose a client then, telemetry job(telemetryTask) should stop but processor task(processorTask) should make best effort to finish the job in background.
                         _ = ClientTelemetry.RunProcessorTaskAsync(this.clientTelemetryInfo.DateTimeUtc, processorTask, ClientTelemetryOptions.ClientTelemetryProcessorTimeOut);
+                    
                     }
                     catch (Exception ex)
                     {
@@ -240,7 +241,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Collects Cache Telemetry Information.
         /// </summary>
-        internal virtual void PushCacheDatapoint(string cacheName, TelemetryInformation data)
+        internal void PushCacheDatapoint(string cacheName, TelemetryInformation data)
         {
             if (string.IsNullOrEmpty(cacheName))
             {
@@ -288,7 +289,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Collects Telemetry Information.
         /// </summary>
-        internal virtual void PushOperationDatapoint(TelemetryInformation data)
+        internal void PushOperationDatapoint(TelemetryInformation data)
         {
             DefaultTrace.TraceVerbose("Collecting Operation data for Telemetry.");
 
@@ -348,7 +349,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="storeResponseStatistics"></param>
         /// <param name="databaseId"></param>
         /// <param name="containerId"></param>
-        internal virtual void PushNetworkDataPoint(List<StoreResponseStatistics> storeResponseStatistics, string databaseId, string containerId)
+        internal void PushNetworkDataPoint(List<StoreResponseStatistics> storeResponseStatistics, string databaseId, string containerId)
         {
             // Record Network/Replica Information
             this.networkDataRecorder.Record(storeResponseStatistics, databaseId, containerId);

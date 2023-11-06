@@ -239,7 +239,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 cacheRefreshInfoSnapshot,
                 requestInfoList,
                 "http://dummy.telemetry.endpoint/",
-                null,
                 new CancellationTokenSource(ClientTelemetryOptions.ClientTelemetryProcessorTimeOut).Token);
 
             Assert.AreEqual(expectedOperationInfoSize, actualOperationInfoSize, "Operation Info is not correct");
@@ -337,7 +336,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                                                     cacheRefreshInfoSnapshot,
                                                     default,
                                                     "http://dummy.telemetry.endpoint/",
-                                                    null,
                                                     cts.Token);
             });
 

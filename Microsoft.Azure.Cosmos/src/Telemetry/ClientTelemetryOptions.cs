@@ -28,14 +28,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         // Expecting histogram to have Minimum Request Charge of 1 and Maximum Request Charge of 9999900
         // For all the Document ReadWriteQuery Operations there will be at least 1 request charge.
-        internal const long RequestChargeMax = 9999900;
         internal const long RequestChargeMin = 1;
         internal const int RequestChargePrecision = 2;
         internal const string RequestChargeName = "RequestCharge";
         internal const string RequestChargeUnit = "RU";
 
         // Expecting histogram to have Minimum CPU Usage of .001% and Maximum CPU Usage of 999.99%
-        internal const long CpuMax = 99999;
         internal const long CpuMin = 1;
         internal const int CpuPrecision = 2;
         internal const String CpuName = "CPU";
@@ -100,6 +98,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal static TimeSpan ClientTelemetryProcessorTimeOut = TimeSpan.FromMinutes(5);
 
         internal static long RequestLatencyMax = TimeSpan.TicksPerHour;
+        internal static long RequestChargeMax = 9999900;
+        internal static long CpuMax = 99999;
 
         private static string environmentName;
 

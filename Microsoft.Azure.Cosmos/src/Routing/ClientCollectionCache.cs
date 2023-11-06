@@ -227,7 +227,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                                          ResourceType = request.ResourceType,
                                          SubStatusCode = response.SubStatusCode,
                                          CollectionLink = collectionLink,
-                                         RequestTrace = childTrace
+                                         TraceToLog = childTrace
                                      });
 
                                 return containerProperties;
