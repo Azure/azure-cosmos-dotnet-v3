@@ -1634,12 +1634,15 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private static Collection VisitSelectMany(ReadOnlyCollection<Expression> arguments, TranslationContext context)
         {
-            if (arguments.Count != 2)
+            if (arguments.Count < 2 || arguments.Count > 3)
             {
                 throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.InvalidArgumentsCount, LinqMethods.SelectMany, 2, arguments.Count));
             }
 
             LambdaExpression lambda = Utilities.GetLambda(arguments[1]);
+            Type collectionType = arguments.Count == 3
+                ? arguments[1].Type.GetGenericArguments()[0]
+                : lambda.Parameters[0].Type.GetGenericArguments()[0];
 
             // If there is Distinct, Take or OrderBy the lambda then it needs to be in a subquery.
             bool requireLocalExecution = false;
@@ -1663,7 +1666,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 Binding binding;
                 SqlQuery query = ExpressionToSql.CreateSubquery(lambda.Body, lambda.Parameters, context);
                 SqlCollection subqueryCollection = SqlSubqueryCollection.Create(query);
-                ParameterExpression parameterExpression = context.GenFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
+                ParameterExpression parameterExpression = context.GenFreshParameter(collectionType, ExpressionToSql.DefaultParameterName);
                 binding = new Binding(parameterExpression, subqueryCollection, isInCollection: false, isInputParameter: true);
                 context.currentQuery.fromParameters.Add(binding);
             }
