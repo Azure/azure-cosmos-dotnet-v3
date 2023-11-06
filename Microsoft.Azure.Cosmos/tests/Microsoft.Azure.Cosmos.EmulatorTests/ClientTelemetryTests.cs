@@ -12,6 +12,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Newtonsoft.Json;
     using System.Text;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.Telemetry.Models;
+    using System;
+    using Microsoft.Azure.Cosmos.Telemetry;
 
     /// <summary>
     /// In Emulator Mode, Run test against emulator and mock client telemetry service calls. 
@@ -170,6 +173,59 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public override async Task CreateItemWithSubStatusCodeTest(ConnectionMode mode)
         {
             await base.CreateItemWithSubStatusCodeTest(mode);
+        }
+
+
+        [TestMethod]
+        [DataRow(ConnectionMode.Direct)]
+        [DataRow(ConnectionMode.Gateway)]
+        public async Task CheckDiagnostics(ConnectionMode mode)
+        {
+            ClientTelemetryOptions.RequestLatencyMax = 1;
+
+            this.httpHandlerForNonAzureInstance = new HttpClientHandlerHelper
+            {
+                RequestCallBack = (request, cancellation) =>
+                {
+                    Console.WriteLine(request.RequestUri.AbsoluteUri);
+                    if (request.RequestUri.AbsoluteUri.Contains(Paths.ClientConfigPathSegment))
+                    {
+                        HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
+                        AccountClientConfiguration clientConfigProperties = new AccountClientConfiguration
+                        {
+                            ClientTelemetryConfiguration = new ClientTelemetryConfiguration
+                            {
+                                IsEnabled = true,
+                                Endpoint = telemetryServiceEndpoint.AbsoluteUri
+                            }
+                        };
+                        string payload = JsonConvert.SerializeObject(clientConfigProperties);
+                        result.Content = new StringContent(payload, Encoding.UTF8, "application/json");
+                        return Task.FromResult(result);
+                    }
+                    else if (request.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint.AbsoluteUri))
+                    {
+                        return Task.FromResult(new HttpResponseMessage(HttpStatusCode.BadGateway));
+                    }
+                    return null;
+                }
+            };
+
+            Container container = await base.CreateClientAndContainer(
+               mode: mode,
+               isAzureInstance: false);
+
+            // Create an item
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue");
+            
+            await container.CreateItemAsync<ToDoActivity>(testItem);
+
+            await Task.Delay(2000);
+
+            // Read an Item
+            ItemResponse<ToDoActivity> response = await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
+
+            Console.WriteLine(response.Diagnostics.ToString());
         }
     }
 }

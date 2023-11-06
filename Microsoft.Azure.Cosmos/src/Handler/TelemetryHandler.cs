@@ -26,6 +26,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             CancellationToken cancellationToken)
         {
             ResponseMessage response = await base.SendAsync(request, cancellationToken);
+
             if (this.IsAllowed(request))
             {
                 try
@@ -44,19 +45,21 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             ConsistencyLevel = request.Headers?[Documents.HttpConstants.HttpHeaders.ConsistencyLevel],
                             RequestCharge = response.Headers.RequestCharge,
                             SubStatusCode = response.Headers.SubStatusCode,
-                            Trace = response.Trace
+                            Trace = response.Trace,
+                            RequestTrace = request.Trace
                         });
                 }
                 catch (Exception ex)
                 {
                     DefaultTrace.TraceError("Error while collecting telemetry information : {0}", ex);
                 }
-
-                if (this.telemetryToServiceHelper.GetJobException() != null)
-                {
-                    response.Trace.AddDatum("Telemetry To Service Job Exception", this.telemetryToServiceHelper.GetJobException()?.ToString());
-                }
             }
+
+            if (this.telemetryToServiceHelper.GetJobException() != null)
+            {
+                request.Trace.AddDatum("TelemetryToServiceJobException", this.telemetryToServiceHelper.GetJobException()?.ToString());
+            }
+
             return response;
         }
 

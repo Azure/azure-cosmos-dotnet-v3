@@ -31,17 +31,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Collector
             {
                 if (data.CollectionLink != null)
                 {
-                    GetDatabaseAndCollectionName(data.CollectionLink, out string databaseName, out string collectionName);
+                    TelemetryCollector.GetDatabaseAndCollectionName(data.CollectionLink, out string databaseName, out string collectionName);
 
                     data.DatabaseId = databaseName;
                     data.ContainerId = collectionName;
                 }
-
                 this.clientTelemetry?.PushCacheDatapoint(cacheName, data);
             }
             catch (Exception ex)
             {
-                data.Trace.AddDatum($"{ClientTelemetryOptions.TelemetryCollectFailedKeyPrefix}-{cacheName}", ex);
+                data.RequestTrace.AddDatum($"{ClientTelemetryOptions.TelemetryCollectFailedKeyPrefix}-{cacheName}", ex);
                 DefaultTrace.TraceError($"Error while collecting cache {0} telemetry. Exception : {1}", cacheName, ex);
             }
         }
@@ -49,14 +48,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Collector
         public virtual void CollectOperationAndNetworkInfo(Func<TelemetryInformation> functionFordata)
         {
             TelemetryInformation data = functionFordata();
-
             try
             {
                 this.clientTelemetry?.PushOperationDatapoint(data);
             }
             catch (Exception ex)
             {
-                data.Trace.AddDatum($"{ClientTelemetryOptions.TelemetryCollectFailedKeyPrefix}-Operation", ex);
+                data.RequestTrace.AddDatum($"{ClientTelemetryOptions.TelemetryCollectFailedKeyPrefix}-Operation", ex);
                 DefaultTrace.TraceError($"Error while collecting operation telemetry. Exception : {1}", ex);
             }
 
@@ -70,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Collector
                 }
                 catch (Exception ex)
                 {
-                    data.Trace.AddDatum($"{ClientTelemetryOptions.TelemetryCollectFailedKeyPrefix}-Network", ex);
+                    data.RequestTrace.AddDatum($"{ClientTelemetryOptions.TelemetryCollectFailedKeyPrefix}-Network", ex);
                     DefaultTrace.TraceError($"Error while collecting network telemetry. Exception : {1}", ex);
                 }
             }

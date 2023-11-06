@@ -1021,7 +1021,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return new ItemBatchOperation(Documents.OperationType.Create, 0, new Cosmos.PartitionKey(itemId), itemId, TestCommon.SerializerCore.ToStream(testItem));
         }
 
-        private async Task<Container> CreateClientAndContainer(ConnectionMode mode,
+        internal async Task<Container> CreateClientAndContainer(ConnectionMode mode,
             Microsoft.Azure.Cosmos.ConsistencyLevel? consistency = null,
             bool isLargeContainer = false,
             bool isAzureInstance = true,

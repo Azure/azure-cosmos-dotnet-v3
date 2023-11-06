@@ -21,7 +21,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal const string TelemetryCollectFailedKeyPrefix = "TelemetryCollectFailed";
 
         // Expecting histogram to have Minimum Latency of 1 and Maximum Latency of 1 hour (which is never going to happen)
-        internal const long RequestLatencyMax = TimeSpan.TicksPerHour;
         internal const long RequestLatencyMin = 1;
         internal const int RequestLatencyPrecision = 4;
         internal const string RequestLatencyName = "RequestLatency";
@@ -81,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal const string DateFormat = "yyyy-MM-ddTHH:mm:ssZ";
 
         internal const string EnvPropsClientTelemetryEnvironmentName = "COSMOS.ENVIRONMENT_NAME";
-        
+
         internal static readonly ResourceType AllowedResourceTypes = ResourceType.Document;
         // Why 5 sec? As of now, if any network request is taking more than 5 millisecond sec, we will consider it slow request this value can be revisited in future
         internal static readonly TimeSpan NetworkLatencyThreshold = TimeSpan.FromMilliseconds(5);
@@ -99,7 +98,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal static TimeSpan DefaultIntervalForTelemetryJob = TimeSpan.FromMinutes(10);
         internal static int PayloadSizeThreshold = 1024 * 1024 * 2; // 2MB
         internal static TimeSpan ClientTelemetryProcessorTimeOut = TimeSpan.FromMinutes(5);
-        
+
+        internal static long RequestLatencyMax = TimeSpan.TicksPerHour;
+
         private static string environmentName;
 
         internal static string GetHostInformation(Compute vmInformation)

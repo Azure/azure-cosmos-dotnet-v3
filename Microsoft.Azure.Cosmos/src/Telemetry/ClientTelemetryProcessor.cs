@@ -38,7 +38,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot,
             IReadOnlyList<RequestInfo> requestInfoSnapshot,
             string endpointUrl,
-            Exception telemetryException,
             CancellationToken cancellationToken)
         {
             try
@@ -48,11 +47,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     operationInfoSnapshot: operationInfoSnapshot,
                     cacheRefreshInfoSnapshot: cacheRefreshInfoSnapshot,
                     sampledRequestInfo: requestInfoSnapshot,
-                    callback: async (payload) => await this.SendAsync(clientTelemetryInfo.GlobalDatabaseAccountName, payload, endpointUrl, telemetryException, cancellationToken));
+                    callback: async (payload) => await this.SendAsync(clientTelemetryInfo.GlobalDatabaseAccountName, payload, endpointUrl, cancellationToken));
             }
             catch (Exception ex)
             {
-                telemetryException = ex;
                 DefaultTrace.TraceError($"Exception while serializing telemetry payload: {ex}");
                 throw;
             }
@@ -69,7 +67,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string globalDatabaseAccountName, 
             string jsonPayload, 
             string endpointUrl,
-            Exception exception,
             CancellationToken cancellationToken)
         {
             if (endpointUrl == null)
@@ -132,7 +129,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
-                exception = ex;
                 DefaultTrace.TraceError("Exception while sending telemetry data : {0}", ex.Message);
                 throw;
             }

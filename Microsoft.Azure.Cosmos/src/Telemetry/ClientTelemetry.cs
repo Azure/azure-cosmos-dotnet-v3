@@ -187,13 +187,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                                                             cacheRefreshInfoSnapshot: cacheRefreshInfoSnapshot,
                                                                             requestInfoSnapshot: requestInfoSnapshot,
                                                                             endpointUrl: this.endpointUrl,
-                                                                            telemetryException: this.telemetryJobException,
-                                                                            cancellationToken: cancellationToken.Token), cancellationToken.Token);
+                                                                            cancellationToken: cancellationToken.Token), cancellationToken.Token)
+                            .ContinueWith(t => this.telemetryJobException = t.Exception, TaskContinuationOptions.OnlyOnFaulted);
 
                         // Initiating Telemetry Data Processor task which will serialize and send telemetry information to Client Telemetry Service
                         // Not disposing this task. If we dispose a client then, telemetry job(telemetryTask) should stop but processor task(processorTask) should make best effort to finish the job in background.
                         _ = ClientTelemetry.RunProcessorTaskAsync(this.clientTelemetryInfo.DateTimeUtc, processorTask, ClientTelemetryOptions.ClientTelemetryProcessorTimeOut);
-
                     }
                     catch (Exception ex)
                     {
