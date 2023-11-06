@@ -1236,6 +1236,23 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Returns the account properties available in the service configuration if the client was initialized.
+        /// </summary>
+        public bool TryGetCachedAccountProperties(out AccountProperties properties)
+        {
+            if (this.isSuccessfullyInitialized
+                && this.accountServiceConfiguration != null
+                && this.accountServiceConfiguration.AccountProperties != null)
+            {
+                properties = this.accountServiceConfiguration.AccountProperties;
+                return true;
+            }
+
+            properties = null;
+            return false;
+        }
+
+        /// <summary>
         /// Disposes the client for the Azure Cosmos DB service.
         /// </summary>
         /// <example>
