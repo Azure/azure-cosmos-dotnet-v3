@@ -1238,7 +1238,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Returns the account properties available in the service configuration if the client was initialized.
         /// </summary>
-        public bool TryGetAccountProperties(out AccountProperties properties)
+        public bool TryGetCachedAccountProperties(out AccountProperties properties)
         {
             if (this.isSuccessfullyInitialized
                 && this.accountServiceConfiguration != null
