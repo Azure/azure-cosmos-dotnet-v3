@@ -6,6 +6,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
 {
     using System;
     using System.Collections.Generic;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
+    using static Microsoft.Azure.Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum;
 
     internal sealed class MergedTrace : ITrace
     {
@@ -39,7 +41,37 @@ namespace Microsoft.Azure.Cosmos.Tracing
                         }
                     }
                 }
+
+                if (this.data.Value.TryGetValue("totalRequestCharge", out object totalRequestCharge))
+                {
+                    this.data.Value["totalRequestCharge"] = (double)totalRequestCharge + this.GetTraceRequestCharge(trace);
+                }
+                else
+                {
+                    this.data.Value.Add("totalRequestCharge", this.GetTraceRequestCharge(trace));
+                }
             }
+        }
+
+        private double GetTraceRequestCharge(ITrace trace)
+        {
+            double requestCharge = 0;
+            foreach (ITrace child in trace.Children)
+            {
+                if (child.Data.TryGetValue("Client Side Request Stats", out object clientSideRequestStats))
+                {
+                    foreach (StoreResponseStatistics storeResponseStatistics in ((ClientSideRequestStatisticsTraceDatum)clientSideRequestStats).StoreResponseStatisticsList)
+                    {
+                        requestCharge += storeResponseStatistics.StoreResult.RequestCharge;
+                    }
+                }
+                else
+                {
+                    requestCharge += this.GetTraceRequestCharge(child);
+                }
+            }
+
+            return requestCharge;
         }
         public string Name => "Multi-request Trace Instance: " + this.Id.ToString();
 

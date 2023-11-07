@@ -43,6 +43,16 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         {
             this.traceDiagnostics = traceDiagnostics;
             this.isMergedDiagnostics = true;
+
+            TraceSummary traceSummary = new TraceSummary();
+            traceSummary.SetRegionsContacted(this.GetContactedRegions());
+            traceSummary.SetFailedRequestCount(this.GetFailedRequestCount());
+
+            this.Value = new MergedTrace(
+                new List<ITrace>(this.traceDiagnostics.Select(trace => trace.Value)),
+                this.GetStartTimeUtc().Value,
+                this.GetClientElapsedTime(),
+                traceSummary);           
         }
 
         public ITrace Value { get; }
@@ -245,16 +255,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         private ReadOnlyMemory<byte> WriteTracesToJsonWriter(JsonSerializationFormat jsonSerializationFormat)
         {
             IJsonWriter jsonTextWriter = JsonWriter.Create(jsonSerializationFormat);
-            TraceSummary traceSummary = new TraceSummary();
-            traceSummary.SetRegionsContacted(this.GetContactedRegions());
-            traceSummary.SetFailedRequestCount(this.GetFailedRequestCount());
-
-            ITrace masterTrace = new MergedTrace(
-                new List<ITrace>(this.traceDiagnostics.Select(trace => trace.Value)),
-                this.GetStartTimeUtc().Value,
-                this.GetClientElapsedTime(),
-                traceSummary);
-            TraceWriter.WriteTrace(jsonTextWriter, masterTrace);
+            TraceWriter.WriteTrace(jsonTextWriter, this.Value);
             return jsonTextWriter.GetResult();
         }
     }
