@@ -30,32 +30,29 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 try
                 {
-                    this.telemetryToServiceHelper
-                        .GetCollector()
-                        .CollectOperationAndNetworkInfo(
-                            () => new TelemetryInformation
-                            {
-                                RegionsContactedList = response.Diagnostics.GetContactedRegions(),
-                                RequestLatency = response.Diagnostics.GetClientElapsedTime(),
-                                StatusCode = response.StatusCode,
-                                ResponseSizeInBytes = TelemetryHandler.GetPayloadSize(response),
-                                ContainerId = request.ContainerId,
-                                DatabaseId = request.DatabaseId,
-                                OperationType = request.OperationType,
-                                ResourceType = request.ResourceType,
-                                ConsistencyLevel = request.Headers?[Documents.HttpConstants.HttpHeaders.ConsistencyLevel],
-                                RequestCharge = response.Headers.RequestCharge,
-                                SubStatusCode = response.Headers.SubStatusCode,
-                                Trace = response.Trace,
-                                TraceToLog = request.Trace
-                            });
+                    this.telemetryToServiceHelper.GetCollector().CollectOperationAndNetworkInfo(
+                        () => new TelemetryInformation
+                        {
+                            RegionsContactedList = response.Diagnostics.GetContactedRegions(),
+                            RequestLatency = response.Diagnostics.GetClientElapsedTime(),
+                            StatusCode = response.StatusCode,
+                            ResponseSizeInBytes = TelemetryHandler.GetPayloadSize(response),
+                            ContainerId = request.ContainerId,
+                            DatabaseId = request.DatabaseId,
+                            OperationType = request.OperationType,
+                            ResourceType = request.ResourceType,
+                            ConsistencyLevel = request.Headers?[Documents.HttpConstants.HttpHeaders.ConsistencyLevel],
+                            RequestCharge = response.Headers.RequestCharge,
+                            SubStatusCode = response.Headers.SubStatusCode,
+                            Trace = response.Trace,
+                            TraceToLog = request.Trace
+                        });
                 }
                 catch (Exception ex)
                 {
                     DefaultTrace.TraceError("Error while collecting telemetry information : {0}", ex);
                 }
             }
-
             return response;
         }
 

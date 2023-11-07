@@ -163,17 +163,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     this.clientTelemetryInfo.ApplicationRegion = vmInformation?.Location;
                     this.clientTelemetryInfo.HostEnvInfo = ClientTelemetryOptions.GetHostInformation(vmInformation);
 
-                    try
-                    {
-                        this.clientTelemetryInfo.SystemInfo = ClientTelemetryHelper.RecordSystemUtilization(
-                                                                                       helper: this.diagnosticsHelper,
-                                                                                       isDirectMode: this.clientTelemetryInfo.IsDirectConnectionMode);
-                    }
-                    catch (Exception ex)
-                    {
-                        DefaultTrace.TraceError(" Error while collecting system usage information {0}", ex);
-                    }
-                   
+                    this.clientTelemetryInfo.SystemInfo = ClientTelemetryHelper.RecordSystemUtilization(this.diagnosticsHelper,
+                        this.clientTelemetryInfo.IsDirectConnectionMode);
+
                     // Take the copy for further processing i.e. serializing and dividing into chunks
                     ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot
                         = Interlocked.Exchange(ref this.operationInfoMap, new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>());
@@ -198,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         // Initiating Telemetry Data Processor task which will serialize and send telemetry information to Client Telemetry Service
                         // Not disposing this task. If we dispose a client then, telemetry job(telemetryTask) should stop but processor task(processorTask) should make best effort to finish the job in background.
                         _ = ClientTelemetry.RunProcessorTaskAsync(this.clientTelemetryInfo.DateTimeUtc, processorTask, ClientTelemetryOptions.ClientTelemetryProcessorTimeOut);
-                    
+
                     }
                     catch (Exception ex)
                     {
@@ -352,7 +344,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="storeResponseStatistics"></param>
         /// <param name="databaseId"></param>
         /// <param name="containerId"></param>
-        internal void PushNetworkDataPoint(List<StoreResponseStatistics> storeResponseStatistics, string databaseId, string containerId)
+        public void PushNetworkDataPoint(List<StoreResponseStatistics> storeResponseStatistics, string databaseId, string containerId)
         {
             // Record Network/Replica Information
             this.networkDataRecorder.Record(storeResponseStatistics, databaseId, containerId);

@@ -19,7 +19,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal const int OneKbToBytes = 1024;
 
         internal const string TelemetryCollectFailedKeyPrefix = "TelemetryCollectFailed";
-        internal const string TelemetryToServiceJobException = "TelemetryToServiceJobException";
 
         // Expecting histogram to have Minimum Latency of 1 and Maximum Latency of 1 hour (which is never going to happen)
         internal const long RequestLatencyMin = 1;
@@ -35,6 +34,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal const string RequestChargeUnit = "RU";
 
         // Expecting histogram to have Minimum CPU Usage of .001% and Maximum CPU Usage of 999.99%
+        internal const long CpuMax = 99999;
         internal const long CpuMin = 1;
         internal const int CpuPrecision = 2;
         internal const String CpuName = "CPU";
@@ -100,7 +100,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         internal static long RequestLatencyMax = TimeSpan.TicksPerHour;
         internal static long RequestChargeMax = 9999900;
-        internal static long CpuMax = 99999;
 
         private static string environmentName;
 

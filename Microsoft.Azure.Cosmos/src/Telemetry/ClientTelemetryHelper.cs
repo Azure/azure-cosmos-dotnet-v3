@@ -80,21 +80,28 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         internal static List<SystemInfo> RecordSystemUtilization(DiagnosticsHandlerHelper helper, bool isDirectMode)
         {
-            DefaultTrace.TraceVerbose("Started Recording System Usage for telemetry.");
-
-            SystemUsageHistory systemUsageHistory = helper.GetClientTelemetrySystemHistory();
-
-            if (systemUsageHistory != null)
+            try
             {
-                return ClientTelemetryHelper.RecordSystemUsage(
-                    systemUsageHistory: systemUsageHistory,
-                    isDirectConnectionMode: isDirectMode);
+                DefaultTrace.TraceVerbose("Started Recording System Usage for telemetry.");
+
+                SystemUsageHistory systemUsageHistory = helper.GetClientTelemetrySystemHistory();
+
+                if (systemUsageHistory != null)
+                {
+                    return ClientTelemetryHelper.RecordSystemUsage(
+                        systemUsageHistory: systemUsageHistory,
+                        isDirectConnectionMode: isDirectMode);
+                }
+                else
+                {
+                    DefaultTrace.TraceWarning("System Usage History not available");
+                }
             }
-            else
+            catch (Exception ex)
             {
-                DefaultTrace.TraceWarning("System Usage History not available");
-                throw new Exception("System Usage History not available");
+                DefaultTrace.TraceError("System Usage Recording Error : {0} ", ex);
             }
+            return null;
         }
 
         /// <summary>

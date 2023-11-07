@@ -176,21 +176,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
 
         [TestMethod]
-        [DataRow("SystemUsageCollectionFailure")]
         [DataRow("RequestChargeCollectionFailure")]
         [DataRow("LatencyCollectionFailure")]
-        [DataRow("TelemetryServiceApiCallFailure")]
         public async Task TelemetryFailuresInDiagnosticsTest(string failureType)
         {
             ClientTelemetryOptions.RequestChargeMax = TimeSpan.TicksPerHour;
             ClientTelemetryOptions.RequestLatencyMax = 9999900;
-            ClientTelemetryOptions.CpuMax = 99999;
 
-            if (failureType == "SystemUsageCollectionFailure")
-            {
-                ClientTelemetryOptions.CpuMax = 1; // It will fail system usage collection
-            }
-            else if (failureType == "RequestChargeCollectionFailure")
+            if (failureType == "RequestChargeCollectionFailure")
             {
                 ClientTelemetryOptions.RequestChargeMax = 1; // It will fail operation level collection
             }
@@ -221,14 +214,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
                     else if (request.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint.AbsoluteUri))
                     {
-                        if (failureType == "TelemetryServiceApiCallFailure")
-                        {
-                            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.BadGateway));
-                        }
-                        else
-                        {
-                            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
-                        }
+                        
+                        return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
                     }
                     return null;
                 }
@@ -246,29 +233,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Read an Item
             ItemResponse<ToDoActivity> read1Response = await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
-            if (failureType == "TelemetryServiceApiCallFailure" || failureType == "SystemUsageCollectionFailure")
-            {
-                Assert.IsTrue(read1Response.Diagnostics.ToString().Contains(ClientTelemetryOptions.TelemetryToServiceJobException));
-            }
-            else
-            {
-                Assert.IsTrue(read1Response.Diagnostics.ToString().Contains(ClientTelemetryOptions.TelemetryCollectFailedKeyPrefix));
-            }
+            
+            Assert.IsTrue(read1Response.Diagnostics.ToString().Contains(ClientTelemetryOptions.TelemetryCollectFailedKeyPrefix));
 
             // Fix issues
             ClientTelemetryOptions.RequestChargeMax = TimeSpan.TicksPerHour;
             ClientTelemetryOptions.RequestLatencyMax = 9999900;
-            ClientTelemetryOptions.CpuMax = 99999;
 
             await Task.Delay(1500); // Wait for one telemetry service call
 
             // Read an Item
             ItemResponse<ToDoActivity> read2Response = await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
-            if (failureType != "TelemetryServiceApiCallFailure")
-            {
-                Assert.IsFalse(read2Response.Diagnostics.ToString().Contains(ClientTelemetryOptions.TelemetryToServiceJobException));
-                Assert.IsFalse(read2Response.Diagnostics.ToString().Contains(ClientTelemetryOptions.TelemetryCollectFailedKeyPrefix));
-            }
+            Assert.IsFalse(read2Response.Diagnostics.ToString().Contains(ClientTelemetryOptions.TelemetryCollectFailedKeyPrefix));
         }
     }
 }
