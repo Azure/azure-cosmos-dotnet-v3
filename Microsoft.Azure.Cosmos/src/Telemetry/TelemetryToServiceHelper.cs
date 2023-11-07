@@ -177,14 +177,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             return this.collector;
         }
 
-        /// <summary>
-        /// This Exception will be available for next aggregation interval (i.e. 10 min) and will be part of request diagnostics for all those requests fired in that 10 minutes.
-        /// </summary>
-        public Exception GetJobException()
-        {
-            return this.clientTelemetry?.telemetryJobException;
-        }
-
         public bool IsClientTelemetryJobRunning()
         {
             return this.clientTelemetry != null;
