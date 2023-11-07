@@ -131,9 +131,45 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             this.ExecuteTestSuite(inputs);
         }
 
-        public override IndexMetricsParserTestOutput ExecuteTest(IndexMetricsParserTestInput input)
+        [TestMethod]
+        public void IndexUtilizationHeaderLengthTest()
         {
-            // V2
+            const int repeatCount = 10000;
+            string property1 = "r." + new string('a', repeatCount);
+            string property2 = "r." + new string('b', repeatCount);
+            string property3 = "r." + new string('c', repeatCount);
+
+            const string equalityFilter = " = 0";
+            const string inequalityFilter = " > 0";
+            List<IndexMetricsParserTestInput> inputs = new List<IndexMetricsParserTestInput>
+            {
+                new IndexMetricsParserTestInput
+                (
+                    description: "Single property",
+                    query: "SELECT * FROM root r WHERE " + property1 + equalityFilter
+                ),
+                new IndexMetricsParserTestInput
+                (
+                    description: "Only single index recommendation",
+                    query: "SELECT * FROM root r WHERE " + property1 + inequalityFilter + " AND " + property2 + inequalityFilter
+                ),
+                new IndexMetricsParserTestInput
+                (
+                    description: "Only one composite index recommendation",
+                    query: "SELECT * FROM root r WHERE " + property1 + equalityFilter + " AND " + property2 + inequalityFilter
+                ),
+                // Notice in this baseline the composite index recommendation is cut off
+                new IndexMetricsParserTestInput
+                (
+                    description: "Multiple composite index recommendation",
+                    query: "SELECT * FROM root r WHERE " + property1 + equalityFilter + " AND " + property2 + inequalityFilter + " AND " + property3 + inequalityFilter
+                ),
+            };
+
+            this.ExecuteTestSuite(inputs);
+        }
+        public override IndexMetricsParserTestOutput ExecuteTest(IndexMetricsParserTestInput input)
+        
             QueryRequestOptions requestOptions = new QueryRequestOptions() { PopulateIndexMetrics = true };
 
             FeedIterator<CosmosElement> itemQuery = testContainer.GetItemQueryIterator<CosmosElement>(
