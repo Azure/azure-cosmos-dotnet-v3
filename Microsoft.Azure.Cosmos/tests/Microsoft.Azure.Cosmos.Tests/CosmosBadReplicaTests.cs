@@ -71,11 +71,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                     "44444444444444444",
                 };
 
-                    HttpResponseMessage replicaSet1 = MockSetupsHelper.CreateAddresses(
-                        replicaIds1,
-                        partitionKeyRanges.First(),
-                        "eastus",
-                        cRid);
+                HttpResponseMessage replicaSet1 = MockSetupsHelper.CreateAddresses(
+                    replicaIds1,
+                    partitionKeyRanges.First(),
+                    "eastus",
+                    cRid);
 
                     // One replica changed on the refresh
                     List<string> replicaIds2 = new List<string>()
@@ -175,6 +175,10 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                         mockTransportClient.VerifyAll();
                         mockHttpHandler.VerifyAll();
+
+                        mockTransportClient
+                            .Setup(x => x.OpenConnectionAsync(It.IsAny<Uri>()))
+                            .Returns(Task.CompletedTask);
 
                         Documents.TransportAddressUri failedReplica = urisVisited.First();
 
