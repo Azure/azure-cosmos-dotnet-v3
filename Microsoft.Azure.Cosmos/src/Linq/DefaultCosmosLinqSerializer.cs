@@ -4,19 +4,17 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
-    using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
     using System.Runtime.Serialization;
-    using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
     internal class DefaultCosmosLinqSerializer : ICosmosLinqSerializer
     {
-        public CustomAttributeData GetConverterAttribute(MemberExpression memberExpression, Type memberType)
+        public bool HasCustomAttribute(MemberExpression memberExpression, Type memberType)
         {
             // There are two ways to specify a custom attribute
             // 1- by specifying the JsonConverterAttribute on a Class/Enum
@@ -40,11 +38,19 @@ namespace Microsoft.Azure.Cosmos.Linq
             // use FirstOrDefault()
             CustomAttributeData memberAttribute = memberExpression.Member.CustomAttributes.FirstOrDefault(ca => ca.AttributeType == typeof(Newtonsoft.Json.JsonConverterAttribute));
             CustomAttributeData typeAttribute = memberType.GetsCustomAttributes().FirstOrDefault(ca => ca.AttributeType == typeof(Newtonsoft.Json.JsonConverterAttribute));
-            return memberAttribute ?? typeAttribute;
+
+            return memberAttribute != null || typeAttribute != null;
         }
 
-        public string SerializeWithConverter(object value, Type converterType)
+        public string Serialize(object value, MemberExpression memberExpression, Type memberType)
         {
+            CustomAttributeData memberAttribute = memberExpression.Member.CustomAttributes.FirstOrDefault(ca => ca.AttributeType == typeof(Newtonsoft.Json.JsonConverterAttribute));
+            CustomAttributeData typeAttribute = memberType.GetsCustomAttributes().FirstOrDefault(ca => ca.AttributeType == typeof(Newtonsoft.Json.JsonConverterAttribute));
+            CustomAttributeData converterAttribute = memberAttribute ?? typeAttribute;
+
+            Debug.Assert(converterAttribute.ConstructorArguments.Count > 0);
+            Type converterType = (Type)converterAttribute.ConstructorArguments[0].Value;
+
             string serializedValue = converterType.GetConstructor(Type.EmptyTypes) != null
                 ? JsonConvert.SerializeObject(value, (Newtonsoft.Json.JsonConverter)Activator.CreateInstance(converterType))
                 : JsonConvert.SerializeObject(value);

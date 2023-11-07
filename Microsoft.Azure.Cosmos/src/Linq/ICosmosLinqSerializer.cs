@@ -4,22 +4,20 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
-    using System.Collections.Generic;
     using System.Linq.Expressions;
     using System.Reflection;
-    using Microsoft.Azure.Cosmos.SqlObjects;
 
     internal interface ICosmosLinqSerializer
     {
         /// <summary>
-        /// Gets custom attributes on a member expression. Returns null if none exist.
+        /// Returns true if there are custom attributes on a member expression.
         /// </summary>
-        CustomAttributeData GetConverterAttribute(MemberExpression memberExpression, Type memberType);
+        bool HasCustomAttribute(MemberExpression memberExpression, Type memberType);
 
         /// <summary>
-        /// Serializes object with provided custom converter.
+        /// Serializes object.
         /// </summary>
-        string SerializeWithConverter(object value, Type converterType);
+        string Serialize(object value, MemberExpression memberExpression, Type memberType);
 
         /// <summary>
         /// Serializes a ConstantExpression.

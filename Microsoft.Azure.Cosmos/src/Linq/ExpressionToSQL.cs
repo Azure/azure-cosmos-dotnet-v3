@@ -503,13 +503,9 @@ namespace Microsoft.Azure.Cosmos.Linq
                     memberType = memberType.NullableUnderlyingType();
                 }
 
-                CustomAttributeData converterAttribute = context.CosmosLinqSerializer.GetConverterAttribute(memberExpression, memberType);
-                if (converterAttribute != null)
+                bool hasConverterAttribute = context.CosmosLinqSerializer.HasCustomAttribute(memberExpression, memberType);
+                if (hasConverterAttribute)
                 {
-                    Debug.Assert(converterAttribute.ConstructorArguments.Count > 0);
-
-                    Type converterType = (Type)converterAttribute.ConstructorArguments[0].Value;
-
                     object value = default(object);
                     // Enum
                     if (memberType.IsEnum())
@@ -541,7 +537,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                     if (value != default(object))
                     {
-                        string serializedValue = context.CosmosLinqSerializer.SerializeWithConverter(value, converterType);
+                        string serializedValue = context.CosmosLinqSerializer.Serialize(value, memberExpression, memberType);
                         return CosmosElement.Parse(serializedValue).Accept(CosmosElementToSqlScalarExpressionVisitor.Singleton);
                     }
                 }
