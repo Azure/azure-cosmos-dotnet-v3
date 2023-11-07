@@ -189,7 +189,7 @@ namespace Microsoft.Azure.Cosmos
             // TODO: Switch the flag to false once V2 is deployed
             this.IndexUtilizationText = ResponseMessage.DecodeIndexMetrics(
                 responseMessageHeaders, 
-                isBase64Encoded: true);
+                isBase64Encoded: false);
             
             this.RequestMessage = requestMessage;
         }
