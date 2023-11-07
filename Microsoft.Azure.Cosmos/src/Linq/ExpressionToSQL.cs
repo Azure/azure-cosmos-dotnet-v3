@@ -503,8 +503,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                     memberType = memberType.NullableUnderlyingType();
                 }
 
-                bool hasConverterAttribute = context.CosmosLinqSerializer.HasCustomAttribute(memberExpression, memberType);
-                if (hasConverterAttribute)
+                bool requiresCustomSerializatior = context.CosmosLinqSerializer.RequiresCustomSerialization(memberExpression, memberType);
+                if (requiresCustomSerializatior)
                 {
                     object value = default(object);
                     // Enum

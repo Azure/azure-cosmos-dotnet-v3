@@ -12,8 +12,9 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <summary>
         /// Returns true if there are custom attributes on a member expression.
         /// </summary>
-        bool HasCustomAttribute(MemberExpression memberExpression, Type memberType);
+        bool RequiresCustomSerialization(MemberExpression memberExpression, Type memberType);
 
+        // TODO : Clean up this interface member for better generalizability
         /// <summary>
         /// Serializes object.
         /// </summary>

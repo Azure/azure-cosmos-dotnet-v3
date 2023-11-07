@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
     internal class DefaultCosmosLinqSerializer : ICosmosLinqSerializer
     {
-        public bool HasCustomAttribute(MemberExpression memberExpression, Type memberType)
+        public bool RequiresCustomSerialization(MemberExpression memberExpression, Type memberType)
         {
             // There are two ways to specify a custom attribute
             // 1- by specifying the JsonConverterAttribute on a Class/Enum
