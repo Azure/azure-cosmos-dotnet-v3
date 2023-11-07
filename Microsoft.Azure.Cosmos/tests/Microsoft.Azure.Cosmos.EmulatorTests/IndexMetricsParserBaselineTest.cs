@@ -168,8 +168,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 
             this.ExecuteTestSuite(inputs);
         }
+
         public override IndexMetricsParserTestOutput ExecuteTest(IndexMetricsParserTestInput input)
-        
+        { 
             QueryRequestOptions requestOptions = new QueryRequestOptions() { PopulateIndexMetrics = true };
 
             FeedIterator<CosmosElement> itemQuery = testContainer.GetItemQueryIterator<CosmosElement>(
