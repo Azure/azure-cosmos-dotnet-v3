@@ -17,6 +17,8 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
     internal sealed class CosmosTraceDiagnostics : CosmosDiagnostics
     {
         private readonly Lazy<ServerSideCumulativeMetrics> accumulatedMetrics;
+        private readonly List<CosmosTraceDiagnostics> traceDiagnostics;
+        private readonly bool isMergedDiagnostics;
 
         public CosmosTraceDiagnostics(ITrace trace)
         {
@@ -34,33 +36,107 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
             this.Value = rootTrace;
             this.accumulatedMetrics = new Lazy<ServerSideCumulativeMetrics>(() => PopulateServerSideCumulativeMetrics(this.Value));
+            this.isMergedDiagnostics = false;
+        }
+
+        public CosmosTraceDiagnostics(List<CosmosTraceDiagnostics> traceDiagnostics)
+        {
+            this.traceDiagnostics = traceDiagnostics;
+            this.isMergedDiagnostics = true;
         }
 
         public ITrace Value { get; }
 
         public override string ToString()
         {
-            return this.ToJsonString();
+            if (!this.isMergedDiagnostics)
+            {
+                return this.ToJsonString();
+            }
+
+            return this.MultiDiagnosticsToJsonString();
         }
 
         public override TimeSpan GetClientElapsedTime()
         {
-            return this.Value.Duration;
+            if (!this.isMergedDiagnostics)
+            {
+                return this.Value.Duration;
+            }
+
+            TimeSpan maxElpasedTime = TimeSpan.Zero;
+            foreach (CosmosTraceDiagnostics trace in this.traceDiagnostics)
+            {
+                maxElpasedTime += trace.GetClientElapsedTime();
+            }
+
+            return maxElpasedTime;
         }
 
         public override IReadOnlyList<(string regionName, Uri uri)> GetContactedRegions()
         {
-            return this.Value?.Summary?.RegionsContacted;
+            if (!this.isMergedDiagnostics)
+            {
+                return this.Value?.Summary?.RegionsContacted;
+            }
+
+            HashSet<(string regionName, Uri uri)> contactedRegions = null;
+            foreach (CosmosTraceDiagnostics trace in this.traceDiagnostics)
+            {
+                if (contactedRegions == null)
+                {
+                    contactedRegions = new HashSet<(string regionName, Uri uri)>(trace.GetContactedRegions());
+                }
+                else
+                {
+                    foreach ((string regionName, Uri uri) in trace.GetContactedRegions())
+                    {
+                        contactedRegions.Add((regionName, uri));
+                    }
+
+                }
+            }
+
+            return contactedRegions.ToList().AsReadOnly();
         }
 
         public override ServerSideCumulativeMetrics GetQueryMetrics()
         {
-            return this.accumulatedMetrics.Value;
+            if (!this.isMergedDiagnostics)
+            {
+                return this.accumulatedMetrics.Value;
+            }
+
+            ServerSideMetricsInternalAccumulator accumulator = new ServerSideMetricsInternalAccumulator();
+            foreach (CosmosTraceDiagnostics traceDiagnostics in this.traceDiagnostics)
+            {
+                ServerSideMetricsInternalAccumulator.WalkTraceTreeForQueryMetrics(traceDiagnostics.GetTrace(), accumulator);
+            }
+
+            IReadOnlyList<ServerSidePartitionedMetricsInternal> serverSideMetricsList = accumulator.GetPartitionedServerSideMetrics().Select(metrics => new ServerSidePartitionedMetricsInternal(metrics)).ToList();
+
+            ServerSideCumulativeMetrics accumulatedMetrics = new ServerSideCumulativeMetricsInternal(serverSideMetricsList);
+            return accumulatedMetrics.PartitionedMetrics.Count != 0 ? accumulatedMetrics : null;
+        }
+
+        internal ITrace GetTrace()
+        {
+            return this.Value;
         }
 
         internal bool IsGoneExceptionHit()
         {
-            return this.WalkTraceTreeForGoneException(this.Value);
+            if (!this.isMergedDiagnostics)
+            {
+                return this.WalkTraceTreeForGoneException(this.Value);
+            }
+            
+            bool isGoneExceptionHit = false;
+            foreach (CosmosTraceDiagnostics trace in this.traceDiagnostics)
+            {
+                isGoneExceptionHit |= trace.IsGoneExceptionHit();
+            }
+            return isGoneExceptionHit;
         }
 
         private bool WalkTraceTreeForGoneException(ITrace currentTrace)
@@ -121,12 +197,23 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         public override DateTime? GetStartTimeUtc()
         {
-            if (this.Value == null || this.Value.StartTime == null)
+            if (!this.isMergedDiagnostics)
             {
-                return null;
+                if (this.Value == null || this.Value.StartTime == null)
+                {
+                    return null;
+                }
+
+                return this.Value.StartTime;
+            }
+            
+            DateTime minStartTime = DateTime.MaxValue;
+            foreach (CosmosTraceDiagnostics trace in this.traceDiagnostics)
+            {
+                minStartTime = minStartTime < trace.GetStartTimeUtc().Value ? minStartTime : trace.GetStartTimeUtc().Value;
             }
 
-            return this.Value.StartTime;
+            return minStartTime == DateTime.MaxValue ? null : minStartTime;
         }
 
         public override int GetFailedRequestCount()
@@ -136,7 +223,39 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                 return 0;
             }
 
-            return this.Value.Summary.GetFailedCount();
-       }
+            if (!this.isMergedDiagnostics)
+            {
+                return this.Value.Summary.GetFailedCount();
+            }
+
+            int failedRequestCount = 0;
+            foreach (CosmosTraceDiagnostics trace in this.traceDiagnostics)
+            {
+                failedRequestCount += trace.GetFailedRequestCount();
+            }
+            return failedRequestCount;        
+        }
+
+        private string MultiDiagnosticsToJsonString()
+        {
+            ReadOnlyMemory<byte> utf8String = this.WriteTracesToJsonWriter(JsonSerializationFormat.Text);
+            return Encoding.UTF8.GetString(utf8String.Span);
+        }
+
+        private ReadOnlyMemory<byte> WriteTracesToJsonWriter(JsonSerializationFormat jsonSerializationFormat)
+        {
+            IJsonWriter jsonTextWriter = JsonWriter.Create(jsonSerializationFormat);
+            TraceSummary traceSummary = new TraceSummary();
+            traceSummary.SetRegionsContacted(this.GetContactedRegions());
+            traceSummary.SetFailedRequestCount(this.GetFailedRequestCount());
+
+            ITrace masterTrace = new MergedTrace(
+                new List<ITrace>(this.traceDiagnostics.Select(trace => trace.Value)),
+                this.GetStartTimeUtc().Value,
+                this.GetClientElapsedTime(),
+                traceSummary);
+            TraceWriter.WriteTrace(jsonTextWriter, masterTrace);
+            return jsonTextWriter.GetResult();
+        }
     }
 }

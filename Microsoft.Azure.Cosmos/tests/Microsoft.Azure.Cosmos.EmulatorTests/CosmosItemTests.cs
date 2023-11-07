@@ -33,7 +33,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Reflection;
     using System.Text.RegularExpressions;
     using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
 
     [TestClass]
     public class CosmosItemTests : BaseCosmosClientHelper
@@ -124,6 +123,67 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                        new Cosmos.PartitionKey(item["pk"].ToString())); ;
                 }
             }
+        }
+
+        [TestMethod]
+        public async Task CheckMergeDiagnosticsTest()
+        {
+            ToDoActivity testItem1 = ToDoActivity.CreateRandomToDoActivity();
+            _ = await this.Container.CreateItemAsync<ToDoActivity>(item: testItem1);
+
+            ToDoActivity testItem2 = ToDoActivity.CreateRandomToDoActivity();
+            _ = await this.Container.CreateItemAsync<ToDoActivity>(item: testItem2);
+
+            ItemResponse<ToDoActivity> response3 = await this.Container.ReadItemAsync<ToDoActivity>(testItem1.id, new Cosmos.PartitionKey(testItem1.pk));
+            Assert.IsNotNull(response3);
+            Assert.IsNotNull(response3.Resource);
+            Assert.IsNotNull(response3.Diagnostics);
+            CosmosTraceDiagnostics cosmosTraceDiagnostics1 = response3.Diagnostics as CosmosTraceDiagnostics;
+
+            ItemResponse<ToDoActivity> response4 = await this.Container.ReadItemAsync<ToDoActivity>(testItem2.id, new Cosmos.PartitionKey(testItem2.pk));
+            Assert.IsNotNull(response4);
+            Assert.IsNotNull(response4.Resource);
+            Assert.IsNotNull(response4.Diagnostics);
+            CosmosTraceDiagnostics cosmosTraceDiagnostics2 = response4.Diagnostics as CosmosTraceDiagnostics;
+
+            CosmosTraceDiagnostics mergedDiagnostics1 = new CosmosTraceDiagnostics(new List<CosmosTraceDiagnostics>() { cosmosTraceDiagnostics1, cosmosTraceDiagnostics2 });
+            Assert.IsNotNull(mergedDiagnostics1);
+            Assert.AreEqual(1, mergedDiagnostics1.GetContactedRegions().Count);
+            Assert.AreEqual(cosmosTraceDiagnostics1.GetStartTimeUtc(), mergedDiagnostics1.GetStartTimeUtc());
+            Assert.AreEqual(cosmosTraceDiagnostics1.GetClientElapsedTime() + cosmosTraceDiagnostics2.GetClientElapsedTime(), mergedDiagnostics1.GetClientElapsedTime());
+            Assert.AreEqual(cosmosTraceDiagnostics1.GetFailedRequestCount() + cosmosTraceDiagnostics2.GetFailedRequestCount(), mergedDiagnostics1.GetFailedRequestCount());
+
+            FeedResponse<ToDoActivity> response5;
+            CosmosTraceDiagnostics cosmosTraceDiagnostics3 = null;
+            using FeedIterator<ToDoActivity> feed1 = this.Container.GetItemQueryIterator<ToDoActivity>(queryText: $"SELECT * FROM c");
+            while (feed1.HasMoreResults)
+            {
+                response5 = await feed1.ReadNextAsync();
+                cosmosTraceDiagnostics3 = response5.Diagnostics as CosmosTraceDiagnostics;
+            }
+            Assert.IsNotNull(cosmosTraceDiagnostics3);
+
+            FeedResponse<ToDoActivity> response6;
+            CosmosTraceDiagnostics cosmosTraceDiagnostics4 = null;
+            using FeedIterator<ToDoActivity> feed2 = this.Container.GetItemQueryIterator<ToDoActivity>(queryText: $"SELECT * FROM c");
+            while (feed2.HasMoreResults)
+            {
+                response6 = await feed2.ReadNextAsync();
+                cosmosTraceDiagnostics4 = response6.Diagnostics as CosmosTraceDiagnostics;
+            }
+            Assert.IsNotNull(cosmosTraceDiagnostics4);
+
+            CosmosTraceDiagnostics mergedDiagnostics2 = new CosmosTraceDiagnostics(new List<CosmosTraceDiagnostics>() { cosmosTraceDiagnostics3, cosmosTraceDiagnostics4 });
+            Assert.IsNotNull(mergedDiagnostics2);
+            Assert.AreEqual(1, mergedDiagnostics2.GetContactedRegions().Count);
+            Assert.AreEqual(cosmosTraceDiagnostics3.GetStartTimeUtc(), mergedDiagnostics2.GetStartTimeUtc());
+            Assert.AreEqual(cosmosTraceDiagnostics3.GetClientElapsedTime() + cosmosTraceDiagnostics4.GetClientElapsedTime(), mergedDiagnostics2.GetClientElapsedTime());
+            Assert.AreEqual(cosmosTraceDiagnostics3.GetFailedRequestCount() + cosmosTraceDiagnostics4.GetFailedRequestCount(), mergedDiagnostics2.GetFailedRequestCount());
+            ServerSideCumulativeMetrics queryMetrics = mergedDiagnostics2.GetQueryMetrics();
+            ServerSideCumulativeMetrics request3QueryMetrics = cosmosTraceDiagnostics3.GetQueryMetrics();
+            ServerSideCumulativeMetrics request4QueryMetrics = cosmosTraceDiagnostics4.GetQueryMetrics();
+            Assert.IsNotNull(queryMetrics);
+            Assert.AreEqual(request3QueryMetrics.CumulativeMetrics.RetrievedDocumentCount + request4QueryMetrics.CumulativeMetrics.RetrievedDocumentCount, queryMetrics.CumulativeMetrics.RetrievedDocumentCount);
         }
 
         [TestMethod]
