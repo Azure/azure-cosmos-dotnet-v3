@@ -4,6 +4,8 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using Microsoft.Azure.Cosmos.Linq;
+
     /// <summary>
     /// This class provides a way to configure Linq Serialization Properties
     /// </summary>
@@ -16,16 +18,8 @@ namespace Microsoft.Azure.Cosmos
         public CosmosLinqSerializerOptions()
         {
             this.PropertyNamingPolicy = CosmosPropertyNamingPolicy.Default;
+            this.LinqSerializerType = LinqSerializerType.Default;
         }
-
-        /// <summary>
-        /// Gets or sets the user defined customer serializer. If no customer serializer was defined, 
-        /// then the value is set to the default value
-        /// </summary>
-        /// <remarks>
-        /// The default value is null
-        /// </remarks>
-        internal CosmosSerializer CustomCosmosSerializer { get; set; }
 
         /// <summary>
         /// Gets or sets whether the naming policy used to convert a string-based name to another format,
@@ -35,5 +29,22 @@ namespace Microsoft.Azure.Cosmos
         /// The default value is CosmosPropertyNamingPolicy.Default
         /// </remarks>
         public CosmosPropertyNamingPolicy PropertyNamingPolicy { get; set; }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        /// <remarks>
+        /// The default value is LinqSerializerType.Default
+        /// </remarks>
+        public LinqSerializerType LinqSerializerType { get; set; }
+
+        /// <summary>
+        /// Gets or sets the user defined customer serializer. If no customer serializer was defined, 
+        /// then the value is set to the default value
+        /// </summary>
+        /// <remarks>
+        /// The default value is null
+        /// </remarks>
+        internal CosmosSerializer CustomCosmosSerializer { get; set; }
     }
 }

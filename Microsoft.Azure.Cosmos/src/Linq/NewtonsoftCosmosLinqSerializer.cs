@@ -8,41 +8,21 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
-    using System.Runtime.Serialization;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Serialization;
 
-    internal class DefaultCosmosLinqSerializer : ICosmosLinqSerializer
+    internal class NewtonsoftCosmosLinqSerializer : ICosmosLinqSerializer
     {
         private readonly CosmosLinqSerializerOptions LinqSerializerOptions;
 
-        public DefaultCosmosLinqSerializer(CosmosLinqSerializerOptions linqSerializerOptions)
+        public NewtonsoftCosmosLinqSerializer(CosmosLinqSerializerOptions linqSerializerOptions)
         {
             this.LinqSerializerOptions = linqSerializerOptions;
         }
 
         public bool RequiresCustomSerialization(MemberExpression memberExpression, Type memberType)
         {
-            // There are two ways to specify a custom attribute
-            // 1- by specifying the JsonConverterAttribute on a Class/Enum
-            //      [JsonConverter(typeof(StringEnumConverter))]
-            //      Enum MyEnum
-            //      {
-            //           ...
-            //      }
-            //
-            // 2- by specifying the JsonConverterAttribute on a property
-            //      class MyClass
-            //      {
-            //           [JsonConverter(typeof(StringEnumConverter))]
-            //           public MyEnum MyEnum;
-            //      }
-            //
-            // Newtonsoft gives high precedence to the attribute specified
-            // on a property over on a type (class/enum)
-            // so we check both attributes and apply the same precedence rules
-            // JsonConverterAttribute doesn't allow duplicates so it's safe to
-            // use FirstOrDefault()
             CustomAttributeData memberAttribute = memberExpression.Member.CustomAttributes.FirstOrDefault(ca => ca.AttributeType == typeof(Newtonsoft.Json.JsonConverterAttribute));
             CustomAttributeData typeAttribute = memberType.GetsCustomAttributes().FirstOrDefault(ca => ca.AttributeType == typeof(Newtonsoft.Json.JsonConverterAttribute));
 
@@ -67,6 +47,16 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public string SerializeScalarExpression(ConstantExpression inputExpression)
         {
+            if (this.LinqSerializerOptions != null && this.LinqSerializerOptions.PropertyNamingPolicy == CosmosPropertyNamingPolicy.CamelCase)
+            {
+                JsonSerializerSettings serializerSettings = new JsonSerializerSettings
+                {
+                    ContractResolver = new CamelCasePropertyNamesContractResolver()
+                };
+
+                return JsonConvert.SerializeObject(inputExpression.Value, serializerSettings);
+            }
+
             return JsonConvert.SerializeObject(inputExpression.Value);
         }
 
@@ -78,33 +68,16 @@ namespace Microsoft.Azure.Cosmos.Linq
             Newtonsoft.Json.JsonExtensionDataAttribute jsonExtensionDataAttribute = memberInfo.GetCustomAttribute<Newtonsoft.Json.JsonExtensionDataAttribute>(true);
             if (jsonExtensionDataAttribute != null && jsonExtensionDataAttribute.ReadData)
             {
-                return String.Empty; // todo check this
+                return String.Empty;
             }
 
-            // Json.Net honors JsonPropertyAttribute more than DataMemberAttribute
-            // So we check for JsonPropertyAttribute first.
             JsonPropertyAttribute jsonPropertyAttribute = memberInfo.GetCustomAttribute<JsonPropertyAttribute>(true);
             if (jsonPropertyAttribute != null && !string.IsNullOrEmpty(jsonPropertyAttribute.PropertyName))
             {
                 memberName = jsonPropertyAttribute.PropertyName;
             }
-            else
-            {
-                DataContractAttribute dataContractAttribute = memberInfo.DeclaringType.GetCustomAttribute<DataContractAttribute>(true);
-                if (dataContractAttribute != null)
-                {
-                    DataMemberAttribute dataMemberAttribute = memberInfo.GetCustomAttribute<DataMemberAttribute>(true);
-                    if (dataMemberAttribute != null && !string.IsNullOrEmpty(dataMemberAttribute.Name))
-                    {
-                        memberName = dataMemberAttribute.Name;
-                    }
-                }
-            }
 
-            if (memberName == null)
-            {
-                memberName = memberInfo.Name;
-            }
+            memberName ??= memberInfo.Name;
 
             if (this.LinqSerializerOptions != null)
             {

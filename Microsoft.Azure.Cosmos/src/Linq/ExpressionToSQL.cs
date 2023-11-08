@@ -10,18 +10,13 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Collections.ObjectModel;
     using System.Diagnostics;
     using System.Globalization;
-    using System.IO;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
-    using System.Text.Json;
-    using System.Text.Json.Serialization;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Serialization;
     using static Microsoft.Azure.Cosmos.Linq.FromParameterBindings;
 
     // ReSharper disable UnusedParameter.Local

@@ -39,7 +39,14 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             CosmosLinqSerializerOptions options = new()
             {
-                CustomCosmosSerializer = new TestCustomJsonSerializer()
+                CustomCosmosSerializer = new TestCustomJsonSerializer(),
+                LinqSerializerType = LinqSerializerType.DotNet
+            };
+
+            CosmosLinqSerializerOptions newtonsoftOptions = new()
+            {
+                CustomCosmosSerializer = new TestCustomJsonSerializer(),
+                LinqSerializerType = LinqSerializerType.Newtonsoft
             };
 
             TestEnum[] values = new[] { TestEnum.One, TestEnum.Two };
@@ -48,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             string sql = SqlTranslator.TranslateExpression(expr.Body, options);
 
             Expression<Func<TestEnumNewtonsoftDocument, bool>> exprNewtonsoft = a => values.Contains(a.Value);
-            string sqlNewtonsoft = SqlTranslator.TranslateExpression(exprNewtonsoft.Body, options);
+            string sqlNewtonsoft = SqlTranslator.TranslateExpression(exprNewtonsoft.Body, newtonsoftOptions);
 
             Assert.AreEqual("(a[\"Value\"] IN (\"One\", \"Two\"))", sql);
             Assert.AreEqual("(a[\"Value\"] IN (\"One\", \"Two\"))", sqlNewtonsoft);
@@ -59,7 +66,14 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             CosmosLinqSerializerOptions options = new()
             {
-                CustomCosmosSerializer = new TestCustomJsonSerializer()
+                CustomCosmosSerializer = new TestCustomJsonSerializer(),
+                LinqSerializerType = LinqSerializerType.DotNet
+            };
+
+            CosmosLinqSerializerOptions newtonsoftOptions = new()
+            {
+                CustomCosmosSerializer = new TestCustomJsonSerializer(),
+                LinqSerializerType = LinqSerializerType.Newtonsoft
             };
 
             TestEnum statusValue = TestEnum.One;
@@ -68,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             string sql = SqlTranslator.TranslateExpression(expr.Body, options);
 
             Expression<Func<TestEnumNewtonsoftDocument, bool>> exprNewtonsoft = a => a.Value == statusValue;
-            string sqlNewtonsoft = SqlTranslator.TranslateExpression(exprNewtonsoft.Body, options);
+            string sqlNewtonsoft = SqlTranslator.TranslateExpression(exprNewtonsoft.Body, newtonsoftOptions);
 
             Assert.AreEqual("(a[\"Value\"] = \"One\")", sql);
             Assert.AreEqual("(a[\"Value\"] = \"One\")", sqlNewtonsoft);
@@ -79,7 +93,14 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             CosmosLinqSerializerOptions options = new()
             {
-                CustomCosmosSerializer = new TestCustomJsonSerializer()
+                CustomCosmosSerializer = new TestCustomJsonSerializer(),
+                LinqSerializerType = LinqSerializerType.DotNet
+            };
+
+            CosmosLinqSerializerOptions newtonsoftOptions = new()
+            {
+                CustomCosmosSerializer = new TestCustomJsonSerializer(),
+                LinqSerializerType = LinqSerializerType.Newtonsoft
             };
 
             // Get status constant
@@ -116,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             Expression<Func<TestEnumNewtonsoftDocument, bool>> lambdaNewtonsoft =
                 Expression.Lambda<Func<TestEnumNewtonsoftDocument, bool>>(expressionNewtonsoft, argNewtonsoft);
-            string sqlNewtonsoft = SqlTranslator.TranslateExpression(lambdaNewtonsoft.Body, options);
+            string sqlNewtonsoft = SqlTranslator.TranslateExpression(lambdaNewtonsoft.Body, newtonsoftOptions);
 
             Assert.AreEqual("(a[\"Value\"] = \"One\")", sql);
             Assert.AreEqual("(a[\"Value\"] = \"One\")", sqlNewtonsoft);
@@ -131,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         class TestEnumDocument
         {
-            [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]
+            [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]  // TODO: Remove this once we have the ability to use custom serializer for LINQ queries
             public TestEnum Value { get; set; }
         }
 
@@ -165,8 +186,13 @@ namespace Microsoft.Azure.Cosmos.Linq
         [TestMethod]
         public void TestNewtonsoftExtensionDataQuery()
         {
+            CosmosLinqSerializerOptions newtonsoftOptions = new()
+            {
+                LinqSerializerType = LinqSerializerType.Newtonsoft
+            };
+
             Expression<Func<DocumentWithExtensionData, bool>> expr = a => (string)a.NewtonsoftExtensionData["foo"] == "bar";
-            string sql = SqlTranslator.TranslateExpression(expr.Body);
+            string sql = SqlTranslator.TranslateExpression(expr.Body, newtonsoftOptions);
 
             Assert.AreEqual("(a[\"foo\"] = \"bar\")", sql);
         }
@@ -174,8 +200,13 @@ namespace Microsoft.Azure.Cosmos.Linq
         [TestMethod]
         public void TestSystemTextJsonExtensionDataQuery()
         {
+            CosmosLinqSerializerOptions dotNetOptions = new()
+            {
+                LinqSerializerType = LinqSerializerType.DotNet
+            };
+
             Expression<Func<DocumentWithExtensionData, bool>> expr = a => ((object)a.NetExtensionData["foo"]) == "bar";
-            string sql = SqlTranslator.TranslateExpression(expr.Body);
+            string sql = SqlTranslator.TranslateExpression(expr.Body, dotNetOptions);
 
             Assert.AreEqual("(a[\"NetExtensionData\"][\"foo\"] = \"bar\")", sql);
         }
