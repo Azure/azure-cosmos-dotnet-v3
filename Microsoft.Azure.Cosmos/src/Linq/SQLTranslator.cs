@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Collections.Generic;
     using System.Linq.Expressions;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.SqlObjects;
 
     /// <summary>
