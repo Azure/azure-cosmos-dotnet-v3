@@ -86,5 +86,10 @@ namespace Microsoft.Azure.Cosmos.Tracing
         {
             // NoOp
         }
+
+        public bool TryRemoveClientConfig()
+        {
+            return false;
+        }
     }
 }

@@ -1816,6 +1816,10 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
 
                 this.data[key] = "Redacted To Not Change The Baselines From Run To Run";
             }
+            public bool TryRemoveClientConfig()
+            {
+                return this.data.Remove("Client Configuration");
+            }
         }
 
         private sealed class RequestHandlerSleepHelper : RequestHandler

@@ -30,17 +30,13 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
             foreach (ITrace trace in traces)
             {
-                if (trace.Data.Count > 0)
+                if (trace.Data.Count > 0 
+                    && !this.data.Value.ContainsKey("Client Configuration")
+                    && trace.Data.TryGetValue("Client Configuration", out object clientConfiguration))
                 {
-                    foreach (KeyValuePair<string, object> kvp in trace.Data)
-                    {
-                        if (!this.data.Value.ContainsKey(kvp.Key))
-                        {
-                            this.data.Value.Add(kvp.Key, kvp.Value);
-
-                        }
-                    }
+                    this.data.Value.Add("Client Configuration", clientConfiguration);                             
                 }
+                trace.TryRemoveClientConfig();
 
                 if (this.data.Value.TryGetValue("totalRequestCharge", out object totalRequestCharge))
                 {
@@ -137,6 +133,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
             TraceLevel level)
         {
             return this;
+        }
+
+        public bool TryRemoveClientConfig()
+        {
+            return this.data.Value.Remove("Client Configuration");
         }
     }
 }

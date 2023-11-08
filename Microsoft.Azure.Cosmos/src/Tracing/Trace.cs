@@ -137,5 +137,10 @@ namespace Microsoft.Azure.Cosmos.Tracing
         {
             this.data.Value[key] = value;
         }
+
+        public bool TryRemoveClientConfig()
+        {
+            return this.data.Value.Remove("Client Configuration");
+        }
     }
 }
