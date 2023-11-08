@@ -776,7 +776,7 @@
             else
             {
                 Assert.AreNotEqual(TestInjections.PipelineType.OptimisticDirectExecution, queryRequestOptions.TestSettings.Stats.PipelineType.Value);
-                Assert.AreEqual(null, inputParameters.SqlQuerySpec.GetType().GetProperty("clientQLCompatibilityLevel"));
+                Assert.AreEqual(null, inputParameters.SqlQuerySpec.ClientQLCompatibilityLevel);
             }
 
             Assert.IsNotNull(queryPipelineStage);
