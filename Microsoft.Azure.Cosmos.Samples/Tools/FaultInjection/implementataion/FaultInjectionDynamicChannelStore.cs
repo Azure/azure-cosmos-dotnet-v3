@@ -23,9 +23,9 @@
             this.channelDictonary.TryRemove(connectionCorrelationId, out Channel _);
         }
 
-        public List<Channel> GetAllChannels()
+        public IEnumerable<Channel> GetAllChannels()
         {
-            return (List<Channel>)this.channelDictonary.Values.AsEnumerable();
+            return this.channelDictonary.Values.AsEnumerable();
         }
     }
 }

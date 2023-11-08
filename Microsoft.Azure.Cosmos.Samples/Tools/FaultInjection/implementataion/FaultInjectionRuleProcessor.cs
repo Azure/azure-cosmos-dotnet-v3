@@ -194,8 +194,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             // Some errors should only be applied to specific operationTypes/ requests 
             // others can be applied to all operations
             return errorType != FaultInjectionServerErrorType.Gone
-                && errorType != FaultInjectionServerErrorType.ConnectionDelay
-                ;
+                && errorType != FaultInjectionServerErrorType.ConnectionDelay;
         }
 
         private OperationType GetEffectiveOperationType(FaultInjectionOperationType faultInjectionOperationType)

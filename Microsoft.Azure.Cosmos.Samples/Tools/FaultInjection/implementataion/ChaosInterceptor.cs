@@ -48,10 +48,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// Used to inject faults on channel open
         /// </summary>
         /// <param name="activityId"></param>
+        /// <param name="connectionCorrilationId"></param>
         /// <param name="serverUri"></param>
         /// <param name="openingRequest"></param>
         /// <param name="channel"></param>
-        public void OnChannelOpen(Guid activityId, Uri serverUri, DocumentServiceRequest openingRequest, Channel channel)
+        public void OnChannelOpen(Guid activityId, Guid connectionCorrilationId, Uri serverUri, DocumentServiceRequest openingRequest, Channel channel)
         {
             FaultInjectionServerErrorRule? serverConnectionDelayRule = this.ruleStore.FindRntbdServerConnectionDelayRule(
                 activityId,

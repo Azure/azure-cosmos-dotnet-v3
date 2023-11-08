@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.FaultInjection
 {
     using System;
+    using Microsoft.Azure.Cosmos;
 
     /// <summary>
     /// This class is used to build a <see cref="FaultInjectionCondition"/>
@@ -47,6 +48,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <returns>the <see cref="FaultInjectionConditionBuilder"/></returns>
         public FaultInjectionConditionBuilder WithRegion(string region)
         {
+            RegionNameMapper mapper = new RegionNameMapper();
             this.region = region ?? throw new ArgumentNullException(nameof(region), "Argument 'region' cannot be null.");
             return this;
         }
