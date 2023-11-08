@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public static string GetMemberName(this MemberInfo memberInfo, TranslationContext context)
         {
-            return context.CosmosLinqSerializer.GetMemberName(memberInfo, context.LinqSerializerOptions);
+            return context.CosmosLinqSerializer.SerializeMemberName(memberInfo, context.LinqSerializerOptions);
         }
 
         private static Type GetElementType(Type type, HashSet<Type> visitedSet)

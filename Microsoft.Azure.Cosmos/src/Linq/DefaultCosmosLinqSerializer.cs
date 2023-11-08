@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             CustomAttributeData typeAttribute = memberType.GetsCustomAttributes().FirstOrDefault(ca => ca.AttributeType == typeof(Newtonsoft.Json.JsonConverterAttribute));
             CustomAttributeData converterAttribute = memberAttribute ?? typeAttribute;
 
-            Debug.Assert(converterAttribute.ConstructorArguments.Count > 0);
+            Debug.Assert(converterAttribute.ConstructorArguments.Count > 0, $"{nameof(DefaultCosmosLinqSerializer)} Assert!", "At least one constructor argument exists.");
             Type converterType = (Type)converterAttribute.ConstructorArguments[0].Value;
 
             string serializedValue = converterType.GetConstructor(Type.EmptyTypes) != null
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             return JsonConvert.SerializeObject(inputExpression.Value);
         }
 
-        public string GetMemberName(MemberInfo memberInfo, CosmosLinqSerializerOptions linqSerializerOptions = null)
+        public string SerializeMemberName(MemberInfo memberInfo, CosmosLinqSerializerOptions linqSerializerOptions = null)
         {
             string memberName = null;
 

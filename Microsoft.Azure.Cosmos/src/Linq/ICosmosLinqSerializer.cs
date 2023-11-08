@@ -26,8 +26,8 @@ namespace Microsoft.Azure.Cosmos.Linq
         string SerializeScalarExpression(ConstantExpression inputExpression);
 
         /// <summary>
-        /// Gets a member name with LINQ serializer options applied.
+        /// Serializes a member name with LINQ serializer options applied.
         /// </summary>
-        string GetMemberName(MemberInfo memberInfo, CosmosLinqSerializerOptions linqSerializerOptions = null);
+        string SerializeMemberName(MemberInfo memberInfo, CosmosLinqSerializerOptions linqSerializerOptions = null);
     }
 }
