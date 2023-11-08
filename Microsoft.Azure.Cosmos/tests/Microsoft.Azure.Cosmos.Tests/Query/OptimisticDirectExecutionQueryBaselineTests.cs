@@ -771,10 +771,12 @@
             if (input.ExpectedOptimisticDirectExecution)
             {
                 Assert.AreEqual(TestInjections.PipelineType.OptimisticDirectExecution, queryRequestOptions.TestSettings.Stats.PipelineType.Value);
+                Assert.AreEqual(1, inputParameters.SqlQuerySpec.ClientQLCompatibilityLevel);
             }
             else
             {
                 Assert.AreNotEqual(TestInjections.PipelineType.OptimisticDirectExecution, queryRequestOptions.TestSettings.Stats.PipelineType.Value);
+                Assert.AreEqual(null, inputParameters.SqlQuerySpec.GetType().GetProperty("clientQLCompatibilityLevel"));
             }
 
             Assert.IsNotNull(queryPipelineStage);

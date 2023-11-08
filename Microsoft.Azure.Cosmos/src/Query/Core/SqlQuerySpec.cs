@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 {
     using System;
     using System.Runtime.Serialization;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// Represents a SQL query in the Azure Cosmos DB service.
@@ -14,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     internal sealed class SqlQuerySpec
     {
         private SqlParameterCollection parameters;
-        
+
         /// <summary>
         /// Initializes a new instance of the <see cref="T:Microsoft.Azure.Documents.SqlQuerySpec"/> class for the Azure Cosmos DB service.</summary>
         /// <remarks> 
@@ -51,6 +52,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         /// <value>The text of the database query.</value>
         [DataMember(Name = "query")]
         public string QueryText { get; set; }
+
+        /// <summary>
+        /// Gets or sets the ClientQL Compatibility Level, which allows the client to specify the compatibility level that it accepts.
+        /// </summary>
+        /// <value>The integer value representing the compatibility of the client.</value>
+        [JsonIgnore]
+        [DataMember(Name = "clientQLCompatibilityLevel")]
+        public int? ClientQLCompatibilityLevel { get; set; }
 
         /// <summary>
         /// Gets or sets the <see cref="T:Microsoft.Azure.Documents.SqlParameterCollection"/> instance, which represents the collection of Azure Cosmos DB query parameters.
