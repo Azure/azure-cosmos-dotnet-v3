@@ -4,12 +4,9 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
-    using System.Diagnostics;
-    using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
     using System.Runtime.Serialization;
-    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Serialization;
 
@@ -24,24 +21,12 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public bool RequiresCustomSerialization(MemberExpression memberExpression, Type memberType)
         {
-            CustomAttributeData converterAttribute = memberExpression.Member.CustomAttributes.FirstOrDefault(ca => ca.AttributeType == typeof(Newtonsoft.Json.JsonConverterAttribute));
-            return converterAttribute != null;
+            return false;
         }
 
         public string Serialize(object value, MemberExpression memberExpression, Type memberType)
         {
-            CustomAttributeData memberAttribute = memberExpression.Member.CustomAttributes.FirstOrDefault(ca => ca.AttributeType == typeof(Newtonsoft.Json.JsonConverterAttribute));
-            CustomAttributeData typeAttribute = memberType.GetsCustomAttributes().FirstOrDefault(ca => ca.AttributeType == typeof(Newtonsoft.Json.JsonConverterAttribute));
-            CustomAttributeData converterAttribute = memberAttribute ?? typeAttribute;
-
-            Debug.Assert(converterAttribute.ConstructorArguments.Count > 0, $"{nameof(DefaultCosmosLinqSerializer)} Assert!", "At least one constructor argument exists.");
-            Type converterType = (Type)converterAttribute.ConstructorArguments[0].Value;
-
-            string serializedValue = converterType.GetConstructor(Type.EmptyTypes) != null
-                ? JsonConvert.SerializeObject(value, (Newtonsoft.Json.JsonConverter)Activator.CreateInstance(converterType))
-                : JsonConvert.SerializeObject(value);
-
-            return serializedValue;
+            throw new InvalidOperationException($"{nameof(DefaultCosmosLinqSerializer)} Assert! - should not reach this function.");
         }
 
         public string SerializeScalarExpression(ConstantExpression inputExpression)

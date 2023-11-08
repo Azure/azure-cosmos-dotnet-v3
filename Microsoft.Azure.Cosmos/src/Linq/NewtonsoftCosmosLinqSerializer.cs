@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             Newtonsoft.Json.JsonExtensionDataAttribute jsonExtensionDataAttribute = memberInfo.GetCustomAttribute<Newtonsoft.Json.JsonExtensionDataAttribute>(true);
             if (jsonExtensionDataAttribute != null && jsonExtensionDataAttribute.ReadData)
             {
-                return String.Empty;
+                return null;
             }
 
             JsonPropertyAttribute jsonPropertyAttribute = memberInfo.GetCustomAttribute<JsonPropertyAttribute>(true);
