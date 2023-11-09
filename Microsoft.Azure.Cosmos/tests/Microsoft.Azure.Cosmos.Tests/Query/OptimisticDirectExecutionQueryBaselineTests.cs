@@ -801,7 +801,6 @@
                 partitionedQueryExecutionInfo: null,
                 executionEnvironment: null,
                 returnResultsInDeterministicOrder: null,
-                forcePassthrough: false,
                 enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
                 testInjections: queryRequestOptions.TestSettings);
 
