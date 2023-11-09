@@ -31,7 +31,8 @@ namespace Microsoft.Azure.Cosmos
         public CosmosPropertyNamingPolicy PropertyNamingPolicy { get; set; }
 
         /// <summary>
-        /// TODO
+        /// Specifies the type of serializer to be used for LINQ translations.
+        /// Options are detailed in <see cref="LinqSerializerType"/>
         /// </summary>
         /// <remarks>
         /// The default value is LinqSerializerType.Default

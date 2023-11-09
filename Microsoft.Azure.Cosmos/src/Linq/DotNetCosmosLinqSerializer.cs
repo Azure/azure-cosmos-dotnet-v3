@@ -12,16 +12,16 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Reflection;
     using System.Text.Json;
     using System.Text.Json.Serialization;
-    using Newtonsoft.Json;
 
     internal class DotNetCosmosLinqSerializer : ICosmosLinqSerializer
     {
         private readonly CosmosSerializer CustomCosmosSerializer;
 
         private readonly CosmosPropertyNamingPolicy PropertyNamingPolicy;
+
         public DotNetCosmosLinqSerializer(CosmosSerializer customCosmosSerializer, CosmosPropertyNamingPolicy propertyNamingPolicy)
         {
-            this.CustomCosmosSerializer = customCosmosSerializer;
+            this.CustomCosmosSerializer = customCosmosSerializer ?? new CosmosJsonDotNetSerializer();
             this.PropertyNamingPolicy = propertyNamingPolicy;
         }
 
@@ -50,22 +50,17 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public string SerializeScalarExpression(ConstantExpression inputExpression)
         {
-            if (this.CustomCosmosSerializer != null)
-            {
-                StringWriter writer = new StringWriter(CultureInfo.InvariantCulture);
+            StringWriter writer = new StringWriter(CultureInfo.InvariantCulture);
 
-                using (Stream stream = this.CustomCosmosSerializer.ToStream(inputExpression.Value))
+            using (Stream stream = this.CustomCosmosSerializer.ToStream(inputExpression.Value))
+            {
+                using (StreamReader streamReader = new StreamReader(stream))
                 {
-                    using (StreamReader streamReader = new StreamReader(stream))
-                    {
-                        string propertyValue = streamReader.ReadToEnd();
-                        writer.Write(propertyValue);
-                        return writer.ToString();
-                    }
+                    string propertyValue = streamReader.ReadToEnd();
+                    writer.Write(propertyValue);
+                    return writer.ToString();
                 }
             }
-            
-            return JsonConvert.SerializeObject(inputExpression.Value); //todo: fix this, throw error if custom serializer is null?
         }
 
         public string SerializeMemberName(MemberInfo memberInfo)

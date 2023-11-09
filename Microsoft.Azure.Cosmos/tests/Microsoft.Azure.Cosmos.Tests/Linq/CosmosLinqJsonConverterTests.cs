@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             string sqlNewtonsoft = SqlTranslator.TranslateExpression(exprNewtonsoft.Body, newtonsoftOptions);
 
             Assert.AreEqual("(a[\"Value\"] IN (\"One\", \"Two\"))", sql);
-            Assert.AreEqual("(a[\"Value\"] IN (0, 1))", sqlNewtonsoft); //todo mayapainter check this
+            Assert.AreEqual("(a[\"Value\"] IN (0, 1))", sqlNewtonsoft); //todo: find way to support StringEnum conversion here
         }
 
         [TestMethod]

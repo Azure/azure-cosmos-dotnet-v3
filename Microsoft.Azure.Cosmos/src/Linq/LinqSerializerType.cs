@@ -4,27 +4,27 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     /// <summary>
-    /// Serializer to be used for LINQ query translations
+    /// Serializer type to be used for LINQ query translations.
     /// </summary>
     public enum LinqSerializerType
     {
         /// <summary>
-        /// TODO
+        /// Follows the exisitng serializer pattern, which honors Newtonsoft and DataContract attributes, but not System.Twxt.Json.
         /// </summary>
         Default,
 
         /// <summary>
-        /// TODO
+        /// Uses a Newtonsoft serializer, which will honor Newtonsoft attributes.
         /// </summary>
         Newtonsoft,
 
         /// <summary>
-        /// TODO
+        /// Uses a DataContract serializer, which will honor DataMember attributes specified on properies.
         /// </summary>
         DataContract,
 
         /// <summary>
-        /// TODO
+        /// Uses a custom CosmosSerializer, if provided. This will honor System.Twxt.Json attributes.
         /// </summary>
         DotNet,
     }

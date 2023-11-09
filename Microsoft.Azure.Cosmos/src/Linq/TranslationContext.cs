@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     LinqSerializerType.DotNet => new DotNetCosmosLinqSerializer(linqSerializerOptions.CustomCosmosSerializer, linqSerializerOptions.PropertyNamingPolicy),
                     LinqSerializerType.Newtonsoft => new NewtonsoftCosmosLinqSerializer(linqSerializerOptions.PropertyNamingPolicy),
                     LinqSerializerType.DataContract => new DataContractCosmosLinqSerializer(linqSerializerOptions.PropertyNamingPolicy),
-                    _ => throw new InvalidOperationException($"Unknown type: {linqSerializerOptions.LinqSerializerType.GetType()}") // todo check this
+                    _ => throw new InvalidOperationException($"Unknown type: {linqSerializerOptions.LinqSerializerType.GetType()}")
                 }
                 : new DefaultCosmosLinqSerializer(CosmosPropertyNamingPolicy.Default);
         }

@@ -51,8 +51,9 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 JsonSerializerSettings serializerSettings = new JsonSerializerSettings
                 {
-                    ContractResolver = new CamelCasePropertyNamesContractResolver()
+                    ContractResolver = new CamelCasePropertyNamesContractResolver(),
                 };
+                //serializerSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter()); //todo: need to find way to identify StringEnumCOnverter decoration
 
                 return JsonConvert.SerializeObject(inputExpression.Value, serializerSettings);
             }

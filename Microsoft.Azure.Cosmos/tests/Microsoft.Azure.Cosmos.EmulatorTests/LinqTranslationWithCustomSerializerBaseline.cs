@@ -359,6 +359,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             [JsonPropertyName("stringValueDotNet")]
             public string StringField { get; set; }
 
+            [System.Text.Json.Serialization.JsonIgnore]
+            public string IgnoreField { get; set; }
+
             public string id { get; set; }
 
             public string Pk { get; set; }
@@ -369,6 +372,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             {
                 this.NumericField = numericField;
                 this.StringField = stringField;
+                this.IgnoreField = "ignore";
                 this.id = id;
                 this.Pk = pk;
             }
@@ -387,6 +391,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             [Newtonsoft.Json.JsonProperty(PropertyName = "StringValueNewtonsoft")]
             public string StringField { get; set; }
 
+            [Newtonsoft.Json.JsonIgnore]
+            public string IgnoreField { get; set; }
+
             public string id { get; set; }
 
             public string Pk { get; set; }
@@ -397,6 +404,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             {
                 this.NumericField = numericField;
                 this.StringField = stringField;
+                this.IgnoreField = "ignore";
                 this.id = id;
                 this.Pk = pk;
             }
