@@ -31,7 +31,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly TimeSpan unavailableLocationsExpirationTime;
         private readonly int connectionLimit;
         private readonly ConcurrentDictionary<Uri, LocationUnavailabilityInfo> locationUnavailablityInfoByEndpoint;
-        private readonly RegionNameMapper regionNameMapper;
 
         private DatabaseAccountLocationsInfo locationInfo;
         private DateTime lastCacheUpdateTimestamp;
@@ -55,7 +54,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.lastCacheUpdateTimestamp = DateTime.MinValue;
             this.enableMultipleWriteLocations = false;
             this.unavailableLocationsExpirationTime = TimeSpan.FromSeconds(LocationCache.DefaultUnavailableLocationsExpirationTimeInSeconds);
-            this.regionNameMapper = new RegionNameMapper();
 
 #if !(NETSTANDARD15 || NETSTANDARD16)
 #if NETSTANDARD20
@@ -283,70 +281,12 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
             else
             {
-                ReadOnlyCollection<Uri> endpoints = this.GetApplicableEndpoints(request, !request.OperationType.IsWriteOperation());
+                ReadOnlyCollection<Uri> endpoints = request.OperationType.IsWriteOperation() ? this.WriteEndpoints : this.ReadEndpoints;
                 locationEndpointToRoute = endpoints[locationIndex % endpoints.Count];
             }
 
             request.RequestContext.RouteToLocation(locationEndpointToRoute);
             return locationEndpointToRoute;
-        }
-
-        public ReadOnlyCollection<Uri> GetApplicableEndpoints(DocumentServiceRequest request, bool isReadRequest)
-        {
-            ReadOnlyCollection<Uri> endpoints = isReadRequest ? this.ReadEndpoints : this.WriteEndpoints;
-
-            if (request.RequestContext.ExcludeRegions == null || request.RequestContext.ExcludeRegions.Count == 0)
-            {
-                return endpoints;
-            }
-
-            return this.GetApplicableEndpoints(
-                endpoints,
-                isReadRequest ? this.locationInfo.AvailableReadEndpointByLocation : this.locationInfo.AvailableWriteEndpointByLocation,
-                this.defaultEndpoint,
-                request.RequestContext.ExcludeRegions);
-        }
-
-        /// <summary>
-        /// Gets applicable endpoints for a request, if there are no applicable endpoints, returns the fallback endpoint
-        /// </summary>
-        /// <param name="endpoints"></param>
-        /// <param name="regionNameByEndpoint"></param>
-        /// <param name="fallbackEndpoint"></param>
-        /// <param name="excludeRegions"></param>
-        /// <returns>a list of applicable endpoints for a request</returns>
-        private ReadOnlyCollection<Uri> GetApplicableEndpoints(
-            IReadOnlyList<Uri> endpoints,
-            ReadOnlyDictionary<string, Uri> regionNameByEndpoint,
-            Uri fallbackEndpoint,
-            IReadOnlyList<string> excludeRegions)
-        {
-            List<Uri> applicableEndpoints = new List<Uri>(endpoints.Count);
-            HashSet<Uri> excludeUris = new HashSet<Uri>();
-
-            foreach (string region in excludeRegions)
-            {
-                string normalizedRegionName = this.regionNameMapper.GetCosmosDBRegionName(region);
-                if (regionNameByEndpoint.ContainsKey(normalizedRegionName))
-                {
-                    excludeUris.Add(regionNameByEndpoint[normalizedRegionName]);
-                }
-            }
-            
-            foreach (Uri endpoint in endpoints)
-            {
-                if (!excludeUris.Contains(endpoint))
-                {
-                    applicableEndpoints.Add(endpoint);
-                }
-            }
-
-            if (applicableEndpoints.Count == 0)
-            {
-                applicableEndpoints.Add(fallbackEndpoint);
-            }
-
-            return new ReadOnlyCollection<Uri>(applicableEndpoints);
         }
 
         public bool ShouldRefreshEndpoints(out bool canRefreshInBackground)

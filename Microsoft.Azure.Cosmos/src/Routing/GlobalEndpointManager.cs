@@ -362,11 +362,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             return this.locationCache.GetLocation(endpoint);
         }
 
-        public ReadOnlyCollection<Uri> GetApplicableEndpoints(DocumentServiceRequest request, bool isReadRequest)
-        {
-            return this.locationCache.GetApplicableEndpoints(request, isReadRequest);
-        }
-
         public bool TryGetLocationForGatewayDiagnostics(Uri endpoint, out string regionName)
         {
             return this.locationCache.TryGetLocationForGatewayDiagnostics(endpoint, out regionName);
