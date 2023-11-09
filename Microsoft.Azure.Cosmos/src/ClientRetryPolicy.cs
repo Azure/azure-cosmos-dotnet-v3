@@ -98,6 +98,17 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
+            if (exception is CosmosException cosmosException)
+            {
+                ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
+                    cosmosException.StatusCode,
+                    cosmosException.Headers.SubStatusCode);
+                if (shouldRetryResult != null)
+                {
+                    return shouldRetryResult;
+                }
+            }
+
             return await this.throttlingRetry.ShouldRetryAsync(exception, cancellationToken);
         }
 
