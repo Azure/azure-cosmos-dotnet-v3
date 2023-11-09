@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
+    using System.Diagnostics;
     using System.Globalization;
     using System.IO;
     using System.Linq;
@@ -15,11 +16,13 @@ namespace Microsoft.Azure.Cosmos.Linq
 
     internal class DotNetCosmosLinqSerializer : ICosmosLinqSerializer
     {
-        private readonly CosmosLinqSerializerOptions LinqSerializerOptions;
+        private readonly CosmosSerializer CustomCosmosSerializer;
 
-        public DotNetCosmosLinqSerializer(CosmosLinqSerializerOptions linqSerializerOptions)
+        private readonly CosmosPropertyNamingPolicy PropertyNamingPolicy;
+        public DotNetCosmosLinqSerializer(CosmosSerializer customCosmosSerializer, CosmosPropertyNamingPolicy propertyNamingPolicy)
         {
-            this.LinqSerializerOptions = linqSerializerOptions;
+            this.CustomCosmosSerializer = customCosmosSerializer;
+            this.PropertyNamingPolicy = propertyNamingPolicy;
         }
 
         public bool RequiresCustomSerialization(MemberExpression memberExpression, Type memberType)
@@ -30,19 +33,28 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public string Serialize(object value, MemberExpression memberExpression, Type memberType)
         {
-            //check this
             JsonSerializerOptions options = new JsonSerializerOptions();
-            options.Converters.Add(new JsonStringEnumConverter());
+
+            CustomAttributeData converterAttribute = memberExpression.Member.CustomAttributes.FirstOrDefault(ca => ca.AttributeType == typeof(System.Text.Json.Serialization.JsonConverterAttribute));
+
+            Debug.Assert(converterAttribute.ConstructorArguments.Count > 0, $"{nameof(DefaultCosmosLinqSerializer)} Assert!", "No constructor arguments exist");
+            Type converterType = (Type)converterAttribute.ConstructorArguments[0].Value;
+
+            if (converterType == typeof(JsonStringEnumConverter))
+            {
+                options.Converters.Add(new JsonStringEnumConverter());
+            }
+
             return System.Text.Json.JsonSerializer.Serialize(value, options);
         }
 
         public string SerializeScalarExpression(ConstantExpression inputExpression)
         {
-            if (this.LinqSerializerOptions.CustomCosmosSerializer != null)
+            if (this.CustomCosmosSerializer != null)
             {
                 StringWriter writer = new StringWriter(CultureInfo.InvariantCulture);
 
-                using (Stream stream = this.LinqSerializerOptions.CustomCosmosSerializer.ToStream(inputExpression.Value))
+                using (Stream stream = this.CustomCosmosSerializer.ToStream(inputExpression.Value))
                 {
                     using (StreamReader streamReader = new StreamReader(stream))
                     {
@@ -64,10 +76,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 ? jsonPropertyNameAttribute.Name
                 : memberInfo.Name;
 
-            if (this.LinqSerializerOptions != null)
-            {
-                memberName = CosmosSerializationUtil.GetStringWithPropertyNamingPolicy(this.LinqSerializerOptions, memberName);
-            }
+            memberName = CosmosSerializationUtil.GetStringWithPropertyNamingPolicy(this.PropertyNamingPolicy, memberName);
 
             return memberName;
         }

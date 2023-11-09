@@ -12,11 +12,11 @@ namespace Microsoft.Azure.Cosmos.Linq
 
     internal class DataContractCosmosLinqSerializer : ICosmosLinqSerializer
     {
-        private readonly CosmosLinqSerializerOptions LinqSerializerOptions;
+        private readonly CosmosPropertyNamingPolicy PropertyNamingPolicy;
 
-        public DataContractCosmosLinqSerializer(CosmosLinqSerializerOptions linqSerializerOptions)
+        public DataContractCosmosLinqSerializer(CosmosPropertyNamingPolicy propertyNamingPolicy)
         {
-            this.LinqSerializerOptions = linqSerializerOptions;
+            this.PropertyNamingPolicy = propertyNamingPolicy;
         }
 
         public bool RequiresCustomSerialization(MemberExpression memberExpression, Type memberType)
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public string SerializeScalarExpression(ConstantExpression inputExpression)
         {
-            if (this.LinqSerializerOptions != null && this.LinqSerializerOptions.PropertyNamingPolicy == CosmosPropertyNamingPolicy.CamelCase)
+            if (this.PropertyNamingPolicy == CosmosPropertyNamingPolicy.CamelCase)
             {
                 JsonSerializerSettings serializerSettings = new JsonSerializerSettings
                 {
@@ -67,10 +67,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             memberName ??= memberInfo.Name;
 
-            if (this.LinqSerializerOptions != null)
-            {
-                memberName = CosmosSerializationUtil.GetStringWithPropertyNamingPolicy(this.LinqSerializerOptions, memberName);
-            }
+            memberName = CosmosSerializationUtil.GetStringWithPropertyNamingPolicy(this.PropertyNamingPolicy, memberName);
 
             return memberName;
         }

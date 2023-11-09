@@ -19,5 +19,15 @@ namespace Microsoft.Azure.Cosmos
 
             return name;
         }
+
+        internal static string GetStringWithPropertyNamingPolicy(CosmosPropertyNamingPolicy namingPolicy, string name)
+        {
+            if (namingPolicy == CosmosPropertyNamingPolicy.CamelCase)
+            {
+                return CosmosSerializationUtil.camelCaseNamingStrategy.GetPropertyName(name, false);
+            }
+
+            return name;
+        }
     }
 }

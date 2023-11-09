@@ -14,11 +14,11 @@ namespace Microsoft.Azure.Cosmos.Linq
 
     internal class DefaultCosmosLinqSerializer : ICosmosLinqSerializer
     {
-        private readonly CosmosLinqSerializerOptions LinqSerializerOptions;
+        private readonly CosmosPropertyNamingPolicy PropertyNamingPolicy;
 
-        public DefaultCosmosLinqSerializer(CosmosLinqSerializerOptions linqSerializerOptions)
+        public DefaultCosmosLinqSerializer(CosmosPropertyNamingPolicy propertyNamingPolicy)
         {
-            this.LinqSerializerOptions = linqSerializerOptions;
+            this.PropertyNamingPolicy = propertyNamingPolicy;
         }
 
         public bool RequiresCustomSerialization(MemberExpression memberExpression, Type memberType)
@@ -101,15 +101,9 @@ namespace Microsoft.Azure.Cosmos.Linq
                 }
             }
 
-            if (memberName == null)
-            {
-                memberName = memberInfo.Name;
-            }
+            memberName ??= memberInfo.Name;
 
-            if (this.LinqSerializerOptions != null)
-            {
-                memberName = CosmosSerializationUtil.GetStringWithPropertyNamingPolicy(this.LinqSerializerOptions, memberName);
-            }
+            memberName = CosmosSerializationUtil.GetStringWithPropertyNamingPolicy(this.PropertyNamingPolicy, memberName);
 
             return memberName;
         }

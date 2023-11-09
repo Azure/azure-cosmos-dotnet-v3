@@ -88,13 +88,13 @@ namespace Microsoft.Azure.Cosmos.Linq
             this.CosmosLinqSerializer = linqSerializerOptions != null
                 ? linqSerializerOptions.LinqSerializerType switch
                 {
-                    LinqSerializerType.Default => new DefaultCosmosLinqSerializer(linqSerializerOptions),
-                    LinqSerializerType.DotNet => new DotNetCosmosLinqSerializer(linqSerializerOptions),
-                    LinqSerializerType.Newtonsoft => new NewtonsoftCosmosLinqSerializer(linqSerializerOptions),
-                    LinqSerializerType.DataContract => new DataContractCosmosLinqSerializer(linqSerializerOptions),
+                    LinqSerializerType.Default => new DefaultCosmosLinqSerializer(linqSerializerOptions.PropertyNamingPolicy),
+                    LinqSerializerType.DotNet => new DotNetCosmosLinqSerializer(linqSerializerOptions.CustomCosmosSerializer, linqSerializerOptions.PropertyNamingPolicy),
+                    LinqSerializerType.Newtonsoft => new NewtonsoftCosmosLinqSerializer(linqSerializerOptions.PropertyNamingPolicy),
+                    LinqSerializerType.DataContract => new DataContractCosmosLinqSerializer(linqSerializerOptions.PropertyNamingPolicy),
                     _ => throw new InvalidOperationException($"Unknown type: {linqSerializerOptions.LinqSerializerType.GetType()}") // todo check this
                 }
-                : new DefaultCosmosLinqSerializer(linqSerializerOptions);
+                : new DefaultCosmosLinqSerializer(CosmosPropertyNamingPolicy.Default);
         }
 
         public Expression LookupSubstitution(ParameterExpression parameter)
