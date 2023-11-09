@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         class TestEnumDocument
         {
-            [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]  // TODO: Remove this once we have the ability to use custom serializer for LINQ queries
+            [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))] // TODO: Remove this once we have the ability to use custom serializer for LINQ queries
             public TestEnum Value { get; set; }
         }
 
