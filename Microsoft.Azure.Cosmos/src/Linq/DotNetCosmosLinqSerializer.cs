@@ -4,13 +4,10 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
-    using System.Diagnostics;
     using System.Globalization;
     using System.IO;
-    using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
-    using System.Text.Json;
     using System.Text.Json.Serialization;
 
     internal class DotNetCosmosLinqSerializer : ICosmosLinqSerializer
@@ -27,40 +24,17 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public bool RequiresCustomSerialization(MemberExpression memberExpression, Type memberType)
         {
-            CustomAttributeData converterAttribute = memberExpression.Member.CustomAttributes.FirstOrDefault(ca => ca.AttributeType == typeof(System.Text.Json.Serialization.JsonConverterAttribute));
-            return converterAttribute != null;
+            return true;
         }
 
         public string Serialize(object value, MemberExpression memberExpression, Type memberType)
         {
-            JsonSerializerOptions options = new JsonSerializerOptions();
-
-            CustomAttributeData converterAttribute = memberExpression.Member.CustomAttributes.FirstOrDefault(ca => ca.AttributeType == typeof(System.Text.Json.Serialization.JsonConverterAttribute));
-
-            Debug.Assert(converterAttribute.ConstructorArguments.Count > 0, $"{nameof(DefaultCosmosLinqSerializer)} Assert!", "No constructor arguments exist");
-            Type converterType = (Type)converterAttribute.ConstructorArguments[0].Value;
-
-            if (converterType == typeof(JsonStringEnumConverter))
-            {
-                options.Converters.Add(new JsonStringEnumConverter());
-            }
-
-            return System.Text.Json.JsonSerializer.Serialize(value, options);
+            return this.SerializeWithCustomSerializer(value);
         }
 
         public string SerializeScalarExpression(ConstantExpression inputExpression)
         {
-            StringWriter writer = new StringWriter(CultureInfo.InvariantCulture);
-
-            using (Stream stream = this.CustomCosmosSerializer.ToStream(inputExpression.Value))
-            {
-                using (StreamReader streamReader = new StreamReader(stream))
-                {
-                    string propertyValue = streamReader.ReadToEnd();
-                    writer.Write(propertyValue);
-                    return writer.ToString();
-                }
-            }
+            return this.SerializeWithCustomSerializer(inputExpression.Value);
         }
 
         public string SerializeMemberName(MemberInfo memberInfo)
@@ -74,6 +48,21 @@ namespace Microsoft.Azure.Cosmos.Linq
             memberName = CosmosSerializationUtil.GetStringWithPropertyNamingPolicy(this.PropertyNamingPolicy, memberName);
 
             return memberName;
+        }
+
+        private string SerializeWithCustomSerializer(object value)
+        {
+            StringWriter writer = new StringWriter(CultureInfo.InvariantCulture);
+
+            using (Stream stream = this.CustomCosmosSerializer.ToStream(value))
+            {
+                using (StreamReader streamReader = new StreamReader(stream))
+                {
+                    string propertyValue = streamReader.ReadToEnd();
+                    writer.Write(propertyValue);
+                    return writer.ToString();
+                }
+            }
         }
     }
 }
