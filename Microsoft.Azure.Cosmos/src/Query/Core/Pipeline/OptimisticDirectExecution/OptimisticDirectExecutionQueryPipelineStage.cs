@@ -30,7 +30,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
         }
 
         private const string OptimisticDirectExecutionToken = "OptimisticDirectExecutionToken";
-        private const int ClientQLCompatibilityLevel = 1;
         private readonly FallbackQueryPipelineStageFactory queryPipelineStageFactory;
         private TryCatch<IQueryPipelineStage> inner;
         private CosmosElement continuationToken;
@@ -160,7 +159,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                 return pipelineStage;
             }
 
-            inputParameters.SqlQuerySpec.ClientQLCompatibilityLevel = ClientQLCompatibilityLevel;
             OptimisticDirectExecutionQueryPipelineStage odePipelineStageMonadicCreate = new OptimisticDirectExecutionQueryPipelineStage(pipelineStage, fallbackQueryPipelineStageFactory, inputParameters.InitialUserContinuationToken);
             return TryCatch<IQueryPipelineStage>.FromResult(odePipelineStageMonadicCreate);
         }

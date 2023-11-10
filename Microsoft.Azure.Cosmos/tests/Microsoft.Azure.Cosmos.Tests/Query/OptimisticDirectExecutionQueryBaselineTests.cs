@@ -7,6 +7,8 @@
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Runtime.Serialization.Json;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using System.Xml;
@@ -771,18 +773,29 @@
             if (input.ExpectedOptimisticDirectExecution)
             {
                 Assert.AreEqual(TestInjections.PipelineType.OptimisticDirectExecution, queryRequestOptions.TestSettings.Stats.PipelineType.Value);
+                Assert.IsTrue(CheckCompatibilityLevelFlagInQuerySpec(inputParameters.SqlQuerySpec));
                 Assert.AreEqual(1, inputParameters.SqlQuerySpec.ClientQLCompatibilityLevel);
             }
             else
             {
                 Assert.AreNotEqual(TestInjections.PipelineType.OptimisticDirectExecution, queryRequestOptions.TestSettings.Stats.PipelineType.Value);
-                Assert.AreEqual(null, inputParameters.SqlQuerySpec.ClientQLCompatibilityLevel);
+                Assert.IsFalse(CheckCompatibilityLevelFlagInQuerySpec(inputParameters.SqlQuerySpec));
             }
 
             Assert.IsNotNull(queryPipelineStage);
             Assert.IsTrue(result);
 
             return new OptimisticDirectExecutionTestOutput(input.ExpectedOptimisticDirectExecution);
+        }
+
+        private static bool CheckCompatibilityLevelFlagInQuerySpec(SqlQuerySpec querySpec)
+        {
+            DataContractJsonSerializer serializer = new DataContractJsonSerializer(typeof(SqlQuerySpec));
+            MemoryStream stream = new MemoryStream();
+            serializer.WriteObject(stream, querySpec);
+            string actualText = Encoding.Default.GetString(stream.ToArray());
+
+            return actualText.Contains("clientQLCompatibilityLevel");
         }
 
         private static Tuple<CosmosQueryExecutionContextFactory.InputParameters, CosmosQueryContextCore> CreateInputParamsAndQueryContext(OptimisticDirectExecutionTestInput input, QueryRequestOptions queryRequestOptions)

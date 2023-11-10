@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 {
     using System;
     using System.Runtime.Serialization;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Represents a SQL query in the Azure Cosmos DB service.
@@ -57,8 +56,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         /// Gets or sets the ClientQL Compatibility Level, which allows the client to specify the compatibility level that it accepts.
         /// </summary>
         /// <value>The integer value representing the compatibility of the client.</value>
-        [JsonIgnore]
-        [DataMember(Name = "clientQLCompatibilityLevel")]
+        [DataMember(Name = "clientQLCompatibilityLevel", EmitDefaultValue = false)]
         public int? ClientQLCompatibilityLevel { get; set; }
 
         /// <summary>
