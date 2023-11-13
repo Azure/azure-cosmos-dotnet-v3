@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal static string GetStringWithPropertyNamingPolicy(CosmosLinqSerializerOptions options, string name)
         {
-            if (options != null && options.PropertyNamingPolicy == CosmosPropertyNamingPolicy.CamelCase)
+            if (options?.PropertyNamingPolicy == CosmosPropertyNamingPolicy.CamelCase)
             {
                 return CosmosSerializationUtil.camelCaseNamingStrategy.GetPropertyName(name, false);
             }

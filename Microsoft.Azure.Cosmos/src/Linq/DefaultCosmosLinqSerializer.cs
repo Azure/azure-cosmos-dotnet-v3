@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public string SerializeMemberName(MemberInfo memberInfo)
         {
-            string memberName = null;
+            string memberName = memberInfo.Name;
 
             // Check if Newtonsoft JsonExtensionDataAttribute is present on the member, if so, return empty member name.
             Newtonsoft.Json.JsonExtensionDataAttribute jsonExtensionDataAttribute = memberInfo.GetCustomAttribute<Newtonsoft.Json.JsonExtensionDataAttribute>(true);
@@ -100,8 +100,6 @@ namespace Microsoft.Azure.Cosmos.Linq
                     }
                 }
             }
-
-            memberName ??= memberInfo.Name;
 
             memberName = CosmosSerializationUtil.GetStringWithPropertyNamingPolicy(this.PropertyNamingPolicy, memberName);
 

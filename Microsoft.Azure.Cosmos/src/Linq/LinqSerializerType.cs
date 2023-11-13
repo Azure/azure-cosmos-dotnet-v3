@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     public enum LinqSerializerType
     {
         /// <summary>
-        /// Follows the exisitng serializer pattern. This honors Newtonsoft and DataContract attributes, but not System.Text.Json.
+        /// Follows the exisiting serializer pattern. This honors Newtonsoft attributes, followed by DataContract attributes, but not System.Text.Json attributes.
         /// </summary>
         Default,
 
