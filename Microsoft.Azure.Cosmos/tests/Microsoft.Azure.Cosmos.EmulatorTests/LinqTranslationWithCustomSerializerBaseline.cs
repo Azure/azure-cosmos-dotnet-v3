@@ -353,10 +353,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
         private class DataObjectDotNet : LinqTestObject
         {
-            [JsonPropertyName("numberValueDotNet")]
+            [JsonPropertyName("NumberValueDotNet")]
             public double NumericField { get; set; }
 
-            [JsonPropertyName("stringValueDotNet")]
+            [JsonPropertyName("StringValueDotNet")]
             public string StringField { get; set; }
 
             [System.Text.Json.Serialization.JsonIgnore]
@@ -372,7 +372,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             {
                 this.NumericField = numericField;
                 this.StringField = stringField;
-                this.IgnoreField = "ignore";
+                this.IgnoreField = "Ignore";
                 this.id = id;
                 this.Pk = pk;
             }

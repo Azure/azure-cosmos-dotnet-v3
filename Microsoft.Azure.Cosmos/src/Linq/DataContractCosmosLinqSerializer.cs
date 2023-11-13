@@ -4,18 +4,25 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
+    using System.Globalization;
+    using System.IO;
     using System.Linq.Expressions;
     using System.Reflection;
     using System.Runtime.Serialization;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Serialization;
 
     internal class DataContractCosmosLinqSerializer : ICosmosLinqSerializer
     {
+        private readonly CosmosSerializer CosmosSerializer;
+
         private readonly CosmosPropertyNamingPolicy PropertyNamingPolicy;
 
         public DataContractCosmosLinqSerializer(CosmosPropertyNamingPolicy propertyNamingPolicy)
         {
+            this.CosmosSerializer = new CosmosJsonDotNetSerializer(new CosmosSerializationOptions()
+            {
+                PropertyNamingPolicy = propertyNamingPolicy
+            });
+
             this.PropertyNamingPolicy = propertyNamingPolicy;
         }
 
@@ -26,34 +33,27 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public string Serialize(object value, MemberExpression memberExpression, Type memberType)
         {
-            throw new InvalidOperationException($"{nameof(DefaultCosmosLinqSerializer)} Assert! - should not reach this function.");
+            throw new InvalidOperationException($"{nameof(DefaultCosmosLinqSerializer)} Assert! Should not reach this function.");
         }
 
         public string SerializeScalarExpression(ConstantExpression inputExpression)
         {
-            if (this.PropertyNamingPolicy == CosmosPropertyNamingPolicy.CamelCase)
+            StringWriter writer = new StringWriter(CultureInfo.InvariantCulture);
+
+            using (Stream stream = this.CosmosSerializer.ToStream(inputExpression.Value))
             {
-                JsonSerializerSettings serializerSettings = new JsonSerializerSettings
+                using (StreamReader streamReader = new StreamReader(stream))
                 {
-                    ContractResolver = new CamelCasePropertyNamesContractResolver()
-                };
-
-                return JsonConvert.SerializeObject(inputExpression.Value, serializerSettings);
+                    string propertyValue = streamReader.ReadToEnd();
+                    writer.Write(propertyValue);
+                    return writer.ToString();
+                }
             }
-
-            return JsonConvert.SerializeObject(inputExpression.Value);
         }
 
         public string SerializeMemberName(MemberInfo memberInfo)
         {
             string memberName = memberInfo.Name;
-
-            // Check if Newtonsoft JsonExtensionDataAttribute is present on the member, if so, return empty member name.
-            Newtonsoft.Json.JsonExtensionDataAttribute jsonExtensionDataAttribute = memberInfo.GetCustomAttribute<Newtonsoft.Json.JsonExtensionDataAttribute>(true);
-            if (jsonExtensionDataAttribute != null && jsonExtensionDataAttribute.ReadData)
-            {
-                return null;
-            }
 
             DataContractAttribute dataContractAttribute = memberInfo.DeclaringType.GetCustomAttribute<DataContractAttribute>(true);
             if (dataContractAttribute != null)

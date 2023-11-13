@@ -18,7 +18,11 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public DotNetCosmosLinqSerializer(CosmosSerializer customCosmosSerializer, CosmosPropertyNamingPolicy propertyNamingPolicy)
         {
-            this.CustomCosmosSerializer = customCosmosSerializer ?? new CosmosJsonDotNetSerializer();
+            this.CustomCosmosSerializer = customCosmosSerializer 
+                ?? new CosmosJsonDotNetSerializer(new CosmosSerializationOptions()
+                {
+                    PropertyNamingPolicy = propertyNamingPolicy
+                });
             this.PropertyNamingPolicy = propertyNamingPolicy;
         }
 

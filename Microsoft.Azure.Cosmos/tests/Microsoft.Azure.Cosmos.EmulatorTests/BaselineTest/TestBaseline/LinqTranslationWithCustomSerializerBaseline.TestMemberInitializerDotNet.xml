@@ -10,17 +10,14 @@ SELECT VALUE root
 FROM root 
 WHERE (root["numberValueDotNet"] = 1)]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"numberValueDotNet\": 0, \"stringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 1, \"stringValueDotNet\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 2, \"stringValueDotNet\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 0, \"stringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 1, \"stringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 2, \"stringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
 ]]]></InputData>
-      <Results><![CDATA[[
-  "{NumericField:1,StringField:1,id:1-True,Pk:Test}",
-  "{NumericField:1,StringField:1,id:1-False,Pk:Test}"
-]]]></Results>
+      <Results><![CDATA[[]]]></Results>
     </Output>
   </Result>
   <Result>
@@ -32,14 +29,14 @@ WHERE (root["numberValueDotNet"] = 1)]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root = {"numberValueDotNet": 1, "stringValueDotNet": "1", "id": null, "Pk": null})]]></SqlQuery>
+WHERE (root = {"NumberValueDotNet": 1, "StringValueDotNet": "1", "id": null, "Pk": null})]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"numberValueDotNet\": 0, \"stringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 1, \"stringValueDotNet\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 2, \"stringValueDotNet\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 0, \"stringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 1, \"stringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 2, \"stringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
 ]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
@@ -51,15 +48,15 @@ WHERE (root = {"numberValueDotNet": 1, "stringValueDotNet": "1", "id": null, "Pk
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"numberValueDotNet": 1, "stringValueDotNet": "1", "id": null, "Pk": null} 
+SELECT VALUE {"NumberValueDotNet": 1, "StringValueDotNet": "1", "id": null, "Pk": null} 
 FROM root]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"numberValueDotNet\": 0, \"stringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 1, \"stringValueDotNet\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 2, \"stringValueDotNet\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 0, \"stringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 1, \"stringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 2, \"stringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
 ]]]></InputData>
       <Results><![CDATA[[
   "{NumericField:1,StringField:1,id:,Pk:}",
@@ -78,15 +75,15 @@ FROM root]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE ((root["numberValueDotNet"] > 1) ? {"numberValueDotNet": 1, "stringValueDotNet": "1", "id": null, "Pk": null} : {"numberValueDotNet": 1, "stringValueDotNet": "1", "id": null, "Pk": null}) 
+SELECT VALUE ((root["numberValueDotNet"] > 1) ? {"NumberValueDotNet": 1, "StringValueDotNet": "1", "id": null, "Pk": null} : {"NumberValueDotNet": 1, "StringValueDotNet": "1", "id": null, "Pk": null}) 
 FROM root]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"numberValueDotNet\": 0, \"stringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 1, \"stringValueDotNet\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 2, \"stringValueDotNet\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 0, \"stringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 1, \"stringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 2, \"stringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
 ]]]></InputData>
       <Results><![CDATA[[
   "{NumericField:1,StringField:1,id:,Pk:}",
@@ -109,12 +106,12 @@ SELECT VALUE "A"
 FROM root 
 WHERE (root = {"numberValueDotNet": root["numberValueDotNet"], "stringValueDotNet": root["stringValueDotNet"]})]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"numberValueDotNet\": 0, \"stringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 1, \"stringValueDotNet\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 2, \"stringValueDotNet\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 0, \"stringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 1, \"stringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 2, \"stringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
 ]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
@@ -128,14 +125,14 @@ WHERE (root = {"numberValueDotNet": root["numberValueDotNet"], "stringValueDotNe
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["numberValueDotNet"] = 1)]]></SqlQuery>
+WHERE (root["NumberValueDotNet"] = 1)]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"numberValueDotNet\": 0, \"stringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 1, \"stringValueDotNet\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 2, \"stringValueDotNet\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 0, \"stringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 1, \"stringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 2, \"stringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
 ]]]></InputData>
       <Results><![CDATA[[
   "{NumericField:1,StringField:1,id:1-True,Pk:Test}",
@@ -152,14 +149,14 @@ WHERE (root["numberValueDotNet"] = 1)]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root = {"numberValueDotNet": 1, "stringValueDotNet": "1", "id": null, "Pk": null})]]></SqlQuery>
+WHERE (root = {"NumberValueDotNet": 1, "StringValueDotNet": "1", "id": null, "Pk": null})]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"numberValueDotNet\": 0, \"stringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 1, \"stringValueDotNet\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 2, \"stringValueDotNet\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 0, \"stringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 1, \"stringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 2, \"stringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
 ]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
@@ -171,15 +168,15 @@ WHERE (root = {"numberValueDotNet": 1, "stringValueDotNet": "1", "id": null, "Pk
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"numberValueDotNet": 1, "stringValueDotNet": "1", "id": null, "Pk": null} 
+SELECT VALUE {"NumberValueDotNet": 1, "StringValueDotNet": "1", "id": null, "Pk": null} 
 FROM root]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"numberValueDotNet\": 0, \"stringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 1, \"stringValueDotNet\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 2, \"stringValueDotNet\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 0, \"stringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 1, \"stringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 2, \"stringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
 ]]]></InputData>
       <Results><![CDATA[[
   "{NumericField:1,StringField:1,id:,Pk:}",
@@ -198,15 +195,15 @@ FROM root]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE ((root["numberValueDotNet"] > 1) ? {"numberValueDotNet": 1, "stringValueDotNet": "1", "id": null, "Pk": null} : {"numberValueDotNet": 1, "stringValueDotNet": "1", "id": null, "Pk": null}) 
+SELECT VALUE ((root["NumberValueDotNet"] > 1) ? {"NumberValueDotNet": 1, "StringValueDotNet": "1", "id": null, "Pk": null} : {"NumberValueDotNet": 1, "StringValueDotNet": "1", "id": null, "Pk": null}) 
 FROM root]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"numberValueDotNet\": 0, \"stringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 1, \"stringValueDotNet\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 2, \"stringValueDotNet\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 0, \"stringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 1, \"stringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 2, \"stringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
 ]]]></InputData>
       <Results><![CDATA[[
   "{NumericField:1,StringField:1,id:,Pk:}",
@@ -227,14 +224,14 @@ FROM root]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE "A" 
 FROM root 
-WHERE (root = {"numberValueDotNet": root["numberValueDotNet"], "stringValueDotNet": root["stringValueDotNet"]})]]></SqlQuery>
+WHERE (root = {"NumberValueDotNet": root["NumberValueDotNet"], "StringValueDotNet": root["StringValueDotNet"]})]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"numberValueDotNet\": 0, \"stringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 1, \"stringValueDotNet\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 2, \"stringValueDotNet\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 0, \"stringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 1, \"stringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
-  "{\"numberValueDotNet\": 2, \"stringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
 ]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
