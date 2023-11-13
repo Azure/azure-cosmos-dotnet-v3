@@ -8036,6 +8036,18 @@
           "Attributes": [],
           "MethodInfo": "System.Collections.Generic.IReadOnlyDictionary`2[System.String,System.Object] Properties;CanRead:True;CanWrite:True;System.Collections.Generic.IReadOnlyDictionary`2[System.String,System.Object] get_Properties();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Properties(System.Collections.Generic.IReadOnlyDictionary`2[System.String,System.Object]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "System.Collections.Generic.List`1[System.String] ExcludeRegions": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.Collections.Generic.List`1[System.String] ExcludeRegions;CanRead:True;CanWrite:True;System.Collections.Generic.List`1[System.String] get_ExcludeRegions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_ExcludeRegions(System.Collections.Generic.List`1[System.String]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.Generic.List`1[System.String] get_ExcludeRegions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.List`1[System.String] get_ExcludeRegions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.String get_IfMatchEtag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -8078,6 +8090,13 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_CosmosThresholdOptions(Microsoft.Azure.Cosmos.CosmosThresholdOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_ExcludeRegions(System.Collections.Generic.List`1[System.String])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_ExcludeRegions(System.Collections.Generic.List`1[System.String]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_IfMatchEtag(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
