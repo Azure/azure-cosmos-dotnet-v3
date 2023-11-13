@@ -85,14 +85,16 @@ namespace Microsoft.Azure.Cosmos.Linq
             this.Parameters = parameters;
             this.MemberNames = new MemberNames(linqSerializerOptions);
             
-            this.CosmosLinqSerializer = (linqSerializerOptions?.LinqSerializerType ?? LinqSerializerType.Default) switch
-            {
-                LinqSerializerType.Default => new DefaultCosmosLinqSerializer(linqSerializerOptions.PropertyNamingPolicy),
-                LinqSerializerType.DotNet => new DotNetCosmosLinqSerializer(linqSerializerOptions.CustomCosmosSerializer, linqSerializerOptions.PropertyNamingPolicy),
-                LinqSerializerType.Newtonsoft => new NewtonsoftCosmosLinqSerializer(linqSerializerOptions.PropertyNamingPolicy),
-                LinqSerializerType.DataContract => new DataContractCosmosLinqSerializer(linqSerializerOptions.PropertyNamingPolicy),
-                _ => throw new InvalidOperationException($"Unknown type: {linqSerializerOptions.LinqSerializerType.GetType()}")
-            };
+            this.CosmosLinqSerializer = linqSerializerOptions != null
+                ? linqSerializerOptions.LinqSerializerType switch
+                {
+                    LinqSerializerType.Default => new DefaultCosmosLinqSerializer(linqSerializerOptions.PropertyNamingPolicy),
+                    LinqSerializerType.DotNet => new DotNetCosmosLinqSerializer(linqSerializerOptions.CustomCosmosSerializer, linqSerializerOptions.PropertyNamingPolicy),
+                    LinqSerializerType.Newtonsoft => new NewtonsoftCosmosLinqSerializer(linqSerializerOptions.PropertyNamingPolicy),
+                    LinqSerializerType.DataContract => new DataContractCosmosLinqSerializer(linqSerializerOptions.PropertyNamingPolicy),
+                    _ => throw new InvalidOperationException($"Unknown type: {linqSerializerOptions.LinqSerializerType.GetType()}")
+                }
+                : new DefaultCosmosLinqSerializer(CosmosPropertyNamingPolicy.Default);
         }
 
         public Expression LookupSubstitution(ParameterExpression parameter)
