@@ -659,9 +659,9 @@ namespace Microsoft.Azure.Cosmos.Fluent
             return this;
         }
 
-        internal CosmosClientBuilder WithFaultInjection(FaultInjectorProvider faultInjectorProvider)
+        public CosmosClientBuilder WithFaultInjection(FaultInjector faultInjector)
         {
-            this.clientOptions.FaultIjectorProvidor = faultInjectorProvider;
+            this.clientOptions.FaultInjector = faultInjector;
             return this;
         }
 

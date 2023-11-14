@@ -30,10 +30,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             return this.chaosInterceptor.GetFaultInjectionRuleId(activityId);
         }
 
-        internal void ConfigureInterceptor(DocumentClient client)
+        internal void ConfigureInterceptor(DocumentClient client, TimeSpan requestTimeout)
         {
             //give it the stuff it needs 
-            this.chaosInterceptor.ConfigureInterceptor(client);
+            this.chaosInterceptor.ConfigureInterceptor(client, requestTimeout);
         }
         internal IChaosInterceptor GetChaosInterceptor()
         {

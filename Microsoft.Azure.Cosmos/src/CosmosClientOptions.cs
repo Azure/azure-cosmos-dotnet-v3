@@ -735,7 +735,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public CosmosClientTelemetryOptions CosmosClientTelemetryOptions { get; set; }
 
-        internal FaultInjector FaultIjector { get; set; }
+        internal FaultInjector FaultInjector { get; set; }
 
         internal void SetSerializerIfNotConfigured(CosmosSerializer serializer)
         {

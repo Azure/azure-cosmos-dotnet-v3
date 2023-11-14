@@ -116,6 +116,8 @@ namespace Microsoft.Azure.Cosmos
         private readonly bool IsLocalQuorumConsistency = false;
         private readonly bool isReplicaAddressValidationEnabled;
 
+        private readonly IChaosInterceptor chaosInterceptor;
+
         //Auth
         internal readonly AuthorizationTokenProvider cosmosAuthorization;
 
@@ -189,7 +191,6 @@ namespace Microsoft.Azure.Cosmos
         private event EventHandler<SendingRequestEventArgs> sendingRequest;
         private event EventHandler<ReceivedResponseEventArgs> receivedResponse;
         private Func<TransportClient, TransportClient> transportClientHandlerFactory;
-        private IChaosInterceptor chaosInterceptor;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DocumentClient"/> class using the

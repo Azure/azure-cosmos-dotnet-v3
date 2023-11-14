@@ -86,6 +86,8 @@ namespace Microsoft.Azure.Cosmos
                cosmosClientTelemetryOptions: clientOptions.CosmosClientTelemetryOptions,
                chaosInterceptor: clientOptions.FaultInjector.GetChaosInterceptor());
 
+            //clientOptions.FaultInjector?.ConfigureChaosInterceptor(documentClient, clientOptions.RequestTimeout);
+
             return ClientContextCore.Create(
                 cosmosClient,
                 documentClient,

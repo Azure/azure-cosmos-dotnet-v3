@@ -13,10 +13,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     internal class ChaosInterceptor : IChaosInterceptor
     {
         private readonly List<FaultInjectionRule> rules;
-        private FaultInjectionRuleStore ruleStore;
-        private RntbdConnectionErrorInjector connectionErrorInjector;
+        private FaultInjectionRuleStore? ruleStore;
+        private RntbdConnectionErrorInjector? connectionErrorInjector;
         private readonly FaultInjectionDynamicChannelStore channelStore;
         private readonly FaultInjectionApplicationContext applicationContext;
+        private TimeSpan requestTimeout;
 
         public ChaosInterceptor(List<FaultInjectionRule> rules)
         {
@@ -25,11 +26,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             this.applicationContext = new FaultInjectionApplicationContext();
         }
 
-        public void ConfigureInterceptor(DocumentClient client)
+        public void ConfigureInterceptor(DocumentClient client, TimeSpan requestTimeout)
         {
-            //give it the stuff it needs
             this.ruleStore = new FaultInjectionRuleStore(client, this.applicationContext);
-            this.connectionErrorInjector = new RntbdConnectionErrorInjector(client, this.channelStore);
+            this.connectionErrorInjector = new RntbdConnectionErrorInjector(this.ruleStore, this.channelStore);
+            this.requestTimeout = requestTimeout;
             this.ConfigureFaultInjectionRules();
         }
 
@@ -38,8 +39,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             this.rules.ForEach(
                 rule =>
                 {
-                    IFaultInjectionRuleInternal effectiveRule = this.ruleStore.ConfigureFaultInjectionRule(rule);
-                    this.connectionErrorInjector?.Accept(effectiveRule);
+                    IFaultInjectionRuleInternal? effectiveRule = this.ruleStore?.ConfigureFaultInjectionRule(rule);
+                    if (effectiveRule != null) { this.connectionErrorInjector?.Accept(effectiveRule);}
                 });
         }
 
@@ -49,10 +50,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <param name="args"></param>
         /// <param name="faultyResponse"></param>
         /// <returns></returns>
-        public bool OnRequestCall(ChannelCallArguments args, out StoreResponse faultyResponse)
+        public bool OnRequestCall(ChannelCallArguments args, out StoreResponse? faultyResponse)
         {
 
-            FaultInjectionServerErrorRule? serverResponseErrorRule = this.ruleStore.FindRntbdServerResponseErrorRule(args);
+            FaultInjectionServerErrorRule? serverResponseErrorRule = this.ruleStore?.FindRntbdServerResponseErrorRule(args);
             if (serverResponseErrorRule != null)
             {
                 this.applicationContext.AddRuleApplication(serverResponseErrorRule.GetId(), args.CommonArguments.ActivityId);
@@ -72,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                         "Fault Injection Server Error: Timeout",
                         args.CommonArguments.UserPayload,
                         args.CommonArguments.PayloadSent);
-                    Thread.Sleep(args.RequestTimeoutInSeconds * 1000);
+                    Thread.Sleep(this.requestTimeout);
                     throw transportException;
                 }
 
@@ -93,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <param name="channel"></param>
         public void OnChannelOpen(Guid activityId, Guid connectionCorrilationId, Uri serverUri, DocumentServiceRequest openingRequest, Channel channel)
         {
-            FaultInjectionServerErrorRule? serverConnectionDelayRule = this.ruleStore.FindRntbdServerConnectionDelayRule(
+            FaultInjectionServerErrorRule? serverConnectionDelayRule = this.ruleStore?.FindRntbdServerConnectionDelayRule(
                 activityId,
                 serverUri,
                 openingRequest);
@@ -128,7 +129,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <param name="args"></param>
         public void OnBeforeConnectionWrite(ChannelCallArguments args)
         {
-            FaultInjectionServerErrorRule? serverResponseDelayRule = this.ruleStore.FindRntbdServerResponseDelayRule(args);
+            FaultInjectionServerErrorRule? serverResponseDelayRule = this.ruleStore?.FindRntbdServerResponseDelayRule(args);
                        
             if (serverResponseDelayRule != null)
             {
@@ -148,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <param name="args"></param>
         public void OnAfterConnectionWrite(ChannelCallArguments args)
         {
-            FaultInjectionServerErrorRule? serverResponseDelayRule = this.ruleStore.FindRntbdServerResponseDelayRule(args);
+            FaultInjectionServerErrorRule? serverResponseDelayRule = this.ruleStore?.FindRntbdServerResponseDelayRule(args);
 
             if (serverResponseDelayRule != null)
             {
