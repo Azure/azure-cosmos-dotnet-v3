@@ -170,7 +170,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         }
 
         public override IndexMetricsParserTestOutput ExecuteTest(IndexMetricsParserTestInput input)
-        { 
+        {
+            // V2
             QueryRequestOptions requestOptions = new QueryRequestOptions() { PopulateIndexMetrics = true };
 
             FeedIterator<CosmosElement> itemQuery = testContainer.GetItemQueryIterator<CosmosElement>(
