@@ -98,7 +98,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         }
 
         public FaultInjectionServerErrorRule? FindRntbdServerConnectionDelayRule(
-            Guid activityId,
             Uri callUri, 
             DocumentServiceRequest request)
         {
@@ -106,7 +105,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             {
                 if (rule.GetConnectionType() == FaultInjectionConnectionType.Direct
                     && rule.IsApplicable(
-                        activityId,
                         callUri,
                         request))
                 {

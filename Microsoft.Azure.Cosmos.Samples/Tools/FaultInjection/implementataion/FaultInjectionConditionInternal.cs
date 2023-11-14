@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         }
 
         //Used for connection delay
-        public bool IsApplicable(string ruleId, Guid activityId, Uri callUri, DocumentServiceRequest request)
+        public bool IsApplicable(Uri callUri, DocumentServiceRequest request)
         {
             foreach (IFaultInjectionConditionValidator validator in this.validators)
             {
@@ -225,6 +225,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             {
                 this.addresses = addresses;
             }
+
             public bool IsApplicable(string ruleId, ChannelCallArguments args)
             {
                 bool isApplicable = this.addresses.Exists(uri => args.PreparedCall.Uri.AbsoluteUri.StartsWith(uri.AbsoluteUri));

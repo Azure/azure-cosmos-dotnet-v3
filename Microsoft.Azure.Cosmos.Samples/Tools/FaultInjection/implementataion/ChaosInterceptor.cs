@@ -95,7 +95,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         public void OnChannelOpen(Guid activityId, Guid connectionCorrilationId, Uri serverUri, DocumentServiceRequest openingRequest, Channel channel)
         {
             FaultInjectionServerErrorRule? serverConnectionDelayRule = this.ruleStore?.FindRntbdServerConnectionDelayRule(
-                activityId,
                 serverUri,
                 openingRequest);
             this.channelStore.AddChannel(connectionCorrilationId, channel);

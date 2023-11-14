@@ -237,53 +237,58 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 return new List<Uri>{ };
             }
 
-            return (List<Uri>)regionEndpoints.Select(
-                regionEndpoint =>
-                {
-                    FeedRangeInternal feedRangeInternal = (FeedRangeInternal)addressEndpoints.GetFeedRange();
+            Console.WriteLine(isWriteOnly);
+            Console.WriteLine(addressEndpoints.GetReplicaCount());
+            return regionEndpoints;
 
-                    //The feed range can be mapped to multiple physical partitions, get the feed range list and resolve addresses for each partition
 
-                    //DocumentServiceRequest request = DocumentServiceRequest.Create(
-                    //    operationType: OperationType.Read,
-                    //    resourceId: containerProperties.ResourceId,
-                    //    resourceType: ResourceType.Document,
-                    //    authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
+            //return (List<Uri>)regionEndpoints.Select(
+            //    regionEndpoint =>
+            //    {
+            //        FeedRangeInternal feedRangeInternal = (FeedRangeInternal)addressEndpoints.GetFeedRange();
 
-                    return feedRangeInternal.GetPartitionKeyRangesAsync(
-                        this.routingMapProvider,
-                        containerProperties.ResourceId,
-                        containerProperties.PartitionKey,
-                        cancellationToken: new CancellationToken(),
-                        trace: NoOpTrace.Singleton).Result.Select(
-                            partitionKeyRange =>
-                            {
-                                DocumentServiceRequest fauntInjectionAddressRequest = DocumentServiceRequest.Create(
-                                    operationType: OperationType.Read,
-                                    resourceId: containerProperties.ResourceId,
-                                    resourceType: ResourceType.Document,
-                                    authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
+            //        //The feed range can be mapped to multiple physical partitions, get the feed range list and resolve addresses for each partition
 
-                                fauntInjectionAddressRequest.RequestContext.RouteToLocation(regionEndpoint);
-                                fauntInjectionAddressRequest.RouteTo(new PartitionKeyRangeIdentity(partitionKeyRange));
+            //        //DocumentServiceRequest request = DocumentServiceRequest.Create(
+            //        //    operationType: OperationType.Read,
+            //        //    resourceId: containerProperties.ResourceId,
+            //        //    resourceType: ResourceType.Document,
+            //        //    authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
 
-                                if (isWriteOnly)
-                                {
-                                    return new List<Uri> { this.ResolvePrimaryTransportAddressUriAsync(fauntInjectionAddressRequest, true).Result.Uri };
-                                }
+            //        return feedRangeInternal.GetPartitionKeyRangesAsync(
+            //            this.routingMapProvider,
+            //            containerProperties.ResourceId,
+            //            containerProperties.PartitionKey,
+            //            cancellationToken: new CancellationToken(),
+            //            trace: NoOpTrace.Singleton).Result.Select(
+            //                partitionKeyRange =>
+            //                {
+            //                    DocumentServiceRequest fauntInjectionAddressRequest = DocumentServiceRequest.Create(
+            //                        operationType: OperationType.Read,
+            //                        resourceId: containerProperties.ResourceId,
+            //                        resourceType: ResourceType.Document,
+            //                        authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
 
-                                return this.ResolveAllTransportAddressUriAsync(
-                                    fauntInjectionAddressRequest,
-                                    addressEndpoints.IsIncludePrimary(),
-                                    true)
-                                .Result
-                                .OrderBy(address => address.Uri.ToString())
-                                .Take(addressEndpoints.GetReplicaCount())
-                                .Select(address => address.Uri).ToList();
+            //                    fauntInjectionAddressRequest.RequestContext.RouteToLocation(regionEndpoint);
+            //                    fauntInjectionAddressRequest.RouteTo(new PartitionKeyRangeIdentity(partitionKeyRange));
 
-                            }
-                        );
-                });
+            //                    if (isWriteOnly)
+            //                    {
+            //                        return new List<Uri> { this.ResolvePrimaryTransportAddressUriAsync(fauntInjectionAddressRequest, true).Result.Uri };
+            //                    }
+
+            //                    return this.ResolveAllTransportAddressUriAsync(
+            //                        fauntInjectionAddressRequest,
+            //                        addressEndpoints.IsIncludePrimary(),
+            //                        true)
+            //                    .Result
+            //                    .OrderBy(address => address.Uri.ToString())
+            //                    .Take(addressEndpoints.GetReplicaCount())
+            //                    .Select(address => address.Uri).ToList();
+
+            //                }
+            //            );
+            //    });
         }
 
         private async Task<IReadOnlyList<TransportAddressUri>> ResolveAllTransportAddressUriAsync(

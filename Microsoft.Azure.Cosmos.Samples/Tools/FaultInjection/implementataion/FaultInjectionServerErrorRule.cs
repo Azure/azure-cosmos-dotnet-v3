@@ -92,7 +92,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
         //Used for Connection Delay
         public bool IsApplicable(
-            Guid activityId, 
             Uri callUri, 
             DocumentServiceRequest request)
         {
@@ -102,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             }
 
             // the failure reason will be populated during condition evaluation
-            if (!this.condition.IsApplicable(this.id, activityId, callUri, request))
+            if (!this.condition.IsApplicable(callUri, request))
             {
                 return false;
             }

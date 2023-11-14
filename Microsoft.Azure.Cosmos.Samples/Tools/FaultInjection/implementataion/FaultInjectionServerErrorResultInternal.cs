@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private readonly int times;
         private readonly TimeSpan delay;
         private readonly bool suppressServiceRequest;
-        private readonly FaultInjectionApplicationContext applicationContext
+        private readonly FaultInjectionApplicationContext applicationContext;
 
         /// <summary>
         /// Constructor for FaultInjectionServerErrorResultInternal
