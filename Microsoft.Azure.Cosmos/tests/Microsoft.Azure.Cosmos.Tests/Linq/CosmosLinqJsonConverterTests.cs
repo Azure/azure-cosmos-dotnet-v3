@@ -40,13 +40,13 @@ namespace Microsoft.Azure.Cosmos.Linq
             CosmosLinqSerializerOptions options = new()
             {
                 CustomCosmosSerializer = new TestCustomJsonSerializer(),
-                LinqSerializerType = LinqSerializerType.DotNet
+                LinqSerializerType = LinqSerializerType.CustomCosmosSerializer
             };
 
             CosmosLinqSerializerOptions newtonsoftOptions = new()
             {
                 CustomCosmosSerializer = new TestCustomJsonSerializer(),
-                LinqSerializerType = LinqSerializerType.Newtonsoft
+                LinqSerializerType = LinqSerializerType.Default
             };
 
             TestEnum[] values = new[] { TestEnum.One, TestEnum.Two };
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             string sqlNewtonsoft = SqlTranslator.TranslateExpression(exprNewtonsoft.Body, newtonsoftOptions);
 
             Assert.AreEqual("(a[\"Value\"] IN (\"One\", \"Two\"))", sql);
-            Assert.AreEqual("(a[\"Value\"] IN (0, 1))", sqlNewtonsoft); //todo: find way to support StringEnum conversion here
+            Assert.AreEqual("(a[\"Value\"] IN (0, 1))", sqlNewtonsoft);
         }
 
         [TestMethod]
@@ -67,13 +67,13 @@ namespace Microsoft.Azure.Cosmos.Linq
             CosmosLinqSerializerOptions options = new()
             {
                 CustomCosmosSerializer = new TestCustomJsonSerializer(),
-                LinqSerializerType = LinqSerializerType.DotNet
+                LinqSerializerType = LinqSerializerType.CustomCosmosSerializer
             };
 
             CosmosLinqSerializerOptions newtonsoftOptions = new()
             {
                 CustomCosmosSerializer = new TestCustomJsonSerializer(),
-                LinqSerializerType = LinqSerializerType.Newtonsoft
+                LinqSerializerType = LinqSerializerType.Default
             };
 
             TestEnum statusValue = TestEnum.One;
@@ -94,13 +94,13 @@ namespace Microsoft.Azure.Cosmos.Linq
             CosmosLinqSerializerOptions options = new()
             {
                 CustomCosmosSerializer = new TestCustomJsonSerializer(),
-                LinqSerializerType = LinqSerializerType.DotNet
+                LinqSerializerType = LinqSerializerType.CustomCosmosSerializer
             };
 
             CosmosLinqSerializerOptions newtonsoftOptions = new()
             {
                 CustomCosmosSerializer = new TestCustomJsonSerializer(),
-                LinqSerializerType = LinqSerializerType.Newtonsoft
+                LinqSerializerType = LinqSerializerType.Default
             };
 
             // Get status constant
@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             CosmosLinqSerializerOptions newtonsoftOptions = new()
             {
-                LinqSerializerType = LinqSerializerType.Newtonsoft
+                LinqSerializerType = LinqSerializerType.Default
             };
 
             Expression<Func<DocumentWithExtensionData, bool>> expr = a => (string)a.NewtonsoftExtensionData["foo"] == "bar";
@@ -201,7 +201,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             CosmosLinqSerializerOptions dotNetOptions = new()
             {
-                LinqSerializerType = LinqSerializerType.DotNet
+                LinqSerializerType = LinqSerializerType.CustomCosmosSerializer
             };
 
             Expression<Func<DocumentWithExtensionData, bool>> expr = a => ((object)a.NetExtensionData["foo"]) == "bar";

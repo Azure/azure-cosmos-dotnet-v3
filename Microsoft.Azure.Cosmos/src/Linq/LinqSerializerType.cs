@@ -14,18 +14,8 @@ namespace Microsoft.Azure.Cosmos.Linq
         Default,
 
         /// <summary>
-        /// Uses a Newtonsoft serializer, which will honor Newtonsoft attributes.
-        /// </summary>
-        Newtonsoft,
-
-        /// <summary>
-        /// Uses a DataContract serializer, which will honor DataMember attributes specified on properies.
-        /// </summary>
-        DataContract,
-
-        /// <summary>
         /// Uses a custom CosmosSerializer, if provided. This will honor System.Text.Json attributes.
         /// </summary>
-        DotNet,
+        CustomCosmosSerializer,
     }
 }
