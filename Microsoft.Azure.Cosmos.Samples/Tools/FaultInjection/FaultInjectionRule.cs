@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private readonly TimeSpan startDelay;
         private readonly int hitLimit;
         private bool enabled;
-        private IFaultInjectionRuleInternal effectiveRule;
+        private IFaultInjectionRuleInternal? effectiveRule;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FaultInjectionRule"/> class.
@@ -47,7 +47,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             this.startDelay = startDelay;
             this.hitLimit = hitLimit;
             this.enabled = enabled;
-            this.effectiveRule = null;
         }
 
         /// <summary>
@@ -138,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <returns>a List of Uri's of the physical addresses</returns>
         public List<Uri> GetAddresses()
         {
-            return this.effectiveRule?.GetAddresses();
+            return this.effectiveRule?.GetAddresses() ?? new List<Uri> { };
         }
 
         /// <summary>
@@ -147,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <returns>a List of Uri's of the region endpoints</returns>
         public List<Uri> GetRegionEndpoints()
         {
-            return this.effectiveRule?.GetRegionEndpoints();
+            return this.effectiveRule?.GetRegionEndpoints() ?? new List<Uri> { };
         }
 
         /// <summary>

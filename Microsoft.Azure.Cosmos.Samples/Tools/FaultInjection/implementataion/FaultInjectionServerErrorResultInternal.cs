@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     using System.Net;
     using System.Text;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.FaultInjection.implementataion;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -27,6 +28,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private readonly int times;
         private readonly TimeSpan delay;
         private readonly bool suppressServiceRequest;
+        private readonly FaultInjectionApplicationContext applicationContext
 
         /// <summary>
         /// Constructor for FaultInjectionServerErrorResultInternal
@@ -34,16 +36,19 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <param name="serverErrorType"></param>
         /// <param name="times"></param>
         /// <param name="delay"></param>
+        /// <param name="applicationContext"></param>
         public FaultInjectionServerErrorResultInternal(
             FaultInjectionServerErrorType serverErrorType, 
             int times, 
             TimeSpan delay, 
-            bool suppressServiceRequest)
+            bool suppressServiceRequest,
+            FaultInjectionApplicationContext applicationContext)
         {
             this.serverErrorType = serverErrorType;
             this.times = times;
             this.delay = delay;
             this.suppressServiceRequest = suppressServiceRequest;
+            this.applicationContext = applicationContext;
         }
 
         /// <summary>
@@ -87,84 +92,76 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// Determins if the rule can be applied.
         /// </summary>
         /// <param name="ruleId"></param>
-        /// <param name="args"></param>
         /// <returns>if the rule can be applied.</returns>
-        public bool IsApplicable(string ruleId, ChannelCallArguments args)
+        public bool IsApplicable(string ruleId)
         {
-            return args.FaultInjectionRequestContext.GetFaultInjectionRuleHitCount(ruleId) > this.times;
+            return this.applicationContext.GetApplicationByRuleId(ruleId)?.Count < this.times;
         }
 
         /// <summary>
-        /// Determins if the rule can be applied for connection delay
+        /// Gets the FaultInjectionServerErrorType
         /// </summary>
-        /// <param name="ruleId"></param>
-        /// <param name="requestContext"></param>
-        /// <returns>if the rule can be applied.</returns>
-        public bool IsApplicable(string ruleId, DocumentServiceRequest request)
+        /// <returns></returns>
+        public FaultInjectionServerErrorType GetInjectedServerErrorType()
         {
-            return request.FaultInjectionRequestContext.GetFaultInjectionRuleHitCount(ruleId) > this.times;
+            return this.serverErrorType;
         }
 
         /// <summary>
-        /// Set the injected server error.
+        /// Get server error to be injected
         /// </summary>
         /// <param name="args"></param>
-        /// <param name="transportRequestStats"></param>
-        public void SetInjectedServerError(ChannelCallArguments args, TransportRequestStats transportRequestStats)
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
+        public StoreResponse GetInjectedServerError(ChannelCallArguments args)
         {
             StoreResponse storeResponse;
-            transportRequestStats.FaultInjectionServerErrorType = this.serverErrorType;
 
             switch (this.serverErrorType)
             {
-                case FaultInjectionServerErrorType.Gone:
+                case FaultInjectionServerErrorType.Gone:                   
                     storeResponse = new StoreResponse()
                     {
                         Status = 410,
                         Headers = args.RequestHeaders,
                         ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes("Fault Injection Server Error: Gone"))
-                    };                    
-                    transportRequestStats.FaultInjectionStoreResponse = storeResponse;
+                    };
 
+                    return storeResponse;
 
-                    break;
-
-                case FaultInjectionServerErrorType.RetryWith:
+                case FaultInjectionServerErrorType.RetryWith:                   
                     storeResponse = new StoreResponse()
                     {
                         Status = 449,
                         Headers = args.RequestHeaders,
                         ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes("Fault Injection Server Error: Retry With"))
                     };
-                    transportRequestStats.FaultInjectionStoreResponse = storeResponse;
+                    
+                    return storeResponse;
 
-                    break;
-
-                case FaultInjectionServerErrorType.TooManyRequests:
+                case FaultInjectionServerErrorType.TooManyRequests:                    
                     INameValueCollection tooManyRequestsHeaders = args.RequestHeaders;
                     tooManyRequestsHeaders.Add(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, "500");
+
                     storeResponse = new StoreResponse()
                     {
                         Status = 429,
                         Headers = tooManyRequestsHeaders,
                         ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes("Fault Injection Server Error: Too Many Requests"))
                     };
-                    transportRequestStats.FaultInjectionStoreResponse = storeResponse;
 
-                    break;
+                    return storeResponse;
 
                 case FaultInjectionServerErrorType.Timeout:
-                    TransportException transportException = new TransportException(
-                        TransportErrorCode.RequestTimeout,
-                        new TimeoutException("Fault Injection Server Error: Timeout"),
-                        args.CommonArguments.ActivityId,
-                        args.PreparedCall.Uri,
-                        "Fault Injection Server Error: Timeout",
-                        args.CommonArguments.UserPayload,
-                        args.CommonArguments.PayloadSent);
-                    transportRequestStats.FaultInjectionException = transportException;   
 
-                    break;
+                    storeResponse = new StoreResponse()
+                    {
+                        Status = 408,
+                        Headers = args.RequestHeaders,
+                        ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes("Fault Injection Server Error: Timeout"))
+                    };
+
+                    return storeResponse;
 
                 case FaultInjectionServerErrorType.InternalServerEror:
                     storeResponse = new StoreResponse()
@@ -173,48 +170,47 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                         Headers = args.RequestHeaders,
                         ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes("Fault Injection Server Error: Internal Server Error"))
                     };
-                    transportRequestStats.FaultInjectionStoreResponse = storeResponse;
-
-                    break;
+                    
+                    return storeResponse;
 
                 case FaultInjectionServerErrorType.ReadSessionNotAvailable:
                     INameValueCollection readSessionHeaders = args.RequestHeaders;
                     readSessionHeaders.Add(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.ReadSessionNotAvailable).ToString(CultureInfo.InvariantCulture));
+
                     storeResponse = new StoreResponse()
                     {
                         Status = 404,
                         Headers = readSessionHeaders,
                         ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes("Fault Injection Server Error: Read Session Not Available"))
                     };
-                    transportRequestStats.FaultInjectionStoreResponse = storeResponse;
-
-                    break;
+                    
+                    return storeResponse;
 
                 case FaultInjectionServerErrorType.PartitionIsMigrating:
                     INameValueCollection partitionMigrationHeaders = args.RequestHeaders;
                     partitionMigrationHeaders.Add(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.CompletingPartitionMigration).ToString(CultureInfo.InvariantCulture));
+
                     storeResponse = new StoreResponse()
                     {
                         Status = 410,
                         Headers = partitionMigrationHeaders,
                         ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes("Fault Injection Server Error: Partition Migrating"))
                     };
-                    transportRequestStats.FaultInjectionStoreResponse = storeResponse;
+                    
+                    return storeResponse;
 
-                    break;
-                
                 case FaultInjectionServerErrorType.PartitionIsSplitting:
                     INameValueCollection partitionSplitting = args.RequestHeaders;
-                    partitionMigrationHeaders.Add(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.CompletingSplit).ToString(CultureInfo.InvariantCulture));
+                    partitionSplitting.Add(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.CompletingSplit).ToString(CultureInfo.InvariantCulture));
+
                     storeResponse = new StoreResponse()
                     {
                         Status = 410,
-                        Headers = partitionMigrationHeaders,
+                        Headers = partitionSplitting,
                         ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes("Fault Injection Server Error: Partition Splitting"))
                     };
-                    transportRequestStats.FaultInjectionStoreResponse = storeResponse;
 
-                    break;
+                    return storeResponse;
 
                 default:
                     throw new ArgumentException($"Server error type {this.serverErrorType} is not supported");

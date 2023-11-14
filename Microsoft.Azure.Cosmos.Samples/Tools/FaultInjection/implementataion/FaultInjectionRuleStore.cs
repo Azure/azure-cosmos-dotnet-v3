@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     using Microsoft.Azure.Documents.FaultInjection;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.FaultInjection.implementataion;
 
     internal class FaultInjectionRuleStore
     {
@@ -23,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
         private readonly FaultInjectionRuleProcessor ruleProcessor;
 
-        public FaultInjectionRuleStore(DocumentClient client)
+        public FaultInjectionRuleStore(DocumentClient client, FaultInjectionApplicationContext applicationContext)
         {
             _= client ?? throw new ArgumentNullException(nameof(client));
 
@@ -33,15 +34,15 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 globalEndpointManager: client.GlobalEndpointManager,
                 addressResolver: client.AddressResolver,
                 retryOptions: client.ConnectionPolicy.RetryOptions,
-                routingMapProvider: client.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton).Result);
+                routingMapProvider: client.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton).Result,
+                applicationContext: applicationContext);
         }
 
-        public IFaultInjectionRuleInternal ConfigureFaultInjectionRule(FaultInjectionRule rule, string containerUri)
+        public IFaultInjectionRuleInternal ConfigureFaultInjectionRule(FaultInjectionRule rule)
         {
             _ = rule ?? throw new ArgumentNullException(nameof(rule));
-            _ = string.IsNullOrEmpty(containerUri) ? throw new ArgumentNullException($"{nameof(containerUri)} cannot be null or empty") : containerUri;
 
-            IFaultInjectionRuleInternal effectiveRule = this.ruleProcessor.ProcessFaultInjectionRule(rule, containerUri);
+            IFaultInjectionRuleInternal effectiveRule = this.ruleProcessor.ProcessFaultInjectionRule(rule);
             
             if (effectiveRule.GetType() == typeof(FaultInjectionConnectionErrorRule))
             {
@@ -67,6 +68,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
             return effectiveRule;
         }
+
         public FaultInjectionServerErrorRule? FindRntbdServerResponseErrorRule(ChannelCallArguments args)
         {
             foreach (FaultInjectionServerErrorRule rule in this.serverResponseErrorRuleSet.Keys)

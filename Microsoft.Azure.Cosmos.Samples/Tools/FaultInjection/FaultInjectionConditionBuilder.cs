@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private FaultInjectionConnectionType connectionType;
         private string region;
         private FaultInjectionEndpoint endpoint;
+        private string containerResourceId;
 
         /// <summary>
         /// Optional. Specifies which operation type rule will target. Once set, the rule will only target requests with this operation type.
@@ -49,12 +50,16 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         public FaultInjectionConditionBuilder WithRegion(string region)
         {
             RegionNameMapper mapper = new RegionNameMapper();
-            this.region = region ?? throw new ArgumentNullException(nameof(region), "Argument 'region' cannot be null.");
+            string regionName = mapper.GetCosmosDBRegionName(region);
+            this.region = string.IsNullOrEmpty(regionName) 
+                ? throw new ArgumentNullException(nameof(region), "Argument 'region' cannot be null.") 
+                : regionName;
+
             return this;
         }
 
         /// <summary>
-        /// Optional. Specifires which endpoint the rule will target. Once set, the rule will only target requests targeting that endpoint. 
+        /// Optional. Specifies which endpoint the rule will target. Once set, the rule will only target requests targeting that endpoint. 
         /// Only applicable to direct mode. 
         /// By default, the rule will target all endpoints
         /// </summary>
@@ -66,13 +71,19 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             return this;
         }
 
+        public FaultInjectionConditionBuilder WithContainerResourceId(string containerResourceId)
+        {
+            this.containerResourceId = containerResourceId;
+            return this;
+        }
+
         /// <summary>
         /// Creates the <see cref="FaultInjectionCondition"/>.
         /// </summary>
         /// <returns>the <see cref="FaultInjectionCondition"/>.</returns>
         public FaultInjectionCondition Build()
         {
-            return new FaultInjectionCondition(this.operationType, this.connectionType, this.region, this.endpoint);
+            return new FaultInjectionCondition(this.operationType, this.connectionType, this.region, this.endpoint, this.containerResourceId);
         }
 
     }

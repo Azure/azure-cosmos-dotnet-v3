@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Concurrent;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Rntbd;
 
     internal class FaultInjectionDynamicChannelStore
     {
@@ -23,9 +24,9 @@
             this.channelDictonary.TryRemove(connectionCorrelationId, out Channel _);
         }
 
-        public IEnumerable<Channel> GetAllChannels()
+        public List<Channel> GetAllChannels()
         {
-            return this.channelDictonary.Values.AsEnumerable();
+            return (List<Channel>)this.channelDictonary.Values;
         }
     }
 }

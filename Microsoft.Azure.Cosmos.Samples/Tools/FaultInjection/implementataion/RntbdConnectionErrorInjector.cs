@@ -6,6 +6,7 @@
     using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.FaultInjection.implementataion;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.FaultInjection;
     using Microsoft.Azure.Documents.Rntbd;
@@ -13,12 +14,12 @@
     internal class RntbdConnectionErrorInjector
     {
         private readonly FaultInjectionRuleStore ruleStore;
-        private readonly ChannelDictionary channelDictionary;
+        private readonly FaultInjectionDynamicChannelStore channelStore;
 
-        public RntbdConnectionErrorInjector(FaultInjectionRuleStore ruleStore, ChannelDictionary channelDictionary)
+        public RntbdConnectionErrorInjector(FaultInjectionRuleStore ruleStore, FaultInjectionDynamicChannelStore channelStore)
         {
             this.ruleStore = ruleStore ?? throw new ArgumentNullException(nameof(ruleStore));
-            this.channelDictionary = channelDictionary ?? throw new ArgumentNullException(nameof(channelDictionary));
+            this.channelStore = channelStore ?? throw new ArgumentNullException(nameof(channelStore));
         }
 
         public bool Accept(IFaultInjectionRuleInternal rule)
@@ -43,7 +44,7 @@
                     if (this.IsEffectiveRule(rule))
 
                     {
-                        List<Channel> allChannels = this.channelDictionary.GetAllChannels();
+                        List<Channel> allChannels = this.channelStore.GetAllChannels();
                         Random random = new Random();
                         FaultInjectionConnectionErrorType connectionErrorType = rule.GetResult().GetConnectionErrorType();
                         //Case 1: Inject connection error for specific physical address
@@ -54,8 +55,11 @@
                             {
                                 if (random.NextDouble() < rule.GetResult().GetThreshold())
                                 {
-                                    DefaultTrace.TraceInformation("FaultInjection: Injecting connection error for address {0}", addressUri);
-                                    channel.InjectFaultInjectionConnectionError(rule.GetId(), connectionErrorType, this.GetTransportException(connectionErrorType, channel));
+                                    DefaultTrace.TraceInformation("FaultInjection: Injecting {0} connection error rule: {1}, for address {2}", 
+                                        connectionErrorType, 
+                                        rule.GetId(), 
+                                        addressUri);
+                                    channel.InjectFaultInjectionConnectionError(this.GetTransportException(connectionErrorType, channel));
                                 }
                             }));
 
@@ -71,8 +75,11 @@
                                 {
                                     if (random.NextDouble() < rule.GetResult().GetThreshold())
                                     {
-                                        DefaultTrace.TraceInformation("FaultInjection: Injecting connection error for region {0}", regionEndpoint);
-                                        channel.InjectFaultInjectionConnectionError(rule.GetId(), connectionErrorType, this.GetTransportException(connectionErrorType, channel));
+                                        DefaultTrace.TraceInformation("FaultInjection: Injecting {0} connection error rule: {1} for region {2}", 
+                                            connectionErrorType, 
+                                            rule.GetId(),
+                                            regionEndpoint);
+                                        channel.InjectFaultInjectionConnectionError(this.GetTransportException(connectionErrorType, channel));
                                     }
                                 }));
 
@@ -84,8 +91,10 @@
                         {
                             if (random.NextDouble() < rule.GetResult().GetThreshold())
                             {
-                                DefaultTrace.TraceInformation("FaultInjection: Injecting connection error");
-                                channel.InjectFaultInjectionConnectionError(rule.GetId(), connectionErrorType, this.GetTransportException(connectionErrorType, channel));
+                                DefaultTrace.TraceInformation("FaultInjection: Injecting {0} connection error rule: {1}",
+                                    connectionErrorType, 
+                                    rule.GetId());
+                                channel.InjectFaultInjectionConnectionError(this.GetTransportException(connectionErrorType, channel));
                             }
                         });
 
@@ -93,34 +102,44 @@
                     }
 
                     return Task.CompletedTask;
+                }).ContinueWith(
+                t =>
+                {
+                    //repeats rule injection if rule is still valid
+                    if (this.IsEffectiveRule(rule))
+                    {
+                        this.InjectConnectionErrorTask(rule);
+                    }
+                    else
+                    {
+                        //removes rule from rule store one rule is no longer valid
+                        this.ruleStore.RemoveRule(rule);
+                    }
                 });
         }
 
         private TransportException GetTransportException(FaultInjectionConnectionErrorType errorType, Channel channel)
         {
-            switch (errorType)
+            return errorType switch
             {
-                case FaultInjectionConnectionErrorType.RecievedStreamClosed:
-                    return new TransportException(
-                        errorCode: TransportErrorCode.ReceiveStreamClosed,
-                        innerException: null,
-                        activityId: Guid.Empty,
-                        requestUri: channel.GetServerUri(),
-                        sourceDescription: "FaultInjectionConnectionError",
-                        userPayload: false,
-                        payloadSent: true);
-                case FaultInjectionConnectionErrorType.RecieveFailed:
-                    return new TransportException(
-                        errorCode: TransportErrorCode.ReceiveFailed,
-                        innerException: null,
-                        activityId: Guid.Empty,
-                        requestUri: channel.GetServerUri(),
-                        sourceDescription: "FaultInjectionConnectionError",
-                        userPayload: false,
-                        payloadSent: true);
-                default:
-                    throw new ArgumentException("Invalid connection error type");
-            }
+                FaultInjectionConnectionErrorType.RecievedStreamClosed => new TransportException(
+                                        errorCode: TransportErrorCode.ReceiveStreamClosed,
+                                        innerException: null,
+                                        activityId: Guid.Empty,
+                                        requestUri: channel.GetServerUri(),
+                                        sourceDescription: "FaultInjectionConnectionError",
+                                        userPayload: false,
+                                        payloadSent: true),
+                FaultInjectionConnectionErrorType.RecieveFailed => new TransportException(
+                                        errorCode: TransportErrorCode.ReceiveFailed,
+                                        innerException: null,
+                                        activityId: Guid.Empty,
+                                        requestUri: channel.GetServerUri(),
+                                        sourceDescription: "FaultInjectionConnectionError",
+                                        userPayload: false,
+                                        payloadSent: true),
+                _ => throw new ArgumentException("Invalid connection error type"),
+            };
         }
 
         private bool IsEffectiveRule(FaultInjectionConnectionErrorRule rule)

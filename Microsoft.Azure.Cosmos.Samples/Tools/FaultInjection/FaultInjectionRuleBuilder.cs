@@ -62,10 +62,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <returns>the <see cref="FaultInjectionRuleBuilder"/>.</returns>
         public FaultInjectionRuleBuilder WithDuration(TimeSpan duration)
         {
-            if (duration == null)
-            {
-                throw new ArgumentNullException(nameof(duration), "Argument 'duration' cannot be null.");
-            }
             this.duration = duration;
             return this;
         }
@@ -77,11 +73,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <returns>the <see cref="FaultInjectionRuleBuilder"/>.</returns>
         public FaultInjectionRuleBuilder WithStartDelay(TimeSpan startDelay)
         {
-            if (startDelay == null)
-            {
-                throw new ArgumentNullException(nameof(startDelay), "Argument 'startDelay' cannot be null.");
-            }
-
             this.startDelay = startDelay;
             return this;
         }

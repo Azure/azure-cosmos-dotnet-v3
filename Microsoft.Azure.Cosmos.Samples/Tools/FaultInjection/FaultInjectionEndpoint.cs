@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.FaultInjection
 {
     using System;
+    using Microsoft.Azure.Cosmos;
 
     /// <summary>
     /// Fault Injection Endpoint

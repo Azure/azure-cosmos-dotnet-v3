@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     /// <summary>
     /// Types of ServerErrors that can be injected
     /// </summary>
-    internal enum FaultInjectionServerErrorType
+    public enum FaultInjectionServerErrorType
     {
         /// <summary>
         /// 410: Gone from server

@@ -37,10 +37,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             FaultInjectionConditionInternal condition,
             FaultInjectionServerErrorResultInternal result)
         {
-            if (id == null || string.Equals(id, string.Empty))
-            {
-                throw new ArgumentException("$ Argument {nameof(id)} cannot be null or empty");
-            }
             this.id = id;
             this.enabled = enabled;
             this.hitLimit = hitLimit;
@@ -58,13 +54,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         {
             if (!this.IsValid())
             {
-                args.FaultInjectionRequestContext.RecordFaultInjectionRuleEvaluation(args.CommonArguments.ActivityId,
-                    String.Format(
-                        "{0}{Disable or duration reached. StartTime: {1}, ExpireTime: {2}]",
-                        this.id,
-                        this.startTime,
-                        this.expireTime));
-
                 return false;
             }
 
@@ -74,11 +63,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 return false;
             }
 
-            if (!this.result.IsApplicable(this.id, args))
+            if (!this.result.IsApplicable(this.id))
             {
-                args.FaultInjectionRequestContext.RecordFaultInjectionRuleEvaluation(
-                    args.CommonArguments.ActivityId,
-                    this.id + "[Per operation apply limit reached]");
                 return false;
             }
 
@@ -87,9 +73,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             bool withinHitLimit = this.hitLimit == 0 || evaluationCount <= this.hitLimit;
             if (!withinHitLimit)
             {
-                args.FaultInjectionRequestContext.RecordFaultInjectionRuleEvaluation(
-                    args.CommonArguments.ActivityId,
-                    this.id + "[Hit limit reached]");
                 return false;
             }
             else
@@ -115,13 +98,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         {
             if (!this.IsValid())
             {
-                request.FaultInjectionRequestContext.RecordFaultInjectionRuleEvaluation(activityId,
-                    String.Format(
-                        "{0}{Disable or duration reached. StartTime: {1}, ExpireTime: {2}]",
-                        this.id,
-                        this.startTime,
-                        this.expireTime));
-
                 return false;
             }
 
@@ -131,11 +107,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 return false;
             }
 
-            if (!this.result.IsApplicable(this.id, request))
+            if (!this.result.IsApplicable(this.id))
             {
-                request.FaultInjectionRequestContext.RecordFaultInjectionRuleEvaluation(
-                    activityId,
-                    this.id + "[Per operation apply limit reached]");
                 return false;
             }
 
@@ -144,9 +117,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             bool withinHitLimit = this.hitLimit == 0 || evaluationCount <= this.hitLimit;
             if (!withinHitLimit)
             {
-                request.FaultInjectionRequestContext.RecordFaultInjectionRuleEvaluation(
-                    activityId,
-                    this.id + "[Hit limit reached]");
                 return false;
             }
             else
@@ -164,9 +134,14 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             }
         }
 
-        public void SetInjectedServerError(ChannelCallArguments args, TransportRequestStats transportRequestStats)
+        public StoreResponse GetInjectedServerError(ChannelCallArguments args)
         {
-            this.result.SetInjectedServerError(args, transportRequestStats);
+            return this.result.GetInjectedServerError(args);
+        }
+
+        public FaultInjectionServerErrorType GetInjectedServerErrorType()
+        {
+            return this.result.GetInjectedServerErrorType();
         }
 
         public string GetId()

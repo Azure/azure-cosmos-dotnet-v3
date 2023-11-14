@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private readonly FaultInjectionServerErrorType serverErrorType;
         private int times = int.MaxValue;
         private TimeSpan delay;
+        private bool suppressServiceRequest;
 
         /// <summary>
         /// Creates a <see cref="FaultInjectionServerErrorResult"/>.
@@ -49,16 +50,17 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <returns>The current <see cref="FaultInjectionServerErrorResultBuilder"/>.</returns>
         public FaultInjectionServerErrorResultBuilder WithDelay(TimeSpan delay)
         {
-            if (delay == null)
-            {
-                throw new ArgumentNullException("Argument 'delay' cannot be null");
-            }
-
-            if (this.serverErrorType == FaultInjectionServerErrorType.RESPONSE_DELAY 
-                || this.serverErrorType == FaultInjectionServerErrorType.CONNECTION_DELAY)
+            if (this.serverErrorType == FaultInjectionServerErrorType.ResponseDelay 
+                || this.serverErrorType == FaultInjectionServerErrorType.ConnectionDelay)
             {
                 this.delay = delay;
             }
+            return this;
+        }
+
+        public FaultInjectionServerErrorResultBuilder WithSuppressServiceRequest(bool suppressServiceRequest)
+        {
+            this.suppressServiceRequest = suppressServiceRequest;
             return this;
         }
 
@@ -68,9 +70,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <returns>the <see cref="FaultInjectionServerErrorResult"/>.</returns>
         public FaultInjectionServerErrorResult Build()
         {
-            if ((this.serverErrorType == FaultInjectionServerErrorType.RESPONSE_DELAY
-                || this.serverErrorType == FaultInjectionServerErrorType.CONNECTION_DELAY)
-                && this.delay == null)
+            if (this.serverErrorType == FaultInjectionServerErrorType.ResponseDelay
+                || this.serverErrorType == FaultInjectionServerErrorType.ConnectionDelay)
             {
                 throw new ArgumentNullException(nameof(this.delay), "Argument 'delay' required for server error type: " + this.serverErrorType);
             }
@@ -78,7 +79,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             return new FaultInjectionServerErrorResult(
                 this.serverErrorType,
                 this.times,
-                this.delay);
+                this.delay,
+                this.suppressServiceRequest);
         }
     }
 }

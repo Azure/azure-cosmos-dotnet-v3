@@ -12,22 +12,34 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     public sealed class FaultInjectionConnectionErrorResultBuilder
     {
         private readonly FaultInjectionConnectionErrorType connectionErrorType;
-        private readonly TimeSpan interval;
+        private TimeSpan interval;
         private double threshold = 1.0;
 
         /// <summary>
         /// Creates a new instance of the <see cref="FaultInjectionConnectionErrorResult"/>.
         /// </summary>
         /// <param name="connectionErrorType"></param>
-        /// <param name="interval"></param>
-        public FaultInjectionConnectionErrorResultBuilder(
-            FaultInjectionConnectionErrorType connectionErrorType,
-            TimeSpan interval)
+        public FaultInjectionConnectionErrorResultBuilder(FaultInjectionConnectionErrorType connectionErrorType)
         {
             this.connectionErrorType = connectionErrorType;
-            this.interval = interval;
         }
 
+        /// <summary>
+        /// Indicates how often the connection error will be injected.
+        /// </summary>
+        /// <param name="interval"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        public FaultInjectionConnectionErrorResultBuilder WithInterval(TimeSpan interval)
+        {
+            if (interval <= TimeSpan.Zero)
+            {
+                throw new ArgumentOutOfRangeException(nameof(interval), "Argument 'interval' must be greater than zero.");
+            }
+
+            this.interval = interval;
+            return this;
+        }
         /// <summary>
         /// Percentage of establised conection that will be impacted by the fault injection.
         /// Values must be between within the range (0, 1].
