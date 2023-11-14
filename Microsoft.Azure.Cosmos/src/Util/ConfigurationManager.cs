@@ -44,12 +44,6 @@ namespace Microsoft.Azure.Cosmos
         public static bool IsReplicaAddressValidationEnabled(
             ConnectionPolicy connectionPolicy)
         {
-            bool replicaValidationDefaultValue = false;
-
-#if PREVIEW
-            replicaValidationDefaultValue = true;
-#endif
-
             if (connectionPolicy != null
                 && connectionPolicy.EnableAdvancedReplicaSelectionForTcp.HasValue)
             {
@@ -59,7 +53,7 @@ namespace Microsoft.Azure.Cosmos
             return ConfigurationManager
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.ReplicaConnectivityValidationEnabled,
-                        defaultValue: replicaValidationDefaultValue);
+                        defaultValue: true);
         }
 
         /// <summary>
