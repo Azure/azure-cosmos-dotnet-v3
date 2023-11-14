@@ -394,15 +394,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         }
 
         /// <summary>
-        /// Test to validate that when RefreshAsync() is invoked for a valid existing key, the
+        /// Test to validate that when Refresh() is invoked for a valid existing key, the
         /// cache refreshes the key successfully and the new value is updated in the cache.
         /// </summary>
         [TestMethod]
         [Owner("dkunda")]
-        public async Task RefreshAsync_WhenRefreshRequestedForAnExistingKey_ShouldRefreshTheCache()
+        public async Task Refresh_WhenRefreshRequestedForAnExistingKey_ShouldRefreshTheCache()
         {
             // Arrange.
-            AsyncCacheNonBlocking<string, string> asyncCache = new ();
+            AsyncCacheNonBlocking<string, string> asyncCache = new();
 
             // Act and Assert.
             string result = await asyncCache.GetAsync(
@@ -412,9 +412,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
             Assert.AreEqual("value1", result);
 
-            await asyncCache.RefreshAsync(
+            asyncCache.Refresh(
                 "key",
                 (_) => Task.FromResult("value2"));
+
+            // Add some delay for the background refresh task to complete.
+            await Task.Delay(
+                millisecondsDelay: 50);
 
             result = await asyncCache.GetAsync(
                 "key",
@@ -425,15 +429,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         }
 
         /// <summary>
-        /// Test to validate that when a DocumentClientException is thrown during RefreshAsync() operation,
+        /// Test to validate that when a DocumentClientException is thrown during Refresh() operation,
         /// then the cache removes the key for which a refresh was requested.
         /// </summary>
         [TestMethod]
         [Owner("dkunda")]
-        public async Task RefreshAsync_WhenThrowsDocumentClientException_ShouldRemoveKeyFromTheCache()
+        public async Task Refresh_WhenThrowsDocumentClientException_ShouldRemoveKeyFromTheCache()
         {
             // Arrange.
-            AsyncCacheNonBlocking<string, string> asyncCache = new ();
+            AsyncCacheNonBlocking<string, string> asyncCache = new();
 
             // Act and Assert.
             string result = await asyncCache.GetAsync(
@@ -453,23 +457,20 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             // and still return the old cached value.
             Assert.AreEqual("value1", result);
 
-            NotFoundException notFoundException = new (
+            NotFoundException notFoundException = new(
                 message: "Item was deleted.");
-            try
-            {
-                await asyncCache.RefreshAsync(
-                    "key",
-                    async (_) =>
-                    {
-                        await Task.Delay(TimeSpan.FromMilliseconds(5));
-                        throw notFoundException;
-                    });
-                Assert.Fail("Should throw a NotFoundException");
-            }
-            catch (NotFoundException exception)
-            {
-                Assert.AreEqual(notFoundException, exception);
-            }
+
+            asyncCache.Refresh(
+                "key",
+                async (_) =>
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(5));
+                    throw notFoundException;
+                });
+
+            // Add some delay for the background refresh task to complete.
+            await Task.Delay(
+                millisecondsDelay: 50);
 
             // Because the key was deleted from the cache, the func delegate should get invoked at
             // this point and update the value to value2.
@@ -482,12 +483,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         }
 
         /// <summary>
-        /// Test to validate that when some other Exception is thrown during RefreshAsync() operation,
+        /// Test to validate that when some other Exception is thrown during Refresh() operation,
         /// then the cache does not remove the key for which the refresh was originally requested.
         /// </summary>
         [TestMethod]
         [Owner("dkunda")]
-        public async Task RefreshAsync_WhenThrowsOtherException_ShouldNotRemoveKeyFromTheCache()
+        public async Task Refresh_WhenThrowsOtherException_ShouldNotRemoveKeyFromTheCache()
         {
             // Arrange.
             AsyncCacheNonBlocking<string, string> asyncCache = new();
@@ -512,21 +513,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
             Exception exception = new(
                 message: "Timeout exception.");
-            try
-            {
-                await asyncCache.RefreshAsync(
-                    "key",
-                    async (_) =>
-                    {
-                        await Task.Delay(TimeSpan.FromMilliseconds(5));
-                        throw exception;
-                    });
-                Assert.Fail("Should throw a NotFoundException");
-            }
-            catch (Exception ex)
-            {
-                Assert.AreEqual(ex, exception);
-            }
+
+            asyncCache.Refresh(
+                "key",
+                async (_) =>
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(5));
+                    throw exception;
+                });
 
             // Because the key should not get deleted from the cache, the func delegate should not get invoked at
             // this point.
