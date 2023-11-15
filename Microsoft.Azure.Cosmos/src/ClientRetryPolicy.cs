@@ -246,9 +246,9 @@ namespace Microsoft.Azure.Cosmos
             if (statusCode == HttpStatusCode.NotFound
                 && subStatusCode == SubStatusCodes.ReadSessionNotAvailable)
             {
-                return this.ShouldRetryOnSessionNotAvailable();
+                return this.ShouldRetryOnSessionNotAvailable(this.documentServiceRequest);
             }
-
+            
             // Received 503 due to client connect timeout or Gateway
             if (statusCode == HttpStatusCode.ServiceUnavailable)
             {
@@ -330,7 +330,7 @@ namespace Microsoft.Azure.Cosmos
             return ShouldRetryResult.RetryAfter(retryDelay);
         }
 
-        private ShouldRetryResult ShouldRetryOnSessionNotAvailable()
+        private ShouldRetryResult ShouldRetryOnSessionNotAvailable(DocumentServiceRequest request)
         {
             this.sessionTokenRetryCount++;
 
@@ -343,7 +343,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (this.canUseMultipleWriteLocations)
                 {
-                    ReadOnlyCollection<Uri> endpoints = this.isReadRequest ? this.globalEndpointManager.ReadEndpoints : this.globalEndpointManager.WriteEndpoints;
+                    ReadOnlyCollection<Uri> endpoints = this.globalEndpointManager.GetApplicableEndpoints(request, this.isReadRequest);
 
                     if (this.sessionTokenRetryCount > endpoints.Count)
                     {
