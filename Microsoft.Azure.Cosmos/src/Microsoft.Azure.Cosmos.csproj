@@ -46,7 +46,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<None Include="..\..\LICENSE" Pack="true" PackagePath="" Visible="false"/>
+		<None Include="..\..\LICENSE" Pack="true" PackagePath="" Visible="false" />
 	</ItemGroup>
 	
 	<ItemGroup>
@@ -144,6 +144,12 @@
 		<None Include="$(MSBuildThisFileDirectory)\Microsoft.Azure.Cosmos.targets" Pack="true" PackagePath="build\netstandard2.0">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Reference Include="Microsoft.Azure.Cosmos.FaultInjection">
+	    <HintPath>..\..\Microsoft.Azure.Cosmos.Samples\Tools\FaultInjection\obj\Release\net6\Microsoft.Azure.Cosmos.FaultInjection.dll</HintPath>
+	  </Reference>
 	</ItemGroup>
 
 	<ItemGroup>
