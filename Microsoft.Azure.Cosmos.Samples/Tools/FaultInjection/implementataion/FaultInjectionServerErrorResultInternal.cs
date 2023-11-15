@@ -4,20 +4,12 @@
 namespace Microsoft.Azure.Cosmos.FaultInjection
 {
     using System;
-    using System.Collections.Generic;
-    using System.Collections.Specialized;
-    using System.Diagnostics;
     using System.Globalization;
-    using System.Net;
     using System.Text;
-    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.FaultInjection.implementataion;
-    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
-    using Microsoft.Azure.Documents.FaultInjection;
     using Microsoft.Azure.Documents.Rntbd;
-    using Microsoft.VisualBasic;
 
     /// <summary>
     /// Fault Injection Server Error Result.

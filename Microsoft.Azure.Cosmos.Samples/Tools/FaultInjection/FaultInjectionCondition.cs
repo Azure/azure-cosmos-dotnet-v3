@@ -4,7 +4,6 @@
 namespace Microsoft.Azure.Cosmos.FaultInjection
 {
     using System;
-    using Microsoft.Azure.Cosmos.FaultInjection;
 
     /// <summary>
     /// Fault Injection Condition
@@ -94,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 "FaultInjectionCondition{{ OperationType: {0}, ConnectionType: {1}, Region: {2}, Endpoint: {3}, ContainerResourceId: {4}",
                 this.operationType,
                 this.connectionType,
-                this.region,
+                this.region,  
                 this.endpoint.ToString(),
                 this.containerResourceId);
         }

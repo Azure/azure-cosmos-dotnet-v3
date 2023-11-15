@@ -5,18 +5,15 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 {
     using System;
     using System.Collections.Generic;
-    using System.Text;
+    using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.FaultInjection;
+    using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.FaultInjection.implementataion;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.Azure.Cosmos.Common;
-    using System.Runtime.ConstrainedExecution;
-    using System.Threading;
-    using System.Linq;
-    using Microsoft.Azure.Cosmos.FaultInjection.implementataion;
+    using Microsoft.Azure.Documents;
 
     internal class FaultInjectionRuleProcessor
     {
@@ -56,12 +53,12 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             this.applicationContext = applicationContext ?? throw new ArgumentNullException(nameof(applicationContext));
         }
 
-        public IFaultInjectionRuleInternal ProcessFaultInjectionRule(FaultInjectionRule rule)
+        public async Task<IFaultInjectionRuleInternal> ProcessFaultInjectionRule(FaultInjectionRule rule)
         {
             _ = rule ?? throw new ArgumentNullException(nameof(rule));
 
             this.ValidateRule(rule);
-            return this.GetEffectiveRule(rule);
+            return await this.GetEffectiveRule(rule);
 
         }
 
@@ -74,22 +71,22 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             }
         }
 
-        private IFaultInjectionRuleInternal GetEffectiveRule(FaultInjectionRule rule)
+        private async Task<IFaultInjectionRuleInternal> GetEffectiveRule(FaultInjectionRule rule)
         {
             if (rule.GetResult().GetType() == typeof(FaultInjectionServerErrorRule))
             {
-                return this.GetEffectiveServerErrorRule(rule);
+                return await this.GetEffectiveServerErrorRule(rule);
             }
 
             if (rule.GetResult().GetType() == typeof(FaultInjectionConnectionErrorRule))
             {
-                return this.GetEffectiveConnectionErrorRule(rule);
+                return await this.GetEffectiveConnectionErrorRule(rule);
             }
 
             throw new Exception($"{rule.GetResult().GetType()} is not supported");
         }
 
-        private IFaultInjectionRuleInternal GetEffectiveServerErrorRule(FaultInjectionRule rule)
+        private async Task<IFaultInjectionRuleInternal> GetEffectiveServerErrorRule(FaultInjectionRule rule)
         {
             FaultInjectionServerErrorType errorType = ((FaultInjectionServerErrorResult)rule.GetResult()).GetServerErrorType();
             FaultInjectionConditionInternal effectiveCondition = new FaultInjectionConditionInternal();
@@ -119,12 +116,12 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 effectiveCondition.SetRegionEndpoints(regionEndpoints);
             }
 
-            List<Uri> effectiveAddresses = BackoffRetryUtility<List<Uri>>.ExecuteAsync(
-                () => Task.FromResult(this.ResolvePhyicalAddresses(
+            List<Uri> effectiveAddresses = await BackoffRetryUtility<List<Uri>>.ExecuteAsync(
+                () => this.ResolvePhyicalAddresses(
                     regionEndpoints,
-                    rule.GetCondition().GetEndpoint(),
-                    this.IsWriteOnly(rule.GetCondition()))),
-                new FaultInjectionRuleProcessorRetryPolicy(this.retryOptions)).Result;
+                    rule.GetCondition(),
+                    this.IsWriteOnly(rule.GetCondition())),
+                new FaultInjectionRuleProcessorRetryPolicy(this.retryOptions));
 
             if (!this.CanErrorLimitToOperation(errorType))
             {
@@ -157,13 +154,13 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
         }
 
-        private IFaultInjectionRuleInternal GetEffectiveConnectionErrorRule(FaultInjectionRule rule)
+        private async Task<IFaultInjectionRuleInternal> GetEffectiveConnectionErrorRule(FaultInjectionRule rule)
         {
             List<Uri> regionEndpoints = this.GetRegionEndpoints(rule.GetCondition());
 
-            List<Uri> resolvedPhysicalAdresses = this.ResolvePhyicalAddresses(
+            List<Uri> resolvedPhysicalAdresses = await this.ResolvePhyicalAddresses(
                 regionEndpoints,
-                rule.GetCondition().GetEndpoint(),
+                rule.GetCondition(),
                 this.IsWriteOnly(rule.GetCondition()));
 
             resolvedPhysicalAdresses.ForEach(address => 
@@ -227,68 +224,66 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             return this.GetEffectiveOperationType(condition.GetOperationType()).IsWriteOperation();
         }
 
-        private List<Uri> ResolvePhyicalAddresses(
+        private async Task<List<Uri>> ResolvePhyicalAddresses(
             List<Uri> regionEndpoints,
-            FaultInjectionEndpoint addressEndpoints,
+            FaultInjectionCondition condition,
             bool isWriteOnly)
         {
-            if (addressEndpoints == null)
+            FaultInjectionEndpoint addressEndpoints = condition.GetEndpoint();
+            if (addressEndpoints == null || addressEndpoints == FaultInjectionEndpoint.Empty)
             {
                 return new List<Uri>{ };
             }
 
-            Console.WriteLine(isWriteOnly);
-            Console.WriteLine(addressEndpoints.GetReplicaCount());
-            return regionEndpoints;
+            List<Uri> resolvedPhysicalAddresses = new List<Uri>();
 
+            foreach (Uri regionEndpoint in regionEndpoints)
+            {
+                FeedRangeInternal feedRangeInternal = (FeedRangeInternal)addressEndpoints.GetFeedRange();
 
-            //return (List<Uri>)regionEndpoints.Select(
-            //    regionEndpoint =>
-            //    {
-            //        FeedRangeInternal feedRangeInternal = (FeedRangeInternal)addressEndpoints.GetFeedRange();
+                //The feed range can be mapped to multiple physical partitions, get the feed range list and resolve addresses for each partition
 
-            //        //The feed range can be mapped to multiple physical partitions, get the feed range list and resolve addresses for each partition
+                DocumentServiceRequest request = DocumentServiceRequest.Create(
+                    operationType: OperationType.Read,
+                    resourceId: condition.GetContainerResourceId(),
+                    resourceType: ResourceType.Document,
+                    authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
 
-            //        //DocumentServiceRequest request = DocumentServiceRequest.Create(
-            //        //    operationType: OperationType.Read,
-            //        //    resourceId: containerProperties.ResourceId,
-            //        //    resourceType: ResourceType.Document,
-            //        //    authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
+                ContainerProperties collection = await this.collectionCache.ResolveCollectionAsync(request, CancellationToken.None, NoOpTrace.Singleton);
+                IEnumerable<string> pkRanges = await feedRangeInternal.GetPartitionKeyRangesAsync(
+                    this.routingMapProvider,
+                    condition.GetContainerResourceId(),
+                    collection.PartitionKey,
+                    cancellationToken: new CancellationToken(),
+                    trace: NoOpTrace.Singleton);
 
-            //        return feedRangeInternal.GetPartitionKeyRangesAsync(
-            //            this.routingMapProvider,
-            //            containerProperties.ResourceId,
-            //            containerProperties.PartitionKey,
-            //            cancellationToken: new CancellationToken(),
-            //            trace: NoOpTrace.Singleton).Result.Select(
-            //                partitionKeyRange =>
-            //                {
-            //                    DocumentServiceRequest fauntInjectionAddressRequest = DocumentServiceRequest.Create(
-            //                        operationType: OperationType.Read,
-            //                        resourceId: containerProperties.ResourceId,
-            //                        resourceType: ResourceType.Document,
-            //                        authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
+                foreach (string partitionKeyRange in pkRanges)
+                {
+                    DocumentServiceRequest fauntInjectionAddressRequest = DocumentServiceRequest.Create(
+                               operationType: OperationType.Read,
+                               resourceId: condition.GetContainerResourceId(),
+                               resourceType: ResourceType.Document,
+                               authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
 
-            //                    fauntInjectionAddressRequest.RequestContext.RouteToLocation(regionEndpoint);
-            //                    fauntInjectionAddressRequest.RouteTo(new PartitionKeyRangeIdentity(partitionKeyRange));
+                    fauntInjectionAddressRequest.RequestContext.RouteToLocation(regionEndpoint);
+                    fauntInjectionAddressRequest.RouteTo(new PartitionKeyRangeIdentity(partitionKeyRange));
 
-            //                    if (isWriteOnly)
-            //                    {
-            //                        return new List<Uri> { this.ResolvePrimaryTransportAddressUriAsync(fauntInjectionAddressRequest, true).Result.Uri };
-            //                    }
+                    if (isWriteOnly)
+                    {
+                        return new List<Uri> { this.ResolvePrimaryTransportAddressUriAsync(fauntInjectionAddressRequest, true).Result.Uri };
+                    }
 
-            //                    return this.ResolveAllTransportAddressUriAsync(
-            //                        fauntInjectionAddressRequest,
-            //                        addressEndpoints.IsIncludePrimary(),
-            //                        true)
-            //                    .Result
-            //                    .OrderBy(address => address.Uri.ToString())
-            //                    .Take(addressEndpoints.GetReplicaCount())
-            //                    .Select(address => address.Uri).ToList();
+                    IEnumerable<Uri> resolvedEndpoints = (IEnumerable<Uri>)(await this.ResolveAllTransportAddressUriAsync(
+                            fauntInjectionAddressRequest,
+                            addressEndpoints.IsIncludePrimary(),
+                            true)).OrderBy(address => address.Uri.ToString())
+                            .Take(addressEndpoints.GetReplicaCount())
+                            .Select(address => address.Uri);
+                    resolvedPhysicalAddresses.AddRange(resolvedEndpoints);
+                }
+            }
 
-            //                }
-            //            );
-            //    });
+            return resolvedPhysicalAddresses;
         }
 
         private async Task<IReadOnlyList<TransportAddressUri>> ResolveAllTransportAddressUriAsync(

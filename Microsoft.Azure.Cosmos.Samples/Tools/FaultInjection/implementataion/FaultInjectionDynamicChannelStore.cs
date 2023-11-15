@@ -2,7 +2,6 @@
 {
     using System;
     using System.Collections.Concurrent;
-    using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Rntbd;
 
     internal class FaultInjectionDynamicChannelStore

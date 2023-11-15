@@ -3,11 +3,7 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.FaultInjection
 {
-    using Antlr4.Runtime;
-    using Microsoft.Azure.Documents.FaultInjection;
     using System;
-    using static Microsoft.Azure.Documents.RntbdConstants;
-    using System.Threading;
 
     /// <summary>
     /// Fault Injection Server Error Result.

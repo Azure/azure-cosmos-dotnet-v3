@@ -3,13 +3,10 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.FaultInjection
 {
-    using Microsoft.Azure.Cosmos.FaultInjection.implementataion;
-    using Microsoft.Azure.Documents.FaultInjection;
-    using Microsoft.Azure.Documents.Rntbd;
     using System;
     using System.Collections.Generic;
-    using System.Reflection.Metadata;
-    using System.Text;
+    using Microsoft.Azure.Cosmos.FaultInjection.implementataion;
+    using Microsoft.Azure.Documents.FaultInjection;
 
     public class FaultInjector
     {
@@ -32,7 +29,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
         internal void ConfigureInterceptor(DocumentClient client, TimeSpan requestTimeout)
         {
-            //give it the stuff it needs 
             this.chaosInterceptor.ConfigureInterceptor(client, requestTimeout);
         }
         internal IChaosInterceptor GetChaosInterceptor()

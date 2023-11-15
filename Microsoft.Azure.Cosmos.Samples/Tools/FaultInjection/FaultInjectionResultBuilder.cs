@@ -3,8 +3,6 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.FaultInjection
 {
-    using System;
-
     /// <summary>
     /// Fault Injection Result Builder.
     /// Based on error type will return either a <see cref="FaultInjectionServerErrorResultBuilder"/> or a <see cref="FaultInjectionConnectionErrorResultBuilder"/>.

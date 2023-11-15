@@ -3,7 +3,6 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.FaultInjection
 {
-    using Microsoft.Azure.Documents.FaultInjection;
     using System;
     using System.Collections.Generic;
 

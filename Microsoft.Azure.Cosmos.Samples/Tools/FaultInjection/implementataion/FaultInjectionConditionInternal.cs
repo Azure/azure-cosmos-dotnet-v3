@@ -3,16 +3,12 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.FaultInjection
 {
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Rntbd;
-    using Microsoft.Azure.Documents.FaultInjection;
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Runtime.CompilerServices;
-    using System.Text;
-    using Microsoft.Azure.Cosmos.Routing;
-
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Rntbd;
+    
     internal class FaultInjectionConditionInternal
     {
         private readonly List<IFaultInjectionConditionValidator> validators;

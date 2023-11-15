@@ -4,13 +4,10 @@
 namespace Microsoft.Azure.Cosmos.FaultInjection
 {
     using System;
-    using System.Collections.Generic;
     using System.Collections.Concurrent;
-    using System.Text;
-    using Microsoft.Azure.Documents.FaultInjection;
-    using Microsoft.Azure.Documents.Rntbd;
+    using System.Collections.Generic;
     using Microsoft.Azure.Documents;
-    using System.Diagnostics.Metrics;
+    using Microsoft.Azure.Documents.Rntbd;
 
     internal class FaultInjectionServerErrorRule : IFaultInjectionRuleInternal
     {

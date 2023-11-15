@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private readonly bool includePrimary;
         private readonly int replicaCount;
 
+        internal static FaultInjectionEndpoint Empty = new FaultInjectionEndpoint(new FeedRangePartitionKey(new PartitionKey()), false, 0);
         /// <summary>
         /// Creates a <see cref="FaultInjectionEndpoint"/>.
         /// </summary>

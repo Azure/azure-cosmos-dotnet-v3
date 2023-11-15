@@ -3,12 +3,10 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.FaultInjection.implementataion;
     using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.FaultInjection;
     using Microsoft.Azure.Documents.Rntbd;
 
     internal class RntbdConnectionErrorInjector

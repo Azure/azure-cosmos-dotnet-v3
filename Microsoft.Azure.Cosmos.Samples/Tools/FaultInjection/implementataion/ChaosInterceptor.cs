@@ -34,14 +34,16 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             this.ConfigureFaultInjectionRules();
         }
 
-        private void ConfigureFaultInjectionRules()
+        private async void ConfigureFaultInjectionRules()
         {
-            this.rules.ForEach(
-                rule =>
+            foreach (FaultInjectionRule rule in this.rules)
+            {
+                if (this.ruleStore != null)
                 {
-                    IFaultInjectionRuleInternal? effectiveRule = this.ruleStore?.ConfigureFaultInjectionRule(rule);
-                    if (effectiveRule != null) { this.connectionErrorInjector?.Accept(effectiveRule);}
-                });
+                    IFaultInjectionRuleInternal? effectiveRule = await this.ruleStore.ConfigureFaultInjectionRuleAsync(rule);
+                    if (effectiveRule != null) { this.connectionErrorInjector?.Accept(effectiveRule); }
+                }               
+            }
         }
 
         /// <summary>

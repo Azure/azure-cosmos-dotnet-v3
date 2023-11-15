@@ -3,17 +3,15 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.FaultInjection
 {
-    using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Documents.Rntbd;
-    using Microsoft.Azure.Documents;
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Text;
-    using Microsoft.Azure.Documents.FaultInjection;
-    using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.Tracing;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.FaultInjection.implementataion;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Rntbd;
 
     internal class FaultInjectionRuleStore
     {
@@ -38,11 +36,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 applicationContext: applicationContext);
         }
 
-        public IFaultInjectionRuleInternal ConfigureFaultInjectionRule(FaultInjectionRule rule)
+        public async Task<IFaultInjectionRuleInternal> ConfigureFaultInjectionRuleAsync(FaultInjectionRule rule)
         {
             _ = rule ?? throw new ArgumentNullException(nameof(rule));
 
-            IFaultInjectionRuleInternal effectiveRule = this.ruleProcessor.ProcessFaultInjectionRule(rule);
+            IFaultInjectionRuleInternal effectiveRule = await this.ruleProcessor.ProcessFaultInjectionRule(rule);
             
             if (effectiveRule.GetType() == typeof(FaultInjectionConnectionErrorRule))
             {

@@ -5,8 +5,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 {
     using System;
     using System.Collections.Generic;
-    using System.Text;
-    using Microsoft.Azure.Documents.FaultInjection;
 
     public class FaultInjectionConnectionErrorRule : IFaultInjectionRuleInternal
     {
