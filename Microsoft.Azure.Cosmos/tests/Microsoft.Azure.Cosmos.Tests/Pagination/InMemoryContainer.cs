@@ -649,6 +649,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                             activityId: Guid.NewGuid().ToString(),
                             responseLengthInBytes: 1337,
                             cosmosQueryExecutionInfo: default,
+                            distributionPlanPayload: default,
                             disallowContinuationTokenMessage: default,
                             additionalHeaders: additionalHeaders.ToImmutable(),
                             state: queryState)));

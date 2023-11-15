@@ -173,6 +173,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                         activityId: sourcePage.ActivityId,
                         responseLengthInBytes: sourcePage.ResponseLengthInBytes,
                         cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
+                        distributionPlanPayload: default,
                         disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
                         additionalHeaders: sourcePage.AdditionalHeaders,
                         state: state);
@@ -185,6 +186,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                         activityId: sourcePage.ActivityId,
                         responseLengthInBytes: sourcePage.ResponseLengthInBytes,
                         cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
+                        distributionPlanPayload: default,
                         disallowContinuationTokenMessage: ClientDistinctQueryPipelineStage.DisallowContinuationTokenMessage,
                         additionalHeaders: sourcePage.AdditionalHeaders,
                         state: null);

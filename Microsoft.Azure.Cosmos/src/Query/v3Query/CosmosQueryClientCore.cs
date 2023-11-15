@@ -327,6 +327,15 @@ namespace Microsoft.Azure.Cosmos
                         memoryStream,
                         resourceType);
 
+                    CosmosObject distributionPlan = CosmosQueryClientCore.ParseDistributionPlanFromRestStream(memoryStream);
+                    DistributionPlanPayload distributionPlanPayload = null;
+
+                    if (distributionPlan.TryGetValue("backendDistributionPlan", out CosmosElement backendDistributionPlan) &&
+                        distributionPlan.TryGetValue("coordinatorDistributionPlan", out CosmosElement clientDistributionPlan))
+                    {
+                        distributionPlanPayload = new DistributionPlanPayload(backendDistributionPlan.ToString(), clientDistributionPlan.ToString());
+                    }
+
                     QueryState queryState;
                     if (cosmosResponseMessage.Headers.ContinuationToken != null)
                     {
@@ -360,6 +369,7 @@ namespace Microsoft.Azure.Cosmos
                         cosmosResponseMessage.Headers.ActivityId,
                         responseLengthBytes,
                         cosmosQueryExecutionInfo,
+                        distributionPlanPayload,
                         disallowContinuationTokenMessage: null,
                         additionalHeaders,
                         queryState);
@@ -425,6 +435,40 @@ namespace Microsoft.Azure.Cosmos
         private Task<PartitionKeyRangeCache> GetRoutingMapProviderAsync()
         {
             return this.documentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
+        }
+
+        public static CosmosObject ParseDistributionPlanFromRestStream(
+            Stream stream)
+        {
+            if (!(stream is MemoryStream memoryStream))
+            {
+                memoryStream = new MemoryStream();
+                stream.CopyTo(memoryStream);
+            }
+
+            if (!memoryStream.CanRead)
+            {
+                throw new InvalidDataException("Stream can not be read");
+            }
+
+            ReadOnlyMemory<byte> content = memoryStream.TryGetBuffer(out ArraySegment<byte> buffer) ? buffer : (ReadOnlyMemory<byte>)memoryStream.ToArray();
+            IJsonNavigator jsonNavigator = JsonNavigator.Create(content);
+
+            string resourceName = "_distributionPlan";
+
+            if (jsonNavigator.TryGetObjectProperty(jsonNavigator.GetRootNode(), resourceName, out ObjectProperty objectProperty))
+            {
+                if (!(CosmosElement.Dispatch(jsonNavigator, objectProperty.ValueNode) is CosmosObject distributionPlanPayload))
+                {
+                    throw new InvalidOperationException($"QueryResponse did not have an object of : {resourceName}");
+                }
+                else
+                {
+                    return distributionPlanPayload;
+                }
+            }
+
+            return null;
         }
 
         /// <summary>

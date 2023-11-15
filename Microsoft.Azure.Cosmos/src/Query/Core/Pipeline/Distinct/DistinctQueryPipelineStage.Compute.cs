@@ -131,6 +131,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                     activityId: sourcePage.ActivityId,
                     responseLengthInBytes: sourcePage.ResponseLengthInBytes,
                     cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
+                    distributionPlanPayload: default,
                     disallowContinuationTokenMessage: ComputeDistinctQueryPipelineStage.UseTryGetContinuationTokenMessage,
                     additionalHeaders: sourcePage.AdditionalHeaders,
                     state: queryState);

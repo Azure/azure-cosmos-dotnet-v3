@@ -244,6 +244,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     activityId: "E7980B1F-436E-44DF-B7A5-655C56D38648",
                     responseLengthInBytes: 48,
                     cosmosQueryExecutionInfo: new Lazy<CosmosQueryExecutionInfo>(() => new CosmosQueryExecutionInfo(false, false)),
+                    distributionPlanPayload: default,
                     disallowContinuationTokenMessage: null,
                     additionalHeaders: null,
                     state: continuationToken);

@@ -59,6 +59,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 activityId: Guid.NewGuid().ToString(),
                 responseLengthInBytes: default,
                 cosmosQueryExecutionInfo: default,
+                distributionPlanPayload: default,
                 disallowContinuationTokenMessage: default,
                 additionalHeaders: default,
                 state: state);

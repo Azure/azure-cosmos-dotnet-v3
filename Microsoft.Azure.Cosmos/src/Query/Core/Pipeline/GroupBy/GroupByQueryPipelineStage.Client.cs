@@ -120,6 +120,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                     activityId: default,
                     responseLengthInBytes: responseLengthInBytes,
                     cosmosQueryExecutionInfo: default,
+                    distributionPlanPayload: default,
                     disallowContinuationTokenMessage: ClientGroupByQueryPipelineStage.ContinuationTokenNotSupportedWithGroupBy,
                     additionalHeaders: addtionalHeaders,
                     state: default);

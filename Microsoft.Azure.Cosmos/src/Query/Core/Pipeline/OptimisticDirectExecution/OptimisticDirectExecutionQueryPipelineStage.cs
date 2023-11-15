@@ -47,7 +47,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
             {
                 this.previousRequiresDistribution = false;
             }
-
         }
 
         public delegate Task<TryCatch<IQueryPipelineStage>> FallbackQueryPipelineStageFactory(CosmosElement continuationToken);
@@ -79,6 +78,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                         else
                         {
                             requiresDistribution = true;
+                        }
+
+                        if (requiresDistribution)
+                        {
+                            DistributionPlanPayload plan = this.Current.Result.DistributionPlanPayload;
+                            string backendDistributionPlan = plan.BackendDistributionPlan;
+                            string clientDistributionJson = plan.ClientDistributionPlan;
+
+                            //TODO
+                            // Use the clientDistributionPlan to build a pipeline stage for handling queries that require distribution
+                            // Send the backendDistributionPlan to the backend
                         }
 
                         if (this.previousRequiresDistribution.HasValue && this.previousRequiresDistribution != requiresDistribution)
@@ -230,6 +240,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                     backendQueryPage.ActivityId,
                     backendQueryPage.ResponseLengthInBytes,
                     backendQueryPage.CosmosQueryExecutionInfo,
+                    backendQueryPage.DistributionPlanPayload,
                     disallowContinuationTokenMessage: null,
                     backendQueryPage.AdditionalHeaders,
                     queryState);
