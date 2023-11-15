@@ -1,0 +1,236 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ constant value, camelcase = True]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.NumericField == 1))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["numericFieldDataMember"] = 1)]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+]]]></InputData>
+      <Results><![CDATA[[]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ DataObject initializer with constant value, camelcase = True]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc == new DataObjectDataMember() {NumericField = 1, StringField = "1"}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root = {"NumericFieldDataMember": 1, "StringFieldDataMember": "1", "id": null, "Pk": null})]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+]]]></InputData>
+      <Results><![CDATA[[]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select w/ DataObject initializer, camelcase = True]]></Description>
+      <Expression><![CDATA[query.Select(doc => new DataObjectDataMember() {NumericField = 1, StringField = "1"})]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"NumericFieldDataMember": 1, "StringFieldDataMember": "1", "id": null, "Pk": null} 
+FROM root]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+]]]></InputData>
+      <Results><![CDATA[[
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}"
+]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Deeper than top level reference, camelcase = True]]></Description>
+      <Expression><![CDATA[query.Select(doc => IIF((doc.NumericField > 1), new DataObjectDataMember() {NumericField = 1, StringField = "1"}, new DataObjectDataMember() {NumericField = 1, StringField = "1"}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ((root["numericFieldDataMember"] > 1) ? {"NumericFieldDataMember": 1, "StringFieldDataMember": "1", "id": null, "Pk": null} : {"NumericFieldDataMember": 1, "StringFieldDataMember": "1", "id": null, "Pk": null}) 
+FROM root]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+]]]></InputData>
+      <Results><![CDATA[[
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}"
+]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ DataObject initializer with member initialization, camelcase = True]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc == new DataObjectDataMember() {NumericField = doc.NumericField, StringField = doc.StringField})).Select(b => "A")]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE "A" 
+FROM root 
+WHERE (root = {"numericFieldDataMember": root["numericFieldDataMember"], "stringFieldDataMember": root["stringFieldDataMember"]})]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+]]]></InputData>
+      <Results><![CDATA[[]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ constant value, camelcase = False]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.NumericField == 1))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["NumericFieldDataMember"] = 1)]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+]]]></InputData>
+      <Results><![CDATA[[]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ DataObject initializer with constant value, camelcase = False]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc == new DataObjectDataMember() {NumericField = 1, StringField = "1"}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root = {"NumericFieldDataMember": 1, "StringFieldDataMember": "1", "id": null, "Pk": null})]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+]]]></InputData>
+      <Results><![CDATA[[]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select w/ DataObject initializer, camelcase = False]]></Description>
+      <Expression><![CDATA[query.Select(doc => new DataObjectDataMember() {NumericField = 1, StringField = "1"})]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"NumericFieldDataMember": 1, "StringFieldDataMember": "1", "id": null, "Pk": null} 
+FROM root]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+]]]></InputData>
+      <Results><![CDATA[[
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}"
+]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Deeper than top level reference, camelcase = False]]></Description>
+      <Expression><![CDATA[query.Select(doc => IIF((doc.NumericField > 1), new DataObjectDataMember() {NumericField = 1, StringField = "1"}, new DataObjectDataMember() {NumericField = 1, StringField = "1"}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ((root["NumericFieldDataMember"] > 1) ? {"NumericFieldDataMember": 1, "StringFieldDataMember": "1", "id": null, "Pk": null} : {"NumericFieldDataMember": 1, "StringFieldDataMember": "1", "id": null, "Pk": null}) 
+FROM root]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+]]]></InputData>
+      <Results><![CDATA[[
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}"
+]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ DataObject initializer with member initialization, camelcase = False]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc == new DataObjectDataMember() {NumericField = doc.NumericField, StringField = doc.StringField})).Select(b => "A")]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE "A" 
+FROM root 
+WHERE (root = {"NumericFieldDataMember": root["NumericFieldDataMember"], "StringFieldDataMember": root["StringFieldDataMember"]})]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+]]]></InputData>
+      <Results><![CDATA[[]]]></Results>
+    </Output>
+  </Result>
+</Results>
