@@ -20,7 +20,7 @@
 
         public void RemoveChannel(Guid connectionCorrelationId)
         {
-            this.channelDictonary.TryRemove(connectionCorrelationId, out Channel _);
+            this.channelDictonary.TryRemove(connectionCorrelationId, out _);
         }
 
         public List<Channel> GetAllChannels()

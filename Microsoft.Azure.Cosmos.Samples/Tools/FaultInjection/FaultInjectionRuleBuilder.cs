@@ -11,8 +11,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     public sealed class FaultInjectionRuleBuilder
     {
         private readonly string id;
-        private IFaultInjectionResult result;
-        private FaultInjectionCondition condition;
+        private IFaultInjectionResult? result;
+        private FaultInjectionCondition? condition;
         private TimeSpan duration;
         private TimeSpan startDelay;
         private int hitLimit;

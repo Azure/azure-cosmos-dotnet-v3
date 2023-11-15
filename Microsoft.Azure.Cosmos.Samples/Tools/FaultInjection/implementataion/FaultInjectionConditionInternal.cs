@@ -13,10 +13,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     {
         private readonly List<IFaultInjectionConditionValidator> validators;
 
-        private string containerResourceId;
+        private string containerResourceId = string.Empty;
         private OperationType operationType;
-        private List<Uri> regionEndpoints;
-        private List<Uri> physicalAddresses;
+        private List<Uri> regionEndpoints = new List<Uri>{ };
+        private List<Uri> physicalAddresses = new List<Uri> { };
 
         public FaultInjectionConditionInternal()
         {
