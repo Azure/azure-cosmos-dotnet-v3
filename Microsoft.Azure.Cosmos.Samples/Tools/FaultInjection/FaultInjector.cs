@@ -5,7 +5,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 {
     using System;
     using System.Collections.Generic;
-    using Microsoft.Azure.Cosmos.FaultInjection.implementataion;
     using Microsoft.Azure.Documents.FaultInjection;
 
     public class FaultInjector
