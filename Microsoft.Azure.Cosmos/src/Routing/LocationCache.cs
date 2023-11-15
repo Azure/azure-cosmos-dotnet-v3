@@ -81,6 +81,11 @@ namespace Microsoft.Azure.Cosmos.Routing
 #endif
         }
 
+        public Uri GetDefaultEndpoint()
+        {
+            return this.defaultEndpoint;
+        }
+
         /// <summary>
         /// Gets list of read endpoints ordered by
         /// 1. Preferred location
@@ -284,6 +289,85 @@ namespace Microsoft.Azure.Cosmos.Routing
             return locationEndpointToRoute;
         }
 
+        public ReadOnlyCollection<Uri> GetApplicableEndpoints(DocumentServiceRequest request, bool isReadRequest)
+        {
+            ReadOnlyCollection<Uri> endpoints = isReadRequest ? this.ReadEndpoints : this.WriteEndpoints;
+
+            if (request.RequestContext.ExcludeRegions == null || request.RequestContext.ExcludeRegions.Count == 0)
+            {
+                return endpoints;
+            }
+
+            return this.GetApplicableEndpoints(
+                endpoints,
+                isReadRequest ? this.locationInfo.AvailableReadEndpointByLocation : this.locationInfo.AvailableWriteEndpointByLocation,
+                this.defaultEndpoint,
+                request.RequestContext.ExcludeRegions);
+        }
+
+        /// <summary>
+        /// Gets applicable endpoints for a request, if there are no applicable endpoints, returns the fallback endpoint
+        /// </summary>
+        /// <param name="endpoints"></param>
+        /// <param name="regionNameByEndpoint"></param>
+        /// <param name="fallbackEndpoint"></param>
+        /// <param name="excludeRegions"></param>
+        /// <returns>a list of applicable endpoints for a request</returns>
+        private ReadOnlyCollection<Uri> GetApplicableEndpoints(
+            IReadOnlyList<Uri> endpoints,
+            ReadOnlyDictionary<string, Uri> regionNameByEndpoint,
+            Uri fallbackEndpoint,
+            IReadOnlyList<string> excludeRegions)
+        {
+            List<Uri> applicableEndpoints = new List<Uri>(endpoints.Count);
+            HashSet<Uri> excludeUris = new HashSet<Uri>();
+
+            foreach (string region in excludeRegions)
+            {
+                string normalizedRegionName = this.regionNameMapper.GetCosmosDBRegionName(region);
+                if (regionNameByEndpoint.ContainsKey(normalizedRegionName))
+                {
+                    excludeUris.Add(regionNameByEndpoint[normalizedRegionName]);
+                }
+            }
+            
+            foreach (Uri endpoint in endpoints)
+            {
+                if (!excludeUris.Contains(endpoint))
+                {
+                    applicableEndpoints.Add(endpoint);
+                }
+            }
+
+            if (applicableEndpoints.Count == 0)
+            {
+                applicableEndpoints.Add(fallbackEndpoint);
+            }
+
+            return new ReadOnlyCollection<Uri>(applicableEndpoints);
+        }
+
+        public Uri ResolveFaultInjectionEndpoint(string region, bool writeOnly)
+        {
+            RegionNameMapper regionNameMapper = new RegionNameMapper();
+            if (writeOnly)
+            {
+                if (this.locationInfo.AvailableWriteEndpointByLocation.TryGetValue(regionNameMapper.GetCosmosDBRegionName(region), out Uri faultInjectionEndpoint))
+                {
+                    return faultInjectionEndpoint;
+                }
+            }
+            else
+            {
+                if (this.locationInfo.AvailableReadEndpointByLocation.TryGetValue(regionNameMapper.GetCosmosDBRegionName(region), out Uri faultInjectionEndpoint))
+                {
+                    return faultInjectionEndpoint;
+                }
+            }
+
+            throw new ArgumentException($"Cannot find service endpoint for region: {region}");
+        }
+        
         public bool ShouldRefreshEndpoints(out bool canRefreshInBackground)
         {
             canRefreshInBackground = true;

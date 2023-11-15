@@ -118,7 +118,7 @@
 		<PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
 		<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="1.0.0" />
 		<PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.0.102" PrivateAssets="All" />
-		<PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
+		<PackageReference Include="Newtonsoft.Json" Version="10.0.2" NoWarn="NU1903" />
 		<PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="All" />
 
 		<!--Direct Dependencies-->
@@ -148,6 +148,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Reference Include="Microsoft.Azure.Cosmos.FaultInjection">
+	    <HintPath>..\..\Microsoft.Azure.Cosmos.Samples\Tools\FaultInjection\obj\Release\net6\Microsoft.Azure.Cosmos.FaultInjection.dll</HintPath>
+	  </Reference>
+	</ItemGroup>
+
+	<ItemGroup>
 		<None Update="CosmosElements\Numbers\CosmosNumberCodeGenerator.tt">
 			<Generator>TextTemplatingFileGenerator</Generator>
 			<LastGenOutput>CosmosNumberCodeGenerator.cs</LastGenOutput>
@@ -161,7 +167,7 @@
 	<ItemGroup>
 		<Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
 	</ItemGroup>
-
+	
 	<PropertyGroup Condition=" '$(ProjectRef)' != 'True' ">
 		<SignAssembly>true</SignAssembly>
 		<DelaySign>true</DelaySign>
