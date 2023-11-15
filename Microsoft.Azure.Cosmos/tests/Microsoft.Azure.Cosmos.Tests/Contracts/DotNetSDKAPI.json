@@ -5734,25 +5734,15 @@
           "Attributes": [],
           "MethodInfo": "Int32 value__;IsInitOnly:False;IsStatic:False;"
         },
-        "Microsoft.Azure.Cosmos.Linq.LinqSerializerType DataContract": {
+        "Microsoft.Azure.Cosmos.Linq.LinqSerializerType CustomCosmosSerializer": {
           "Type": "Field",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Linq.LinqSerializerType DataContract;IsInitOnly:False;IsStatic:True;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.Linq.LinqSerializerType CustomCosmosSerializer;IsInitOnly:False;IsStatic:True;"
         },
         "Microsoft.Azure.Cosmos.Linq.LinqSerializerType Default": {
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Linq.LinqSerializerType Default;IsInitOnly:False;IsStatic:True;"
-        },
-        "Microsoft.Azure.Cosmos.Linq.LinqSerializerType DotNet": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Linq.LinqSerializerType DotNet;IsInitOnly:False;IsStatic:True;"
-        },
-        "Microsoft.Azure.Cosmos.Linq.LinqSerializerType Newtonsoft": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Linq.LinqSerializerType Newtonsoft;IsInitOnly:False;IsStatic:True;"
         }
       },
       "NestedTypes": {}

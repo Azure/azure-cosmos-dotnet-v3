@@ -91,7 +91,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     new LinqTestInput("Filter w/ DataObject initializer with constant value, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc == new DataObjectDotNet() { NumericField = 1, StringField = "1" }), skipVerification : true, inputData: insertedData),
                     new LinqTestInput("Select w/ DataObject initializer, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Select(doc => new DataObjectDotNet() { NumericField = 1, StringField = "1" }), skipVerification : true, inputData: insertedData),
                     new LinqTestInput("Deeper than top level reference, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Select(doc => doc.NumericField > 1 ? new DataObjectDotNet() { NumericField = 1, StringField = "1" } : new DataObjectDotNet() { NumericField = 1, StringField = "1" }), skipVerification : true, inputData: insertedData),
-                    new LinqTestInput("Filter w/ DataObject initializer with member initialization, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc == new DataObjectDotNet() { NumericField = doc.NumericField, StringField = doc.StringField }).Select(b => "A"), skipVerification : true, inputData: insertedData)
+                    new LinqTestInput("Filter w/ DataObject initializer with member initialization, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc == new DataObjectDotNet() { NumericField = doc.NumericField, StringField = doc.StringField }).Select(b => "A"), skipVerification : true, inputData: insertedData),
+                    new LinqTestInput("Mutistep query, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Select(x => x).OrderBy(x => x).Select(f => f.NumericField).Take(5), skipVerification : true, inputData: insertedData),
                 };
 
                 inputs.AddRange(camelCaseSettingInputs);

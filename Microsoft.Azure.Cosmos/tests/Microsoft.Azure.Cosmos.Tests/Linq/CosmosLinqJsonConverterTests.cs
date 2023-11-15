@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 LinqSerializerType = LinqSerializerType.CustomCosmosSerializer
             };
 
-            CosmosLinqSerializerOptions newtonsoftOptions = new()
+            CosmosLinqSerializerOptions defaultOptions = new()
             {
                 CustomCosmosSerializer = new TestCustomJsonSerializer(),
                 LinqSerializerType = LinqSerializerType.Default
@@ -51,14 +51,14 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             TestEnum[] values = new[] { TestEnum.One, TestEnum.Two };
 
-            Expression<Func<TestEnumDocument, bool>> expr = a => values.Contains(a.Value);     
+            Expression<Func<TestEnumDocument, bool>> expr = a => values.Contains(a.Value);
             string sql = SqlTranslator.TranslateExpression(expr.Body, options);
 
             Expression<Func<TestEnumNewtonsoftDocument, bool>> exprNewtonsoft = a => values.Contains(a.Value);
-            string sqlNewtonsoft = SqlTranslator.TranslateExpression(exprNewtonsoft.Body, newtonsoftOptions);
+            string sqlDefault = SqlTranslator.TranslateExpression(exprNewtonsoft.Body, defaultOptions);
 
             Assert.AreEqual("(a[\"Value\"] IN (\"One\", \"Two\"))", sql);
-            Assert.AreEqual("(a[\"Value\"] IN (0, 1))", sqlNewtonsoft);
+            Assert.AreEqual("(a[\"Value\"] IN (0, 1))", sqlDefault);
         }
 
         [TestMethod]
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 LinqSerializerType = LinqSerializerType.CustomCosmosSerializer
             };
 
-            CosmosLinqSerializerOptions newtonsoftOptions = new()
+            CosmosLinqSerializerOptions defaultOptions = new()
             {
                 CustomCosmosSerializer = new TestCustomJsonSerializer(),
                 LinqSerializerType = LinqSerializerType.Default
@@ -81,8 +81,8 @@ namespace Microsoft.Azure.Cosmos.Linq
             Expression<Func<TestEnumDocument, bool>> expr = a => a.Value == statusValue;
             string sql = SqlTranslator.TranslateExpression(expr.Body, options);
 
-            Expression<Func<TestEnumNewtonsoftDocument, bool>> exprNewtonsoft = a => a.Value == statusValue;
-            string sqlNewtonsoft = SqlTranslator.TranslateExpression(exprNewtonsoft.Body, newtonsoftOptions);
+            Expression<Func<TestEnumNewtonsoftDocument, bool>> exprDefault = a => a.Value == statusValue;
+            string sqlNewtonsoft = SqlTranslator.TranslateExpression(exprDefault.Body, defaultOptions);
 
             Assert.AreEqual("(a[\"Value\"] = \"One\")", sql);
             Assert.AreEqual("(a[\"Value\"] = \"One\")", sqlNewtonsoft);
@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 LinqSerializerType = LinqSerializerType.CustomCosmosSerializer
             };
 
-            CosmosLinqSerializerOptions newtonsoftOptions = new()
+            CosmosLinqSerializerOptions defaultOptions = new()
             {
                 CustomCosmosSerializer = new TestCustomJsonSerializer(),
                 LinqSerializerType = LinqSerializerType.Default
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 arg,
                 typeof(TestEnumDocument).GetProperty(nameof(TestEnumDocument.Value))!
             );
-            MemberExpression docValueExpressionNewtonsoft = Expression.MakeMemberAccess(
+            MemberExpression docValueExpressionDefault = Expression.MakeMemberAccess(
                 argNewtonsoft,
                 typeof(TestEnumNewtonsoftDocument).GetProperty(nameof(TestEnumNewtonsoftDocument.Value))!
             );
@@ -125,22 +125,22 @@ namespace Microsoft.Azure.Cosmos.Linq
                 docValueExpression,
                 status
             );
-            BinaryExpression expressionNewtonsoft = Expression.Equal(
-                docValueExpressionNewtonsoft,
+            BinaryExpression expressionDefault = Expression.Equal(
+                docValueExpressionDefault,
                 status
             );
 
             // Create lambda expression
-            Expression<Func<TestEnumDocument, bool>> lambda = 
+            Expression<Func<TestEnumDocument, bool>> lambda =
                 Expression.Lambda<Func<TestEnumDocument, bool>>(expression, arg);
             string sql = SqlTranslator.TranslateExpression(lambda.Body, options);
 
             Expression<Func<TestEnumNewtonsoftDocument, bool>> lambdaNewtonsoft =
-                Expression.Lambda<Func<TestEnumNewtonsoftDocument, bool>>(expressionNewtonsoft, argNewtonsoft);
-            string sqlNewtonsoft = SqlTranslator.TranslateExpression(lambdaNewtonsoft.Body, newtonsoftOptions);
+                Expression.Lambda<Func<TestEnumNewtonsoftDocument, bool>>(expressionDefault, argNewtonsoft);
+            string sqlDefault = SqlTranslator.TranslateExpression(lambdaNewtonsoft.Body, defaultOptions);
 
             Assert.AreEqual("(a[\"Value\"] = \"One\")", sql);
-            Assert.AreEqual("(a[\"Value\"] = \"One\")", sqlNewtonsoft);
+            Assert.AreEqual("(a[\"Value\"] = \"One\")", sqlDefault);
         }
 
         enum TestEnum
@@ -185,13 +185,13 @@ namespace Microsoft.Azure.Cosmos.Linq
         [TestMethod]
         public void TestNewtonsoftExtensionDataQuery()
         {
-            CosmosLinqSerializerOptions newtonsoftOptions = new()
+            CosmosLinqSerializerOptions options = new()
             {
                 LinqSerializerType = LinqSerializerType.Default
             };
 
             Expression<Func<DocumentWithExtensionData, bool>> expr = a => (string)a.NewtonsoftExtensionData["foo"] == "bar";
-            string sql = SqlTranslator.TranslateExpression(expr.Body, newtonsoftOptions);
+            string sql = SqlTranslator.TranslateExpression(expr.Body, options);
 
             Assert.AreEqual("(a[\"foo\"] = \"bar\")", sql);
         }
@@ -260,7 +260,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             public override Stream ToStream<T>(T input)
             {
-                MemoryStream stream = new ();
+                MemoryStream stream = new();
 
                 this.systemTextJsonSerializer.Serialize(stream, input, typeof(T), default);
                 stream.Position = 0;
