@@ -4,7 +4,9 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.IO;
+    using System.Reflection;
 
     /// <summary>
     /// This is an interface to allow a custom serializer to be used by the CosmosClient
@@ -29,5 +31,13 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="input">Any type passed to <see cref="Container"/>.</param>
         /// <returns>A readable Stream containing JSON of the serialized object.</returns>
         public abstract Stream ToStream<T>(T input);
+
+        /// <summary/> //mayapainter todo
+        /// <param name="memberInfo">Any MemberInfo used in the query.</param>
+        /// <returns>A serialized representation of the member</returns>
+        public virtual string SerializeLinqMemberName(MemberInfo memberInfo)
+        {
+            throw new NotImplementedException($"{nameof(CosmosSerializer)}.{nameof(SerializeLinqMemberName)})");
+        }
     }
 }

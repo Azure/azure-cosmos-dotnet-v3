@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.IO;
     using System.Linq.Expressions;
     using System.Reflection;
-    using System.Text.Json.Serialization;
 
     internal class DotNetCosmosLinqSerializer : ICosmosLinqSerializer
     {
@@ -36,16 +35,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public string SerializeMemberName(MemberInfo memberInfo)
         {
-            JsonPropertyNameAttribute jsonPropertyNameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(true);
-
-            string memberName = jsonPropertyNameAttribute != null && !string.IsNullOrEmpty(jsonPropertyNameAttribute.Name)
-                ? jsonPropertyNameAttribute.Name
-                : memberInfo.Name;
-
-            //memberName = this.SerializeWithCustomSerializer(memberName); //This doesnt work - too many quotes
-            memberName = CosmosSerializationUtil.GetStringWithPropertyNamingPolicy(new CosmosLinqSerializerOptions(), memberName);
-
-            return memberName;
+            return this.CustomCosmosSerializer.SerializeLinqMemberName(memberInfo);
         }
 
         private string SerializeWithCustomSerializer(object value)

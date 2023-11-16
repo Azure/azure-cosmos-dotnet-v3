@@ -88,6 +88,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 if (this.LinqSerializerOptions.CustomCosmosSerializer == null)
                 {
+                    //Todo mayapainter: make sure GetMemberName implemented
                     throw new InvalidOperationException($"Must provide CustomCosmosSerializer if selecting linqSerializerOptions.CustomCosmosSerializer");
                 }
                 

@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using System.Text.Json.Serialization;
     using System.Threading.Tasks;
     using BaselineTest;
-    using global::Azure.Core.Serialization;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -311,45 +310,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             string insertedData = JsonConvert.SerializeObject(insertedDataList.Select(item => item), new JsonSerializerSettings { Formatting = Newtonsoft.Json.Formatting.Indented });
             return insertedData;
-        }
-
-        class SystemTextJsonSerializer : CosmosSerializer
-        {
-            private readonly JsonObjectSerializer systemTextJsonSerializer;
-
-            public SystemTextJsonSerializer(JsonSerializerOptions jsonSerializerOptions)
-            {
-                this.systemTextJsonSerializer = new JsonObjectSerializer(jsonSerializerOptions);
-            }
-
-            public override T FromStream<T>(Stream stream)
-            {
-                if (stream == null)
-                    throw new ArgumentNullException(nameof(stream));
-
-                using (stream)
-                {
-                    if (stream.CanSeek && stream.Length == 0)
-                    {
-                        return default;
-                    }
-
-                    if (typeof(Stream).IsAssignableFrom(typeof(T)))
-                    {
-                        return (T)(object)stream;
-                    }
-
-                    return (T)this.systemTextJsonSerializer.Deserialize(stream, typeof(T), default);
-                }
-            }
-
-            public override Stream ToStream<T>(T input)
-            {
-                MemoryStream streamPayload = new MemoryStream();
-                this.systemTextJsonSerializer.Serialize(streamPayload, input, typeof(T), default);
-                streamPayload.Position = 0;
-                return streamPayload;
-            }
         }
 
         private class DataObjectDotNet : LinqTestObject

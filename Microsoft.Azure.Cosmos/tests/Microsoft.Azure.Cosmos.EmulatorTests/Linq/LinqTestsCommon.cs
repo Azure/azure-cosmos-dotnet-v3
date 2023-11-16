@@ -10,12 +10,17 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Diagnostics;
+    using System.IO;
     using System.Linq;
     using System.Linq.Expressions;
+    using System.Reflection;
     using System.Runtime.CompilerServices;
     using System.Text;
+    using System.Text.Json.Serialization;
+    using System.Text.Json;
     using System.Text.RegularExpressions;
     using System.Xml;
+    using global::Azure.Core.Serialization;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -833,6 +838,56 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 xmlWriter.WriteCData(LinqTestOutput.FormatErrorMessage(this.ErrorMessage));
                 xmlWriter.WriteEndElement();
             }
+        }
+    }
+
+    public class SystemTextJsonSerializer : CosmosSerializer
+    {
+        private readonly JsonObjectSerializer systemTextJsonSerializer;
+
+        public SystemTextJsonSerializer(JsonSerializerOptions jsonSerializerOptions)
+        {
+            this.systemTextJsonSerializer = new JsonObjectSerializer(jsonSerializerOptions);
+        }
+
+        public override T FromStream<T>(Stream stream)
+        {
+            if (stream == null)
+                throw new ArgumentNullException(nameof(stream));
+
+            using (stream)
+            {
+                if (stream.CanSeek && stream.Length == 0)
+                {
+                    return default;
+                }
+
+                if (typeof(Stream).IsAssignableFrom(typeof(T)))
+                {
+                    return (T)(object)stream;
+                }
+
+                return (T)this.systemTextJsonSerializer.Deserialize(stream, typeof(T), default);
+            }
+        }
+
+        public override Stream ToStream<T>(T input)
+        {
+            MemoryStream streamPayload = new MemoryStream();
+            this.systemTextJsonSerializer.Serialize(streamPayload, input, typeof(T), default);
+            streamPayload.Position = 0;
+            return streamPayload;
+        }
+
+        public override string SerializeLinqMemberName(MemberInfo memberInfo)
+        {
+            JsonPropertyNameAttribute jsonPropertyNameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(true);
+
+            string memberName = jsonPropertyNameAttribute != null && !string.IsNullOrEmpty(jsonPropertyNameAttribute.Name)
+                ? jsonPropertyNameAttribute.Name
+                : memberInfo.Name;
+
+            return memberName;
         }
     }
 }

@@ -10,6 +10,8 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.IO;
     using System.Linq;
     using System.Linq.Expressions;
+    using System.Reflection;
+    using System.Text.Json.Serialization;
     using global::Azure.Core.Serialization;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -157,13 +159,13 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         class TestEnumNewtonsoftDocument
         {
-            [JsonConverter(typeof(StringEnumConverter))]
+            [Newtonsoft.Json.JsonConverter(typeof(StringEnumConverter))]
             public TestEnum Value { get; set; }
         }
 
         class TestDocument
         {
-            [JsonConverter(typeof(DateJsonConverter))]
+            [Newtonsoft.Json.JsonConverter(typeof(DateJsonConverter))]
             public DateTime StartDate { get; set; }
         }
 
@@ -266,6 +268,17 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.systemTextJsonSerializer.Serialize(stream, input, typeof(T), default);
                 stream.Position = 0;
                 return stream;
+            }
+
+            public override string SerializeLinqMemberName(MemberInfo memberInfo)
+            {
+                JsonPropertyNameAttribute jsonPropertyNameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(true);
+
+                string memberName = jsonPropertyNameAttribute != null && !string.IsNullOrEmpty(jsonPropertyNameAttribute.Name)
+                    ? jsonPropertyNameAttribute.Name
+                    : memberInfo.Name;
+
+                return memberName;
             }
         }
     }

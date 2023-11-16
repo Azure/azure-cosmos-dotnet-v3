@@ -3633,6 +3633,11 @@
           "Attributes": [],
           "MethodInfo": "System.IO.Stream ToStream[T](T);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
+        "System.String SerializeLinqMemberName(System.Reflection.MemberInfo)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.String SerializeLinqMemberName(System.Reflection.MemberInfo);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "T FromStream[T](System.IO.Stream)": {
           "Type": "Method",
           "Attributes": [],
