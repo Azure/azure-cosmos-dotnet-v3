@@ -31,7 +31,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly TimeSpan unavailableLocationsExpirationTime;
         private readonly int connectionLimit;
         private readonly ConcurrentDictionary<Uri, LocationUnavailabilityInfo> locationUnavailablityInfoByEndpoint;
-        private readonly RegionNameMapper regionNameMapper;
 
         private DatabaseAccountLocationsInfo locationInfo;
         private DateTime lastCacheUpdateTimestamp;
@@ -55,7 +54,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.lastCacheUpdateTimestamp = DateTime.MinValue;
             this.enableMultipleWriteLocations = false;
             this.unavailableLocationsExpirationTime = TimeSpan.FromSeconds(LocationCache.DefaultUnavailableLocationsExpirationTimeInSeconds);
-            this.regionNameMapper = new RegionNameMapper();
 
 #if !(NETSTANDARD15 || NETSTANDARD16)
 #if NETSTANDARD20

@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http;
     using System.Net.Security;
     using System.Security.Cryptography.X509Certificates;
+    using Microsoft.Azure.Cosmos.FaultInjection;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -733,6 +734,8 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets Client Telemetry Options like feature flags and corresponding options
         /// </summary>
         public CosmosClientTelemetryOptions CosmosClientTelemetryOptions { get; set; }
+
+        internal FaultInjector FaultInjector { get; set; }
 
         internal void SetSerializerIfNotConfigured(CosmosSerializer serializer)
         {
