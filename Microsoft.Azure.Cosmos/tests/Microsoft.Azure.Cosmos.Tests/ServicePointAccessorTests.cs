@@ -20,7 +20,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             ServicePointAccessor accessor = ServicePointAccessor.FindServicePoint(ServicePointAccessorTests.uri);
             Assert.IsNotNull(accessor);
             accessor.ConnectionLimit = limit;
+#pragma warning disable SYSLIB0014 // Type or member is obsolete
             ServicePoint servicePoint = ServicePointManager.FindServicePoint(ServicePointAccessorTests.uri);
+#pragma warning restore SYSLIB0014 // Type or member is obsolete
             Assert.AreEqual(limit, servicePoint.ConnectionLimit);
         }
 
@@ -29,7 +31,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             ServicePointAccessor accessor = ServicePointAccessor.FindServicePoint(ServicePointAccessorTests.uri);
             Assert.IsNotNull(accessor);
+#pragma warning disable SYSLIB0014 // Type or member is obsolete
             ServicePoint servicePoint = ServicePointManager.FindServicePoint(ServicePointAccessorTests.uri);
+#pragma warning restore SYSLIB0014 // Type or member is obsolete
             Assert.IsFalse(servicePoint.UseNagleAlgorithm);
         }
     }
