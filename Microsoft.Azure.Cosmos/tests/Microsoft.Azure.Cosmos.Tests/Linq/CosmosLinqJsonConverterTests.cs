@@ -201,6 +201,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             CosmosLinqSerializerOptions dotNetOptions = new()
             {
+                CustomCosmosSerializer = new TestCustomJsonSerializer(),
                 LinqSerializerType = LinqSerializerType.CustomCosmosSerializer
             };
 

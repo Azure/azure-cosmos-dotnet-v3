@@ -14,13 +14,9 @@ namespace Microsoft.Azure.Cosmos.Linq
     {
         private readonly CosmosSerializer CustomCosmosSerializer;
 
-        public DotNetCosmosLinqSerializer(CosmosSerializer customCosmosSerializer, CosmosPropertyNamingPolicy propertyNamingPolicy)
+        public DotNetCosmosLinqSerializer(CosmosSerializer customCosmosSerializer)
         {
-            this.CustomCosmosSerializer = customCosmosSerializer 
-                ?? new CosmosJsonDotNetSerializer(new CosmosSerializationOptions()
-                {
-                    PropertyNamingPolicy = propertyNamingPolicy
-                });
+            this.CustomCosmosSerializer = customCosmosSerializer;
         }
 
         public bool RequiresCustomSerialization(MemberExpression memberExpression, Type memberType)
@@ -46,7 +42,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                 ? jsonPropertyNameAttribute.Name
                 : memberInfo.Name;
 
-            memberName = this.SerializeWithCustomSerializer(memberName);
+            //memberName = this.SerializeWithCustomSerializer(memberName); //This doesnt work - too many quotes
+            memberName = CosmosSerializationUtil.GetStringWithPropertyNamingPolicy(new CosmosLinqSerializerOptions(), memberName);
 
             return memberName;
         }

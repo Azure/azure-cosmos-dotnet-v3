@@ -81,18 +81,24 @@ namespace Microsoft.Azure.Cosmos.Linq
             this.collectionStack = new List<Collection>();
             this.CurrentQuery = new QueryUnderConstruction(this.GetGenFreshParameterFunc());
             this.subqueryBindingStack = new Stack<SubqueryBinding>();
-            this.LinqSerializerOptions = linqSerializerOptions;
+            this.LinqSerializerOptions = linqSerializerOptions ?? new CosmosLinqSerializerOptions();
             this.Parameters = parameters;
-            this.MemberNames = new MemberNames(linqSerializerOptions);
-            
-            this.CosmosLinqSerializer = linqSerializerOptions != null
-                ? linqSerializerOptions.LinqSerializerType switch
+
+            if (this.LinqSerializerOptions.LinqSerializerType == LinqSerializerType.CustomCosmosSerializer)
+            {
+                if (this.LinqSerializerOptions.CustomCosmosSerializer == null)
                 {
-                    LinqSerializerType.Default => new DefaultCosmosLinqSerializer(linqSerializerOptions.PropertyNamingPolicy),
-                    LinqSerializerType.CustomCosmosSerializer => new DotNetCosmosLinqSerializer(linqSerializerOptions.CustomCosmosSerializer, linqSerializerOptions.PropertyNamingPolicy),
-                    _ => throw new InvalidOperationException($"Unknown type: {linqSerializerOptions.LinqSerializerType.GetType()}")
+                    throw new InvalidOperationException($"Must provide CustomCosmosSerializer if selecting linqSerializerOptions.CustomCosmosSerializer");
                 }
-                : new DefaultCosmosLinqSerializer(CosmosPropertyNamingPolicy.Default);
+                
+                this.CosmosLinqSerializer = new DotNetCosmosLinqSerializer(this.LinqSerializerOptions.CustomCosmosSerializer);
+                this.MemberNames = new MemberNames(new CosmosLinqSerializerOptions());
+            }
+            else
+            {
+                this.CosmosLinqSerializer = new DefaultCosmosLinqSerializer(this.LinqSerializerOptions.PropertyNamingPolicy);
+                this.MemberNames = new MemberNames(this.LinqSerializerOptions);
+            }
         }
 
         public Expression LookupSubstitution(ParameterExpression parameter)
