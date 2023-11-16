@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class ServicePointAccessorTests
     {
-        private static Uri uri = new Uri("https://localhost");
+        private static readonly Uri uri = new Uri("https://localhost");
 
         [TestMethod]
         public void ServicePointAccessor_SetConnectionLimit()
