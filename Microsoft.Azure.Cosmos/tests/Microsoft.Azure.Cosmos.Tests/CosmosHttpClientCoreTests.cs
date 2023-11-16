@@ -243,15 +243,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task Retry3TimesOnDefaultPolicyTestAsync()
         {
             int count = 0;
-#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-            async Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
+            Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
             {
                 count++;
 
                 throw new OperationCanceledException("API with exception");
 
             }
-#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
 
             DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
             HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
@@ -285,15 +283,13 @@ namespace Microsoft.Azure.Cosmos.Tests
             async Task TestScenarioAsync(HttpMethod method, ResourceType resourceType, HttpTimeoutPolicy timeoutPolicy, Type expectedException, int expectedNumberOfRetrys)
             {
                 int count = 0;
-#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-                async Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
+                Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
                 {
                     count++;
 
                     throw new OperationCanceledException("API with exception");
 
                 }
-#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
 
                 DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
                 HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
@@ -350,8 +346,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task NoRetryOnNoRetryPolicyTestAsync()
         {
             int count = 0;
-#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-            async Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
+            Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
             {
                 if(count == 0)
                 {
@@ -361,7 +356,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 throw new OperationCanceledException("API with exception");
             }
-#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
 
             DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
             HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
