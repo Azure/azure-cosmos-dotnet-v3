@@ -16,7 +16,7 @@
         private static readonly string databaseName = "samples";
         private static readonly string containerName = "ai-sample";
 
-        private static TelemetryClient? _telemetryClient;
+        private static TelemetryClient _telemetryClient;
 
         static async Task Main()
         {
