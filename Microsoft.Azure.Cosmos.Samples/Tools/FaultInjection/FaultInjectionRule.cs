@@ -122,6 +122,16 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         }
 
         /// <summary>
+        /// Enables the fault injection rule.
+        /// </summary>
+        public void Enable()
+        {
+            this.enabled = true;
+
+            this.effectiveRule?.Enable();
+        }
+
+        /// <summary>
         /// Gets the count of how many times the rule has been applied.
         /// </summary>
         /// <returns>the hit count.</returns>

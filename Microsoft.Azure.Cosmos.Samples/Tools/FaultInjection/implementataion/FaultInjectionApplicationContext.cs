@@ -3,7 +3,7 @@
     using System;
     using System.Collections.Concurrent;
 
-    internal class FaultInjectionApplicationContext
+    public class FaultInjectionApplicationContext
     { 
 
         private readonly ConcurrentDictionary<string, List<(DateTime, Guid)>> applicationsByRuleId;

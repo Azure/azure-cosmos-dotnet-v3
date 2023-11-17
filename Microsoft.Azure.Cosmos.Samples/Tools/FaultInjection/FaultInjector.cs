@@ -16,6 +16,12 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             this.chaosInterceptor = new ChaosInterceptor(rules);
         }
 
+        public CosmosClientOptions GetFaultInjectionClientOptions(CosmosClientOptions clientOptions)
+        {
+            clientOptions.ChaosInterceptor = this.chaosInterceptor;
+            return clientOptions;
+        }       
+
         /// <summary>
         /// Gets the fault injection rule id for the given activity id
         /// </summary>
@@ -26,20 +32,15 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             return this.chaosInterceptor.GetFaultInjectionRuleId(activityId);
         }
 
-        internal void ConfigureInterceptor(DocumentClient client, TimeSpan requestTimeout)
-        {
-            this.chaosInterceptor.ConfigureInterceptor(client, requestTimeout);
-        }
-        internal IChaosInterceptor GetChaosInterceptor()
-        {
-            return this.chaosInterceptor;
-        }
-
         //Get Application Context
-        internal FaultInjectionApplicationContext GetApplicationContext()
+        public FaultInjectionApplicationContext GetApplicationContext()
         {
             return this.chaosInterceptor.GetApplicationContext();
         }
 
+        internal IChaosInterceptor GetChaosInterceptor()
+        {
+            return this.chaosInterceptor;
+        }
     }
 }

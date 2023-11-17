@@ -26,9 +26,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             this.applicationContext = new FaultInjectionApplicationContext();
         }
 
-        public void ConfigureInterceptor(DocumentClient client, TimeSpan requestTimeout)
+        public void ConfigureInterceptor(dynamic client, TimeSpan requestTimeout)
         {
-            this.ruleStore = new FaultInjectionRuleStore(client, this.applicationContext);
+            DocumentClient documentClient = client as DocumentClient ?? throw new ArgumentNullException(nameof(client));
+            this.ruleStore = new FaultInjectionRuleStore(documentClient, this.applicationContext);
             this.connectionErrorInjector = new RntbdConnectionErrorInjector(this.ruleStore, this.channelStore);
             this.requestTimeout = requestTimeout;
             this.ConfigureFaultInjectionRules();

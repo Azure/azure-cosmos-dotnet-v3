@@ -17,6 +17,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         void Disable();
 
         /// <summary>
+        /// Enables the rule
+        /// </summary>
+        void Enable();
+
+        /// <summary>
         /// Gets the physical addresses of the rule.
         /// </summary>
         /// <returns>a list of the physical addresses of the rule.</returns>

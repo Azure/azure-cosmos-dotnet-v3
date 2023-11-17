@@ -44,6 +44,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             this.enabled = false;
         }
 
+        public void Enable()
+        {
+            this.enabled = true;
+        }
+
         public List<Uri> GetAddresses()
         {
             return this.addresses;
