@@ -23,7 +23,7 @@ WHERE (root["numberValueNewtonsoft"] = 1)]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Filter w/ DataObject initializer with constant value, camelcase = True]]></Description>
-      <Expression><![CDATA[query.Where(doc => (doc == new DataObjectNewtonsoftDotNetSerializer() {NumericField = 1, StringField = "1"}))]]></Expression>
+      <Expression><![CDATA[query.Where(doc => (doc == new DataObjectNewtonsoftDotNet() {NumericField = 1, StringField = "1"}))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -44,7 +44,7 @@ WHERE (root = {"NumberValueNewtonsoft": 1, "StringValueNewtonsoft": "1", "id": n
   <Result>
     <Input>
       <Description><![CDATA[Select w/ DataObject initializer, camelcase = True]]></Description>
-      <Expression><![CDATA[query.Select(doc => new DataObjectNewtonsoftDotNetSerializer() {NumericField = 1, StringField = "1"})]]></Expression>
+      <Expression><![CDATA[query.Select(doc => new DataObjectNewtonsoftDotNet() {NumericField = 1, StringField = "1"})]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -71,7 +71,7 @@ FROM root]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Deeper than top level reference, camelcase = True]]></Description>
-      <Expression><![CDATA[query.Select(doc => IIF((doc.NumericField > 1), new DataObjectNewtonsoftDotNetSerializer() {NumericField = 1, StringField = "1"}, new DataObjectNewtonsoftDotNetSerializer() {NumericField = 1, StringField = "1"}))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => IIF((doc.NumericField > 1), new DataObjectNewtonsoftDotNet() {NumericField = 1, StringField = "1"}, new DataObjectNewtonsoftDotNet() {NumericField = 1, StringField = "1"}))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -98,7 +98,7 @@ FROM root]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Filter w/ DataObject initializer with member initialization, camelcase = True]]></Description>
-      <Expression><![CDATA[query.Where(doc => (doc == new DataObjectNewtonsoftDotNetSerializer() {NumericField = doc.NumericField, StringField = doc.StringField})).Select(b => "A")]]></Expression>
+      <Expression><![CDATA[query.Where(doc => (doc == new DataObjectNewtonsoftDotNet() {NumericField = doc.NumericField, StringField = doc.StringField})).Select(b => "A")]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -140,7 +140,7 @@ WHERE (root["NumberValueNewtonsoft"] = 1)]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Filter w/ DataObject initializer with constant value, camelcase = False]]></Description>
-      <Expression><![CDATA[query.Where(doc => (doc == new DataObjectNewtonsoftDotNetSerializer() {NumericField = 1, StringField = "1"}))]]></Expression>
+      <Expression><![CDATA[query.Where(doc => (doc == new DataObjectNewtonsoftDotNet() {NumericField = 1, StringField = "1"}))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -161,7 +161,7 @@ WHERE (root = {"NumberValueNewtonsoft": 1, "StringValueNewtonsoft": "1", "id": n
   <Result>
     <Input>
       <Description><![CDATA[Select w/ DataObject initializer, camelcase = False]]></Description>
-      <Expression><![CDATA[query.Select(doc => new DataObjectNewtonsoftDotNetSerializer() {NumericField = 1, StringField = "1"})]]></Expression>
+      <Expression><![CDATA[query.Select(doc => new DataObjectNewtonsoftDotNet() {NumericField = 1, StringField = "1"})]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -188,7 +188,7 @@ FROM root]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Deeper than top level reference, camelcase = False]]></Description>
-      <Expression><![CDATA[query.Select(doc => IIF((doc.NumericField > 1), new DataObjectNewtonsoftDotNetSerializer() {NumericField = 1, StringField = "1"}, new DataObjectNewtonsoftDotNetSerializer() {NumericField = 1, StringField = "1"}))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => IIF((doc.NumericField > 1), new DataObjectNewtonsoftDotNet() {NumericField = 1, StringField = "1"}, new DataObjectNewtonsoftDotNet() {NumericField = 1, StringField = "1"}))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -215,7 +215,7 @@ FROM root]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Filter w/ DataObject initializer with member initialization, camelcase = False]]></Description>
-      <Expression><![CDATA[query.Where(doc => (doc == new DataObjectNewtonsoftDotNetSerializer() {NumericField = doc.NumericField, StringField = doc.StringField})).Select(b => "A")]]></Expression>
+      <Expression><![CDATA[query.Where(doc => (doc == new DataObjectNewtonsoftDotNet() {NumericField = doc.NumericField, StringField = doc.StringField})).Select(b => "A")]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[

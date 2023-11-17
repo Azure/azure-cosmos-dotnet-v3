@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 if (this.LinqSerializerOptions.CustomCosmosSerializer == null)
                 {
-                    //Todo mayapainter: make sure GetMemberName implemented
+                    //Todo mayapainter: do we want to throw error here if SerializeLinqMemberName not implemented or let it throw a notimplementedexception from SerializeLinqMemberName?
                     throw new InvalidOperationException($"Must provide CustomCosmosSerializer if selecting linqSerializerOptions.CustomCosmosSerializer");
                 }
                 

@@ -1,7 +1,7 @@
 ﻿<Results>
   <Result>
     <Input>
-      <Description><![CDATA[Avg, custom serializer: True]]></Description>
+      <Description><![CDATA[Avg, Custom serializer: True]]></Description>
       <Expression><![CDATA[query.Average(doc => doc.NumericField), Object)]]></Expression>
     </Input>
     <Output>
@@ -12,7 +12,7 @@ FROM root]]></SqlQuery>
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[Sum, custom serializer: True]]></Description>
+      <Description><![CDATA[Sum, Custom serializer: True]]></Description>
       <Expression><![CDATA[query.Sum(doc => doc.NumericField), Object)]]></Expression>
     </Input>
     <Output>
@@ -23,39 +23,47 @@ FROM root]]></SqlQuery>
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[Any, custom serializer: True]]></Description>
-      <Expression><![CDATA[query.Any(), Object)]]></Expression>
+      <Description><![CDATA[Select many -> Filter -> Select -> Average, Custom serializer: True]]></Description>
+      <Expression><![CDATA[query.SelectMany(doc => doc.ArrayField.Where(m => ((m % 3) == 0)).Select(m => m)).Average(), Object)]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE (COUNT(v0) > 0) 
-FROM (
-    SELECT VALUE root 
-    FROM root) AS v0
-]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"Errors":["Compositions of aggregates and other expressions are not allowed."]},0x800A0B00]]></ErrorMessage>
+SELECT VALUE AVG(m0) 
+FROM root 
+JOIN m0 IN root["ArrayValuesDotNet"] 
+WHERE ((m0 % 3) = 0)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[Select many -> Filter -> Select -> Any, custom serializer: True]]></Description>
-      <Expression><![CDATA[query.SelectMany(doc => doc.ArrayField.Where(m => ((m % 3) == 0)).Select(m => m)).Any(), Object)]]></Expression>
+      <Description><![CDATA[Select number -> Skip -> Count, Custom serializer: True]]></Description>
+      <Expression><![CDATA[query.Select(f => f.NumericField).Skip(2).Count(), Object)]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE (COUNT(v0) > 0) 
+SELECT VALUE COUNT(1) 
 FROM (
-    SELECT VALUE m0 
+    SELECT VALUE root["NumberValueDotNet"] 
     FROM root 
-    JOIN m0 IN root["ArrayValuesDotNet"] 
-    WHERE ((m0 % 3) = 0)) AS v0
+    OFFSET 2 LIMIT 2147483647) AS r0
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"Errors":["Compositions of aggregates and other expressions are not allowed."]},0x800A0B00]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":77,"end":102},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[Avg, custom serializer: False]]></Description>
+      <Description><![CDATA[Select number -> Min w/ mapping]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.NumericField).Min(num => num), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE MIN(root["NumberValueDotNet"]) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Avg, Custom serializer: False]]></Description>
       <Expression><![CDATA[query.Average(doc => doc.NumericField), Object)]]></Expression>
     </Input>
     <Output>
@@ -66,7 +74,7 @@ FROM root]]></SqlQuery>
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[Sum, custom serializer: False]]></Description>
+      <Description><![CDATA[Sum, Custom serializer: False]]></Description>
       <Expression><![CDATA[query.Sum(doc => doc.NumericField), Object)]]></Expression>
     </Input>
     <Output>
@@ -77,34 +85,42 @@ FROM root]]></SqlQuery>
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[Any, custom serializer: False]]></Description>
-      <Expression><![CDATA[query.Any(), Object)]]></Expression>
+      <Description><![CDATA[Select many -> Filter -> Select -> Average, Custom serializer: False]]></Description>
+      <Expression><![CDATA[query.SelectMany(doc => doc.ArrayField.Where(m => ((m % 3) == 0)).Select(m => m)).Average(), Object)]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE (COUNT(v0) > 0) 
-FROM (
-    SELECT VALUE root 
-    FROM root) AS v0
-]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"Errors":["Compositions of aggregates and other expressions are not allowed."]},0x800A0B00]]></ErrorMessage>
+SELECT VALUE AVG(m0) 
+FROM root 
+JOIN m0 IN root["ArrayField"] 
+WHERE ((m0 % 3) = 0)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[Select many -> Filter -> Select -> Any, custom serializer: False]]></Description>
-      <Expression><![CDATA[query.SelectMany(doc => doc.ArrayField.Where(m => ((m % 3) == 0)).Select(m => m)).Any(), Object)]]></Expression>
+      <Description><![CDATA[Select number -> Skip -> Count, Custom serializer: False]]></Description>
+      <Expression><![CDATA[query.Select(f => f.NumericField).Skip(2).Count(), Object)]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE (COUNT(v0) > 0) 
+SELECT VALUE COUNT(1) 
 FROM (
-    SELECT VALUE m0 
+    SELECT VALUE root["NumericField"] 
     FROM root 
-    JOIN m0 IN root["ArrayField"] 
-    WHERE ((m0 % 3) = 0)) AS v0
+    OFFSET 2 LIMIT 2147483647) AS r0
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"Errors":["Compositions of aggregates and other expressions are not allowed."]},0x800A0B00]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":72,"end":97},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select number -> Min w/ mapping]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.NumericField).Min(num => num), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE MIN(root["NumericField"]) 
+FROM root]]></SqlQuery>
     </Output>
   </Result>
 </Results>

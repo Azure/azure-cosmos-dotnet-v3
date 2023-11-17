@@ -1,7 +1,7 @@
 ﻿<Results>
   <Result>
     <Input>
-      <Description><![CDATA[Filter w/ constant value, camelcase = True]]></Description>
+      <Description><![CDATA[Filter w/ constant value]]></Description>
       <Expression><![CDATA[query.Where(doc => (doc.NumericField == 1))]]></Expression>
     </Input>
     <Output>
@@ -25,7 +25,7 @@ WHERE (root["NumberValueDotNet"] = 1)]]></SqlQuery>
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[Filter w/ DataObject initializer with constant value, camelcase = True]]></Description>
+      <Description><![CDATA[Filter w/ DataObject initializer with constant value]]></Description>
       <Expression><![CDATA[query.Where(doc => (doc == new DataObjectDotNet() {NumericField = 1, StringField = "1"}))]]></Expression>
     </Input>
     <Output>
@@ -46,7 +46,7 @@ WHERE (root = {"NumberValueDotNet": 1, "StringValueDotNet": "1", "id": null, "Pk
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[Select w/ DataObject initializer, camelcase = True]]></Description>
+      <Description><![CDATA[Select w/ DataObject initializer]]></Description>
       <Expression><![CDATA[query.Select(doc => new DataObjectDotNet() {NumericField = 1, StringField = "1"})]]></Expression>
     </Input>
     <Output>
@@ -73,7 +73,7 @@ FROM root]]></SqlQuery>
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[Deeper than top level reference, camelcase = True]]></Description>
+      <Description><![CDATA[Deeper than top level reference]]></Description>
       <Expression><![CDATA[query.Select(doc => IIF((doc.NumericField > 1), new DataObjectDotNet() {NumericField = 1, StringField = "1"}, new DataObjectDotNet() {NumericField = 1, StringField = "1"}))]]></Expression>
     </Input>
     <Output>
@@ -100,7 +100,7 @@ FROM root]]></SqlQuery>
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[Filter w/ DataObject initializer with member initialization, camelcase = True]]></Description>
+      <Description><![CDATA[Filter w/ DataObject initializer with member initialization]]></Description>
       <Expression><![CDATA[query.Where(doc => (doc == new DataObjectDotNet() {NumericField = doc.NumericField, StringField = doc.StringField})).Select(b => "A")]]></Expression>
     </Input>
     <Output>
@@ -121,7 +121,7 @@ WHERE (root = {"NumberValueDotNet": root["NumberValueDotNet"], "StringValueDotNe
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[OrderBy query, camelcase = True]]></Description>
+      <Description><![CDATA[OrderBy query]]></Description>
       <Expression><![CDATA[query.Select(x => x).OrderBy(x => x.NumericField).Take(5)]]></Expression>
     </Input>
     <Output>
@@ -148,57 +148,12 @@ ORDER BY root["NumberValueDotNet"] ASC]]></SqlQuery>
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[Filter w/ constant value, camelcase = False]]></Description>
-      <Expression><![CDATA[query.Where(doc => (doc.NumericField == 1))]]></Expression>
+      <Description><![CDATA[Conditional]]></Description>
+      <Expression><![CDATA[query.Select(c => IIF((c.NumericField > 1), "true", "false"))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE root 
-FROM root 
-WHERE (root["NumberValueDotNet"] = 1)]]></SqlQuery>
-      <InputData><![CDATA[[
-  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
-]]]></InputData>
-      <Results><![CDATA[[
-  "{NumericField:1,StringField:1,id:1-True,Pk:Test}",
-  "{NumericField:1,StringField:1,id:1-False,Pk:Test}"
-]]]></Results>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description><![CDATA[Filter w/ DataObject initializer with constant value, camelcase = False]]></Description>
-      <Expression><![CDATA[query.Where(doc => (doc == new DataObjectDotNet() {NumericField = 1, StringField = "1"}))]]></Expression>
-    </Input>
-    <Output>
-      <SqlQuery><![CDATA[
-SELECT VALUE root 
-FROM root 
-WHERE (root = {"NumberValueDotNet": 1, "StringValueDotNet": "1", "id": null, "Pk": null})]]></SqlQuery>
-      <InputData><![CDATA[[
-  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
-]]]></InputData>
-      <Results><![CDATA[[]]]></Results>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description><![CDATA[Select w/ DataObject initializer, camelcase = False]]></Description>
-      <Expression><![CDATA[query.Select(doc => new DataObjectDotNet() {NumericField = 1, StringField = "1"})]]></Expression>
-    </Input>
-    <Output>
-      <SqlQuery><![CDATA[
-SELECT VALUE {"NumberValueDotNet": 1, "StringValueDotNet": "1", "id": null, "Pk": null} 
+SELECT VALUE ((root["NumberValueDotNet"] > 1) ? "true" : "false") 
 FROM root]]></SqlQuery>
       <InputData><![CDATA[[
   "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
@@ -209,87 +164,12 @@ FROM root]]></SqlQuery>
   "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
 ]]]></InputData>
       <Results><![CDATA[[
-  "{NumericField:1,StringField:1,id:,Pk:}",
-  "{NumericField:1,StringField:1,id:,Pk:}",
-  "{NumericField:1,StringField:1,id:,Pk:}",
-  "{NumericField:1,StringField:1,id:,Pk:}",
-  "{NumericField:1,StringField:1,id:,Pk:}",
-  "{NumericField:1,StringField:1,id:,Pk:}"
-]]]></Results>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description><![CDATA[Deeper than top level reference, camelcase = False]]></Description>
-      <Expression><![CDATA[query.Select(doc => IIF((doc.NumericField > 1), new DataObjectDotNet() {NumericField = 1, StringField = "1"}, new DataObjectDotNet() {NumericField = 1, StringField = "1"}))]]></Expression>
-    </Input>
-    <Output>
-      <SqlQuery><![CDATA[
-SELECT VALUE ((root["NumberValueDotNet"] > 1) ? {"NumberValueDotNet": 1, "StringValueDotNet": "1", "id": null, "Pk": null} : {"NumberValueDotNet": 1, "StringValueDotNet": "1", "id": null, "Pk": null}) 
-FROM root]]></SqlQuery>
-      <InputData><![CDATA[[
-  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
-]]]></InputData>
-      <Results><![CDATA[[
-  "{NumericField:1,StringField:1,id:,Pk:}",
-  "{NumericField:1,StringField:1,id:,Pk:}",
-  "{NumericField:1,StringField:1,id:,Pk:}",
-  "{NumericField:1,StringField:1,id:,Pk:}",
-  "{NumericField:1,StringField:1,id:,Pk:}",
-  "{NumericField:1,StringField:1,id:,Pk:}"
-]]]></Results>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description><![CDATA[Filter w/ DataObject initializer with member initialization, camelcase = False]]></Description>
-      <Expression><![CDATA[query.Where(doc => (doc == new DataObjectDotNet() {NumericField = doc.NumericField, StringField = doc.StringField})).Select(b => "A")]]></Expression>
-    </Input>
-    <Output>
-      <SqlQuery><![CDATA[
-SELECT VALUE "A" 
-FROM root 
-WHERE (root = {"NumberValueDotNet": root["NumberValueDotNet"], "StringValueDotNet": root["StringValueDotNet"]})]]></SqlQuery>
-      <InputData><![CDATA[[
-  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
-]]]></InputData>
-      <Results><![CDATA[[]]]></Results>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description><![CDATA[OrderBy query, camelcase = False]]></Description>
-      <Expression><![CDATA[query.Select(x => x).OrderBy(x => x.NumericField).Take(5)]]></Expression>
-    </Input>
-    <Output>
-      <SqlQuery><![CDATA[
-SELECT TOP 5 VALUE root 
-FROM root 
-ORDER BY root["NumberValueDotNet"] ASC]]></SqlQuery>
-      <InputData><![CDATA[[
-  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
-]]]></InputData>
-      <Results><![CDATA[[
-  "{NumericField:0,StringField:0,id:0-True,Pk:Test}",
-  "{NumericField:0,StringField:0,id:0-False,Pk:Test}",
-  "{NumericField:1,StringField:1,id:1-True,Pk:Test}",
-  "{NumericField:1,StringField:1,id:1-False,Pk:Test}",
-  "{NumericField:2,StringField:2,id:2-True,Pk:Test}"
+  "false",
+  "false",
+  "true",
+  "false",
+  "false",
+  "true"
 ]]]></Results>
     </Output>
   </Result>

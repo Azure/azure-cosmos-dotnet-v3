@@ -73,34 +73,40 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             CosmosLinqSerializerOptions linqSerializerOptions = new CosmosLinqSerializerOptions()
             {
-                CustomCosmosSerializer = customCosmosSerializer,
                 LinqSerializerType = LinqSerializerType.CustomCosmosSerializer
             };
-            Func<bool, IQueryable<DataObjectDotNet>> getQueryCustomSerializer = LinqTestsCommon.GenerateSerializationTestCosmosData<DataObjectDotNet>(createDataObj, 5, testContainer, linqSerializerOptions);       
-            Func<bool, IQueryable<DataObjectDotNet>> getQueryDefault = LinqTestsCommon.GenerateSerializationTestCosmosData<DataObjectDotNet>(createDataObj, 5, testContainer, new CosmosLinqSerializerOptions());
-            List<Func<bool, IQueryable<DataObjectDotNet>>> getQueryList = new List<Func<bool, IQueryable<DataObjectDotNet>>> { getQueryCustomSerializer, getQueryDefault };
+
+            List<Func<bool, IQueryable<DataObjectDotNet>>> getQueryList = new List<Func<bool, IQueryable<DataObjectDotNet>>> 
+            {
+                LinqTestsCommon.GenerateSerializationTestCosmosData<DataObjectDotNet>(createDataObj, 5, testContainer, linqSerializerOptions),
+                LinqTestsCommon.GenerateSerializationTestCosmosData<DataObjectDotNet>(createDataObj, 5, testContainer, new CosmosLinqSerializerOptions())
+            };
 
             List<LinqAggregateInput> inputs = new List<LinqAggregateInput>();
 
-            foreach (bool isCustomSerializer in new List<bool>{ true, false })
+            foreach (bool applyCustomSerializer in new List<bool>{ true, false })
             {
-                Func<bool, IQueryable<DataObjectDotNet>> getQuery = getQueryList[isCustomSerializer ? 0 : 1];
+                Func<bool, IQueryable<DataObjectDotNet>> getQuery = getQueryList[applyCustomSerializer ? 0 : 1];
 
                 inputs.Add(new LinqAggregateInput(
-                    "Avg, custom serializer: " + isCustomSerializer, b => getQuery(b)
+                    "Avg, Custom serializer: " + applyCustomSerializer, b => getQuery(b)
                     .Average(doc => doc.NumericField)));
 
                 inputs.Add(new LinqAggregateInput(
-                    "Sum, custom serializer: " + isCustomSerializer, b => getQuery(b)
+                    "Sum, Custom serializer: " + applyCustomSerializer, b => getQuery(b)
                     .Sum(doc => doc.NumericField)));
 
                 inputs.Add(new LinqAggregateInput(
-                    "Any, custom serializer: " + isCustomSerializer, b => getQuery(b)
-                    .Any()));
+                    "Select many -> Filter -> Select -> Average, Custom serializer: " + applyCustomSerializer, b => getQuery(b)
+                    .SelectMany(doc => doc.ArrayField.Where(m => (m % 3) == 0).Select(m => m)).Average()));
 
                 inputs.Add(new LinqAggregateInput(
-                    "Select many -> Filter -> Select -> Any, custom serializer: " + isCustomSerializer, b => getQuery(b)
-                    .SelectMany(doc => doc.ArrayField.Where(m => m % 3 == 0).Select(m => m)).Any()));
+                    "Select number -> Skip -> Count, Custom serializer: " + applyCustomSerializer, b => getQuery(b)
+                    .Select(f => f.NumericField).Skip(2).Count()));
+
+                inputs.Add(new LinqAggregateInput(
+                    "Select number -> Min w/ mapping", b => getQuery(b)
+                    .Select(doc => doc.NumericField).Min(num => num)));
             }
 
             this.ExecuteTestSuite(inputs);

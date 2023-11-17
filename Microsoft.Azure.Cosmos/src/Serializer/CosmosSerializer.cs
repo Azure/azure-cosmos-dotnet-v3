@@ -32,7 +32,10 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A readable Stream containing JSON of the serialized object.</returns>
         public abstract Stream ToStream<T>(T input);
 
-        /// <summary/> //mayapainter todo
+        /// <summary>
+        /// Convert a MemberInfo to a string for use in LINQ query translation.
+        /// This must be implemented when using a custom serializer for LINQ queries.
+        /// </summary>
         /// <param name="memberInfo">Any MemberInfo used in the query.</param>
         /// <returns>A serialized representation of the member</returns>
         public virtual string SerializeLinqMemberName(MemberInfo memberInfo)

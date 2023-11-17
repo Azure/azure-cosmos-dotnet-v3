@@ -387,15 +387,20 @@ namespace Microsoft.Azure.Cosmos
         {
             requestOptions ??= new QueryRequestOptions();
 
-            if (linqSerializerOptions == null && this.ClientContext.ClientOptions != null)
+            if (this.ClientContext.ClientOptions != null)
             {
-                linqSerializerOptions = new CosmosLinqSerializerOptions
+                if (linqSerializerOptions == null)
                 {
-                    PropertyNamingPolicy = this.ClientContext.ClientOptions.SerializerOptions != null
-                                            ? this.ClientContext.ClientOptions.SerializerOptions.PropertyNamingPolicy
-                                            : CosmosPropertyNamingPolicy.Default,
-                    CustomCosmosSerializer = this.ClientContext.ClientOptions.Serializer
-                };
+                    linqSerializerOptions = new CosmosLinqSerializerOptions
+                    {
+                        PropertyNamingPolicy = this.ClientContext.ClientOptions.SerializerOptions != null
+                                                ? this.ClientContext.ClientOptions.SerializerOptions.PropertyNamingPolicy
+                                                : CosmosPropertyNamingPolicy.Default,                      
+                    };
+                }
+                
+                linqSerializerOptions.CustomCosmosSerializer = this.ClientContext.ClientOptions.Serializer;
+
             }
 
             return new CosmosLinqQuery<T>(
