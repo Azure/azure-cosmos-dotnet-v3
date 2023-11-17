@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [4125](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4125) Item Operations: Fixes JsonSerialization exception when MissingMemberHandling = Error on Json default settings when NotFound on Item operations (#4125)
 
 #### Added
-- [4180](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4180) Upgrade Resiliency: Adds Code to Enable Advanced Replica Selection Feature for Preview (#4180)
+- [4180](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4180) Upgrade Resiliency: Adds Code to Enable Advanced Replica Selection Feature for Preview and GA (#4180)
 - [4128](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4128) Routing: Adds ExcludeRegions Feature to RequestOptions (#4128)
 
 ### <a name="3.36.0"/> [3.36.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.36.0) - 2023-10-24
