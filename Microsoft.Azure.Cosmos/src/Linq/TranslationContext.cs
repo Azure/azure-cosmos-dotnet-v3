@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System;
     using System.Collections.Generic;
     using System.Linq.Expressions;
+    using System.Reflection;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using static Microsoft.Azure.Cosmos.Linq.ExpressionToSql;
     using static Microsoft.Azure.Cosmos.Linq.FromParameterBindings;
@@ -88,11 +89,16 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 if (this.LinqSerializerOptions.CustomCosmosSerializer == null)
                 {
-                    //Todo mayapainter: do we want to throw error here if SerializeLinqMemberName not implemented or let it throw a notimplementedexception from SerializeLinqMemberName?
                     throw new InvalidOperationException($"Must provide CustomCosmosSerializer if selecting linqSerializerOptions.CustomCosmosSerializer");
                 }
-                
-                this.CosmosLinqSerializer = new DotNetCosmosLinqSerializer(this.LinqSerializerOptions.CustomCosmosSerializer);
+
+                MethodInfo methodInfo = this.LinqSerializerOptions.CustomCosmosSerializer.GetType().GetMethod("SerializeLinqMemberName");
+                if (methodInfo.DeclaringType == typeof(CosmosSerializer))
+                {
+                    throw new InvalidOperationException($"Must implement SerializeLinqMemberName to use CustomCosmosSerializer for LINQ queries.");
+                }
+
+                this.CosmosLinqSerializer = new CustomCosmosLinqSerializer(this.LinqSerializerOptions.CustomCosmosSerializer);
                 this.MemberNames = new MemberNames(new CosmosLinqSerializerOptions());
             }
             else

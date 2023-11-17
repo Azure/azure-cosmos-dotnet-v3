@@ -9,12 +9,15 @@ namespace Microsoft.Azure.Cosmos.Linq
     public enum LinqSerializerType
     {
         /// <summary>
-        /// Follows the exisiting serializer pattern. This honors Newtonsoft attributes, followed by DataContract attributes, but not System.Text.Json attributes.
+        /// Follows the exisiting serializer pattern. This honors Newtonsoft attributes, followed by DataContract attributes. This will ignore System.Text.Json attributes.
         /// </summary>
         Default,
 
         /// <summary>
-        /// Uses a custom CosmosSerializer, if provided. This will honor System.Text.Json attributes.
+        /// Uses the provided custom CosmosSerializer.
+        /// This requires:
+        /// 1. a <see cref="CosmosSerializer"/> to be provided on a client, and
+        /// 2. the custom CosmosSerializer implements the member function <see cref="CosmosSerializer.SerializeLinqMemberName(System.Reflection.MemberInfo)"/>
         /// </summary>
         CustomCosmosSerializer,
     }

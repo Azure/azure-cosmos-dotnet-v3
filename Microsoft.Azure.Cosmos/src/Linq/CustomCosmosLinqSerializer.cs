@@ -9,11 +9,11 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Linq.Expressions;
     using System.Reflection;
 
-    internal class DotNetCosmosLinqSerializer : ICosmosLinqSerializer
+    internal class CustomCosmosLinqSerializer : ICosmosLinqSerializer
     {
         private readonly CosmosSerializer CustomCosmosSerializer;
 
-        public DotNetCosmosLinqSerializer(CosmosSerializer customCosmosSerializer)
+        public CustomCosmosLinqSerializer(CosmosSerializer customCosmosSerializer)
         {
             this.CustomCosmosSerializer = customCosmosSerializer;
         }
