@@ -13,6 +13,17 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.36.1-preview"/> [3.36.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.36.1-preview) - 2023-11-17
+### <a name="3.36.1"/> [3.36.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.36.1) - 2023-11-17
+
+#### Fixed
+- [4100](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4100) Query : Fixes querying conflicts (#4100)
+- [4125](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4125) Item Operations: Fixes JsonSerialization exception when MissingMemberHandling = Error on Json default settings when NotFound on Item operations (#4125)
+
+#### Added
+- [4180](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4180) Upgrade Resiliency: Adds Code to Enable Advanced Replica Selection Feature for Preview (#4180)
+- [4128](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4128) Routing: Adds ExcludeRegions Feature to RequestOptions (#4128)
+
 ### <a name="3.36.0"/> [3.36.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.36.0) - 2023-10-24
 
 #### Fixed
