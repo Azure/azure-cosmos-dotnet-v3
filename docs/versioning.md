@@ -7,6 +7,15 @@ The Azure Cosmos DB SDK ships two [Nuget package](https://www.nuget.org/packages
 
 > :information_source: General Availability of an API or feature present in a Preview SDK is not guaranteed on the next GA SDK release following the Preview SDK release when it was introduced. Each Preview API can have an independent GA cycle that can be dependent on the Azure Cosmos DB Service.
 
+## Major releases
+
+Major releases are defined by:
+
+* Significant breaking changes to the API surface of the SDK.
+* Significant breaking changes to dependencies
+
+> :information_source: No new major release is currently planned.
+
 ## Minor releases
 
 Minor releases are defined by: 
