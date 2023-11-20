@@ -3,13 +3,13 @@
 The Azure Cosmos DB SDK ships two [Nuget package](https://www.nuget.org/packages/Microsoft.Azure.Cosmos) versions:
 
 * GA SDK: Versioned with `3.X.Y`, it contains APIs and features that are considered General Availability
-* Preview SDK: Versioned with `3.X.Y-preview`, it contains APIs and features that are in Preview. These APIs or features might be service features that are in Preview (such as a new Cosmos DB Service feature or operation) or SDK client specific features that are unrelated to a service feature (such as improvements in connection handling).
+* Preview SDK: Versioned with `3.(X + 1).Y-preview`, it contains APIs and features that are in Preview. These APIs or features might be service features that are in Preview (such as a new Cosmos DB Service feature or operation) or SDK client specific features that are unrelated to a service feature (such as improvements in connection handling).
 
 > :information_source: General Availability of an API or feature present in a Preview SDK is not guaranteed on the next GA SDK release following the Preview SDK release when it was introduced. Each Preview API can have an independent GA cycle that can be dependent on the Azure Cosmos DB Service.
 
-## Major releases
+## Minor releases
 
-Major releases are defined by: 
+Minor releases are defined by: 
 
 * Changes in the public API surface of the SDK, such as new features, or GAing APIs that were in preview
 * Changes in the version of one of the dependencies
