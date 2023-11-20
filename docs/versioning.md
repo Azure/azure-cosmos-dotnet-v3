@@ -1,6 +1,6 @@
 # Versioning
 
-The Azure Cosmos DB SDK ships two Nuget package versions:
+The Azure Cosmos DB SDK ships two [Nuget package](https://www.nuget.org/packages/Microsoft.Azure.Cosmos) versions:
 
 * GA SDK: Versioned with `3.X.Y`, it contains APIs and features that are considered General Availability
 * Preview SDK: Versioned with `3.X.Y-preview`, it contains APIs and features that are in Preview. These APIs or features might be service features that are in Preview (such as a new Cosmos DB Service feature or operation) or SDK client specific features that are unrelated to a service feature (such as improvements in connection handling).
