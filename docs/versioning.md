@@ -23,10 +23,10 @@ For example, if `3.10.0` is being released for **GA SDK**, then `3.11.0-preview.
 Patch releases are defined by:
 
 * No Public API changes
-* Includes a subset bug fixes reported after the last major release
+* Includes a subset of the bug fixes reported after the last major release
 
 In these cases, the **GA SDK** should **increase the patch version** and **Preview SDK** should **increase the preview suffix version**.
 
-For example, if `3.10.0` is being patched, for **GA SDK** we would release `3.10.1` and for **Preview SDK** we would release `3.11.0-preview1`.
+For example, if `3.10.0` is being patched, for **GA SDK** we would release `3.10.1` and for **Preview SDK** we would release `3.11.0-preview.1`.
 
 If `3.10.1` is being patched, for **GA SDK** we would release `3.10.2` and for **Preview SDK** we would release `3.11.0-preview.2`.
