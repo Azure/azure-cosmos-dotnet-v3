@@ -39,3 +39,12 @@ In these cases, the **GA SDK** should **increase the patch version** and **Previ
 For example, if `3.10.0` is being patched, for **GA SDK** we would release `3.10.1` and for **Preview SDK** we would release `3.11.0-preview.1`.
 
 If `3.10.1` is being patched, for **GA SDK** we would release `3.10.2` and for **Preview SDK** we would release `3.11.0-preview.2`.
+
+## Complete full example
+
+| GA         | Preview     |
+|----------|-----------|
+| 3.10.0 | 3.11.0-preview.0 |
+| 3.10.1 | 3.11.0-preview.1 |
+| 3.10.2 | 3.11.0-preview.2 |
+| 3.11.0 | 3.12.0-preview.0 |
