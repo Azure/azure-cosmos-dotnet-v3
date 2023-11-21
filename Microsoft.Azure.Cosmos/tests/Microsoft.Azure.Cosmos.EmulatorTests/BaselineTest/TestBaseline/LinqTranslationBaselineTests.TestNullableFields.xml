@@ -71,4 +71,16 @@ FROM root
 WHERE (NOT IS_DEFINED(root["NullableField"]))]]></SqlQuery>
     </Output>
   </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ null comparison and custom converter]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.NullableDateTime != null))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["NullableDateTime"] != null)]]></SqlQuery>
+    </Output>
+  </Result>
 </Results>

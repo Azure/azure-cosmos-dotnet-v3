@@ -144,6 +144,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             [JsonConverter(typeof(DateJsonConverter))]
             public DateTime IsoDateOnly;
 
+            [JsonConverter(typeof(IsoDateTimeConverter))]
+            public DateTime? NullableDateTime;
+
             // This field should serialize as ISO Date
             // as this is the default DateTimeConverter
             // used by Newtonsoft
@@ -463,6 +466,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     {
                         obj.NullableField = random.Next();
                     }
+
+                    obj.NullableDateTime = null;
                 }
                 obj.Id = Guid.NewGuid().ToString();
                 obj.Pk = "Test";
@@ -477,7 +482,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("Filter w/ .HasValue", b => getQuery(b).Where(doc => doc.NullableField.HasValue)),
                 new LinqTestInput("Filter w/ .HasValue comparison true", b => getQuery(b).Where(doc => doc.NullableField.HasValue == true)),
                 new LinqTestInput("Filter w/ .HasValue comparison false", b => getQuery(b).Where(doc => doc.NullableField.HasValue == false)),
-                new LinqTestInput("Filter w/ .HasValue not", b => getQuery(b).Where(doc => !doc.NullableField.HasValue))
+                new LinqTestInput("Filter w/ .HasValue not", b => getQuery(b).Where(doc => !doc.NullableField.HasValue)),
+                new LinqTestInput("Filter w/ null comparison and custom converter", b => getQuery(b).Where(doc => doc.NullableDateTime != null))
             };
             this.ExecuteTestSuite(inputs);
         }
