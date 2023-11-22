@@ -40,13 +40,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task QueryConflicts()
         {
-            ContainerInternal container = CosmosConflictTests.GetMockedContainer(async (request, cancellationToken) => {
+            ContainerInternal container = CosmosConflictTests.GetMockedContainer((request, cancellationToken) => {
                 Assert.AreEqual(ResourceType.Conflict, request.ResourceType);
                 ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK)
                 {
                     Content = new MemoryStream(Encoding.UTF8.GetBytes(@"{ ""Conflicts"": [{ ""id"": ""Test""}]}"))
                 };
-                return responseMessage;
+                return Task.FromResult(responseMessage);
             });
 
             {
