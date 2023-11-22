@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.isMergedDiagnostics = false;
         }
 
-        public CosmosTraceDiagnostics(List<CosmosTraceDiagnostics> traceDiagnostics)
+        private CosmosTraceDiagnostics(List<CosmosTraceDiagnostics> traceDiagnostics)
         {
             this.traceDiagnostics = traceDiagnostics;
             this.isMergedDiagnostics = true;
@@ -53,6 +53,11 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                 this.GetStartTimeUtc().Value,
                 this.GetClientElapsedTime(),
                 traceSummary);           
+        }
+
+        public static CosmosTraceDiagnostics MergeDiagnostics(List<CosmosTraceDiagnostics> traceDiagnostics)
+        {
+            return new CosmosTraceDiagnostics(traceDiagnostics);
         }
 
         public ITrace Value { get; }
@@ -74,13 +79,17 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                 return this.Value.Duration;
             }
 
-            TimeSpan maxElpasedTime = TimeSpan.Zero;
+            DateTime startTime = DateTime.MaxValue;
+            DateTime endTime = DateTime.MinValue;
             foreach (CosmosTraceDiagnostics trace in this.traceDiagnostics)
             {
-                maxElpasedTime += trace.GetClientElapsedTime();
+                startTime = startTime < trace.GetStartTimeUtc().Value ? startTime : trace.GetStartTimeUtc().Value;
+                endTime = endTime > trace.GetStartTimeUtc().Value + trace.GetClientElapsedTime() 
+                    ? endTime 
+                    : trace.GetStartTimeUtc().Value + trace.GetClientElapsedTime();
             }
-
-            return maxElpasedTime;
+            
+            return endTime - startTime;
         }
 
         public override IReadOnlyList<(string regionName, Uri uri)> GetContactedRegions()
