@@ -200,16 +200,25 @@ namespace Microsoft.Azure.Cosmos.Linq
                     {
                         if (needsLoopAnd || needsNotsAnd || needsRegularsAnd)
                             sb.Append(" AND ");
-                        sb.Append("(");
-                        sb.Append($"ARRAY_CONTAINS({tagProp}, \"{wildcardTag}\")");
-                        sb.Append(" OR ");
-                        foreach ((var value, int index) in requireds.Select((v, i) => (v, i)))
+
+                        if (requireds.Any(x => x.IsWildcard))
                         {
-                            if (index > 0)
-                                sb.Append(" OR ");
-                            sb.Append($"ARRAY_CONTAINS({tagProp}, \"{value.Tag.Substring(1)}\")");
+                            sb.Append($"IS_DEFINED({regularProp})");
                         }
-                        sb.Append(")");
+                        else
+                        {
+                            sb.Append("(");
+                            sb.Append($"ARRAY_CONTAINS({tagProp}, \"{wildcardTag}\")");
+                            sb.Append(" OR ");
+                            foreach ((var value, int index) in requireds.Select((v, i) => (v, i)))
+                            {
+                                if (index > 0)
+                                    sb.Append(" OR ");
+                                sb.Append($"ARRAY_CONTAINS({tagProp}, \"{value.Tag.Substring(1)}\")");
+                            }
+
+                            sb.Append(")");
+                        }
 
                         needsLoopAnd = true;
                     }
