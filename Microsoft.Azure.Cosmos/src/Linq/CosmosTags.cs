@@ -72,9 +72,10 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             const char nullOperator = '\0';
             const char requiredOperator = '*';
+            const char requiredWildcardOperator = '@';
             const char notOperator = '!';
 
-            (char Operator, string Namespace, string Name, string Value, string Tag, bool IsNot, bool IsRequired, bool IsWildcard) Parse(string tag)
+            (char Operator, string Namespace, string Name, string Value, string Tag, bool IsNot, bool IsRequired, bool IsRequiredWildcard, bool IsWildcard) Parse(string tag)
             {
                 int indexOfColon = tag.IndexOf(':');
                 int indexOfEquals = tag.IndexOf('=');
@@ -82,12 +83,12 @@ namespace Microsoft.Azure.Cosmos.Linq
                 if (indexOfColon < 1 || indexOfEquals < 3 || indexOfColon > indexOfEquals)
                     throw new ArgumentException("Tag is not a machine tag");
 
-                char op = tag[0] == notOperator || tag[0] == requiredOperator ? tag[0] : nullOperator;
+                char op = tag[0] == notOperator || tag[0] == requiredOperator || tag[0] == requiredWildcardOperator ? tag[0] : nullOperator;
                 string ns = tag.Substring(op == nullOperator ? 0 : 1, op == nullOperator ? indexOfColon : indexOfColon - 1);
                 string name = tag.Substring(indexOfColon + 1, indexOfEquals - (indexOfColon + 1));
                 string value = tag.Substring(indexOfEquals + 1);
 
-                return (op, ns, name, value, tag, op == '!', op == '*', value.Length == 0);
+                return (op, ns, name, value, tag, op == notOperator, op == requiredOperator, op == requiredWildcardOperator, value.Length == 0);
             }
 
             var sb = new StringBuilder();
@@ -110,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     var tagName = grouping.Key;
                     var regulars = grouping.Where(x => x.Operator == nullOperator).ToArray();
                     var nots = grouping.Where(x => x.IsNot);
-                    var requireds = grouping.Where(x => x.IsRequired);
+                    var requireds = grouping.Where(x => x.IsRequired || x.IsRequiredWildcard);
                     var wildcardTag = grouping.Key + "=";
                     var regularProp = $"{tagsProp}[\"tags\"][\"{tagName}\"]";
                     var notProp = $"{tagsProp}[\"tags\"][\"!{tagName}\"]";
@@ -201,7 +202,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                         if (needsLoopAnd || needsNotsAnd || needsRegularsAnd)
                             sb.Append(" AND ");
 
-                        if (requireds.Any(x => x.IsWildcard))
+                        if (requireds.Any(x => x is { IsWildcard: true, IsRequiredWildcard: false }))
                         {
                             sb.Append($"IS_DEFINED({regularProp})");
                         }
@@ -209,12 +210,10 @@ namespace Microsoft.Azure.Cosmos.Linq
                         {
                             sb.Append("(");
                             sb.Append($"ARRAY_CONTAINS({tagProp}, \"{wildcardTag}\")");
-                            sb.Append(" OR ");
-                            foreach ((var value, int index) in requireds.Select((v, i) => (v, i)))
+                            foreach (var required in requireds.Where(x => !x.IsWildcard))
                             {
-                                if (index > 0)
-                                    sb.Append(" OR ");
-                                sb.Append($"ARRAY_CONTAINS({tagProp}, \"{value.Tag.Substring(1)}\")");
+                                sb.Append(" OR ");
+                                sb.Append($"ARRAY_CONTAINS({tagProp}, \"{required.Tag.Substring(1)}\")");
                             }
 
                             sb.Append(")");
