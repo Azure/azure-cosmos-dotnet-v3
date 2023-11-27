@@ -72,10 +72,10 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             const char nullOperator = '\0';
             const char requiredOperator = '*';
-            const char requiredWildcardOperator = '@';
+            const char requiredExactOperator = '@';
             const char notOperator = '!';
 
-            (char Operator, string Namespace, string Name, string Value, string Tag, bool IsNot, bool IsRequired, bool IsRequiredWildcard, bool IsWildcard) Parse(string tag)
+            (char Operator, string Namespace, string Name, string Value, string Tag, bool IsNot, bool IsRequired, bool IsRequiredExact, bool IsWildcard) Parse(string tag)
             {
                 int indexOfColon = tag.IndexOf(':');
                 int indexOfEquals = tag.IndexOf('=');
@@ -83,12 +83,12 @@ namespace Microsoft.Azure.Cosmos.Linq
                 if (indexOfColon < 1 || indexOfEquals < 3 || indexOfColon > indexOfEquals)
                     throw new ArgumentException("Tag is not a machine tag");
 
-                char op = tag[0] == notOperator || tag[0] == requiredOperator || tag[0] == requiredWildcardOperator ? tag[0] : nullOperator;
+                char op = tag[0] == notOperator || tag[0] == requiredOperator || tag[0] == requiredExactOperator ? tag[0] : nullOperator;
                 string ns = tag.Substring(op == nullOperator ? 0 : 1, op == nullOperator ? indexOfColon : indexOfColon - 1);
                 string name = tag.Substring(indexOfColon + 1, indexOfEquals - (indexOfColon + 1));
                 string value = tag.Substring(indexOfEquals + 1);
 
-                return (op, ns, name, value, tag, op == notOperator, op == requiredOperator, op == requiredWildcardOperator, value.Length == 0);
+                return (op, ns, name, value, tag, op == notOperator, op == requiredOperator, op == requiredExactOperator, value.Length == 0);
             }
 
             var sb = new StringBuilder();
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     var tagName = grouping.Key;
                     var regulars = grouping.Where(x => x.Operator == nullOperator).ToArray();
                     var nots = grouping.Where(x => x.IsNot);
-                    var requireds = grouping.Where(x => x.IsRequired || x.IsRequiredWildcard);
+                    var requireds = grouping.Where(x => x.IsRequired || x.IsRequiredExact);
                     var wildcardTag = grouping.Key + "=";
                     var regularProp = $"{tagsProp}[\"tags\"][\"{tagName}\"]";
                     var notProp = $"{tagsProp}[\"tags\"][\"!{tagName}\"]";
@@ -202,18 +202,25 @@ namespace Microsoft.Azure.Cosmos.Linq
                         if (needsLoopAnd || needsNotsAnd || needsRegularsAnd)
                             sb.Append(" AND ");
 
-                        if (requireds.Any(x => x is { IsWildcard: true, IsRequiredWildcard: false }))
+                        if (requireds.Any(x => x is { IsWildcard: true, IsRequiredExact: false }))
                         {
                             sb.Append($"IS_DEFINED({regularProp})");
                         }
                         else
                         {
+                            var needsOr = false;
                             sb.Append("(");
-                            sb.Append($"ARRAY_CONTAINS({tagProp}, \"{wildcardTag}\")");
+                            if (requireds.Any(x => x is { IsRequiredExact: false }) || requireds.All(x => x is { IsWildcard: true }))
+                            {
+                                sb.Append($"ARRAY_CONTAINS({tagProp}, \"{wildcardTag}\")");
+                                needsOr = true;
+                            }
                             foreach (var required in requireds.Where(x => !x.IsWildcard))
                             {
-                                sb.Append(" OR ");
+                                if (needsOr)
+                                    sb.Append(" OR ");
                                 sb.Append($"ARRAY_CONTAINS({tagProp}, \"{required.Tag.Substring(1)}\")");
+                                needsOr = true;
                             }
 
                             sb.Append(")");
