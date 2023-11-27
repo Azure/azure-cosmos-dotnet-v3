@@ -173,7 +173,7 @@ namespace Microsoft.Azure.Cosmos
         internal RemoteCertificateValidationCallback remoteCertificateValidationCallback;
 
         //Distributed Tracing Flag
-        internal bool isDistributedTracingEnabled;
+        internal CosmosClientTelemetryOptions cosmosClientTelemetryOptions;
 
         //SessionContainer.
         internal ISessionContainer sessionContainer;
@@ -436,6 +436,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="remoteCertificateValidationCallback">This delegate responsible for validating the third party certificate. </param>
         /// <param name="isDistributedTracingEnabled">This is distributed tracing flag</param>
         /// <param name="availabilityStrategy">This is availability strategy options</param>
+        /// <param name="cosmosClientTelemetryOptions">This is distributed tracing flag</param>
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal.
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
@@ -464,7 +465,8 @@ namespace Microsoft.Azure.Cosmos
                               string cosmosClientId = null,
                               RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
                               bool isDistributedTracingEnabled = false,
-                              AvailabilityStrategyOptions availabilityStrategy = null)
+                              AvailabilityStrategyOptions availabilityStrategy = null,
+                              CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null)
         {
             if (sendingRequestEventArgs != null)
             {
@@ -499,9 +501,7 @@ namespace Microsoft.Azure.Cosmos
                 storeClientFactory: storeClientFactory,
                 cosmosClientId: cosmosClientId,
                 remoteCertificateValidationCallback: remoteCertificateValidationCallback,
-                isDistributedTracingEnabled: isDistributedTracingEnabled);
-            this.availabilityStrategy = availabilityStrategy;
-
+                cosmosClientTelemetryOptions: cosmosClientTelemetryOptions);
         }
 
         /// <summary>
@@ -685,7 +685,7 @@ namespace Microsoft.Azure.Cosmos
             TokenCredential tokenCredential = null,
             string cosmosClientId = null,
             RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
-            bool isDistributedTracingEnabled = false)
+            CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null)
         {
             if (serviceEndpoint == null)
             {
@@ -694,7 +694,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.clientId = cosmosClientId;
             this.remoteCertificateValidationCallback = remoteCertificateValidationCallback;
-            this.isDistributedTracingEnabled = isDistributedTracingEnabled;
+            this.cosmosClientTelemetryOptions = cosmosClientTelemetryOptions ?? new CosmosClientTelemetryOptions();
 
             this.queryPartitionProvider = new AsyncLazy<QueryPartitionProvider>(async () =>
             {
@@ -1240,6 +1240,23 @@ namespace Microsoft.Azure.Cosmos
                 return this.desiredConsistencyLevel.HasValue ? this.desiredConsistencyLevel.Value :
                     this.accountServiceConfiguration.DefaultConsistencyLevel;
             }
+        }
+
+        /// <summary>
+        /// Returns the account properties available in the service configuration if the client was initialized.
+        /// </summary>
+        public bool TryGetCachedAccountProperties(out AccountProperties properties)
+        {
+            if (this.isSuccessfullyInitialized
+                && this.accountServiceConfiguration != null
+                && this.accountServiceConfiguration.AccountProperties != null)
+            {
+                properties = this.accountServiceConfiguration.AccountProperties;
+                return true;
+            }
+
+            properties = null;
+            return false;
         }
 
         /// <summary>
@@ -6630,7 +6647,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 Documents.Telemetry.DistributedTracingOptions distributedTracingOptions = new ()
                 {
-                    IsDistributedTracingEnabled = this.isDistributedTracingEnabled
+                    IsDistributedTracingEnabled = !this.cosmosClientTelemetryOptions.DisableDistributedTracing
                 };
 
                 StoreClientFactory newClientFactory = new StoreClientFactory(

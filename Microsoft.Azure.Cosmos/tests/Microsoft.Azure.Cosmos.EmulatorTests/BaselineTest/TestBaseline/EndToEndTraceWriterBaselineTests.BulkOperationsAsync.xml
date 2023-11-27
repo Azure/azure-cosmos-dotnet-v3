@@ -3969,9 +3969,14 @@
             maxRetryWaitTimeOnThrottledRequests: TimeSpan.FromSeconds(1),
             maxRetryAttemptsOnThrottledRequests: 3)
             .WithBulkExecution(true)
-            .WithDistributedTracingOptions(new DistributedTracingOptions()
+            .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
              {
-                 LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
+                DisableDistributedTracing = false,
+                CosmosThresholdOptions = new CosmosThresholdOptions()
+                {
+                    PointOperationLatencyThreshold = TimeSpan.Zero,
+                    NonPointOperationLatencyThreshold = TimeSpan.Zero
+                }
              })
             .WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
                 transportClient,

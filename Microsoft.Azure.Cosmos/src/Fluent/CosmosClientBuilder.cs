@@ -437,36 +437,6 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Sets whether Distributed Tracing for "Azure.Cosmos.Operation" source is enabled.
-        /// </summary>
-        /// <param name="isEnabled">Whether <see cref="CosmosClientOptions.IsDistributedTracingEnabled"/> is enabled.</param>
-        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif 
-            CosmosClientBuilder WithDistributedTracing(bool isEnabled = true)
-        {
-            this.clientOptions.IsDistributedTracingEnabled = isEnabled;
-            return this;
-        }
-        
-        /// <summary>
-        /// Enables Distributed Tracing with a Configuration ref. <see cref="DistributedTracingOptions"/>
-        /// </summary>
-        /// <param name="options"><see cref="DistributedTracingOptions"/>.</param>
-        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>]
-        /// <remarks>Refer https://opentelemetry.io/docs/instrumentation/net/exporters/ to know more about open telemetry exporters</remarks>
-        internal CosmosClientBuilder WithDistributedTracingOptions(DistributedTracingOptions options)
-        {
-            this.clientOptions.IsDistributedTracingEnabled = true;
-            this.clientOptions.DistributedTracingOptions = options;
-
-            return this;
-        }
-
-        /// <summary>
         /// Sets the connection mode to Gateway. This is used by the client when connecting to the Azure Cosmos DB service.
         /// </summary>
         /// <param name="maxConnectionLimit">The number specifies the number of connections that may be opened simultaneously. Default is 50 connections</param>
@@ -694,27 +664,6 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Disable Telemetry if enabled using environment properties
-        /// </summary>
-        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
-        internal CosmosClientBuilder WithTelemetryDisabled()
-        {
-            this.clientOptions.EnableClientTelemetry = false;
-            return this;
-        }
-
-        /// <summary>
-        /// To enable Telemetry, set COSMOS.CLIENT_TELEMETRY_ENABLED environment property. 
-        /// This function is used by Test only.
-        /// </summary>
-        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
-        internal CosmosClientBuilder WithTelemetryEnabled()
-        {
-            this.clientOptions.EnableClientTelemetry = true;
-            return this;
-        }
-
-        /// <summary>
         /// Enabled partition level failover in the SDK
         /// </summary>
         internal CosmosClientBuilder WithPartitionLevelFailoverEnabled()
@@ -743,6 +692,17 @@ namespace Microsoft.Azure.Cosmos.Fluent
             this.clientOptions.MaximumRetryForRetryWithMilliseconds = maximumRetryForRetryWithMilliseconds;
             this.clientOptions.RandomSaltForRetryWithMilliseconds = randomSaltForRetryWithMilliseconds;
             this.clientOptions.TotalWaitTimeForRetryWithMilliseconds = totalWaitTimeForRetryWithMilliseconds;
+            return this;
+        }
+
+        /// <summary>
+        /// To enable Telemetry features with corresponding options
+        /// </summary>
+        /// <param name="options"></param>
+        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
+        public CosmosClientBuilder WithClientTelemetryOptions(CosmosClientTelemetryOptions options)
+        {
+            this.clientOptions.CosmosClientTelemetryOptions = options;
             return this;
         }
     }

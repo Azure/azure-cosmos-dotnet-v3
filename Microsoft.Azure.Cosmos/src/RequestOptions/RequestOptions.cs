@@ -65,9 +65,17 @@ namespace Microsoft.Azure.Cosmos
         PriorityLevel? PriorityLevel { get; set; }
 
         /// <summary>
-        /// Set Request Level Distributed Tracing Options.
+        /// Threshold values for Distributed Tracing. 
+        /// These values decides whether to generate operation level <see cref="System.Diagnostics.Tracing.EventSource"/> with request diagnostics or not.
         /// </summary>
-        internal DistributedTracingOptions DistributedTracingOptions { get; set; }
+        public CosmosThresholdOptions CosmosThresholdOptions { get; set; }
+
+        /// <summary>
+        /// List of regions to be excluded routing the request to.
+        /// This can be used to route a request to a specific region by excluding all other regions.
+        /// If all regions are excluded, then the request will be routed to the primary/hub region.
+        /// </summary>
+        public List<string> ExcludeRegions { get; set; }
 
         /// <summary>
         /// Gets or sets the boolean to use effective partition key routing in the cosmos db request.

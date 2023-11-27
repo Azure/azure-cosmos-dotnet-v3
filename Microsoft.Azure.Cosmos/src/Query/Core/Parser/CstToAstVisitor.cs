@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
     using System.Collections.Immutable;
     using System.Diagnostics.Contracts;
     using System.Globalization;
+    using System.Text;
     using Antlr4.Runtime.Misc;
     using Antlr4.Runtime.Tree;
     using Microsoft.Azure.Cosmos.SqlObjects;
@@ -950,8 +951,45 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
         private static string GetStringValueFromNode(IParseTree parseTree)
         {
             string text = parseTree.GetText();
-            string textWithoutQuotes = text.Substring(1, text.Length - 2).Replace("\\\"", "\"");
-            return textWithoutQuotes;
+
+            // 1. Remove leading and trailing (single or double) quotes.
+            // 2. Unescape following characters:
+            //    \" => "
+            //    \\ => \
+            //    \/ => /
+            // Based on the documentation, we should also escape single quote \'.
+            // https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/constants#remarks
+            // However that's failing in the parser (before reaching this point) and will be fixed separately (after checking server's behavior).
+            StringBuilder stringBuilder = new StringBuilder(text.Length);
+            for (int index = 1; index < text.Length - 1; index++)
+            {
+                switch (text[index])
+                {
+                    case '\\':
+                        if ((index + 1) < (text.Length - 1))
+                        {
+                            switch (text[index + 1])
+                            {
+                                case '"':
+                                case '\\':
+                                case '/':
+                                    stringBuilder.Append(text[index + 1]);
+                                    index++;
+                                    break;
+                                default:
+                                    stringBuilder.Append(text[index]);
+                                    break;
+                            }
+                        }
+                        break;
+
+                    default:
+                        stringBuilder.Append(text[index]);
+                        break;
+                }
+            }
+
+            return stringBuilder.ToString();
         }
 
         private static Number64 GetNumber64ValueFromNode(IParseTree parseTree)

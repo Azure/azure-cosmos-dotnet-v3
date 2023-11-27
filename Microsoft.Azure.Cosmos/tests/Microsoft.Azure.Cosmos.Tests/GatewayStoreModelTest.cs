@@ -175,11 +175,13 @@ namespace Microsoft.Azure.Cosmos
 
             Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = request =>
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 Assert.AreEqual(properties.Count, request.Properties.Count);
                 foreach (KeyValuePair<string, object> item in properties)
                 {
                     Assert.AreEqual(item.Value, request.Properties[item.Key]);
                 }
+#pragma warning restore CS0618 // Type or member is obsolete
 
                 return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) );
             };

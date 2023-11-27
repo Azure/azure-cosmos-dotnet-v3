@@ -31,6 +31,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly TimeSpan unavailableLocationsExpirationTime;
         private readonly int connectionLimit;
         private readonly ConcurrentDictionary<Uri, LocationUnavailabilityInfo> locationUnavailablityInfoByEndpoint;
+        private readonly RegionNameMapper regionNameMapper;
 
         private DatabaseAccountLocationsInfo locationInfo;
         private DateTime lastCacheUpdateTimestamp;
@@ -54,6 +55,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.lastCacheUpdateTimestamp = DateTime.MinValue;
             this.enableMultipleWriteLocations = false;
             this.unavailableLocationsExpirationTime = TimeSpan.FromSeconds(LocationCache.DefaultUnavailableLocationsExpirationTimeInSeconds);
+            this.regionNameMapper = new RegionNameMapper();
 
 #if !(NETSTANDARD15 || NETSTANDARD16)
 #if NETSTANDARD20
@@ -100,6 +102,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return this.locationInfo.ReadEndpoints;
             }
         }
+
+        /// <summary>
+        /// Gets list of account level read endpoints.
+        /// </summary>
+        public ReadOnlyCollection<Uri> AccountReadEndpoints => this.locationInfo.AccountReadEndpoints;
 
         /// <summary>
         /// Gets list of write endpoints ordered by
@@ -281,12 +288,70 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
             else
             {
-                ReadOnlyCollection<Uri> endpoints = request.OperationType.IsWriteOperation() ? this.WriteEndpoints : this.ReadEndpoints;
+                ReadOnlyCollection<Uri> endpoints = this.GetApplicableEndpoints(request, !request.OperationType.IsWriteOperation());
                 locationEndpointToRoute = endpoints[locationIndex % endpoints.Count];
             }
 
             request.RequestContext.RouteToLocation(locationEndpointToRoute);
             return locationEndpointToRoute;
+        }
+
+        public ReadOnlyCollection<Uri> GetApplicableEndpoints(DocumentServiceRequest request, bool isReadRequest)
+        {
+            ReadOnlyCollection<Uri> endpoints = isReadRequest ? this.ReadEndpoints : this.WriteEndpoints;
+
+            if (request.RequestContext.ExcludeRegions == null || request.RequestContext.ExcludeRegions.Count == 0)
+            {
+                return endpoints;
+            }
+
+            return this.GetApplicableEndpoints(
+                endpoints,
+                isReadRequest ? this.locationInfo.AvailableReadEndpointByLocation : this.locationInfo.AvailableWriteEndpointByLocation,
+                this.defaultEndpoint,
+                request.RequestContext.ExcludeRegions);
+        }
+
+        /// <summary>
+        /// Gets applicable endpoints for a request, if there are no applicable endpoints, returns the fallback endpoint
+        /// </summary>
+        /// <param name="endpoints"></param>
+        /// <param name="regionNameByEndpoint"></param>
+        /// <param name="fallbackEndpoint"></param>
+        /// <param name="excludeRegions"></param>
+        /// <returns>a list of applicable endpoints for a request</returns>
+        private ReadOnlyCollection<Uri> GetApplicableEndpoints(
+            IReadOnlyList<Uri> endpoints,
+            ReadOnlyDictionary<string, Uri> regionNameByEndpoint,
+            Uri fallbackEndpoint,
+            IReadOnlyList<string> excludeRegions)
+        {
+            List<Uri> applicableEndpoints = new List<Uri>(endpoints.Count);
+            HashSet<Uri> excludeUris = new HashSet<Uri>();
+
+            foreach (string region in excludeRegions)
+            {
+                string normalizedRegionName = this.regionNameMapper.GetCosmosDBRegionName(region);
+                if (regionNameByEndpoint.ContainsKey(normalizedRegionName))
+                {
+                    excludeUris.Add(regionNameByEndpoint[normalizedRegionName]);
+                }
+            }
+            
+            foreach (Uri endpoint in endpoints)
+            {
+                if (!excludeUris.Contains(endpoint))
+                {
+                    applicableEndpoints.Add(endpoint);
+                }
+            }
+
+            if (applicableEndpoints.Count == 0)
+            {
+                applicableEndpoints.Add(fallbackEndpoint);
+            }
+
+            return new ReadOnlyCollection<Uri>(applicableEndpoints);
         }
 
         public bool ShouldRefreshEndpoints(out bool canRefreshInBackground)
@@ -496,20 +561,35 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 if (readLocations != null)
                 {
-                    ReadOnlyCollection<string> availableReadLocations;
-                    nextLocationInfo.AvailableReadEndpointByLocation = this.GetEndpointByLocation(readLocations, out availableReadLocations);
+                    nextLocationInfo.AvailableReadEndpointByLocation = this.GetEndpointByLocation(
+                        readLocations,
+                        out ReadOnlyCollection<string> availableReadLocations);
+
                     nextLocationInfo.AvailableReadLocations = availableReadLocations;
+                    nextLocationInfo.AccountReadEndpoints = nextLocationInfo.AvailableReadEndpointByLocation.Select(x => x.Value).ToList().AsReadOnly();
                 }
 
                 if (writeLocations != null)
                 {
-                    ReadOnlyCollection<string> availableWriteLocations;
-                    nextLocationInfo.AvailableWriteEndpointByLocation = this.GetEndpointByLocation(writeLocations, out availableWriteLocations);
+                    nextLocationInfo.AvailableWriteEndpointByLocation = this.GetEndpointByLocation(
+                        writeLocations,
+                        out ReadOnlyCollection<string> availableWriteLocations);
+
                     nextLocationInfo.AvailableWriteLocations = availableWriteLocations;
                 }
 
-                nextLocationInfo.WriteEndpoints = this.GetPreferredAvailableEndpoints(nextLocationInfo.AvailableWriteEndpointByLocation, nextLocationInfo.AvailableWriteLocations, OperationType.Write, this.defaultEndpoint);
-                nextLocationInfo.ReadEndpoints = this.GetPreferredAvailableEndpoints(nextLocationInfo.AvailableReadEndpointByLocation, nextLocationInfo.AvailableReadLocations, OperationType.Read, nextLocationInfo.WriteEndpoints[0]);
+                nextLocationInfo.WriteEndpoints = this.GetPreferredAvailableEndpoints(
+                    endpointsByLocation: nextLocationInfo.AvailableWriteEndpointByLocation,
+                    orderedLocations: nextLocationInfo.AvailableWriteLocations,
+                    expectedAvailableOperation: OperationType.Write,
+                    fallbackEndpoint: this.defaultEndpoint);
+
+                nextLocationInfo.ReadEndpoints = this.GetPreferredAvailableEndpoints(
+                    endpointsByLocation: nextLocationInfo.AvailableReadEndpointByLocation,
+                    orderedLocations: nextLocationInfo.AvailableReadLocations,
+                    expectedAvailableOperation: OperationType.Read,
+                    fallbackEndpoint: nextLocationInfo.WriteEndpoints[0]);
+
                 this.lastCacheUpdateTimestamp = DateTime.UtcNow;
 
                 DefaultTrace.TraceInformation("Current WriteEndpoints = ({0}) ReadEndpoints = ({1})",
@@ -539,8 +619,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                     foreach (string location in currentLocationInfo.PreferredLocations)
                     {
-                        Uri endpoint;
-                        if (endpointsByLocation.TryGetValue(location, out endpoint))
+                        if (endpointsByLocation.TryGetValue(location, out Uri endpoint))
                         {
                             if (this.IsEndpointUnavailable(endpoint, expectedAvailableOperation))
                             {
@@ -565,9 +644,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                     foreach (string location in orderedLocations)
                     {
-                        Uri endpoint;
                         if (!string.IsNullOrEmpty(location) && // location is empty during manual failover
-                            endpointsByLocation.TryGetValue(location, out endpoint))
+                            endpointsByLocation.TryGetValue(location, out Uri endpoint))
                         {
                             endpoints.Add(endpoint);
                         }
@@ -639,6 +717,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.AvailableWriteEndpointByLocation = new ReadOnlyDictionary<string, Uri>(new Dictionary<string, Uri>(StringComparer.OrdinalIgnoreCase));
                 this.AvailableReadEndpointByLocation = new ReadOnlyDictionary<string, Uri>(new Dictionary<string, Uri>(StringComparer.OrdinalIgnoreCase));
                 this.WriteEndpoints = new List<Uri>() { defaultEndpoint }.AsReadOnly();
+                this.AccountReadEndpoints = new List<Uri>() { defaultEndpoint }.AsReadOnly();
                 this.ReadEndpoints = new List<Uri>() { defaultEndpoint }.AsReadOnly();
             }
 
@@ -650,6 +729,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.AvailableWriteEndpointByLocation = other.AvailableWriteEndpointByLocation;
                 this.AvailableReadEndpointByLocation = other.AvailableReadEndpointByLocation;
                 this.WriteEndpoints = other.WriteEndpoints;
+                this.AccountReadEndpoints = other.AccountReadEndpoints;
                 this.ReadEndpoints = other.ReadEndpoints;
             }
 
@@ -660,6 +740,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             public ReadOnlyDictionary<string, Uri> AvailableReadEndpointByLocation { get; set; }
             public ReadOnlyCollection<Uri> WriteEndpoints { get; set; }
             public ReadOnlyCollection<Uri> ReadEndpoints { get; set; }
+            public ReadOnlyCollection<Uri> AccountReadEndpoints { get; set; }
         }
 
         [Flags]

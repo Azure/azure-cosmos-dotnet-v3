@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Net;
     using System.Net.Http;
-    using System.Net.Http.Headers;
     using System.Net.Security;
     using System.Security.Cryptography.X509Certificates;
     using Microsoft.Azure.Cosmos.Fluent;
@@ -86,6 +85,7 @@ namespace Microsoft.Azure.Cosmos
             this.ConnectionProtocol = CosmosClientOptions.DefaultProtocol;
             this.ApiType = CosmosClientOptions.DefaultApiType;
             this.CustomHandlers = new Collection<RequestHandler>();
+            this.CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions();
         }
 
         /// <summary>
@@ -614,7 +614,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Enable partition key level failover
         /// </summary>
-        internal bool EnablePartitionLevelFailover { get; set; } = false;
+        internal bool EnablePartitionLevelFailover { get; set; } = ConfigurationManager.IsPartitionLevelFailoverEnabled(defaultValue: false);
 
         /// <summary>
         /// Quorum Read allowed with eventual consistency account or consistent prefix account.
@@ -736,9 +736,9 @@ namespace Microsoft.Azure.Cosmos
         internal bool? EnableCpuMonitor { get; set; }
 
         /// <summary>
-        /// Flag to enable telemetry
+        /// Gets or sets Client Telemetry Options like feature flags and corresponding options
         /// </summary>
-        internal bool? EnableClientTelemetry { get; set; }
+        public CosmosClientTelemetryOptions CosmosClientTelemetryOptions { get; set; }
 
         internal void SetSerializerIfNotConfigured(CosmosSerializer serializer)
         {
@@ -758,6 +758,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.ValidateDirectTCPSettings();
             this.ValidateLimitToEndpointSettings();
+            this.ValidatePartitionLevelFailoverSettings();
 
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
@@ -777,22 +778,26 @@ namespace Microsoft.Azure.Cosmos
                 EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
                 EnableAdvancedReplicaSelectionForTcp = this.EnableAdvancedReplicaSelectionForTcp,
                 HttpClientFactory = this.httpClientFactory,
-                ServerCertificateCustomValidationCallback = this.ServerCertificateCustomValidationCallback
+                ServerCertificateCustomValidationCallback = this.ServerCertificateCustomValidationCallback,
+                CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions()
             };
 
-            if (this.EnableClientTelemetry.HasValue)
+            if (this.CosmosClientTelemetryOptions != null)
             {
-                connectionPolicy.EnableClientTelemetry = this.EnableClientTelemetry.Value;
+                connectionPolicy.CosmosClientTelemetryOptions = this.CosmosClientTelemetryOptions;
             }
 
-            if (this.ApplicationRegion != null)
+            RegionNameMapper mapper = new RegionNameMapper();
+            if (!string.IsNullOrEmpty(this.ApplicationRegion))
             {
-                connectionPolicy.SetCurrentLocation(this.ApplicationRegion);
+                connectionPolicy.SetCurrentLocation(mapper.GetCosmosDBRegionName(this.ApplicationRegion));
             }
 
             if (this.ApplicationPreferredRegions != null)
             {
-                connectionPolicy.SetPreferredLocations(this.ApplicationPreferredRegions);
+                List<string> mappedRegions = this.ApplicationPreferredRegions.Select(s => mapper.GetCosmosDBRegionName(s)).ToList();
+
+                connectionPolicy.SetPreferredLocations(mappedRegions);
             }
 
             if (this.MaxRetryAttemptsOnRateLimitedRequests != null)
@@ -887,6 +892,15 @@ namespace Microsoft.Azure.Cosmos
             if (!string.IsNullOrEmpty(this.ApplicationRegion) && this.ApplicationPreferredRegions?.Count > 0)
             {
                 throw new ArgumentException($"Cannot specify {nameof(this.ApplicationPreferredRegions)} and {nameof(this.ApplicationRegion)}. Only one can be set.");
+            }
+        }
+
+        private void ValidatePartitionLevelFailoverSettings()
+        {
+            if (this.EnablePartitionLevelFailover
+                && (this.ApplicationPreferredRegions == null || this.ApplicationPreferredRegions.Count == 0))
+            {
+                throw new ArgumentException($"{nameof(this.ApplicationPreferredRegions)} is required when {nameof(this.EnablePartitionLevelFailover)} is enabled.");
             }
         }
 
@@ -1019,29 +1033,5 @@ namespace Microsoft.Azure.Cosmos
                 return objectType == typeof(DateTime);
             }
         }
-        
-        /// <summary>
-        /// Distributed Tracing Options. <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/>
-        /// </summary>
-        /// <remarks> Applicable only when Operation level distributed tracing is enabled through <see cref="Microsoft.Azure.Cosmos.CosmosClientOptions.IsDistributedTracingEnabled"/></remarks>
-        internal DistributedTracingOptions DistributedTracingOptions { get; set; }
-
-        /// <summary>
-        /// Gets or sets the flag to generate operation level <see cref="System.Diagnostics.Activity"/> for methods calls using the Source Name "Azure.Cosmos.Operation".
-        /// </summary>
-        /// <value>
-        /// The default value is true (for preview package).
-        /// </value>
-        /// <remarks>This flag is there to disable it from source. Please Refer https://opentelemetry.io/docs/instrumentation/net/exporters/ to know more about open telemetry exporters</remarks>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-            bool IsDistributedTracingEnabled { get; set; }
-#if PREVIEW
-        = true;
-#endif
-
     }
 }

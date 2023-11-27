@@ -91,8 +91,10 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public ReadOnlyCollection<Uri> ReadEndpoints => this.locationCache.ReadEndpoints;
 
-        public ReadOnlyCollection<Uri> WriteEndpoints => this.locationCache.WriteEndpoints;
+        public ReadOnlyCollection<Uri> AccountReadEndpoints => this.locationCache.AccountReadEndpoints;
 
+        public ReadOnlyCollection<Uri> WriteEndpoints => this.locationCache.WriteEndpoints;
+        
         internal ReadOnlyCollection<string> AvailableReadLocations => this.locationCache.GetAvailableReadLocations();
 
         public int PreferredLocationCount => this.connectionPolicy.PreferredLocations != null ? this.connectionPolicy.PreferredLocations.Count : 0;
@@ -360,6 +362,11 @@ namespace Microsoft.Azure.Cosmos.Routing
         public string GetLocation(Uri endpoint)
         {
             return this.locationCache.GetLocation(endpoint);
+        }
+
+        public ReadOnlyCollection<Uri> GetApplicableEndpoints(DocumentServiceRequest request, bool isReadRequest)
+        {
+            return this.locationCache.GetApplicableEndpoints(request, isReadRequest);
         }
 
         public bool TryGetLocationForGatewayDiagnostics(Uri endpoint, out string regionName)
