@@ -41,7 +41,7 @@
 		<RootNamespace>Microsoft.Azure.Cosmos</RootNamespace>
 		<NoWarn>NU5125</NoWarn>
 		<Optimize Condition="'$(Configuration)'=='Release'">true</Optimize>
-		<PackageVersion>3.32.1003-ca</PackageVersion>
+		<PackageVersion>3.32.1005-ca</PackageVersion>
 		<LangVersion>$(LangVersion)</LangVersion>
 	</PropertyGroup>
 
