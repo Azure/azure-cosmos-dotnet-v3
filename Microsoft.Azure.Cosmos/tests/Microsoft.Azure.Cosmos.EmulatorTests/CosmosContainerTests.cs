@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+﻿/*//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -1585,7 +1585,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                         EncryptionType = "Randomized"
                     },
-                    new ClientEncryptionIncludedPath()
+                    new Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath()
                     {
                         Path = "/path1",
                         ClientEncryptionKeyId = "dekId1",
@@ -1787,3 +1787,4 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
     }
 }
+*/

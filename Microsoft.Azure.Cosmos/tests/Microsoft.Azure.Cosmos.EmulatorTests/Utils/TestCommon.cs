@@ -26,6 +26,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Routing;
+    using Microsoft.Azure.Documents.Telemetry;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
@@ -130,8 +131,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal static CosmosClient CreateCosmosClient(
             bool useGateway,
-            Action<CosmosClientBuilder> customizeClientBuilder = null,
-            bool enableDistributingTracing = false)
+            Action<CosmosClientBuilder> customizeClientBuilder = null)
         {
             CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration();
 
@@ -142,14 +142,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 cosmosClientBuilder.WithConnectionModeGateway();
             }
 
-            if(enableDistributingTracing)
-            {
-                cosmosClientBuilder.WithDistributedTracingOptions(new DistributedTracingOptions()
-                {
-                    LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
-                });
-            }
-            
             return cosmosClientBuilder.Build();
         }
 

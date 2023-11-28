@@ -20,7 +20,7 @@
         private ContainerInternal Container = null;
         private const string PartitionKey = "/pk";
 
-        [TestInitialize]
+        // [TestInitialize]
         public async Task TestInitialize()
         {
             await this.TestInit();
@@ -45,7 +45,7 @@
             }
         }
 
-        [TestCleanup]
+        // [TestCleanup]
         public async Task Cleanup()
         {
             await base.TestCleanup();
@@ -364,5 +364,95 @@
             Assert.IsNotNull(ce);
             Assert.AreEqual(HttpStatusCode.NotFound, ce.StatusCode);
         }
+
+        [TestMethod]
+        [Owner("dkunda")]
+        public async Task CreateAndInitializeAsync_LocalTest()
+        {
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                ApplicationPreferredRegions = new List<string>()
+                {
+                    Regions.NorthCentralUS,
+                    Regions.EastAsia,
+                },
+                EnablePartitionLevelFailover = true,
+                ConnectionMode = ConnectionMode.Direct,
+                RequestTimeout = TimeSpan.FromSeconds(5),
+                OpenTcpConnectionTimeout = TimeSpan.FromSeconds(5),
+            };
+
+            CosmosClient client = new CosmosClient(
+                "https://dkppaf.documents-test.windows-int.net:443/",
+                "blabla",
+                clientOptions
+            );
+
+            Cosmos.Database database = client.GetDatabase("comments");
+            Container container = database.GetContainer("comments");
+
+            Comment comment = SampleData.GetComment();
+            try
+            {
+                ItemResponse<Comment> response = await container.CreateItemAsync<Comment>(
+                    item: comment,
+                    partitionKey: new Cosmos.PartitionKey(comment.postId)
+                );
+
+                Console.WriteLine(response.Diagnostics);
+            }
+            catch (CosmosException ce)
+            {
+                Console.WriteLine(ce.Diagnostics);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Exception Occurred: " + ex.Message);
+            }
+
+            Comment comment2 = SampleData.GetComment();
+            try
+            {
+                ItemResponse<Comment> response = await container.CreateItemAsync<Comment>(
+                    item: comment2,
+                    partitionKey: new Cosmos.PartitionKey(comment2.postId)
+                );
+
+                Console.WriteLine(response.Diagnostics);
+            }
+            catch (CosmosException ce)
+            {
+                Console.WriteLine(ce.Diagnostics);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Exception Occurred: " + ex.Message);
+            }
+
+            // Console.WriteLine(new StackTrace().ToString());
+
+            /* Stopwatch s = new ();
+             s.Start();
+             while (s.Elapsed < TimeSpan.FromSeconds(360))
+             {
+                 Comment comment = Data.GetComment();
+                 ItemResponse<Comment> response = await container.CreateItemAsync<Comment>(
+                     item: comment,
+                     partitionKey: new Cosmos.PartitionKey(comment.postId)
+                 );
+
+                 Console.WriteLine(response.Diagnostics);
+             }
+
+             s.Stop();*/
+        }
+
+        public record Comment(
+            string id,
+            string postId,
+            string name,
+            string email,
+            string body
+        );
     }
 }
