@@ -36,6 +36,8 @@ using (FeedIterator<dynamic> feedIterator = container.GetItemQueryIterator<dynam
 
 `Install-Package Microsoft.Azure.Cosmos`
 
+For available versions, see [SDK versioning](./docs/versioning.md).
+
 ## Useful links
 
 - [Get Started APP](https://docs.microsoft.com/azure/cosmos-db/sql-api-get-started)
