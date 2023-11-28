@@ -144,7 +144,7 @@
         // This test confirms that TestInjection.EnableOptimisticDirectExection is set to false from default. 
         // Check test "TestPipelineForDistributedQueryAsync" to understand why this is done
         [TestMethod]
-        public async Task TestDefaultQueryRequestOptionsSettings()
+        public void TestDefaultQueryRequestOptionsSettings()
         {
             QueryRequestOptions requestOptions = new QueryRequestOptions();
             bool odeExpectedValue =
@@ -644,7 +644,7 @@
             return tryGetQueryPlan;
         }
 
-        private static async Task<IQueryPipelineStage> GetOdePipelineAsync(OptimisticDirectExecutionTestInput input, DocumentContainer documentContainer, QueryRequestOptions queryRequestOptions)
+        private static Task<IQueryPipelineStage> GetOdePipelineAsync(OptimisticDirectExecutionTestInput input, DocumentContainer documentContainer, QueryRequestOptions queryRequestOptions)
         {
             (CosmosQueryExecutionContextFactory.InputParameters inputParameters, CosmosQueryContextCore cosmosQueryContextCore) = CreateInputParamsAndQueryContext(input, queryRequestOptions);
 
@@ -655,7 +655,7 @@
                       NoOpTrace.Singleton);
 
             Assert.IsNotNull(queryPipelineStage);
-            return queryPipelineStage;
+            return Task.FromResult(queryPipelineStage);
         }
 
         private static async Task<DocumentContainer> CreateDocumentContainerAsync(
@@ -801,7 +801,6 @@
                 partitionedQueryExecutionInfo: null,
                 executionEnvironment: null,
                 returnResultsInDeterministicOrder: null,
-                forcePassthrough: false,
                 enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
                 testInjections: queryRequestOptions.TestSettings);
 
@@ -913,6 +912,7 @@
                 this.IsFailedFallbackPipelineTest = isFailedFallbackPipelineTest;
             }
 
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
             public async Task<Exception> ShouldReturnFailure()
             {
                 this.MoveNextCounter++;
@@ -940,6 +940,7 @@
 
                 return null;
             }
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         }
     }
 
@@ -1094,7 +1095,7 @@
             throw new NotImplementedException();
         }
 
-        public override async Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(SqlQuerySpec sqlQuerySpec, ResourceType resourceType, PartitionKeyDefinition partitionKeyDefinition, bool requireFormattableOrderByQuery, bool isContinuationExpected, bool allowNonValueAggregateQuery, bool hasLogicalPartitionKey, bool allowDCount, bool useSystemPrefix, Cosmos.GeospatialType geospatialType, CancellationToken cancellationToken)
+        public override Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(SqlQuerySpec sqlQuerySpec, ResourceType resourceType, PartitionKeyDefinition partitionKeyDefinition, bool requireFormattableOrderByQuery, bool isContinuationExpected, bool allowNonValueAggregateQuery, bool hasLogicalPartitionKey, bool allowDCount, bool useSystemPrefix, Cosmos.GeospatialType geospatialType, CancellationToken cancellationToken)
         {
             CosmosSerializerCore serializerCore = new();
             using StreamReader streamReader = new(serializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, Documents.ResourceType.Document));
@@ -1102,7 +1103,7 @@
 
             TryCatch<PartitionedQueryExecutionInfo> queryPlan = OptimisticDirectExecutionQueryBaselineTests.TryGetPartitionedQueryExecutionInfo(sqlQuerySpecJsonString, partitionKeyDefinition);
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = queryPlan.Succeeded ? queryPlan.Result : throw queryPlan.Exception;
-            return TryCatch<PartitionedQueryExecutionInfo>.FromResult(partitionedQueryExecutionInfo);
+            return Task.FromResult(TryCatch<PartitionedQueryExecutionInfo>.FromResult(partitionedQueryExecutionInfo));
         }
     }
 }

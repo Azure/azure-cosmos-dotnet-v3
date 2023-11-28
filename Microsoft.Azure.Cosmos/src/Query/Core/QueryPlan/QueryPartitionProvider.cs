@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Runtime.InteropServices;
     using System.Text;
@@ -289,6 +290,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                        DateParseHandling = DateParseHandling.None,
                        MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
                    });
+
+            Debug.Assert(!(queryInfoInternal.QueryInfo.HasTop && queryInfoInternal.QueryInfo.HasLimit));
 
             return TryCatch<PartitionedQueryExecutionInfoInternal>.FromResult(queryInfoInternal);
         }
