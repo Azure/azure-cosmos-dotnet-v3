@@ -333,7 +333,7 @@ namespace Microsoft.Azure.Cosmos
                     DistributionPlanPayload distributionPlanPayload = null;
 
                     if (distributionPlan.TryGetValue("backendDistributionPlan", out CosmosElement backendDistributionPlan) &&
-                        distributionPlan.TryGetValue("coordinatorDistributionPlan", out CosmosElement clientDistributionPlan))
+                        distributionPlan.TryGetValue("clientDistributionPlan", out CosmosElement clientDistributionPlan))
                     {
                         distributionPlanPayload = new DistributionPlanPayload(backendDistributionPlan.ToString(), clientDistributionPlan.ToString());
                     }

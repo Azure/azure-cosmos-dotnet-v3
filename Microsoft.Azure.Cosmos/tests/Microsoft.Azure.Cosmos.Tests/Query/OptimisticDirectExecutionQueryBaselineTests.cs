@@ -502,11 +502,11 @@
             string backendPlan = "{\"query\": \"\\nSELECT Count(r.a) AS count_a\\nFROM r\", \"obfuscatedQuery\": \"{\\\"query\\\":\\\"SELECT Count(r.a) AS p1\\\\nFROM r\\\",\\\"parameters\\\":[]}\", \"shape\": \"{\\\"Select\\\":{\\\"Type\\\":\\\"List\\\",\\\"AggCount\\\":1},\\\"From\\\":{\\\"Expr\\\":\\\"Aliased\\\"}}\", \"signature\":-4885972563975185329, \"shapeSignature\":-6171928203673877984, \"queryIL\": { \"Expression\": { \"Kind\": \"Aggregate\", \"Type\": { \"Kind\": \"Enum\", \"ItemType\": { \"Kind\": \"Base\", \"BaseTypeKind\": \"Number\", \"ExcludesUndefined\": true } }, \"Aggregate\": { \"Kind\": \"Builtin\", \"Signature\": { \"ItemType\": { \"Kind\": \"Base\", \"BaseTypeKind\": \"Variant\", \"ExcludesUndefined\": false }, \"ResultType\": { \"Kind\": \"Base\", \"BaseTypeKind\": \"Number\", \"ExcludesUndefined\": true } }, \"OperatorKind\": \"Count\" }, \"SourceExpression\": { \"Kind\": \"Select\", \"Type\": { \"Kind\": \"Enum\", \"ItemType\": { \"Kind\": \"Base\", \"BaseTypeKind\": \"Variant\", \"ExcludesUndefined\": false } }, \"Delegate\": { \"Kind\": \"ScalarExpression\", \"Type\": { \"Kind\": \"Base\", \"BaseTypeKind\": \"Variant\", \"ExcludesUndefined\": false }, \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 4, \"Type\": { \"Kind\": \"Base\", \"BaseTypeKind\": \"Variant\", \"ExcludesUndefined\": true } }, \"Expression\": { \"Kind\": \"PropertyRef\", \"Type\": { \"Kind\": \"Base\", \"BaseTypeKind\": \"Variant\", \"ExcludesUndefined\": false }, \"Expression\": { \"Kind\": \"VariableRef\", \"Type\": { \"Kind\": \"Base\", \"BaseTypeKind\": \"Variant\", \"ExcludesUndefined\": true }, \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 4, \"Type\": { \"Kind\": \"Base\", \"BaseTypeKind\": \"Variant\", \"ExcludesUndefined\": true } } }, \"PropertyName\": \"a\" } }, \"SourceExpression\": { \"Kind\": \"Input\", \"Type\": { \"Kind\": \"Enum\", \"ItemType\": { \"Kind\": \"Base\", \"BaseTypeKind\": \"Variant\", \"ExcludesUndefined\": true } }, \"Name\": \"r\" } } } }, \"noSpatial\": true, \"language\": \"QueryIL\"}";
             string backendJson = $@"{{""backendDistributionPlan"": {backendPlan},";
             string clientPlan = "{\"clientQL\": {\"Kind\": \"Input\",\"Name\": \"root\"}}";
-            string clientJson = $@"""coordinatorDistributionPlan"": {clientPlan}";
+            string clientJson = $@"""clientDistributionPlan"": {clientPlan}";
             string distributionPlanJson = backendJson + clientJson;
 
-            string testResponse = $@"{{""_distributionPlan"": {$"{distributionPlanJson}"} }}}}";
-
+            string testResponse = $@"{{""_rid"": ""AgAAALHVPPs="", ""Documents"": [ {{ ""count_a"": 30 }} ], ""_count"": 1, ""_distributionPlan"": {$"{distributionPlanJson}"} }}}}";
+            
             MemoryStream memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(testResponse));
             CosmosQueryClientCore.ParseRestStream(
                 memoryStream,
@@ -515,7 +515,7 @@
                 out CosmosObject distributionPlan);
 
             if (distributionPlan.TryGetValue("backendDistributionPlan", out CosmosElement backendDistributionPlan) &&
-                distributionPlan.TryGetValue("coordinatorDistributionPlan", out CosmosElement clientDistributionPlan))
+                distributionPlan.TryGetValue("clientDistributionPlan", out CosmosElement clientDistributionPlan))
             {
                 Assert.IsTrue(backendDistributionPlan.ToString().Equals(backendPlan));
                 Assert.IsTrue(clientDistributionPlan.ToString().Equals(clientPlan));
