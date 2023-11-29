@@ -508,7 +508,11 @@
             string testResponse = $@"{{""_distributionPlan"": {$"{distributionPlanJson}"} }}}}";
 
             MemoryStream memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(testResponse));
-            CosmosObject distributionPlan = CosmosQueryClientCore.ParseDistributionPlanFromRestStream(memoryStream);
+            CosmosQueryClientCore.ParseRestStream(
+                memoryStream,
+                Documents.ResourceType.Document,
+                out CosmosArray documents,
+                out CosmosObject distributionPlan);
 
             if (distributionPlan.TryGetValue("backendDistributionPlan", out CosmosElement backendDistributionPlan) &&
                 distributionPlan.TryGetValue("coordinatorDistributionPlan", out CosmosElement clientDistributionPlan))
@@ -529,9 +533,14 @@
             string clientPlan = "{\"clientQL\":{\"Kind\":\"Select\",\"DeclaredVariable\":{\"Name\":\"v0\",\"UniqueId\":2},\"Expression\":{\"Kind\":\"ObjectCreate\",\"ObjectKind\":\"Object\",\"Properties\":[{\"Name\":\"count_a\",\"Expression\":{\"Kind\":\"VariableRef\",\"Variable\":{\"Name\":\"v0\",\"UniqueId\":2}}}]},\"SourceExpression\":{\"Kind\":\"Aggregate\",\"Aggregate\":{\"Kind\":\"Builtin\",\"OperatorKind\":\"Sum\"},\"SourceExpression\":{\"Kind\":\"Input\",\"Name\":\"root\"}}}}";
             
             string binaryTestResponse = "{ \"_rid\": \"AgAAAP-tzwk=\", \"Documents\": [ { \"count_a\": 30 } ], \"_count\": 1, \"_distributionPlan\": \"gOsBBJdiYWNrZW5kRGlzdHJpYnV0aW9uUGxhbussA4VxdWVyeaQKU0VMRUNUIENvdW50KHIuYSkgQVMgY291bnRfYQpGUk9NIHKPb2JmdXNjYXRlZFF1ZXJ5u3sicXVlcnkiOiJTRUxFQ1QgQ291bnQoci5hKSBBUyBwMVxuRlJPTSByIiwicGFyYW1ldGVycyI6W119hXNoYXBlwEF7IlNlbGVjdCI6eyJUeXBlIjoiTGlzdCIsIkFnZ0NvdW50IjoxfSwiRnJvbSI6eyJFeHByIjoiQWxpYXNlZCJ9fYlzaWduYXR1cmXLT1z0DdeJMbyOc2hhcGVTaWduYXR1cmXLIMLNwP\\/nWKqHcXVlcnlJTOmKRXhwcmVzc2lvbusOAoRLaW5kiUFnZ3JlZ2F0ZTfqQsQhAYRFbnVtiEl0ZW1UeXBl6i\\/EIQGEQmFzZYxCYXNlVHlwZUtpbmSGTnVtYmVykUV4Y2x1ZGVzVW5kZWZpbmVk0sQmAephxCEBh0J1aWx0aW6JU2lnbmF0dXJl6jfEOwHqFcQhAcRJAcROAYdWYXJpYW50xGIB0YpSZXN1bHRUeXBl6hDEIQHESQHETgHEWwHEYgHSjE9wZXJhdG9yS2luZIVDb3VudJBTb3VyY2VFeHByZXNzaW9u60ABxCEBhlNlbGVjdDfqG8QhAcQ2AcQ7AeoQxCEBxEkBxE4BxJ8BxGIB0YhEZWxlZ2F0ZerexCEBkFNjYWxhckV4cHJlc3Npb2436hDEIQHESQHETgHEnwHEYgHRkERlY2xhcmVkVmFyaWFibGXqITaCdjCIVW5pcXVlSWQAN+oQxCEBxEkBxE4BxJ8BxGIB0sQTAep+xCEBi1Byb3BlcnR5UmVmN+oQxCEBxEkBxE4BxJ8BxGIB0cQTAepIxCEBi1ZhcmlhYmxlUmVmN+oQxCEBxEkBxE4BxJ8BxGIB0ohWYXJpYWJsZeobNoJ2MMRgAgA36hDEIQHESQHETgHEnwHEYgHSjFByb3BlcnR5TmFtZYFhxNsB6irEIQGFSW5wdXQ36hvEIQHENgHEOwHqEMQhAcRJAcROAcSfAcRiAdI2gXKJbm9TcGF0aWFs0ohsYW5ndWFnZYdRdWVyeUlMlmNsaWVudERpc3RyaWJ1dGlvblBsYW7piGNsaWVudFFM6pfEIQHE8gHESQLqCDaCdjDEYAICxBMB6lHEIQGMT2JqZWN0Q3JlYXRlik9iamVjdEtpbmSGT2JqZWN0ilByb3BlcnRpZXPh6iE2h2NvdW50X2HEEwHqE8QhAcSsAsTLAuoINoJ2MMRgAgLE2wHqKcQhAcQmAcQmAeoNxCEBxH0BxMgBg1N1bcTbAeoMxCEBxAgDNoRyb290\" }";
-            MemoryStream memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(binaryTestResponse));
-            CosmosObject distributionPlan = CosmosQueryClientCore.ParseDistributionPlanFromRestStream(memoryStream);
             
+            MemoryStream memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(binaryTestResponse));
+            CosmosQueryClientCore.ParseRestStream(
+                memoryStream,
+                Documents.ResourceType.Document,
+                out CosmosArray documents,
+                out CosmosObject distributionPlan);
+
             if (distributionPlan.TryGetValue("backendDistributionPlan", out CosmosElement backendDistributionPlan) &&
                 distributionPlan.TryGetValue("clientDistributionPlan", out CosmosElement clientDistributionPlan))
             {

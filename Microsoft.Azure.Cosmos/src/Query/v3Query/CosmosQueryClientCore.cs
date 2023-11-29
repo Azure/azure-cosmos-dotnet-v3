@@ -324,11 +324,12 @@ namespace Microsoft.Azure.Cosmos
                     }
 
                     long responseLengthBytes = memoryStream.Length;
-                    CosmosArray documents = CosmosQueryClientCore.ParseElementsFromRestStream(
+                    CosmosQueryClientCore.ParseRestStream(
                         memoryStream,
-                        resourceType);
+                        resourceType,
+                        out CosmosArray documents,
+                        out CosmosObject distributionPlan);
 
-                    CosmosObject distributionPlan = CosmosQueryClientCore.ParseDistributionPlanFromRestStream(memoryStream);
                     DistributionPlanPayload distributionPlanPayload = null;
 
                     if (distributionPlan.TryGetValue("backendDistributionPlan", out CosmosElement backendDistributionPlan) &&
@@ -438,55 +439,22 @@ namespace Microsoft.Azure.Cosmos
             return this.documentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
         }
 
-        public static CosmosObject ParseDistributionPlanFromRestStream(
-            Stream stream)
-        {
-            if (!(stream is MemoryStream memoryStream))
-            {
-                memoryStream = new MemoryStream();
-                stream.CopyTo(memoryStream);
-            }
-
-            if (!memoryStream.CanRead)
-            {
-                throw new InvalidDataException("Stream can not be read");
-            }
-
-            ReadOnlyMemory<byte> content = memoryStream.TryGetBuffer(out ArraySegment<byte> buffer) ? buffer : (ReadOnlyMemory<byte>)memoryStream.ToArray();
-            IJsonNavigator jsonNavigator = JsonNavigator.Create(content);
-
-            string resourceName = "_distributionPlan";
-
-            if (jsonNavigator.TryGetObjectProperty(jsonNavigator.GetRootNode(), resourceName, out ObjectProperty objectProperty))
-            {
-                if (CosmosElement.Dispatch(jsonNavigator, objectProperty.ValueNode) is CosmosString binaryDistributionPlan)
-                {
-                    byte[] binaryJson = Convert.FromBase64String(binaryDistributionPlan.Value.ToString());
-                    IJsonReader reader = Json.JsonReader.Create(binaryJson);
-                    IJsonWriter textWriter = Json.JsonWriter.Create(JsonSerializationFormat.Text);
-                    reader.WriteAll(textWriter);
-                    string json = Encoding.UTF8.GetString(textWriter.GetResult().ToArray());
-                    return CosmosObject.Parse(json);
-                }
-                else if (CosmosElement.Dispatch(jsonNavigator, objectProperty.ValueNode) is CosmosObject distributionPlanPayload)
-                {
-                    return distributionPlanPayload;
-                }
-            }
-
-            return null;
-        }
-
         /// <summary>
         /// Converts a list of CosmosElements into a memory stream.
         /// </summary>
         /// <param name="stream">The memory stream response for the query REST response Azure Cosmos</param>
         /// <param name="resourceType">The resource type</param>
-        /// <returns>An array of CosmosElements parsed from the response body.</returns>
-        public static CosmosArray ParseElementsFromRestStream(
+        /// <param name="documents">An array of CosmosElements parsed from the response body</param>
+        /// <param name="distributionPlan">An object containing the distribution plan for the client</param>
+        public static void ParseRestStream(
             Stream stream,
-            ResourceType resourceType)
+            ResourceType resourceType,
+            out CosmosArray documents,
+            out CosmosObject distributionPlan)
         {
+            documents = null;
+            distributionPlan = null;
+
             if (!(stream is MemoryStream memoryStream))
             {
                 memoryStream = new MemoryStream();
@@ -555,7 +523,27 @@ namespace Microsoft.Azure.Cosmos
                 throw new InvalidOperationException($"QueryResponse did not have an array of : {resourceName}");
             }
 
-            return cosmosArray;
+            documents = cosmosArray;
+
+            resourceName = "_distributionPlan";
+
+            if (jsonNavigator.TryGetObjectProperty(jsonNavigator.GetRootNode(), resourceName, out objectProperty))
+            {
+                if (CosmosElement.Dispatch(jsonNavigator, objectProperty.ValueNode) is CosmosString binaryDistributionPlan)
+                {
+                    byte[] binaryJson = Convert.FromBase64String(binaryDistributionPlan.Value.ToString());
+                    IJsonReader reader = Json.JsonReader.Create(binaryJson);
+                    IJsonWriter textWriter = Json.JsonWriter.Create(JsonSerializationFormat.Text);
+                    reader.WriteAll(textWriter);
+                    string json = Encoding.UTF8.GetString(textWriter.GetResult().ToArray());
+
+                    distributionPlan = CosmosObject.Parse(json);
+                }
+                else if (CosmosElement.Dispatch(jsonNavigator, objectProperty.ValueNode) is CosmosObject textDistributionPlan)
+                {
+                    distributionPlan = textDistributionPlan;
+                }
+            }
         }
     }
 }
