@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using Newtonsoft.Json.Serialization;
 
     internal static class CosmosSerializationUtil
@@ -12,22 +13,22 @@ namespace Microsoft.Azure.Cosmos
 
         internal static string GetStringWithPropertyNamingPolicy(CosmosLinqSerializerOptions options, string name)
         {
-            if (options?.PropertyNamingPolicy == CosmosPropertyNamingPolicy.CamelCase)
+            if (options == null)
             {
-                return CosmosSerializationUtil.camelCaseNamingStrategy.GetPropertyName(name, false);
+                return name;
             }
 
-            return name;
+            return GetStringWithPropertyNamingPolicy(options.PropertyNamingPolicy, name);
         }
 
         internal static string GetStringWithPropertyNamingPolicy(CosmosPropertyNamingPolicy namingPolicy, string name)
         {
-            if (namingPolicy == CosmosPropertyNamingPolicy.CamelCase)
+            return namingPolicy switch
             {
-                return CosmosSerializationUtil.camelCaseNamingStrategy.GetPropertyName(name, false);
-            }
-
-            return name;
+                CosmosPropertyNamingPolicy.CamelCase => CosmosSerializationUtil.camelCaseNamingStrategy.GetPropertyName(name, false),
+                CosmosPropertyNamingPolicy.Default => name,
+                _ => throw new ArgumentException("Unsupported CosmosPropertyNamingPolicy value"),
+            };
         }
     }
 }

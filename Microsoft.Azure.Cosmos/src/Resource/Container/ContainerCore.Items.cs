@@ -24,7 +24,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.ReadFeed;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -389,15 +388,10 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.ClientContext.ClientOptions != null)
             {
-                if (linqSerializerOptions == null)
+                linqSerializerOptions ??= new CosmosLinqSerializerOptions
                 {
-                    linqSerializerOptions = new CosmosLinqSerializerOptions
-                    {
-                        PropertyNamingPolicy = this.ClientContext.ClientOptions.SerializerOptions != null
-                                                ? this.ClientContext.ClientOptions.SerializerOptions.PropertyNamingPolicy
-                                                : CosmosPropertyNamingPolicy.Default,                      
-                    };
-                }
+                    PropertyNamingPolicy = this.ClientContext.ClientOptions.SerializerOptions?.PropertyNamingPolicy ?? CosmosPropertyNamingPolicy.Default             
+                };
                 
                 linqSerializerOptions.CustomCosmosSerializer = this.ClientContext.ClientOptions.Serializer;
 
