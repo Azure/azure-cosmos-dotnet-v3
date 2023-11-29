@@ -532,12 +532,10 @@ namespace Microsoft.Azure.Cosmos
                 if (CosmosElement.Dispatch(jsonNavigator, objectProperty.ValueNode) is CosmosString binaryDistributionPlan)
                 {
                     byte[] binaryJson = Convert.FromBase64String(binaryDistributionPlan.Value.ToString());
-                    IJsonReader reader = Json.JsonReader.Create(binaryJson);
-                    IJsonWriter textWriter = Json.JsonWriter.Create(JsonSerializationFormat.Text);
-                    reader.WriteAll(textWriter);
-                    string json = Encoding.UTF8.GetString(textWriter.GetResult().ToArray());
+                    IJsonNavigator binaryJsonNavigator = JsonNavigator.Create(binaryJson);
+                    IJsonNavigatorNode binaryJsonNavigatorNode = binaryJsonNavigator.GetRootNode();
 
-                    distributionPlan = CosmosObject.Parse(json);
+                    distributionPlan = CosmosObject.Create(binaryJsonNavigator, binaryJsonNavigatorNode);
                 }
                 else if (CosmosElement.Dispatch(jsonNavigator, objectProperty.ValueNode) is CosmosObject textDistributionPlan)
                 {
