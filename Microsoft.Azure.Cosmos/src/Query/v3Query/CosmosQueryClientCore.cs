@@ -529,15 +529,16 @@ namespace Microsoft.Azure.Cosmos
 
             if (jsonNavigator.TryGetObjectProperty(jsonNavigator.GetRootNode(), resourceName, out objectProperty))
             {
-                if (CosmosElement.Dispatch(jsonNavigator, objectProperty.ValueNode) is CosmosString binaryDistributionPlan)
+                CosmosElement element = CosmosElement.Dispatch(jsonNavigator, objectProperty.ValueNode);
+                if (element is CosmosString binaryDistributionPlan)
                 {
-                    byte[] binaryJson = Convert.FromBase64String(binaryDistributionPlan.Value.ToString());
+                    byte[] binaryJson = Convert.FromBase64String(binaryDistributionPlan.Value);
                     IJsonNavigator binaryJsonNavigator = JsonNavigator.Create(binaryJson);
                     IJsonNavigatorNode binaryJsonNavigatorNode = binaryJsonNavigator.GetRootNode();
 
                     distributionPlan = CosmosObject.Create(binaryJsonNavigator, binaryJsonNavigatorNode);
                 }
-                else if (CosmosElement.Dispatch(jsonNavigator, objectProperty.ValueNode) is CosmosObject textDistributionPlan)
+                else if (element is CosmosObject textDistributionPlan)
                 {
                     distributionPlan = textDistributionPlan;
                 }
