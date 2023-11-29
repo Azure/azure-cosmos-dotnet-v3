@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         public string QueryText { get; set; }
 
         /// <summary>
-        /// Gets or sets the ClientQL Compatibility Level, which allows the client to specify the compatibility level that it accepts.
+        /// Gets or sets the ClientQL Compatibility Level supported by the client.
         /// </summary>
         /// <value>The integer value representing the compatibility of the client.</value>
         [DataMember(Name = "clientQLCompatibilityLevel", EmitDefaultValue = false)]

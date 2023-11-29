@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Globalization;
     using System.IO;
     using System.Linq;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -458,11 +459,16 @@ namespace Microsoft.Azure.Cosmos
 
             if (jsonNavigator.TryGetObjectProperty(jsonNavigator.GetRootNode(), resourceName, out ObjectProperty objectProperty))
             {
-                if (!(CosmosElement.Dispatch(jsonNavigator, objectProperty.ValueNode) is CosmosObject distributionPlanPayload))
+                if (CosmosElement.Dispatch(jsonNavigator, objectProperty.ValueNode) is CosmosString binaryDistributionPlan)
                 {
-                    throw new InvalidOperationException($"QueryResponse did not have an object of : {resourceName}");
+                    byte[] binaryJson = Convert.FromBase64String(binaryDistributionPlan.Value.ToString());
+                    IJsonReader reader = Json.JsonReader.Create(binaryJson);
+                    IJsonWriter textWriter = Json.JsonWriter.Create(JsonSerializationFormat.Text);
+                    reader.WriteAll(textWriter);
+                    string json = Encoding.UTF8.GetString(textWriter.GetResult().ToArray());
+                    return CosmosObject.Parse(json);
                 }
-                else
+                else if (CosmosElement.Dispatch(jsonNavigator, objectProperty.ValueNode) is CosmosObject distributionPlanPayload)
                 {
                     return distributionPlanPayload;
                 }
@@ -503,7 +509,25 @@ namespace Microsoft.Azure.Cosmos
             //        "_attachments": "attachments\/",
             //        "_ts": 1501107886
             //    }],
-            //    "_count": 1
+            //    "_count": 1,
+            //    "_distributionPlan": {
+            //         "backendDistributionPlan": {
+            //              "query": "\nSELECT Count(r.a) AS count_a\nFROM r",
+            //              "obfuscatedQuery": "{\"query\":\"SELECT Count(r.a) AS p1\\nFROM r\",\"parameters\":[]}",
+            //              "shape": "{\"Select\":{\"Type\":\"List\",\"AggCount\":1},\"From\":{\"Expr\":\"Aliased\"}}",
+            //              "signature":-4885972563975185329,
+            //              "shapeSignature":-6171928203673877984,
+            //              "queryIL": {...},
+            //              "noSpatial": true,
+            //              "language": "QueryIL"
+            //          },
+            //          "coordinatorDistributionPlan": {
+            //              "clientQL": {
+            //                  "Kind": "Input",
+            //                  "Name": "root"
+            //              }
+            //          }
+            //      }
             // }
             // You want to create a CosmosElement for each document in "Documents".
 

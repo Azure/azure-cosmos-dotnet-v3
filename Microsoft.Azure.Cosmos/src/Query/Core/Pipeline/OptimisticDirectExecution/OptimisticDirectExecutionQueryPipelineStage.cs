@@ -80,17 +80,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                             requiresDistribution = true;
                         }
 
-                        if (requiresDistribution)
-                        {
-                            DistributionPlanPayload plan = this.Current.Result.DistributionPlanPayload;
-                            string backendDistributionPlan = plan.BackendDistributionPlan;
-                            string clientDistributionJson = plan.ClientDistributionPlan;
-
-                            //TODO
-                            // Use the clientDistributionPlan to build a pipeline stage for handling queries that require distribution
-                            // Send the backendDistributionPlan to the backend
-                        }
-
                         if (this.previousRequiresDistribution.HasValue && this.previousRequiresDistribution != requiresDistribution)
                         {
                             // We should never enter this if statement as requiresDistribution flag can never switch mid execution.
@@ -175,6 +164,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
 
         private sealed class OptimisticDirectExecutionQueryPipelineImpl : IQueryPipelineStage
         {
+            private const int ClientQLCompatibilityLevel = 1;
             private readonly QueryPartitionRangePageAsyncEnumerator queryPartitionRangePageAsyncEnumerator;
 
             private OptimisticDirectExecutionQueryPipelineImpl(
@@ -279,6 +269,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                     return TryCatch<IQueryPipelineStage>.FromException(monadicExtractState.Exception);
                 }
 
+                sqlQuerySpec.ClientQLCompatibilityLevel = ClientQLCompatibilityLevel;
                 FeedRangeState<QueryState> feedRangeState = monadicExtractState.Result;
                 QueryPartitionRangePageAsyncEnumerator partitionPageEnumerator = new QueryPartitionRangePageAsyncEnumerator(
                     documentContainer,

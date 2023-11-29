@@ -37,7 +37,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         private const string OptimisticDirectExecution = "OptimisticDirectExecution";
         private const string Passthrough = "Passthrough";
         private const string Specialized = "Specialized";
-        private const int ClientQLCompatibilityLevel = 1;
         private const int PageSizeFactorForTop = 5;
         private static readonly Regex QueryInspectionRegex = new Regex(QueryInspectionPattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
@@ -329,7 +328,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
             // Test code added to confirm the correct pipeline is being utilized
             SetTestInjectionPipelineType(inputParameters, OptimisticDirectExecution);
-            inputParameters.SqlQuerySpec.ClientQLCompatibilityLevel = ClientQLCompatibilityLevel;
 
             TryCatch<IQueryPipelineStage> tryCreatePipelineStage = CosmosQueryExecutionContextFactory.TryCreateOptimisticDirectExecutionContext(
                 documentContainer,
