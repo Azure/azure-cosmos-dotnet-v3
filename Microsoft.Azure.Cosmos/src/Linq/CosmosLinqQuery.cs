@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Tracing;
     using Newtonsoft.Json;
 
@@ -32,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         private readonly QueryRequestOptions cosmosQueryRequestOptions;
         private readonly bool allowSynchronousQueryExecution = false;
         private readonly string continuationToken;
-        private readonly CosmosLinqSerializerOptions linqSerializationOptions;
+        private readonly CosmosLinqSerializerOptionsInternal linqSerializationOptions;
 
         public CosmosLinqQuery(
            ContainerInternal container,
@@ -42,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Linq
            QueryRequestOptions cosmosQueryRequestOptions,
            Expression expression,
            bool allowSynchronousQueryExecution,
-           CosmosLinqSerializerOptions linqSerializationOptions = null)
+           CosmosLinqSerializerOptionsInternal linqSerializationOptions = null)
         {
             this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.responseFactory = responseFactory ?? throw new ArgumentNullException(nameof(responseFactory));
@@ -72,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Linq
           string continuationToken,
           QueryRequestOptions cosmosQueryRequestOptions,
           bool allowSynchronousQueryExecution,
-          CosmosLinqSerializerOptions linqSerializerOptions = null)
+          CosmosLinqSerializerOptionsInternal linqSerializerOptions = null)
             : this(
               container,
               responseFactory,

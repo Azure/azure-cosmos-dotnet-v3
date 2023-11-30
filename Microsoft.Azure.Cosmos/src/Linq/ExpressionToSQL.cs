@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Linq.Expressions;
     using System.Reflection;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Documents;
@@ -87,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         public static SqlQuery TranslateQuery(
             Expression inputExpression,
             IDictionary<object, string> parameters,
-            CosmosLinqSerializerOptions linqSerializerOptions)
+            CosmosLinqSerializerOptionsInternal linqSerializerOptions)
         {
             TranslationContext context = new TranslationContext(linqSerializerOptions, parameters);
             ExpressionToSql.Translate(inputExpression, context); // ignore result here

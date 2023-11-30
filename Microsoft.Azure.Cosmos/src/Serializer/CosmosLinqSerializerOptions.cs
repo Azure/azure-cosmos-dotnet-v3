@@ -38,14 +38,5 @@ namespace Microsoft.Azure.Cosmos
         /// The default value is LinqSerializerType.Default
         /// </remarks>
         public LinqSerializerType LinqSerializerType { get; set; }
-
-        /// <summary>
-        /// Gets or sets the user defined customer serializer. If no customer serializer was defined, 
-        /// then the value is set to the default value
-        /// </summary>
-        /// <remarks>
-        /// The default value is null
-        /// </remarks>
-        internal CosmosSerializer CustomCosmosSerializer { get; set; }
     }
 }

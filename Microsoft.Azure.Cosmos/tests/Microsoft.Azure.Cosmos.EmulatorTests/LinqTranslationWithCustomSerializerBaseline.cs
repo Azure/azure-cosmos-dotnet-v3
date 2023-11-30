@@ -258,7 +258,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 LinqSerializerType = linqSerializerType
             };
 
-            Func<bool, IQueryable<T>> getQueryCamelCase = LinqTestsCommon.GenerateSerializationTestCosmosData(createDataObj, RecordCount, TestContainer, linqSerializerOptionsCamelCase);
+            Func<bool, IQueryable<T>> getQueryCamelCase = null;
+            if (linqSerializerType != LinqSerializerType.CustomCosmosSerializer)
+            {
+                getQueryCamelCase = LinqTestsCommon.GenerateSerializationTestCosmosData(createDataObj, RecordCount, TestContainer, linqSerializerOptionsCamelCase);
+            }
+
             Func<bool, IQueryable<T>> getQueryDefault = LinqTestsCommon.GenerateSerializationTestCosmosData(createDataObj, RecordCount, TestContainer, linqSerializerOptionsDefault);
 
             return (getQueryCamelCase, getQueryDefault);

@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System;
     using System.Collections.Generic;
     using System.Linq.Expressions;
-    using System.Reflection;
+    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using static Microsoft.Azure.Cosmos.Linq.ExpressionToSql;
     using static Microsoft.Azure.Cosmos.Linq.FromParameterBindings;
@@ -26,11 +26,6 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// The LINQ serializer 
         /// </summary>
         public readonly ICosmosLinqSerializer CosmosLinqSerializer;
-
-        /// <summary>
-        /// User-provided LINQ serializer options
-        /// </summary>
-        public CosmosLinqSerializerOptions LinqSerializerOptions;
 
         /// <summary>
         /// Set of parameters in scope at any point; used to generate fresh parameter names if necessary.
@@ -73,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </summary>
         private Stack<SubqueryBinding> subqueryBindingStack;
 
-        public TranslationContext(CosmosLinqSerializerOptions linqSerializerOptions, IDictionary<object, string> parameters = null)
+        public TranslationContext(CosmosLinqSerializerOptionsInternal linqSerializerOptionsInternal, IDictionary<object, string> parameters = null)
         {
             this.InScope = new HashSet<ParameterExpression>();
             this.substitutions = new ParameterSubstitution();
@@ -82,29 +77,19 @@ namespace Microsoft.Azure.Cosmos.Linq
             this.collectionStack = new List<Collection>();
             this.CurrentQuery = new QueryUnderConstruction(this.GetGenFreshParameterFunc());
             this.subqueryBindingStack = new Stack<SubqueryBinding>();
-            this.LinqSerializerOptions = linqSerializerOptions ?? new CosmosLinqSerializerOptions();
             this.Parameters = parameters;
 
-            if (this.LinqSerializerOptions.LinqSerializerType == LinqSerializerType.CustomCosmosSerializer)
+            if (linqSerializerOptionsInternal?.CustomCosmosSerializer != null)
             {
-                if (this.LinqSerializerOptions.CustomCosmosSerializer == null)
-                {
-                    throw new InvalidOperationException($"Must provide CustomCosmosSerializer if selecting linqSerializerOptions.CustomCosmosSerializer");
-                }
-
-                MethodInfo methodInfo = this.LinqSerializerOptions.CustomCosmosSerializer.GetType().GetMethod("SerializeLinqMemberName");
-                if (methodInfo.DeclaringType == typeof(CosmosSerializer))
-                {
-                    throw new InvalidOperationException($"Must implement SerializeLinqMemberName to use CustomCosmosSerializer for LINQ queries.");
-                }
-
-                this.CosmosLinqSerializer = new CustomCosmosLinqSerializer(this.LinqSerializerOptions.CustomCosmosSerializer);
+                this.CosmosLinqSerializer = new CustomCosmosLinqSerializer(linqSerializerOptionsInternal.CustomCosmosSerializer);
                 this.MemberNames = new MemberNames(new CosmosLinqSerializerOptions());
             }
             else
             {
-                this.CosmosLinqSerializer = new DefaultCosmosLinqSerializer(this.LinqSerializerOptions.PropertyNamingPolicy);
-                this.MemberNames = new MemberNames(this.LinqSerializerOptions);
+                CosmosLinqSerializerOptions linqSerializerOptions = linqSerializerOptionsInternal?.CosmosLinqSerializerOptions ?? new CosmosLinqSerializerOptions();
+
+                this.CosmosLinqSerializer = new DefaultCosmosLinqSerializer(linqSerializerOptions.PropertyNamingPolicy);
+                this.MemberNames = new MemberNames(linqSerializerOptions);
             }
         }
 

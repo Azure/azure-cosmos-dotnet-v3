@@ -26,6 +26,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.ReadFeed;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
+    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -392,10 +393,9 @@ namespace Microsoft.Azure.Cosmos
                 {
                     PropertyNamingPolicy = this.ClientContext.ClientOptions.SerializerOptions?.PropertyNamingPolicy ?? CosmosPropertyNamingPolicy.Default             
                 };
-                
-                linqSerializerOptions.CustomCosmosSerializer = this.ClientContext.ClientOptions.Serializer;
-
             }
+
+            CosmosLinqSerializerOptionsInternal linqSerializerOptionsInternal = CosmosLinqSerializerOptionsInternal.Create(linqSerializerOptions, this.ClientContext.ClientOptions.Serializer);
 
             return new CosmosLinqQuery<T>(
                 this,
@@ -404,7 +404,7 @@ namespace Microsoft.Azure.Cosmos
                 continuationToken,
                 requestOptions,
                 allowSynchronousQueryExecution,
-                linqSerializerOptions);
+                linqSerializerOptionsInternal);
         }
 
         public override FeedIterator<T> GetItemQueryIterator<T>(

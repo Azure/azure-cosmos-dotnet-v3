@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Reflection;
     using System.Text.Json.Serialization;
     using global::Azure.Core.Serialization;
+    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
@@ -20,6 +21,16 @@ namespace Microsoft.Azure.Cosmos.Linq
     [TestClass]
     public class CosmosLinqJsonConverterTests
     {
+        private readonly CosmosLinqSerializerOptions defaultPublicOptions = new()
+        {
+            LinqSerializerType = LinqSerializerType.Default
+        };
+
+        private readonly CosmosLinqSerializerOptions customPublicOptions = new()
+        {
+            LinqSerializerType = LinqSerializerType.CustomCosmosSerializer
+        };
+
         [TestMethod]
         public void DateTimeKindIsPreservedTest()
         {
@@ -39,17 +50,8 @@ namespace Microsoft.Azure.Cosmos.Linq
         [TestMethod]
         public void EnumIsPreservedAsINTest()
         {
-            CosmosLinqSerializerOptions options = new()
-            {
-                CustomCosmosSerializer = new TestCustomJsonSerializer(),
-                LinqSerializerType = LinqSerializerType.CustomCosmosSerializer
-            };
-
-            CosmosLinqSerializerOptions defaultOptions = new()
-            {
-                CustomCosmosSerializer = new TestCustomJsonSerializer(),
-                LinqSerializerType = LinqSerializerType.Default
-            };
+            CosmosLinqSerializerOptionsInternal options = CosmosLinqSerializerOptionsInternal.Create(this.customPublicOptions, new TestCustomJsonSerializer());
+            CosmosLinqSerializerOptionsInternal defaultOptions = CosmosLinqSerializerOptionsInternal.Create(this.defaultPublicOptions, new TestCustomJsonSerializer());
 
             TestEnum[] values = new[] { TestEnum.One, TestEnum.Two };
 
@@ -66,17 +68,8 @@ namespace Microsoft.Azure.Cosmos.Linq
         [TestMethod]
         public void EnumIsPreservedAsEQUALSTest()
         {
-            CosmosLinqSerializerOptions options = new()
-            {
-                CustomCosmosSerializer = new TestCustomJsonSerializer(),
-                LinqSerializerType = LinqSerializerType.CustomCosmosSerializer
-            };
-
-            CosmosLinqSerializerOptions defaultOptions = new()
-            {
-                CustomCosmosSerializer = new TestCustomJsonSerializer(),
-                LinqSerializerType = LinqSerializerType.Default
-            };
+            CosmosLinqSerializerOptionsInternal options = CosmosLinqSerializerOptionsInternal.Create(this.customPublicOptions, new TestCustomJsonSerializer());
+            CosmosLinqSerializerOptionsInternal defaultOptions = CosmosLinqSerializerOptionsInternal.Create(this.defaultPublicOptions, new TestCustomJsonSerializer());
 
             TestEnum statusValue = TestEnum.One;
 
@@ -93,17 +86,8 @@ namespace Microsoft.Azure.Cosmos.Linq
         [TestMethod]
         public void EnumIsPreservedAsEXPRESSIONTest()
         {
-            CosmosLinqSerializerOptions options = new()
-            {
-                CustomCosmosSerializer = new TestCustomJsonSerializer(),
-                LinqSerializerType = LinqSerializerType.CustomCosmosSerializer
-            };
-
-            CosmosLinqSerializerOptions defaultOptions = new()
-            {
-                CustomCosmosSerializer = new TestCustomJsonSerializer(),
-                LinqSerializerType = LinqSerializerType.Default
-            };
+            CosmosLinqSerializerOptionsInternal options = CosmosLinqSerializerOptionsInternal.Create(this.customPublicOptions, new TestCustomJsonSerializer());
+            CosmosLinqSerializerOptionsInternal defaultOptions = CosmosLinqSerializerOptionsInternal.Create(this.defaultPublicOptions, new TestCustomJsonSerializer());
 
             // Get status constant
             ConstantExpression status = Expression.Constant(TestEnum.One);
@@ -187,13 +171,10 @@ namespace Microsoft.Azure.Cosmos.Linq
         [TestMethod]
         public void TestNewtonsoftExtensionDataQuery()
         {
-            CosmosLinqSerializerOptions options = new()
-            {
-                LinqSerializerType = LinqSerializerType.Default
-            };
+            CosmosLinqSerializerOptionsInternal defaultOptions = CosmosLinqSerializerOptionsInternal.Create(this.defaultPublicOptions, null);
 
             Expression<Func<DocumentWithExtensionData, bool>> expr = a => (string)a.NewtonsoftExtensionData["foo"] == "bar";
-            string sql = SqlTranslator.TranslateExpression(expr.Body, options);
+            string sql = SqlTranslator.TranslateExpression(expr.Body, defaultOptions);
 
             Assert.AreEqual("(a[\"foo\"] = \"bar\")", sql);
         }
@@ -201,11 +182,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         [TestMethod]
         public void TestSystemTextJsonExtensionDataQuery()
         {
-            CosmosLinqSerializerOptions dotNetOptions = new()
-            {
-                CustomCosmosSerializer = new TestCustomJsonSerializer(),
-                LinqSerializerType = LinqSerializerType.CustomCosmosSerializer
-            };
+            CosmosLinqSerializerOptionsInternal dotNetOptions = CosmosLinqSerializerOptionsInternal.Create(this.customPublicOptions, new TestCustomJsonSerializer());
 
             Expression<Func<DocumentWithExtensionData, bool>> expr = a => ((object)a.NetExtensionData["foo"]) == "bar";
             string sql = SqlTranslator.TranslateExpression(expr.Body, dotNetOptions);
