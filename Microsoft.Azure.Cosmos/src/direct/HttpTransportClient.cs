@@ -380,6 +380,16 @@ namespace Microsoft.Azure.Documents
                 HttpTransportClient.AddHeader(httpRequestMessage.Headers, WFConstants.BackendHeaders.PopulateCapacityType, request.Headers[WFConstants.BackendHeaders.PopulateCapacityType]);
             }
 
+            if (request.Headers[WFConstants.BackendHeaders.ClientIpAddress] != null)
+            {
+                HttpTransportClient.AddHeader(httpRequestMessage.Headers, WFConstants.BackendHeaders.ClientIpAddress, request.Headers[WFConstants.BackendHeaders.ClientIpAddress]);
+            }
+
+            if (request.Headers[WFConstants.BackendHeaders.IsRequestNotAuthorized] != null)
+            {
+                HttpTransportClient.AddHeader(httpRequestMessage.Headers, WFConstants.BackendHeaders.IsRequestNotAuthorized, request.Headers[WFConstants.BackendHeaders.IsRequestNotAuthorized]);
+            }
+
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IsAutoScaleRequest, request);
 
             //Query
@@ -478,6 +488,8 @@ namespace Microsoft.Azure.Documents
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IsMigratedFixedCollection, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.SetMasterResourcesDeletionPending, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.HighPriorityForcedBackup, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.EnableConflictResolutionPolicyUpdate, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.AllowDocumentReadsInOfflineRegion, request);
 
             Stream clonedStream = null;
             if (request.Body != null)
@@ -616,6 +628,13 @@ namespace Microsoft.Azure.Documents
                     httpRequestMessage.Content = new StreamContent(clonedStream);
                     break;
 
+                case OperationType.GetDekProperties:
+                    httpRequestMessage.RequestUri = physicalAddress;
+                    httpRequestMessage.Method = HttpMethod.Post;
+                    Debug.Assert(clonedStream != null);
+                    httpRequestMessage.Content = new StreamContent(clonedStream);
+                    break;
+
                 case OperationType.ReadReplicaFromMasterPartition:
                 case OperationType.ReadReplicaFromServerPartition:
                     httpRequestMessage.RequestUri = physicalAddress;
@@ -635,6 +654,8 @@ namespace Microsoft.Azure.Documents
                 case OperationType.BatchReportThroughputUtilization:
                 case OperationType.ControllerBatchReportCharges:
                 case OperationType.ControllerBatchGetOutput:
+                case OperationType.ControllerBatchAutoscaleRUsConsumption:
+                case OperationType.ControllerBatchGetAutoscaleAggregateOutput:
                     httpRequestMessage.RequestUri = HttpTransportClient.GetRootOperationUri(physicalAddress, resourceOperation.operationType);
                     httpRequestMessage.Method = HttpMethod.Post;
                     Debug.Assert(clonedStream != null);

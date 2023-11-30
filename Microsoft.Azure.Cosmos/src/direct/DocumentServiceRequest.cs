@@ -396,6 +396,76 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        /// <summary>
+        /// StoreModel vs GatewayStoreModel contract for friends.
+        /// TODO: SDK V3 start using this contract. - https://msdata.visualstudio.com/CosmosDB/_workitems/edit/2470799
+        /// </summary>
+        internal static bool IsGatewayMode(ResourceType resourceType, OperationType operationType)
+        {
+            if (resourceType == ResourceType.Offer ||
+                (resourceType.IsScript() && operationType != OperationType.ExecuteJavaScript) ||
+                resourceType == ResourceType.PartitionKeyRange ||
+                resourceType == ResourceType.Snapshot ||
+                resourceType == ResourceType.ClientEncryptionKey ||
+                (resourceType == ResourceType.PartitionKey && operationType == OperationType.Delete))
+            {
+                return true;
+            }
+
+            if (operationType == OperationType.Create
+                || operationType == OperationType.Upsert)
+            {
+                if (resourceType == ResourceType.Database ||
+                    resourceType == ResourceType.User ||
+                    resourceType == ResourceType.Collection ||
+                    resourceType == ResourceType.Permission)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else if (operationType == OperationType.Delete)
+            {
+                if (resourceType == ResourceType.Database ||
+                    resourceType == ResourceType.User ||
+                    resourceType == ResourceType.Collection)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else if ((operationType == OperationType.Replace) || (operationType == OperationType.CollectionTruncate))
+            {
+                if (resourceType == ResourceType.Collection)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else if (operationType == OperationType.Read)
+            {
+                if (resourceType == ResourceType.Collection)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            return false;
+        }
+
         public bool ForceNameCacheRefresh { get; set; }
 
         /// <summary>
@@ -473,6 +543,7 @@ namespace Microsoft.Azure.Documents
                     case OperationType.BatchApply:
                     case OperationType.Batch:
                     case OperationType.QueryPlan:
+                    case OperationType.MetadataCheckAccess:
                     case OperationType.CompleteUserTransaction:
                         return HttpConstants.HttpMethods.Post;
 
@@ -534,12 +605,12 @@ namespace Microsoft.Azure.Documents
                 case OperationType.ServiceReservation:
                 case OperationType.GetSplitPoints:
                 case OperationType.GetUnwrappedDek:
+                case OperationType.GetDekProperties:
                 case OperationType.GetFederationConfigurations:
                 case OperationType.GetDatabaseAccountConfigurations:
                 case OperationType.GetStorageServiceConfigurations:
                 case OperationType.ForcePartitionBackup:
                 case OperationType.MasterInitiatedProgressCoordination:
-                case OperationType.MetadataCheckAccess:
                 case OperationType.CreateSystemSnapshot:
                 case OperationType.CreateRidRangeResources:
                 case OperationType.GetAadGroups:
@@ -684,6 +755,12 @@ namespace Microsoft.Azure.Documents
                     {
                         return true;
                     }
+#if !COSMOSCLIENT
+                    else if (this.ResourceType == ResourceType.VectorClock)
+                    {
+                        return true;
+                    }
+#endif
                     else
                     {
                         return false;

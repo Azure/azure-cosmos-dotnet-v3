@@ -21,6 +21,9 @@ namespace Microsoft.Azure.Documents
     {
         public const string ExceptionSourceToIgnoreForIgnoreForRetry = "BackoffRetryUtility";
 
+        /// <remarks>
+        /// On an exception if this methiod is not attempting another retry it throws the last exception encountered. Not an Aggregation Exception of All Exceptions Encountered.
+        /// </remarks>
         public static Task<T> ExecuteAsync(
             Func<Task<T>> callbackMethod,
             IRetryPolicy retryPolicy,
@@ -129,6 +132,9 @@ namespace Microsoft.Azure.Documents
         /// <summary>
         /// Common implementation that handles all the different possible configurations.
         /// </summary>
+        /// <remarks>
+        /// On an exception if this methiod is not attempting another retry it throws the last exception encountered. Not an Aggregation Exception of All Exceptions Encountered.
+        /// </remarks>
         private static async Task<T> ExecuteRetryAsync<TParam, TPolicy>(
             Func<Task<T>> callbackMethod,
             Func<TParam, CancellationToken, Task<T>> callbackMethodWithParam,
@@ -154,75 +160,90 @@ namespace Microsoft.Azure.Documents
 
             while (true)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                ExceptionDispatchInfo exception;
                 try
                 {
-                    if (callbackMethod != null)
-                    {
-                        return await callbackMethod();
-                    }
-                    else if (callbackMethodWithParam != null)
-                    {
-                        return await callbackMethodWithParam(param, cancellationToken);
-                    }
-
-                    return await callbackMethodWithPolicy(policyArg1);
-                }
-                catch (Exception ex)
-                {
-                    await Task.Yield();
-                    exception = ExceptionDispatchInfo.Capture(ex);
-                }
-
-                ShouldRetryResult result;
-                if (retryPolicyWithArg != null)
-                {
-                    ShouldRetryResult<TPolicy> resultWithPolicy = await retryPolicyWithArg.ShouldRetryAsync(exception.SourceException, cancellationToken);
-
-                    policyArg1 = resultWithPolicy.PolicyArg1;
-                    result = resultWithPolicy;
-                }
-                else
-                {
-                    result = await retryPolicy.ShouldRetryAsync(exception.SourceException, cancellationToken);
-                }
-
-                result.ThrowIfDoneTrying(exception);
-
-                TimeSpan backoffTime = result.BackoffTime;
-                bool hasBackoffAlternateCallback = inBackoffAlternateCallbackMethod != null || inBackoffAlternateCallbackMethodWithPolicy != null;
-
-                if (hasBackoffAlternateCallback && result.BackoffTime >= minBackoffForInBackoffCallback)
-                {
-                    ValueStopwatch stopwatch = ValueStopwatch.StartNew();
-                    TimeSpan elapsed;
+                    cancellationToken.ThrowIfCancellationRequested();
+                    ExceptionDispatchInfo exception;
                     try
                     {
-                        if (inBackoffAlternateCallbackMethod != null)
+                        if (callbackMethod != null)
                         {
-                            return await inBackoffAlternateCallbackMethod();
+                            return await callbackMethod();
+                        }
+                        else if (callbackMethodWithParam != null)
+                        {
+                            return await callbackMethodWithParam(param, cancellationToken);
                         }
 
-                        return await inBackoffAlternateCallbackMethodWithPolicy(policyArg1);
+                        return await callbackMethodWithPolicy(policyArg1);
                     }
                     catch (Exception ex)
                     {
-                        elapsed = stopwatch.Elapsed;
-                        DefaultTrace.TraceInformation("Failed inBackoffAlternateCallback with {0}, proceeding with retry. Time taken: {1}ms", ex.ToString(), elapsed.TotalMilliseconds);
+                        // this Yield is to "reset" the stack to avoid stack overflows in Framework
+                        // and to keep the total size of the StackTrace down if we fail
+                        await Task.Yield();
+
+                        exception = ExceptionDispatchInfo.Capture(ex);
                     }
 
-                    backoffTime = result.BackoffTime > elapsed ? result.BackoffTime - elapsed : TimeSpan.Zero;
-                }
+                    ShouldRetryResult result;
+                    if (retryPolicyWithArg != null)
+                    {
+                        ShouldRetryResult<TPolicy> resultWithPolicy = await retryPolicyWithArg.ShouldRetryAsync(exception.SourceException, cancellationToken);
 
-                if (preRetryCallback != null)
-                {
-                    preRetryCallback(exception.SourceException);
-                }
+                        policyArg1 = resultWithPolicy.PolicyArg1;
+                        result = resultWithPolicy;
+                    }
+                    else
+                    {
+                        result = await retryPolicy.ShouldRetryAsync(exception.SourceException, cancellationToken);
+                    }
 
-                if (backoffTime != TimeSpan.Zero)
+                    result.ThrowIfDoneTrying(exception);
+
+                    TimeSpan backoffTime = result.BackoffTime;
+                    bool hasBackoffAlternateCallback = inBackoffAlternateCallbackMethod != null || inBackoffAlternateCallbackMethodWithPolicy != null;
+
+                    if (hasBackoffAlternateCallback && result.BackoffTime >= minBackoffForInBackoffCallback)
+                    {
+                        ValueStopwatch stopwatch = ValueStopwatch.StartNew();
+                        TimeSpan elapsed;
+                        try
+                        {
+                            if (inBackoffAlternateCallbackMethod != null)
+                            {
+                                return await inBackoffAlternateCallbackMethod();
+                            }
+
+                            return await inBackoffAlternateCallbackMethodWithPolicy(policyArg1);
+                        }
+                        catch (Exception ex)
+                        {
+                            elapsed = stopwatch.Elapsed;
+                            DefaultTrace.TraceInformation("Failed inBackoffAlternateCallback with {0}, proceeding with retry. Time taken: {1}ms", ex.ToString(), elapsed.TotalMilliseconds);
+                        }
+
+                        backoffTime = result.BackoffTime > elapsed ? result.BackoffTime - elapsed : TimeSpan.Zero;
+                    }
+
+                    if (preRetryCallback != null)
+                    {
+                        preRetryCallback(exception.SourceException);
+                    }
+
+                    if (backoffTime != TimeSpan.Zero)
+                    {
+                        await Task.Delay(backoffTime, cancellationToken);
+                    }
+                }
+                catch
                 {
-                    await Task.Delay(backoffTime, cancellationToken);
+                    // if we're going to completely fail, we want to toss all the async continuation
+                    // stack frames so we don't have a gigantic stack trace (which has serious performance
+                    // implications)
+                    await Task.Yield();
+
+                    throw;
                 }
             }
         }

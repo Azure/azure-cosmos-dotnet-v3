@@ -3,6 +3,7 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents
 {
+    using Newtonsoft.Json;
     using System;
 
     internal interface IServiceIdentity
@@ -19,6 +20,7 @@ namespace Microsoft.Azure.Documents
         /// <summary>
         /// Needed for TestForWhiteListedPersistedTypes to succeed 
         /// </summary>
+        [JsonConstructor]
         private ServiceIdentity()
         {
         }
@@ -30,18 +32,21 @@ namespace Microsoft.Azure.Documents
             this.IsMasterService = isMasterService;
         }
 
+        [JsonProperty]
         public string FederationId
         {
             get;
             private set;
         }
 
+        [JsonProperty]
         public Uri ServiceName
         {
             get;
             private set;
         }
 
+        [JsonProperty]
         public bool IsMasterService
         {
             get;

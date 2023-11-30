@@ -86,7 +86,8 @@ namespace Microsoft.Azure.Documents
             HttpResponseHeaders responseHeaders,
             HttpStatusCode? statusCode,
             Uri requestUri = null,
-            SubStatusCodes? substatusCode = null)
+            SubStatusCodes? substatusCode = null,
+            bool traceCallStack = true)
             : base(DocumentClientException.MessageWithActivityId(message, responseHeaders), innerException)
         {
             this.responseHeaders = new StoreResponseNameValueCollection();
@@ -127,7 +128,8 @@ namespace Microsoft.Azure.Documents
                     "DocumentClientException with status code {0}, message: {1}, inner exception: {2}, and response headers: {3}",
                     this.StatusCode ?? 0,
                     message,
-                    innerException != null ? innerException.ToString() : "null",
+                    innerException != null ? 
+                        (traceCallStack ? innerException.ToString() : innerException.ToStringWithMessageAndData()) : "null",
                     SerializeHTTPResponseHeaders(responseHeaders));
             }
         }
@@ -219,6 +221,13 @@ namespace Microsoft.Azure.Documents
                     this.StatusCode ?? 0,
                     info.ToString());
             }
+        }
+
+        internal DocumentClientException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
+            this.LSN = -1;
+            this.PartitionKeyRangeId = null;
         }
 #endif
 

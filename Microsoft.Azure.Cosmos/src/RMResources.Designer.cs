@@ -767,6 +767,28 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Cannot set EnableMultipleWriteLocations on an account with EnableTieredStorageV1.
+        /// </summary>
+        internal static string EnableMultipleWriteLocationsAndEnableTieredStorageV1NotSupported
+        {
+            get
+            {
+                return ResourceManager.GetString("EnableMultipleWriteLocationsAndEnableTieredStorageV1NotSupported", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot set EnableOnlyColdStorageContainersInAccountV1 on an account with EnableMaterializedViews
+        /// </summary>
+        internal static string EnableOnlyColdStorageContainersInAccountV1AndEnableMaterializedViewsNotSupported
+        {
+            get
+            {
+                return ResourceManager.GetString("EnableOnlyColdStorageContainersInAccountV1AndEnableMaterializedViewsNotSupported", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Accounts configured with default consistency level as &apos;Strong&apos; cannot be enabled for multiple write locations(i.e. EnableMultipleWriteLocations=true). Consider relaxing default consistency level of the account to enable multiple write locations..
         /// </summary>
         internal static string EnableMultipleWriteLocationsAndStrongConsistencyNotSupported
@@ -1124,6 +1146,17 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Federation and region are not matching.
+        /// </summary>
+        internal static string FederationAndRegionMismatch
+        {
+            get
+            {
+                return ResourceManager.GetString("FederationAndRegionMismatch", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Global Strong write barrier has not been met for the request..
         /// </summary>
         internal static string GlobalStrongWriteBarrierNotMet
@@ -1389,13 +1422,24 @@ namespace Microsoft.Azure.Documents
 
 
         /// <summary>
-        ///   Looks up a localized string similar to Federation cap action is not currently supported.
+        ///   Looks up a localized string similar to The CapUncapMetadata action &apos;{0}&apos; is not currently supported..
         /// </summary>
-        internal static string InvalidFederationCapAction
+        internal static string InvalidFederationCapUncapMetadataAction
         {
             get
             {
-                return ResourceManager.GetString("InvalidFederationCapAction", resourceCulture);
+                return ResourceManager.GetString("InvalidFederationCapUncapMetadataAction", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The CapUncapMetadata source &apos;{0}&apos; is invalid..
+        /// </summary>
+        internal static string InvalidFederationCapUncapMetadataSource
+        {
+            get
+            {
+                return ResourceManager.GetString("InvalidFederationCapUncapMetadataSource", resourceCulture);
             }
         }
 
@@ -3233,6 +3277,17 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Service Unavailable due to high demand in the region.
+        /// </summary>
+        internal static string ServiceUnavailableDueToHighDemandInRegion
+        {
+            get
+            {
+                return ResourceManager.GetString("ServiceUnavailableDueToHighDemandInRegion", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Could not find service hosting DocumentCollection with ResourceId {0}.
         /// </summary>
         internal static string ServiceWithResourceIdNotFound
@@ -3376,13 +3431,13 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
-        ///   Looks up a localized string similar to Continuous backup, synapse link, full fidelity change feed and materialized views are currently not supported with cross tenant customer-managed keys features.
+        ///   Looks up a localized string similar to Cross tenant CMK database account doesn't support using delegated identity as the default identity.
         /// </summary>
-        internal static string CrossTenantCMKDatabaseAccountLogstoreFeaturesNotSupported
+        internal static string CrossTenantCMKDatabaseAccountDelegatedIdentityNotSupported
         {
             get
             {
-                return ResourceManager.GetString("CrossTenantCMKDatabaseAccountLogstoreFeaturesNotSupported", resourceCulture);
+                return ResourceManager.GetString("CrossTenantCMKDatabaseAccountDelegatedIdentityNotSupported", resourceCulture);
             }
         }
 
@@ -4147,6 +4202,17 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Web socket requests are not supported.
+        /// </summary>
+        internal static string WebSocketRequestsNotSupported
+        {
+            get
+            {
+                return ResourceManager.GetString("WebSocketRequestsNotSupported", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Cannot offline write region when automatic failover is not enabled.
         /// </summary>
         internal static string WriteRegionAutomaticFailoverNotEnabled
@@ -4269,12 +4335,9 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-        
-#pragma warning disable CS1570 // XML comment has badly formed XML
-///   Looks up a localized string similar to Could not resolve DataTransfer state store account for region [{0}]..
+        ///   Looks up a localized string similar to Could not resolve DataTransfer state store account for region [{0}]..
         /// </summary>
         internal static string DataTransferStateStoreNotResolved
-#pragma warning restore CS1570 // XML comment has badly formed XML
         {
             get
             {
@@ -4565,6 +4628,149 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return ResourceManager.GetString("InvalidMongoDatabaseName", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Access to your account is currently revoked because the current default identity no longer has permission to the associated Key Vault key; for more details about this error and how to restore access to your account please visit https://learn.microsoft.com/en-us/azure/cosmos-db/cmk-troubleshooting-guide#default-identity-is-unauthorized-to-access-the-azure-key-vault-key ({0}).
+        /// </summary>
+        internal static string KeyVaultAuthenticationFailureRevokeMessage
+        {
+            get
+            {
+                return ResourceManager.GetString("KeyVaultAuthenticationFailureRevokeMessage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Access to your account is currently revoked because the Azure Cosmos DB service is unable to wrap or unwrap the key; for more details about this error and how to restore access to your account please visit https://learn.microsoft.com/en-us/azure/cosmos-db/cmk-troubleshooting-guide#internal-unwrapping-procedure-error ({0}).
+        /// </summary>
+        internal static string KeyVaultWrapUnwrapFailureRevokeMessage
+        {
+            get
+            {
+                return ResourceManager.GetString("KeyVaultWrapUnwrapFailureRevokeMessage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to the correspondent key is not found on the specified Key Vault.
+        /// </summary>
+        internal static string KeyVaultKeyNotFoundRevokeMessage
+        {
+            get
+            {
+                return ResourceManager.GetString("KeyVaultKeyNotFoundRevokeMessage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Access to your account is currently revoked because the correspondent Azure Key Vault was not found.
+        /// </summary>
+        internal static string KeyVaultNotFoundRevokeMessage
+        {
+            get
+            {
+                return ResourceManager.GetString("KeyVaultNotFoundRevokeMessage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Access to your account is currently revoked because the Azure Key Vault DNS name specified by the account's keyvaultkeyuri property could not be resolved; for more details about this error and how to restore access to your account please visit https://learn.microsoft.com/en-us/azure/cosmos-db/cmk-troubleshooting-guide#unable-to-resolve-the-key-vaults-dns ({0}).
+        /// </summary>
+        internal static string KeyVaultDNSNotResolvedRevokeMessage
+        {
+            get
+            {
+                return ResourceManager.GetString("KeyVaultDNSNotResolvedRevokeMessage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Access to your account is currently revoked because the Azure Cosmos DB service is unable to obtain the AAD authentication token for the account's default identity; for more details about this error and how to restore access to your account please visit https://learn.microsoft.com/en-us/azure/cosmos-db/cmk-troubleshooting-guide#azure-active-directory-token-acquisition-error ({0}).
+        /// </summary>
+        internal static string AadClientCredentialsGrantFailureRevokeMessage
+        {
+            get
+            {
+                return ResourceManager.GetString("AadClientCredentialsGrantFailureRevokeMessage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Access to your account is currently revoked because the Azure Cosmos DB account has an undefined default identity; for more details about this error and how to restore access to your account please visit https://learn.microsoft.com/en-us/azure/cosmos-db/cmk-troubleshooting-guide#invalid-azure-cosmos-db-default-identity ({0}).
+        /// </summary>
+        internal static string UndefinedDefaultIdentityRevokeMessage
+        {
+            get
+            {
+                return ResourceManager.GetString("UndefinedDefaultIdentityRevokeMessage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Access to your account is currently revoked because the Azure Cosmos DB account's key vault key URI does not follow the expected format; for more details about this error and how to restore access to your account please visit https://learn.microsoft.com/en-us/azure/cosmos-db/cmk-troubleshooting-guide#improper-syntax-detected-on-the-key-vault-uri-property ({0}).
+        /// </summary>
+        internal static string InvalidKeyVaultKeyURIRevokeMessage
+        {
+            get
+            {
+                return ResourceManager.GetString("InvalidKeyVaultKeyURIRevokeMessage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Access to your account is currently revoked because the access rules are blocking outbound requests to the Azure Key Vault service; for more details about this error and how to restore access to your account please visit https://learn.microsoft.com/en-us/azure/cosmos-db/cmk-troubleshooting-guide ({0}).
+        /// </summary>
+        internal static string NspOutboundDeniedRevokeMessage
+        {
+            get
+            {
+                return ResourceManager.GetString("NspOutboundDeniedRevokeMessage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Access to your account is currently revoked; for more details about this error and how to restore access to your account please visit https://learn.microsoft.com/en-us/azure/cosmos-db/cmk-troubleshooting-guide
+        /// </summary>
+        internal static string UnknownSubstatusCodeRevokeMessage
+        {
+            get
+            {
+                return ResourceManager.GetString("UnknownSubstatusCodeRevokeMessage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Your account has access to the customer managed key.
+        /// </summary>
+        internal static string CmkAccountIsNotRevoked
+        {
+            get
+            {
+                return ResourceManager.GetString("CmkAccountIsNotRevoked", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot set EnableDataMaskingPolicy on an account with Log Store features.
+        /// </summary>
+        internal static string EnableDataMaskingPolicyAndEnableLogStoreNotSupported
+        {
+            get
+            {
+                return ResourceManager.GetString("EnableDataMaskingPolicyAndEnableLogStoreNotSupported", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to DataMaskingPolicy is not supported on this account type.
+        /// </summary>
+        internal static string DataMaskingPolicyNotSupported
+        {
+            get
+            {
+                return ResourceManager.GetString("DataMaskingPolicyNotSupported", resourceCulture);
             }
         }
     }

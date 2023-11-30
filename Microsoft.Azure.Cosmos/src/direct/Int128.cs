@@ -74,6 +74,25 @@ namespace Microsoft.Azure.Documents.SharedFiles.Routing
             return left.value < right.value;
         }
 
+        public static bool operator ==(Int128 left, Int128 right)
+        {
+            return left.value == right.value;
+        }
+
+        public static bool operator !=(Int128 left, Int128 right)
+        {
+            return left.value != right.value;
+        }
+        public override int GetHashCode()
+        {
+            return value.GetHashCode();
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is Int128 other && this.Equals(other);
+        }
+
         public byte[] Bytes
         {
             get

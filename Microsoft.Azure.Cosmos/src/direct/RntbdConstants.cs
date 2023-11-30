@@ -497,6 +497,14 @@ namespace Microsoft.Azure.Documents
             PopulateCapacityType = 0x00CB,
             TraceParent = 0x00CC,
             TraceState = 0x00CD,
+            GlobalDatabaseAccountName = 0x00CE,
+            EnableConflictResolutionPolicyUpdate = 0x00CF,
+            ClientIpAddress = 0x00D0,
+            IsRequestNotAuthorized = 0x00D1,
+            StartEpkHash = 0x00D2,
+            EndEpkHash = 0x00D3,
+            AllowDocumentReadsInOfflineRegion = 0x00D4,
+            PopulateCurrentPartitionThroughputInfo = 0x00D5,
         }
 
         public sealed class Request : RntbdTokenStream<RequestIdentifiers>
@@ -692,6 +700,14 @@ namespace Microsoft.Azure.Documents
             public RntbdToken populateCapacityType;
             public RntbdToken traceParent;
             public RntbdToken traceState;
+            public RntbdToken globalDatabaseAccountName;
+            public RntbdToken enableConflictResolutionPolicyUpdate;
+            public RntbdToken clientIpAddress;
+            public RntbdToken isRequestNotAuthorized;
+            public RntbdToken startEpkHash;
+            public RntbdToken endEpkHash;
+            public RntbdToken allowDocumentReadsInOfflineRegion;
+            public RntbdToken populateCurrentPartitionThroughputInfo;
 
             public Request()
             {
@@ -884,6 +900,14 @@ namespace Microsoft.Azure.Documents
                 this.populateCapacityType = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.PopulateCapacityType);
                 this.traceParent = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.TraceParent);
                 this.traceState = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.TraceState);
+                this.globalDatabaseAccountName = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.GlobalDatabaseAccountName);
+                this.enableConflictResolutionPolicyUpdate = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.EnableConflictResolutionPolicyUpdate);
+                this.clientIpAddress = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.ClientIpAddress);
+                this.isRequestNotAuthorized = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.IsRequestNotAuthorized);
+                this.startEpkHash = new RntbdToken(false, RntbdTokenTypes.Bytes, (ushort)RequestIdentifiers.StartEpkHash);
+                this.endEpkHash = new RntbdToken(false, RntbdTokenTypes.Bytes, (ushort)RequestIdentifiers.EndEpkHash);
+                this.allowDocumentReadsInOfflineRegion = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.AllowDocumentReadsInOfflineRegion);
+                this.populateCurrentPartitionThroughputInfo = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.PopulateCurrentPartitionThroughputInfo);
 
                 this.tokens = new RntbdToken[]
                 {
@@ -1093,6 +1117,14 @@ namespace Microsoft.Azure.Documents
                     this.populateCapacityType,
                     this.traceParent,
                     this.traceState,
+                    this.globalDatabaseAccountName,
+                    this.enableConflictResolutionPolicyUpdate,
+                    this.clientIpAddress,
+                    this.isRequestNotAuthorized,
+                    this.startEpkHash,
+                    this.endEpkHash,
+                    this.allowDocumentReadsInOfflineRegion,
+                    this.populateCurrentPartitionThroughputInfo,
                 };
             }
         }
@@ -1183,6 +1215,7 @@ namespace Microsoft.Azure.Documents
             MinGLSNForDocumentOperations = 0x0068,
             MinGLSNForTombstoneOperations = 0x0069,
             HighestTentativeWriteLLSN = 0x0070,
+            PartitionThroughputInfo = 0x0071,
         }
 
         //

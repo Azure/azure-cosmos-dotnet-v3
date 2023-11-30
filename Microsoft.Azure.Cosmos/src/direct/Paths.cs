@@ -26,6 +26,7 @@ namespace Microsoft.Azure.Documents
         public const string Operations_GetStorageAccountKey = "getstorageaccountkey";
         public const string Operations_GetStorageAccountSas = "getstorageaccountsas";
         public const string Operations_GetUnwrappedDek = "getunwrappeddek";
+        public const string Operations_GetDekProperties = "getdekproperties";
         public const string Operations_GetCustomerManagedKeyStatus = "getcustomermanagedkeystatus";
         public const string Operations_ReadReplicaFromMasterPartition = "readreplicafrommasterpartition";
         public const string Operations_ReadReplicaFromServerPartition = "readreplicafromserverpartition";
@@ -308,6 +309,8 @@ namespace Microsoft.Azure.Documents
         // controller service
         public const string ControllerOperations_BatchGetOutput = "controllerbatchgetoutput";
         public const string ControllerOperations_BatchReportCharges = "controllerbatchreportcharges";
+        public const string ControllerOperations_BatchAutoscaleRUsConsumption = "controllerbatchautoscalerusconsumption";
+        public const string ControllerOperations_BatchGetAutoscaleAggregateOutput = "controllerbatchgetautoscaleaggregateoutput";
 
         // vector clock
         public const string VectorClockPathSegment = "vectorclock";

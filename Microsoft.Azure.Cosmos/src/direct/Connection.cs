@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.serverUri = serverUri;
             this.hostNameCertificateOverride = hostNameCertificateOverride;
             this.BufferProvider = new BufferProvider();
-            this.dnsResolutionFunction = dnsResolutionFunction ?? Connection.ResolveHostAsync;
+            this.dnsResolutionFunction = dnsResolutionFunction ?? Connection.ResolveHostIncludingIPv6AddressesAsync;
             this.lastSendAttemptTime = DateTime.MinValue;
             this.lastSendTime = DateTime.MinValue;
             this.lastReceiveTime = DateTime.MinValue;
@@ -984,14 +984,44 @@ namespace Microsoft.Azure.Documents.Rntbd
             return Tuple.Create(await Connection.ConnectUnicastPortAsync(serverUri, address, connectionCorrelationId), false);
         }
 
-        internal static async Task<IPAddress> ResolveHostAsync(string hostName)
+        /// <summary>
+        /// Wrapper method for <see cref="Connection.ResolveHostAsync(string, bool)"/> that allows IPv6 addresses.
+        /// Used unless internal clients provide a version that might override decision to use IPv6 addresses.
+        /// </summary>
+        /// <param name="hostName"></param>
+        /// <returns></returns>
+        private static Task<IPAddress> ResolveHostIncludingIPv6AddressesAsync(string hostName) => Connection.ResolveHostAsync(hostName, includeIPv6Addresses: true);
+
+        internal static async Task<IPAddress> ResolveHostAsync(string hostName, bool includeIPv6Addresses)
         {
+            // Using Linq for a cold path
             IPAddress[] serverAddresses = await Dns.GetHostAddressesAsync(hostName);
-            int addressIndex = 0;
-            if (serverAddresses.Length > 1)
+            int serverAddressesCount = serverAddresses.Length;
+            
+            if (!includeIPv6Addresses)
             {
-                addressIndex = Connection.rng.Value.Next(serverAddresses.Length);
+                // Exclude IPv6 addresses
+                serverAddressesCount = 0;
+                foreach (IPAddress ipAddress in serverAddresses)
+                {
+                    if (ipAddress.AddressFamily == AddressFamily.InterNetwork)
+                    {
+                        serverAddresses[serverAddressesCount++] = ipAddress;
+                    }
+                }
             }
+
+            int addressIndex = 0;
+            if (serverAddressesCount > 1)
+            {
+                addressIndex = Connection.rng.Value.Next(serverAddressesCount);
+            }
+
+            if (serverAddressesCount  == 0)
+            {
+                throw new ArgumentOutOfRangeException($"DNS Resolve resulted in no internet addresses. includeIPv6Addresses: {includeIPv6Addresses}");
+            }
+
             return serverAddresses[addressIndex];
         }
 

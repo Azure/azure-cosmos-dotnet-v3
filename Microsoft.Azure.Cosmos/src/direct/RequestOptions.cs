@@ -556,6 +556,16 @@ namespace Microsoft.Azure.Documents.Client
         internal bool PopulateRestoreStatus { get; set; }
 
         /// <summary>
+        ///  Gets or sets the <see cref="PopulateCapacityType"/> for document create requests in the Azure Cosmos DB service.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// PopulateCapacityType is used to return the capacity type of the request.
+        /// </para>
+        /// </remarks>
+        internal bool PopulateCapacityType { get; set; }
+
+        /// <summary>
         /// Gets or sets exclude system properties.
         /// ExcludeSystemProperties indicates whether system properties 
         /// should be excluded from JSON content of a document or not.

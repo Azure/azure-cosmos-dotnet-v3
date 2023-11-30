@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Documents
 
 #if COSMOSCLIENT
         public const string SDKName = "cosmos-netstandard-sdk";
-        public const string SDKVersion = "3.31.5";
+        public const string SDKVersion = "3.32.0";
 #else
         public const string SDKName = "documentdb-netcore-sdk";
         public const string SDKVersion = "2.14.0";

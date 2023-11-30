@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Documents
     using System.Net.Http.Headers;
     using System.Runtime.Serialization;
     using Microsoft.Azure.Documents.Collections;
+    using Newtonsoft.Json;
 
     [Serializable]
     internal sealed class PreconditionFailedException : DocumentClientException
@@ -60,6 +61,7 @@ namespace Microsoft.Azure.Documents
         }
 
 #if !NETSTANDARD16
+        [JsonConstructor]
         private PreconditionFailedException(SerializationInfo info, StreamingContext context) 
             : base(info, context, HttpStatusCode.PreconditionFailed)
         {
