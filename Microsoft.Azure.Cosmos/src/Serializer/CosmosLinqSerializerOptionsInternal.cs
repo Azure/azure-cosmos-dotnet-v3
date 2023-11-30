@@ -9,10 +9,13 @@ namespace Microsoft.Azure.Cosmos.Serializer
     using Microsoft.Azure.Cosmos.Linq;
 
     /// <summary>
-    /// This class provides a way to configure Linq Serialization Properties
+    /// This class stores user-provided LINQ Serialization Properties.
     /// </summary>
     internal sealed class CosmosLinqSerializerOptionsInternal
     {
+        /// <summary>
+        /// Creates an instance of CosmosSerializationOptionsInternal.
+        /// </summary>
         public static CosmosLinqSerializerOptionsInternal Create(CosmosLinqSerializerOptions cosmosLinqSerializerOptions, CosmosSerializer customCosmosSerializer)
         {
             switch (cosmosLinqSerializerOptions.LinqSerializerType)
@@ -42,10 +45,7 @@ namespace Microsoft.Azure.Cosmos.Serializer
             }
         }
 
-        /// <summary>
-        /// Create an instance of CosmosSerializationOptionsInternal
-        /// </summary>
-        internal CosmosLinqSerializerOptionsInternal(CosmosLinqSerializerOptions cosmosLinqSerializerOptions, CosmosSerializer customCosmosSerializer)
+        private CosmosLinqSerializerOptionsInternal(CosmosLinqSerializerOptions cosmosLinqSerializerOptions, CosmosSerializer customCosmosSerializer)
         {
             this.CosmosLinqSerializerOptions = cosmosLinqSerializerOptions;
             this.CustomCosmosSerializer = customCosmosSerializer;
@@ -57,12 +57,9 @@ namespace Microsoft.Azure.Cosmos.Serializer
         public readonly CosmosLinqSerializerOptions CosmosLinqSerializerOptions;
 
         /// <summary>
-        /// Gets or sets the user defined customer serializer. If no customer serializer was defined, 
-        /// then the value is set to the default value
+        /// User defined customer serializer, if LinqSerializerType is CustomCosmosSerializer. 
+        /// Otherwise set to null;
         /// </summary>
-        /// <remarks>
-        /// The default value is null
-        /// </remarks>
         public readonly CosmosSerializer CustomCosmosSerializer;
     }
 }
