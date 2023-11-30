@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Documents.FaultInjection
     /// </summary>
     internal interface IChaosInterceptor
     {
+        public void ConfigureInterceptor(dynamic client, TimeSpan timeout);
         /// <summary>
         /// Used to inject faults on request call
         /// </summary>
@@ -23,10 +24,11 @@ namespace Microsoft.Azure.Documents.FaultInjection
         /// Used to inject faults on channel open
         /// </summary>
         /// <param name="activityId"></param>
+        /// <param name="connectionCorrilationId"></param>
         /// <param name="serverUri"></param>
         /// <param name="openingRequest"></param>
         /// <param name="channel"></param>
-        public void OnChannelOpen(Guid activityId, Uri serverUri, DocumentServiceRequest openingRequest, Channel channel);
+        public void OnChannelOpen(Guid activityId, Guid connectionCorrilationId, Uri serverUri, DocumentServiceRequest openingRequest, Channel channel);
 
         /// <summary>
         /// Used to update internal active channel store on channel close

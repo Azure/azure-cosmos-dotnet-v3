@@ -13,10 +13,10 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http;
     using System.Net.Security;
     using System.Security.Cryptography.X509Certificates;
-    using Microsoft.Azure.Cosmos.FaultInjection;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
+    using Microsoft.Azure.Documents.FaultInjection;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -735,7 +735,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public CosmosClientTelemetryOptions CosmosClientTelemetryOptions { get; set; }
 
-        internal FaultInjector FaultInjector { get; set; }
+        internal IChaosInterceptor ChaosInterceptor { get; set; }
 
         internal void SetSerializerIfNotConfigured(CosmosSerializer serializer)
         {

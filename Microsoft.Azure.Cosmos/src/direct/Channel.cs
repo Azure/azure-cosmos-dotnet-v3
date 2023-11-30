@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             ChannelProperties channelProperties,
             bool localRegionRequest, SemaphoreSlim openingSlim, 
             IChaosInterceptor chaosInterceptor = null, 
-            Action<Guid, Uri, Channel> onChannelOpen = null)
+            Action<Guid, Guid, Uri, Channel> onChannelOpen = null)
         {
             Debug.Assert(channelProperties != null);
             this.dispatcher = new Dispatcher(serverUri,
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 channelProperties.DnsResolutionFunction,
                 chaosInterceptor);
             this.timerPool = channelProperties.RequestTimerPool;
-            this.requestTimeoutSeconds = (int) channelProperties.RequestTimeout.TotalSeconds;
+            this.requestTimeoutSeconds = (int)channelProperties.RequestTimeout.TotalSeconds;
             this.serverUri = serverUri;
             this.localRegionRequest = localRegionRequest;
             this.chaosInterceptor = chaosInterceptor;
@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private Guid ConnectionCorrelationId { get => this.dispatcher.ConnectionCorrelationId; }
 
-        private void Initialize(Guid activityId, Action<Guid, Uri, Channel> onChannelOpen = null)
+        private void Initialize(Guid activityId, Action<Guid, Guid, Uri, Channel> onChannelOpen = null)
         {
             this.ThrowIfDisposed();
             this.stateLock.EnterWriteLock();
@@ -362,12 +362,12 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        private async Task InitializeAsync(Guid activityId, Action<Guid, Uri, Channel> onChannelOpen = null)
+        private async Task InitializeAsync(Guid activityId, Action<Guid, Guid, Uri, Channel> onChannelOpen = null)
         {
             bool slimAcquired = false;
             try
             {
-                onChannelOpen?.Invoke(activityId, this.serverUri, this);
+                onChannelOpen?.Invoke(activityId, this.ConnectionCorrelationId, this.serverUri, this);
                
                 this.openArguments.CommonArguments.SetTimeoutCode(TransportErrorCode.ChannelWaitingToOpenTimeout);
                 slimAcquired = await this.openingSlim.WaitAsync(this.openArguments.OpenTimeout).ConfigureAwait(false);

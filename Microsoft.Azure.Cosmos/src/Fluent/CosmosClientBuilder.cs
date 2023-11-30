@@ -13,9 +13,9 @@ namespace Microsoft.Azure.Cosmos.Fluent
     using global::Azure;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.FaultInjection;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
+    using Microsoft.Azure.Documents.FaultInjection;
 
     /// <summary>
     /// This is a Builder class that creates a cosmos client
@@ -659,9 +659,9 @@ namespace Microsoft.Azure.Cosmos.Fluent
             return this;
         }
 
-        public CosmosClientBuilder WithFaultInjection(FaultInjector faultInjector)
+        internal CosmosClientBuilder WithFaultInjection(IChaosInterceptor chaosInterceptor)
         {
-            this.clientOptions.FaultInjector = faultInjector;
+            this.clientOptions.ChaosInterceptor = chaosInterceptor;
             return this;
         }
 
