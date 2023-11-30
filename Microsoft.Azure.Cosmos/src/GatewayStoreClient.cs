@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -349,6 +350,7 @@ namespace Microsoft.Azure.Cosmos
            Uri physicalAddress,
            CancellationToken cancellationToken)
         {
+            DefaultTrace.TraceInformation("Inside GatewayStoreClient.InvokeClientAsync(): resourceAddress: {0}", physicalAddress.ToString());
             return this.httpClient.SendHttpAsync(
                 () => this.PrepareRequestMessageAsync(request, physicalAddress),
                 resourceType,

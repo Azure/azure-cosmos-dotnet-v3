@@ -71,6 +71,15 @@ namespace Microsoft.Azure.Cosmos
             {
                 Uri physicalAddress = GatewayStoreClient.IsFeedRequest(request.OperationType) ? this.GetFeedUri(request) : this.GetEntityUri(request);
                 // Collect region name only for document resources
+                if (GatewayStoreClient.IsFeedRequest(request.OperationType))
+                {
+                    DefaultTrace.TraceInformation("This is a Feed Request. Physical Address for the request: {0}, operation type: {1}, location endpoint to route: {2}", physicalAddress, request.OperationType, request.RequestContext.LocationEndpointToRoute);
+                }
+                else
+                {
+                    DefaultTrace.TraceInformation("Physical Address for the request: {0}, operation type: {1}", physicalAddress, request.OperationType);
+                }
+
                 if (request.ResourceType.Equals(ResourceType.Document) && this.endpointManager.TryGetLocationForGatewayDiagnostics(request.RequestContext.LocationEndpointToRoute, out string regionName))
                 {
                     request.RequestContext.RegionName = regionName;

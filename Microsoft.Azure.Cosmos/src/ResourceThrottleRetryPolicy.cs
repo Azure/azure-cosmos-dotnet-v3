@@ -48,6 +48,10 @@ namespace Microsoft.Azure.Cosmos
             Exception exception,
             CancellationToken cancellationToken)
         {
+            DefaultTrace.TraceInformation(
+                    "Inside ResourceThrottleRetryPolicy.ShouldRetryAsync(). Current attempt {0}, Exception: {1} ",
+                    this.currentAttemptCount,
+                    this.GetExceptionMessage(exception));
             if (exception is DocumentClientException dce)
             {
                 if (!this.IsValidThrottleStatusCode(dce.StatusCode))

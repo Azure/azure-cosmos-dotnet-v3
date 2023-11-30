@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             //Partition Key Requests
-            if (documentServiceRequest.ResourceType == ResourceType.PartitionKeyRange)
+            if (documentServiceRequest.ResourceType == ResourceType.Address)
             {
                 return HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance;
             }

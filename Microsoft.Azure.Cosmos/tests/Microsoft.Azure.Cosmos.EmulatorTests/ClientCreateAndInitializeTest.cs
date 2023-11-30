@@ -375,10 +375,11 @@
                 {
                     Regions.NorthCentralUS,
                     Regions.EastAsia,
+                    Regions.WestUS,
                 },
                 EnablePartitionLevelFailover = true,
                 ConnectionMode = ConnectionMode.Direct,
-                RequestTimeout = TimeSpan.FromSeconds(5),
+                RequestTimeout = TimeSpan.FromSeconds(500),
                 OpenTcpConnectionTimeout = TimeSpan.FromSeconds(5),
             };
 

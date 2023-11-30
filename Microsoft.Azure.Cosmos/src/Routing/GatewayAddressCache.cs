@@ -601,6 +601,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             string partitionKeyRangeId,
             bool forceRefresh)
         {
+            DefaultTrace.TraceInformation("Step 6: In GatewayAddressCache.GetAddressesForRangeIdAsync()");
             using (DocumentServiceResponse response =
                 await this.GetServerAddressesViaGatewayAsync(request, collectionRid, new[] { partitionKeyRangeId }, forceRefresh))
             {
@@ -735,6 +736,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             IEnumerable<string> partitionKeyRangeIds,
             bool forceRefresh)
         {
+            DefaultTrace.TraceInformation("Step 7: In GatewayAddressCache.GetServerAddressesViaGatewayAsync()");
+
             string entryUrl = PathsHelper.GeneratePath(ResourceType.Document, collectionRid, true);
 
             INameValueCollection addressQuery = new RequestNameValueCollection

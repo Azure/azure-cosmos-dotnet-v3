@@ -55,6 +55,7 @@ namespace Microsoft.Azure.Documents
             DocumentServiceRequest request,
             bool forceAddressRefresh)
         {
+            DefaultTrace.TraceInformation("Step 2: In Address Selector.ResolveAddressesAsync()");
             PartitionAddressInformation partitionAddressInformation =
                 await this.addressResolver.ResolveAsync(request, forceAddressRefresh, CancellationToken.None);
 

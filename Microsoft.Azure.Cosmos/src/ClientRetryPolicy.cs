@@ -98,6 +98,17 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
+            if (exception is CosmosException cosmosException)
+            {
+                ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
+                    cosmosException.StatusCode,
+                    cosmosException.Headers.SubStatusCode);
+                if (shouldRetryResult != null)
+                {
+                    return shouldRetryResult;
+                }
+            }
+
             return await this.throttlingRetry.ShouldRetryAsync(exception, cancellationToken);
         }
 
@@ -261,7 +272,18 @@ namespace Microsoft.Azure.Cosmos
                 this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
                      this.documentServiceRequest);
 
-                return this.ShouldRetryOnServiceUnavailable();
+                ShouldRetryResult retryResult = this.ShouldRetryOnServiceUnavailable();
+
+                if (subStatusCode == SubStatusCodes.PartitionKeyRangeGone)
+                {
+                    DefaultTrace.TraceWarning("ClientRetryPolicy: SubStatusCodes.PartitionKeyRangeGone hit. Calling ProcessRequest()..",
+                        this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
+                        this.documentServiceRequest?.ResourceAddress ?? string.Empty);
+                    this.globalEndpointManager.MarkEndpointUnavailableForRead(this.locationEndpoint);
+                    // this.ProcessRequest(this.documentServiceRequest);
+                }
+
+                return retryResult;
             }
 
             return null;

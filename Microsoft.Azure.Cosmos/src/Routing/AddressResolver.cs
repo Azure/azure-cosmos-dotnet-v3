@@ -61,6 +61,8 @@ namespace Microsoft.Azure.Cosmos
             bool forceRefreshPartitionAddresses,
             CancellationToken cancellationToken)
         {
+            DefaultTrace.TraceInformation("Step 4: In AddressResolver.ResolveAsync()");
+
             cancellationToken.ThrowIfCancellationRequested();
 
             ResolutionResult result =
@@ -262,6 +264,7 @@ namespace Microsoft.Azure.Cosmos
             bool collectionRoutingMapCacheIsUptoDate = false;
 
             ContainerProperties collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken, NoOpTrace.Singleton);
+            DefaultTrace.TraceInformation("Step 5.0: In AddressResolver.ResolveAddressesAndIdentityAsync(). -> Calling collectionRoutingMapCache.TryLookupAsync()");
             CollectionRoutingMap routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
                 collectionRid: collection.ResourceId,
                 previousValue: null,
@@ -457,6 +460,8 @@ namespace Microsoft.Azure.Cosmos
 
             if (partitionKeyString != null)
             {
+                DefaultTrace.TraceInformation("Step 5.1: In AddressResolver.TryResolveServerPartitionAsync() -> Calling TryResolveServerPartitionByPartitionKey()");
+
                 range = AddressResolver.TryResolveServerPartitionByPartitionKey(
                     request,
                     partitionKeyString,
@@ -493,6 +498,8 @@ namespace Microsoft.Azure.Cosmos
                 // upper logic will refresh cache and retry.
                 return null;
             }
+
+            DefaultTrace.TraceInformation("Step 5.2: In AddressResolver.TryResolveServerPartitionAsync() -> Calling GWCache.TryGetAddressesAsync()");
 
             ServiceIdentity serviceIdentity = routingMap.TryGetInfoByPartitionKeyRangeId(range.Id);
 

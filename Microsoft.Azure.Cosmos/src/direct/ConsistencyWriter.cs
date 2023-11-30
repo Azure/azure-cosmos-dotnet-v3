@@ -131,6 +131,7 @@ For globally strong write:
 
                 string requestedCollectionRid = request.RequestContext.ResolvedCollectionRid;
 
+                DefaultTrace.TraceInformation("Step 1: In Consistency Writer. WritePrivateAsync()");
                 PerProtocolPartitionAddressInformation partitionPerProtocolAddress = await this.addressSelector.ResolveAddressesAsync(request, forceRefresh);
 
                 if (!string.IsNullOrEmpty(requestedCollectionRid) && !string.IsNullOrEmpty(request.RequestContext.ResolvedCollectionRid))

@@ -390,15 +390,31 @@ namespace Microsoft.Azure.Cosmos
                                     
                                     if (timeoutPolicy.ShouldThrow503OnTimeout)
                                     {
-                                        throw CosmosExceptionFactory.CreateServiceUnavailableException(
-                                            message: message,
-                                            headers: new Headers()
-                                            {
-                                                ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString(),
-                                                SubStatusCode = SubStatusCodes.TransportGenerated503
-                                            },
-                                            trace: trace,
-                                            innerException: e);
+                                        DefaultTrace.TraceInformation("Throwing 503 exception for resource type: {0}", resourceType);
+                                        if (resourceType == ResourceType.DatabaseAccount || resourceType == ResourceType.PartitionKeyRange)
+                                        {
+                                            throw CosmosExceptionFactory.CreateServiceUnavailableException(
+                                                message: message,
+                                                headers: new Headers()
+                                                {
+                                                    ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString(),
+                                                    SubStatusCode = SubStatusCodes.PartitionKeyRangeGone
+                                                },
+                                                trace: trace,
+                                                innerException: e);
+                                        }
+                                        else
+                                        {
+                                            throw CosmosExceptionFactory.CreateServiceUnavailableException(
+                                                message: message,
+                                                headers: new Headers()
+                                                {
+                                                    ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString(),
+                                                    SubStatusCode = SubStatusCodes.TransportGenerated503
+                                                },
+                                                trace: trace,
+                                                innerException: e);
+                                        }
                                     }
 
                                     throw;

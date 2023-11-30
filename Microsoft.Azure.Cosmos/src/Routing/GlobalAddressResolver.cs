@@ -217,6 +217,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             bool forceRefresh,
             CancellationToken cancellationToken)
         {
+            DefaultTrace.TraceInformation("Step 3: In GlobalAddressResolver.ResolveAsync()");
+
             IAddressResolver resolver = this.GetAddressResolver(request);
             PartitionAddressInformation partitionAddressInformation = await resolver.ResolveAsync(request, forceRefresh, cancellationToken);
 
