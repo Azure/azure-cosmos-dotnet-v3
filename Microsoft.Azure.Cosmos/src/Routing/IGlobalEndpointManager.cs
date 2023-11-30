@@ -13,6 +13,8 @@ namespace Microsoft.Azure.Cosmos.Routing
     {
         ReadOnlyCollection<Uri> ReadEndpoints { get; }
 
+        ReadOnlyCollection<Uri> AccountReadEndpoints { get; }
+
         ReadOnlyCollection<Uri> WriteEndpoints { get; }
 
         int PreferredLocationCount { get; }

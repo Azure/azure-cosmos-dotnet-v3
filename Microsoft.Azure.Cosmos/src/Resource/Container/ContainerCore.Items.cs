@@ -337,119 +337,6 @@ namespace Microsoft.Azure.Cosmos
                                                                     cancellationToken);
         }
 
-        /// <summary>
-        /// Used in the compute gateway to support legacy gateway interface.
-        /// </summary>
-        public override async Task<TryExecuteQueryResult> TryExecuteQueryAsync(
-            QueryFeatures supportedQueryFeatures,
-            QueryDefinition queryDefinition,
-            string continuationToken,
-            FeedRangeInternal feedRangeInternal,
-            QueryRequestOptions requestOptions,
-            GeospatialType geospatialType,
-            CancellationToken cancellationToken = default)
-        {
-            if (queryDefinition == null)
-            {
-                throw new ArgumentNullException(nameof(queryDefinition));
-            }
-
-            if (requestOptions == null)
-            {
-                throw new ArgumentNullException(nameof(requestOptions));
-            }
-
-            if (feedRangeInternal != null)
-            {
-                // The user has scoped down to a physical partition or logical partition.
-                // In either case let the query execute as a passthrough.
-                QueryIterator passthroughQueryIterator = QueryIterator.Create(
-                    containerCore: this,
-                    client: this.queryClient,
-                    clientContext: this.ClientContext,
-                    sqlQuerySpec: queryDefinition.ToSqlQuerySpec(),
-                    continuationToken: continuationToken,
-                    feedRangeInternal: feedRangeInternal,
-                    queryRequestOptions: requestOptions,
-                    resourceLink: this.LinkUri,
-                    isContinuationExpected: false,
-                    allowNonValueAggregateQuery: true,
-                    forcePassthrough: true, // Forcing a passthrough, since we don't want to get the query plan nor try to rewrite it.
-                    partitionedQueryExecutionInfo: null);
-
-                return new QueryPlanIsSupportedResult(passthroughQueryIterator);
-            }
-
-            cancellationToken.ThrowIfCancellationRequested();
-
-            Documents.PartitionKeyDefinition partitionKeyDefinition;
-            if (requestOptions.Properties != null
-                && requestOptions.Properties.TryGetValue("x-ms-query-partitionkey-definition", out object partitionKeyDefinitionObject))
-            {
-                if (!(partitionKeyDefinitionObject is Documents.PartitionKeyDefinition definition))
-                {
-                    throw new ArgumentException(
-                        "partitionkeydefinition has invalid type",
-                        nameof(partitionKeyDefinitionObject));
-                }
-
-                partitionKeyDefinition = definition;
-            }
-            else
-            {
-                ContainerQueryProperties containerQueryProperties = await this.queryClient.GetCachedContainerQueryPropertiesAsync(
-                    this.LinkUri,
-                    requestOptions.PartitionKey,
-                    NoOpTrace.Singleton,
-                    cancellationToken);
-                partitionKeyDefinition = containerQueryProperties.PartitionKeyDefinition;
-            }
-
-            QueryPlanHandler queryPlanHandler = new QueryPlanHandler(this.queryClient);
-
-            TryCatch<(PartitionedQueryExecutionInfo queryPlan, bool supported)> tryGetQueryInfoAndIfSupported = await queryPlanHandler.TryGetQueryInfoAndIfSupportedAsync(
-                supportedQueryFeatures,
-                queryDefinition.ToSqlQuerySpec(),
-                ResourceType.Document,
-                partitionKeyDefinition,
-                requestOptions.PartitionKey.HasValue,
-                useSystemPrefix: QueryIterator.IsSystemPrefixExpected(requestOptions),
-                geospatialType: geospatialType,
-                cancellationToken);
-
-            if (tryGetQueryInfoAndIfSupported.Failed)
-            {
-                return new FailedToGetQueryPlanResult(tryGetQueryInfoAndIfSupported.Exception);
-            }
-
-            (PartitionedQueryExecutionInfo queryPlan, bool supported) = tryGetQueryInfoAndIfSupported.Result;
-            TryExecuteQueryResult tryExecuteQueryResult;
-            if (supported)
-            {
-                QueryIterator queryIterator = QueryIterator.Create(
-                    containerCore: this,
-                    client: this.queryClient,
-                    clientContext: this.ClientContext,
-                    sqlQuerySpec: queryDefinition.ToSqlQuerySpec(),
-                    continuationToken: continuationToken,
-                    feedRangeInternal: feedRangeInternal,
-                    queryRequestOptions: requestOptions,
-                    resourceLink: this.LinkUri,
-                    isContinuationExpected: false,
-                    allowNonValueAggregateQuery: true,
-                    forcePassthrough: false,
-                    partitionedQueryExecutionInfo: queryPlan);
-
-                tryExecuteQueryResult = new QueryPlanIsSupportedResult(queryIterator);
-            }
-            else
-            {
-                tryExecuteQueryResult = new QueryPlanNotSupportedResult(queryPlan);
-            }
-
-            return tryExecuteQueryResult;
-        }
-
         public override FeedIterator<T> GetItemQueryIterator<T>(
            string queryText = null,
            string continuationToken = null,
@@ -833,8 +720,8 @@ namespace Microsoft.Azure.Cosmos
                 resourceLink: this.LinkUri,
                 isContinuationExpected: isContinuationExcpected,
                 allowNonValueAggregateQuery: true,
-                forcePassthrough: false,
-                partitionedQueryExecutionInfo: null);
+                partitionedQueryExecutionInfo: null,
+                resourceType: ResourceType.Document);
         }
 
         public override FeedIteratorInternal GetReadFeedIterator(
@@ -871,8 +758,8 @@ namespace Microsoft.Azure.Cosmos
                     resourceLink: resourceLink,
                     isContinuationExpected: false,
                     allowNonValueAggregateQuery: true,
-                    forcePassthrough: false,
-                    partitionedQueryExecutionInfo: null);
+                    partitionedQueryExecutionInfo: null,
+                    resourceType: resourceType);
             }
             else
             {

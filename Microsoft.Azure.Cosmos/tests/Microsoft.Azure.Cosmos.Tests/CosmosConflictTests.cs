@@ -5,11 +5,16 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.IO;
+    using System.Net;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json.Linq;
@@ -30,6 +35,43 @@ namespace Microsoft.Azure.Cosmos.Tests
             while (iterator.HasMoreResults)
             {
                 ResponseMessage responseMessage = await iterator.ReadNextAsync();
+            }
+        }
+
+        [TestMethod]
+        public async Task QueryConflicts()
+        {
+            ContainerInternal container = CosmosConflictTests.GetMockedContainer((request, cancellationToken) => {
+                Assert.AreEqual(ResourceType.Conflict, request.ResourceType);
+                ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new MemoryStream(Encoding.UTF8.GetBytes(@"{ ""Conflicts"": [{ ""id"": ""Test""}]}"))
+                };
+                return Task.FromResult(responseMessage);
+            });
+
+            {
+                FeedIterator<CosmosObject> iterator = container.Conflicts.GetConflictQueryIterator<CosmosObject>();
+                while (iterator.HasMoreResults)
+                {
+                    FeedResponse<CosmosObject> responseMessage = await iterator.ReadNextAsync();
+                }
+            }
+            {
+                FeedIterator<CosmosObject> iterator = container.Conflicts.GetConflictQueryIterator<CosmosObject>("SELECT * FROM c");
+                while (iterator.HasMoreResults)
+                {
+                    FeedResponse<CosmosObject> responseMessage = await iterator.ReadNextAsync();
+                }
+            }
+            {
+                FeedIterator<CosmosObject> iterator = container.Conflicts.GetConflictQueryIterator<CosmosObject>(
+                    queryText: "SELECT * FROM c",
+                    requestOptions: new QueryRequestOptions { MaxItemCount = 1 });
+                while (iterator.HasMoreResults)
+                {
+                    FeedResponse<CosmosObject> responseMessage = await iterator.ReadNextAsync();
+                }
             }
         }
 
