@@ -330,12 +330,12 @@ namespace Microsoft.Azure.Cosmos
                         out CosmosArray documents,
                         out CosmosObject distributionPlan);
 
-                    DistributionPlanPayload distributionPlanPayload = null;
+                    DistributionPlanSpec distributionPlanSpec = null;
 
                     if (distributionPlan.TryGetValue("backendDistributionPlan", out CosmosElement backendDistributionPlan) &&
                         distributionPlan.TryGetValue("clientDistributionPlan", out CosmosElement clientDistributionPlan))
                     {
-                        distributionPlanPayload = new DistributionPlanPayload(backendDistributionPlan.ToString(), clientDistributionPlan.ToString());
+                        distributionPlanSpec = new DistributionPlanSpec(backendDistributionPlan.ToString(), clientDistributionPlan.ToString());
                     }
 
                     QueryState queryState;
@@ -371,7 +371,7 @@ namespace Microsoft.Azure.Cosmos
                         cosmosResponseMessage.Headers.ActivityId,
                         responseLengthBytes,
                         cosmosQueryExecutionInfo,
-                        distributionPlanPayload,
+                        distributionPlanSpec,
                         disallowContinuationTokenMessage: null,
                         additionalHeaders,
                         queryState);
@@ -525,22 +525,21 @@ namespace Microsoft.Azure.Cosmos
 
             documents = cosmosArray;
 
-            resourceName = "_distributionPlan";
-
-            if (jsonNavigator.TryGetObjectProperty(jsonNavigator.GetRootNode(), resourceName, out objectProperty))
+            if (jsonNavigator.TryGetObjectProperty(jsonNavigator.GetRootNode(), "_distributionPlan", out objectProperty))
             {
-                CosmosElement element = CosmosElement.Dispatch(jsonNavigator, objectProperty.ValueNode);
-                if (element is CosmosString binaryDistributionPlan)
+                switch (CosmosElement.Dispatch(jsonNavigator, objectProperty.ValueNode))
                 {
-                    byte[] binaryJson = Convert.FromBase64String(binaryDistributionPlan.Value);
-                    IJsonNavigator binaryJsonNavigator = JsonNavigator.Create(binaryJson);
-                    IJsonNavigatorNode binaryJsonNavigatorNode = binaryJsonNavigator.GetRootNode();
-
-                    distributionPlan = CosmosObject.Create(binaryJsonNavigator, binaryJsonNavigatorNode);
-                }
-                else if (element is CosmosObject textDistributionPlan)
-                {
-                    distributionPlan = textDistributionPlan;
+                    case CosmosString binaryDistributionPlan:
+                        byte[] binaryJson = Convert.FromBase64String(binaryDistributionPlan.Value);
+                        IJsonNavigator binaryJsonNavigator = JsonNavigator.Create(binaryJson);
+                        IJsonNavigatorNode binaryJsonNavigatorNode = binaryJsonNavigator.GetRootNode();
+                        distributionPlan = CosmosObject.Create(binaryJsonNavigator, binaryJsonNavigatorNode);
+                        break;
+                    case CosmosObject textDistributionPlan:
+                        distributionPlan = textDistributionPlan;
+                        break;
+                    default:
+                        throw new InvalidOperationException($"Response Body Contract was violated. QueryResponse did not have property: {resourceName}");
                 }
             }
         }

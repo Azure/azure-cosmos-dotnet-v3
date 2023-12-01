@@ -129,7 +129,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                             activityId: Guid.NewGuid().ToString(),
                             responseLengthInBytes: "[]".Length,
                             cosmosQueryExecutionInfo: default,
-                            distributionPlanPayload: default,
+                            distributionPlanSpec: default,
                             disallowContinuationTokenMessage: default,
                             additionalHeaders: default,
                             state: new QueryState(CosmosString.Create("Empty"))));
@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                             activityId: Guid.NewGuid().ToString(),
                             responseLengthInBytes: "[42]".Length,
                             cosmosQueryExecutionInfo: default,
-                            distributionPlanPayload: default,
+                            distributionPlanSpec: default,
                             disallowContinuationTokenMessage: default,
                             additionalHeaders: default,
                             state: new QueryState(CosmosString.Create("NonEmpty"))));

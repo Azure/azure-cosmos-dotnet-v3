@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination
             string activityId,
             long responseLengthInBytes,
             Lazy<CosmosQueryExecutionInfo> cosmosQueryExecutionInfo,
-            DistributionPlanPayload distributionPlanPayload,
+            DistributionPlanSpec distributionPlanSpec,
             string disallowContinuationTokenMessage,
             IReadOnlyDictionary<string, string> additionalHeaders,
             QueryState state)
@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination
             this.Documents = documents ?? throw new ArgumentNullException(nameof(documents));
             this.ResponseLengthInBytes = responseLengthInBytes < 0 ? throw new ArgumentOutOfRangeException(nameof(responseLengthInBytes)) : responseLengthInBytes;
             this.CosmosQueryExecutionInfo = cosmosQueryExecutionInfo;
-            this.DistributionPlanPayload = distributionPlanPayload;
+            this.DistributionPlanSpec = distributionPlanSpec;
             this.DisallowContinuationTokenMessage = disallowContinuationTokenMessage;
         }
 
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination
 
         public Lazy<CosmosQueryExecutionInfo> CosmosQueryExecutionInfo { get; }
 
-        public DistributionPlanPayload DistributionPlanPayload { get; }
+        public DistributionPlanSpec DistributionPlanSpec { get; }
 
         public string DisallowContinuationTokenMessage { get; }
 

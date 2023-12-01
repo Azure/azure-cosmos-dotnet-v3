@@ -4,9 +4,9 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core
 {
-    internal sealed class DistributionPlanPayload
+    internal sealed class DistributionPlanSpec
     {
-        public DistributionPlanPayload(string backendDistributionPlan, string clientDistributionPlan)
+        public DistributionPlanSpec(string backendDistributionPlan, string clientDistributionPlan)
         {
             this.BackendDistributionPlan = backendDistributionPlan;
             this.ClientDistributionPlan = clientDistributionPlan;

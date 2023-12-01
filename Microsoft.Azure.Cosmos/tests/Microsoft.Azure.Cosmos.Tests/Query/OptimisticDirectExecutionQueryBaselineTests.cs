@@ -953,7 +953,7 @@
                             activityId: Guid.NewGuid().ToString(),
                             responseLengthInBytes: 1337,
                             cosmosQueryExecutionInfo: default,
-                            distributionPlanPayload: default,
+                            distributionPlanSpec: default,
                             disallowContinuationTokenMessage: default,
                             additionalHeaders: additionalHeaders.ToImmutable(),
                             state: queryPage.Result.Result.State)));

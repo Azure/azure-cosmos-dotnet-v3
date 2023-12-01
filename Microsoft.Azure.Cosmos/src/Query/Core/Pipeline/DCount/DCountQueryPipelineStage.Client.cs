@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
                     activityId: default,
                     responseLengthInBytes: responseLengthBytes,
                     cosmosQueryExecutionInfo: default,
-                    distributionPlanPayload: default,
+                    distributionPlanSpec: default,
                     disallowContinuationTokenMessage: default,
                     additionalHeaders: additionalHeaders,
                     state: default);
