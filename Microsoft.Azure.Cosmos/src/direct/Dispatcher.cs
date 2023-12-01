@@ -336,6 +336,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                         this.chaosInterceptor?.OnBeforeConnectionWrite(args);
                         if (this.chaosInterceptor != null && this.chaosInterceptor.OnRequestCall(args, out StoreResponse faultyResponse))
                         {
+                            transportRequestStats.RecordState(TransportRequestStats.RequestStage.Sent);
                             return faultyResponse;
                         }                       
 

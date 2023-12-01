@@ -27,8 +27,6 @@ namespace Microsoft.Azure.Documents
 
         private PerformanceCounter currentFrontendConnections;
 
-        private PerformanceCounter fabricResolveServiceFailures;
-
         private PerformanceCounter queryRequestsPerSec;
 
         private PerformanceCounter triggerRequestsPerSec;
@@ -46,10 +44,6 @@ namespace Microsoft.Azure.Documents
         private PerformanceCounter backendConnectionOpenAverageLatency;
 
         private PerformanceCounter backendConnectionOpenAverageLatencyBase;
-
-        private PerformanceCounter fabricResolveServiceAverageLatency;
-
-        private PerformanceCounter fabricResolveServiceAverageLatencyBase;
 
         private PerformanceCounter routingFailures;
 
@@ -116,14 +110,6 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return this.currentFrontendConnections;
-            }
-        }
-
-        public PerformanceCounter FabricResolveServiceFailures
-        {
-            get
-            {
-                return this.fabricResolveServiceFailures;
             }
         }
 
@@ -196,22 +182,6 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return this.backendConnectionOpenAverageLatencyBase;
-            }
-        }
-
-        public PerformanceCounter FabricResolveServiceAverageLatency
-        {
-            get
-            {
-                return this.fabricResolveServiceAverageLatency;
-            }
-        }
-
-        public PerformanceCounter FabricResolveServiceAverageLatencyBase
-        {
-            get
-            {
-                return this.fabricResolveServiceAverageLatencyBase;
             }
         }
 
@@ -370,9 +340,6 @@ namespace Microsoft.Azure.Documents
             this.currentFrontendConnections = new PerformanceCounter(this.performanceCategory, "Current Frontend Connections", false);
             this.currentFrontendConnections.RawValue = 0;
 
-            this.fabricResolveServiceFailures = new PerformanceCounter(this.performanceCategory, "Fabric Resolve Service Failures", false);
-            this.fabricResolveServiceFailures.RawValue = 0;
-
             this.queryRequestsPerSec = new PerformanceCounter(this.performanceCategory, "Query Requests/sec", false);
             this.queryRequestsPerSec.RawValue = 0;
 
@@ -400,12 +367,6 @@ namespace Microsoft.Azure.Documents
             this.backendConnectionOpenAverageLatencyBase = new PerformanceCounter(this.performanceCategory, "Backend Connection Open Average Latency Base", false);
             this.backendConnectionOpenAverageLatencyBase.RawValue = 0;
 
-            this.fabricResolveServiceAverageLatency = new PerformanceCounter(this.performanceCategory, "Fabric Resolve Service Average Latency", false);
-            this.fabricResolveServiceAverageLatency.RawValue = 0;
-
-            this.fabricResolveServiceAverageLatencyBase = new PerformanceCounter(this.performanceCategory, "Fabric Resolve Service Average Latency Base", false);
-            this.fabricResolveServiceAverageLatencyBase.RawValue = 0;
-
             this.routingFailures = new PerformanceCounter(this.performanceCategory, "Routing Failures", false);
             this.routingFailures.RawValue = 0;
 
@@ -432,8 +393,6 @@ namespace Microsoft.Azure.Documents
 
             using (this.currentFrontendConnections) { }
 
-            using (this.fabricResolveServiceFailures) { }
-
             using (this.queryRequestsPerSec) { }
 
             using (this.triggerRequestsPerSec) { }
@@ -451,10 +410,6 @@ namespace Microsoft.Azure.Documents
             using (this.backendConnectionOpenAverageLatency) { }
 
             using (this.backendConnectionOpenAverageLatencyBase) { }
-
-            using (this.fabricResolveServiceAverageLatency) { }
-
-            using (this.fabricResolveServiceAverageLatencyBase) { }
 
             using (this.routingFailures) { }
 

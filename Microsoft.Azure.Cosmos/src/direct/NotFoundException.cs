@@ -36,14 +36,14 @@ namespace Microsoft.Azure.Documents
 
         }
 
-        public NotFoundException(Exception innerException)
-            : this(RMResources.NotFound, innerException, null)
+        public NotFoundException(Exception innerException, bool traceCallStack = true)
+            : this(RMResources.NotFound, innerException, null, traceCallStack: traceCallStack)
         {
 
         }
 
-        public NotFoundException(Exception innerException, SubStatusCodes subStatusCode)
-            : this(RMResources.NotFound, innerException, headers: null, subStatusCode: subStatusCode)
+        public NotFoundException(Exception innerException, SubStatusCodes subStatusCode, bool traceCallStack = true)
+            : this(RMResources.NotFound, innerException, headers: null, subStatusCode: subStatusCode, traceCallStack: traceCallStack)
         {
         }
 
@@ -53,8 +53,8 @@ namespace Microsoft.Azure.Documents
             SetDescription();
         }
 
-        public NotFoundException(string message, Exception innerException, HttpResponseHeaders headers, Uri requestUri = null, SubStatusCodes? subStatusCode = null)
-            : base(message, innerException, headers, HttpStatusCode.NotFound, requestUri, subStatusCode)
+        public NotFoundException(string message, Exception innerException, HttpResponseHeaders headers, Uri requestUri = null, SubStatusCodes? subStatusCode = null, bool traceCallStack = true)
+            : base(message, innerException, headers, HttpStatusCode.NotFound, requestUri, subStatusCode, traceCallStack)
         {
             SetDescription();
         }

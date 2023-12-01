@@ -25,6 +25,7 @@ namespace Microsoft.Azure.Documents
 
         private IList<string> partitionKeyRangeResourceIds;
         private IList<string> dataDirectories;
+        private IList<string> storageAccountUris;
 
         // If Snapshot contains ClientEncryptionKeys this will be set
         private IList<string> serializedClientEncryptionKeys;
@@ -383,6 +384,28 @@ namespace Microsoft.Azure.Documents
             {
                 this.serializedClientEncryptionKeys = value;
                 base.SetValue(Constants.SnapshotProperties.ClientEncryptionKeyResources, value);
+            }
+        }
+
+        /// <summary>
+        /// Gets the list of StorageAccountUris.
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.SnapshotProperties.StorageAccountUris)]
+        public IList<string> StorageAccountUris
+        {
+            get
+            {
+                if (this.storageAccountUris == null)
+                {
+                    this.storageAccountUris = base.GetValue<IList<string>>(Constants.SnapshotProperties.StorageAccountUris);
+                }
+
+                return this.storageAccountUris;
+            }
+            internal set
+            {
+                this.storageAccountUris = value;
+                base.SetValue(Constants.SnapshotProperties.StorageAccountUris, value);
             }
         }
 

@@ -108,9 +108,15 @@ namespace Microsoft.Azure.Documents.Rntbd
             ResourceOperation resourceOperation,
             Guid activityId,
             BufferProvider bufferProvider,
+            string globalDatabaseAccountName,
             out int headerSize,
             out int? bodySize)
         {
+            if (string.IsNullOrEmpty(globalDatabaseAccountName))
+            {
+                throw new ArgumentNullException(nameof(globalDatabaseAccountName));
+            }
+
             RntbdConstants.Request rntbdRequest = new();
 
             // for proxy, transportRequestId and replicapath are optional.
@@ -126,6 +132,13 @@ namespace Microsoft.Azure.Documents.Rntbd
             tokenIndex = Array.IndexOf(rntbdRequest.tokens, rntbdRequest.effectivePartitionKey);
             rntbdRequest.tokens[tokenIndex] = rntbdRequest.tokens[0];
             rntbdRequest.tokens[0] = rntbdRequest.effectivePartitionKey;
+
+            // Account name is the second token
+            tokenIndex = Array.IndexOf(rntbdRequest.tokens, rntbdRequest.globalDatabaseAccountName);
+            rntbdRequest.tokens[tokenIndex] = rntbdRequest.tokens[1];
+            rntbdRequest.tokens[1] = rntbdRequest.globalDatabaseAccountName;
+            rntbdRequest.globalDatabaseAccountName.value.valueBytes = BytesSerializer.GetBytesForString(globalDatabaseAccountName, rntbdRequest);
+            rntbdRequest.globalDatabaseAccountName.isPresent = true;
 
             return BuildRequestCore(
                 request,
@@ -272,6 +285,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             TransportSerialization.AddIsMaterializedViewSourceSchemaReplaceBatchRequest(requestHeaders, rntbdRequest);
             TransportSerialization.AddIsCassandraAlterTypeRequest(request, rntbdRequest);
             TransportSerialization.AddHighPriorityForcedBackup(requestHeaders, rntbdRequest);
+            TransportSerialization.AddEnableConflictResolutionPolicyUpdate(requestHeaders, rntbdRequest);
+            TransportSerialization.AddAllowDocumentReadsInOfflineRegion(requestHeaders, rntbdRequest);
 
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.Authorization, requestHeaders.Authorization, rntbdRequest.authorizationToken, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.SessionToken, requestHeaders.SessionToken, rntbdRequest.sessionToken, rntbdRequest);
@@ -355,6 +370,11 @@ namespace Microsoft.Azure.Documents.Rntbd
             TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.PopulateCapacityType, requestHeaders.PopulateCapacityType, rntbdRequest.populateCapacityType, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.TraceParent, requestHeaders.TraceParent, rntbdRequest.traceParent, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.TraceState, requestHeaders.TraceState, rntbdRequest.traceState, rntbdRequest);
+            TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.ClientIpAddress, requestHeaders.ClientIpAddress, rntbdRequest.clientIpAddress, rntbdRequest);
+            TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.IsRequestNotAuthorized, requestHeaders.IsRequestNotAuthorized, rntbdRequest.isRequestNotAuthorized, rntbdRequest);
+            TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.StartEpkHash, headerStringValue: null, rntbdRequest.startEpkHash, rntbdRequest);
+            TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.EndEpkHash, headerStringValue: null, rntbdRequest.endEpkHash, rntbdRequest);
+            TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.PopulateCurrentPartitionThroughputInfo, requestHeaders.PopulateCurrentPartitionThroughputInfo, rntbdRequest.populateCurrentPartitionThroughputInfo, rntbdRequest);
 
             // will be null in case of direct, which is fine - BE will use the value from the connection context message.
             // When this is used in Gateway, the header value will be populated with the proxied HTTP request's header, and
@@ -547,8 +567,10 @@ namespace Microsoft.Azure.Documents.Rntbd
                 return RntbdConstants.RntbdOperationType.Batch;
             case OperationType.CompleteUserTransaction:
                 return RntbdConstants.RntbdOperationType.CompleteUserTransaction;
+            case OperationType.MetadataCheckAccess:
+                return RntbdConstants.RntbdOperationType.MetadataCheckAccess;
 #if !COSMOSCLIENT
-            case OperationType.Crash:
+                case OperationType.Crash:
                 return RntbdConstants.RntbdOperationType.Crash;
             case OperationType.Pause:
                 return RntbdConstants.RntbdOperationType.Pause;
@@ -606,8 +628,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                 return RntbdConstants.RntbdOperationType.ForcePartitionBackup;
             case OperationType.MasterInitiatedProgressCoordination:
                 return RntbdConstants.RntbdOperationType.MasterInitiatedProgressCoordination;
-            case OperationType.MetadataCheckAccess:
-                return RntbdConstants.RntbdOperationType.MetadataCheckAccess;
             case OperationType.CreateSystemSnapshot:
                 return RntbdConstants.RntbdOperationType.CreateSystemSnapshot;
             case OperationType.CreateRidRangeResources:
@@ -2585,6 +2605,18 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
+        private static void AddEnableConflictResolutionPolicyUpdate(RequestNameValueCollection requestHeaders, RntbdConstants.Request rntbdRequest)
+        {
+            if (!string.IsNullOrEmpty(requestHeaders.EnableConflictResolutionPolicyUpdate))
+            {
+                rntbdRequest.enableConflictResolutionPolicyUpdate.value.valueByte = (requestHeaders.EnableConflictResolutionPolicyUpdate.
+                    Equals(bool.TrueString, StringComparison.OrdinalIgnoreCase))
+                    ? (byte)0x01
+                    : (byte)0x00;
+                rntbdRequest.enableConflictResolutionPolicyUpdate.isPresent = true;
+            }
+        }
+
         private static void AddPriorityLevelHeader(DocumentServiceRequest request, string headerName, string headerStringValue, RequestNameValueCollection requestHeaders, RntbdConstants.Request rntbdRequest)
         {
             PriorityLevel priorityLevel = PriorityLevel.High;
@@ -2631,6 +2663,18 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             rntbdRequest.priorityLevel.value.valueByte = (byte) rntbdPriorityLevel;
             rntbdRequest.priorityLevel.isPresent = true;
+        }
+
+        private static void AddAllowDocumentReadsInOfflineRegion(RequestNameValueCollection requestHeaders, RntbdConstants.Request rntbdRequest)
+        {
+            if (!string.IsNullOrEmpty(requestHeaders.AllowDocumentReadsInOfflineRegion))
+            {
+                rntbdRequest.allowDocumentReadsInOfflineRegion.value.valueByte = (requestHeaders.AllowDocumentReadsInOfflineRegion.
+                    Equals(bool.TrueString, StringComparison.OrdinalIgnoreCase))
+                    ? (byte)0x01
+                    : (byte)0x00;
+                rntbdRequest.allowDocumentReadsInOfflineRegion.isPresent = true;
+            }
         }
     }
 }

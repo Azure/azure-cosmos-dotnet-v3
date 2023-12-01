@@ -1289,6 +1289,10 @@ namespace Microsoft.Azure.Documents
             {
                 return Paths.DatabaseAccountSegment;
             }
+            else if (resourceType == ResourceType.DatabaseAccount && operationType == OperationType.MetadataCheckAccess)
+            {
+                return Paths.OperationsPathSegment + "/" + Paths.Operations_MetadataCheckAccess;
+            }
             else if (resourceType == ResourceType.DatabaseAccount)
             {
                 return Paths.DatabaseAccountSegment + "/" + ownerOrResourceId;
@@ -1447,6 +1451,10 @@ namespace Microsoft.Azure.Documents
                     return Paths.OperationsPathSegment + "/" + Paths.ControllerOperations_BatchGetOutput;
                 case OperationType.ControllerBatchReportCharges:
                     return Paths.OperationsPathSegment + "/" + Paths.ControllerOperations_BatchReportCharges;
+                case OperationType.ControllerBatchAutoscaleRUsConsumption:
+                    return Paths.OperationsPathSegment + "/" + Paths.ControllerOperations_BatchAutoscaleRUsConsumption;
+                case OperationType.ControllerBatchGetAutoscaleAggregateOutput:
+                    return Paths.OperationsPathSegment + "/" + Paths.ControllerOperations_BatchGetAutoscaleAggregateOutput;
                 case OperationType.GetConfiguration:
                     return Paths.OperationsPathSegment + "/" + Paths.Operations_GetConfiguration;
                 case OperationType.GetFederationConfigurations:
@@ -1465,6 +1473,8 @@ namespace Microsoft.Azure.Documents
                     return Paths.OperationsPathSegment + "/" + Paths.Operations_GetStorageAccountSas;
                 case OperationType.GetUnwrappedDek:
                     return Paths.OperationsPathSegment + "/" + Paths.Operations_GetUnwrappedDek;
+                case OperationType.GetDekProperties:
+                    return Paths.OperationsPathSegment + "/" + Paths.Operations_GetDekProperties;
                 case OperationType.GetCustomerManagedKeyStatus:
                     return Paths.OperationsPathSegment + "/" + Paths.Operations_GetCustomerManagedKeyStatus;
                 case OperationType.ReadReplicaFromMasterPartition:
@@ -1556,6 +1566,8 @@ namespace Microsoft.Azure.Documents
                    operationTypeSegment.Equals(Paths.ReplicaOperations_BatchReportThroughputUtilization, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.ControllerOperations_BatchGetOutput, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.ControllerOperations_BatchReportCharges, StringComparison.OrdinalIgnoreCase) ||
+                   operationTypeSegment.Equals(Paths.ControllerOperations_BatchAutoscaleRUsConsumption, StringComparison.OrdinalIgnoreCase) ||
+                   operationTypeSegment.Equals(Paths.ControllerOperations_BatchGetAutoscaleAggregateOutput, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_GetFederationConfigurations, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_GetStorageServiceConfigurations, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_GetConfiguration, StringComparison.OrdinalIgnoreCase) ||
@@ -1564,11 +1576,13 @@ namespace Microsoft.Azure.Documents
                    operationTypeSegment.Equals(Paths.Operations_GetDatabaseAccountConfigurations, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_XPDatabaseAccountMetaData, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_GetUnwrappedDek, StringComparison.OrdinalIgnoreCase) ||
+                   operationTypeSegment.Equals(Paths.Operations_GetDekProperties, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_GetCustomerManagedKeyStatus, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_ReadReplicaFromMasterPartition, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_ReadReplicaFromServerPartition, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_MasterInitiatedProgressCoordination, StringComparison.OrdinalIgnoreCase) ||
-                   operationTypeSegment.Equals(Paths.Operations_GetAadGroups, StringComparison.OrdinalIgnoreCase);
+                   operationTypeSegment.Equals(Paths.Operations_GetAadGroups, StringComparison.OrdinalIgnoreCase) ||
+                   operationTypeSegment.Equals(Paths.Operations_MetadataCheckAccess, StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool IsTopLevelOperationOperation(in StringSegment replicaSegment, in StringSegment addressSegment)

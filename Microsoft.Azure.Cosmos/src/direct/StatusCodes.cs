@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Documents
 {
     internal enum StatusCodes
     {
+        Processing = 102,
+
         // Success
         Ok = 200,
         Created = 201,
@@ -77,6 +79,7 @@ namespace Microsoft.Azure.Documents
         PartitionMigrationSourcePartitionDeletedInMaster = 1034,
         PartitionMigrationSharedThroughputDatabasePartitionResourceNotFoundInMaster = 1035,
         PartitionMigrationPartitionResourceNotFoundInMaster = 1036,
+        PartitionMigrationFailedToUpdateDNS = 1037,
 
         // 403: Forbidden Substatus.
         WriteForbidden = 3,
@@ -106,8 +109,17 @@ namespace Microsoft.Azure.Documents
         InsufficientBindablePartitions = 1007,
         ComputeFederationNotFound = 1012,
         OperationPaused = 9001,
-        ServiceIsOffline = 9002,
         InsufficientCapacity = 9003,
+
+        // Federation Buildout / Expansion error codes
+        AggregatedHealthStateError = 6001, // - Aggregated health state is Error
+        ApplicationHealthStateError = 6002, // - Any application is in Warning or Error state
+        HealthStateError = 6003, // - Any health events in Error state are found
+        UnhealthyEventFound = 6004, // - Any unhealthy evaluations are found (except for Warning evaluations on Nodes)
+        ClusterHealthEmpty = 6005, // Cluster Health States is empty
+        AllocationFailed = 6006, // Allocation failed for federation
+        OperationResultNull = 6007, // Null operation result
+        OperationResultUnexpected = 6008, // Null operation result
 
         //412: PreCondition Failed
         SplitIsDisabled = 2001,
@@ -139,17 +151,29 @@ namespace Microsoft.Azure.Documents
         PartitionMigrationSourceAndTargetFederationSubregionIsNotSame = 2024,
         PartitionMigrationFailedToCreatePartitionMigrationLocks = 2025,
         PartitionMigrationFailedToResolvePartitionInformation = 2026,
-        PartitionMigrationTopologyHasWriteRegionEmpty = 2027,
         PartitionMigrationIsDisableOnTheGlobalDatabaseAccount = 2028,
         PartitionMigrationIsDisableOnTheRunnerAccount = 2029,
         PartitionMigrationCanNotProceedForInactiveRegionalDatabaseAccount = 2030,
         PartitionMigrationDidNotCompleteWaitForFullSyncInTenRetries = 2031,
+        PartitionMigrationCanNotProceedForDeletingRegionalDatabaseAccount = 2032,
+        PartitionMigrationCanNotProceedForDeletionFailedRegionalDatabaseAccount = 2033,
+        PartitionMigrationCanNotAcquireRegionalDatabaseAccountPartitionMigrationLock = 2034,
+        PartitionMigrationIsDisabledOnReadyForDecommissionFederation = 2035,
+        PartitionMigrationCanNotAcquirePartitionLock = 2036,
+        PartitionMigrationCanNotAcquirePartitionKeyRangesLock = 2037,
+        PartitionMigrationCanNotProceedForDeletingGlobalDatabaseAccount = 2038,
+        PartitionMigrationCanNotProceedForDeletionFailedGlobalDatabaseAccount = 2039,
+        PartitionMigrationCanNotProceedForRevokedGlobalDatabaseAccount = 2040,
+        PartitionMigrationMasterServiceTopologyHasWriteRegionEmpty = 2041,
+        PartitionMigrationWriteRegionServiceTopologyHasWriteRegionEmpty = 2042,
+        PartitionMigrationIsDisabledOnFinalizingDecommissionFederation = 2043,
 
         // 500: InternalServerError
         ConfigurationNameNotEmpty = 3001,
         ConfigurationOperationCancelled = 3002,
         InvalidAccountConfiguration = 3003,
         FederationDoesnotExistOrIsLocked = 3004,
+        PartitionFailoverErrorCode = 3010,
 
         // 429: Request Rate Too Large
         PrepareTimeLimitExceeded = 3207,
@@ -177,6 +201,7 @@ namespace Microsoft.Azure.Documents
         InvalidKeyVaultSecretURI = 4014, // Indicates the Key Vault secret URI is invalid.
         UndefinedDefaultIdentity = 4015, // Indicates that the account has an undefined default identity.
         NspOutboundDenied = 4016, // Indicates that the account's NSP is blocking outbound requests to Key Vault.
+        KeyVaultNotFound = 4017, // Indicates that the Key Vault could not be found by the system.
 
         // Keep in sync with Microsoft.Azure.Cosmos.ServiceFramework.Security.AadAuthentication.AadSubStatusCodes
         // 401 : Unauthorized Exception (User-side errors start with 50)
@@ -227,7 +252,11 @@ namespace Microsoft.Azure.Documents
         // 401 Unauthorized Exception (mutual TLS client auth failed)
         MutualTlsClientAuthFailed = 5600,
 
+        // 200 OK.GW response to GET DocService request.
+        LocationsModified = 5700, // Indicates locations derived from topology have been modified due to region being offlined.
+
         // SDK Codes (Client)
+        // IMPORTANT - keep these consistent with Java SDK as well
         TransportGenerated410 = 20001,
         TimeoutGenerated410 = 20002,
         TransportGenerated503 = 20003,
@@ -235,8 +264,10 @@ namespace Microsoft.Azure.Documents
         Client_ThreadStarvation = 20005,
         Channel_Closed = 20006,
         MalformedContinuationToken = 20007,
+        // EndToEndOperationCancelled = 20008 - cancellation by e2e retry policy - currently only applicable in Java
 
         //SDK Codes (Server)
+        // IMPORTANT - keep these consistent with Java SDK as well
         Server_NameCacheIsStaleExceededRetryLimit = 21001,
         Server_PartitionKeyRangeGoneExceededRetryLimit = 21002,
         Server_CompletingSplitExceededRetryLimit = 21003,
@@ -245,7 +276,12 @@ namespace Microsoft.Azure.Documents
         Server_GlobalStrongWriteBarrierNotMet = 21006,
         Server_ReadQuorumNotMet = 21007,
         ServerGenerated503 = 21008,
-        Server_NoValidStoreResponse = 21009
+        Server_NoValidStoreResponse = 21009,
+        // ServerGenerated408 = 21010 - currently only applicable in Java
+
+        // Data Transfer Application related
+        MissingPartitionKeyInDataTransfer = 22001,
+        InvalidPartitionKeyInDataTransfer = 22002
     }
 
     internal static class StatusCodesExtensions

@@ -114,13 +114,13 @@ namespace Microsoft.Azure.Documents
 
         // These names make it unclear what they map to in RequestOperationType.
         ExecuteJavaScript = -2,
+        GetConfiguration = -8,
 #if !COSMOSCLIENT
         ForceConfigRefresh = -3,
         ReportThroughputUtilization = -4,
         ServiceReservation = -5,
         ControllerBatchReportCharges = -6,
         ControllerBatchGetOutput = -7,
-        GetConfiguration = -8,
         GetStorageAccountKey = -9,
         GetFederationConfigurations = -10,
         GetDatabaseAccountConfigurations = -11,
@@ -135,6 +135,9 @@ namespace Microsoft.Azure.Documents
         GetCustomerManagedKeyStatus = -20,
         GetBatchCustomerManagedKeyStatus = -21,
         XPDatabaseAccountMetaData = -22,
+        ControllerBatchAutoscaleRUsConsumption = -23,
+        ControllerBatchGetAutoscaleAggregateOutput = -24,
+        GetDekProperties = -25,
 #endif
     }
 
@@ -218,10 +221,10 @@ namespace Microsoft.Azure.Documents
                    type == OperationType.SqlQuery ||
                    type == OperationType.Head ||
                    type == OperationType.HeadFeed ||
+                   type == OperationType.MetadataCheckAccess ||
                    type == OperationType.QueryPlan
 #if !COSMOSCLIENT
                    ||
-                   type == OperationType.MetadataCheckAccess ||
                    type == OperationType.GetStorageAuthToken
 #endif
                    ;

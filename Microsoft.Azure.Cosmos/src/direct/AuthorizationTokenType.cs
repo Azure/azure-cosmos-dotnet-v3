@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Documents
         AadToken,
         CompoundToken,
         SasToken,
+        TokenCredential
     }
 
     internal static class AuthorizationTokenTypeExtensions

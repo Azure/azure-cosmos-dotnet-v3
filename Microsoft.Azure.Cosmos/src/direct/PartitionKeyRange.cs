@@ -95,6 +95,19 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        [JsonProperty(PropertyName = Constants.Properties.Lsn)]
+        public long LSN
+        {
+            get
+            {
+                return base.GetValue<long>(Constants.Properties.Lsn);
+            }
+            set
+            {
+                base.SetValue(Constants.Properties.Lsn, value);
+            }
+        }
+
         /// <summary>
         /// Contains ids or parent ranges in the Azure Cosmos DB service.
         /// For example if range with id '1' splits into '2' and '3',

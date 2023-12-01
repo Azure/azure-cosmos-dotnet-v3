@@ -85,6 +85,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             /// <summary>
             /// https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-globalmemorystatusex
             /// </summary>
+            /// <param name="idle"></param>
+            /// <param name="kernel"></param>
             /// <param name="user"></param>
             /// <returns></returns>
             [DllImport("kernel32.dll", SetLastError = true)]

@@ -43,11 +43,11 @@
 		<Optimize Condition="'$(Configuration)'=='Release'">true</Optimize>
 		<LangVersion>$(LangVersion)</LangVersion>
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
-		<NoWarn>CS1572; CS1573; CS1574; CS1580</NoWarn>
+		<NoWarn>CS1572; CS1573; CS1574; CS1580; CS1570; CS0472</NoWarn>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<None Include="..\..\LICENSE" Pack="true" PackagePath="" Visible="false" />
+		<None Include="..\..\LICENSE" Pack="true" PackagePath="" Visible="false"/>
 	</ItemGroup>
 	
 	<ItemGroup>
@@ -118,8 +118,7 @@
 		<PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
 		<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="1.0.0" />
 		<PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.0.102" PrivateAssets="All" />
-		<PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
-		<PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="All" />
+		<PackageReference Include="Newtonsoft.Json" Version="10.0.2" NoWarn="NU1903" />
 
 		<!--Direct Dependencies-->
 		<PackageReference Include="System.Configuration.ConfigurationManager" Version="6.0.0" />

@@ -148,10 +148,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                     resourceOperation, activityId, transportRequestStats);
                 transportRequestStats.RecordState(TransportRequestStats.RequestStage.Completed);
                 storeResponse.TransportRequestStats = transportRequestStats;
-
-#if NETSTANDARD2_0_OR_GREATER
-                recorder?.Record(physicalAddress.Uri, storeResponse: storeResponse);
-#endif
             }
             catch (TransportException ex)
             {
@@ -275,13 +271,15 @@ namespace Microsoft.Azure.Documents.Rntbd
                 recorder?.Record(physicalAddress.Uri, documentClientException: exception);
                 throw;
             }
+
+            // Record the information of the sucessfull response in the end, it also make sure it is not getting called twice.
+            recorder?.Record(physicalAddress.Uri, storeResponse: storeResponse);
 #else
             catch (DocumentClientException)
             {
                 throw;
             }
 #endif
-
             return storeResponse;
         }
 

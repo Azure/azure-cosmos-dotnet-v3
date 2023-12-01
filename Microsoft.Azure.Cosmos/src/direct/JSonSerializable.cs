@@ -821,6 +821,11 @@ namespace Microsoft.Azure.Documents
                 if (token != null)
                 {
                     Dictionary<string, JObject> jobjectDictionary = token.ToObject<Dictionary<string, JObject>>();
+                    if (jobjectDictionary == null)
+                    {
+                        return null;
+                    } 
+
                     Dictionary<string, TSerializable> objectDictionary = new Dictionary<string, TSerializable>();
                     foreach (KeyValuePair<string, JObject> kvp in jobjectDictionary)
                     {

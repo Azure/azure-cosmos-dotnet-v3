@@ -36,6 +36,11 @@ namespace Microsoft.Azure.Documents
         /// <summary>
         /// Specifies replace operations only.
         /// </summary>
-        Replace = 0x4
+        Replace = 0x4,
+
+        /// <summary>
+        /// Specifies upsert operations only.
+        /// </summary>
+        Upsert = 0x5
     }
 }

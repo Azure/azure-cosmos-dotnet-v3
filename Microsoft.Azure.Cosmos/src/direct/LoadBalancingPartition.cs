@@ -36,13 +36,13 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         // This channel factory delegate is meant for unit testing only and a default implementation is provided.
         // However it can be extended to support the main line code path if needed.
-        private readonly Func<Guid, Uri, ChannelProperties, bool, SemaphoreSlim, IChaosInterceptor, Action<Guid, Uri, Channel>, IChannel> channelFactory;
+        private readonly Func<Guid, Uri, ChannelProperties, bool, SemaphoreSlim, IChaosInterceptor, Action<Guid, Guid, Uri, Channel>, IChannel> channelFactory;
 
         public LoadBalancingPartition(
             Uri serverUri,
             ChannelProperties channelProperties,
             bool localRegionRequest,
-            Func<Guid, Uri, ChannelProperties, bool, SemaphoreSlim, IChaosInterceptor, Action<Guid, Uri, Channel>, IChannel> channelFactory = null,
+            Func<Guid, Uri, ChannelProperties, bool, SemaphoreSlim, IChaosInterceptor, Action<Guid, Guid, Uri, Channel>, IChannel> channelFactory = null,
             IChaosInterceptor chaosInterceptor = null)
         {
             Debug.Assert(serverUri != null);
@@ -188,8 +188,9 @@ namespace Microsoft.Azure.Documents.Rntbd
                                 channelsCreated = targetChannels - this.openChannels.Count;
                             }
 
-                           Action<Guid, Uri, Channel> onChannelOpen = 
-                                (Guid createId, Uri serverUri, Channel createdChannel) => this.chaosInterceptor?.OnChannelOpen(createId, serverUri, request, createdChannel);
+                           Action<Guid, Guid, Uri, Channel> onChannelOpen = 
+                                (Guid createId, Guid connectionCorrelationId, Uri serverUri, Channel createdChannel) 
+                                    => this.chaosInterceptor?.OnChannelOpen(createId, serverUri, request, createdChannel);
 
                             while (this.openChannels.Count < targetChannels)
                             {                              
@@ -317,7 +318,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         /// <returns>An instance of <see cref="IChannel"/>.</returns>
         private IChannel OpenChannelAndIncrementCapacity(
             Guid activityId,
-            Action<Guid, Uri, Channel> onChannelOpen = null)
+            Action<Guid, Guid, Uri, Channel> onChannelOpen = null)
         {
             Debug.Assert(this.capacityLock.IsWriteLockHeld);
 
@@ -364,7 +365,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             bool localRegionRequest,
             SemaphoreSlim concurrentOpeningChannelSlim,
             IChaosInterceptor chaosInterceptor = null,
-            Action<Guid, Uri, Channel> onChannelOpen = null)
+            Action<Guid, Guid, Uri, Channel> onChannelOpen = null)
         {
             return new Channel(
                 activityId,

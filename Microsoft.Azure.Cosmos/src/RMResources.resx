@@ -744,6 +744,9 @@
   <data name="WriteRegionAutomaticFailoverNotEnabled" xml:space="preserve">
     <value>Cannot offline write region when automatic failover is not enabled</value>
   </data>
+  <data name="FederationAndRegionMismatch" xml:space="preserve">
+    <value>Federation {0} and region {1} are not matching.</value>
+  </data>
   <data name="WriteRegionDoesNotExist" xml:space="preserve">
     <value>Cannot add additional regions, since database account provision failed.</value>
   </data>
@@ -1195,6 +1198,9 @@ If you would like to serve this query through continuation tokens, then please r
   <data name="RbacMissingAction" xml:space="preserve">
     <value>Cannot authorize request since the [Action] to authorize was not found.</value>
   </data>
+  <data name="CrossTenantCMKDatabaseAccountDelegatedIdentityNotSupported" xml:space="preserve">
+    <value>Cross tenant CMK database account doesn't support using delegated identity as the default identity.</value>
+  </data>
   <data name="SystemDatabaseAccountPitrEnabledNotSupported" xml:space="preserve">
     <value>System database account {0} cannot be created with Continuous backup mode</value>
     <comment>{0} = GlobalDatabaseAccountId</comment>
@@ -1238,7 +1244,7 @@ If you would like to serve this query through continuation tokens, then please r
   <data name="InvalildScopeSegments" xml:space="preserve">
     <value>The requested scope contains unexpected segments.</value>
   </data>
-	<data name="FailoverDisabled" xml:space="preserve">
+  <data name="FailoverDisabled" xml:space="preserve">
     <value>Cannot perform failover as it is disabled for the account.</value>
   </data>
   <data name="UnsupportedPartitionDefinitionKindForPartialKeyOperations" xml:space="preserve">
@@ -1322,8 +1328,8 @@ If you would like to serve this query through continuation tokens, then please r
   <data name="CrossTenantCMKNotSupportedWithSystemAssignedIdentity" xml:space="preserve">
     <value>Cross-tenant CMK is not supported with System Assigned identities as Default identities. Please use an User Assigned Identity instead.</value>
   </data>
-  <data name="InvalidFederationCapAction" xml:space="preserve">
-    <value>Federation cap action is not currently supported.</value>
+  <data name="InvalidFederationCapUncapMetadataAction" xml:space="preserve">
+    <value>The CapUncapMetadata action '{0}' is not currently supported.</value>
   </data>
   <data name="DefaultIdentityNotValidFormat" xml:space="preserve">
     <value>The given default identity for {0} is not valid. The format for the default identity is not valid, please use 'FirstPartyIdentity'/'SystemAssignedIdentity'/'UserAssignedIdentity=&lt;UA_resource_id&gt;'</value>
@@ -1336,5 +1342,63 @@ If you would like to serve this query through continuation tokens, then please r
   </data>
   <data name="DefaultIdentityWithoutCorrespondingUserIdentity" xml:space="preserve">
     <value>The given default identity for {0} is not valid. The default identity points to an user identity that does not exist in {0}.</value>
+  </data>
+  <data name="AadClientCredentialsGrantFailureRevokeMessage" xml:space="preserve">
+    <value>Access to your account is currently revoked because the Azure Cosmos DB service is unable to obtain the AAD authentication token for the account's default identity; for more details about this error and how to restore access to your account please visit https://learn.microsoft.com/en-us/azure/cosmos-db/cmk-troubleshooting-guide#azure-active-directory-token-acquisition-error ({0}).</value>
+  </data>
+  <data name="InvalidKeyVaultKeyURIRevokeMessage" xml:space="preserve">
+    <value>Access to your account is currently revoked because the Azure Cosmos DB account's key vault key URI does not follow the expected format; for more details about this error and how to restore access to your account please visit https://learn.microsoft.com/en-us/azure/cosmos-db/cmk-troubleshooting-guide#improper-syntax-detected-on-the-key-vault-uri-property ({0}).</value>
+  </data>
+  <data name="KeyVaultAuthenticationFailureRevokeMessage" xml:space="preserve">
+    <value>Access to your account is currently revoked because the current default identity no longer has permission to the associated Key Vault key; for more details about this error and how to restore access to your account please visit https://learn.microsoft.com/en-us/azure/cosmos-db/cmk-troubleshooting-guide#default-identity-is-unauthorized-to-access-the-azure-key-vault-key ({0}).</value>
+  </data>
+  <data name="KeyVaultDNSNotResolvedRevokeMessage" xml:space="preserve">
+    <value>Access to your account is currently revoked because the Azure Key Vault DNS name specified by the account's keyvaultkeyuri property could not be resolved; for more details about this error and how to restore access to your account please visit https://learn.microsoft.com/en-us/azure/cosmos-db/cmk-troubleshooting-guide#unable-to-resolve-the-key-vaults-dns ({0}).</value>
+  </data>
+  <data name="KeyVaultKeyNotFoundRevokeMessage" xml:space="preserve">
+    <value>Access to your account is currently revoked because the correspondent key is not found on the specified Key Vault; for more details about this error and how to restore access to your account please visit https://learn.microsoft.com/en-us/azure/cosmos-db/cmk-troubleshooting-guide#azure-key-vault-resource-not-found ({0}).</value>
+  </data>
+  <data name="KeyVaultNotFoundRevokeMessage" xml:space="preserve">
+    <value>Access to your account is currently revoked because the correspondent Azure Key Vault was not found; for more details about this error and how to restore access to your account please visit https://learn.microsoft.com/en-us/azure/cosmos-db/cmk-troubleshooting-guide#azure-key-vault-resource-not-found ({0}).</value>
+  </data>
+  <data name="KeyVaultWrapUnwrapFailureRevokeMessage" xml:space="preserve">
+    <value>Access to your account is currently revoked because the Azure Cosmos DB service is unable to wrap or unwrap the key; for more details about this error and how to restore access to your account please visit https://learn.microsoft.com/en-us/azure/cosmos-db/cmk-troubleshooting-guide#internal-unwrapping-procedure-error ({0}).</value>
+  </data>
+  <data name="UndefinedDefaultIdentityRevokeMessage" xml:space="preserve">
+    <value>Access to your account is currently revoked because the Azure Cosmos DB account has an undefined default identity; for more details about this error and how to restore access to your account please visit https://learn.microsoft.com/en-us/azure/cosmos-db/cmk-troubleshooting-guide#invalid-azure-cosmos-db-default-identity ({0}).</value>
+  </data>
+  <data name="NspOutboundDeniedRevokeMessage" xml:space="preserve">
+    <value>Access to your account is currently revoked because the access rules are blocking outbound requests to the Azure Key Vault service; for more details about this error and how to restore access to your account please visit https://learn.microsoft.com/en-us/azure/cosmos-db/cmk-troubleshooting-guide ({0}).</value>
+  </data>
+  <data name="UnknownSubstatusCodeRevokeMessage" xml:space="preserve">
+    <value>Access to your account is currently revoked; for more details about this error and how to restore access to your account please visit https://learn.microsoft.com/en-us/azure/cosmos-db/cmk-troubleshooting-guide</value>
+  </data>
+  <data name="CmkAccountIsNotRevoked" xml:space="preserve">
+    <value>Access to the configured customer managed key confirmed. </value>
+  </data>
+  <data name="WebSocketRequestsNotSupported" xml:space="preserve">
+    <value>Web socket requests are not supported</value>
+  </data>
+  <data name="ServiceUnavailableDueToHighDemandInRegion" xml:space="preserve">
+    <value>Sorry, we are currently experiencing high demand in {0} region, and cannot fulfill your request at this time. Please retry after sometime. If the problem persists, please reach out to support.</value>
+    <comment>{0} = Location</comment>
+  </data>
+  <data name="EnableMultipleWriteLocationsAndEnableTieredStorageV1NotSupported" xml:space="preserve">
+    <value>Enable TieredStorageV1 and Enable Multiple write locations are not supported together on GlobalDatabaseAccount.</value>
+  </data>
+  <data name="EnableDataMaskingPolicyAndEnableLogStoreNotSupported" xml:space="preserve">
+    <value>Dynamic Data Masking is not supported with Continuous Backup/Analytical Store/Materialized View/Full Fidelity Change Feed.</value>
+  </data>
+  <data name="DataMaskingPolicyNotSupportedOnNonSQLAccounts" xml:space="preserve">
+    <value>Dynamic Data Masking Policy is not supported on this account type.</value>
+  </data>
+  <data name="EnableOnlyColdStorageContainersInAccountV1AndEnableMaterializedViewsNotSupported" xml:space="preserve">
+    <value>Enable OnlyColdStorageContainersInAccount V1 and EnableMaterializedViews are not supported together on GlobalDatabaseAccount.</value>
+  </data>
+  <data name="InvalidFederationCapUncapMetadataSource" xml:space="preserve">
+    <value>The CapUncapMetadata source '{0}' is invalid.</value>
+  </data>
+  <data name="InvalidFederationDocumentFormat" xml:space="preserve">
+    <value>The federation document for the federation {0} is in an invalid format.</value>
   </data>
 </root>

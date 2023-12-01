@@ -106,12 +106,6 @@ namespace CosmosCTL
         [Option("ctl_disable_client_telemetry", Required = false, HelpText = "Disable Client Telemetry Feature in SDK. Make sure you enable it from the portal also.")]
         public bool DisableClientTelemetry { get; set; } = false;
 
-        [Option("ctl_reservoir_type", Required = false, HelpText = "Defines the reservoir type. Valid values are: Uniform, SlidingWindow and ExponentialDecay. The default value is SlidingWindow.")]
-        public ReservoirTypes ReservoirType { get; set; } = ReservoirTypes.SlidingWindow;
-
-        [Option("ctl_reservoir_sample_size", Required = false, HelpText = "The reservoir sample size.")]
-        public int ReservoirSampleSize { get; set; } = 1028;
-
         internal TimeSpan RunningTimeDurationAsTimespan { get; private set; } = TimeSpan.FromHours(10);
         internal TimeSpan DiagnosticsThresholdDurationAsTimespan { get; private set; } = TimeSpan.FromSeconds(60);
 

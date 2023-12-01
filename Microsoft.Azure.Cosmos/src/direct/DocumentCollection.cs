@@ -113,10 +113,12 @@ namespace Microsoft.Azure.Documents
         private MaterializedViewDefinition materializedViewDefinition;
         private ByokConfig byokConfig;
         private ClientEncryptionPolicy clientEncryptionPolicy;
+        private DataMaskingPolicy dataMaskingPolicy;
         private Collection<MaterializedViews> materializedViews;
         private EncryptionScopeMetadata encryptionScopeMetadata;
         private InAccountRestoreParameters restoreParameters;
         private byte uniqueIndexNameEncodingMode;
+        private Collection<ComputedProperty> computedProperties;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DocumentCollection"/> class for the Azure Cosmos DB service.
@@ -151,6 +153,40 @@ namespace Microsoft.Azure.Documents
 
                 this.indexingPolicy = value;
                 base.SetObject<IndexingPolicy>(Constants.Properties.IndexingPolicy, value);
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the collection containing <see cref="ComputedProperty"/> objects in the container.
+        /// </summary>
+        /// <value>
+        /// The collection containing <see cref="ComputedProperty"/> objects associated with the container.
+        /// </value>
+        [JsonProperty(PropertyName = Constants.Properties.ComputedProperties)]
+        internal Collection<ComputedProperty> ComputedProperties
+        {
+            get
+            {
+                if (this.computedProperties == null)
+                {
+                    this.computedProperties = base.GetValue<Collection<ComputedProperty>>(Constants.Properties.ComputedProperties);
+                    if (this.computedProperties == null)
+                    {
+                        this.computedProperties = new Collection<ComputedProperty>();
+                    }
+                }
+
+                return this.computedProperties;
+            }
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentNullException(string.Format(CultureInfo.CurrentCulture, RMResources.PropertyCannotBeNull, "computedProperties"));
+                }
+
+                this.computedProperties = value;
+                base.SetValue(Constants.Properties.ComputedProperties, this.computedProperties);
             }
         }
 
@@ -285,12 +321,10 @@ namespace Microsoft.Azure.Documents
             }
             set
             {
-#pragma warning disable CS0472 // The result of the expression is always the same since a value of this type is never equal to 'null'
                 if(value == null)
                 {
                     throw new ArgumentNullException(string.Format(CultureInfo.CurrentCulture, RMResources.PropertyCannotBeNull, "UniqueIndexNameEncodingMode"));
                 }
-#pragma warning restore CS0472 // The result of the expression is always the same since a value of this type is never equal to 'null'
                 this.uniqueIndexNameEncodingMode = value;
                 this.SetValue(Constants.Properties.UniqueIndexNameEncodingMode, value);
             }
@@ -920,6 +954,36 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        /// Gets the <see cref="DataMaskingPolicy"/> associated with the collection from the Azure Cosmos DB service. 
+        /// </summary>
+        /// <value>
+        /// The DataMaskingPolicy associated with the collection.
+        /// </value>
+        [JsonProperty(PropertyName = Constants.Properties.DataMaskingPolicy, DefaultValueHandling = DefaultValueHandling.Ignore, NullValueHandling = NullValueHandling.Ignore)]
+        internal DataMaskingPolicy DataMaskingPolicy
+        {
+            get
+            {
+                if (this.dataMaskingPolicy == null)
+                {
+                    this.dataMaskingPolicy = base.GetObject<DataMaskingPolicy>(Constants.Properties.DataMaskingPolicy);
+                }
+
+                return this.dataMaskingPolicy;
+            }
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentNullException(string.Format(CultureInfo.CurrentCulture, RMResources.PropertyCannotBeNull, nameof(DataMaskingPolicy)));
+                }
+
+                this.dataMaskingPolicy = value;
+                base.SetObject<DataMaskingPolicy>(Constants.Properties.DataMaskingPolicy, value);
+            }
+        }
+
+        /// <summary>
         /// Gets the materialized views on the collection. 
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.MaterializedViews, DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate)]
@@ -1004,6 +1068,11 @@ namespace Microsoft.Azure.Documents
             this.UniqueKeyPolicy.Validate();
             this.ConflictResolutionPolicy.Validate();
             this.UniqueIndexReIndexContext.Validate();
+
+            foreach (ComputedProperty computedProperty in this.ComputedProperties)
+            {
+                computedProperty.Validate();
+            }
         }
 
         internal override void OnSave()
@@ -1067,9 +1136,19 @@ namespace Microsoft.Azure.Documents
                 base.SetObject(Constants.Properties.ClientEncryptionPolicy, this.clientEncryptionPolicy);
             }
 
+            if (this.dataMaskingPolicy != null)
+            {
+                base.SetObject(Constants.Properties.DataMaskingPolicy, this.dataMaskingPolicy);
+            }
+
             if (this.materializedViews != null)
             {
                 base.SetValueCollection<MaterializedViews>(Constants.Properties.MaterializedViews, this.materializedViews);
+            }
+
+            if (this.computedProperties != null)
+            {
+                base.SetValueCollection<ComputedProperty>(Constants.Properties.ComputedProperties, this.computedProperties);
             }
 
             if (this.restoreParameters != null)

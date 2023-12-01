@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Documents
 {
     using System;
     using System.Diagnostics;
+    using System.Globalization;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
@@ -17,6 +18,32 @@ namespace Microsoft.Azure.Documents
     internal sealed class GoneAndRetryWithRequestRetryPolicy<TResponse> :
         IRequestRetryPolicy<GoneAndRetryRequestRetryPolicyContext, DocumentServiceRequest, TResponse> where TResponse : IRetriableResponse
     {
+        struct ErrorOrResponse
+        {
+            private Exception exception;
+            private int statusCode;
+
+            public ErrorOrResponse(Exception ex, TResponse response)
+            {
+                exception = ex;
+                this.statusCode = response != null ? (int)response.StatusCode : 0;
+            }
+
+            public ErrorOrResponse(Exception ex)
+            {
+                exception = ex;
+                statusCode = 0;
+            }
+
+            private string ExceptionToString()
+            {
+                // If no error code is set, use WithMessageAndData
+                return statusCode != 0 ? exception?.ToStringWithData() : exception?.ToStringWithMessageAndData();
+            }
+
+            public override string ToString() => exception != null ? this.ExceptionToString() : statusCode.ToString(CultureInfo.InvariantCulture);
+        }
+
         private static readonly ThreadLocal<Random> Random = new ThreadLocal<Random>(() => new Random());
 
         private const int defaultWaitTimeInMilliSeconds = 30000;
@@ -133,8 +160,8 @@ namespace Microsoft.Azure.Documents
                 if (disableRetryWithPolicy)
                 {
                     DefaultTrace.TraceWarning(
-                        "The GoneAndRetryWithRequestRetryPolicy is configured with disableRetryWithPolicy to true. Retries on 449(RetryWith) exceptions has been disabled. This is by design to allow users to handle the exception: {0}", 
-                        exception.ToStringWithMessageAndData());
+                        "The GoneAndRetryWithRequestRetryPolicy is configured with disableRetryWithPolicy to true. Retries on 449(RetryWith) exceptions has been disabled. This is by design to allow users to handle the exception: {0}",
+                        new ErrorOrResponse(exception));
                     this.durationTimer.Stop();
                     shouldRetryResult = ShouldRetryResult.NoRetry();
                     return true;
@@ -174,12 +201,16 @@ namespace Microsoft.Azure.Documents
                             DefaultTrace.TraceError(
                                 "{0} including at least one RetryWithException. " +
                                 "Will fail the request with RetryWithException. Exception: {1}. RetryWithException: {2}",
-                                message, exception?.ToStringWithData() ?? response?.StatusCode.ToString(), this.lastRetryWithException.ToStringWithData());
+                                message,
+                                new ErrorOrResponse(exception, response),
+                                new ErrorOrResponse(this.lastRetryWithException));
                             exceptionToThrow = this.lastRetryWithException;
                         }
                         else
                         {
-                            DefaultTrace.TraceError("{0}. Will fail the request. {1}", message, exception?.ToStringWithData() ?? response?.StatusCode.ToString());
+                            DefaultTrace.TraceError("{0}. Will fail the request. {1}", message,
+                                new ErrorOrResponse(exception, response));
+
                             SubStatusCodes exceptionSubStatus = DocumentClientException.GetExceptionSubStatusForGoneRetryPolicy(exception);
                             if (exceptionSubStatus == SubStatusCodes.TimeoutGenerated410)
                             {
@@ -236,7 +267,8 @@ namespace Microsoft.Azure.Documents
                     }
                     else
                     {
-                        DefaultTrace.TraceError("Received retry with exception after backoff/retry. Will fail the request. {0}", exception?.ToStringWithData() ?? response?.StatusCode.ToString());
+                        DefaultTrace.TraceError("Received retry with exception after backoff/retry. Will fail the request. {0}", new ErrorOrResponse(exception, response));
+                        exceptionToThrow = exception;
                     }
 
                     this.durationTimer.Stop();
@@ -306,7 +338,8 @@ namespace Microsoft.Azure.Documents
                 {
                     // for third InvalidPartitionException, stop retrying.
                     SubStatusCodes exceptionSubStatusCode = DocumentClientException.GetExceptionSubStatusForGoneRetryPolicy(exception);
-                    DefaultTrace.TraceCritical("Received second InvalidPartitionException after backoff/retry. Will fail the request. {0}", exception?.ToStringWithData() ?? response?.StatusCode.ToString());
+                    DefaultTrace.TraceCritical("Received second InvalidPartitionException after backoff/retry. Will fail the request. {0}",
+                        new ErrorOrResponse(exception, response));
                     shouldRetryResult = ShouldRetryResult.NoRetry(ServiceUnavailableException.Create(exceptionSubStatusCode, innerException: exception));
                     return true;
                 }
@@ -317,7 +350,7 @@ namespace Microsoft.Azure.Documents
                 }
                 else
                 {
-                    DefaultTrace.TraceCritical("Received unexpected invalid collection exception, request should be non-null. {0}", exception?.ToStringWithData() ?? response?.StatusCode.ToString());
+                    DefaultTrace.TraceCritical("Received unexpected invalid collection exception, request should be non-null. {0}", new ErrorOrResponse(exception, response));
                     shouldRetryResult = ShouldRetryResult.NoRetry(new InternalServerErrorException(exception));
                     return true;
                 }
@@ -344,7 +377,7 @@ namespace Microsoft.Azure.Documents
                 this.regionRerouteAttemptCount,
                 backoffTime,
                 timeout,
-                exception?.ToStringWithData() ?? response?.StatusCode.ToString());
+                new ErrorOrResponse(exception, response));
 
             shouldRetryResult = ShouldRetryResult.RetryAfter(backoffTime);
             this.previousException = exception;

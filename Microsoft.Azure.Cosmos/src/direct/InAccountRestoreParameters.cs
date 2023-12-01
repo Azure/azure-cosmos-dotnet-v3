@@ -67,6 +67,19 @@ namespace Microsoft.Azure.Documents
             set { base.SetValue(Constants.Properties.SourceBackupLocation, value); }
         }
 
+        /// <summary>
+        /// Gets or sets the <see cref="RestoreWithTTLDisabled"/> for triggering the InAccount Restore as part of RestoreParameters
+        /// </summary>
+        /// <value>
+        /// A valid value should be true or false
+        /// </value>
+        [JsonProperty(PropertyName = Constants.Properties.RestoreWithTTLDisabled)]
+        public bool RestoreWithTTLDisabled
+        {
+            get { return base.GetValue<bool>(Constants.Properties.RestoreWithTTLDisabled); }
+            set { base.SetValue(Constants.Properties.RestoreWithTTLDisabled, value); }
+        }
+
         internal override void Validate()
         {
             base.Validate();

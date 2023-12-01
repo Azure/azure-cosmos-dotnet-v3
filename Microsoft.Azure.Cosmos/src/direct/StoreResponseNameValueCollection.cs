@@ -91,6 +91,7 @@ namespace Microsoft.Azure.Documents.Collections
         public string OwnerFullName { get; set; }
         public string OwnerId { get; set; }
         public string PartitionKeyRangeId { get; set; }
+        public string PartitionThroughputInfo { get; set; }
         public string PendingPKDelete { get; set; }
         public string PhysicalPartitionId { get; set; }
         public string QueryExecutionInfo { get; set; }
@@ -215,6 +216,7 @@ namespace Microsoft.Azure.Documents.Collections
             this.OwnerFullName = null;
             this.OwnerId = null;
             this.PartitionKeyRangeId = null;
+            this.PartitionThroughputInfo = null;
             this.PendingPKDelete = null;
             this.PhysicalPartitionId = null;
             this.QueryExecutionInfo = null;
@@ -311,6 +313,7 @@ namespace Microsoft.Azure.Documents.Collections
                 OwnerFullName = this.OwnerFullName,
                 OwnerId = this.OwnerId,
                 PartitionKeyRangeId = this.PartitionKeyRangeId,
+                PartitionThroughputInfo = this.PartitionThroughputInfo,
                 PendingPKDelete = this.PendingPKDelete,
                 PhysicalPartitionId = this.PhysicalPartitionId,
                 QueryExecutionInfo = this.QueryExecutionInfo,
@@ -691,6 +694,10 @@ namespace Microsoft.Azure.Documents.Collections
             {
                 yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.HighestTentativeWriteLLSN, this.HighestTentativeWriteLLSN);
             }
+            if (this.PartitionThroughputInfo != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.PartitionThroughputInfo, this.PartitionThroughputInfo);
+            }
 
             if (this.lazyNotCommonHeaders != null)
             {
@@ -1046,6 +1053,10 @@ namespace Microsoft.Azure.Documents.Collections
             {
                 yield return WFConstants.BackendHeaders.HighestTentativeWriteLLSN;
             }
+            if (this.PartitionThroughputInfo != null)
+            {
+                yield return WFConstants.BackendHeaders.PartitionThroughputInfo;
+            }
 
             if (this.lazyNotCommonHeaders != null)
             {
@@ -1399,6 +1410,10 @@ namespace Microsoft.Azure.Documents.Collections
                         if (this.HighestTentativeWriteLLSN != null)
                         {
                             this.nameValueCollection.Add(WFConstants.BackendHeaders.HighestTentativeWriteLLSN, this.HighestTentativeWriteLLSN);
+                        }
+                        if (this.PartitionThroughputInfo != null)
+                        {
+                            this.nameValueCollection.Add(WFConstants.BackendHeaders.PartitionThroughputInfo, this.PartitionThroughputInfo);
                         }
                         if(this.lazyNotCommonHeaders != null)
                         {
@@ -2055,6 +2070,10 @@ namespace Microsoft.Azure.Documents.Collections
                     {
                         return this.MergeProgressBlocked;
                     }
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.PartitionThroughputInfo, key))
+                    {
+                        return this.PartitionThroughputInfo;
+                    }
                     if (string.Equals(WFConstants.BackendHeaders.IsRUPerMinuteUsed, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.IsRUPerMinuteUsed;
@@ -2068,6 +2087,11 @@ namespace Microsoft.Azure.Documents.Collections
                     if (string.Equals(WFConstants.BackendHeaders.MergeProgressBlocked, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.MergeProgressBlocked;
+                    }
+
+                    if (string.Equals(WFConstants.BackendHeaders.PartitionThroughputInfo, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.PartitionThroughputInfo;
                     }
 
                     break;
@@ -2110,6 +2134,10 @@ namespace Microsoft.Azure.Documents.Collections
 
                     break;
                 case 40:
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.SoftMaxAllowedThroughput, key))
+                    {
+                        return this.SoftMaxAllowedThroughput;
+                    }
                     if (object.ReferenceEquals(WFConstants.BackendHeaders.HighestTentativeWriteLLSN, key))
                     {
                         return this.HighestTentativeWriteLLSN;
@@ -3550,6 +3578,16 @@ namespace Microsoft.Azure.Documents.Collections
                         this.MergeProgressBlocked = value;
                         return;
                     }
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.PartitionThroughputInfo, key))
+                    {
+                        if (throwIfAlreadyExists && this.PartitionThroughputInfo != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.PartitionThroughputInfo = value;
+                        return;
+                    }
                     if (string.Equals(WFConstants.BackendHeaders.IsRUPerMinuteUsed, key, StringComparison.OrdinalIgnoreCase))
                     {
                         if (throwIfAlreadyExists && this.IsRUPerMinuteUsed != null)
@@ -3578,6 +3616,16 @@ namespace Microsoft.Azure.Documents.Collections
                         }
 
                         this.MergeProgressBlocked = value;
+                        return;
+                    }
+                    if (string.Equals(WFConstants.BackendHeaders.PartitionThroughputInfo, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.PartitionThroughputInfo != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.PartitionThroughputInfo = value;
                         return;
                     }
                     break;
@@ -3664,6 +3712,16 @@ namespace Microsoft.Azure.Documents.Collections
                     }
                     break;
                 case 40:
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.SoftMaxAllowedThroughput, key))
+                    {
+                        if (throwIfAlreadyExists && this.SoftMaxAllowedThroughput != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.SoftMaxAllowedThroughput = value;
+                        return;
+                    }
                     if (object.ReferenceEquals(WFConstants.BackendHeaders.HighestTentativeWriteLLSN, key))
                     {
                         if (throwIfAlreadyExists && this.HighestTentativeWriteLLSN != null)

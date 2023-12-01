@@ -377,6 +377,38 @@ namespace Microsoft.Azure.Documents
         /// <summary>
         /// Name of the Azure Mexico Central region in the Azure Cosmos DB service.
         /// </summary>
-        internal const string MexicoCentral = "Mexico Central";
+        public const string MexicoCentral = "Mexico Central";
+
+        /// <summary>
+        /// Name of the Azure Spain Central region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string SpainCentral = "Spain Central";
+
+        /// <summary>
+        /// Name of the Azure Taiwan North region in the Azure Cosmos DB service.
+        /// </summary>
+        internal const string TaiwanNorth = "Taiwan North";
+
+        /// <summary>
+        /// Name of the Azure Taiwan Northwest region in the Azure Cosmos DB service.
+        /// </summary>
+        internal const string TaiwanNorthwest = "Taiwan Northwest";
+
+        /// <summary>
+        /// Name of the Azure Austria East region in the Azure Cosmos DB service.
+        /// </summary>
+        internal const string AustriaEast = "Austria East";
+
+        /// <summary>
+        /// Name of the Azure New Zealand North region in the Azure Cosmos DB service.
+        /// </summary>
+        internal const string NewZealandNorth = "New Zealand North";
     }
 }
+
+
+
+
+
+
+

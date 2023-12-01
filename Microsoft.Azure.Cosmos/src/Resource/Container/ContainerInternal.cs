@@ -65,15 +65,6 @@ namespace Microsoft.Azure.Cosmos
 
         public abstract Task<CollectionRoutingMap> GetRoutingMapAsync(CancellationToken cancellationToken);
 
-        public abstract Task<TryExecuteQueryResult> TryExecuteQueryAsync(
-            QueryFeatures supportedQueryFeatures,
-            QueryDefinition queryDefinition,
-            string continuationToken,
-            FeedRangeInternal feedRangeInternal,
-            QueryRequestOptions requestOptions,
-            GeospatialType geospatialType,
-            CancellationToken cancellationToken = default);
-
         public abstract FeedIterator GetStandByFeedIterator(
             string continuationToken = default,
             int? maxItemCount = default,

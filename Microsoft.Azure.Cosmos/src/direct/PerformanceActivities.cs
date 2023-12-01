@@ -3,13 +3,6 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents
 {
-    internal sealed class ResolveFabricPerformanceActivity : PerformanceActivity
-    {
-        public ResolveFabricPerformanceActivity()
-            : base(null, null, PerfCounters.Counters.FabricResolveServiceFailures, PerfCounters.Counters.FabricResolveServiceAverageLatency, PerfCounters.Counters.FabricResolveServiceAverageLatencyBase, "ResolveFabric")
-        { }
-    }
-
     internal sealed class OpenConnectionPerformanceActivity : PerformanceActivity
     {
         public OpenConnectionPerformanceActivity()

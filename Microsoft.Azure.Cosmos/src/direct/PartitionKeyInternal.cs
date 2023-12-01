@@ -720,75 +720,20 @@ namespace Microsoft.Azure.Documents.Routing
                 return new string(result);
             }
         }
-
-        public static string GetMiddleRangeEffectivePartitionKey(string minInclusive, string maxExclusive, PartitionKeyDefinition partitionKeyDefinition)
+        
+        public static string GetMiddleRangeEffectivePartitionKey(string minInclusive, string maxExclusive, PartitionKeyDefinition partitionKeyDefinition) => partitionKeyDefinition.Kind switch
         {
-            switch (partitionKeyDefinition.Kind)
+            PartitionKind.Hash => GetMiddleRangeEffectivePartitionKeyForHash(minInclusive, maxExclusive, partitionKeyDefinition),
+            PartitionKind.MultiHash => GetMiddleRangeEffectivePartitionKeyForMultiHash(minInclusive, maxExclusive, partitionKeyDefinition),
+            _ => throw new InternalServerErrorException($"Unexpected PartitionKey Kind {partitionKeyDefinition.Kind}. Can determine middle of range only for hash and multihash partitioning.")
+        };
+
+        private static string GetMiddleRangeEffectivePartitionKeyForHash(string minInclusive, string maxExclusive, PartitionKeyDefinition partitionKeyDefinition)
+        {
+            switch (partitionKeyDefinition.Version ?? PartitionKeyDefinitionVersion.V1)
             {
-                case PartitionKind.Hash:
+                case PartitionKeyDefinitionVersion.V2:
                     {
-                        switch (partitionKeyDefinition.Version ?? PartitionKeyDefinitionVersion.V1)
-                        {
-                            case PartitionKeyDefinitionVersion.V2:
-                                {
-                                    Int128 min = 0;
-                                    if (!minInclusive.Equals(MinimumInclusiveEffectivePartitionKey, StringComparison.Ordinal))
-                                    {
-                                        byte[] minBytes = PartitionKeyInternal.HexStringToByteArray(minInclusive);
-                                        Array.Reverse(minBytes);
-                                        min = new Int128(minBytes);
-                                    }
-
-                                    Int128 max = MaxHashV2Value;
-                                    if (!maxExclusive.Equals(MaximumExclusiveEffectivePartitionKey, StringComparison.Ordinal))
-                                    {
-                                        byte[] maxBytes = PartitionKeyInternal.HexStringToByteArray(maxExclusive);
-                                        Array.Reverse(maxBytes);
-                                        max = new Int128(maxBytes);
-                                    }
-
-                                    byte[] midBytes = (min + (max - min) / 2).Bytes;
-                                    Array.Reverse(midBytes);
-                                    return HexConvert.ToHex(midBytes, 0, midBytes.Length);
-                                }
-                            case PartitionKeyDefinitionVersion.V1:
-                                {
-                                    long min = 0;
-                                    long max = uint.MaxValue;
-                                    if (!minInclusive.Equals(MinimumInclusiveEffectivePartitionKey, StringComparison.Ordinal))
-                                    {
-#pragma warning disable 0612
-                                        min = (long)((NumberPartitionKeyComponent)FromHexEncodedBinaryString(minInclusive).Components[0]).Value;
-#pragma warning restore 0612
-                                    }
-
-                                    if (!maxExclusive.Equals(MaximumExclusiveEffectivePartitionKey, StringComparison.Ordinal))
-                                    {
-#pragma warning disable 0612
-                                        max = (long)((NumberPartitionKeyComponent)FromHexEncodedBinaryString(maxExclusive).Components[0]).Value;
-#pragma warning restore 0612
-                                    }
-
-                                    return ToHexEncodedBinaryString(new[] { new NumberPartitionKeyComponent((min + max) / 2) });
-                                }
-
-                            default:
-                                throw new InternalServerErrorException("Unexpected PartitionKeyDefinitionVersion");
-                        }
-                    }
-
-                case PartitionKind.MultiHash:
-                    {
-                        if (partitionKeyDefinition.Version == PartitionKeyDefinitionVersion.V1)
-                        {
-                            throw new InternalServerErrorException("Unexpected PartitionKeyDefinitionVersion " + partitionKeyDefinition.Version + " for MultiHash Partition kind");
-                        }
-
-                        //Extract only the first EPK from a multi-path partition key.
-                        //[Given this is invoked for equal range Split, we do not want to split a subrange of a top-level key]
-                        minInclusive = minInclusive.Substring(0, Math.Min(minInclusive.Length, HashV2EPKLength));
-                        maxExclusive = maxExclusive.Substring(0, Math.Min(maxExclusive.Length, HashV2EPKLength));
-
                         Int128 min = 0;
                         if (!minInclusive.Equals(MinimumInclusiveEffectivePartitionKey, StringComparison.Ordinal))
                         {
@@ -809,10 +754,115 @@ namespace Microsoft.Azure.Documents.Routing
                         Array.Reverse(midBytes);
                         return HexConvert.ToHex(midBytes, 0, midBytes.Length);
                     }
+                case PartitionKeyDefinitionVersion.V1:
+                    {
+                        long min = 0;
+                        long max = uint.MaxValue;
+                        if (!minInclusive.Equals(MinimumInclusiveEffectivePartitionKey, StringComparison.Ordinal))
+                        {
+#pragma warning disable 0612
+                            min = (long)((NumberPartitionKeyComponent)FromHexEncodedBinaryString(minInclusive).Components[0]).Value;
+#pragma warning restore 0612
+                        }
+
+                        if (!maxExclusive.Equals(MaximumExclusiveEffectivePartitionKey, StringComparison.Ordinal))
+                        {
+#pragma warning disable 0612
+                            max = (long)((NumberPartitionKeyComponent)FromHexEncodedBinaryString(maxExclusive).Components[0]).Value;
+#pragma warning restore 0612
+                        }
+
+                        return ToHexEncodedBinaryString(new[] { new NumberPartitionKeyComponent((min + max) / 2) });
+                    }
 
                 default:
-                    throw new InternalServerErrorException("Unexpected PartitionKey Kind. Can determine middle of range only for hash and multihash partitioning.");
+                    throw new InternalServerErrorException("Unexpected PartitionKeyDefinitionVersion");
             }
+        }
+
+        private static IReadOnlyList<Int128> GetHashValueFromEPKForMultiHash(string epkValueString, PartitionKeyDefinition partitionKeyDefinition)
+        {
+            IList<Int128> hashes = new List<Int128>();
+            int pathCountInEPK = (epkValueString.Length + (HashV2EPKLength - 1))/HashV2EPKLength;
+
+            for (int index = 0; index < partitionKeyDefinition.Paths.Count; index++)
+            {
+                if (index < pathCountInEPK)
+                {
+                    int startIndexForEPK = index * HashV2EPKLength; //Offset it by the length of previously read EPK(s),
+
+                    // All EPK value lengths are HashV2EPKLength, however the end EPK value is 'FF'
+                    // FF is a special marker which appears only as a suffix 
+                    if (epkValueString.Length - startIndexForEPK < HashV2EPKLength)
+                    {
+                        hashes.Add(MaxHashV2Value);
+                    }
+                    else
+                    {
+                        // Extract the EPK for nth key
+                        string epkSubPart = epkValueString.Substring(startIndexForEPK, HashV2EPKLength);
+                        byte[] maxBytes = PartitionKeyInternal.HexStringToByteArray(epkSubPart);
+                        Array.Reverse(maxBytes);
+                        hashes.Add(new Int128(maxBytes));
+                    }
+                }
+                else // The EPK has less values than Paths.Count in the PkDef, this is empty partitionkey.
+                {
+                    hashes.Add(0);
+                }
+            }
+
+            return (IReadOnlyList<Int128>)hashes;
+        }
+
+        //Refer docs/design/elasticity/SubpartitioningContainerSplit.md for implementation detail
+        private static string GetMiddleRangeEffectivePartitionKeyForMultiHash(string minInclusive, string maxExclusive, PartitionKeyDefinition partitionKeyDefinition)
+        {
+            if (partitionKeyDefinition.Version == PartitionKeyDefinitionVersion.V1)
+            {
+                throw new InternalServerErrorException("Unexpected PartitionKeyDefinitionVersion " + partitionKeyDefinition.Version + " for MultiHash Partition kind");
+            }
+
+            IReadOnlyList<Int128> minInclusiveHashValues = GetHashValueFromEPKForMultiHash(minInclusive, partitionKeyDefinition);
+            IReadOnlyList<Int128> maxExclusiveHashValues = GetHashValueFromEPKForMultiHash(maxExclusive, partitionKeyDefinition);
+            IList<Int128> midPointHashValues = new List<Int128>(partitionKeyDefinition.Paths.Count);
+
+            for (int index = 0; index < partitionKeyDefinition.Paths.Count; index++)
+            {
+                Int128 min = minInclusiveHashValues[index];
+                Int128 max = maxExclusiveHashValues[index];
+
+                if (min == max || min + 1 == max)
+                {
+                    midPointHashValues.Add(min);
+                }
+                else
+                {
+                    /* It is possible, for Example if MinEPK, MaxEPK are [20, 40], [21, 10] respectively,
+                    *  the nMinEPKCurrentSubRange = 40 and nMaxEPKCurrentSubRange = 10
+                    *  Since in the above step we are already setting 20 to be first level midPoint,
+                    *  for a valid second level midPoint we must look for it the range [40, HashV2Max]
+                    */
+                    if (min > max)
+                    {
+                        max = MaxHashV2Value;
+                    }
+
+                    Int128 midValue = (min + (max - min) / 2);
+                    midPointHashValues.Add(midValue);
+                    break;
+                }
+            }
+
+            StringBuilder midPointEPKBuilder = new StringBuilder() ;
+            foreach (Int128 value in midPointHashValues)
+            {
+                byte[] midBytes = value.Bytes;
+                Array.Reverse(midBytes);
+                midPointEPKBuilder.Append(HexConvert.ToHex(midBytes, 0, midBytes.Length));
+            }
+
+            return midPointEPKBuilder.ToString();
         }
 
         public static string[] GetNEqualRangeEffectivePartitionKeys(
