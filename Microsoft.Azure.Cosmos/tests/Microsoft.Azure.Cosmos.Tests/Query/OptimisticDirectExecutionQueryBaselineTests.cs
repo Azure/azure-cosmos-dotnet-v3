@@ -7,7 +7,6 @@
     using System.IO;
     using System.Linq;
     using System.Net;
-    using System.Runtime.Serialization.Json;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -32,6 +31,7 @@
     using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class OptimisticDirectExecutionQueryBaselineTests : BaselineTests<OptimisticDirectExecutionTestInput, OptimisticDirectExecutionTestOutput>
@@ -499,30 +499,37 @@
         [TestMethod]
         public async Task TestTextDistributionPlanParsingFromStream()
         {
-            string backendPlan = "{\"query\": \"\\nSELECT Count(r.a) AS count_a\\nFROM r\", \"obfuscatedQuery\": \"{\\\"query\\\":\\\"SELECT Count(r.a) AS p1\\\\nFROM r\\\",\\\"parameters\\\":[]}\", \"shape\": \"{\\\"Select\\\":{\\\"Type\\\":\\\"List\\\",\\\"AggCount\\\":1},\\\"From\\\":{\\\"Expr\\\":\\\"Aliased\\\"}}\", \"signature\":-4885972563975185329, \"shapeSignature\":-6171928203673877984, \"queryIL\": { \"Expression\": { \"Kind\": \"Aggregate\", \"Type\": { \"Kind\": \"Enum\", \"ItemType\": { \"Kind\": \"Base\", \"BaseTypeKind\": \"Number\", \"ExcludesUndefined\": true } }, \"Aggregate\": { \"Kind\": \"Builtin\", \"Signature\": { \"ItemType\": { \"Kind\": \"Base\", \"BaseTypeKind\": \"Variant\", \"ExcludesUndefined\": false }, \"ResultType\": { \"Kind\": \"Base\", \"BaseTypeKind\": \"Number\", \"ExcludesUndefined\": true } }, \"OperatorKind\": \"Count\" }, \"SourceExpression\": { \"Kind\": \"Select\", \"Type\": { \"Kind\": \"Enum\", \"ItemType\": { \"Kind\": \"Base\", \"BaseTypeKind\": \"Variant\", \"ExcludesUndefined\": false } }, \"Delegate\": { \"Kind\": \"ScalarExpression\", \"Type\": { \"Kind\": \"Base\", \"BaseTypeKind\": \"Variant\", \"ExcludesUndefined\": false }, \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 4, \"Type\": { \"Kind\": \"Base\", \"BaseTypeKind\": \"Variant\", \"ExcludesUndefined\": true } }, \"Expression\": { \"Kind\": \"PropertyRef\", \"Type\": { \"Kind\": \"Base\", \"BaseTypeKind\": \"Variant\", \"ExcludesUndefined\": false }, \"Expression\": { \"Kind\": \"VariableRef\", \"Type\": { \"Kind\": \"Base\", \"BaseTypeKind\": \"Variant\", \"ExcludesUndefined\": true }, \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 4, \"Type\": { \"Kind\": \"Base\", \"BaseTypeKind\": \"Variant\", \"ExcludesUndefined\": true } } }, \"PropertyName\": \"a\" } }, \"SourceExpression\": { \"Kind\": \"Input\", \"Type\": { \"Kind\": \"Enum\", \"ItemType\": { \"Kind\": \"Base\", \"BaseTypeKind\": \"Variant\", \"ExcludesUndefined\": true } }, \"Name\": \"r\" } } } }, \"noSpatial\": true, \"language\": \"QueryIL\"}";
-            string backendJson = $@"{{""backendDistributionPlan"": {backendPlan},";
-            string clientPlan = "{\"clientQL\": {\"Kind\": \"Input\",\"Name\": \"root\"}}";
-            string clientJson = $@"""clientDistributionPlan"": {clientPlan}";
-            string distributionPlanJson = backendJson + clientJson;
-
-            string testResponse = $@"{{""_rid"": ""AgAAALHVPPs="", ""Documents"": [ {{ ""count_a"": 30 }} ], ""_count"": 1, ""_distributionPlan"": {$"{distributionPlanJson}"} }}}}";
+            string textPath = "C:\\Users\\akotalwar\\source\\azure-cosmos-dotnet-v3\\Microsoft.Azure.Cosmos\\tests\\Microsoft.Azure.Cosmos.Tests\\Query\\DistributionPlans\\Text\\";
+            string[] filePaths = Directory.GetFiles(textPath);
             
-            MemoryStream memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(testResponse));
-            CosmosQueryClientCore.ParseRestStream(
-                memoryStream,
-                Documents.ResourceType.Document,
-                out CosmosArray documents,
-                out CosmosObject distributionPlan);
+            foreach (string filePath in filePaths)
+            {
+                string testResponse = File.ReadAllText(filePath);
+                JObject jsonObject = JObject.Parse(testResponse);
 
-            if (distributionPlan.TryGetValue("backendDistributionPlan", out CosmosElement backendDistributionPlan) &&
-                distributionPlan.TryGetValue("clientDistributionPlan", out CosmosElement clientDistributionPlan))
-            {
-                Assert.IsTrue(backendDistributionPlan.ToString().Equals(backendPlan));
-                Assert.IsTrue(clientDistributionPlan.ToString().Equals(clientPlan));
-            }
-            else
-            {
-                Assert.Fail();
+                string backendPlan = jsonObject["_distributionPlan"]["backendDistributionPlan"].ToString();
+                backendPlan = backendPlan.Replace(" ", "").Replace("\t", "").Replace("\n", "").Replace("\r", "");
+
+                string clientPlan = jsonObject["_distributionPlan"]["clientDistributionPlan"].ToString();
+                clientPlan = clientPlan.Replace(" ", "").Replace("\t", "").Replace("\n", "").Replace("\r", "");
+
+                MemoryStream memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(testResponse));
+                CosmosQueryClientCore.ParseRestStream(
+                    memoryStream,
+                    Documents.ResourceType.Document,
+                    out CosmosArray documents,
+                    out CosmosObject distributionPlan);
+
+                if (distributionPlan.TryGetValue("backendDistributionPlan", out CosmosElement backendDistributionPlan) &&
+                    distributionPlan.TryGetValue("clientDistributionPlan", out CosmosElement clientDistributionPlan))
+                {
+                    Assert.AreEqual(backendDistributionPlan.ToString().Replace(" ", "").Replace("\t", "").Replace("\n", "").Replace("\r", ""), backendPlan);
+                    Assert.AreEqual(clientDistributionPlan.ToString().Replace(" ", "").Replace("\t", "").Replace("\n", "").Replace("\r", ""), clientPlan);
+                }
+                else
+                {
+                    Assert.Fail();
+                }
             }
         }
 
