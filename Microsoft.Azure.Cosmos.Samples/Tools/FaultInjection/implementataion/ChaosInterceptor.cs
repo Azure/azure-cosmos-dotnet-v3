@@ -4,7 +4,6 @@
 namespace Microsoft.Azure.Cosmos.FaultInjection
 {
     using System;
-    using Microsoft.Azure.Cosmos.FaultInjection.implementataion;
     using Microsoft.Azure.Documents.Rntbd;
     using Microsoft.Azure.Documents.FaultInjection;
     using Microsoft.Azure.Cosmos.Core.Trace;

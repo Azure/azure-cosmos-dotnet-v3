@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
         public StoreResponse GetInjectedServerError(ChannelCallArguments args)
         {
-            return this.result.GetInjectedServerError(args);
+            return this.result.GetInjectedServerError(args, this.id);
         }
 
         public FaultInjectionServerErrorType GetInjectedServerErrorType()

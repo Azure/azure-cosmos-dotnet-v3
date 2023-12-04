@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     using System;
     using System.Globalization;
     using System.Text;
-    using Microsoft.Azure.Cosmos.FaultInjection.implementataion;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Rntbd;
@@ -103,9 +102,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// Get server error to be injected
         /// </summary>
         /// <param name="args"></param>
+        /// <param name="ruleId"></param>
         /// <returns></returns>
         /// <exception cref="ArgumentException"></exception>
-        public StoreResponse GetInjectedServerError(ChannelCallArguments args)
+        public StoreResponse GetInjectedServerError(ChannelCallArguments args, string ruleId)
         {
             StoreResponse storeResponse;
 
@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     {
                         Status = 410,
                         Headers = args.RequestHeaders,
-                        ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes("Fault Injection Server Error: Gone"))
+                        ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes($"Fault Injection Server Error: Gone, rule: {ruleId}"))
                     };
 
                     return storeResponse;
@@ -126,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     {
                         Status = 449,
                         Headers = args.RequestHeaders,
-                        ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes("Fault Injection Server Error: Retry With"))
+                        ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes($"Fault Injection Server Error: Retry With, rule: {ruleId}"))
                     };
                     
                     return storeResponse;
@@ -139,7 +139,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     {
                         Status = 429,
                         Headers = tooManyRequestsHeaders,
-                        ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes("Fault Injection Server Error: Too Many Requests"))
+                        ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes($"Fault Injection Server Error: Too Many Requests, rule: {ruleId}"))
                     };
 
                     return storeResponse;
@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     {
                         Status = 408,
                         Headers = args.RequestHeaders,
-                        ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes("Fault Injection Server Error: Timeout"))
+                        ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes($"Fault Injection Server Error: Timeout, rule: {ruleId}"))
                     };
 
                     return storeResponse;
@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     {
                         Status = 500,
                         Headers = args.RequestHeaders,
-                        ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes("Fault Injection Server Error: Internal Server Error"))
+                        ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes($"Fault Injection Server Error: Internal Server Error, rule: {ruleId}"))
                     };
                     
                     return storeResponse;
@@ -173,7 +173,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     {
                         Status = 404,
                         Headers = readSessionHeaders,
-                        ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes("Fault Injection Server Error: Read Session Not Available"))
+                        ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes($"Fault Injection Server Error: Read Session Not Available, rule: {ruleId}"))
                     };
                     
                     return storeResponse;
@@ -186,7 +186,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     {
                         Status = 410,
                         Headers = partitionMigrationHeaders,
-                        ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes("Fault Injection Server Error: Partition Migrating"))
+                        ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes($"Fault Injection Server Error: Partition Migrating, rule: {ruleId}"))
                     };
                     
                     return storeResponse;
@@ -199,7 +199,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     {
                         Status = 410,
                         Headers = partitionSplitting,
-                        ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes("Fault Injection Server Error: Partition Splitting"))
+                        ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes($"Fault Injection Server Error: Partition Splitting, rule: {ruleId}"))
                     };
 
                     return storeResponse;

@@ -12,7 +12,7 @@
 		<VersionSuffix Condition=" '$(IsPreview)' == 'true' ">$(ClientPreviewSuffixVersion)</VersionSuffix>
 		<VersionSuffix Condition=" '$(IsNightly)' == 'true' AND '$(IsPreview)' != 'true' ">nightly-$(CurrentDate)</VersionSuffix>
 		<VersionSuffix Condition=" '$(IsNightly)' == 'true' AND '$(IsPreview)' == 'true' ">$(VersionSuffix)-nightly-$(CurrentDate)</VersionSuffix>
-		<Version>3.42.0</Version>
+		<Version>3.43.0</Version>
 		<FileVersion>$(ClientVersion)</FileVersion>
 		<Authors>Microsoft</Authors>
 		<TargetFramework>netstandard2.0</TargetFramework>

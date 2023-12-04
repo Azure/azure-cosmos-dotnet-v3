@@ -29,6 +29,8 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Analytics.Core" + AssemblyKeys.TestPublicKey)]
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.FaultInjection" + AssemblyKeys.ProductPublicKey)]
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.FaultInjection" + AssemblyKeys.TestPublicKey)]
+[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.FaultInjection.Tests" + AssemblyKeys.ProductPublicKey)]
+[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.FaultInjection.Tests" + AssemblyKeys.TestPublicKey)]
 [assembly: InternalsVisibleTo("CosmosCTL" + AssemblyKeys.ProductPublicKey)]
 [assembly: InternalsVisibleTo("CosmosCTL" + AssemblyKeys.TestPublicKey)]
 [assembly: InternalsVisibleTo("CosmosBenchmark" + AssemblyKeys.ProductPublicKey)]
