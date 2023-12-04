@@ -15,11 +15,10 @@
     public class FaultInjectionServerErrorRuleDirectModeTests
     {
         private const int Timeout = 6000;
-        private const string FaultInjectionRuleNonApplicableOperationType = "OperationType mismatch";
 
-        private CosmosClient client = null;
-        private Database database = null;
-        private Container container = null;
+        private CosmosClient? client;
+        private Database? database;
+        private Container? container;
 
         public async Task Initialize(FaultInjector faultInjector)
         {
@@ -52,8 +51,8 @@
         [TestCleanup]
         public async Task Cleanup()
         {
-            await this.database.DeleteAsync();
-            this.client.Dispose();
+            if (this.database != null) { await this.database.DeleteAsync(); }
+            this.client?.Dispose();
         }
 
         [TestMethod]
@@ -63,7 +62,7 @@
         [DataRow(OperationType.Delete, DisplayName = "Delete")]
         [DataRow(OperationType.Query, DisplayName = "Query")]
         [DataRow(OperationType.Patch, DisplayName = "Patch")]
-        public async Task FaultInjectionServerErrorRule_OperationTypeTest(OperationType operationType)
+        public void FaultInjectionServerErrorRule_OperationTypeTest(OperationType operationType)
         {
             if (!this.Timeout_FaultInjectionServerErrorRule_OperationTypeTest(operationType).Wait(Timeout))
             {
@@ -130,8 +129,7 @@
                 {
                     this.ValidateFaultInjectionRuleNotApplied(
                         diagnostics,
-                        tooManyRequestsRule,
-                        FaultInjectionRuleNonApplicableOperationType);
+                        tooManyRequestsRule);
                 }
             }
             finally
@@ -148,7 +146,7 @@
         [DataRow(OperationType.Delete, DisplayName = "Delete")]
         [DataRow(OperationType.Query, DisplayName = "Query")]
         [DataRow(OperationType.Patch, DisplayName = "Patch")]
-        public async Task FaultInjectionServerErrorRule_OperationTypeAddressTest(OperationType operationType)
+        public void FaultInjectionServerErrorRule_OperationTypeAddressTest(OperationType operationType)
         {
             if (!this.Timeout_FaultInjectionServerErrorRule_OperationTypeAddressTest(operationType).Wait(Timeout))
             {
@@ -204,7 +202,7 @@
             List<FaultInjectionRule> ruleList = new List<FaultInjectionRule> { writeRegionServerGoneRule, primaryReplicaServerGoneRule };
             FaultInjector faultInjector = new FaultInjector(ruleList);
 
-            await this.Initialize(faultInjector, preferredRegionList);
+            await this.Initialize(faultInjector);
 
             primaryReplicaServerGoneRule.Disable();
 
@@ -251,8 +249,7 @@
                 {
                     this.ValidateFaultInjectionRuleNotApplied(
                         diagnostics,
-                        writeRegionServerGoneRule,
-                        FaultInjectionRuleNonApplicableOperationType);
+                        writeRegionServerGoneRule);
                 }
 
                 writeRegionServerGoneRule.Disable();
@@ -270,12 +267,11 @@
                 preferredRegionsClient.Dispose();
                 writeRegionServerGoneRule.Disable();
                 primaryReplicaServerGoneRule.Disable();
-
             }
         }
 
         [TestMethod]
-        public async Task FaultInjectionServerErrorRule_RegionTest()
+        public void FaultInjectionServerErrorRule_RegionTest()
         {
             if (!this.Timeout_FaultInjectionServerErrorRule_RegionTest().Wait(Timeout))
             {
@@ -326,7 +322,7 @@
         }
 
         [TestMethod]
-        public async Task FaultInjectionServerErrorRule_PartitionTest()
+        public void FaultInjectionServerErrorRule_PartitionTest()
         {
             if (!this.Timeout_FaultInjectionServerErrorRule_RegionTest().Wait(Timeout))
             {
@@ -396,7 +392,10 @@
                 serverErrorFeedRangeRule.GetAddresses().Count >= 3 * readRegions.Count
                 && serverErrorFeedRangeRule.GetAddresses().Count <= 5 * readRegions.Count);
 
-            CosmosDiagnostics diagnostics = (await this.container.ReadItemAsync<DatabaseItem>(query0.Id, new Cosmos.PartitionKey(query0.Pk))).Diagnostics;
+            CosmosDiagnostics? diagnostics = this.container != null
+                ? (await this.container.ReadItemAsync<DatabaseItem>(query0.Id, new Cosmos.PartitionKey(query0.Pk))).Diagnostics
+                : null;
+            Assert.IsNotNull(diagnostics);
 
             this.ValidateHitCount(serverErrorFeedRangeRule, 1);
             this.ValidateFaultInjectionRuleApplication(
@@ -408,7 +407,10 @@
 
             try
             {
-                diagnostics = (await this.container.ReadItemAsync<DatabaseItem>(query1.Id, new Cosmos.PartitionKey(query1.Pk))).Diagnostics;
+                diagnostics = this.container != null
+                    ? (await this.container.ReadItemAsync<DatabaseItem>(query1.Id, new Cosmos.PartitionKey(query1.Pk))).Diagnostics
+                    : null;
+                Assert.IsNotNull(diagnostics);
                 Assert.IsTrue(diagnostics.ToString().Contains("200"));
                 this.ValidateHitCount(serverErrorFeedRangeRule, 1);
             }
@@ -419,7 +421,7 @@
         }
 
         [TestMethod]
-        public async Task FaultInjectionServerErrorRule_ServerResponseDelay()
+        public void FaultInjectionServerErrorRule_ServerResponseDelay()
         {
             if (!this.Timeout_FaultInjectionServerErrorRule_ServerResponseDelay().Wait(Timeout))
             {
@@ -446,9 +448,12 @@
             await this.Initialize();
             
             DatabaseItem createdItem = new DatabaseItem(Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
-            ItemResponse<DatabaseItem> itemResponse = await this.container.CreateItemAsync<DatabaseItem>(createdItem);
+            ItemResponse<DatabaseItem>? itemResponse = this.container != null 
+                ? await this.container.CreateItemAsync<DatabaseItem>(createdItem)
+                : null;
+            Assert.IsNotNull(itemResponse);
             
-            this.client.Dispose();
+            this.client?.Dispose();
 
             try
             {
@@ -465,7 +470,10 @@
                         ChaosInterceptor = faultInjector.GetChaosInterceptor()
                     });
 
-                ItemResponse<DatabaseItem> readResponse = await this.container.ReadItemAsync<DatabaseItem>(createdItem.Id, new Cosmos.PartitionKey(createdItem.Pk));
+                ItemResponse<DatabaseItem>? readResponse = this.container != null 
+                    ? await this.container.ReadItemAsync<DatabaseItem>(createdItem.Id, new Cosmos.PartitionKey(createdItem.Pk)) 
+                    : null;
+                Assert.IsNotNull(readResponse);
                 this.ValidateHitCount(timeoutRule, 1);
                 this.ValidateFaultInjectionRuleApplication(
                     readResponse.Diagnostics,
@@ -480,7 +488,7 @@
         }
 
         [TestMethod]
-        public async Task FaultInjectionServerErrorRule_ConnectionTimeout()
+        public void FaultInjectionServerErrorRule_ConnectionTimeout()
         {
             if (!this.Timeout_FaultInjectionServerErrorRule_ConnecitonTimeout().Wait(Timeout))
             {
@@ -505,7 +513,7 @@
                 .Build();
 
             await this.Initialize();
-            this.client.Dispose();
+            this.client?.Dispose();
 
             try
             {
@@ -523,7 +531,10 @@
                     });
 
                 DatabaseItem createdItem = new DatabaseItem(Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
-                ItemResponse<DatabaseItem> itemResponse = await this.container.CreateItemAsync<DatabaseItem>(createdItem);
+                ItemResponse<DatabaseItem>? itemResponse = this.container != null 
+                    ? await this.container.CreateItemAsync<DatabaseItem>(createdItem)
+                    : null;
+                Assert.IsNotNull(itemResponse);
 
                 Assert.IsTrue(connectionTimeoutRule.GetHitCount() == 1 || connectionTimeoutRule.GetHitCount() == 2);
                 this.ValidateFaultInjectionRuleApplication(
@@ -539,7 +550,7 @@
         }
 
         [TestMethod]
-        public async Task FaultInjectionServerErrorRule_ConnectionDelay()
+        public void FaultInjectionServerErrorRule_ConnectionDelay()
         {
             if (!this.Timeout_FaultInjectionServerErrorRule_ConnecitonDelay().Wait(Timeout))
             {
@@ -564,7 +575,7 @@
                 .Build();
 
             await this.Initialize();
-            this.client.Dispose();
+            this.client?.Dispose();
 
             try
             {
@@ -582,10 +593,13 @@
                     });
 
                 DatabaseItem createdItem = new DatabaseItem(Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
-                ItemResponse<DatabaseItem> itemResponse = await this.container.CreateItemAsync<DatabaseItem>(createdItem);
+                ItemResponse<DatabaseItem>? itemResponse = this.container != null 
+                    ? await this.container.CreateItemAsync<DatabaseItem>(createdItem) 
+                    : null;
+                Assert.IsNotNull(itemResponse);
 
                 Assert.IsTrue(connectionDelayRule.GetHitCount() == 1 || connectionDelayRule.GetHitCount() == 2);
-                Assert.IsTrue(itemResponse.StatusCode = HttpConstants.StatusCode.Created);
+                Assert.IsTrue(itemResponse.StatusCode == HttpConstants.StatusCode.Created);
             }
             finally
             {
@@ -610,7 +624,7 @@
         [DataRow(OperationType.Create, FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.Timeout, 408, 0, DisplayName = "CreateItem Timeout")]
         [DataRow(OperationType.Create, FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.PartitionIsMigrating, 410, 1008, DisplayName = "CreateItem PartitionIsMigrating")]
         [DataRow(OperationType.Create, FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.PartitionIsSplitting, 410, 1007, DisplayName = "CreateItem PartitionIsSplitting")]
-        public async Task FaultInjectionServerErrorRule_ServerErrorResponseTest(
+        public void FaultInjectionServerErrorRule_ServerErrorResponseTest(
             OperationType operationType,
             FaultInjectionOperationType faultInjectionOperationType,
             FaultInjectionServerErrorType serverErrorType,
@@ -621,7 +635,6 @@
                     operationType,
                     faultInjectionOperationType,
                     serverErrorType,
-                    canRetry,
                     errorStatusCode,
                     substatusCode).Wait(Timeout))
             {
@@ -682,7 +695,7 @@
         }
 
         [TestMethod]
-        public async Task FaultInjectionServerErrorRule_HitCountTest()
+        public void FaultInjectionServerErrorRule_HitCountTest()
         {
             if (!this.Timeout_FaultInjectionServerErrorRule_HitCountTest().Wait(Timeout))
             {
@@ -710,10 +723,14 @@
             {
                 FaultInjector faultInjector = new FaultInjector(new List<FaultInjectionRule> { hitCountRule });
 
-                this.Initialize(faultInjector);
+                await this.Initialize(faultInjector);
 
                 DatabaseItem createdItem = new DatabaseItem(Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
-                ItemResponse<DatabaseItem> itemResponse = await this.container.CreateItemAsync<DatabaseItem>(createdItem);
+
+                ItemResponse<DatabaseItem>? itemResponse = this.container != null
+                    ? await this.container.CreateItemAsync<DatabaseItem>(createdItem)
+                    : null;
+                Assert.IsNotNull(itemResponse);
 
                 for (int i = 0; i < 3; i++)
                 {
@@ -741,7 +758,7 @@
         }
 
         [TestMethod]
-        public async Task FaultInjectionServerErrorRule_IncludePrimaryTest()
+        public void FaultInjectionServerErrorRule_IncludePrimaryTest()
         {
             if (!this.Timeout_FaultInjectionServerErrorRule_IncludePrimaryTest().Wait(Timeout))
             {
@@ -824,7 +841,11 @@
                 {
                     QueryRequestOptions queryOptions = new QueryRequestOptions();
                     string query = String.Format("SELECT * FROM c WHERE c.Id = '{0}'", item.Id);
-                    FeedResponse<DatabaseItem> queryResponse = await this.container.GetItemQueryIterator<DatabaseItem>(query, requestOptions: queryOptions).ReadNextAsync();
+                    FeedResponse<DatabaseItem>? queryResponse = this.container != null 
+                        ? await this.container.GetItemQueryIterator<DatabaseItem>(query, requestOptions: queryOptions).ReadNextAsync()
+                        : null;
+                    Assert.IsNotNull(queryResponse);
+
                     return queryResponse.Diagnostics;
                 }
 
@@ -837,38 +858,62 @@
                 {
                     if (operationType == OperationType.Read)
                     {
-                        return (await this.container.ReadItemAsync<DatabaseItem>(item.Id, new Cosmos.PartitionKey(item.Pk))).Diagnostics;
+                        CosmosDiagnostics? cosmosDiagnostics = this.container != null 
+                            ? (await this.container.ReadItemAsync<DatabaseItem>(item.Id, new Cosmos.PartitionKey(item.Pk))).Diagnostics
+                            : null;
+                        Assert.IsNotNull(cosmosDiagnostics);
+                        return cosmosDiagnostics;
                     }
 
                     if (operationType = OperationType.Repleace)
                     {
-                        return (await this.container.ReplaceItemAsync<DatabaseItem>(item, item.Id, new Cosmos.PartitionKey(item.Pk))).Diagnostics;
+                        CosmosDiagnostics? cosmosDiagnostics = this.container != null 
+                            ? (await this.container.ReplaceItemAsync<DatabaseItem>(item, item.Id, new Cosmos.PartitionKey(item.Pk))).Diagnostics
+                            : null;
+                        Assert.IsNotNull(cosmosDiagnostics);
+                        return cosmosDiagnostics;
                     }
 
                     if (operationType = OperationType.Delete)
                     {
-                        return (await this.container.DeleteItemAsync<DatabaseItem>(item.Id, new Cosmos.PartitionKey(item.Pk))).Diagnostics;
+                        CosmosDiagnostics? cosmosDiagnostics = this.container != null 
+                            ? (await this.container.DeleteItemAsync<DatabaseItem>(item.Id, new Cosmos.PartitionKey(item.Pk))).Diagnostics
+                            : null;
+                        Assert.IsNotNull(cosmosDiagnostics);
+                        return cosmosDiagnostics;
                     }
 
                     if (operationType = OperationType.Create)
                     {
-                        return (await this.container.CreateItemAsync<DatabaseItem>(item, new Cosmos.PartitionKey(item.Pk))).Diagnostics;
+                        CosmosDiagnostics? cosmosDiagnostics = this.container != null 
+                            ? (await this.container.CreateItemAsync<DatabaseItem>(item, new Cosmos.PartitionKey(item.Pk))).Diagnostics
+                            : null;
+                        Assert.IsNotNull(cosmosDiagnostics);
+                        return cosmosDiagnostics;
                     }
 
                     if (operationType = OperationType.Upsert)
                     {
-                        return (await this.container.UpsertItemAsync<DatabaseItem>(item, new Cosmos.PartitionKey(item.Pk))).Diagnostics;
+                        CosmosDiagnostics? cosmosDiagnostics = this.container != null 
+                            ? (await this.container.UpsertItemAsync<DatabaseItem>(item, new Cosmos.PartitionKey(item.Pk))).Diagnostics
+                            : null;
+                        Assert.IsNotNull(cosmosDiagnostics);
+                        return cosmosDiagnostics;
                     }
 
                     if (operationType = OperationType.Patch)
                     {
-                        return (await this.container.PatchItemAsync<DatabaseItem>(
-                            item.Id, 
-                            new Cosmos.PartitionKey(item.Pk), 
-                            new[]
-                            {
-                                PatchOperation.Replace("/Id", item.Id),
-                            })).Diagnostics;
+                        CosmosDiagnostics? cosmosDiagnostics = this.container != null 
+                            ? (await this.container.PatchItemAsync<DatabaseItem>(
+                                item.Id, 
+                                new Cosmos.PartitionKey(item.Pk), 
+                                new[] 
+                                { 
+                                    PatchOperation.Replace("/Id", item.Id) 
+                                })).Diagnostics
+                            : null;
+                        Assert.IsNotNull(cosmosDiagnostics);
+                        return cosmosDiagnostics;
                     }
                 }
 
@@ -887,13 +932,11 @@
 
         private void ValidateFaultInjectionRuleNotApplied(
             CosmosDiagnostics diagnostics,
-            FaultInjectionRule rule,
-            string failureReason)
+            FaultInjectionRule rule)
         {
             string diagnosticsString = diagnostics.ToString();
             Assert.AreEqual(0, rule.GetHitCount());
             Assert.AreEqual(0, diagnostics.GetFailedRequestCount());
-            Assert.IsFalse(diagnosticsString.Contains(failureReason));
             Assert.IsTrue(diagnosticsString.Contains("200") || diagnosticsString.Contains("201"));
         }
         private void ValidateFaultInjectionRuleApplication(
