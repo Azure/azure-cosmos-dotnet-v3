@@ -6,7 +6,12 @@ namespace Microsoft.Azure.Cosmos.Linq
     /// <summary>
     /// Serializer type to be used for LINQ query translations.
     /// </summary>
-    public enum LinqSerializerType
+    #if PREVIEW
+    public
+    #else
+    internal
+    #endif
+    enum LinqSerializerType
     {
         /// <summary>
         /// Follows the exisiting serializer pattern. This honors Newtonsoft attributes, followed by DataContract attributes. This will ignore System.Text.Json attributes.

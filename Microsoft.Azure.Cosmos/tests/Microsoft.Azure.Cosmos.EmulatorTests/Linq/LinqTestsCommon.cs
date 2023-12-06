@@ -879,7 +879,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             return streamPayload;
         }
 
-        public override string SerializeLinqMemberName(MemberInfo memberInfo)
+        #if PREVIEW
+        public
+        #else
+        internal
+        #endif
+        override string SerializeLinqMemberName(MemberInfo memberInfo)
         {
             JsonPropertyNameAttribute jsonPropertyNameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(true);
 

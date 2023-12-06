@@ -38,7 +38,12 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="memberInfo">Any MemberInfo used in the query.</param>
         /// <returns>A serialized representation of the member</returns>
-        public virtual string SerializeLinqMemberName(MemberInfo memberInfo)
+        #if PREVIEW
+        public
+        #else
+        internal
+        #endif
+        virtual string SerializeLinqMemberName(MemberInfo memberInfo)
         {
             throw new NotImplementedException($"{nameof(CosmosSerializer)}.{nameof(SerializeLinqMemberName)})");
         }

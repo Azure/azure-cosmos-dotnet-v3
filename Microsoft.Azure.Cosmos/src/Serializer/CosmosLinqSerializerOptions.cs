@@ -37,6 +37,11 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// The default value is LinqSerializerType.Default
         /// </remarks>
-        public LinqSerializerType LinqSerializerType { get; set; }
+        #if PREVIEW
+        public
+        #else
+        internal
+        #endif
+        LinqSerializerType LinqSerializerType { get; set; }
     }
 }

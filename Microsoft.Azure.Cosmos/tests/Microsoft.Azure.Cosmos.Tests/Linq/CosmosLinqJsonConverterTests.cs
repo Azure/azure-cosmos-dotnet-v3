@@ -247,7 +247,12 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return stream;
             }
 
-            public override string SerializeLinqMemberName(MemberInfo memberInfo)
+            #if PREVIEW
+            public
+            #else
+            internal
+            #endif
+            override string SerializeLinqMemberName(MemberInfo memberInfo)
             {
                 JsonPropertyNameAttribute jsonPropertyNameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(true);
 
