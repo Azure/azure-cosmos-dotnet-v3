@@ -395,7 +395,9 @@ namespace Microsoft.Azure.Cosmos
                                             headers: new Headers()
                                             {
                                                 ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString(),
-                                                SubStatusCode = SubStatusCodes.TransportGenerated503
+                                                SubStatusCode = resourceType == ResourceType.DatabaseAccount || resourceType == ResourceType.PartitionKeyRange
+                                                ? SubStatusCodes.PartitionKeyRangeGone
+                                                : SubStatusCodes.TransportGenerated503
                                             },
                                             trace: trace,
                                             innerException: e);

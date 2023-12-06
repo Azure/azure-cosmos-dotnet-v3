@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly AsyncCacheNonBlocking<string, CollectionRoutingMap> routingMapCache;
 
         private readonly ICosmosAuthorizationTokenProvider authorizationTokenProvider;
-        private readonly IStoreModel storeModel;
+        private readonly GatewayStoreModel storeModel;
         private readonly CollectionCache collectionCache;
 
         public PartitionKeyRangeCache(
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.routingMapCache = new AsyncCacheNonBlocking<string, CollectionRoutingMap>(
                     keyEqualityComparer: StringComparer.Ordinal);
             this.authorizationTokenProvider = authorizationTokenProvider;
-            this.storeModel = storeModel;
+            this.storeModel = (GatewayStoreModel)storeModel;
             this.collectionCache = collectionCache;
         }
 
@@ -121,10 +121,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return await this.routingMapCache.GetAsync(
                     key: collectionRid,
                     singleValueInitFunc: (_) => this.GetRoutingMapForCollectionAsync(
-                        collectionRid, 
-                        previousValue, 
-                        trace,
-                        request?.RequestContext?.ClientRequestStatistics),
+                        collectionRid: collectionRid,
+                        previousRoutingMap: previousValue,
+                        trace: trace,
+                        clientSideRequestStatistics: request?.RequestContext?.ClientRequestStatistics,
+                        locationEndpoint: this.storeModel.EndpointManager.ResolveServiceEndpoint(request)),
                     forceRefresh: (currentValue) => PartitionKeyRangeCache.ShouldForceRefresh(previousValue, currentValue));
             }
             catch (DocumentClientException ex)
@@ -174,40 +175,12 @@ namespace Microsoft.Azure.Cosmos.Routing
             return previousValue.ChangeFeedNextIfNoneMatch == currentValue.ChangeFeedNextIfNoneMatch; 
         }
 
-        public async Task<PartitionKeyRange> TryGetRangeByPartitionKeyRangeIdAsync(string collectionRid, 
-                            string partitionKeyRangeId, 
-                            ITrace trace,
-                            IClientSideRequestStatistics clientSideRequestStatistics)
-        {
-            try
-            {
-                CollectionRoutingMap routingMap = await this.routingMapCache.GetAsync(
-                    key: collectionRid,
-                    singleValueInitFunc: (_) => this.GetRoutingMapForCollectionAsync(
-                        collectionRid: collectionRid,
-                        previousRoutingMap: null,
-                        trace: trace,
-                        clientSideRequestStatistics: clientSideRequestStatistics),
-                    forceRefresh: (_) => false);
-
-                return routingMap.TryGetRangeByPartitionKeyRangeId(partitionKeyRangeId);
-            }
-            catch (DocumentClientException ex)
-            {
-                if (ex.StatusCode == HttpStatusCode.NotFound)
-                {
-                    return null;
-                }
-
-                throw;
-            }
-        }
-
         private async Task<CollectionRoutingMap> GetRoutingMapForCollectionAsync(
             string collectionRid,
             CollectionRoutingMap previousRoutingMap,
             ITrace trace,
-            IClientSideRequestStatistics clientSideRequestStatistics)
+            IClientSideRequestStatistics clientSideRequestStatistics,
+            Uri locationEndpoint)
         {
             List<PartitionKeyRange> ranges = new List<PartitionKeyRange>();
             string changeFeedNextIfNoneMatch = previousRoutingMap?.ChangeFeedNextIfNoneMatch;
@@ -227,7 +200,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                 RetryOptions retryOptions = new RetryOptions();
                 using (DocumentServiceResponse response = await BackoffRetryUtility<DocumentServiceResponse>.ExecuteAsync(
                     () => this.ExecutePartitionKeyRangeReadChangeFeedAsync(collectionRid, headers, trace, clientSideRequestStatistics),
-                    new ResourceThrottleRetryPolicy(retryOptions.MaxRetryAttemptsOnThrottledRequests, retryOptions.MaxRetryWaitTimeInSeconds)))
+                    new MetadataRequestThrottleRetryPolicy(
+                        locationEndpoint,
+                        this.storeModel.EndpointManager,
+                        retryOptions.MaxRetryAttemptsOnThrottledRequests,
+                        retryOptions.MaxRetryWaitTimeInSeconds)))
                 {
                     lastStatusCode = response.StatusCode;
                     changeFeedNextIfNoneMatch = response.Headers[HttpConstants.HttpHeaders.ETag];

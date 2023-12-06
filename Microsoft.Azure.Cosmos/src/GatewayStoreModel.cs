@@ -445,6 +445,8 @@ namespace Microsoft.Azure.Cosmos
                    operationType != Documents.OperationType.ExecuteJavaScript;
         }
 
+        internal GlobalEndpointManager EndpointManager => this.endpointManager;
+
         private void Dispose(bool disposing)
         {
             if (disposing)
