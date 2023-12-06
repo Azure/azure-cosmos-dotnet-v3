@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        public void TestMemberInitializerDotNet()
+        public void TestMemberInitializerDotNetCustomSerializer()
         {
             Func<bool, IQueryable<DataObjectDotNet>> getQuery;
             (_, getQuery) = this.InsertDataAndGetQueryables<DataObjectDotNet>(LinqSerializerType.CustomCosmosSerializer);
@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        public void TestMemberInitializerNewtonsoftDotNetSerializer()
+        public void TestMemberInitializerNewtonsoftDotNet()
         {
             Func<bool, IQueryable<DataObjectNewtonsoftDotNet>> getQueryCamelCase;
             Func<bool, IQueryable<DataObjectNewtonsoftDotNet>> getQueryDefault;
@@ -179,7 +179,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        public void TestMemberInitializerNewtonsoftDataMemberSerializer()
+        public void TestMemberInitializerNewtonsoftDataMember()
         {
             Func<bool, IQueryable<DataObjectNewtonsoftDataMember>> getQueryCamelCase;
             Func<bool, IQueryable<DataObjectNewtonsoftDataMember>> getQueryDefault;
@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        public void TestMemberInitializerDotNetDataMemberSerializer()
+        public void TestMemberInitializerDotNetDataMember()
         {
             Func<bool, IQueryable<DataObjectDotNetDataMember>> getQueryCamelCase;
             Func<bool, IQueryable<DataObjectDotNetDataMember>> getQueryDefault;

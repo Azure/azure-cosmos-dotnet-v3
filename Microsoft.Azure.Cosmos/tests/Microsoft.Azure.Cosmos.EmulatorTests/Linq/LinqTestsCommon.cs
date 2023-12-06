@@ -883,7 +883,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         {
             JsonPropertyNameAttribute jsonPropertyNameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(true);
 
-            string memberName = jsonPropertyNameAttribute != null && !string.IsNullOrEmpty(jsonPropertyNameAttribute.Name)
+            string memberName = !string.IsNullOrEmpty(jsonPropertyNameAttribute?.Name)
                 ? jsonPropertyNameAttribute.Name
                 : memberInfo.Name;
 

@@ -54,12 +54,12 @@ namespace Microsoft.Azure.Cosmos.Serializer
         /// <summary>
         /// User-provided CosmosLinqSerializerOptions.
         /// </summary>
-        public readonly CosmosLinqSerializerOptions CosmosLinqSerializerOptions;
+        public CosmosLinqSerializerOptions CosmosLinqSerializerOptions { get; }
 
         /// <summary>
         /// User defined customer serializer, if LinqSerializerType is CustomCosmosSerializer. 
         /// Otherwise set to null;
         /// </summary>
-        public readonly CosmosSerializer CustomCosmosSerializer;
+        public CosmosSerializer CustomCosmosSerializer { get; }
     }
 }
