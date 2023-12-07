@@ -138,6 +138,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 allowDCount: allowDCount,
                 useSystemPrefix: useSystemPrefix,
                 geospatialType: geospatialType);
+
             if (!tryGetInternalQueryInfo.Succeeded)
             {
                 return TryCatch<PartitionedQueryExecutionInfo>.FromException(tryGetInternalQueryInfo.Exception);

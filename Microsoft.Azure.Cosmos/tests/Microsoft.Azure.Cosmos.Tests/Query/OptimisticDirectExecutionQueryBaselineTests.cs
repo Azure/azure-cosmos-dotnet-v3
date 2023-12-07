@@ -449,7 +449,7 @@
                 }
                 catch (Exception ex)
                 {
-                    Assert.IsNotNull(ex);
+                    Assert.IsTrue(ex.InnerException.InnerException.Message.Contains(testCase.ExpectedMessage));
                     continue;
                 }
             }
@@ -731,8 +731,9 @@
                 allowDCount: true,
                 useSystemPrefix: false,
                 geospatialType: Cosmos.GeospatialType.Geography);
-
-            return Tuple.Create(tryGetQueryPlan.Result, queryPartitionProvider);
+            
+            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = tryGetQueryPlan.Succeeded ? tryGetQueryPlan.Result : throw tryGetQueryPlan.Exception;
+            return Tuple.Create(partitionedQueryExecutionInfo, queryPartitionProvider);
         }
 
         private static async Task<IQueryPipelineStage> GetOdePipelineAsync(OptimisticDirectExecutionTestInput input, DocumentContainer documentContainer, QueryRequestOptions queryRequestOptions, bool clientDisableOde = false)
