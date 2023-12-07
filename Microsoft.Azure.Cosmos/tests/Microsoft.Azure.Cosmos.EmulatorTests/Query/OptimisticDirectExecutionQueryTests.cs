@@ -541,6 +541,8 @@
                 "/" + PartitionKeyField);
         }
 
+        //TODO: Remove Ignore flag once emulator is updated to 1101
+        [Ignore]
         [TestMethod]
         public async Task TestClientDisableOdeDefaultValue()
         {
