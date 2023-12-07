@@ -390,9 +390,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     using StreamReader streamReader = new(serializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, Documents.ResourceType.Document));
                     string sqlQuerySpecJsonString = streamReader.ReadToEnd();
 
-                    TryCatch<PartitionedQueryExecutionInfo> queryPlan = OptimisticDirectExecutionQueryBaselineTests.TryGetPartitionedQueryExecutionInfo(sqlQuerySpecJsonString, partitionKeyDefinition);
-                    PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = queryPlan.Succeeded ? queryPlan.Result : throw queryPlan.Exception;
-                    return Task.FromResult(TryCatch<PartitionedQueryExecutionInfo>.FromResult(partitionedQueryExecutionInfo));
+                    (PartitionedQueryExecutionInfo partitionedQueryExecutionInfo, QueryPartitionProvider queryPartitionProvider) = OptimisticDirectExecutionQueryBaselineTests.GetPartitionedQueryExecutionInfoAndPartitionProvider(sqlQuerySpecJsonString, partitionKeyDefinition);
+                    return TryCatch<PartitionedQueryExecutionInfo>.FromResult(partitionedQueryExecutionInfo);
                 }
                 );
 

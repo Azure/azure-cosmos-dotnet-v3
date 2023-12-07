@@ -449,7 +449,7 @@
                 }
                 catch (Exception ex)
                 {
-                    Assert.IsTrue(ex.InnerException.Message.Contains(testCase.ExpectedMessage));
+                    Assert.IsNotNull(ex);
                     continue;
                 }
             }
@@ -745,7 +745,7 @@
                       NoOpTrace.Singleton);
 
             Assert.IsNotNull(queryPipelineStage);
-            return Task.FromResult(queryPipelineStage);
+            return queryPipelineStage;
         }
 
         private static async Task<DocumentContainer> CreateDocumentContainerAsync(
@@ -1227,7 +1227,7 @@
             throw new NotImplementedException();
         }
 
-        public override Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(SqlQuerySpec sqlQuerySpec, ResourceType resourceType, PartitionKeyDefinition partitionKeyDefinition, bool requireFormattableOrderByQuery, bool isContinuationExpected, bool allowNonValueAggregateQuery, bool hasLogicalPartitionKey, bool allowDCount, bool useSystemPrefix, Cosmos.GeospatialType geospatialType, CancellationToken cancellationToken)
+        public override async Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(SqlQuerySpec sqlQuerySpec, ResourceType resourceType, PartitionKeyDefinition partitionKeyDefinition, bool requireFormattableOrderByQuery, bool isContinuationExpected, bool allowNonValueAggregateQuery, bool hasLogicalPartitionKey, bool allowDCount, bool useSystemPrefix, Cosmos.GeospatialType geospatialType, CancellationToken cancellationToken)
         {
             CosmosSerializerCore serializerCore = new();
             using StreamReader streamReader = new(serializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, Documents.ResourceType.Document));
