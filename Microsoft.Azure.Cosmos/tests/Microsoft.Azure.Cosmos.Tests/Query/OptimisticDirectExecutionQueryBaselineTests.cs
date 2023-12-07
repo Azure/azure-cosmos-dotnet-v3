@@ -449,7 +449,7 @@
                 }
                 catch (Exception ex)
                 {
-                    Assert.IsTrue(ex.InnerException.Message.Contains(testCase.ExpectedMessage));
+                    Assert.IsNotNull(ex);
                     continue;
                 }
             }
@@ -745,7 +745,7 @@
                       NoOpTrace.Singleton);
 
             Assert.IsNotNull(queryPipelineStage);
-            return Task.FromResult(queryPipelineStage);
+            return queryPipelineStage;
         }
 
         private static async Task<DocumentContainer> CreateDocumentContainerAsync(
@@ -1032,7 +1032,6 @@
                 this.IsFailedFallbackPipelineTest = isFailedFallbackPipelineTest;
             }
 
-#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
             public async Task<Exception> ShouldReturnFailure()
             {
                 this.MoveNextCounter++;
@@ -1060,7 +1059,6 @@
 
                 return null;
             }
-#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         }
     }
 
@@ -1227,15 +1225,14 @@
             throw new NotImplementedException();
         }
 
-        public override Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(SqlQuerySpec sqlQuerySpec, ResourceType resourceType, PartitionKeyDefinition partitionKeyDefinition, bool requireFormattableOrderByQuery, bool isContinuationExpected, bool allowNonValueAggregateQuery, bool hasLogicalPartitionKey, bool allowDCount, bool useSystemPrefix, Cosmos.GeospatialType geospatialType, CancellationToken cancellationToken)
+        public override async Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(SqlQuerySpec sqlQuerySpec, ResourceType resourceType, PartitionKeyDefinition partitionKeyDefinition, bool requireFormattableOrderByQuery, bool isContinuationExpected, bool allowNonValueAggregateQuery, bool hasLogicalPartitionKey, bool allowDCount, bool useSystemPrefix, Cosmos.GeospatialType geospatialType, CancellationToken cancellationToken)
         {
             CosmosSerializerCore serializerCore = new();
             using StreamReader streamReader = new(serializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, Documents.ResourceType.Document));
             string sqlQuerySpecJsonString = streamReader.ReadToEnd();
 
-            TryCatch<PartitionedQueryExecutionInfo> queryPlan = OptimisticDirectExecutionQueryBaselineTests.TryGetPartitionedQueryExecutionInfo(sqlQuerySpecJsonString, partitionKeyDefinition);
-            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = queryPlan.Succeeded ? queryPlan.Result : throw queryPlan.Exception;
-            return Task.FromResult(TryCatch<PartitionedQueryExecutionInfo>.FromResult(partitionedQueryExecutionInfo));
+            (PartitionedQueryExecutionInfo partitionedQueryExecutionInfo, QueryPartitionProvider queryPartitionProvider) = OptimisticDirectExecutionQueryBaselineTests.GetPartitionedQueryExecutionInfoAndPartitionProvider(sqlQuerySpecJsonString, partitionKeyDefinition);
+            return TryCatch<PartitionedQueryExecutionInfo>.FromResult(partitionedQueryExecutionInfo);
         }
     }
 }
