@@ -4,30 +4,23 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan
 {
+    using System;
     using Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan.Cql;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
 
     internal class ClientDistributionPipelineFactory : ICqlVisitor
-    { 
-        private readonly ICqlVisitor visitor;
-        // private MonadicCreatePipelineStage monadicCreatePipelineStage;
+    {
+        /*private readonly ICqlVisitor visitor;
 
         public ClientDistributionPipelineFactory(ICqlVisitor visitor)
         {
             this.visitor = visitor;
-            // initialize a parallel pipeline here which becomes the source pipeline to the first pipeline called here
-            /*
-              monadicCreatePipelineStage = (continuationToken, cancellationToken) => ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
-                  documentContainer: documentContainer,
-                  sqlQuerySpec: sqlQuerySpec,
-                  targetRanges: targetRanges,
-                  queryPaginationOptions: queryPaginationOptions,
-                  partitionKey: partitionKey,
-                  prefetchPolicy: prefetchPolicy,
-                  maxConcurrency: maxConcurrency,
-                  continuationToken: continuationToken,
-                  cancellationToken: cancellationToken);
-             */
+            // TODO: initialize a parallel pipeline here which becomes the source pipeline to the first pipeline called
+        }*/
+
+        public static readonly ClientDistributionPipelineFactory Singleton = new ClientDistributionPipelineFactory();
+
+        public ClientDistributionPipelineFactory()
+        {
         }
 
         public void Visit(CqlAggregate cqlAggregate)
@@ -37,18 +30,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan
 
         public void Visit(CqlAggregateEnumerableExpression cqlAggregateEnumerableExpression)
         {
-            // One complication: To create any Enumerable pipeline, it needs the base of parallel pipeline or order by pipeline
-            // call Aggregate pipeline
-            /*MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
-            monadicCreatePipelineStage = (continuationToken, cancellationToken) => AggregateQueryPipelineStage.MonadicCreate(
-                executionEnvironment,
-                queryInfo.Aggregates,
-                queryInfo.GroupByAliasToAggregateType,
-                queryInfo.GroupByAliases,
-                queryInfo.HasSelectValue,
-                continuationToken,
-                cancellationToken,
-                monadicCreateSourceStage);*/
+            // TODO: initialize Aggregate pipeline
+            Console.WriteLine("Aggregate");
         }
 
         public void Visit(CqlAggregateKind cqlAggregateKind)
@@ -103,7 +86,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan
 
         public void Visit(CqlDistinctEnumerableExpression cqlDistinctEnumerableExpression)
         {
-            // Call distinct pipeline
+            // TODO: initialize Distinct pipeline
+            Console.WriteLine("Distinct");
         }
 
         public void Visit(CqlEnumerableExpression cqlEnumerableExpression)
@@ -128,7 +112,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan
 
         public void Visit(CqlGroupByEnumerableExpression cqlGroupByEnumerableExpression)
         {
-            // Call Groupby pipeline
+            // TODO: initialize GroupBy pipeline
+            Console.WriteLine("GroupBy");
         }
 
         public void Visit(CqlInputEnumerableExpression cqlInputEnumerableExpression)
@@ -203,7 +188,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan
 
         public void Visit(CqlOrderByEnumerableExpression cqlOrderByEnumerableExpression)
         {
-            // call order by pipeline
+            // TODO: initialize OrderBy pipeline
+            Console.WriteLine("OrderBy");
         }
 
         public void Visit(CqlOrderByItem cqlOrderByItem)
@@ -218,7 +204,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan
 
         public void Visit(CqlScalarAsEnumerableExpression cqlScalarAsEnumerableExpression)
         {
-            // call scalar as enumerable pipeline
+            // TODO: initialize ScalarAs pipeline
+            Console.WriteLine("ScalarAs");
         }
 
         public void Visit(CqlScalarExpression cqlScalarExpression)
@@ -233,12 +220,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan
 
         public void Visit(CqlSelectEnumerableExpression cqlSelectEnumerableExpression)
         {
-            // call select pipeline
+            // TODO: initialize Select pipeline
+            Console.WriteLine("Select");
         }
 
         public void Visit(CqlSelectManyEnumerableExpression cqlSelectManyEnumerableExpression)
         {
-            // call select many pipeline
+            // TODO: initialize SelectMany pipeline
+            Console.WriteLine("SelectMany");
         }
 
         public void Visit(CqlSortOrder cqlSortOrder)
@@ -258,7 +247,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan
 
         public void Visit(CqlTakeEnumerableExpression cqlTakeEnumerableExpression)
         {
-            // call take pipeline
+            // TODO: initialize Take pipeline
+            Console.WriteLine("Take");
         }
 
         public void Visit(CqlTupleAggregate cqlTupleAggregate)
@@ -308,7 +298,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan
 
         public void Visit(CqlWhereEnumerableExpression cqlWhereEnumerableExpression)
         {
-            // Call where pipeline
+            // TODO: initialize Where pipeline
+            Console.WriteLine("Where");
         }
     }
 }
