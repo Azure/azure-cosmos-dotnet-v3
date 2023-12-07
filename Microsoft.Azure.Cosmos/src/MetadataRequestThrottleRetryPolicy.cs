@@ -12,15 +12,17 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
 
-    // Retry when we receive the throttling from server.
+    /// <summary>
+    /// Metadata Request Throttle Retry Policy is combination of endpoint change retry + throttling retry.
+    /// </summary>
     internal sealed class MetadataRequestThrottleRetryPolicy : IDocumentClientRetryPolicy
     {
-        private readonly Uri locationEndpoint;
+        private readonly Func<Uri> locationEndpoint;
         private readonly GlobalEndpointManager globalEndpointManager;
         private readonly IDocumentClientRetryPolicy throttlingRetryPolicy;
 
         public MetadataRequestThrottleRetryPolicy(
-            Uri locationEndpoint,
+            Func<Uri> locationEndpoint,
             GlobalEndpointManager endpointManager,
             int maxRetryAttemptsOnThrottledRequests,
             int maxRetryWaitTimeInSeconds)
@@ -42,18 +44,11 @@ namespace Microsoft.Azure.Cosmos
             Exception exception,
             CancellationToken cancellationToken)
         {
-            DefaultTrace.TraceInformation(
-                    "Inside MetadataRequestThrottleRetryPolicy.ShouldRetryAsync(). Exception: {0} ",
-                    this.GetExceptionMessage(exception));
-
-            if (exception is CosmosException cosmosException)
+            if (exception is CosmosException cosmosException
+                && cosmosException.StatusCode == HttpStatusCode.ServiceUnavailable
+                && cosmosException.Headers.SubStatusCode == SubStatusCodes.PartitionKeyRangeGone)
             {
-                if (cosmosException.StatusCode == HttpStatusCode.ServiceUnavailable
-                    && cosmosException.Headers.SubStatusCode == SubStatusCodes.PartitionKeyRangeGone)
-                {
-                    DefaultTrace.TraceInformation("MetadataRequestThrottleRetryPolicy: SubStatusCodes.PartitionKeyRangeGone hit. Calling globalEndpointManager.MarkEndpointUnavailableForRead() for URI: {0}.", this.locationEndpoint);
-                    this.globalEndpointManager.MarkEndpointUnavailableForRead(this.locationEndpoint);
-                }
+                this.MarkEndpointUnavailableForRead();
             }
 
             return this.throttlingRetryPolicy.ShouldRetryAsync(exception, cancellationToken);
@@ -72,23 +67,10 @@ namespace Microsoft.Azure.Cosmos
             if (cosmosResponseMessage?.StatusCode == HttpStatusCode.ServiceUnavailable
                 && cosmosResponseMessage?.Headers.SubStatusCode == SubStatusCodes.PartitionKeyRangeGone)
             {
-                DefaultTrace.TraceInformation("MetadataRequestThrottleRetryPolicy: SubStatusCodes.PartitionKeyRangeGone hit. Calling globalEndpointManager.MarkEndpointUnavailableForRead()..");
-                this.globalEndpointManager.MarkEndpointUnavailableForRead(this.locationEndpoint);
+                this.MarkEndpointUnavailableForRead();
             }
 
             return this.throttlingRetryPolicy.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
-        }
-
-        private object GetExceptionMessage(Exception exception)
-        {
-            if (exception is DocumentClientException dce && dce.StatusCode != null && (int)dce.StatusCode < (int)StatusCodes.InternalServerError)
-            {
-                // for client related errors, don't print out the whole call stack.
-                // simply return the message to prevent CPU overhead on ToString() 
-                return exception.Message;
-            }
-
-            return exception;
         }
 
         /// <summary>
@@ -98,6 +80,13 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="request">The request being sent to the service.</param>
         public void OnBeforeSendRequest(DocumentServiceRequest request)
         {
+        }
+
+        private void MarkEndpointUnavailableForRead()
+        {
+            Uri location = this.locationEndpoint.Invoke();
+            DefaultTrace.TraceWarning("MetadataRequestThrottleRetryPolicy: SubStatusCodes.PartitionKeyRangeGone hit. Calling globalEndpointManager.MarkEndpointUnavailableForRead() for URI: {0}.", location);
+            this.globalEndpointManager.MarkEndpointUnavailableForRead(location);
         }
     }
 }

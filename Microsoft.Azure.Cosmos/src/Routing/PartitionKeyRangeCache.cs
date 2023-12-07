@@ -31,6 +31,8 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly GatewayStoreModel storeModel;
         private readonly CollectionCache collectionCache;
 
+        private Uri pkRangeLocationEndpoint;
+
         public PartitionKeyRangeCache(
             ICosmosAuthorizationTokenProvider authorizationTokenProvider,
             IStoreModel storeModel,
@@ -124,8 +126,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         collectionRid: collectionRid,
                         previousRoutingMap: previousValue,
                         trace: trace,
-                        clientSideRequestStatistics: request?.RequestContext?.ClientRequestStatistics,
-                        locationEndpoint: this.storeModel.EndpointManager.ResolveServiceEndpoint(request)),
+                        clientSideRequestStatistics: request?.RequestContext?.ClientRequestStatistics),
                     forceRefresh: (currentValue) => PartitionKeyRangeCache.ShouldForceRefresh(previousValue, currentValue));
             }
             catch (DocumentClientException ex)
@@ -179,8 +180,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             string collectionRid,
             CollectionRoutingMap previousRoutingMap,
             ITrace trace,
-            IClientSideRequestStatistics clientSideRequestStatistics,
-            Uri locationEndpoint)
+            IClientSideRequestStatistics clientSideRequestStatistics)
         {
             List<PartitionKeyRange> ranges = new List<PartitionKeyRange>();
             string changeFeedNextIfNoneMatch = previousRoutingMap?.ChangeFeedNextIfNoneMatch;
@@ -201,7 +201,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 using (DocumentServiceResponse response = await BackoffRetryUtility<DocumentServiceResponse>.ExecuteAsync(
                     () => this.ExecutePartitionKeyRangeReadChangeFeedAsync(collectionRid, headers, trace, clientSideRequestStatistics),
                     new MetadataRequestThrottleRetryPolicy(
-                        locationEndpoint,
+                        () => this.pkRangeLocationEndpoint,
                         this.storeModel.EndpointManager,
                         retryOptions.MaxRetryAttemptsOnThrottledRequests,
                         retryOptions.MaxRetryWaitTimeInSeconds)))
@@ -262,6 +262,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     AuthorizationTokenType.PrimaryMasterKey,
                     headers))
                 {
+                    this.pkRangeLocationEndpoint = this.storeModel.EndpointManager.ResolveServiceEndpoint(request);
                     string authorizationToken = null;
                     try
                     {
