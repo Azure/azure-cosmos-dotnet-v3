@@ -269,8 +269,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                     return TryCatch<IQueryPipelineStage>.FromException(monadicExtractState.Exception);
                 }
 
-                SqlQuerySpec updatedSqlQuerySpec = sqlQuerySpec;
-                updatedSqlQuerySpec.ClientQLCompatibilityLevel = ClientQLCompatibilityLevel;
+                SqlQuerySpec updatedSqlQuerySpec = new SqlQuerySpec(sqlQuerySpec.QueryText, sqlQuerySpec.Parameters)
+                {
+                    ClientQLCompatibilityLevel = ClientQLCompatibilityLevel
+                };
                 FeedRangeState<QueryState> feedRangeState = monadicExtractState.Result;
                 QueryPartitionRangePageAsyncEnumerator partitionPageEnumerator = new QueryPartitionRangePageAsyncEnumerator(
                     documentContainer,

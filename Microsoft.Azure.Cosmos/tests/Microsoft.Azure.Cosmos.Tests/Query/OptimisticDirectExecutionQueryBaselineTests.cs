@@ -508,10 +508,10 @@
                 JObject jsonObject = JObject.Parse(testResponse);
 
                 string expectedBackendPlan = jsonObject["_distributionPlan"]["backendDistributionPlan"].ToString();
-                expectedBackendPlan = expectedBackendPlan.Replace(" ", "").Replace("\t", "").Replace("\n", "").Replace("\r", "");
+                expectedBackendPlan = RemoveJsonFormattingAndConvertToString(expectedBackendPlan);
 
                 string expectedClientPlan = jsonObject["_distributionPlan"]["clientDistributionPlan"].ToString();
-                expectedClientPlan = expectedClientPlan.Replace(" ", "").Replace("\t", "").Replace("\n", "").Replace("\r", "");
+                expectedClientPlan = RemoveJsonFormattingAndConvertToString(expectedClientPlan);
 
                 MemoryStream memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(testResponse));
                 CosmosQueryClientCore.ParseRestStream(
@@ -523,8 +523,8 @@
                 if (distributionPlan.TryGetValue("backendDistributionPlan", out CosmosElement backendDistributionPlan) &&
                     distributionPlan.TryGetValue("clientDistributionPlan", out CosmosElement clientDistributionPlan))
                 {
-                    Assert.AreEqual(backendDistributionPlan.ToString().Replace(" ", "").Replace("\t", "").Replace("\n", "").Replace("\r", ""), expectedBackendPlan);
-                    Assert.AreEqual(clientDistributionPlan.ToString().Replace(" ", "").Replace("\t", "").Replace("\n", "").Replace("\r", ""), expectedClientPlan);
+                    Assert.AreEqual(expectedBackendPlan, RemoveJsonFormattingAndConvertToString(backendDistributionPlan.ToString()));
+                    Assert.AreEqual(expectedClientPlan, RemoveJsonFormattingAndConvertToString(clientDistributionPlan.ToString()));
                 }
                 else
                 {
@@ -625,6 +625,11 @@
             }
 
             return false;
+        }
+
+        private static string RemoveJsonFormattingAndConvertToString(string jsonString)
+        {
+            return jsonString.Replace(" ", string.Empty).Replace("\t", string.Empty).Replace("\n", string.Empty).Replace("\r", string.Empty);
         }
 
         private static async Task<(MergeTestUtil, IQueryPipelineStage)> CreateFallbackPipelineTestInfrastructure(int numItems, bool isFailedFallbackPipelineTest, bool isMultiPartition, QueryRequestOptions queryRequestOptions)
@@ -839,8 +844,6 @@
             if (input.ExpectedOptimisticDirectExecution)
             {
                 Assert.AreEqual(TestInjections.PipelineType.OptimisticDirectExecution, queryRequestOptions.TestSettings.Stats.PipelineType.Value);
-                Assert.IsTrue(inputParameters.SqlQuerySpec.ClientQLCompatibilityLevel != null);
-                Assert.AreEqual(1, inputParameters.SqlQuerySpec.ClientQLCompatibilityLevel);
             }
             else
             {

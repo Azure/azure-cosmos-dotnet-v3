@@ -452,9 +452,6 @@ namespace Microsoft.Azure.Cosmos
             out CosmosArray documents,
             out CosmosObject distributionPlan)
         {
-            documents = null;
-            distributionPlan = null;
-
             if (!(stream is MemoryStream memoryStream))
             {
                 memoryStream = new MemoryStream();
@@ -525,9 +522,9 @@ namespace Microsoft.Azure.Cosmos
 
             documents = cosmosArray;
 
-            if (jsonNavigator.TryGetObjectProperty(jsonNavigator.GetRootNode(), "_distributionPlan", out objectProperty))
+            if (jsonNavigator.TryGetObjectProperty(jsonNavigator.GetRootNode(), "_distributionPlan", out ObjectProperty distributionPlanObjectProperty))
             {
-                switch (CosmosElement.Dispatch(jsonNavigator, objectProperty.ValueNode))
+                switch (CosmosElement.Dispatch(jsonNavigator, distributionPlanObjectProperty.ValueNode))
                 {
                     case CosmosString binaryDistributionPlan:
                         byte[] binaryJson = Convert.FromBase64String(binaryDistributionPlan.Value);
@@ -541,6 +538,10 @@ namespace Microsoft.Azure.Cosmos
                     default:
                         throw new InvalidOperationException($"Response Body Contract was violated. QueryResponse did not have property: {resourceName}");
                 }
+            }
+            else
+            {
+                distributionPlan = null;
             }
         }
     }
