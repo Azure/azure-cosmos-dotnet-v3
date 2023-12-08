@@ -17,17 +17,36 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class MetadataRequestThrottleRetryPolicy : IDocumentClientRetryPolicy
     {
-        private readonly Func<Uri> locationEndpoint;
+        /// <summary>
+        /// A callback delegate to fetch the location endpoint at a later point of time.
+        /// </summary>
+        private readonly Func<Uri> locationEndpointCallbackUri;
+
+        /// <summary>
+        /// An instance of <see cref="GlobalEndpointManager"/>.
+        /// </summary>
         private readonly GlobalEndpointManager globalEndpointManager;
+
+        /// <summary>
+        /// Defines the throttling retry policy that is used as the underlying retry policy.
+        /// </summary>
         private readonly IDocumentClientRetryPolicy throttlingRetryPolicy;
 
+        /// <summary>
+        /// The constructor to initialize an instance of <see cref="MetadataRequestThrottleRetryPolicy"/>.
+        /// </summary>
+        /// <param name="locationEndpointCallbackUri">A callback delegate to fetch the location endpoint at a later point of time.</param>
+        /// <param name="endpointManager">An instance of <see cref="GlobalEndpointManager"/></param>
+        /// <param name="maxRetryAttemptsOnThrottledRequests">An integer defining the maximum number
+        /// of attempts to retry when requests are throttled.</param>
+        /// <param name="maxRetryWaitTimeInSeconds">An integer defining the maximum wait time in seconds.</param>
         public MetadataRequestThrottleRetryPolicy(
-            Func<Uri> locationEndpoint,
+            Func<Uri> locationEndpointCallbackUri,
             GlobalEndpointManager endpointManager,
             int maxRetryAttemptsOnThrottledRequests,
             int maxRetryWaitTimeInSeconds)
         {
-            this.locationEndpoint = locationEndpoint;
+            this.locationEndpointCallbackUri = locationEndpointCallbackUri;
             this.globalEndpointManager = endpointManager;
             this.throttlingRetryPolicy = new ResourceThrottleRetryPolicy(
                 maxRetryAttemptsOnThrottledRequests,
@@ -38,7 +57,7 @@ namespace Microsoft.Azure.Cosmos
         /// Should the caller retry the operation.
         /// </summary>
         /// <param name="exception">Exception that occured when the operation was tried</param>
-        /// <param name="cancellationToken"></param>
+        /// <param name="cancellationToken">An instance of <see cref="CancellationToken"/>.</param>
         /// <returns>True indicates caller should retry, False otherwise</returns>
         public Task<ShouldRetryResult> ShouldRetryAsync(
             Exception exception,
@@ -48,7 +67,10 @@ namespace Microsoft.Azure.Cosmos
                 && cosmosException.StatusCode == HttpStatusCode.ServiceUnavailable
                 && cosmosException.Headers.SubStatusCode == SubStatusCodes.PartitionKeyRangeGone)
             {
-                this.MarkEndpointUnavailableForRead();
+                if (!this.MarkEndpointUnavailableForRead())
+                {
+                    return Task.FromResult(ShouldRetryResult.NoRetry());
+                }
             }
 
             return this.throttlingRetryPolicy.ShouldRetryAsync(exception, cancellationToken);
@@ -58,7 +80,7 @@ namespace Microsoft.Azure.Cosmos
         /// Should the caller retry the operation.
         /// </summary>
         /// <param name="cosmosResponseMessage"><see cref="ResponseMessage"/> in return of the request</param>
-        /// <param name="cancellationToken"></param>
+        /// <param name="cancellationToken">An instance of <see cref="CancellationToken"/>.</param>
         /// <returns>True indicates caller should retry, False otherwise</returns>
         public Task<ShouldRetryResult> ShouldRetryAsync(
             ResponseMessage cosmosResponseMessage,
@@ -67,7 +89,10 @@ namespace Microsoft.Azure.Cosmos
             if (cosmosResponseMessage?.StatusCode == HttpStatusCode.ServiceUnavailable
                 && cosmosResponseMessage?.Headers.SubStatusCode == SubStatusCodes.PartitionKeyRangeGone)
             {
-                this.MarkEndpointUnavailableForRead();
+                if (!this.MarkEndpointUnavailableForRead())
+                {
+                    return Task.FromResult(ShouldRetryResult.NoRetry());
+                }
             }
 
             return this.throttlingRetryPolicy.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
@@ -82,11 +107,24 @@ namespace Microsoft.Azure.Cosmos
         {
         }
 
-        private void MarkEndpointUnavailableForRead()
+        /// <summary>
+        /// Marks an endpoint unavailable in the global endpoint manager, for any future read requests.
+        /// </summary>
+        /// <returns>A boolean flag indicating if the operation was successful.</returns>
+        private bool MarkEndpointUnavailableForRead()
         {
-            Uri location = this.locationEndpoint.Invoke();
-            DefaultTrace.TraceWarning("MetadataRequestThrottleRetryPolicy: SubStatusCodes.PartitionKeyRangeGone hit. Calling globalEndpointManager.MarkEndpointUnavailableForRead() for URI: {0}.", location);
-            this.globalEndpointManager.MarkEndpointUnavailableForRead(location);
+            Uri location = this.locationEndpointCallbackUri?.Invoke();
+            if (location != null)
+            {
+                DefaultTrace.TraceWarning("MetadataRequestThrottleRetryPolicy: Marking the following endpoint unavailable for reads: {0}.", location);
+                this.globalEndpointManager.MarkEndpointUnavailableForRead(location);
+                return true;
+            }
+            else
+            {
+                DefaultTrace.TraceWarning("MetadataRequestThrottleRetryPolicy: location endpoint couldn't be resolved. Skip marking endpoint unavailable for reads.");
+                return false;
+            }
         }
     }
 }

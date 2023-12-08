@@ -21,6 +21,8 @@ namespace Microsoft.Azure.Cosmos.Tests
     using TraceLevel = Cosmos.Tracing.TraceLevel;
     using Newtonsoft.Json.Linq;
     using Newtonsoft.Json;
+    using Microsoft.Azure.Cosmos.Client.Tests;
+    using System;
 
     /// <summary>
     /// Unit Tests for <see cref="PartitionKeyRangeCache"/>.
@@ -77,6 +79,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                     [HttpConstants.HttpHeaders.ETag] = eTag,
                 };
 
+                Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
+                mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
+
+                using GlobalEndpointManager endpointManager = new (mockDocumentClient.Object, new ConnectionPolicy());
+
                 mockStoreModel.SetupSequence(x => x.ProcessMessageAsync(It.IsAny<DocumentServiceRequest>(), It.IsAny<CancellationToken>()))
                      .ReturnsAsync(new DocumentServiceResponse(new MemoryStream(singlePkCollectionCacheByte),
                             new StoreResponseNameValueCollection()
@@ -91,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     .Returns(new ValueTask<string>(authToken));
 
                 // Act.
-                PartitionKeyRangeCache partitionKeyRangeCache = new(mockTokenProvider.Object, mockStoreModel.Object, mockCollectioNCache.Object);
+                PartitionKeyRangeCache partitionKeyRangeCache = new(mockTokenProvider.Object, mockStoreModel.Object, mockCollectioNCache.Object, endpointManager);
                 IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
                     containerRId,
                     FeedRangeEpk.FullRange.Range,

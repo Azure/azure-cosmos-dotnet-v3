@@ -28,21 +28,24 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly AsyncCacheNonBlocking<string, CollectionRoutingMap> routingMapCache;
 
         private readonly ICosmosAuthorizationTokenProvider authorizationTokenProvider;
-        private readonly GatewayStoreModel storeModel;
+        private readonly IStoreModel storeModel;
         private readonly CollectionCache collectionCache;
+        private readonly GlobalEndpointManager endpointManager;
 
         private Uri pkRangeLocationEndpoint;
 
         public PartitionKeyRangeCache(
             ICosmosAuthorizationTokenProvider authorizationTokenProvider,
             IStoreModel storeModel,
-            CollectionCache collectionCache)
+            CollectionCache collectionCache,
+            GlobalEndpointManager endpointManager)
         {
             this.routingMapCache = new AsyncCacheNonBlocking<string, CollectionRoutingMap>(
                     keyEqualityComparer: StringComparer.Ordinal);
             this.authorizationTokenProvider = authorizationTokenProvider;
-            this.storeModel = (GatewayStoreModel)storeModel;
+            this.storeModel = storeModel;
             this.collectionCache = collectionCache;
+            this.endpointManager = endpointManager;
         }
 
         public virtual async Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
@@ -201,10 +204,10 @@ namespace Microsoft.Azure.Cosmos.Routing
                 using (DocumentServiceResponse response = await BackoffRetryUtility<DocumentServiceResponse>.ExecuteAsync(
                     () => this.ExecutePartitionKeyRangeReadChangeFeedAsync(collectionRid, headers, trace, clientSideRequestStatistics),
                     new MetadataRequestThrottleRetryPolicy(
-                        () => this.pkRangeLocationEndpoint,
-                        this.storeModel.EndpointManager,
-                        retryOptions.MaxRetryAttemptsOnThrottledRequests,
-                        retryOptions.MaxRetryWaitTimeInSeconds)))
+                        locationEndpointCallbackUri: () => this.pkRangeLocationEndpoint,
+                        endpointManager: this.endpointManager,
+                        maxRetryAttemptsOnThrottledRequests: retryOptions.MaxRetryAttemptsOnThrottledRequests,
+                        maxRetryWaitTimeInSeconds: retryOptions.MaxRetryWaitTimeInSeconds)))
                 {
                     lastStatusCode = response.StatusCode;
                     changeFeedNextIfNoneMatch = response.Headers[HttpConstants.HttpHeaders.ETag];
@@ -262,7 +265,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     AuthorizationTokenType.PrimaryMasterKey,
                     headers))
                 {
-                    this.pkRangeLocationEndpoint = this.storeModel.EndpointManager.ResolveServiceEndpoint(request);
+                    this.pkRangeLocationEndpoint = this.endpointManager.ResolveServiceEndpoint(request);
                     string authorizationToken = null;
                     try
                     {
