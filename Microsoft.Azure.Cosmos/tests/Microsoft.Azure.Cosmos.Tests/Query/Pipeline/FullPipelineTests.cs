@@ -391,7 +391,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     string sqlQuerySpecJsonString = streamReader.ReadToEnd();
 
                     (PartitionedQueryExecutionInfo partitionedQueryExecutionInfo, QueryPartitionProvider queryPartitionProvider) = OptimisticDirectExecutionQueryBaselineTests.GetPartitionedQueryExecutionInfoAndPartitionProvider(sqlQuerySpecJsonString, partitionKeyDefinition);
-                    return TryCatch<PartitionedQueryExecutionInfo>.FromResult(partitionedQueryExecutionInfo);
+                    return Task.FromResult(TryCatch<PartitionedQueryExecutionInfo>.FromResult(partitionedQueryExecutionInfo));
                 }
                 );
 
