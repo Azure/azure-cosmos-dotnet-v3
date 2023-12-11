@@ -92,7 +92,6 @@ namespace Microsoft.Azure.Cosmos.Linq
             this.CosmosLinqSerializer = new DefaultCosmosLinqSerializer();
             this.GroupByKeySubstitution = new ParameterSubstitution();
         }
-    }
 
         public Expression LookupSubstitution(ParameterExpression parameter)
         {
