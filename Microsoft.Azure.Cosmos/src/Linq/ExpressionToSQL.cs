@@ -794,7 +794,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             if (context.currentQuery.GroupByParameter != null)
             {
-                Expression groupbySubstitution = context.groupByKeySubstitution.Lookup(inputExpression);
+                Expression groupbySubstitution = context.GroupByKeySubstitution.Lookup(inputExpression);
                 if (groupbySubstitution != null)
                 {
                     return ExpressionToSql.VisitNonSubqueryScalarExpression(groupbySubstitution, context);
@@ -820,21 +820,6 @@ namespace Microsoft.Azure.Cosmos.Linq
             if (memberName == null)
             {
                 return memberExpression;
-            }
-
-            // If the type of the inputexpression's parent expression (i.e type of (x) for x.Key) is IGrouping, we should ignore "key" 
-            if (inputExpression.Expression.Type.IsGenericType && inputExpression.Expression.Type.GetGenericTypeDefinition() == typeof(IGrouping<,>))
-            {
-                // If the type is IGrouping then there must be a groupby binding
-                if (context.currentQuery.GroupByParameter == null)
-                {
-                    throw new DocumentQueryException(ClientResources.MemberBindingNotSupported);
-                }
-
-                if (memberName == "Key")
-                {
-                    return memberExpression;
-                }
             }
 
             // if expression is nullable
@@ -1745,7 +1730,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             // The alias for the key in the value selector lambda is the first parameter
             ParameterExpression valueSelectorKeyExpressionAlias = Utilities.GetLambda(arguments[2]).Parameters[0];
-            context.groupByKeySubstitution.AddSubstitution(valueSelectorKeyExpressionAlias, Utilities.GetLambda(arguments[1]).Body);
+            context.GroupByKeySubstitution.AddSubstitution(valueSelectorKeyExpressionAlias, Utilities.GetLambda(arguments[1]).Body);
 
             // Translate the body of the value selector lambda
             Expression valueSelectorExpression = Utilities.GetLambda(arguments[2]).Body;
@@ -1958,24 +1943,13 @@ namespace Microsoft.Azure.Cosmos.Linq
             SqlScalarExpression aggregateExpression;
             if (arguments.Count == 1)
             {
-                if (context.currentQuery.GroupByParameter == null)
-                {
-                    // Need to trigger parameter binding for cases where a aggregate function immediately follows a member access.
-                    ParameterExpression parameter = context.GenerateFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
-                    context.PushParameter(parameter, context.CurrentSubqueryBinding.ShouldBeOnNewQuery);
-                    aggregateExpression = ExpressionToSql.VisitParameter(parameter, context);
-                    context.PopParameter();
-                }
-                else
-                {
-                    // The aggregate is being called on the values field in the value selector, which is the same as the current root, in which case, we don't need to get the group by key
-                    //aggregateExpression = ExpressionToSql.VisitParameter(context.currentQuery.groupByParameter.GetInputParameter(), context);
+                // Need to trigger parameter binding for cases where an aggregate function immediately follows a member access.
+                ParameterExpression parameter = context.GenerateFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
+                context.PushParameter(parameter, context.CurrentSubqueryBinding.ShouldBeOnNewQuery);
 
-                    ParameterExpression parameter = context.GenerateFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
-                    context.PushParameter(parameter, context.CurrentSubqueryBinding.ShouldBeOnNewQuery);
-                    aggregateExpression = ExpressionToSql.VisitParameter(parameter, context);
-                    context.PopParameter();
-                }
+                // If there is a groupby, since there is no argument to the aggregate, we consider it to be invoked on the source collection, and not the group by keys 
+                aggregateExpression = ExpressionToSql.VisitParameter(parameter, context);
+                context.PopParameter();
             }
             else if (arguments.Count == 2)
             {

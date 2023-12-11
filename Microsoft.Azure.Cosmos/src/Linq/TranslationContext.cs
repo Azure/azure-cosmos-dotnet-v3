@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <summary>
         /// Ductuibart for group by key substitution
         /// </summary>
-        public ParameterSubstitution groupByKeySubstitution;
+        public ParameterSubstitution GroupByKeySubstitution;
 
         /// <summary>
         /// If the FROM clause uses a parameter name, it will be substituted for the parameter used in 
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             this.linqSerializerOptions = linqSerializerOptions;
             this.parameters = parameters;
             this.memberNames = new MemberNames(linqSerializerOptions);
-            this.groupByKeySubstitution = new ParameterSubstitution();
+            this.GroupByKeySubstitution = new ParameterSubstitution();
         }
 
         public CosmosLinqSerializerOptions linqSerializerOptions;

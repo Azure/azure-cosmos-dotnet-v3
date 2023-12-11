@@ -100,15 +100,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public ParameterExpression GetInputParameterInContext(bool isInNewQuery)
         {
-            if (isInNewQuery) return this.Alias;
-
-            //// If the current query has a groupby, then we need to use the groupby binding instead
-            //if (this.groupByClause != null)
-            //{
-            //    return this.groupByParameter.GetInputParameter();
-            //}
-
-            return this.FromParameters.GetInputParameter();
+            return isInNewQuery ? this.Alias : this.FromParameters.GetInputParameter();
         }
 
         /// <summary>
@@ -339,7 +331,6 @@ namespace Microsoft.Azure.Cosmos.Linq
             SqlIdentifier replacement = SqlIdentifier.Create(paramName);
             SqlSelectClause composedSelect;
             
-            // TODO: If there is already a groupby prior to the select, some form of substitution needs to happen
             composedSelect = this.Substitute(inputSelect, inputSelect.TopSpec ?? this.topSpec, replacement, this.selectClause);
             SqlWhereClause composedWhere = this.Substitute(inputSelect.SelectSpec, replacement, this.whereClause);
             SqlOrderByClause composedOrderBy = this.Substitute(inputSelect.SelectSpec, replacement, this.orderByClause);
@@ -561,7 +552,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 case LinqMethods.OrderByDescending:
                 case LinqMethods.ThenBy:
                 case LinqMethods.ThenByDescending:
-                case LinqMethods.GroupBy: //TODO need to check if this is correct
+                case LinqMethods.GroupBy: 
                 case LinqMethods.Distinct:
                     // New query is needed when there is already a Take or a non-distinct Select
                     shouldPackage = (this.topSpec != null) ||
