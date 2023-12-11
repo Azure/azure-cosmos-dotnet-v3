@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <summary>
         /// Binding for the FROM parameters.
         /// </summary>
-        public FromParameterBindings fromParameters
+        public FromParameterBindings FromParameters
         {
             get;
             set;
@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <summary>
         /// Binding for the Group By clause.
         /// </summary>
-        public FromParameterBindings groupByParameter
+        public FromParameterBindings GroupByParameter
         {
             get;
             set;
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public QueryUnderConstruction(Func<string, ParameterExpression> aliasCreatorFunc, QueryUnderConstruction inputQuery)
         {
-            this.fromParameters = new FromParameterBindings();
+            this.FromParameters = new FromParameterBindings();
             this.aliasCreatorFunc = aliasCreatorFunc;
             this.inputQuery = inputQuery;
             this.alias = new Lazy<ParameterExpression>(() => aliasCreatorFunc(QueryUnderConstruction.DefaultSubqueryRoot));
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public void AddBinding(Binding binding)
         {
-            this.fromParameters.Add(binding);
+            this.FromParameters.Add(binding);
         }
 
         public ParameterExpression GetInputParameterInContext(bool isInNewQuery)
@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             //    return this.groupByParameter.GetInputParameter();
             //}
 
-            return this.fromParameters.GetInputParameter();
+            return this.FromParameters.GetInputParameter();
         }
 
         /// <summary>
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         private SqlFromClause CreateFromClause(SqlCollectionExpression inputCollectionExpression)
         {
             bool first = true;
-            foreach (Binding paramDef in this.fromParameters.GetBindings())
+            foreach (Binding paramDef in this.FromParameters.GetBindings())
             {
                 // If input collection expression is provided, the first binding,
                 // which is the input paramter name, should be omitted.
@@ -196,7 +196,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             SqlSelectClause selectClause = this.selectClause;
             if (selectClause == null)
             {
-                string parameterName = this.fromParameters.GetInputParameter().Name;
+                string parameterName = this.FromParameters.GetInputParameter().Name;
                 SqlScalarExpression parameterExpression = SqlPropertyRefScalarExpression.Create(null, SqlIdentifier.Create(parameterName));
                 selectClause = this.selectClause = SqlSelectClause.Create(SqlSelectValueSpec.Create(parameterExpression));
             }
@@ -216,7 +216,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         public QueryUnderConstruction PackageQuery(HashSet<ParameterExpression> inScope)
         {
             QueryUnderConstruction result = new QueryUnderConstruction(this.aliasCreatorFunc);
-            result.fromParameters.SetInputParameter(typeof(object), this.Alias.Name, inScope);
+            result.FromParameters.SetInputParameter(typeof(object), this.Alias.Name, inScope);
             result.inputQuery = this;
             return result;
         }
@@ -238,7 +238,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             bool seenAnyNonSelectOp = false;
             for (QueryUnderConstruction query = this; query != null; query = query.inputQuery)
             {
-                foreach (Binding binding in query.fromParameters.GetBindings())
+                foreach (Binding binding in query.FromParameters.GetBindings())
                 {
                     if ((binding.ParameterDefinition != null) && (binding.ParameterDefinition is SqlSubqueryCollection))
                     {
@@ -250,8 +250,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                 // In Select -> SelectMany cases, fromParameter substitution is not yet supported .
                 // Therefore these are un-flattenable.
                 if (query.inputQuery != null &&
-                    (query.fromParameters.GetBindings().First().Parameter.Name == query.inputQuery.Alias.Name) &&
-                    query.fromParameters.GetBindings().Any(b => b.ParameterDefinition != null))
+                    (query.FromParameters.GetBindings().First().Parameter.Name == query.inputQuery.Alias.Name) &&
+                    query.FromParameters.GetBindings().Any(b => b.ParameterDefinition != null))
                 {
                     flattenQuery = this;
                     break;
@@ -274,7 +274,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     (query.groupByClause != null) ||    
                     (query.topSpec != null) ||
                     (query.offsetSpec != null) ||
-                    query.fromParameters.GetBindings().Any(b => b.ParameterDefinition != null) ||
+                    query.FromParameters.GetBindings().Any(b => b.ParameterDefinition != null) ||
                     ((query.selectClause != null) && (query.selectClause.HasDistinct || 
                     this.HasSelectAggregate()));
                 parentQuery = query;
@@ -302,7 +302,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 {
                     // If selectClause doesn't exists, use SELECT v0 where v0 is the input parameter, instead of SELECT *.
                     // If there is a groupby clause, the input parameter comes from the groupBy binding instead of the from clause binding
-                    string parameterName = this.groupByParameter != null ? this.groupByParameter.GetInputParameter().Name : this.fromParameters.GetInputParameter().Name;
+                    string parameterName = this.GroupByParameter != null ? this.GroupByParameter.GetInputParameter().Name : this.FromParameters.GetInputParameter().Name;
                     SqlScalarExpression parameterExpression = SqlPropertyRefScalarExpression.Create(null, SqlIdentifier.Create(parameterName));
                     this.selectClause = SqlSelectClause.Create(SqlSelectValueSpec.Create(parameterExpression));
                 }
@@ -323,12 +323,12 @@ namespace Microsoft.Azure.Cosmos.Linq
             // That is because if it has been binded before, it has global scope and should not be replaced.
             string paramName = null;
             HashSet<string> inputQueryParams = new HashSet<string>();
-            foreach (Binding binding in this.inputQuery.fromParameters.GetBindings())
+            foreach (Binding binding in this.inputQuery.FromParameters.GetBindings())
             {
                 inputQueryParams.Add(binding.Parameter.Name);
             }
 
-            foreach (Binding binding in this.fromParameters.GetBindings())
+            foreach (Binding binding in this.FromParameters.GetBindings())
             {
                 if (binding.ParameterDefinition == null || inputQueryParams.Contains(binding.Parameter.Name))
                 {
@@ -345,7 +345,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             SqlOrderByClause composedOrderBy = this.Substitute(inputSelect.SelectSpec, replacement, this.orderByClause);
             SqlGroupByClause composedGroupBy = this.Substitute(inputSelect.SelectSpec, replacement, this.groupByClause);
             SqlWhereClause and = QueryUnderConstruction.CombineWithConjunction(inputwhere, composedWhere);
-            FromParameterBindings fromParams = QueryUnderConstruction.CombineInputParameters(flatInput.fromParameters, this.fromParameters);
+            FromParameterBindings fromParams = QueryUnderConstruction.CombineInputParameters(flatInput.FromParameters, this.FromParameters);
             SqlOffsetSpec offsetSpec;
             SqlLimitSpec limitSpec;
             if (flatInput.offsetSpec != null)
@@ -363,7 +363,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 selectClause = composedSelect,
                 whereClause = and,
                 inputQuery = null,
-                fromParameters = flatInput.fromParameters,
+                FromParameters = flatInput.FromParameters,
                 orderByClause = composedOrderBy ?? this.inputQuery.orderByClause,
                 groupByClause = composedGroupBy ?? this.inputQuery.groupByClause,
                 offsetSpec = offsetSpec,

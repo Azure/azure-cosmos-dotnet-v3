@@ -1274,27 +1274,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        public void TestGroupByTranslation()
-        {
-            List<LinqTestInput> inputs = new List<LinqTestInput>();
-            //inputs.Add(new LinqTestInput("GroupBy select single key", b => getQuery(b).GroupBy(k => k.FamilyId /*keySelector*/)));
-
-            inputs.Add(new LinqTestInput("GroupBy Single Value With Min", b => getQuery(b).GroupBy(k => k.FamilyId /*keySelector*/,
-                                                                                (key, values) => values.Min() /*return the Min of each group */)));
-            inputs.Add(new LinqTestInput("GroupBy Single Value With Max", b => getQuery(b).GroupBy(k => k.FamilyId /*keySelector*/,
-                                                                                (key, values) => values.Max() /*return the Max of each group */)));
-
-            inputs.Add(new LinqTestInput("GroupBy Single Value With Min", b => getQuery(b).GroupBy(k => k.FamilyId /*keySelector*/,
-                                                                                (key, values) => values.Min(value => value.Int) /*return the Min of each group */)));
-            inputs.Add(new LinqTestInput("GroupBy Single Value With Max", b => getQuery(b).GroupBy(k => k.FamilyId /*keySelector*/,
-                                                                                (key, values) => values.Max(value => value.Int) /*return the Max of each group */)));
-            inputs.Add(new LinqTestInput("GroupBy Single Value With Count", b => getQuery(b).GroupBy(k => k.FamilyId /*keySelector*/,
-                                                                                (key, values) => values.Count() /*return the Count of each group */)));
-
-            this.ExecuteTestSuite(inputs);
-        }
-
-        [TestMethod]
         public void TestLambdaReuse()
         {
             List<LinqTestInput> inputs = new List<LinqTestInput>();

@@ -37,6 +37,11 @@ namespace Microsoft.Azure.Cosmos.Linq
         public IDictionary<object, string> parameters;
 
         /// <summary>
+        /// Ductuibart for group by key substitution
+        /// </summary>
+        public ParameterSubstitution groupByKeySubstitution;
+
+        /// <summary>
         /// If the FROM clause uses a parameter name, it will be substituted for the parameter used in 
         /// the lambda expressions for the WHERE and SELECT clauses.
         /// </summary>
@@ -70,6 +75,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             this.linqSerializerOptions = linqSerializerOptions;
             this.parameters = parameters;
             this.memberNames = new MemberNames(linqSerializerOptions);
+            this.groupByKeySubstitution = new ParameterSubstitution();
         }
 
         public CosmosLinqSerializerOptions linqSerializerOptions;
@@ -182,7 +188,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="name">Suggested name for the input parameter.</param>
         public ParameterExpression SetInputParameter(Type type, string name)
         {
-            return this.currentQuery.fromParameters.SetInputParameter(type, name, this.InScope);
+            return this.currentQuery.FromParameters.SetInputParameter(type, name, this.InScope);
         }
 
         /// <summary>
@@ -193,7 +199,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         public void SetFromParameter(ParameterExpression parameter, SqlCollection collection)
         {
             Binding binding = new Binding(parameter, collection, isInCollection: true);
-            this.currentQuery.fromParameters.Add(binding);
+            this.currentQuery.FromParameters.Add(binding);
         }
 
         /// <summary>
