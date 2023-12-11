@@ -5,17 +5,21 @@
 namespace Microsoft.Azure.Cosmos.Telemetry.Models
 {
     using System;
-    using Newtonsoft.Json;
+    using System.Text.Json.Serialization;
 
     [Serializable]
     internal sealed class AzureVMMetadata
     {
+        public AzureVMMetadata() 
+        { 
+        }
+
         public AzureVMMetadata(Compute compute)
         {
             this.Compute = compute;
         }
 
-        [JsonProperty(PropertyName = "compute")]
-        internal Compute Compute { get; }
+        [JsonPropertyName("compute")]
+        public Compute Compute { get; }
     }
 }

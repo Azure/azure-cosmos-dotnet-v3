@@ -5,13 +5,15 @@
 namespace Microsoft.Azure.Cosmos.Telemetry.Models
 {
     using System;
-    using Newtonsoft.Json;
-    using Util;
+    using System.Text.Json.Serialization;
 
     [Serializable]
     internal sealed class Compute
     {
-        [JsonConstructor]
+        public Compute()
+        {
+        }
+
         public Compute(
             string vMId,
             string location,
@@ -28,23 +30,23 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
             this.VMId = $"{VmMetadataApiHandler.VmIdPrefix}{vMId}";
         }
 
-        [JsonProperty(PropertyName = "location")]
-        internal string Location { get; }
+        [JsonPropertyName("location")]
+        public string Location { get; }
 
-        [JsonProperty(PropertyName = "sku")]
-        internal string SKU { get; }
+        [JsonPropertyName("sku")]
+        public string SKU { get; }
 
-        [JsonProperty(PropertyName = "azEnvironment")]
-        internal string AzEnvironment { get; }
+        [JsonPropertyName("azEnvironment")]
+        public string AzEnvironment { get; }
 
-        [JsonProperty(PropertyName = "osType")]
-        internal string OSType { get; }
+        [JsonPropertyName("osType")]
+        public string OSType { get; }
 
-        [JsonProperty(PropertyName = "vmSize")]
-        internal string VMSize { get; }
+        [JsonPropertyName("vmSize")]
+        public string VMSize { get; }
 
-        [JsonProperty(PropertyName = "vmId")]
-        internal string VMId { get; }
+        [JsonPropertyName("vmId")]
+        public string VMId { get; }
     }
 
 }

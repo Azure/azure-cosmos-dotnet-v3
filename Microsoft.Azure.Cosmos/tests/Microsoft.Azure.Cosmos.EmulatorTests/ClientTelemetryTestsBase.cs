@@ -16,12 +16,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json.Linq;
-    using Newtonsoft.Json;
     using System.Globalization;
     using System.Linq;
     using Cosmos.Util;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
+    using System.Text.Json;
 
     public abstract class ClientTelemetryTestsBase : BaseCosmosClientHelper
     {
@@ -75,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         lock (this.actualInfo)
                         {
-                            this.actualInfo.Add(JsonConvert.DeserializeObject<ClientTelemetryProperties>(jsonObject));
+                            this.actualInfo.Add(JsonSerializer.Deserialize<ClientTelemetryProperties>(jsonObject));
                         }
                     }
                     return this.HttpHandlerRequestCallbackChecks(request);
@@ -114,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         lock(this.actualInfo)
                         {
-                            this.actualInfo.Add(JsonConvert.DeserializeObject<ClientTelemetryProperties>(jsonObject));
+                            this.actualInfo.Add(JsonSerializer.Deserialize<ClientTelemetryProperties>(jsonObject));
                         }
                     }
 
@@ -221,7 +220,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Container container = await this.CreateClientAndContainer(mode, Microsoft.Azure.Cosmos.ConsistencyLevel.ConsistentPrefix);
 
-                await container.ReadItemAsync<JObject>(
+                await container.ReadItemAsync<JsonDocument>(
                     new Guid().ToString(),
                     new Cosmos.PartitionKey(new Guid().ToString()),
                      new ItemRequestOptions()
@@ -646,7 +645,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     lock (this.actualInfo)
                     {
-                        this.actualInfo.Add(JsonConvert.DeserializeObject<ClientTelemetryProperties>(jsonObject));
+                        this.actualInfo.Add(JsonSerializer.Deserialize<ClientTelemetryProperties>(jsonObject));
                     }
                 }
                 else if (request.Method == HttpMethod.Get && request.RequestUri.AbsolutePath == "//addresses/")
@@ -657,7 +656,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     // This ensures that if the backend adds a enum the status code is not lost.
                     result.Headers.Add(WFConstants.BackendHeaders.SubStatus, 999999.ToString(CultureInfo.InvariantCulture));
 
-                    string payload = JsonConvert.SerializeObject(new Error() { Message = "test message" });
+                    string payload = JsonSerializer.Serialize(new Error() { Message = "test message" });
                     result.Content = new StringContent(payload, Encoding.UTF8, "application/json");
 
                     return Task.FromResult(result);
@@ -761,7 +760,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         break;
                     }
 
-                    Assert.IsTrue(stopwatch.Elapsed.TotalMinutes < 1, $"The expected operation count({expectedOperationCount}) was never hit, Actual Operation Count is {actualOperationSet.Count}.  ActualInfo:{JsonConvert.SerializeObject(this.actualInfo)}");
+                    Assert.IsTrue(stopwatch.Elapsed.TotalSeconds < 10, $"The expected operation count({expectedOperationCount}) was never hit, Actual Operation Count is {actualOperationSet.Count}.  ActualInfo:{JsonSerializer.Serialize(this.actualInfo)}");
                 }
             }
             while (localCopyOfActualInfo == null);
@@ -948,11 +947,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 if (telemetryInfo.ConnectionMode == ConnectionMode.Direct.ToString().ToUpperInvariant())
                 {
-                    Assert.AreEqual(6, telemetryInfo.SystemInfo.Count, $"System Information Count doesn't Match; {JsonConvert.SerializeObject(telemetryInfo.SystemInfo)}");
+                    Assert.AreEqual(6, telemetryInfo.SystemInfo.Count, $"System Information Count doesn't Match; {JsonSerializer.Serialize(telemetryInfo.SystemInfo)}");
                 }
                 else
                 {
-                    Assert.AreEqual(5, telemetryInfo.SystemInfo.Count, $"System Information Count doesn't Match; {JsonConvert.SerializeObject(telemetryInfo.SystemInfo)}");
+                    Assert.AreEqual(5, telemetryInfo.SystemInfo.Count, $"System Information Count doesn't Match; {JsonSerializer.Serialize(telemetryInfo.SystemInfo)}");
                 }
 
                 Assert.IsNotNull(telemetryInfo.GlobalDatabaseAccountName, "GlobalDatabaseAccountName is null");
@@ -987,7 +986,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
 
-            Assert.AreEqual(1, machineId.Count, $"Multiple Machine Id has been generated i.e {JsonConvert.SerializeObject(machineId)}");
+            Assert.AreEqual(1, machineId.Count, $"Multiple Machine Id has been generated i.e {JsonSerializer.Serialize(machineId)}");
         }
 
         private static void AssertCacheRefreshInfoInformation(

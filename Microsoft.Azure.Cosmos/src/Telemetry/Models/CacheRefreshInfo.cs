@@ -5,42 +5,41 @@
 namespace Microsoft.Azure.Cosmos.Telemetry.Models
 {
     using System;
+    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
 
     [Serializable]
     internal sealed class CacheRefreshInfo : OperationInfo
     {
-        [JsonProperty(PropertyName = "cacheRefreshSource")]
-        internal string CacheRefreshSource { get; }
-
-        internal CacheRefreshInfo(string metricsName, string unitName)
-            : base(metricsName, unitName)
+        internal CacheRefreshInfo()
         {
         }
 
-        [JsonConstructor]
-        internal CacheRefreshInfo(string regionsContacted,
-            long? responseSizeInBytes,
+        [JsonPropertyName("cacheRefreshSource")]
+        public string CacheRefreshSource { get; }
+
+        public CacheRefreshInfo(string regionsContacted,
+            bool? greaterThan1Kb,
             string consistency,
             string databaseName,
             string containerName,
-            OperationType? operation,
-            ResourceType? resource,
+            string operation,
+            string resource,
             int? statusCode,
             int subStatusCode,
-            string cacheRefreshSource)
-            : base(
-                  regionsContacted: regionsContacted,
-                  responseSizeInBytes: responseSizeInBytes,
-                  consistency: consistency,
-                  databaseName: databaseName,
-                  containerName: containerName,
-                  operation: operation,
-                  resource: resource,
-                  statusCode: statusCode,
-                  subStatusCode: subStatusCode)
+            string cacheRefreshSource,
+            MetricInfo metricInfo = null)
         {
+            this.RegionsContacted = regionsContacted;
+            this.GreaterThan1Kb = greaterThan1Kb;
+            this.Consistency = consistency;
+            this.DatabaseName = databaseName;
+            this.ContainerName = containerName;
+            this.Operation = operation;
+            this.Resource = resource;
+            this.StatusCode = statusCode;
+            this.SubStatusCode = subStatusCode;
+            this.MetricInfo = metricInfo;
             this.CacheRefreshSource = cacheRefreshSource;
         }
 

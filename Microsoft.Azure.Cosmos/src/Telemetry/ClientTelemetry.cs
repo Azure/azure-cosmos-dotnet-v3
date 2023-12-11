@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Telemetry.Collector;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
+    using Microsoft.Azure.Documents;
     using Util;
     using static Microsoft.Azure.Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum;
 
@@ -258,12 +259,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             // Recording Request Latency
             CacheRefreshInfo payloadKey = new CacheRefreshInfo(cacheRefreshSource: cacheName,
                                             regionsContacted: regionsContacted?.ToString(),
-                                            responseSizeInBytes: data.ResponseSizeInBytes,
+                                            greaterThan1Kb: data.ResponseSizeInBytes > ClientTelemetryOptions.OneKbToBytes,
                                             consistency: data.ConsistencyLevel,
                                             databaseName: data.DatabaseId,
                                             containerName: data.ContainerId,
-                                            operation: data.OperationType,
-                                            resource: data.ResourceType,
+                                            operation: data.OperationType.ToOperationTypeString(),
+                                            resource: data.ResourceType.ToResourceTypeString(),
                                             statusCode: (int)data.StatusCode,
                                             subStatusCode: (int)data.SubStatusCode);
 
@@ -292,14 +293,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             // Recording Request Latency and Request Charge
             OperationInfo payloadKey = new OperationInfo(regionsContacted: regionsContacted?.ToString(),
-                                            responseSizeInBytes: data.ResponseSizeInBytes,
+                                            greaterThan1Kb: data.ResponseSizeInBytes > ClientTelemetryOptions.OneKbToBytes,
                                             consistency: data.ConsistencyLevel,
                                             databaseName: data.DatabaseId,
                                             containerName: data.ContainerId,
-                                            operation: data.OperationType,
-                                            resource: data.ResourceType,
+                                            operation: data?.OperationType.ToOperationTypeString(),
+                                            resource: data?.ResourceType.ToResourceTypeString(),
                                             statusCode: (int)data.StatusCode,
-                                            subStatusCode: (int)data.SubStatusCode);
+                                            subStatusCode: (int)data.SubStatusCode,
+                                            metricInfo: null);
 
             (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge) = this.operationInfoMap
                     .GetOrAdd(payloadKey, x => (latency: new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,

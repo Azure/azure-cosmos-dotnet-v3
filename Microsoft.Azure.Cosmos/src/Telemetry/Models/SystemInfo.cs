@@ -5,17 +5,21 @@
 namespace Microsoft.Azure.Cosmos.Telemetry.Models
 {
     using System;
+    using System.Text.Json.Serialization;
     using HdrHistogram;
-    using Newtonsoft.Json;
 
     [Serializable]
     internal sealed class SystemInfo
     {
-        [JsonProperty(PropertyName = "resource")]
-        internal string Resource => "HostMachine";
+        public SystemInfo()
+        {
+        }
 
-        [JsonProperty(PropertyName = "metricInfo")]
-        internal MetricInfo MetricInfo { get; set; }
+        [JsonPropertyName("resource")]
+        public string Resource => "HostMachine";
+
+        [JsonPropertyName("metricInfo")]
+        public MetricInfo MetricInfo { get; set; }
 
         internal SystemInfo(string metricsName, string unitName)
         {

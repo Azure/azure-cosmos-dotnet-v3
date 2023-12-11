@@ -6,65 +6,65 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
 {
     using System;
     using System.Collections.Generic;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Serialization;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
 
     [Serializable]
     internal sealed class ClientTelemetryProperties
     {
-        [JsonProperty(PropertyName = "timeStamp")]
-        internal string DateTimeUtc { get; set; }
+        [JsonPropertyName("timeStamp")]
+        public string DateTimeUtc { get; set; }
 
-        [JsonProperty(PropertyName = "clientId")]
-        internal string ClientId { get; }
+        [JsonPropertyName("clientId")]
+        public string ClientId { get; }
 
-        [JsonProperty(PropertyName = "machineId")]
-        internal string MachineId { get; set; }
+        [JsonPropertyName("machineId")]
+        public string MachineId { get; set; }
 
-        [JsonProperty(PropertyName = "processId")]
-        internal string ProcessId { get; }
+        [JsonPropertyName("processId")]
+        public string ProcessId { get; }
 
-        [JsonProperty(PropertyName = "userAgent")]
-        internal string UserAgent { get; }
+        [JsonPropertyName("userAgent")]
+        public string UserAgent { get; }
 
-        [JsonProperty(PropertyName = "connectionMode")]
-        internal string ConnectionMode { get; }
+        [JsonPropertyName("connectionMode")]
+        public string ConnectionMode { get; }
 
-        [JsonProperty(PropertyName = "globalDatabaseAccountName")]
-        internal string GlobalDatabaseAccountName { get; set; }
+        [JsonPropertyName("globalDatabaseAccountName")]
+        public string GlobalDatabaseAccountName { get; set; }
 
-        [JsonProperty(PropertyName = "applicationRegion")]
-        internal string ApplicationRegion { get; set; }
+        [JsonPropertyName("applicationRegion")]
+        public string ApplicationRegion { get; set; }
 
-        [JsonProperty(PropertyName = "hostEnvInfo")]
-        internal string HostEnvInfo { get; set; }
+        [JsonPropertyName("hostEnvInfo")]
+        public string HostEnvInfo { get; set; }
 
-        [JsonProperty(PropertyName = "acceleratedNetworking")]
-        internal bool? AcceleratedNetworking { get; set; }
+        [JsonPropertyName("acceleratedNetworking")]
+        public bool? AcceleratedNetworking { get; set; }
 
         /// <summary>
         /// Preferred Region set by the client
         /// </summary>
-        [JsonProperty(PropertyName = "preferredRegions")]
-        internal IReadOnlyList<string> PreferredRegions { get; set; }
+        [JsonPropertyName("preferredRegions")]
+        public IReadOnlyList<string> PreferredRegions { get; set; }
 
-        [JsonProperty(PropertyName = "aggregationIntervalInSec")]
-        internal int AggregationIntervalInSec { get; set; }
+        [JsonPropertyName("aggregationIntervalInSec")]
+        public int AggregationIntervalInSec { get; set; }
 
-        [JsonProperty(PropertyName = "systemInfo")]
-        internal List<SystemInfo> SystemInfo { get; set; }
+        [JsonPropertyName("systemInfo")]
+        public List<SystemInfo> SystemInfo { get; set; }
 
-        [JsonProperty(PropertyName = "cacheRefreshInfo")]
-        internal List<CacheRefreshInfo> CacheRefreshInfo { get; set; }
+        [JsonPropertyName("cacheRefreshInfo")]
+        public List<CacheRefreshInfo> CacheRefreshInfo { get; set; }
 
-        [JsonProperty(PropertyName = "operationInfo")]
-        internal List<OperationInfo> OperationInfo { get; set; }
+        [JsonPropertyName("operationInfo")]
+        public List<OperationInfo> OperationInfo { get; set; }
 
-        [JsonProperty(PropertyName = "requestInfo")]
-        internal List<RequestInfo> RequestInfo { get; set; }
+        [JsonPropertyName("requestInfo")]
+        public List<RequestInfo> RequestInfo { get; set; }
 
         [JsonIgnore]
-        internal bool IsDirectConnectionMode { get; }
+        public bool IsDirectConnectionMode { get; }
 
         internal ClientTelemetryProperties(string clientId,
                                    string processId,
@@ -86,7 +86,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
         /// <summary>
         /// Needed by Serializer to deserialize the json
         /// </summary>
-        [JsonConstructor]
         public ClientTelemetryProperties(string dateTimeUtc,
             string clientId,
             string processId,
@@ -120,50 +119,32 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
             this.MachineId = machineId;
         }
 
-        public void Write(JsonWriter writer)
+        internal void Write(Utf8JsonWriter writer)
         {
-            writer.WritePropertyName("timeStamp");
-            writer.WriteValue(this.DateTimeUtc);
-
-            writer.WritePropertyName("clientId");
-            writer.WriteValue(this.ClientId);
-
-            writer.WritePropertyName("machineId");
-            writer.WriteValue(this.MachineId);
-
-            writer.WritePropertyName("processId");
-            writer.WriteValue(this.ProcessId);
-
-            writer.WritePropertyName("userAgent");
-            writer.WriteValue(this.UserAgent);
-
-            writer.WritePropertyName("connectionMode");
-            writer.WriteValue(this.ConnectionMode);
-
-            writer.WritePropertyName("globalDatabaseAccountName");
-            writer.WriteValue(this.GlobalDatabaseAccountName);
-
-            writer.WritePropertyName("applicationRegion");
+            writer.WriteString("timeStamp", this.DateTimeUtc);
+            writer.WriteString("clientId", this.ClientId);
+            writer.WriteString("machineId", this.MachineId);
+            writer.WriteString("processId", this.ProcessId);
+            writer.WriteString("userAgent", this.UserAgent);
+            writer.WriteString("connectionMode", this.ConnectionMode);
+            writer.WriteString("globalDatabaseAccountName", this.GlobalDatabaseAccountName);
             if (this.ApplicationRegion != null)
             {
-                writer.WriteValue(this.ApplicationRegion);
+                writer.WriteString("applicationRegion", this.ApplicationRegion);
             }
             else
             {
-                writer.WriteNull();
+                writer.WriteNull("applicationRegion");
             }
 
-            writer.WritePropertyName("hostEnvInfo");
-            writer.WriteValue(this.HostEnvInfo);
-
-            writer.WritePropertyName("acceleratedNetworking");
+            writer.WriteString("hostEnvInfo", this.HostEnvInfo);
             if (this.AcceleratedNetworking.HasValue)
             {
-                writer.WriteValue(this.AcceleratedNetworking.Value);
+                writer.WriteBoolean("acceleratedNetworking", this.AcceleratedNetworking.Value);
             }
             else
             {
-                writer.WriteNull();
+                writer.WriteNull("acceleratedNetworking");
             }
 
             writer.WritePropertyName("preferredRegions");
@@ -173,22 +154,22 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
                 writer.WriteStartArray();
                 foreach (string region in this.PreferredRegions)
                 {
-                    writer.WriteValue(region);
+                    writer.WriteStringValue(region);
                 }
                 writer.WriteEndArray();
             }
             else
             {
-                writer.WriteNull();
+                writer.WriteNull("preferredRegions");
             }
 
-            writer.WritePropertyName("aggregationIntervalInSec");
-            writer.WriteValue(this.AggregationIntervalInSec);
+            writer.WriteNumber("aggregationIntervalInSec", this.AggregationIntervalInSec);
 
             if (this.SystemInfo != null && this.SystemInfo.Count > 0)
             {
                 writer.WritePropertyName("systemInfo");
-                writer.WriteRawValue(JsonConvert.SerializeObject(this.SystemInfo));
+                string sysInfo = JsonSerializer.Serialize(this.SystemInfo);
+                writer.WriteRawValue(sysInfo);
             }
         }
     }

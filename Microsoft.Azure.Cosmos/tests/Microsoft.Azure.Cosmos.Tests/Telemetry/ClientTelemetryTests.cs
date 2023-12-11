@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
     using System;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using HdrHistogram;
-    using Newtonsoft.Json;
     using Microsoft.Azure.Cosmos.Telemetry;
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
@@ -19,6 +18,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
     using System.Threading;
     using System.Net;
     using System.Collections.Concurrent;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
+    using System.Text.Json.Nodes;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Tests for <see cref="ClientTelemetry"/>.
@@ -26,6 +29,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
     [TestClass]
     public class ClientTelemetryTests
     {
+        internal static readonly JsonSerializerOptions JsonSerializerSettings = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+        };
+
         [TestMethod]
         public void CheckMetricsAggregationLogic()
         {
@@ -87,12 +97,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
         [TestMethod]
         public void CheckJsonSerializerContract()
         {
-            string json = JsonConvert.SerializeObject(new ClientTelemetryProperties(clientId: "clientId",
+            string json = JsonSerializer.Serialize(new ClientTelemetryProperties(clientId: "clientId",
                 processId: "",
                 userAgent: null,
                 connectionMode: ConnectionMode.Direct,
                 preferredRegions: null,
-                aggregationIntervalInSec: 10), ClientTelemetryOptions.JsonSerializerSettings);
+                aggregationIntervalInSec: 10), JsonSerializerSettings);
             Assert.AreEqual("{\"clientId\":\"clientId\",\"processId\":\"\",\"connectionMode\":\"DIRECT\",\"aggregationIntervalInSec\":10,\"systemInfo\":[]}", json);
         }
 
@@ -103,12 +113,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
             {
                 "region1"
             };
-            string json = JsonConvert.SerializeObject(new ClientTelemetryProperties(clientId: "clientId",
+            string json = JsonSerializer.Serialize(new ClientTelemetryProperties(clientId: "clientId",
                 processId: "",
                 userAgent: null,
                 connectionMode: ConnectionMode.Direct,
                 preferredRegions: preferredRegion,
-                aggregationIntervalInSec: 1), ClientTelemetryOptions.JsonSerializerSettings);
+                aggregationIntervalInSec: 1), JsonSerializerSettings);
             Assert.AreEqual("{\"clientId\":\"clientId\",\"processId\":\"\",\"connectionMode\":\"DIRECT\",\"preferredRegions\":[\"region1\"],\"aggregationIntervalInSec\":1,\"systemInfo\":[]}", json);
         }
         
@@ -119,10 +129,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
         [DataRow(150, 0, 0)] // When only operation info is there in payload
         public async Task CheckIfPayloadIsDividedCorrectlyAsync(int expectedOperationInfoSize, int expectedCacheRefreshInfoSize, int expectedRequestInfoSize)
         {
-            ClientTelemetryOptions.PayloadSizeThreshold = 1024 * 15; //15 Kb
+            ClientTelemetryOptions.PayloadSizeThresholdInBytes = 1024 * 15; //15 Kb
 
             string data = File.ReadAllText("Telemetry/ClientTelemetryPayloadWithoutMetrics.json", Encoding.UTF8);
-            ClientTelemetryProperties clientTelemetryProperties = JsonConvert.DeserializeObject<ClientTelemetryProperties>(data);
+            ClientTelemetryProperties clientTelemetryProperties = JsonSerializer.Deserialize<ClientTelemetryProperties>(data);
             
             int totalPayloadSizeInBytes = data.Length;
 
@@ -138,9 +148,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 (request, cancellationToken) =>
                 {
                     string payloadJson = request.Content.ReadAsStringAsync().Result;
-                    Assert.IsTrue(payloadJson.Length <= ClientTelemetryOptions.PayloadSizeThreshold, "Payload Size is " + payloadJson.Length);
+                    Console.WriteLine(payloadJson);
+                    Assert.IsTrue(payloadJson.Length <= ClientTelemetryOptions.PayloadSizeThresholdInBytes, "Actual Payload Size is " + payloadJson.Length + " and expected payload size is : " + ClientTelemetryOptions.PayloadSizeThresholdInBytes);
 
-                    ClientTelemetryProperties propertiesToSend = JsonConvert.DeserializeObject<ClientTelemetryProperties>(payloadJson);
+                    ClientTelemetryProperties propertiesToSend = JsonSerializer.Deserialize<ClientTelemetryProperties>(payloadJson);
 
                     Assert.AreEqual(7, propertiesToSend.SystemInfo.Count, "System Info is not correct");
 
@@ -161,14 +172,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
             for (int i = 0; i < (expectedOperationInfoSize/ numberOfMetricsInOperationSection); i++)
             {
                 OperationInfo opeInfo = new OperationInfo(Regions.WestUS,
-                                                        0,
+                                                        true,
                                                         Documents.ConsistencyLevel.Session.ToString(),
                                                         "databaseName" + i,
                                                         "containerName",
-                                                        Documents.OperationType.Read,
-                                                        Documents.ResourceType.Document,
+                                                        Documents.OperationType.Read.ToOperationTypeString(),
+                                                        Documents.ResourceType.Document.ToResourceTypeString(),
                                                         200,
-                                                        0);
+                                                        0,
+                                                        null);
 
                 LongConcurrentHistogram latency = new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
                                                             ClientTelemetryOptions.RequestLatencyMax,
@@ -188,12 +200,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
             for (int i = 0; i < expectedCacheRefreshInfoSize; i++)
             {
                 CacheRefreshInfo crInfo = new CacheRefreshInfo(Regions.WestUS,
-                                                        10,
+                                                        true,
                                                         Documents.ConsistencyLevel.Session.ToString(),
                                                         "databaseName" + i,
                                                         "containerName",
-                                                        Documents.OperationType.Read,
-                                                        Documents.ResourceType.Document,
+                                                        Documents.OperationType.Read.ToOperationTypeString(),
+                                                        Documents.ResourceType.Document.ToResourceTypeString(),
                                                         200,
                                                         1002,
                                                         "dummycache") ;
@@ -250,7 +262,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
         public async Task ClientTelmetryProcessor_should_timeout()
         {
             string data = File.ReadAllText("Telemetry/ClientTelemetryPayloadWithoutMetrics.json", Encoding.UTF8);
-            ClientTelemetryProperties clientTelemetryProperties = JsonConvert.DeserializeObject<ClientTelemetryProperties>(data);
+            ClientTelemetryProperties clientTelemetryProperties = JsonSerializer.Deserialize<ClientTelemetryProperties>(data);
  
             int actualOperationInfoSize = 0;
             int actualCacheRefreshInfoSize = 0;
@@ -263,9 +275,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 (request, cancellationToken) =>
                 {
                     string payloadJson = request.Content.ReadAsStringAsync().Result;
-                    Assert.IsTrue(payloadJson.Length <= ClientTelemetryOptions.PayloadSizeThreshold, "Payload Size is " + payloadJson.Length);
+                    Console.WriteLine(payloadJson);
+                    Assert.IsTrue(payloadJson.Length <= ClientTelemetryOptions.PayloadSizeThresholdInBytes, "Actual Payload Size is " + payloadJson.Length + " and expected payload size is : " + ClientTelemetryOptions.PayloadSizeThresholdInBytes);
 
-                    ClientTelemetryProperties propertiesToSend = JsonConvert.DeserializeObject<ClientTelemetryProperties>(payloadJson);
+                    ClientTelemetryProperties propertiesToSend = JsonSerializer.Deserialize<ClientTelemetryProperties>(payloadJson);
 
                     actualOperationInfoSize += propertiesToSend.OperationInfo?.Count ?? 0;
                     actualCacheRefreshInfoSize += propertiesToSend.CacheRefreshInfo?.Count ?? 0;
@@ -282,14 +295,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
             for (int i = 0; i < 20; i++)
             {
                 OperationInfo opeInfo = new OperationInfo(Regions.WestUS,
-                                                        0,
+                                                        true,
                                                         Documents.ConsistencyLevel.Session.ToString(),
                                                         "databaseName" + i,
                                                         "containerName",
-                                                        Documents.OperationType.Read,
-                                                        Documents.ResourceType.Document,
+                                                        Documents.OperationType.Read.ToOperationTypeString(),
+                                                        Documents.ResourceType.Document.ToResourceTypeString(),
                                                         200,
-                                                        0);
+                                                        0,
+                                                        null);
 
                 LongConcurrentHistogram latency = new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
                                                             ClientTelemetryOptions.RequestLatencyMax,
@@ -309,12 +323,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
             for (int i = 0; i < 10; i++)
             {
                 CacheRefreshInfo crInfo = new CacheRefreshInfo(Regions.WestUS,
-                                                        10,
+                                                        true,
                                                         Documents.ConsistencyLevel.Session.ToString(),
                                                         "databaseName" + i,
                                                         "containerName",
-                                                        Documents.OperationType.Read,
-                                                        Documents.ResourceType.Document,
+                                                        Documents.OperationType.Read.ToOperationTypeString(),
+                                                        Documents.ResourceType.Document.ToResourceTypeString(),
                                                         200,
                                                         1002,
                                                         "dummycache");

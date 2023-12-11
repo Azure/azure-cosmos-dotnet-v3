@@ -5,72 +5,46 @@
 namespace Microsoft.Azure.Cosmos.Telemetry.Models
 {
     using System;
+    using System.Text.Json.Serialization;
     using HdrHistogram;
     using Microsoft.Azure.Cosmos.Telemetry;
-    using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
-
+ 
     [Serializable]
     internal class OperationInfo
     {
-        [JsonProperty(PropertyName = "regionsContacted")]
-        internal string RegionsContacted { get; }
-
-        [JsonProperty(PropertyName = "greaterThan1Kb")]
-        internal bool? GreaterThan1Kb { get; set; }
-
-        [JsonProperty(PropertyName = "databaseName")]
-        internal string DatabaseName { get; }
-
-        [JsonProperty(PropertyName = "containerName")]
-        internal string ContainerName { get; }
-
-        [JsonProperty(PropertyName = "operation")]
-        internal string Operation { get; }
-
-        [JsonProperty(PropertyName = "resource")]
-        internal string Resource { get; }
-
-        [JsonProperty(PropertyName = "consistency")]
-        internal string Consistency { get; }
-
-        [JsonProperty(PropertyName = "statusCode")]
-        public int? StatusCode { get; }
-
-        [JsonProperty(PropertyName = "subStatusCode")]
-        public int SubStatusCode { get; }
-
-        [JsonProperty(PropertyName = "metricInfo")]
-        internal MetricInfo MetricInfo { get; set; }
-
-        internal OperationInfo(string metricsName, string unitName)
+        internal OperationInfo()
         {
-            this.MetricInfo = new MetricInfo(metricsName, unitName);
         }
 
-        internal OperationInfo(string regionsContacted,
-            long? responseSizeInBytes,
-            string consistency,
-            string databaseName,
-            string containerName,
-            OperationType? operation,
-            ResourceType? resource,
-            int? statusCode,
-            int subStatusCode)
-        {
-            this.RegionsContacted = regionsContacted;
-            if (responseSizeInBytes != null)
-            {
-                this.GreaterThan1Kb = responseSizeInBytes > ClientTelemetryOptions.OneKbToBytes;
-            }
-            this.Consistency = consistency;
-            this.DatabaseName = databaseName;
-            this.ContainerName = containerName;
-            this.Operation = operation?.ToOperationTypeString();
-            this.Resource = resource?.ToResourceTypeString();
-            this.StatusCode = statusCode;
-            this.SubStatusCode = subStatusCode;
-        }
+        [JsonPropertyName("regionsContacted")]
+        public string RegionsContacted { get; set; }
+
+        [JsonPropertyName("greaterThan1Kb")]
+        public bool? GreaterThan1Kb { get; set; }
+
+        [JsonPropertyName("databaseName")]
+        public string DatabaseName { get; set; }
+
+        [JsonPropertyName("containerName")]
+        public string ContainerName { get; set; }
+
+        [JsonPropertyName("operation")]
+        public string Operation { get; set; }
+
+        [JsonPropertyName("resource")]
+        public string Resource { get; set; }
+
+        [JsonPropertyName("consistency")]
+        public string Consistency { get; set; }
+
+        [JsonPropertyName("statusCode")]
+        public int? StatusCode { get; set; }
+
+        [JsonPropertyName("subStatusCode")]
+        public int SubStatusCode { get; set; }
+
+        [JsonPropertyName("metricInfo")]
+        public MetricInfo MetricInfo { get; set; }
 
         public OperationInfo(string regionsContacted,
             bool? greaterThan1Kb,
@@ -95,18 +69,18 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
             this.MetricInfo = metricInfo;
         }
 
-        public OperationInfo Copy()
+        internal OperationInfo Copy()
         {
             return new OperationInfo(this.RegionsContacted,
-            this.GreaterThan1Kb,
-            this.DatabaseName,
-            this.ContainerName,
-            this.Operation,
-            this.Resource,
-            this.Consistency,
-            this.StatusCode,
-            this.SubStatusCode,
-            null);
+                                    this.GreaterThan1Kb,
+                                    this.DatabaseName,
+                                    this.ContainerName,
+                                    this.Operation,
+                                    this.Resource,
+                                    this.Consistency,
+                                    this.StatusCode,
+                                    this.SubStatusCode,
+                                    null);
         }
 
         public override int GetHashCode()

@@ -6,18 +6,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
 {
     using System;
     using System.Collections.Generic;
+    using System.Text.Json.Serialization;
     using HdrHistogram;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Util;
-    using Newtonsoft.Json;
 
     [Serializable]
     internal sealed class MetricInfo
     {
-        internal MetricInfo(string metricsName, string unitName)
+        public MetricInfo()
         {
-            this.MetricsName = metricsName;
-            this.UnitName = unitName;
         }
 
         public MetricInfo(string metricsName,
@@ -27,35 +25,36 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
             long min = 0,
             long max = 0,
             IReadOnlyDictionary<double, double> percentiles = null)
-            : this(metricsName, unitName)
         {
             this.Mean = mean;
             this.Count = count;
             this.Min = min;
             this.Max = max;
             this.Percentiles = percentiles;
+            this.MetricsName = metricsName;
+            this.UnitName = unitName;
         }
 
-        [JsonProperty(PropertyName = "metricsName")]
-        internal string MetricsName { get; }
+        [JsonPropertyName("metricsName")]
+        public string MetricsName { get; set; }
 
-        [JsonProperty(PropertyName = "unitName")]
-        internal string UnitName { get; }
+        [JsonPropertyName("unitName")]
+        public string UnitName { get; set; }
 
-        [JsonProperty(PropertyName = "mean")]
-        internal double Mean { get; set; }
+        [JsonPropertyName("mean")]
+        public double Mean { get; set; }
 
-        [JsonProperty(PropertyName = "count")]
-        internal long Count { get; set; }
+        [JsonPropertyName("count")]
+        public long Count { get; set; }
 
-        [JsonProperty(PropertyName = "min")]
-        internal double Min { get; set; }
+        [JsonPropertyName("min")]
+        public double Min { get; set; }
 
-        [JsonProperty(PropertyName = "max")]
-        internal double Max { get; set; }
+        [JsonPropertyName("max")]
+        public double Max { get; set; }
 
-        [JsonProperty(PropertyName = "percentiles")]
-        internal IReadOnlyDictionary<double, double> Percentiles { get; set; }
+        [JsonPropertyName("percentiles")]
+        public IReadOnlyDictionary<double, double> Percentiles { get; set; }
 
         /// <summary>
         /// It will set the current object with the aggregated values from the given histogram
