@@ -508,10 +508,10 @@
                 JObject jsonObject = JObject.Parse(testResponse);
 
                 string expectedBackendPlan = jsonObject["_distributionPlan"]["backendDistributionPlan"].ToString();
-                expectedBackendPlan = RemoveJsonFormattingAndConvertToString(expectedBackendPlan);
+                expectedBackendPlan = RemoveJsonFormattingFromString(expectedBackendPlan);
 
                 string expectedClientPlan = jsonObject["_distributionPlan"]["clientDistributionPlan"].ToString();
-                expectedClientPlan = RemoveJsonFormattingAndConvertToString(expectedClientPlan);
+                expectedClientPlan = RemoveJsonFormattingFromString(expectedClientPlan);
 
                 MemoryStream memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(testResponse));
                 CosmosQueryClientCore.ParseRestStream(
@@ -523,8 +523,8 @@
                 if (distributionPlan.TryGetValue("backendDistributionPlan", out CosmosElement backendDistributionPlan) &&
                     distributionPlan.TryGetValue("clientDistributionPlan", out CosmosElement clientDistributionPlan))
                 {
-                    Assert.AreEqual(expectedBackendPlan, RemoveJsonFormattingAndConvertToString(backendDistributionPlan.ToString()));
-                    Assert.AreEqual(expectedClientPlan, RemoveJsonFormattingAndConvertToString(clientDistributionPlan.ToString()));
+                    Assert.AreEqual(expectedBackendPlan, RemoveJsonFormattingFromString(backendDistributionPlan.ToString()));
+                    Assert.AreEqual(expectedClientPlan, RemoveJsonFormattingFromString(clientDistributionPlan.ToString()));
                 }
                 else
                 {
@@ -627,7 +627,7 @@
             return false;
         }
 
-        private static string RemoveJsonFormattingAndConvertToString(string jsonString)
+        private static string RemoveJsonFormattingFromString(string jsonString)
         {
             return jsonString.Replace(" ", string.Empty).Replace("\t", string.Empty).Replace("\n", string.Empty).Replace("\r", string.Empty);
         }
