@@ -634,13 +634,13 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public QueryUnderConstruction UpdateOrderByClause(SqlOrderByClause thenBy, TranslationContext context)
         {
-            List<SqlOrderByItem> items = new List<SqlOrderByItem>(context.currentQuery.orderByClause.OrderByItems);
+            List<SqlOrderByItem> items = new List<SqlOrderByItem>(context.CurrentQuery.orderByClause.OrderByItems);
             items.AddRange(thenBy.OrderByItems);
-            context.currentQuery.orderByClause = SqlOrderByClause.Create(items.ToImmutableArray());
+            context.CurrentQuery.orderByClause = SqlOrderByClause.Create(items.ToImmutableArray());
 
-            foreach (Binding binding in context.CurrentSubqueryBinding.TakeBindings()) context.currentQuery.AddBinding(binding);
+            foreach (Binding binding in context.CurrentSubqueryBinding.TakeBindings()) context.CurrentQuery.AddBinding(binding);
 
-            return context.currentQuery;
+            return context.CurrentQuery;
         }
 
         public QueryUnderConstruction AddGroupByClause(SqlGroupByClause groupBy, TranslationContext context)

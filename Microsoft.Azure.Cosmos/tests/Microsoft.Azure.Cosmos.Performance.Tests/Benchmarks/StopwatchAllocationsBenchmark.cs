@@ -39,12 +39,16 @@
 
         private class StopwatchHolder
         {
+#pragma warning disable CS0414 // Remove unread private members
             private readonly Stopwatch stopwatch = new Stopwatch();
+#pragma warning restore CS0414 // Remove unread private members
         }
 
         private class ValueStopwatchHolder
         {
+#pragma warning disable CS0414 // Remove unread private members
             private readonly ValueStopwatch stopwatch = new ValueStopwatch();
+#pragma warning restore CS0414 // Remove unread private members
         }
     }
 }
