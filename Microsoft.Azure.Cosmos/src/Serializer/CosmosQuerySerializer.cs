@@ -3,17 +3,17 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Serializer
 {
-    using System;
     using System.Reflection;
 
     /// <summary>
-    /// This is an interface to allow a custom serializer to be used by the CosmosClient for both CRUD operations and LINQ queries.
+    /// This abstract class can be implemented to allow a custom serializer to be used by the CosmosClient
+    /// for both CRUD operations and LINQ queries.
     /// </summary>
-    #if PREVIEW
+#if PREVIEW
     public
-    #else
+#else
     internal
-    #endif
+#endif
     abstract class CosmosQuerySerializer : CosmosSerializer
     {
         /// <summary>
@@ -21,10 +21,7 @@ namespace Microsoft.Azure.Cosmos.Serializer
         /// This must be implemented when using a custom serializer for LINQ queries.
         /// </summary>
         /// <param name="memberInfo">Any MemberInfo used in the query.</param>
-        /// <returns>A serialized representation of the member</returns>
-        public virtual string SerializeLinqMemberName(MemberInfo memberInfo)
-        {
-            throw new NotImplementedException($"{nameof(CosmosSerializer)}.{nameof(SerializeLinqMemberName)})");
-        }
+        /// <returns>A serialized representation of the member.</returns>
+        public abstract string SerializeLinqMemberName(MemberInfo memberInfo);
     }
 }
