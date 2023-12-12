@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             return true;
         }
 
-        private async Task<ResponseMessage> SendAsyncWithAvailabilityStrategy(RequestMessage request, CancellationToken cancellationToken)
+        private async Task<ResponseMessage> SendAsyncWithAvailabilityStrategyAsync(RequestMessage request, CancellationToken cancellationToken)
         {
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             CancellationToken parallelRequestCancellationToken = cancellationTokenSource.Token;
@@ -130,22 +130,23 @@ namespace Microsoft.Azure.Cosmos.Handlers
             for (int i = 1; i < availableRegions.Count; i++)
             {
                 RequestMessage clonedRequest = request.Clone();
-                clonedRequest.RequestOptions.ExcludeRegions = request.RequestOptions.ExcludeRegions == null 
-                    ? availableRegions.Skip(i)
-                    : availableRegions.Skip(i).Except(request.RequestOptions.ExcludeRegions);
+                clonedRequest.RequestOptions.ExcludeRegions = request.RequestOptions.ExcludeRegions == null
+                    ? availableRegions.Skip(i).ToList()
+                    : availableRegions.Skip(i).Except(request.RequestOptions.ExcludeRegions).ToList();
 
                 requestMessages.Add(clonedRequest);
             }
-            List<Task<Task<ResponseMessage>>> tasks = this.RequestTaskBuilder(requestMessages, cancellationToken, parallelRequestCancellationToken, cancellationTokenSource);
-            Task<ResponseMessage>[] completedTasks = await Task.WhenAll(tasks.ToArray());
-            return this.ParseResults(completedTasks);
+            List<Task<ResponseMessage>> tasks = this.RequestTaskBuilder(requestMessages, cancellationToken, parallelRequestCancellationToken);
+            Task<ResponseMessage> response = await Task.WhenAny(tasks);
+            cancellationTokenSource.Cancel();
+            
+            return await response;
         }
 
-        private List<Task<Task<ResponseMessage>>> RequestTaskBuilder(
+        private List<Task<ResponseMessage>> RequestTaskBuilder(
             List<RequestMessage> requests, 
             CancellationToken cancellationToken, 
-            CancellationToken parallelRequestCancellationToken, 
-            CancellationTokenSource cancellationTokenSource)
+            CancellationToken parallelRequestCancellationToken)
         {
             TimeSpan threshold = requests[0].RequestOptions.AvailabilityStrategyOptions == null
                 ? requests[0].RequestOptions.AvailabilityStrategyOptions.Threshold 
@@ -155,39 +156,31 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 ? requests[0].RequestOptions.AvailabilityStrategyOptions.Step.Milliseconds
                 : this.client.ClientOptions.AvailabilityStrategyOptions.Step.Milliseconds;
 
-            List<Task<Task<ResponseMessage>>> tasks = new List<Task<Task<ResponseMessage>>>();
+            List<Task<ResponseMessage>> tasks = new List<Task<ResponseMessage>>();
             for (int i = 0; i < requests.Count; i++)
             {
                 if (i == 0)
                 {
-                    tasks.Add(
-                        new Task<Task<ResponseMessage>>(async () =>
-                        {
-                            ResponseMessage response = await base.SendAsync(requests[i], parallelRequestCancellationToken);
-                            if (response.IsSuccessStatusCodeOrTransient)
-                            {
-                                cancellationTokenSource.Cancel();
-                            }
-                            return response;
-                        }));
+                    tasks.Add(base.SendAsync(requests[i], parallelRequestCancellationToken));
                 }
                 else
                 {
-                    tasks.Add(
-                        Task.Delay(threshold + TimeSpan.FromMilliseconds((i - 1) * step), parallelRequestCancellationToken)
-                        .ContinueWith(async (t) =>
-                        {
-                            ResponseMessage response = await base.SendAsync(requests[i], parallelRequestCancellationToken);
-                            if (response.IsSuccessStatusCodeOrTransient)
-                            {
-                                cancellationTokenSource.Cancel();
-                            }
-                            return response;
-                        }, cancellationToken));
+                    TimeSpan delay = threshold + TimeSpan.FromMilliseconds((i - 1) * step);
+                    tasks.Add(this.SendWithDelayAsync(delay, requests[i], cancellationToken, parallelRequestCancellationToken));
                 }
             }
 
             return tasks;
+        }
+
+        private async Task<ResponseMessage> SendWithDelayAsync(
+            TimeSpan delay, 
+            RequestMessage request, 
+            CancellationToken cancellationToken, 
+            CancellationToken parallelRequestCancellationToken)
+        {
+            await Task.Delay(delay, parallelRequestCancellationToken);
+            return await base.SendAsync(request, cancellationToken);
         }
 
         public virtual async Task<T> SendAsync<T>(
