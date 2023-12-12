@@ -333,14 +333,17 @@ namespace Microsoft.Azure.Cosmos
 
                     DistributionPlanSpec distributionPlanSpec = null;
 
-                    bool backendPlan = distributionPlan.TryGetValue("backendDistributionPlan", out CosmosElement backendDistributionPlan);
-                    bool clientPlan = distributionPlan.TryGetValue("clientDistributionPlan", out CosmosElement clientDistributionPlan);
-
-                    Debug.Assert(clientPlan == backendPlan, "Response Body Contract was violated. Out of the backend and client plans, only one is present in the distribution plan.");
-
-                    if (backendPlan && clientPlan)
+                    if (distributionPlan != null)
                     {
-                        distributionPlanSpec = new DistributionPlanSpec(backendDistributionPlan.ToString(), clientDistributionPlan.ToString());
+                        bool backendPlan = distributionPlan.TryGetValue("backendDistributionPlan", out CosmosElement backendDistributionPlan);
+                        bool clientPlan = distributionPlan.TryGetValue("clientDistributionPlan", out CosmosElement clientDistributionPlan);
+
+                        Debug.Assert(clientPlan == backendPlan, "Response Body Contract was violated. Out of the backend and client plans, only one is present in the distribution plan.");
+
+                        if (backendPlan && clientPlan)
+                        {
+                            distributionPlanSpec = new DistributionPlanSpec(backendDistributionPlan.ToString(), clientDistributionPlan.ToString());
+                        }
                     }
 
                     QueryState queryState;
@@ -527,7 +530,7 @@ namespace Microsoft.Azure.Cosmos
 
             documents = cosmosArray;
 
-            if (jsonNavigator.TryGetObjectProperty(jsonNavigator.GetRootNode(), "_distributionPlan", out ObjectProperty distributionPlanObjectProperty))
+            if (resourceType == ResourceType.Document && jsonNavigator.TryGetObjectProperty(jsonNavigator.GetRootNode(), "_distributionPlan", out ObjectProperty distributionPlanObjectProperty))
             {
                 switch (CosmosElement.Dispatch(jsonNavigator, distributionPlanObjectProperty.ValueNode))
                 {
