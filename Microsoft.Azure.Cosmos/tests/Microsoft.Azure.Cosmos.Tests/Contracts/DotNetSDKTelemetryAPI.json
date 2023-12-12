@@ -12,6 +12,25 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Int32 GetHashCode();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String CacheRefreshSource[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"cacheRefreshSource\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "System.String CacheRefreshSource;CanRead:True;CanWrite:False;System.String get_CacheRefreshSource();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_CacheRefreshSource()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_CacheRefreshSource();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor(System.String, System.Nullable`1[System.Boolean], System.String, System.String, System.String, System.String, System.String, System.Nullable`1[System.Int32], Int32, System.String, Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(System.String, System.Nullable`1[System.Boolean], System.String, System.String, System.String, System.String, System.String, System.Nullable`1[System.Int32], Int32, System.String, Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo), Void .ctor(System.String, System.Nullable`1[System.Boolean], System.String, System.String, System.String, System.String, System.String, System.Nullable`1[System.Int32], Int32, System.String, Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo)]"
         }
       },
       "NestedTypes": {}
@@ -19,17 +38,332 @@
     "Microsoft.Azure.Cosmos.Telemetry.Models.ClientTelemetryProperties;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:True": {
       "Subclasses": {},
       "Members": {
-        "Void .ctor(System.String, System.String, System.String, System.String, System.String, System.String, System.String, System.String, System.Nullable`1[System.Boolean], System.Collections.Generic.IReadOnlyList`1[System.String], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.SystemInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.CacheRefreshInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.OperationInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.RequestInfo], System.String)[Newtonsoft.Json.JsonConstructorAttribute()]": {
-          "Type": "Constructor",
-          "Attributes": [
-            "JsonConstructorAttribute"
-          ],
-          "MethodInfo": "[Void .ctor(System.String, System.String, System.String, System.String, System.String, System.String, System.String, System.String, System.Nullable`1[System.Boolean], System.Collections.Generic.IReadOnlyList`1[System.String], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.SystemInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.CacheRefreshInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.OperationInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.RequestInfo], System.String)[Newtonsoft.Json.JsonConstructorAttribute()], Void .ctor(System.String, System.String, System.String, System.String, System.String, System.String, System.String, System.String, System.Nullable`1[System.Boolean], System.Collections.Generic.IReadOnlyList`1[System.String], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.SystemInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.CacheRefreshInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.OperationInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.RequestInfo], System.String)]"
-        },
-        "Void Write(Newtonsoft.Json.JsonWriter)": {
+        "Boolean get_IsDirectConnectionMode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Boolean get_IsDirectConnectionMode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Boolean IsDirectConnectionMode[System.Text.Json.Serialization.JsonIgnoreAttribute()]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonIgnoreAttribute"
+          ],
+          "MethodInfo": "Boolean IsDirectConnectionMode;CanRead:True;CanWrite:False;Boolean get_IsDirectConnectionMode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Int32 AggregationIntervalInSec[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"aggregationIntervalInSec\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "Int32 AggregationIntervalInSec;CanRead:True;CanWrite:True;Int32 get_AggregationIntervalInSec();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_AggregationIntervalInSec(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Int32 get_AggregationIntervalInSec()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Int32 get_AggregationIntervalInSec();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.Generic.IReadOnlyList`1[System.String] get_PreferredRegions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.IReadOnlyList`1[System.String] get_PreferredRegions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.Generic.IReadOnlyList`1[System.String] PreferredRegions[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"preferredRegions\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.IReadOnlyList`1[System.String] PreferredRegions;CanRead:True;CanWrite:True;System.Collections.Generic.IReadOnlyList`1[System.String] get_PreferredRegions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_PreferredRegions(System.Collections.Generic.IReadOnlyList`1[System.String]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.CacheRefreshInfo] CacheRefreshInfo[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"cacheRefreshInfo\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.CacheRefreshInfo] CacheRefreshInfo;CanRead:True;CanWrite:True;System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.CacheRefreshInfo] get_CacheRefreshInfo();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_CacheRefreshInfo(System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.CacheRefreshInfo]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.CacheRefreshInfo] get_CacheRefreshInfo()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.CacheRefreshInfo] get_CacheRefreshInfo();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.OperationInfo] get_OperationInfo()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.OperationInfo] get_OperationInfo();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.OperationInfo] OperationInfo[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"operationInfo\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.OperationInfo] OperationInfo;CanRead:True;CanWrite:True;System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.OperationInfo] get_OperationInfo();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_OperationInfo(System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.OperationInfo]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.RequestInfo] get_RequestInfo()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.RequestInfo] get_RequestInfo();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.RequestInfo] RequestInfo[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"requestInfo\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.RequestInfo] RequestInfo;CanRead:True;CanWrite:True;System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.RequestInfo] get_RequestInfo();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_RequestInfo(System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.RequestInfo]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.SystemInfo] get_SystemInfo()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.SystemInfo] get_SystemInfo();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.SystemInfo] SystemInfo[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"systemInfo\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.SystemInfo] SystemInfo;CanRead:True;CanWrite:True;System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.SystemInfo] get_SystemInfo();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_SystemInfo(System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.SystemInfo]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[System.Boolean] AcceleratedNetworking[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"acceleratedNetworking\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.Boolean] AcceleratedNetworking;CanRead:True;CanWrite:True;System.Nullable`1[System.Boolean] get_AcceleratedNetworking();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_AcceleratedNetworking(System.Nullable`1[System.Boolean]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[System.Boolean] get_AcceleratedNetworking()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.Boolean] get_AcceleratedNetworking();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String ApplicationRegion[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"applicationRegion\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "System.String ApplicationRegion;CanRead:True;CanWrite:True;System.String get_ApplicationRegion();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_ApplicationRegion(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String ClientId[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"clientId\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "System.String ClientId;CanRead:True;CanWrite:False;System.String get_ClientId();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String ConnectionMode[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"connectionMode\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "System.String ConnectionMode;CanRead:True;CanWrite:False;System.String get_ConnectionMode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String DateTimeUtc[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"timeStamp\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "System.String DateTimeUtc;CanRead:True;CanWrite:True;System.String get_DateTimeUtc();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DateTimeUtc(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_ApplicationRegion()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_ApplicationRegion();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_ClientId()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_ClientId();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_ConnectionMode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_ConnectionMode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_DateTimeUtc()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_DateTimeUtc();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_GlobalDatabaseAccountName()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_GlobalDatabaseAccountName();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_HostEnvInfo()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_HostEnvInfo();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_MachineId()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_MachineId();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_ProcessId()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_ProcessId();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_UserAgent()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_UserAgent();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String GlobalDatabaseAccountName[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"globalDatabaseAccountName\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "System.String GlobalDatabaseAccountName;CanRead:True;CanWrite:True;System.String get_GlobalDatabaseAccountName();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_GlobalDatabaseAccountName(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String HostEnvInfo[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"hostEnvInfo\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "System.String HostEnvInfo;CanRead:True;CanWrite:True;System.String get_HostEnvInfo();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_HostEnvInfo(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String MachineId[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"machineId\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "System.String MachineId;CanRead:True;CanWrite:True;System.String get_MachineId();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_MachineId(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String ProcessId[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"processId\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "System.String ProcessId;CanRead:True;CanWrite:False;System.String get_ProcessId();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String UserAgent[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"userAgent\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "System.String UserAgent;CanRead:True;CanWrite:False;System.String get_UserAgent();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor(System.String, System.String, System.String, System.String, System.String, System.String, System.String, System.String, System.Nullable`1[System.Boolean], System.Collections.Generic.IReadOnlyList`1[System.String], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.SystemInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.CacheRefreshInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.OperationInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.RequestInfo], System.String)": {
+          "Type": "Constructor",
           "Attributes": [],
-          "MethodInfo": "Void Write(Newtonsoft.Json.JsonWriter);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "[Void .ctor(System.String, System.String, System.String, System.String, System.String, System.String, System.String, System.String, System.Nullable`1[System.Boolean], System.Collections.Generic.IReadOnlyList`1[System.String], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.SystemInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.CacheRefreshInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.OperationInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.RequestInfo], System.String), Void .ctor(System.String, System.String, System.String, System.String, System.String, System.String, System.String, System.String, System.Nullable`1[System.Boolean], System.Collections.Generic.IReadOnlyList`1[System.String], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.SystemInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.CacheRefreshInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.OperationInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.RequestInfo], System.String)]"
+        },
+        "Void set_AcceleratedNetworking(System.Nullable`1[System.Boolean])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_AcceleratedNetworking(System.Nullable`1[System.Boolean]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_AggregationIntervalInSec(Int32)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_AggregationIntervalInSec(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_ApplicationRegion(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_ApplicationRegion(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_CacheRefreshInfo(System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.CacheRefreshInfo])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_CacheRefreshInfo(System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.CacheRefreshInfo]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_DateTimeUtc(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_DateTimeUtc(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_GlobalDatabaseAccountName(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_GlobalDatabaseAccountName(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_HostEnvInfo(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_HostEnvInfo(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_MachineId(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_MachineId(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_OperationInfo(System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.OperationInfo])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_OperationInfo(System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.OperationInfo]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_PreferredRegions(System.Collections.Generic.IReadOnlyList`1[System.String])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_PreferredRegions(System.Collections.Generic.IReadOnlyList`1[System.String]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_RequestInfo(System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.RequestInfo])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_RequestInfo(System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.RequestInfo]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_SystemInfo(System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.SystemInfo])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_SystemInfo(System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.SystemInfo]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -37,10 +371,162 @@
     "Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:True": {
       "Subclasses": {},
       "Members": {
+        "Double get_Max()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Double get_Max();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Double get_Mean()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Double get_Mean();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Double get_Min()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Double get_Min();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Double Max[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"max\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "Double Max;CanRead:True;CanWrite:True;Double get_Max();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Max(Double);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Double Mean[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"mean\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "Double Mean;CanRead:True;CanWrite:True;Double get_Mean();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Mean(Double);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Double Min[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"min\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "Double Min;CanRead:True;CanWrite:True;Double get_Min();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Min(Double);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Int64 Count[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"count\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "Int64 Count;CanRead:True;CanWrite:True;Int64 get_Count();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Count(Int64);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Int64 get_Count()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Int64 get_Count();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.Generic.IReadOnlyDictionary`2[System.Double,System.Double] get_Percentiles()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.IReadOnlyDictionary`2[System.Double,System.Double] get_Percentiles();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.Generic.IReadOnlyDictionary`2[System.Double,System.Double] Percentiles[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"percentiles\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.IReadOnlyDictionary`2[System.Double,System.Double] Percentiles;CanRead:True;CanWrite:True;System.Collections.Generic.IReadOnlyDictionary`2[System.Double,System.Double] get_Percentiles();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Percentiles(System.Collections.Generic.IReadOnlyDictionary`2[System.Double,System.Double]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_MetricsName()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_MetricsName();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_UnitName()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_UnitName();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String MetricsName[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"metricsName\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "System.String MetricsName;CanRead:True;CanWrite:True;System.String get_MetricsName();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_MetricsName(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String UnitName[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"unitName\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "System.String UnitName;CanRead:True;CanWrite:True;System.String get_UnitName();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_UnitName(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor()": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(), Void .ctor()]"
+        },
         "Void .ctor(System.String, System.String, Double, Int64, Int64, Int64, System.Collections.Generic.IReadOnlyDictionary`2[System.Double,System.Double])": {
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "[Void .ctor(System.String, System.String, Double, Int64, Int64, Int64, System.Collections.Generic.IReadOnlyDictionary`2[System.Double,System.Double]), Void .ctor(System.String, System.String, Double, Int64, Int64, Int64, System.Collections.Generic.IReadOnlyDictionary`2[System.Double,System.Double])]"
+        },
+        "Void set_Count(Int64)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_Count(Int64);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_Max(Double)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_Max(Double);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_Mean(Double)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_Mean(Double);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_MetricsName(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_MetricsName(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_Min(Double)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_Min(Double);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_Percentiles(System.Collections.Generic.IReadOnlyDictionary`2[System.Double,System.Double])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_Percentiles(System.Collections.Generic.IReadOnlyDictionary`2[System.Double,System.Double]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_UnitName(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_UnitName(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -59,6 +545,25 @@
               "Type": "Method",
               "Attributes": [],
               "MethodInfo": "Int32 GetHashCode();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "System.String CacheRefreshSource[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"cacheRefreshSource\")]": {
+              "Type": "Property",
+              "Attributes": [
+                "JsonPropertyNameAttribute"
+              ],
+              "MethodInfo": "System.String CacheRefreshSource;CanRead:True;CanWrite:False;System.String get_CacheRefreshSource();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "System.String get_CacheRefreshSource()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "System.String get_CacheRefreshSource();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "Void .ctor(System.String, System.Nullable`1[System.Boolean], System.String, System.String, System.String, System.String, System.String, System.Nullable`1[System.Int32], Int32, System.String, Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo)": {
+              "Type": "Constructor",
+              "Attributes": [],
+              "MethodInfo": "[Void .ctor(System.String, System.Nullable`1[System.Boolean], System.String, System.String, System.String, System.String, System.String, System.Nullable`1[System.Int32], Int32, System.String, Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo), Void .ctor(System.String, System.Nullable`1[System.Boolean], System.String, System.String, System.String, System.String, System.String, System.Nullable`1[System.Int32], Int32, System.String, Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo)]"
             }
           },
           "NestedTypes": {}
@@ -82,17 +587,40 @@
           "Attributes": [],
           "MethodInfo": "Int32 GetHashCode();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Int32 SubStatusCode[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"subStatusCode\")]": {
+        "Int32 SubStatusCode[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"subStatusCode\")]": {
           "Type": "Property",
           "Attributes": [
-            "JsonPropertyAttribute"
+            "JsonPropertyNameAttribute"
           ],
-          "MethodInfo": "Int32 SubStatusCode;CanRead:True;CanWrite:False;Int32 get_SubStatusCode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Int32 SubStatusCode;CanRead:True;CanWrite:True;Int32 get_SubStatusCode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_SubStatusCode(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.Telemetry.Models.OperationInfo Copy()": {
+        "Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo get_MetricInfo()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Telemetry.Models.OperationInfo Copy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo get_MetricInfo();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo MetricInfo[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"metricInfo\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo MetricInfo;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo get_MetricInfo();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_MetricInfo(Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[System.Boolean] get_GreaterThan1Kb()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.Boolean] get_GreaterThan1Kb();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[System.Boolean] GreaterThan1Kb[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"greaterThan1Kb\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.Boolean] GreaterThan1Kb;CanRead:True;CanWrite:True;System.Nullable`1[System.Boolean] get_GreaterThan1Kb();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_GreaterThan1Kb(System.Nullable`1[System.Boolean]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.Nullable`1[System.Int32] get_StatusCode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -101,17 +629,171 @@
           ],
           "MethodInfo": "System.Nullable`1[System.Int32] get_StatusCode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Nullable`1[System.Int32] StatusCode[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"statusCode\")]": {
+        "System.Nullable`1[System.Int32] StatusCode[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"statusCode\")]": {
           "Type": "Property",
           "Attributes": [
-            "JsonPropertyAttribute"
+            "JsonPropertyNameAttribute"
           ],
-          "MethodInfo": "System.Nullable`1[System.Int32] StatusCode;CanRead:True;CanWrite:False;System.Nullable`1[System.Int32] get_StatusCode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.Nullable`1[System.Int32] StatusCode;CanRead:True;CanWrite:True;System.Nullable`1[System.Int32] get_StatusCode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_StatusCode(System.Nullable`1[System.Int32]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String Consistency[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"consistency\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "System.String Consistency;CanRead:True;CanWrite:True;System.String get_Consistency();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Consistency(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String ContainerName[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"containerName\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "System.String ContainerName;CanRead:True;CanWrite:True;System.String get_ContainerName();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_ContainerName(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String DatabaseName[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"databaseName\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "System.String DatabaseName;CanRead:True;CanWrite:True;System.String get_DatabaseName();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DatabaseName(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_Consistency()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_Consistency();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_ContainerName()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_ContainerName();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_DatabaseName()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_DatabaseName();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_Operation()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_Operation();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_RegionsContacted()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_RegionsContacted();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_Resource()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_Resource();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String Operation[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"operation\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "System.String Operation;CanRead:True;CanWrite:True;System.String get_Operation();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Operation(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String RegionsContacted[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"regionsContacted\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "System.String RegionsContacted;CanRead:True;CanWrite:True;System.String get_RegionsContacted();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_RegionsContacted(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String Resource[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"resource\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "System.String Resource;CanRead:True;CanWrite:True;System.String get_Resource();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Resource(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void .ctor(System.String, System.Nullable`1[System.Boolean], System.String, System.String, System.String, System.String, System.String, System.Nullable`1[System.Int32], Int32, Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo)": {
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "[Void .ctor(System.String, System.Nullable`1[System.Boolean], System.String, System.String, System.String, System.String, System.String, System.Nullable`1[System.Int32], Int32, Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo), Void .ctor(System.String, System.Nullable`1[System.Boolean], System.String, System.String, System.String, System.String, System.String, System.Nullable`1[System.Int32], Int32, Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo)]"
+        },
+        "Void set_Consistency(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_Consistency(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_ContainerName(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_ContainerName(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_DatabaseName(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_DatabaseName(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_GreaterThan1Kb(System.Nullable`1[System.Boolean])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_GreaterThan1Kb(System.Nullable`1[System.Boolean]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_MetricInfo(Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_MetricInfo(Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_Operation(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_Operation(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_RegionsContacted(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_RegionsContacted(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_Resource(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_Resource(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_StatusCode(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_StatusCode(System.Nullable`1[System.Int32]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_SubStatusCode(Int32)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_SubStatusCode(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -151,10 +833,10 @@
           "Attributes": [],
           "MethodInfo": "Int32 GetHashCodeForSampler();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Int32 SubStatusCode[Newtonsoft.Json.JsonPropertyAttribute(\"subStatusCode\")]": {
+        "Int32 SubStatusCode[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"subStatusCode\")]": {
           "Type": "Property",
           "Attributes": [
-            "JsonPropertyAttribute"
+            "JsonPropertyNameAttribute"
           ],
           "MethodInfo": "Int32 SubStatusCode;CanRead:True;CanWrite:True;Int32 get_SubStatusCode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_SubStatusCode(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
@@ -165,10 +847,10 @@
           ],
           "MethodInfo": "System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo] get_Metrics();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo] Metrics[Newtonsoft.Json.JsonPropertyAttribute(\"metricInfo\")]": {
+        "System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo] Metrics[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"metricInfo\")]": {
           "Type": "Property",
           "Attributes": [
-            "JsonPropertyAttribute"
+            "JsonPropertyNameAttribute"
           ],
           "MethodInfo": "System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo] Metrics;CanRead:True;CanWrite:True;System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo] get_Metrics();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Metrics(System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
@@ -179,24 +861,24 @@
           ],
           "MethodInfo": "System.Nullable`1[System.Int32] get_StatusCode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Nullable`1[System.Int32] StatusCode[Newtonsoft.Json.JsonPropertyAttribute(\"statusCode\")]": {
+        "System.Nullable`1[System.Int32] StatusCode[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"statusCode\")]": {
           "Type": "Property",
           "Attributes": [
-            "JsonPropertyAttribute"
+            "JsonPropertyNameAttribute"
           ],
           "MethodInfo": "System.Nullable`1[System.Int32] StatusCode;CanRead:True;CanWrite:True;System.Nullable`1[System.Int32] get_StatusCode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_StatusCode(System.Nullable`1[System.Int32]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String ContainerName[Newtonsoft.Json.JsonPropertyAttribute(\"containerName\")]": {
+        "System.String ContainerName[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"containerName\")]": {
           "Type": "Property",
           "Attributes": [
-            "JsonPropertyAttribute"
+            "JsonPropertyNameAttribute"
           ],
           "MethodInfo": "System.String ContainerName;CanRead:True;CanWrite:True;System.String get_ContainerName();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_ContainerName(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String DatabaseName[Newtonsoft.Json.JsonPropertyAttribute(\"databaseName\")]": {
+        "System.String DatabaseName[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"databaseName\")]": {
           "Type": "Property",
           "Attributes": [
-            "JsonPropertyAttribute"
+            "JsonPropertyNameAttribute"
           ],
           "MethodInfo": "System.String DatabaseName;CanRead:True;CanWrite:True;System.String get_DatabaseName();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DatabaseName(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
@@ -235,17 +917,17 @@
           ],
           "MethodInfo": "System.String get_Uri();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String Operation[Newtonsoft.Json.JsonPropertyAttribute(\"operation\")]": {
+        "System.String Operation[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"operation\")]": {
           "Type": "Property",
           "Attributes": [
-            "JsonPropertyAttribute"
+            "JsonPropertyNameAttribute"
           ],
           "MethodInfo": "System.String Operation;CanRead:True;CanWrite:True;System.String get_Operation();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Operation(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String Resource[Newtonsoft.Json.JsonPropertyAttribute(\"resource\")]": {
+        "System.String Resource[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"resource\")]": {
           "Type": "Property",
           "Attributes": [
-            "JsonPropertyAttribute"
+            "JsonPropertyNameAttribute"
           ],
           "MethodInfo": "System.String Resource;CanRead:True;CanWrite:True;System.String get_Resource();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Resource(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
@@ -254,10 +936,10 @@
           "Attributes": [],
           "MethodInfo": "System.String ToString();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String Uri[Newtonsoft.Json.JsonPropertyAttribute(\"uri\")]": {
+        "System.String Uri[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"uri\")]": {
           "Type": "Property",
           "Attributes": [
-            "JsonPropertyAttribute"
+            "JsonPropertyNameAttribute"
           ],
           "MethodInfo": "System.String Uri;CanRead:True;CanWrite:True;System.String get_Uri();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Uri(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
@@ -328,10 +1010,48 @@
     "Microsoft.Azure.Cosmos.Telemetry.Models.SystemInfo;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:True": {
       "Subclasses": {},
       "Members": {
+        "Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo get_MetricInfo()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo get_MetricInfo();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo MetricInfo[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"metricInfo\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo MetricInfo;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo get_MetricInfo();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_MetricInfo(Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_Resource()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.String get_Resource();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String Resource[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"resource\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "System.String Resource;CanRead:True;CanWrite:False;System.String get_Resource();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor()": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(), Void .ctor()]"
+        },
         "Void .ctor(Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo)": {
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "[Void .ctor(Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo), Void .ctor(Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo)]"
+        },
+        "Void set_MetricInfo(Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_MetricInfo(Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}

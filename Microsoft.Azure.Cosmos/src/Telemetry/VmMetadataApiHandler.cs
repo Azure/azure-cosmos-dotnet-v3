@@ -8,11 +8,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Net.Http;
     using System.Security.Cryptography;
     using System.Text;
+    using System.Text.Json;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json.Linq;
     using Util;
 
     /// <summary>
@@ -100,7 +100,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 return null;
             }
             string jsonVmInfo = await httpResponseMessage.Content.ReadAsStringAsync();
-            return JObject.Parse(jsonVmInfo).ToObject<AzureVMMetadata>();
+
+            return JsonSerializer.Deserialize<AzureVMMetadata>(jsonVmInfo);
         }
 
         /// <summary>
