@@ -148,7 +148,9 @@
         {
             this.output.Append("{Kind: ArrayCreate, ");
             string arrayKind = cqlArrayCreateScalarExpression.ArrayKind;
+            this.output.Append($"ArrayKind: {arrayKind}, ");
             IReadOnlyList<CqlScalarExpression> items = cqlArrayCreateScalarExpression.Items;
+            this.output.Append("Items: [");
 
             foreach (CqlScalarExpression item in items)
             { 
@@ -158,7 +160,10 @@
 
         void ICqlVisitor.Visit(CqlArrayIndexerScalarExpression cqlArrayIndexerScalarExpression)
         {
-            throw new System.NotImplementedException();
+            this.output.Append("Kind: ArrayIndexer, ");
+            cqlArrayIndexerScalarExpression.Expression.Accept(this);
+            ulong index = cqlArrayIndexerScalarExpression.Index;
+            this.output.Append($"Index: {index}");
         }
 
         void ICqlVisitor.Visit(CqlArrayLiteral cqlArrayLiteral)
@@ -313,7 +318,20 @@
 
         void ICqlVisitor.Visit(CqlObjectCreateScalarExpression cqlObjectCreateScalarExpression)
         {
-            throw new System.NotImplementedException();
+            this.output.Append("Kind: ObjectCreate");
+            string objectKind = cqlObjectCreateScalarExpression.ObjectKind;
+            this.output.Append($"ObjectKind: {objectKind}");
+            this.output.Append("Properties: [{");
+
+            IReadOnlyList<CqlObjectProperty> properties = cqlObjectCreateScalarExpression.Properties;
+
+            foreach (CqlObjectProperty property in properties)
+            {
+                string name = property.Name;
+                this.output.Append($"Name: {name}, ");
+                this.output.Append("Expression:{ ");
+                property.Expression.Accept(this);
+            }
         }
 
         void ICqlVisitor.Visit(CqlObjectLiteral cqlObjectLiteral)
@@ -374,7 +392,6 @@
                 _ => throw new NotSupportedException($"Invalid CqlExpression kind: {kind}"),
             };
 
-            this.output.Append("SourceExpression: {");
             this.output.Append($"{{Kind:{scalarExpressionKindString}, ");
 
         }
