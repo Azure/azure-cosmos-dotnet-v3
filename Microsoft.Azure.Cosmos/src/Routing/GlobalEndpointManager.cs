@@ -93,9 +93,9 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public ReadOnlyCollection<Uri> AccountReadEndpoints => this.locationCache.AccountReadEndpoints;
 
+        public ReadOnlyCollection<string> AvailableReadLocations => this.locationCache.GetAvailableReadLocations();
+
         public ReadOnlyCollection<Uri> WriteEndpoints => this.locationCache.WriteEndpoints;
-        
-        internal ReadOnlyCollection<string> AvailableReadLocations => this.locationCache.GetAvailableReadLocations();
 
         public int PreferredLocationCount => this.connectionPolicy.PreferredLocations != null ? this.connectionPolicy.PreferredLocations.Count : 0;
 
