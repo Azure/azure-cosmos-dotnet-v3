@@ -82,8 +82,8 @@ namespace Microsoft.Azure.Cosmos
                sessionContainer: clientOptions.SessionContainer,
                cosmosClientId: cosmosClient.Id,
                remoteCertificateValidationCallback: ClientContextCore.SslCustomValidationCallBack(clientOptions.ServerCertificateCustomValidationCallback),
-               availabilityStrategy: clientOptions.AvailabilityStrategyOptions,
-               cosmosClientTelemetryOptions: clientOptions.CosmosClientTelemetryOptions);
+               cosmosClientTelemetryOptions: clientOptions.CosmosClientTelemetryOptions,
+               availabilityStrategy: clientOptions.AvailabilityStrategyOptions);
 
             return ClientContextCore.Create(
                 cosmosClient,
