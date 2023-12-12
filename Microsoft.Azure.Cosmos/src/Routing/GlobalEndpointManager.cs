@@ -359,6 +359,16 @@ namespace Microsoft.Azure.Cosmos.Routing
         public Uri GetDefaultEndpoint()
         {
             return this.locationCache.GetDefaultEndpoint();
+        } 
+
+        public ReadOnlyDictionary<string, Uri> GetAvailableWriteEndpointsByLocation()
+        {
+            return this.locationCache.GetAvailableWriteEndpointsByLocation();
+        }
+
+        public ReadOnlyDictionary<string, Uri> GetAvailableReadEndpointsByLocation()
+        {
+            return this.locationCache.GetAvailableReadEndpointsByLocation();
         }
 
         /// <summary>

@@ -1,11 +1,14 @@
 namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 {
+    using System;
+
     [TestClass]
     public class FaultInjectionUnitTests
     {
         [TestMethod]
         public void FaultInjectionBuilderTests()
         {
+
             string ruleId = "rule_id";
             FaultInjectionCondition faultInjectionCondition = new FaultInjectionConditionBuilder()
                 .WithOperationType(FaultInjectionOperationType.CreateItem)

@@ -40,7 +40,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             _ = rule ?? throw new ArgumentNullException(nameof(rule));
 
             IFaultInjectionRuleInternal effectiveRule = await this.ruleProcessor.ProcessFaultInjectionRule(rule);
-            
+            rule.SetEffectiveFaultInjectionRule(effectiveRule);
+
             if (effectiveRule.GetType() == typeof(FaultInjectionConnectionErrorRule))
             {
                 this.connectionErrorRuleSet.TryAdd((FaultInjectionConnectionErrorRule)effectiveRule, 0);
@@ -96,14 +97,16 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
         public FaultInjectionServerErrorRule? FindRntbdServerConnectionDelayRule(
             Uri callUri, 
-            DocumentServiceRequest request)
+            DocumentServiceRequest request,
+            Guid activityId)
         {
             foreach (FaultInjectionServerErrorRule rule in this.serverConnectionDelayRuleSet.Keys)
             {
                 if (rule.GetConnectionType() == FaultInjectionConnectionType.Direct
                     && rule.IsApplicable(
                         callUri,
-                        request))
+                        request,
+                        activityId))
                 {
                     return rule;
                 }
@@ -120,6 +123,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         public bool RemoveRule(FaultInjectionConnectionErrorRule rule)
         {
             return this.connectionErrorRuleSet.Remove(rule, out byte _);
+        }
+
+        internal FaultInjectionRuleProcessor GetRuleProcessor()
+        {
+            return this.ruleProcessor;
         }
     }
 }

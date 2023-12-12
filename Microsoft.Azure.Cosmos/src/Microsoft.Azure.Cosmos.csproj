@@ -12,7 +12,7 @@
 		<VersionSuffix Condition=" '$(IsPreview)' == 'true' ">$(ClientPreviewSuffixVersion)</VersionSuffix>
 		<VersionSuffix Condition=" '$(IsNightly)' == 'true' AND '$(IsPreview)' != 'true' ">nightly-$(CurrentDate)</VersionSuffix>
 		<VersionSuffix Condition=" '$(IsNightly)' == 'true' AND '$(IsPreview)' == 'true' ">$(VersionSuffix)-nightly-$(CurrentDate)</VersionSuffix>
-		<Version>3.43.0</Version>
+		<Version>3.48.0</Version>
 		<FileVersion>$(ClientVersion)</FileVersion>
 		<Authors>Microsoft</Authors>
 		<TargetFramework>netstandard2.0</TargetFramework>
@@ -43,6 +43,7 @@
 		<LangVersion>$(LangVersion)</LangVersion>
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 		<NoWarn>CS1572; CS1573; CS1574; CS1580</NoWarn>
+		<EnabledefaultEmbeddedResourceItems>false</EnabledefaultEmbeddedResourceItems>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -77,11 +78,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Compile Update="ClientResources.Designer.cs">
-			<DesignTime>True</DesignTime>
-			<AutoGen>True</AutoGen>
-			<DependentUpon>ClientResources.resx</DependentUpon>
-		</Compile>
 		<Compile Update="CosmosElements\Numbers\CosmosNumberCodeGenerator.cs">
 			<DesignTime>True</DesignTime>
 			<AutoGen>True</AutoGen>
@@ -99,9 +95,23 @@
 		</Compile>
 	</ItemGroup>
 	<ItemGroup>
-		<EmbeddedResource Update="ClientResources.resx">
+		<Compile Update="ClientResources.resx">
 			<Generator>ResXFileCodeGenerator</Generator>
 			<LastGenOutput>ClientResources.Designer.cs</LastGenOutput>
+		</Compile>
+		<Compile Update="RMResources.Designer.cs">
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>RMResources.resx</DependentUpon>
+		</Compile>
+	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Include="RMResources.resx">
+			<Generator>ResXFileCodeGenerator</Generator>
+			<SubType>Designer</SubType>
+			<LastGenOutput>RMResources.Designer.cs</LastGenOutput>
+			<CustomToolNamespace>Microsoft.Azure.Documents</CustomToolNamespace>
 		</EmbeddedResource>
 	</ItemGroup>
 

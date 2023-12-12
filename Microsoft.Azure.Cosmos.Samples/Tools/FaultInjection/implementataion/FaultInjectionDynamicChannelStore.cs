@@ -25,7 +25,7 @@
 
         public List<Channel> GetAllChannels()
         {
-            return (List<Channel>)this.channelDictonary.Values;
+            return this.channelDictonary.Values.ToList();
         }
     }
 }

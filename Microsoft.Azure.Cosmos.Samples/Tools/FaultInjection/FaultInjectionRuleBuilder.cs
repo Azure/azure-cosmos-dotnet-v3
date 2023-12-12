@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private TimeSpan duration;
         private TimeSpan startDelay;
         private int hitLimit;
-        private bool enabled;
+        private bool enabled = true;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FaultInjectionRuleBuilder"/> class.

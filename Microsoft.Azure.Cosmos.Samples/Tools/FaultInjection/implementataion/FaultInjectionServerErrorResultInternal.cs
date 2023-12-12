@@ -83,10 +83,24 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// Determins if the rule can be applied.
         /// </summary>
         /// <param name="ruleId"></param>
+        /// <param name="activityId"></param>
         /// <returns>if the rule can be applied.</returns>
-        public bool IsApplicable(string ruleId)
+        public bool IsApplicable(string ruleId, Guid activityId)
         {
-            return this.applicationContext.GetApplicationByRuleId(ruleId)?.Count < this.times;
+            List<(DateTime, Guid)>? applicationByRuleId = this.applicationContext.GetApplicationByRuleId(ruleId);
+            if (this.times == 0 || applicationByRuleId == null)
+            {
+                return true;
+            }
+            int count = 0;
+            foreach ((DateTime, Guid) application in applicationByRuleId)
+            {
+                if (application.Item2 == activityId)
+                {
+                    count++;
+                }
+            }
+            return count < this.times;
         }
 
         /// <summary>
@@ -111,11 +125,13 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
             switch (this.serverErrorType)
             {
-                case FaultInjectionServerErrorType.Gone:                   
+                case FaultInjectionServerErrorType.Gone:
+                    INameValueCollection goneHeaders = args.RequestHeaders;
+                    goneHeaders.Add(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.ServerGenerated410).ToString(CultureInfo.InvariantCulture));
                     storeResponse = new StoreResponse()
                     {
                         Status = 410,
-                        Headers = args.RequestHeaders,
+                        Headers = goneHeaders,
                         ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes($"Fault Injection Server Error: Gone, rule: {ruleId}"))
                     };
 

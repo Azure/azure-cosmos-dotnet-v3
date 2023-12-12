@@ -196,7 +196,13 @@ namespace Microsoft.Azure.Documents.Rntbd
             // - Timeouts only apply to the call (send+recv), not to everything preceding it.
             using ChannelCallArguments callArguments = this.chaosInterceptor == null
                 ? new ChannelCallArguments(activityId) 
-                : new ChannelCallArguments(activityId, request.OperationType, request.ResourceType, request.RequestContext.ResolvedCollectionRid, request.Headers);
+                : new ChannelCallArguments(
+                    activityId, 
+                    request.OperationType, 
+                    request.ResourceType, 
+                    request.RequestContext.ResolvedCollectionRid, 
+                    request.Headers, 
+                    request.RequestContext.LocationEndpointToRoute);
             try
             {
                 callArguments.PreparedCall = this.dispatcher.PrepareCall(

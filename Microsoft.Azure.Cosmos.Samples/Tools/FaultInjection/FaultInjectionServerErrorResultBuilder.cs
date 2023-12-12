@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private int times = int.MaxValue;
         private TimeSpan delay;
         private bool suppressServiceRequest;
+        private bool isDelaySet = false;
 
         /// <summary>
         /// Creates a <see cref="FaultInjectionServerErrorResult"/>.
@@ -53,6 +54,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 || this.serverErrorType == FaultInjectionServerErrorType.ConnectionDelay)
             {
                 this.delay = delay;
+                this.isDelaySet = true;
             }
             return this;
         }
@@ -69,8 +71,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <returns>the <see cref="FaultInjectionServerErrorResult"/>.</returns>
         public FaultInjectionServerErrorResult Build()
         {
-            if (this.serverErrorType == FaultInjectionServerErrorType.ResponseDelay
+            if ((this.serverErrorType == FaultInjectionServerErrorType.ResponseDelay
                 || this.serverErrorType == FaultInjectionServerErrorType.ConnectionDelay)
+                && !this.isDelaySet)
             {
                 throw new ArgumentNullException(nameof(this.delay), "Argument 'delay' required for server error type: " + this.serverErrorType);
             }

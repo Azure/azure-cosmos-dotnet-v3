@@ -98,7 +98,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         {
             FaultInjectionServerErrorRule? serverConnectionDelayRule = this.ruleStore?.FindRntbdServerConnectionDelayRule(
                 serverUri,
-                openingRequest);
+                openingRequest, 
+                activityId);
             this.channelStore.AddChannel(connectionCorrilationId, channel);
 
             if (serverConnectionDelayRule != null)
@@ -177,6 +178,21 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         public FaultInjectionApplicationContext GetApplicationContext()
         {
             return this.applicationContext;
+        }
+
+        internal FaultInjectionRuleStore? GetRuleStore()
+        {
+            return this.ruleStore;
+        }
+
+        internal TimeSpan GetRequestTimeout()
+        {
+            return this.requestTimeout;
+        }
+
+        internal FaultInjectionDynamicChannelStore GetChannelStore()
+        {
+            return this.channelStore;
         }
     }
 }

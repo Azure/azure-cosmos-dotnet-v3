@@ -10,11 +10,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     /// </summary>
     public sealed class FaultInjectionCondition
     {
-        private readonly FaultInjectionOperationType operationType;
-        private readonly FaultInjectionConnectionType connectionType;
+        private readonly FaultInjectionOperationType? operationType;
+        private readonly FaultInjectionConnectionType? connectionType;
         private readonly string region;
         private readonly FaultInjectionEndpoint endpoint;
-        private readonly string containerResourceId;
 
         /// <summary>
         /// Creates a <see cref="FaultInjectionCondition"/>.
@@ -23,26 +22,25 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <param name="connectionType">Specifies which connection type rule will target.</param>
         /// <param name="region">Specifies wich region the rule will target.</param>
         /// <param name="endpoint">Specifies which endpoint the rule will tareget.</param>
-        /// <param name="containerResourceId">Specifies which container rid the rule will target.</param>
+        /// <param name="databaseName">Specifies which database the rule will target.</param>
+        /// <param name="containerName">Specifies which container the rule will target.</param>
         public FaultInjectionCondition(
             FaultInjectionOperationType operationType,
             FaultInjectionConnectionType connectionType,
             string region,
-            FaultInjectionEndpoint endpoint,
-            string containerResourceId)
+            FaultInjectionEndpoint endpoint)
         {
             this.operationType = operationType;
             this.connectionType = connectionType;
             this.region = region;
             this.endpoint = endpoint;
-            this.containerResourceId = containerResourceId;
         }
 
         /// <summary>
         /// The operation type the rule will target.
         /// </summary>
         /// <returns>the <see cref="FaultInjectionOperationType"/>.</returns>
-        public FaultInjectionOperationType GetOperationType() 
+        public FaultInjectionOperationType? GetOperationType() 
         { 
             return this.operationType;
         }
@@ -51,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// The connection type the rule will target.
         /// </summary>
         /// <returns>the <see cref="FaultInjectionConnectionType"/>.</returns>
-        public FaultInjectionConnectionType GetConnectionType()
+        public FaultInjectionConnectionType? GetConnectionType()
         {
             return this.connectionType;
         }
@@ -75,27 +73,17 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         }
 
         /// <summary>
-        /// The container resource id the rule will target.
-        /// </summary>
-        /// <returns></returns>
-        public string GetContainerResourceId()
-        {
-            return this.containerResourceId;
-        }
-
-        /// <summary>
         /// To String method
         /// </summary>
         /// <returns>A string represeting the <see cref="FaultInjectionCondition"/>.</returns>
         public override string ToString()
         {
             return String.Format(
-                "FaultInjectionCondition{{ OperationType: {0}, ConnectionType: {1}, Region: {2}, Endpoint: {3}, ContainerResourceId: {4}",
+                "FaultInjectionCondition{{ OperationType: {0}, ConnectionType: {1}, Region: {2}, Endpoint: {3}",
                 this.operationType,
                 this.connectionType,
                 this.region,  
-                this.endpoint.ToString(),
-                this.containerResourceId);
+                this.endpoint.ToString());
         }
     }
 }

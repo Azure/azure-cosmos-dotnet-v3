@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// Sets the effective fault injection rule.
         /// </summary>
         /// <param name="effectiveRule">the effective fault injection rule.</param>
-        private void SetEffectiveFaultInjectionRule(IFaultInjectionRuleInternal effectiveRule)
+        internal void SetEffectiveFaultInjectionRule(IFaultInjectionRuleInternal effectiveRule)
         {
             this.effectiveRule = effectiveRule;
         }

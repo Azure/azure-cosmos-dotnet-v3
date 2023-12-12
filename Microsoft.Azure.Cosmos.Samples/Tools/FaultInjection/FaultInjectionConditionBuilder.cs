@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private FaultInjectionConnectionType connectionType;
         private string region = string.Empty;
         private FaultInjectionEndpoint? endpoint;
-        private string containerResourceId = string.Empty;
 
         /// <summary>
         /// Optional. Specifies which operation type rule will target. Once set, the rule will only target requests with this operation type.
@@ -61,16 +60,13 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <summary>
         /// Optional. Specifies which endpoint the rule will target. Once set, the rule will only target requests targeting that endpoint. 
         /// Only applicable to direct mode. 
-        /// You must specify the conainter and partition key definition if you specify an endpoint.
         /// By default, the rule will target all endpoints
         /// </summary>
         /// <param name="endpoint"></param>
-        /// <param name="containerResourceId">The container resource id</param>
         /// <returns> the <see cref="FaultInjectionConditionBuilder"/></returns>
-        public FaultInjectionConditionBuilder WithEndpoint(FaultInjectionEndpoint endpoint, string containerResourceId)
+        public FaultInjectionConditionBuilder WithEndpoint(FaultInjectionEndpoint endpoint)
         {
             this.endpoint = endpoint;
-            this.containerResourceId = containerResourceId;
             return this;
         }
 
@@ -84,8 +80,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 this.operationType, 
                 this.connectionType, 
                 this.region, 
-                this.endpoint ?? FaultInjectionEndpoint.Empty, 
-                this.containerResourceId);
+                this.endpoint ?? FaultInjectionEndpoint.Empty);
         }
 
     }

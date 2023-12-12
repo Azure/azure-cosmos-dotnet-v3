@@ -11,22 +11,34 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     /// </summary>
     public sealed class FaultInjectionEndpoint
     {
+        private readonly string databaseName;
+        private readonly string containerName;
         private readonly FeedRange feedRange;
         private readonly bool includePrimary;
         private readonly int replicaCount;
 
-        internal static FaultInjectionEndpoint Empty = new FaultInjectionEndpoint(new FeedRangePartitionKey(new PartitionKey()), false, 0);
+        internal static FaultInjectionEndpoint Empty = new FaultInjectionEndpoint(
+            string.Empty, 
+            string.Empty, 
+            new FeedRangePartitionKey(new PartitionKey()), false, 0);
         /// <summary>
         /// Creates a <see cref="FaultInjectionEndpoint"/>.
         /// </summary>
+        /// <param name="databaseName">The database name.</param>
+        /// <param name="containerName">The container name.</param>
         /// <param name="feedRange">The <see cref="FeedRange"/>.</param>
         /// <param name="includePrimary">Indicates wether primary replica can be used</param>
         /// <param name="replicaCount">Replica count.</param>
         public FaultInjectionEndpoint(
+            string databaseName,
+            string containerName,
             FeedRange feedRange,
             bool includePrimary,
             int replicaCount)
-        {
+
+        { 
+            this.databaseName = databaseName;
+            this.containerName = containerName;
             this.feedRange = feedRange;
             this.includePrimary = includePrimary;
             this.replicaCount = replicaCount;
@@ -59,6 +71,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             return this.replicaCount; 
         }
 
+        public string GetResoureName()
+        {
+            return $"dbs/{this.databaseName}/colls/{this.containerName}";
+        }
+
         /// <summary>
         /// To String method
         /// </summary>
@@ -66,7 +83,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         public override string ToString()
         {
             return String.Format(
-                "FaultInjectionEndpoint{{ FeedRange: {0}, IncludePrimary: {1}, ReplicaCount{2}",
+                "\"FaultInjectionEndpoint\":{{ \"ResourceName\": \"{0}\", \"FeedRange\": \"{1}\", \"IncludePrimary\": \"{2}\", \"ReplicaCount\": \"{3}\"}}",
+                this.GetResoureName(),
                 this.feedRange,
                 this.includePrimary,
                 this.replicaCount);

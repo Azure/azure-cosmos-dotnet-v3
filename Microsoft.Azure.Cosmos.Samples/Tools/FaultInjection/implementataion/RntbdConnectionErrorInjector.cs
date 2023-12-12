@@ -5,7 +5,6 @@
     using System.Linq;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.FaultInjection.implementataion;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Rntbd;
 
@@ -13,11 +12,22 @@
     {
         private readonly FaultInjectionRuleStore ruleStore;
         private readonly FaultInjectionDynamicChannelStore channelStore;
+        private readonly RegionNameMapper regionNameMapper;
+        private readonly Dictionary<string, string> regionSpecialCases;
 
         public RntbdConnectionErrorInjector(FaultInjectionRuleStore ruleStore, FaultInjectionDynamicChannelStore channelStore)
         {
             this.ruleStore = ruleStore ?? throw new ArgumentNullException(nameof(ruleStore));
             this.channelStore = channelStore ?? throw new ArgumentNullException(nameof(channelStore));
+            this.regionNameMapper = new RegionNameMapper();
+            this.regionSpecialCases = new Dictionary<string, string>
+            {
+                { "westus1", "westus" },
+                { "eastus1", "eastus" },
+                { "chinanorth1", "chinanorth" },
+                { "chinaeast1", "chinaeast" },
+                { "australiacentral1", "australiacentral" },
+            };
         }
 
         public bool Accept(IFaultInjectionRuleInternal rule)
@@ -25,7 +35,7 @@
             if (rule.GetConnectionType() == FaultInjectionConnectionType.Direct
                 && (rule.GetType() == typeof(FaultInjectionConnectionErrorRule)))
             {
-                this.InjectConnectionErrorTask((FaultInjectionConnectionErrorRule)rule).Start();
+                this.InjectConnectionErrorTask((FaultInjectionConnectionErrorRule)rule);
                 return true;
             }
             return false;
@@ -53,6 +63,7 @@
                             {
                                 if (random.NextDouble() < rule.GetResult().GetThreshold())
                                 {
+                                    rule.ApplyRule();
                                     DefaultTrace.TraceInformation("FaultInjection: Injecting {0} connection error rule: {1}, for address {2}", 
                                         connectionErrorType, 
                                         rule.GetId(), 
@@ -69,10 +80,13 @@
                         if (regionEndpoints != null && regionEndpoints.Count > 0)
                         {
                             regionEndpoints.ForEach(regionEndpoint => allChannels.Where(channel =>
-                                channel.GetServerUri().DnsSafeHost.Equals(regionEndpoint.DnsSafeHost)).ToList().ForEach(channel =>
+                                this.ParseRntbdEndpointForNormalizedRegion(channel.GetServerUri())
+                                    .Equals(this.ParseRntbdEndpointForNormalizedRegion(regionEndpoint))).ToList()
+                                .ForEach(channel =>
                                 {
                                     if (random.NextDouble() < rule.GetResult().GetThreshold())
                                     {
+                                        rule.ApplyRule();
                                         DefaultTrace.TraceInformation("FaultInjection: Injecting {0} connection error rule: {1} for region {2}", 
                                             connectionErrorType, 
                                             rule.GetId(),
@@ -89,6 +103,7 @@
                         {
                             if (random.NextDouble() < rule.GetResult().GetThreshold())
                             {
+                                rule.ApplyRule();
                                 DefaultTrace.TraceInformation("FaultInjection: Injecting {0} connection error rule: {1}",
                                     connectionErrorType, 
                                     rule.GetId());
@@ -143,6 +158,24 @@
         private bool IsEffectiveRule(FaultInjectionConnectionErrorRule rule)
         {
             return this.ruleStore.ContainsRule(rule) && rule.IsValid();
+        }
+
+        private string ParseRntbdEndpointForNormalizedRegion(Uri endpoint)
+        {
+            string region = endpoint.ToString().Split(new char[] { '-' })[3];
+            region = this.regionNameMapper.GetCosmosDBRegionName(
+                this.regionSpecialCases.ContainsKey(region) 
+                ? this.regionSpecialCases[region]
+                : region);
+            return region;
+        }
+
+        private string ParseLocationEndpointForNormalizedRegion(Uri endpoint)
+        {
+            string region = endpoint.ToString().Split(new char[] { '-' }).Last();
+            region = region[0..region.IndexOf('.')];
+            region = this.regionNameMapper.GetCosmosDBRegionName(region);
+            return region;
         }
     }
 }

@@ -88,6 +88,16 @@ namespace Microsoft.Azure.Cosmos.Routing
             return this.defaultEndpoint;
         }
 
+        public ReadOnlyDictionary<string, Uri> GetAvailableWriteEndpointsByLocation()
+        {
+            return this.locationInfo.AvailableWriteEndpointByLocation;
+        }
+
+        public ReadOnlyDictionary<string, Uri> GetAvailableReadEndpointsByLocation()
+        {
+            return this.locationInfo.AvailableReadEndpointByLocation;
+        }
+
         /// <summary>
         /// Gets list of read endpoints ordered by
         /// 1. Preferred location

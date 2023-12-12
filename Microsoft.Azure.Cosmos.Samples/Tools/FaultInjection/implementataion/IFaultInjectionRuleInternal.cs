@@ -55,6 +55,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// Gets the connection type of the rule.
         /// </summary>
         /// <returns>the <see cref="FaultInjectionConnectionType"/>.</returns>
-        FaultInjectionConnectionType GetConnectionType();
+        FaultInjectionConnectionType? GetConnectionType();
     }
 }

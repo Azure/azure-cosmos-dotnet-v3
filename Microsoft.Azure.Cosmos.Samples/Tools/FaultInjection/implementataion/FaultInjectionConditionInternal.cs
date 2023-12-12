@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private readonly List<IFaultInjectionConditionValidator> validators;
 
         private string containerResourceId = string.Empty;
-        private OperationType operationType;
+        private OperationType? operationType = null;
         private List<Uri> regionEndpoints = new List<Uri>{ };
         private List<Uri> physicalAddresses = new List<Uri> { };
 
@@ -23,14 +23,14 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             this.validators = new List<IFaultInjectionConditionValidator>();
         }
 
-        public OperationType GetOperationType()
+        public OperationType? GetOperationType()
         {
             return this.operationType;
         }
 
-        public void SetContainerResourceId(string containerResourceId)
+        public void SetContainerResourceId(string containerResourcePath)
         {
-            this.containerResourceId = containerResourceId;
+            this.containerResourceId = containerResourcePath;
             if (!string.IsNullOrEmpty(this.containerResourceId))
             {
                 this.validators.Add(new ContainerValidator(this.containerResourceId));
@@ -40,6 +40,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         public void SetOperationType(OperationType operationType)
         {
             this.operationType = operationType;
+            if (this.operationType != null)
+            {
+                this.validators.Add(new OperationTypeValidator(this.operationType.Value));
+            }
         }
 
         public void SetRegionEndpoints(List<Uri> regionEndpoints)
@@ -150,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
             public bool IsApplicable(string ruleId, ChannelCallArguments args)
             {
-                bool isApplicable = this.regionEndpoints.Any(uri => args.PreparedCall.Uri.AbsoluteUri.StartsWith(uri.AbsoluteUri));
+                bool isApplicable = this.regionEndpoints.Any(uri => args.LocationEndpointToRouteTo.AbsoluteUri.StartsWith(uri.AbsoluteUri));
 
                 return isApplicable;
             }
