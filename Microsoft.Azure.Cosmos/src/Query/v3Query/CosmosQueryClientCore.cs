@@ -336,7 +336,7 @@ namespace Microsoft.Azure.Cosmos
                     bool backendPlan = distributionPlan.TryGetValue("backendDistributionPlan", out CosmosElement backendDistributionPlan);
                     bool clientPlan = distributionPlan.TryGetValue("clientDistributionPlan", out CosmosElement clientDistributionPlan);
 
-                    Debug.Assert(clientPlan == backendPlan, "Out of the backend and client plans, only one is present in the distribution plan.");
+                    Debug.Assert(clientPlan == backendPlan, "Response Body Contract was violated. Out of the backend and client plans, only one is present in the distribution plan.");
 
                     if (backendPlan && clientPlan)
                     {
