@@ -203,27 +203,7 @@
             foreach (CqlScalarExpression scalarExpression in scalarExpressions)
             {
                 CqlScalarExpressionKind scalarExpressionKind = scalarExpression.Kind;
-                string scalarExpressionKindString = scalarExpressionKind switch
-                {
-                    CqlScalarExpressionKind.ArrayCreate => "ArrayCreate",
-                    CqlScalarExpressionKind.ArrayIndexer => "ArrayIndexer",
-                    CqlScalarExpressionKind.BinaryOperator => "BinaryOperator",
-                    CqlScalarExpressionKind.IsOperator => "IsOperator",
-                    CqlScalarExpressionKind.Let => "Let",
-                    CqlScalarExpressionKind.Literal => "Literal",
-                    CqlScalarExpressionKind.Mux => "Mux",
-                    CqlScalarExpressionKind.ObjectCreate => "ObjectCreate",
-                    CqlScalarExpressionKind.PropertyRef => "PropertyRef",
-                    CqlScalarExpressionKind.SystemFunctionCall => "SystemFunctionCall",
-                    CqlScalarExpressionKind.TupleCreate => "TupleCreate",
-                    CqlScalarExpressionKind.TupleItemRef => "TupleItemRef",
-                    CqlScalarExpressionKind.UnaryOperator => "UnaryOperator",
-                    CqlScalarExpressionKind.UserDefinedFunctionCall => "UserDefinedFunctionCall",
-                    CqlScalarExpressionKind.VariableRef => "VariableRef",
-                    _ => throw new NotSupportedException($"Invalid CqlExpression kind: {scalarExpressionKind}"),
-                };
-
-                this.output.Append($"{{Kind:{scalarExpressionKindString}, ");
+                
             }
         }
 
@@ -245,6 +225,7 @@
                 _ => throw new NotSupportedException($"Invalid CqlExpression kind: {kind}"),
             };
 
+            this.output.Append("SourceExpression: {");
             this.output.Append($"Kind: {kindString}, ");
         }
 
@@ -372,12 +353,35 @@
 
         void ICqlVisitor.Visit(CqlScalarExpression cqlScalarExpression)
         {
-            throw new System.NotImplementedException();
+            CqlScalarExpressionKind kind = cqlScalarExpression.Kind;
+            string scalarExpressionKindString = kind switch
+            {
+                CqlScalarExpressionKind.ArrayCreate => "ArrayCreate",
+                CqlScalarExpressionKind.ArrayIndexer => "ArrayIndexer",
+                CqlScalarExpressionKind.BinaryOperator => "BinaryOperator",
+                CqlScalarExpressionKind.IsOperator => "IsOperator",
+                CqlScalarExpressionKind.Let => "Let",
+                CqlScalarExpressionKind.Literal => "Literal",
+                CqlScalarExpressionKind.Mux => "Mux",
+                CqlScalarExpressionKind.ObjectCreate => "ObjectCreate",
+                CqlScalarExpressionKind.PropertyRef => "PropertyRef",
+                CqlScalarExpressionKind.SystemFunctionCall => "SystemFunctionCall",
+                CqlScalarExpressionKind.TupleCreate => "TupleCreate",
+                CqlScalarExpressionKind.TupleItemRef => "TupleItemRef",
+                CqlScalarExpressionKind.UnaryOperator => "UnaryOperator",
+                CqlScalarExpressionKind.UserDefinedFunctionCall => "UserDefinedFunctionCall",
+                CqlScalarExpressionKind.VariableRef => "VariableRef",
+                _ => throw new NotSupportedException($"Invalid CqlExpression kind: {kind}"),
+            };
+
+            this.output.Append("SourceExpression: {");
+            this.output.Append($"{{Kind:{scalarExpressionKindString}, ");
+
         }
 
         void ICqlVisitor.Visit(CqlScalarExpressionKind cqlScalarExpressionKind)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         void ICqlVisitor.Visit(CqlSelectEnumerableExpression cqlSelectEnumerableExpression)
@@ -385,7 +389,6 @@
             //throw new System.NotImplementedException();
             string start = "{Select: "; 
             cqlSelectEnumerableExpression.SourceExpression.Accept(this);
-            Console.WriteLine("Select");
         }
 
         void ICqlVisitor.Visit(CqlSelectManyEnumerableExpression cqlSelectManyEnumerableExpression)
@@ -460,7 +463,15 @@
 
         void ICqlVisitor.Visit(CqlWhereEnumerableExpression cqlWhereEnumerableExpression)
         {
-            throw new System.NotImplementedException();
+            cqlWhereEnumerableExpression.SourceExpression.Accept(this);
+            string name = cqlWhereEnumerableExpression.DeclaredVariable.Name;
+            long uniqueId = cqlWhereEnumerableExpression.DeclaredVariable.UniqueId;
+
+            this.output.Append("DeclaredVariable: {");
+            this.output.Append($"Name: {name}");
+            this.output.Append($"UniqueId: {uniqueId}");
+
+            cqlWhereEnumerableExpression.Expression.Accept(this);
         }
     }
 }
