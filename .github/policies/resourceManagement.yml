@@ -20,7 +20,7 @@ configuration:
           label: needs-more-information
       - noActivitySince:
           days: 14
-      - isNotAssigned
+      - isNotAssigne
       actions:
       - addReply:
           reply: '@${issueAuthor} this issue requires more information for the team to be able to help. In case this information is available, please add it and re-open the Issue.'
