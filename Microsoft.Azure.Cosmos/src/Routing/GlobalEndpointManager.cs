@@ -353,6 +353,26 @@ namespace Microsoft.Azure.Cosmos.Routing
             return this.locationCache.ResolveServiceEndpoint(request);
         }
 
+        public Uri ResolveFaultInjectionServiceEndpoint(string region, bool writeOnly)
+        {
+            return this.locationCache.ResolveFaultInjectionEndpoint(region, writeOnly);
+        }
+
+        public Uri GetDefaultEndpoint()
+        {
+            return this.locationCache.GetDefaultEndpoint();
+        }
+
+        public ReadOnlyDictionary<string, Uri> GetAvailableWriteEndpointsByLocation()
+        {
+            return this.locationCache.GetAvailableWriteEndpointsByLocation();
+        }
+
+        public ReadOnlyDictionary<string, Uri> GetAvailableReadEndpointsByLocation()
+        {
+            return this.locationCache.GetAvailableReadEndpointsByLocation();
+        }
+
         /// <summary>
         /// Returns location corresponding to the endpoint
         /// </summary>

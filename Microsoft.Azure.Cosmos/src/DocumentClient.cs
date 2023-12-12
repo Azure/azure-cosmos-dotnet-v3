@@ -30,6 +30,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
+    using Microsoft.Azure.Documents.FaultInjection;
     using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
 
@@ -114,6 +115,8 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly bool IsLocalQuorumConsistency = false;
         private readonly bool isReplicaAddressValidationEnabled;
+
+        private readonly IChaosInterceptor chaosInterceptor;
 
         //Auth
         internal readonly AuthorizationTokenProvider cosmosAuthorization;
@@ -433,6 +436,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cosmosClientId"></param>
         /// <param name="remoteCertificateValidationCallback">This delegate responsible for validating the third party certificate. </param>
         /// <param name="cosmosClientTelemetryOptions">This is distributed tracing flag</param>
+        /// <param name="chaosInterceptor">This is the chaos interceptor used for fault injection</param>
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal.
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
@@ -460,7 +464,8 @@ namespace Microsoft.Azure.Cosmos
                               bool isLocalQuorumConsistency = false,
                               string cosmosClientId = null,
                               RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
-                              CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null)
+                              CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null,
+                              IChaosInterceptor chaosInterceptor = null)
         {
             if (sendingRequestEventArgs != null)
             {
@@ -483,6 +488,7 @@ namespace Microsoft.Azure.Cosmos
             this.transportClientHandlerFactory = transportClientHandlerFactory;
             this.IsLocalQuorumConsistency = isLocalQuorumConsistency;
             this.initTaskCache = new AsyncCacheNonBlocking<string, bool>(cancellationToken: this.cancellationTokenSource.Token);
+            this.chaosInterceptor = chaosInterceptor;
 
             this.Initialize(
                 serviceEndpoint: serviceEndpoint,
@@ -6666,7 +6672,8 @@ namespace Microsoft.Azure.Cosmos
                     addressResolver: this.AddressResolver,
                     rntbdMaxConcurrentOpeningConnectionCount: this.rntbdMaxConcurrentOpeningConnectionCount,
                     remoteCertificateValidationCallback: this.remoteCertificateValidationCallback,
-                    distributedTracingOptions: distributedTracingOptions);
+                    distributedTracingOptions: distributedTracingOptions,
+                    chaosInterceptor: this.chaosInterceptor);
 
                 if (this.transportClientHandlerFactory != null)
                 {
