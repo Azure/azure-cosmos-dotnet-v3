@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Globalization;
     using System.IO;
     using System.Linq;
@@ -332,8 +333,12 @@ namespace Microsoft.Azure.Cosmos
 
                     DistributionPlanSpec distributionPlanSpec = null;
 
-                    if (distributionPlan.TryGetValue("backendDistributionPlan", out CosmosElement backendDistributionPlan) &&
-                        distributionPlan.TryGetValue("clientDistributionPlan", out CosmosElement clientDistributionPlan))
+                    bool backendPlan = distributionPlan.TryGetValue("backendDistributionPlan", out CosmosElement backendDistributionPlan);
+                    bool clientPlan = distributionPlan.TryGetValue("clientDistributionPlan", out CosmosElement clientDistributionPlan);
+
+                    Debug.Assert(clientPlan == backendPlan, "Out of the backend and client plans, only one is present in the distribution plan.");
+
+                    if (backendPlan && clientPlan)
                     {
                         distributionPlanSpec = new DistributionPlanSpec(backendDistributionPlan.ToString(), clientDistributionPlan.ToString());
                     }
