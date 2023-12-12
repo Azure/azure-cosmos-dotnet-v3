@@ -202,7 +202,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <remarks>
         // See: https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos.Samples/Usage/SystemTextJson/CosmosSystemTextJsonSerializer.cs
         /// </remarks>
-        class TestCustomJsonSerializer : CosmosSerializer
+        class TestCustomJsonSerializer : CosmosQuerySerializer
         {
             private readonly JsonObjectSerializer systemTextJsonSerializer;
 
@@ -247,12 +247,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return stream;
             }
 
-            #if PREVIEW
-            public
-            #else
-            internal
-            #endif
-            override string SerializeLinqMemberName(MemberInfo memberInfo)
+            public override string SerializeLinqMemberName(MemberInfo memberInfo)
             {
                 JsonPropertyNameAttribute jsonPropertyNameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(true);
 

@@ -26,6 +26,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
+    using Microsoft.Azure.Cosmos.Serializer;
 
     internal class LinqTestsCommon
     {
@@ -841,7 +842,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         }
     }
 
-    public class SystemTextJsonSerializer : CosmosSerializer
+    class SystemTextJsonSerializer : CosmosQuerySerializer
     {
         private readonly JsonObjectSerializer systemTextJsonSerializer;
 
@@ -879,12 +880,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             return streamPayload;
         }
 
-        #if PREVIEW
-        public
-        #else
-        internal
-        #endif
-        override string SerializeLinqMemberName(MemberInfo memberInfo)
+        public override string SerializeLinqMemberName(MemberInfo memberInfo)
         {
             JsonPropertyNameAttribute jsonPropertyNameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(true);
 
