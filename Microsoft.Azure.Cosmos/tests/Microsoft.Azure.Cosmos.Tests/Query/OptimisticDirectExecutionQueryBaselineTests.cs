@@ -163,6 +163,7 @@
         public async Task TestPipelineForBackendDocumentsOnSinglePartitionAsync()
         {
             int numItems = 100;
+            int documentCountInSinglePartition = 0;
             OptimisticDirectExecutionTestInput input = CreateInput(
                     description: @"Single Partition Key and Value Field",
                     query: "SELECT VALUE COUNT(1) FROM c",
@@ -173,7 +174,6 @@
             QueryRequestOptions queryRequestOptions = GetQueryRequestOptions(enableOptimisticDirectExecution: true);
             DocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(numItems, multiPartition: false);
             IQueryPipelineStage queryPipelineStage = await GetOdePipelineAsync(input, inMemoryCollection, queryRequestOptions);
-            int documentCountInSinglePartition = 0;
 
             while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton))
             {
@@ -449,7 +449,7 @@
                 }
                 catch (Exception ex)
                 {
-                    Assert.IsNotNull(ex);
+                    Assert.IsTrue(ex.InnerException.InnerException.Message.Contains(testCase.ExpectedMessage));
                     continue;
                 }
             }
@@ -731,8 +731,9 @@
                 allowDCount: true,
                 useSystemPrefix: false,
                 geospatialType: Cosmos.GeospatialType.Geography);
-
-            return Tuple.Create(tryGetQueryPlan.Result, queryPartitionProvider);
+            
+            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = tryGetQueryPlan.Succeeded ? tryGetQueryPlan.Result : throw tryGetQueryPlan.Exception;
+            return Tuple.Create(partitionedQueryExecutionInfo, queryPartitionProvider);
         }
 
         private static async Task<IQueryPipelineStage> GetOdePipelineAsync(OptimisticDirectExecutionTestInput input, DocumentContainer documentContainer, QueryRequestOptions queryRequestOptions, bool clientDisableOde = false)
@@ -1230,7 +1231,7 @@
             CosmosSerializerCore serializerCore = new();
             using StreamReader streamReader = new(serializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, Documents.ResourceType.Document));
             string sqlQuerySpecJsonString = streamReader.ReadToEnd();
-
+            
             (PartitionedQueryExecutionInfo partitionedQueryExecutionInfo, QueryPartitionProvider queryPartitionProvider) = OptimisticDirectExecutionQueryBaselineTests.GetPartitionedQueryExecutionInfoAndPartitionProvider(sqlQuerySpecJsonString, partitionKeyDefinition);
             return TryCatch<PartitionedQueryExecutionInfo>.FromResult(partitionedQueryExecutionInfo);
         }
