@@ -211,6 +211,12 @@ namespace Microsoft.Azure.Cosmos
             return partitionedQueryExecutionInfo;
         }
 
+        public override async Task<bool> GetClientDisableOptimisticDirectExecutionAsync()
+        {
+            QueryPartitionProvider provider = await this.clientContext.DocumentClient.QueryPartitionProvider;
+            return provider.ClientDisableOptimisticDirectExecution;
+        }
+
         public override async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangeByFeedRangeAsync(
             string resourceLink,
             string collectionResourceId,
