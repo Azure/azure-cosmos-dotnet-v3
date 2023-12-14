@@ -170,6 +170,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                             activityId: Guid.NewGuid().ToString(),
                             responseLengthInBytes: "[]".Length,
                             cosmosQueryExecutionInfo: default,
+                            distributionPlanSpec: default,
                             disallowContinuationTokenMessage: default,
                             additionalHeaders: default,
                             state: feedRangeState.State ?? StateForStartedButNoDocumentsReturned));
