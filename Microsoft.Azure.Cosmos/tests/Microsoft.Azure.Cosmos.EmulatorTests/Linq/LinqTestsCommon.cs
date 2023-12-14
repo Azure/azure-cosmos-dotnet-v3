@@ -26,7 +26,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
-    using Microsoft.Azure.Cosmos.Serializer;
 
     internal class LinqTestsCommon
     {
@@ -875,7 +874,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         public override Stream ToStream<T>(T input)
         {
             MemoryStream streamPayload = new MemoryStream();
-            this.systemTextJsonSerializer.Serialize(streamPayload, input, typeof(T), default);
+            this.systemTextJsonSerializer.Serialize(streamPayload, input, input.GetType(), default);
             streamPayload.Position = 0;
             return streamPayload;
         }

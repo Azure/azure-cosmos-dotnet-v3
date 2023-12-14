@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.IO;
     using System.Linq.Expressions;
     using System.Reflection;
-    using Microsoft.Azure.Cosmos.Serializer;
 
     internal class CustomCosmosLinqSerializer : ICosmosLinqSerializer
     {

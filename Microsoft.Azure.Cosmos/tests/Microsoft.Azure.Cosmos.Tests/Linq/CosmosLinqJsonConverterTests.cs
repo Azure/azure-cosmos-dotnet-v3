@@ -242,7 +242,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 MemoryStream stream = new();
 
-                this.systemTextJsonSerializer.Serialize(stream, input, typeof(T), default);
+                this.systemTextJsonSerializer.Serialize(stream, input, input.GetType(), default);
                 stream.Position = 0;
                 return stream;
             }
