@@ -4,12 +4,11 @@
     using System.Threading.Tasks;
     using Newtonsoft.Json;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Extensions.Logging;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.ApplicationInsights;
     using Microsoft.ApplicationInsights.WorkerService;
-    using Microsoft.Extensions.Logging.ApplicationInsights;
+    using Microsoft.ApplicationInsights.DataContracts;
 
     internal class Program
     {
@@ -52,21 +51,17 @@
                 _telemetryClient = serviceProvider.GetRequiredService<TelemetryClient>();
                 // </SetUpApplicationInsights>
 
-                CosmosClientOptions options = new CosmosClientOptions()
-                {
-                    IsDistributedTracingEnabled = true // Defaults to true, set to false to disable
-                };
-                using (CosmosClient client = new CosmosClient(endpoint, authKey, options))
-                {
-                    Console.WriteLine($"Getting container reference for {containerName}.");
+                var infoOperation = _telemetryClient.StartOperation<DependencyTelemetry>(".Net SDK (v3.37.0) : ApplicationInsights SDK (v2.22.0)");
 
-                    ContainerProperties properties = new ContainerProperties(containerName, partitionKeyPath: "/id");
+                var gops = _telemetryClient.StartOperation<DependencyTelemetry>("GATEWAY MODE");
+                await Program.RunCosmosDbOperation(ConnectionMode.Gateway, endpoint, authKey);
+                _telemetryClient.StopOperation(gops);
 
-                    await client.CreateDatabaseIfNotExistsAsync(databaseName);
-                    Container container = await client.GetDatabase(databaseName).CreateContainerIfNotExistsAsync(properties);
+                var dops = _telemetryClient.StartOperation<DependencyTelemetry>("DIRECT MODE");
+                await Program.RunCosmosDbOperation(ConnectionMode.Direct, endpoint, authKey);
+                _telemetryClient.StopOperation(dops);
 
-                    await Program.RunCrudDemo(container);
-                }
+                _telemetryClient.StopOperation(infoOperation);
             }
             finally
             {
@@ -75,6 +70,31 @@
                 await Task.Delay(5000);
 
                 Console.WriteLine("End of demo.");
+            }
+        }
+
+        private static async Task RunCosmosDbOperation(ConnectionMode connMode, string endpoint, string authKey)
+        {
+            CosmosClientOptions options = new CosmosClientOptions()
+            {
+                CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions()
+                {
+                    DisableDistributedTracing = false
+                },
+                ConnectionMode = connMode
+            };
+
+            // </EnableDistributedTracing>
+            using (CosmosClient client = new CosmosClient(endpoint, authKey, options))
+            {
+                Console.WriteLine($"Getting container reference for {containerName}.");
+
+                ContainerProperties properties = new ContainerProperties(containerName, partitionKeyPath: "/id");
+
+                await client.CreateDatabaseIfNotExistsAsync(databaseName);
+                Container container = await client.GetDatabase(databaseName).CreateContainerIfNotExistsAsync(properties);
+
+                await Program.RunCrudDemo(container);
             }
         }
 
