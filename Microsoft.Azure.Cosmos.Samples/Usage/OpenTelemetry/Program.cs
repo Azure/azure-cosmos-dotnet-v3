@@ -58,7 +58,7 @@
                                                         .AddConfiguration(configuration.GetSection("Logging"))
                                                         .AddOpenTelemetry(options =>
                                                         {
-                                                                options.IncludeFormattedMessage = true;
+                                                            options.IncludeFormattedMessage = true;
                                                             options.SetResourceBuilder(resource);
                                                             options.AddAzureMonitorLogExporter(o => o.ConnectionString = aiConnectionString); // Set up exporter of your choice
                                                         }));
@@ -70,11 +70,11 @@
                 // Configure OpenTelemetry trace provider
                 AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
                 _traceProvider = Sdk.CreateTracerProviderBuilder()
-                    .AddSource("Azure.Cosmos.Operation", 
-                               "Azure.Cosmos.Request", 
-                               "Sample.Application") // Cosmos DB source for operation level telemetry
+                    .AddSource("Azure.Cosmos.Operation", // Cosmos DB source for operation level telemetry
+                               "Azure.Cosmos.Request", // Cosmos DB source for DIRECT Mode network request level telemetry
+                               "Sample.Application") 
                     .AddAzureMonitorTraceExporter(o => o.ConnectionString = aiConnectionString) // Set up exporter of your choice
-                    .AddHttpClientInstrumentation()
+                    .AddHttpClientInstrumentation() // Added to capture HTTP telemetry
                     .SetResourceBuilder(resource)
                     .Build();
                 // </SetUpOpenTelemetry>
