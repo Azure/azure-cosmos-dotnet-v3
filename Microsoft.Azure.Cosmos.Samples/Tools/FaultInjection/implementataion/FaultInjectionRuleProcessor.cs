@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private readonly CollectionCache collectionCache;
         private readonly GlobalEndpointManager globalEndpointManager;
         private readonly GlobalAddressResolver addressResolver;
-        private readonly RetryOptions retryOptions;
+        private readonly Func<IRetryPolicy> retryPolicy;
         private readonly IRoutingMapProvider routingMapProvider;
         private readonly FaultInjectionApplicationContext applicationContext;
 
@@ -35,11 +35,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <param name="routingMapProvider"></param>
         /// <param name="applicationContext"></param>
         public FaultInjectionRuleProcessor(
+            Func<IRetryPolicy> retryPolicy,
             ConnectionMode connectionMode,
             CollectionCache collectionCache,
             GlobalEndpointManager globalEndpointManager,
             GlobalAddressResolver addressResolver,
-            RetryOptions retryOptions,
             IRoutingMapProvider routingMapProvider,
             FaultInjectionApplicationContext applicationContext)
         {
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             this.collectionCache = collectionCache ?? throw new ArgumentNullException(nameof(collectionCache));
             this.globalEndpointManager = globalEndpointManager ?? throw new ArgumentNullException(nameof(globalEndpointManager));
             this.addressResolver = addressResolver ?? throw new ArgumentNullException(nameof(addressResolver));
-            this.retryOptions = retryOptions ?? throw new ArgumentNullException(nameof(retryOptions));
+            this.retryPolicy = retryPolicy ?? throw new ArgumentNullException(nameof(retryPolicy));
             this.routingMapProvider = routingMapProvider ?? throw new ArgumentNullException(nameof(routingMapProvider));
             this.applicationContext = applicationContext ?? throw new ArgumentNullException(nameof(applicationContext));
         }
@@ -129,7 +129,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     regionEndpoints,
                     rule.GetCondition(),
                     this.IsWriteOnly(rule.GetCondition())),
-                new FaultInjectionRuleProcessorRetryPolicy(this.retryOptions));
+                this.retryPolicy());
 
             if (!this.CanErrorLimitToOperation(errorType))
             {
@@ -249,21 +249,19 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
             List<Uri> resolvedPhysicalAddresses = new List<Uri>();
 
-            
-            foreach (Uri regionEndpoint in regionEndpoints)
-            {
-                FeedRangeInternal feedRangeInternal = (FeedRangeInternal)addressEndpoints.GetFeedRange();
+            FeedRangeInternal feedRangeInternal = (FeedRangeInternal)addressEndpoints.GetFeedRange();
 
-                //The feed range can be mapped to multiple physical partitions, get the feed range list and resolve addresses for each partition
-
-                DocumentServiceRequest request = DocumentServiceRequest.CreateFromName(
+            DocumentServiceRequest request = DocumentServiceRequest.CreateFromName(
                     operationType: OperationType.Read,
                     resourceFullName: condition.GetEndpoint().GetResoureName(),
                     resourceType: ResourceType.Document,
                     authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
 
-                ContainerProperties collection = await this.collectionCache.ResolveCollectionAsync(request, CancellationToken.None, NoOpTrace.Singleton);
-                
+            ContainerProperties collection = await this.collectionCache.ResolveCollectionAsync(request, CancellationToken.None, NoOpTrace.Singleton);
+
+            foreach (Uri regionEndpoint in regionEndpoints)
+            {
+                //The feed range can be mapped to multiple physical partitions, get the feed range list and resolve addresses for each partition
                 IEnumerable<string> pkRanges = await feedRangeInternal.GetPartitionKeyRangesAsync(
                     this.routingMapProvider,
                     collection.ResourceId,
@@ -284,7 +282,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
                     if (isWriteOnly)
                     {
-                        return new List<Uri> { this.ResolvePrimaryTransportAddressUriAsync(fauntInjectionAddressRequest, true).Result.Uri };
+                        TransportAddressUri primary = await this.ResolvePrimaryTransportAddressUriAsync(fauntInjectionAddressRequest, true);
+                        return new List<Uri> { primary.Uri };
                     }
 
                     IEnumerable<Uri> resolvedEndpoints = (await this.ResolveAllTransportAddressUriAsync(
@@ -334,31 +333,5 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         {
             return this.globalEndpointManager;
         }
-
-        public class FaultInjectionRuleProcessorRetryPolicy : IRetryPolicy
-        {
-            private readonly ResourceThrottleRetryPolicy resourceThrottleRetryPolicy;
-            private readonly WebExceptionRetryPolicy webExceptionRetryPolicy;
-
-            public FaultInjectionRuleProcessorRetryPolicy(RetryOptions retryOptions)
-            {
-                this.resourceThrottleRetryPolicy = new ResourceThrottleRetryPolicy(
-                    maxAttemptCount: retryOptions.MaxRetryAttemptsOnThrottledRequests,
-                    maxWaitTimeInSeconds: retryOptions.MaxRetryWaitTimeInSeconds);
-                this.webExceptionRetryPolicy = new WebExceptionRetryPolicy();
-            }
-
-            public Task<ShouldRetryResult> ShouldRetryAsync(Exception e, CancellationToken cancellationToken)
-            {
-                ShouldRetryResult result = this.webExceptionRetryPolicy.ShouldRetryAsync(e, cancellationToken).Result;
-                if (result.ShouldRetry)
-                {
-                    return Task.FromResult(result);
-                }
-
-                return this.resourceThrottleRetryPolicy.ShouldRetryAsync(e, cancellationToken);
-            }
-        }
-
     }   
 }

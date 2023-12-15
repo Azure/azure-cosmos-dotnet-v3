@@ -16,7 +16,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
-    using Microsoft.Azure.Documents.FaultInjection;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -735,7 +734,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public CosmosClientTelemetryOptions CosmosClientTelemetryOptions { get; set; }
 
-        internal IChaosInterceptor ChaosInterceptor { get; set; }
+        internal IChaosInterceptorFactory ChaosInterceptorFactory { get; set; }
 
         internal void SetSerializerIfNotConfigured(CosmosSerializer serializer)
         {

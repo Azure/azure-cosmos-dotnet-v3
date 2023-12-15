@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 collectionCache: client.GetCollectionCacheAsync(NoOpTrace.Singleton).Result,
                 globalEndpointManager: client.GlobalEndpointManager,
                 addressResolver: client.AddressResolver,
-                retryOptions: client.ConnectionPolicy.RetryOptions,
+                retryPolicy: client.ResetSessionTokenRetryPolicy.GetRequestPolicy,
                 routingMapProvider: client.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton).Result,
                 applicationContext: applicationContext);
         }

@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Documents.FaultInjection
     /// </summary>
     internal interface IChaosInterceptor
     {
-        public void ConfigureInterceptor(dynamic client, TimeSpan timeout);
         /// <summary>
         /// Used to inject faults on request call
         /// </summary>

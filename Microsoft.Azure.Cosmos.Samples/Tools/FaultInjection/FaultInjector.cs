@@ -9,16 +9,16 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
     public class FaultInjector
     {
-        private readonly ChaosInterceptor chaosInterceptor;
+        private readonly ChaosInterceptorFactory chaosInterceptorFactory;
 
         public FaultInjector(List<FaultInjectionRule> rules)
         {
-            this.chaosInterceptor = new ChaosInterceptor(rules);
+            this.chaosInterceptorFactory = new ChaosInterceptorFactory(rules);
         }
 
         public CosmosClientOptions GetFaultInjectionClientOptions(CosmosClientOptions clientOptions)
         {
-            clientOptions.ChaosInterceptor = this.chaosInterceptor;
+            clientOptions.ChaosInterceptorFactory = this.chaosInterceptorFactory;
             return clientOptions;
         }       
 
@@ -27,20 +27,25 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// </summary>
         /// <param name="activityId"></param>
         /// <returns>the fault injection rule id</returns>
-        public string GetFaultInjectionRuleId(Guid activityId)
+        public string? GetFaultInjectionRuleId(Guid activityId)
         {
-            return this.chaosInterceptor.GetFaultInjectionRuleId(activityId);
+            return this.chaosInterceptorFactory.ChaosInterceptor?.GetFaultInjectionRuleId(activityId);
         }
 
         //Get Application Context
-        public FaultInjectionApplicationContext GetApplicationContext()
+        public FaultInjectionApplicationContext? GetApplicationContext()
         {
-            return this.chaosInterceptor.GetApplicationContext();
+            return this.chaosInterceptorFactory.ChaosInterceptor?.GetApplicationContext();
         }
 
-        internal IChaosInterceptor GetChaosInterceptor()
+        internal IChaosInterceptor? GetChaosInterceptor()
         {
-            return this.chaosInterceptor;
+            return this.chaosInterceptorFactory.ChaosInterceptor;
+        }
+
+        internal IChaosInterceptorFactory GetChaosInterceptorFactory()
+        {
+            return this.chaosInterceptorFactory;
         }
     }
 }

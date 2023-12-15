@@ -659,9 +659,9 @@ namespace Microsoft.Azure.Cosmos.Fluent
             return this;
         }
 
-        internal CosmosClientBuilder WithFaultInjection(IChaosInterceptor chaosInterceptor)
+        internal CosmosClientBuilder WithFaultInjection(IChaosInterceptorFactory chaosInterceptor)
         {
-            this.clientOptions.ChaosInterceptor = chaosInterceptor;
+            this.clientOptions.ChaosInterceptorFactory = chaosInterceptor;
             return this;
         }
 

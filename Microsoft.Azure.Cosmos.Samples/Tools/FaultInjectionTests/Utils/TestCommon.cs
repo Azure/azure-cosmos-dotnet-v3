@@ -19,7 +19,7 @@
             Action<CosmosClientBuilder>? customizeClientBuilder = null)
         {
             CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration(multiRegion);
-            cosmosClientBuilder.WithFaultInjection(injector.GetChaosInterceptor());
+            cosmosClientBuilder.WithFaultInjection(injector.GetChaosInterceptorFactory());
 
             customizeClientBuilder?.Invoke(cosmosClientBuilder);
 

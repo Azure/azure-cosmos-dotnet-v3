@@ -465,7 +465,7 @@ namespace Microsoft.Azure.Cosmos
                               string cosmosClientId = null,
                               RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
                               CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null,
-                              IChaosInterceptor chaosInterceptor = null)
+                              IChaosInterceptorFactory chaosInterceptorFactory = null)
         {
             if (sendingRequestEventArgs != null)
             {
@@ -488,7 +488,6 @@ namespace Microsoft.Azure.Cosmos
             this.transportClientHandlerFactory = transportClientHandlerFactory;
             this.IsLocalQuorumConsistency = isLocalQuorumConsistency;
             this.initTaskCache = new AsyncCacheNonBlocking<string, bool>(cancellationToken: this.cancellationTokenSource.Token);
-            this.chaosInterceptor = chaosInterceptor;
 
             this.Initialize(
                 serviceEndpoint: serviceEndpoint,
@@ -501,6 +500,8 @@ namespace Microsoft.Azure.Cosmos
                 cosmosClientId: cosmosClientId,
                 remoteCertificateValidationCallback: remoteCertificateValidationCallback,
                 cosmosClientTelemetryOptions: cosmosClientTelemetryOptions);
+
+            this.chaosInterceptor = chaosInterceptorFactory.CreateInterceptor(this);
         }
 
         /// <summary>

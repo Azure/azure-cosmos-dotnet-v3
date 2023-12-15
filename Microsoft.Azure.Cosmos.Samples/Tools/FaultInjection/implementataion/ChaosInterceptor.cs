@@ -9,28 +9,42 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
 
+    internal class ChaosInterceptorFactory : IChaosInterceptorFactory
+    {
+        private readonly List<FaultInjectionRule> rules;
+
+        public ChaosInterceptor? ChaosInterceptor { get; private set; }
+
+        public ChaosInterceptorFactory(List<FaultInjectionRule> rules)
+        {
+            this.rules = rules;
+        }
+
+        public IChaosInterceptor CreateInterceptor(DocumentClient documentClient)
+        {
+            this.ChaosInterceptor ??= new ChaosInterceptor(this.rules, documentClient);
+
+            return this.ChaosInterceptor;
+        }
+    }
+
     internal class ChaosInterceptor : IChaosInterceptor
     {
         private readonly List<FaultInjectionRule> rules;
-        private FaultInjectionRuleStore? ruleStore;
-        private RntbdConnectionErrorInjector? connectionErrorInjector;
+        private readonly FaultInjectionRuleStore? ruleStore;
+        private readonly RntbdConnectionErrorInjector? connectionErrorInjector;
         private readonly FaultInjectionDynamicChannelStore channelStore;
         private readonly FaultInjectionApplicationContext applicationContext;
-        private TimeSpan requestTimeout;
+        private readonly TimeSpan requestTimeout;
 
-        public ChaosInterceptor(List<FaultInjectionRule> rules)
+        public ChaosInterceptor(List<FaultInjectionRule> rules, DocumentClient documentClient)
         {
             this.rules = rules;
             this.channelStore = new FaultInjectionDynamicChannelStore();
             this.applicationContext = new FaultInjectionApplicationContext();
-        }
-
-        public void ConfigureInterceptor(dynamic client, TimeSpan requestTimeout)
-        {
-            DocumentClient documentClient = client as DocumentClient ?? throw new ArgumentNullException(nameof(client));
             this.ruleStore = new FaultInjectionRuleStore(documentClient, this.applicationContext);
             this.connectionErrorInjector = new RntbdConnectionErrorInjector(this.ruleStore, this.channelStore);
-            this.requestTimeout = requestTimeout;
+            this.requestTimeout = documentClient.ConnectionPolicy.RequestTimeout;
             this.ConfigureFaultInjectionRules();
         }
 
