@@ -167,6 +167,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             }
 
             await this.RemoveLeaseAsync(lease: lease, wasAcquired: true).ConfigureAwait(false);
+
+            partitionSupervisor.Dispose();
         }
 
         private async Task HandlePartitionGoneAsync(DocumentServiceLease lease, string lastContinuationToken)
