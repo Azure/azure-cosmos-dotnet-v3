@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// Uses the provided custom CosmosSerializer.
         /// This requires:
         /// 1. a <see cref="CosmosSerializer"/> to be provided on a client, and
-        /// 2. the custom CosmosSerializer implements <see cref="CosmosQuerySerializer"/>
+        /// 2. the custom CosmosSerializer implements <see cref="CosmosLinqSerializer"/>
         /// </summary>
         CustomCosmosSerializer,
     }

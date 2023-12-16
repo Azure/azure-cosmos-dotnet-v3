@@ -841,7 +841,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         }
     }
 
-    class SystemTextJsonSerializer : CosmosQuerySerializer
+    class SystemTextJsonSerializer : CosmosLinqSerializer
     {
         private readonly JsonObjectSerializer systemTextJsonSerializer;
 

@@ -11,9 +11,9 @@ namespace Microsoft.Azure.Cosmos.Linq
 
     internal class CustomCosmosLinqSerializer : ICosmosLinqSerializer
     {
-        private readonly CosmosQuerySerializer CustomCosmosSerializer;
+        private readonly CosmosLinqSerializer CustomCosmosSerializer;
 
-        public CustomCosmosLinqSerializer(CosmosQuerySerializer customCosmosSerializer)
+        public CustomCosmosLinqSerializer(CosmosLinqSerializer customCosmosSerializer)
         {
             this.CustomCosmosSerializer = customCosmosSerializer;
         }
