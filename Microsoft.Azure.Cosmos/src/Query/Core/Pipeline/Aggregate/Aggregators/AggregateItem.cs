@@ -16,20 +16,20 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
 
         public AggregateItem(CosmosElement cosmosElement)
         {
-            if (cosmosElement == null)
-            {
-                throw new ArgumentNullException($"{nameof(cosmosElement)} must not be null.");
-            }
+            CosmosObject cosmosObject = cosmosElement as CosmosObject;
 
-            if (!(cosmosElement is CosmosObject cosmosObject))
+            if (cosmosObject == null)
             {
                 // In case of Aggregate query with VALUE query plan, the top level is an array of one item
-                cosmosObject = cosmosElement is CosmosArray cosmosArray && cosmosArray[0] is CosmosObject cosmosObjectFromCosmosArray
-                    ? cosmosObjectFromCosmosArray
-                    : throw new ArgumentException($"{nameof(cosmosElement)} must not be an object.");
+                CosmosArray cosmosArray = cosmosElement as CosmosArray;
+                if (cosmosArray.Count == 1)
+                {
+                    cosmosObject = cosmosArray[0] as CosmosObject;
+                }
             }
 
-            this.cosmosObject = cosmosObject;
+            // If the object is still null, then we have an invalid aggregate item
+            this.cosmosObject = cosmosObject ?? throw new ArgumentException($"Unsupported aggregate item. Expected CosmosObject"); 
         }
 
         public CosmosElement Item

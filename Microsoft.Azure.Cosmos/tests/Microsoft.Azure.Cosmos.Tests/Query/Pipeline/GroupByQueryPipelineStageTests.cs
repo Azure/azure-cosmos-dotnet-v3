@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 continuationToken: continuationToken,
                 cancellationToken: default,
                 monadicCreatePipelineStage: (CosmosElement continuationToken, CancellationToken cancellationToken) => TryCatch<IQueryPipelineStage>.FromResult(source),
-                aggregates: null,
+                aggregates: new AggregateOperator[] { },
                 groupByAliasToAggregateType: groupByAliasToAggregateType,
                 orderedAliases: orderedAliases,
                 hasSelectValue: hasSelectValue,
