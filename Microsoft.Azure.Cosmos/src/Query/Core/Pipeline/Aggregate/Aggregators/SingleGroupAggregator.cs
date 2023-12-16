@@ -55,8 +55,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
                 {
                     // SELECT VALUE <AGGREGATE> 
                     tryCreateSingleGroupAggregator = SelectValueAggregateValues.TryCreate(
-                        aggregates[0],
-                        continuationToken);
+                        aggregateOperator: aggregates[0],
+                        continuationToken: continuationToken);
                 }
                 else
                 {
