@@ -23,7 +23,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
 
             if (!(cosmosElement is CosmosObject cosmosObject))
             {
-                throw new ArgumentException($"{nameof(cosmosElement)} must not be an object.");
+                // In case of Aggregate query with VALUE query plan, the top level is an array of one item
+                cosmosObject = cosmosElement is CosmosArray cosmosArray && cosmosArray[0] is CosmosObject cosmosObjectFromCosmosArray
+                    ? cosmosObjectFromCosmosArray
+                    : throw new ArgumentException($"{nameof(cosmosElement)} must not be an object.");
             }
 
             this.cosmosObject = cosmosObject;

@@ -51,9 +51,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
             TryCatch<SingleGroupAggregator> tryCreateSingleGroupAggregator;
             if (hasSelectValue)
             {
-                if (aggregates != null && aggregates.Any())
+                if (aggregates != null && aggregates.Any()) 
                 {
-                    // SELECT VALUE <AGGREGATE>
+                    // SELECT VALUE <AGGREGATE> 
                     tryCreateSingleGroupAggregator = SelectValueAggregateValues.TryCreate(
                         aggregates[0],
                         continuationToken);
