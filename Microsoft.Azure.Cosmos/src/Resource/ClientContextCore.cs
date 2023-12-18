@@ -83,9 +83,7 @@ namespace Microsoft.Azure.Cosmos
                cosmosClientId: cosmosClient.Id,
                remoteCertificateValidationCallback: ClientContextCore.SslCustomValidationCallBack(clientOptions.ServerCertificateCustomValidationCallback),
                cosmosClientTelemetryOptions: clientOptions.CosmosClientTelemetryOptions,
-               chaosInterceptor: clientOptions.ChaosInterceptor);
-
-            clientOptions.ChaosInterceptor?.ConfigureInterceptor(documentClient, clientOptions.RequestTimeout);
+               chaosInterceptorFactory: clientOptions.ChaosInterceptorFactory);
 
             return ClientContextCore.Create(
                 cosmosClient,

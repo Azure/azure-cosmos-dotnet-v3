@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
+    using Microsoft.Azure.Documents.FaultInjection;
 
     /// <summary>
     /// This is a Builder class that creates a cosmos client
@@ -655,6 +656,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
         internal CosmosClientBuilder WithPartitionLevelFailoverEnabled()
         {
             this.clientOptions.EnablePartitionLevelFailover = true;
+            return this;
+        }
+
+        internal CosmosClientBuilder WithFaultInjection(IChaosInterceptorFactory chaosInterceptorFactory)
+        {
+            this.clientOptions.ChaosInterceptorFactory = chaosInterceptorFactory;
             return this;
         }
 

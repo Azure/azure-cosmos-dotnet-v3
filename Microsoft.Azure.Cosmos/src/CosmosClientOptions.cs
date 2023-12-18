@@ -735,7 +735,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public CosmosClientTelemetryOptions CosmosClientTelemetryOptions { get; set; }
 
-        internal IChaosInterceptor ChaosInterceptor { get; set; }
+        internal IChaosInterceptorFactory ChaosInterceptorFactory { get; set; }
 
         internal void SetSerializerIfNotConfigured(CosmosSerializer serializer)
         {
