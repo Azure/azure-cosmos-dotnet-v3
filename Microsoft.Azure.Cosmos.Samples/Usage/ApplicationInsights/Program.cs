@@ -51,14 +51,14 @@
                 _telemetryClient = serviceProvider.GetRequiredService<TelemetryClient>();
                 // </SetUpApplicationInsights>
 
-                var infoOperation = _telemetryClient.StartOperation<DependencyTelemetry>(".Net SDK (v3.37.0) : ApplicationInsights SDK (v2.22.0)");
+                var infoOperation = _telemetryClient.StartOperation<DependencyTelemetry>(".Net SDK : ApplicationInsights SDK"); // Application level activity to track the entire execution of the application
 
-                var gops = _telemetryClient.StartOperation<DependencyTelemetry>("GATEWAY MODE");
+                var gops = _telemetryClient.StartOperation<DependencyTelemetry>("GATEWAY MODE"); // Activity to track the execution of the gateway mode
                 await Program.RunCosmosDbOperation(ConnectionMode.Gateway, endpoint, authKey);
                 _telemetryClient.StopOperation(gops);
 
-                var dops = _telemetryClient.StartOperation<DependencyTelemetry>("DIRECT MODE");
-                await Program.RunCosmosDbOperation(ConnectionMode.Direct, endpoint, authKey);
+                var dops = _telemetryClient.StartOperation<DependencyTelemetry>("DIRECT MODE"); // Activity to track the execution of the direct mode
+                await Program.RunCosmosDbOperation(ConnectionMode.Direct, endpoint, authKey); 
                 _telemetryClient.StopOperation(dops);
 
                 _telemetryClient.StopOperation(infoOperation);
@@ -75,6 +75,7 @@
 
         private static async Task RunCosmosDbOperation(ConnectionMode connMode, string endpoint, string authKey)
         {
+            // <EnableDistributedTracing>
             CosmosClientOptions options = new CosmosClientOptions()
             {
                 CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions()
@@ -83,8 +84,8 @@
                 },
                 ConnectionMode = connMode
             };
-
             // </EnableDistributedTracing>
+
             using (CosmosClient client = new CosmosClient(endpoint, authKey, options))
             {
                 Console.WriteLine($"Getting container reference for {containerName}.");

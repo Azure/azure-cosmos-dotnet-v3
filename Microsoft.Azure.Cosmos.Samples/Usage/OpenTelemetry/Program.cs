@@ -79,17 +79,14 @@
                     .Build();
                 // </SetUpOpenTelemetry>
 
-                // <EnableDistributedTracing>
-
                 ActivitySource source = new ActivitySource("Sample.Application");
-
-                using (_ = source.StartActivity(".Net SDK (v3.37.0) : Azure Monitor (v1.1.0) : Open Telemetry Sample"))
+                using (_ = source.StartActivity(".Net SDK : Azure Monitor : Open Telemetry Sample")) // Application level activity to track the entire execution of the application
                 {
-                    using (_ = source.StartActivity("GATEWAY MODE"))
+                    using (_ = source.StartActivity("GATEWAY MODE")) // Activity to track the execution of the gateway mode
                     {
                         await Program.RunCosmosDbOperation(ConnectionMode.Gateway, endpoint, authKey);
                     }
-                    using (_ = source.StartActivity("DIRECT MODE"))
+                    using (_ = source.StartActivity("DIRECT MODE")) // Activity to track the execution of the direct mode
                     {
                         await Program.RunCosmosDbOperation(ConnectionMode.Direct, endpoint, authKey);
                     }
@@ -108,6 +105,7 @@
 
         private static async Task RunCosmosDbOperation(ConnectionMode connMode, string endpoint, string authKey)
         {
+            // <EnableDistributedTracing>
             CosmosClientOptions options = new CosmosClientOptions()
             {
                 CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions()
@@ -116,8 +114,8 @@
                 },
                 ConnectionMode = connMode
             };
-
             // </EnableDistributedTracing>
+
             using (CosmosClient client = new CosmosClient(endpoint, authKey, options))
             {
                 Console.WriteLine($"Getting container reference for {containerName}.");
