@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Linq.Expressions;
     using System.Reflection;
 
-    internal interface ICosmosLinqSerializer
+    internal interface ICosmosLinqSerializerInternal
     {
         /// <summary>
         /// Returns true if there are custom attributes on a member expression.

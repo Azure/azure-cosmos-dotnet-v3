@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <summary>
         /// The LINQ serializer 
         /// </summary>
-        public readonly ICosmosLinqSerializer CosmosLinqSerializer;
+        public readonly ICosmosLinqSerializerInternal CosmosLinqSerializer;
 
         /// <summary>
         /// Set of parameters in scope at any point; used to generate fresh parameter names if necessary.

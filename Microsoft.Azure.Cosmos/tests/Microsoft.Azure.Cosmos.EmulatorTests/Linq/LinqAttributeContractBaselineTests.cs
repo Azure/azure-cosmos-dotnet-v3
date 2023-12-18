@@ -172,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public void TestAttributePriority()
         {
-            ICosmosLinqSerializer cosmosLinqSerializer = new DefaultCosmosLinqSerializer(new CosmosPropertyNamingPolicy());
+            ICosmosLinqSerializerInternal cosmosLinqSerializer = new DefaultCosmosLinqSerializer(new CosmosPropertyNamingPolicy());
             Assert.AreEqual("jsonProperty", cosmosLinqSerializer.SerializeMemberName(typeof(Datum).GetMember("JsonProperty").First()));
             Assert.AreEqual("dataMember", cosmosLinqSerializer.SerializeMemberName(typeof(Datum).GetMember("DataMember").First()));
             Assert.AreEqual("Default", cosmosLinqSerializer.SerializeMemberName(typeof(Datum).GetMember("Default").First()));

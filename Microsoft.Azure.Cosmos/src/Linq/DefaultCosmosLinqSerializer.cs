@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
-    internal class DefaultCosmosLinqSerializer : ICosmosLinqSerializer
+    internal class DefaultCosmosLinqSerializer : ICosmosLinqSerializerInternal
     {
         private readonly CosmosPropertyNamingPolicy PropertyNamingPolicy;
 

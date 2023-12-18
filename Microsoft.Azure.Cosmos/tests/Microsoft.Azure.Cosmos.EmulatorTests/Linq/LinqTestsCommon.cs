@@ -841,7 +841,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         }
     }
 
-    class SystemTextJsonSerializer : CosmosLinqSerializer
+    class SystemTextJsonSerializer : CosmosSerializer, ICosmosLinqSerializer
     {
         private readonly JsonObjectSerializer systemTextJsonSerializer;
 
@@ -879,7 +879,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             return streamPayload;
         }
 
-        public override string SerializeLinqMemberName(MemberInfo memberInfo)
+        public string SerializeLinqMemberName(MemberInfo memberInfo)
         {
             JsonPropertyNameAttribute jsonPropertyNameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(true);
 

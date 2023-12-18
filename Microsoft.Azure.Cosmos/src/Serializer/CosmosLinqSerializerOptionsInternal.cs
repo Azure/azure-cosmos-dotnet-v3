@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Serializer
                         throw new InvalidOperationException($"CosmosPropertyNamingPolicy must be CosmosPropertyNamingPolicy.Default if selecting linqSerializerOptions.CustomCosmosSerializer.");
                     }
 
-                    if (customCosmosSerializer is CosmosLinqSerializer customQueryCosmosSerializer)
+                    if (customCosmosSerializer is ICosmosLinqSerializer customQueryCosmosSerializer)
                     {
                         return new CosmosLinqSerializerOptionsInternal(cosmosLinqSerializerOptions, customQueryCosmosSerializer);
                     }
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Serializer
             }
         }
 
-        private CosmosLinqSerializerOptionsInternal(CosmosLinqSerializerOptions cosmosLinqSerializerOptions, CosmosLinqSerializer customCosmosSerializer)
+        private CosmosLinqSerializerOptionsInternal(CosmosLinqSerializerOptions cosmosLinqSerializerOptions, ICosmosLinqSerializer customCosmosSerializer)
         {
             this.CosmosLinqSerializerOptions = cosmosLinqSerializerOptions;
             this.CustomCosmosSerializer = customCosmosSerializer;
@@ -65,6 +65,6 @@ namespace Microsoft.Azure.Cosmos.Serializer
         /// User defined customer serializer, if LinqSerializerType is CustomCosmosSerializer. 
         /// Otherwise set to null;
         /// </summary>
-        public CosmosLinqSerializer CustomCosmosSerializer { get; }
+        public ICosmosLinqSerializer CustomCosmosSerializer { get; }
     }
 }

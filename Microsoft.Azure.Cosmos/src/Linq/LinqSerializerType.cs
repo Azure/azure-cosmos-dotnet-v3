@@ -3,14 +3,12 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Linq
 {
-    using Microsoft.Azure.Cosmos.Serializer;
-
     /// <summary>
     /// Serializer type to be used for LINQ query translations.
     /// </summary>
-    #if PREVIEW
+#if PREVIEW
     public
-    #else
+#else
     internal
     #endif
     enum LinqSerializerType
@@ -24,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// Uses the provided custom CosmosSerializer.
         /// This requires:
         /// 1. a <see cref="CosmosSerializer"/> to be provided on a client, and
-        /// 2. the custom CosmosSerializer implements <see cref="CosmosLinqSerializer"/>
+        /// 2. the custom CosmosSerializer implements <see cref="ICosmosLinqSerializer"/>
         /// </summary>
         CustomCosmosSerializer,
     }
