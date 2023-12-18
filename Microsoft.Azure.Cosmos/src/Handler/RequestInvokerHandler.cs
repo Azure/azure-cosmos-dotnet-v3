@@ -50,11 +50,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             RequestOptions promotedRequestOptions = request.RequestOptions;
-            if (promotedRequestOptions != null)
-            {
-                // Fill request options
-                promotedRequestOptions.PopulateRequestOptions(request);
-            }
+            // Fill request options
+            promotedRequestOptions?.PopulateRequestOptions(request);
 
             // Adds the NoContent header if not already added based on Client Level flag
             if (RequestInvokerHandler.ShouldSetNoContentResponseHeaders(
@@ -77,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             this.FillMultiMasterContext(request);
             if (this.ShouldSpeculate(request))
             {
-                return await this.SendAsyncWithAvailabilityStrategy(request, cancellationToken);
+                return await this.SendWithAvailabilityStrategyAsync(request, cancellationToken);
             }
             return await base.SendAsync(request, cancellationToken);
         }
@@ -119,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             return true;
         }
 
-        private async Task<ResponseMessage> SendAsyncWithAvailabilityStrategyAsync(RequestMessage request, CancellationToken cancellationToken)
+        private async Task<ResponseMessage> SendWithAvailabilityStrategyAsync(RequestMessage request, CancellationToken cancellationToken)
         {
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             CancellationToken parallelRequestCancellationToken = cancellationTokenSource.Token;
