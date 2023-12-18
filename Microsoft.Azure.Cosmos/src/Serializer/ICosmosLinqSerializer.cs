@@ -24,15 +24,5 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="memberInfo">Any MemberInfo used in the query.</param>
         /// <returns>A serialized representation of the member.</returns>
         public string SerializeLinqMemberName(MemberInfo memberInfo);
-
-        /// <summary>
-        /// <see cref="CosmosSerializer.FromStream{T}(Stream)"/>
-        /// </summary>
-        public T FromStream<T>(Stream stream);
-
-        /// <summary>
-        /// <see cref="CosmosSerializer.ToStream{T}(T)"/>
-        /// </summary>
-        public Stream ToStream<T>(T input);
     }
 }

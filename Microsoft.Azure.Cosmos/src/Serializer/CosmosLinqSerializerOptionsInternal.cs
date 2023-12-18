@@ -32,12 +32,12 @@ namespace Microsoft.Azure.Cosmos.Serializer
                         throw new InvalidOperationException($"CosmosPropertyNamingPolicy must be CosmosPropertyNamingPolicy.Default if selecting linqSerializerOptions.CustomCosmosSerializer.");
                     }
 
-                    if (customCosmosSerializer is ICosmosLinqSerializer customQueryCosmosSerializer)
+                    if (customCosmosSerializer is not ICosmosLinqSerializer)
                     {
-                        return new CosmosLinqSerializerOptionsInternal(cosmosLinqSerializerOptions, customQueryCosmosSerializer);
+                        throw new InvalidOperationException($"CosmosSerializer must implement ICosmosLinqSerializer if selecting linqSerializerOptions.CustomCosmosSerializer.");
                     }
 
-                    throw new InvalidOperationException($"CosmosSerializer must implement CosmosLinqSerializer if selecting linqSerializerOptions.CustomCosmosSerializer.");
+                    return new CosmosLinqSerializerOptionsInternal(cosmosLinqSerializerOptions, customCosmosSerializer);
                 }
                 case LinqSerializerType.Default:
                 {
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Serializer
             }
         }
 
-        private CosmosLinqSerializerOptionsInternal(CosmosLinqSerializerOptions cosmosLinqSerializerOptions, ICosmosLinqSerializer customCosmosSerializer)
+        private CosmosLinqSerializerOptionsInternal(CosmosLinqSerializerOptions cosmosLinqSerializerOptions, CosmosSerializer customCosmosSerializer)
         {
             this.CosmosLinqSerializerOptions = cosmosLinqSerializerOptions;
             this.CustomCosmosSerializer = customCosmosSerializer;
@@ -63,8 +63,8 @@ namespace Microsoft.Azure.Cosmos.Serializer
 
         /// <summary>
         /// User defined customer serializer, if LinqSerializerType is CustomCosmosSerializer. 
-        /// Otherwise set to null;
+        /// Otherwise set to null.
         /// </summary>
-        public ICosmosLinqSerializer CustomCosmosSerializer { get; }
+        public CosmosSerializer CustomCosmosSerializer { get; }
     }
 }
