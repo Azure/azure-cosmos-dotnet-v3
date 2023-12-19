@@ -18,11 +18,6 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class MetadataRequestThrottleRetryPolicy : IDocumentClientRetryPolicy
     {
         /// <summary>
-        /// A callback delegate to fetch the location endpoint at a later point of time.
-        /// </summary>
-        private readonly Func<Uri> locationEndpointCallbackUri;
-
-        /// <summary>
         /// An instance of <see cref="GlobalEndpointManager"/>.
         /// </summary>
         private readonly GlobalEndpointManager globalEndpointManager;
@@ -33,20 +28,23 @@ namespace Microsoft.Azure.Cosmos
         private readonly IDocumentClientRetryPolicy throttlingRetryPolicy;
 
         /// <summary>
+        /// An instance of <see cref="Uri"/> containing the location endpoint where the partition key
+        /// range http request will be sent over.
+        /// </summary>
+        private Uri metadataLocationEndpoint;
+
+        /// <summary>
         /// The constructor to initialize an instance of <see cref="MetadataRequestThrottleRetryPolicy"/>.
         /// </summary>
-        /// <param name="locationEndpointCallbackUri">A callback delegate to fetch the location endpoint at a later point of time.</param>
         /// <param name="endpointManager">An instance of <see cref="GlobalEndpointManager"/></param>
         /// <param name="maxRetryAttemptsOnThrottledRequests">An integer defining the maximum number
         /// of attempts to retry when requests are throttled.</param>
         /// <param name="maxRetryWaitTimeInSeconds">An integer defining the maximum wait time in seconds.</param>
         public MetadataRequestThrottleRetryPolicy(
-            Func<Uri> locationEndpointCallbackUri,
             GlobalEndpointManager endpointManager,
             int maxRetryAttemptsOnThrottledRequests,
             int maxRetryWaitTimeInSeconds)
         {
-            this.locationEndpointCallbackUri = locationEndpointCallbackUri;
             this.globalEndpointManager = endpointManager;
             this.throttlingRetryPolicy = new ResourceThrottleRetryPolicy(
                 maxRetryAttemptsOnThrottledRequests,
@@ -105,6 +103,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="request">The request being sent to the service.</param>
         public void OnBeforeSendRequest(DocumentServiceRequest request)
         {
+            this.metadataLocationEndpoint = this.globalEndpointManager.ResolveServiceEndpoint(request);
         }
 
         /// <summary>
@@ -113,11 +112,10 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A boolean flag indicating if the operation was successful.</returns>
         private bool MarkEndpointUnavailableForRead()
         {
-            Uri location = this.locationEndpointCallbackUri?.Invoke();
-            if (location != null)
+            if (this.metadataLocationEndpoint != null)
             {
-                DefaultTrace.TraceWarning("MetadataRequestThrottleRetryPolicy: Marking the following endpoint unavailable for reads: {0}.", location);
-                this.globalEndpointManager.MarkEndpointUnavailableForRead(location);
+                DefaultTrace.TraceWarning("MetadataRequestThrottleRetryPolicy: Marking the following endpoint unavailable for reads: {0}.", this.metadataLocationEndpoint);
+                this.globalEndpointManager.MarkEndpointUnavailableForRead(this.metadataLocationEndpoint);
                 return true;
             }
             else

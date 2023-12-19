@@ -32,8 +32,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly CollectionCache collectionCache;
         private readonly GlobalEndpointManager endpointManager;
 
-        private Uri pkRangeLocationEndpoint;
-
         public PartitionKeyRangeCache(
             ICosmosAuthorizationTokenProvider authorizationTokenProvider,
             IStoreModel storeModel,
@@ -201,13 +199,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
 
                 RetryOptions retryOptions = new RetryOptions();
-                using (DocumentServiceResponse response = await BackoffRetryUtility<DocumentServiceResponse>.ExecuteAsync(
-                    () => this.ExecutePartitionKeyRangeReadChangeFeedAsync(collectionRid, headers, trace, clientSideRequestStatistics),
-                    new MetadataRequestThrottleRetryPolicy(
-                        locationEndpointCallbackUri: () => this.pkRangeLocationEndpoint,
+                MetadataRequestThrottleRetryPolicy metadataRetryPolicy = new (
                         endpointManager: this.endpointManager,
                         maxRetryAttemptsOnThrottledRequests: retryOptions.MaxRetryAttemptsOnThrottledRequests,
-                        maxRetryWaitTimeInSeconds: retryOptions.MaxRetryWaitTimeInSeconds)))
+                        maxRetryWaitTimeInSeconds: retryOptions.MaxRetryWaitTimeInSeconds);
+
+                using (DocumentServiceResponse response = await BackoffRetryUtility<DocumentServiceResponse>.ExecuteAsync(
+                    () => this.ExecutePartitionKeyRangeReadChangeFeedAsync(collectionRid, headers, trace, clientSideRequestStatistics, metadataRetryPolicy),
+                    retryPolicy: metadataRetryPolicy))
                 {
                     lastStatusCode = response.StatusCode;
                     changeFeedNextIfNoneMatch = response.Headers[HttpConstants.HttpHeaders.ETag];
@@ -254,7 +253,8 @@ namespace Microsoft.Azure.Cosmos.Routing
         private async Task<DocumentServiceResponse> ExecutePartitionKeyRangeReadChangeFeedAsync(string collectionRid, 
                                                                                 INameValueCollection headers, 
                                                                                 ITrace trace,
-                                                                                IClientSideRequestStatistics clientSideRequestStatistics)
+                                                                                IClientSideRequestStatistics clientSideRequestStatistics,
+                                                                                IDocumentClientRetryPolicy retryPolicy)
         {
             using (ITrace childTrace = trace.StartChild("Read PartitionKeyRange Change Feed", TraceComponent.Transport, Tracing.TraceLevel.Info))
             {
@@ -265,7 +265,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     AuthorizationTokenType.PrimaryMasterKey,
                     headers))
                 {
-                    this.pkRangeLocationEndpoint = this.endpointManager.ResolveServiceEndpoint(request);
+                    retryPolicy?.OnBeforeSendRequest(request);
                     string authorizationToken = null;
                     try
                     {
