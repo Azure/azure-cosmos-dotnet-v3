@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
             //Meta Data Read
             if (HttpTimeoutPolicy.IsMetaData(documentServiceRequest) && documentServiceRequest.IsReadOnlyRequest)
             {
-                return HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout;
+                return HttpTimeoutPolicyMetadataRead.InstanceShouldThrow503OnTimeout;
             }
 
             //Default behavior
