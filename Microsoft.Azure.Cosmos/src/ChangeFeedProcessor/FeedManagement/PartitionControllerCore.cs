@@ -89,8 +89,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                 throw;
             }
 
-            PartitionSupervisor supervisor = this.partitionSupervisorFactory.Create(lease);
-            this.ProcessPartitionAsync(supervisor, lease).LogException();
+            this.ProcessPartitionAsync(lease).LogException();
         }
 
         public override async Task ShutdownAsync()
@@ -146,8 +145,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             }
         }
 
-        private async Task ProcessPartitionAsync(PartitionSupervisor partitionSupervisor, DocumentServiceLease lease)
+        private async Task ProcessPartitionAsync(DocumentServiceLease lease)
         {
+            using PartitionSupervisor partitionSupervisor = this.partitionSupervisorFactory.Create(lease);
+
             try
             {
                 await partitionSupervisor.RunAsync(this.shutdownCts.Token).ConfigureAwait(false);
@@ -167,8 +168,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             }
 
             await this.RemoveLeaseAsync(lease: lease, wasAcquired: true).ConfigureAwait(false);
-
-            partitionSupervisor.Dispose();
         }
 
         private async Task HandlePartitionGoneAsync(DocumentServiceLease lease, string lastContinuationToken)
