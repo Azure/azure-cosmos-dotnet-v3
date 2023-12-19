@@ -98,6 +98,9 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
+            // Any metadata request will throw a cosmos exception from CosmosHttpClientCore if
+            // it receives a 503 service unavailable from gateway. This check is to add retry
+            // mechanism for the metadata requests in such cases.
             if (exception is CosmosException cosmosException)
             {
                 ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
