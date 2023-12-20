@@ -35,7 +35,8 @@ namespace Microsoft.Azure.Cosmos
             return this.TimeoutsAndDelays.GetEnumerator();
         }
 
-        // This is for control plane reads which should always be safe to retry on.
+        // Assume that it is not safe to retry unless it is a get method.
+        // Create and other operations could have succeeded even though a timeout occurred.
         public override bool IsSafeToRetry(HttpMethod httpMethod)
         {
             return httpMethod == HttpMethod.Get;
@@ -43,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool ShouldRetryBasedOnResponse(HttpMethod requestHttpMethod, HttpResponseMessage responseMessage)
         {
-            return false;
+            return responseMessage.StatusCode == System.Net.HttpStatusCode.RequestTimeout;
         }
 
         public override bool ShouldThrow503OnTimeout => this.shouldThrow503OnTimeout;
