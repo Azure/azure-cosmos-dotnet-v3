@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
         {
             (TimeSpan.FromSeconds(3), TimeSpan.Zero),
             (TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(1)),
-            (TimeSpan.FromSeconds(65), TimeSpan.Zero), 
+            (TimeSpan.FromSeconds(10), TimeSpan.Zero), 
         };
 
         public override string TimeoutPolicyName => HttpTimeoutPolicyMetadataRead.Name;
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
         // This is for control plane reads which should always be safe to retry on.
         public override bool IsSafeToRetry(HttpMethod httpMethod)
         {
-            return true;
+            return httpMethod == HttpMethod.Get;
         }
 
         public override bool ShouldRetryBasedOnResponse(HttpMethod requestHttpMethod, HttpResponseMessage responseMessage)
@@ -46,6 +46,6 @@ namespace Microsoft.Azure.Cosmos
             return false;
         }
 
-        public override bool ShouldThrow503OnTimeout => true;
+        public override bool ShouldThrow503OnTimeout => this.shouldThrow503OnTimeout;
     }
 }
