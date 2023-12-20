@@ -15,7 +15,7 @@
         private static readonly string databaseName = "samples";
         private static readonly string containerName = "ai-sample";
 
-        private static TelemetryClient _telemetryClient;
+        private static TelemetryClient telemetryClient;
 
         static async Task Main()
         {
@@ -48,25 +48,25 @@
                 services.AddApplicationInsightsTelemetryWorkerService((ApplicationInsightsServiceOptions options) => options.ConnectionString = aiConnectionString);
 
                 IServiceProvider serviceProvider = services.BuildServiceProvider();
-                _telemetryClient = serviceProvider.GetRequiredService<TelemetryClient>();
+                telemetryClient = serviceProvider.GetRequiredService<TelemetryClient>();
                 // </SetUpApplicationInsights>
 
-                var infoOperation = _telemetryClient.StartOperation<DependencyTelemetry>(".Net SDK : ApplicationInsights SDK"); // Application level activity to track the entire execution of the application
+                var infoOperation = telemetryClient.StartOperation<DependencyTelemetry>(".Net SDK : ApplicationInsights SDK"); // Application level activity to track the entire execution of the application
 
-                var gops = _telemetryClient.StartOperation<DependencyTelemetry>("GATEWAY MODE"); // Activity to track the execution of the gateway mode
+                var gops = telemetryClient.StartOperation<DependencyTelemetry>("GATEWAY MODE"); // Activity to track the execution of the gateway mode
                 await Program.RunCosmosDbOperation(ConnectionMode.Gateway, endpoint, authKey);
-                _telemetryClient.StopOperation(gops);
+                telemetryClient.StopOperation(gops);
 
-                var dops = _telemetryClient.StartOperation<DependencyTelemetry>("DIRECT MODE"); // Activity to track the execution of the direct mode
+                var dops = telemetryClient.StartOperation<DependencyTelemetry>("DIRECT MODE"); // Activity to track the execution of the direct mode
                 await Program.RunCosmosDbOperation(ConnectionMode.Direct, endpoint, authKey); 
-                _telemetryClient.StopOperation(dops);
+                telemetryClient.StopOperation(dops);
 
-                _telemetryClient.StopOperation(infoOperation);
+                telemetryClient.StopOperation(infoOperation);
             }
             finally
             {
                 // Explicitly calling Flush() followed by sleep is required for Application Insights logging in console apps to ensure that telemetry is sent to the back-end even if application terminates.
-                _telemetryClient?.Flush();
+                telemetryClient?.Flush();
                 await Task.Delay(5000);
 
                 Console.WriteLine("End of demo.");
