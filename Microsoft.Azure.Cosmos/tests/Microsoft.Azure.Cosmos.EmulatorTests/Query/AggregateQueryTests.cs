@@ -152,9 +152,7 @@
                                 new QueryRequestOptions()
                                 {
                                     MaxConcurrency = maxDoP,
-#if PREVIEW
                                     EnableOptimisticDirectExecution = false
-#endif
                                 });
 
                             if (argument.ExpectedValue == null)

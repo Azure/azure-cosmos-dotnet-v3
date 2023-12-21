@@ -101,11 +101,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 FeedIterator<ToDoActivity> feedIterator = container.GetItemQueryIterator<ToDoActivity>(
                         queryDefinition: new QueryDefinition("select * from T where STARTSWITH(T.id, \"BasicItem\")"),
                         feedRange: feedRange,
-                        continuationToken: null
-
-#if PREVIEW
-                        , requestOptions: new QueryRequestOptions() { EnableOptimisticDirectExecution = false }
-#endif
+                        continuationToken: null,
+                        requestOptions: new QueryRequestOptions() { EnableOptimisticDirectExecution = false }
                         );
 
                 CosmosException exception = await Assert.ThrowsExceptionAsync<CosmosException>(() => feedIterator.ReadNextAsync());
