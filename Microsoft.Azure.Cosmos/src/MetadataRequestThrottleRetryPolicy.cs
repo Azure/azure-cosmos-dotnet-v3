@@ -18,9 +18,14 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class MetadataRequestThrottleRetryPolicy : IDocumentClientRetryPolicy
     {
         /// <summary>
-        /// An instance of <see cref="GlobalEndpointManager"/>.
+        /// A constant integer defining the default maximum retry wait time in seconds.
         /// </summary>
-        private readonly GlobalEndpointManager globalEndpointManager;
+        private const int DefaultMaxWaitTimeInSeconds = 60;
+
+        /// <summary>
+        /// An instance of <see cref="IGlobalEndpointManager"/>.
+        /// </summary>
+        private readonly IGlobalEndpointManager globalEndpointManager;
 
         /// <summary>
         /// Defines the throttling retry policy that is used as the underlying retry policy.
@@ -41,9 +46,9 @@ namespace Microsoft.Azure.Cosmos
         /// of attempts to retry when requests are throttled.</param>
         /// <param name="maxRetryWaitTimeInSeconds">An integer defining the maximum wait time in seconds.</param>
         public MetadataRequestThrottleRetryPolicy(
-            GlobalEndpointManager endpointManager,
+            IGlobalEndpointManager endpointManager,
             int maxRetryAttemptsOnThrottledRequests,
-            int maxRetryWaitTimeInSeconds)
+            int maxRetryWaitTimeInSeconds = DefaultMaxWaitTimeInSeconds)
         {
             this.globalEndpointManager = endpointManager;
             this.throttlingRetryPolicy = new ResourceThrottleRetryPolicy(
@@ -63,7 +68,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (exception is CosmosException cosmosException
                 && cosmosException.StatusCode == HttpStatusCode.ServiceUnavailable
-                && cosmosException.Headers.SubStatusCode == SubStatusCodes.PartitionKeyRangeGone)
+                && cosmosException.Headers.SubStatusCode == SubStatusCodes.TransportGenerated503)
             {
                 if (!this.MarkEndpointUnavailableForRead())
                 {
@@ -85,7 +90,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             if (cosmosResponseMessage?.StatusCode == HttpStatusCode.ServiceUnavailable
-                && cosmosResponseMessage?.Headers.SubStatusCode == SubStatusCodes.PartitionKeyRangeGone)
+                && cosmosResponseMessage?.Headers?.SubStatusCode == SubStatusCodes.TransportGenerated503)
             {
                 if (!this.MarkEndpointUnavailableForRead())
                 {
