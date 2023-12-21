@@ -129,16 +129,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                             activityId: Guid.NewGuid().ToString(),
                             responseLengthInBytes: "[]".Length,
                             cosmosQueryExecutionInfo: default,
+                            distributionPlanSpec: default,
                             disallowContinuationTokenMessage: default,
                             additionalHeaders: default,
                             state: new QueryState(CosmosString.Create("Empty"))));
 
             private static readonly TryCatch<QueryPage> NonEmpty = TryCatch<QueryPage>.FromResult(new QueryPage(
-                documents: new List<CosmosElement> { CosmosElement.Parse("42") },
+                            documents: new List<CosmosElement> { CosmosElement.Parse("42") },
                             requestCharge: 100,
                             activityId: Guid.NewGuid().ToString(),
                             responseLengthInBytes: "[42]".Length,
                             cosmosQueryExecutionInfo: default,
+                            distributionPlanSpec: default,
                             disallowContinuationTokenMessage: default,
                             additionalHeaders: default,
                             state: new QueryState(CosmosString.Create("NonEmpty"))));

@@ -126,6 +126,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                     activityId: default,
                     responseLengthInBytes: responseLengthBytes,
                     cosmosQueryExecutionInfo: default,
+                    distributionPlanSpec: default,
                     disallowContinuationTokenMessage: default,
                     additionalHeaders: default,
                     state: default);
