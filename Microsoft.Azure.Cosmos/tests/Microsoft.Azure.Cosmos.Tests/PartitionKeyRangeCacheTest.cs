@@ -21,8 +21,8 @@ namespace Microsoft.Azure.Cosmos.Tests
     using TraceLevel = Cosmos.Tracing.TraceLevel;
     using Newtonsoft.Json.Linq;
     using Newtonsoft.Json;
-    using Microsoft.Azure.Cosmos.Client.Tests;
     using System;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
 
     /// <summary>
     /// Unit Tests for <see cref="PartitionKeyRangeCache"/>.
@@ -124,6 +124,78 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.IsTrue(!string.IsNullOrWhiteSpace(secondPkRangeValue));
                 Assert.IsTrue(string.IsNullOrEmpty(firstPkRangeValue));
                 Assert.AreEqual(eTag, secondPkRangeValue);
+            }
+        }
+
+        /// <summary>
+        /// Test to validate that when the gateway service is unavailable, the partition key range cache is able to mark
+        /// the service endpoint as unavailable for read, so that the retry policy could pick the next region for the Pk
+        /// range calls.
+        /// </summary>
+        [TestMethod]
+        public async Task TryGetOverlappingRangesAsync_WhenGatewayThrowsServiceUnavailable_ShouldMarkReadEndpointAsUnavailable()
+        {
+            // Arrange.
+            string eTag = "483";
+            string authToken = "token!";
+            string containerRId = "kjhsAA==";
+            string singlePkCollectionCache = "{\"_rid\":\"3FIlAOzjvyg=\",\"PartitionKeyRanges\":[{\"_rid\":\"3FIlAOzjvygCAAAAAAAAUA==\",\"id\":\"0\",\"_etag\":\"\\\"00005565-0000-0800-0000-621fd98a0000\\\"\",\"minInclusive\":\"\",\"maxExclusive\":\"FF\",\"ridPrefix\":0,\"_self\":\"dbs/3FIlAA==/colls/3FIlAOzjvyg=/pkranges/3FIlAOzjvygCAAAAAAAAUA==/\",\"throughputFraction\":1,\"status\":\"splitting\",\"parents\":[],\"_ts\":1646254474,\"_lsn\":44}],\"_count\":1}";
+            byte[] singlePkCollectionCacheByte = Encoding.UTF8.GetBytes(singlePkCollectionCache);
+            using (ITrace trace = Trace.GetRootTrace(this.TestContext.TestName, TraceComponent.Unknown, TraceLevel.Info))
+            {
+                Mock<IStoreModel> mockStoreModel = new();
+                Mock<CollectionCache> mockCollectioNCache = new();
+                Mock<ICosmosAuthorizationTokenProvider> mockTokenProvider = new();
+                NameValueCollectionWrapper headers = new()
+                {
+                    [HttpConstants.HttpHeaders.ETag] = eTag,
+                };
+
+                Uri serviceUri = new ("https://foo");
+                Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
+                mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(serviceUri);
+
+                Mock<IGlobalEndpointManager> mockedEndpointManager = new Mock<IGlobalEndpointManager>();
+                mockedEndpointManager
+                    .Setup(gem => gem.ResolveServiceEndpoint(It.IsAny<DocumentServiceRequest>()))
+                    .Returns(serviceUri);
+                mockedEndpointManager
+                    .Setup(gem => gem.MarkEndpointUnavailableForRead(serviceUri));
+
+                mockStoreModel.SetupSequence(x => x.ProcessMessageAsync(It.IsAny<DocumentServiceRequest>(), It.IsAny<CancellationToken>()))
+                     .ThrowsAsync(CosmosExceptionFactory.CreateServiceUnavailableException(
+                                            message: "Service is Unavailable.",
+                                            headers: new Headers()
+                                            {
+                                                ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString(),
+                                                SubStatusCode = SubStatusCodes.TransportGenerated503
+                                            },
+                                            trace: trace,
+                                            innerException: null))
+                     .ReturnsAsync(new DocumentServiceResponse(null, headers, HttpStatusCode.NotModified, null))
+                     .ReturnsAsync(new DocumentServiceResponse(null, headers, HttpStatusCode.NotModified, null));
+
+                mockTokenProvider.Setup(x => x.GetUserAuthorizationTokenAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<INameValueCollection>(), It.IsAny<AuthorizationTokenType>(), It.IsAny<ITrace>()))
+                    .Returns(new ValueTask<string>(authToken));
+
+                // Act.
+                PartitionKeyRangeCache partitionKeyRangeCache = new(mockTokenProvider.Object, mockStoreModel.Object, mockCollectioNCache.Object, mockedEndpointManager.Object);
+                CosmosException cosmosException = await Assert.ThrowsExceptionAsync<CosmosException>(() => partitionKeyRangeCache.TryGetOverlappingRangesAsync(
+                    containerRId,
+                    FeedRangeEpk.FullRange.Range,
+                    trace,
+                    forceRefresh: true));
+
+                // Assert.
+                string diagnostics = new CosmosTraceDiagnostics(trace).ToString();
+                JObject traceData = JsonConvert.DeserializeObject<JObject>(diagnostics);
+
+                Assert.IsNotNull(cosmosException);
+                Assert.IsNotNull(traceData);
+                Assert.AreEqual(HttpStatusCode.ServiceUnavailable, cosmosException.StatusCode);
+                Assert.AreEqual(SubStatusCodes.TransportGenerated503, cosmosException.Headers.SubStatusCode);
+
+                mockedEndpointManager.Verify(em => em.MarkEndpointUnavailableForRead(It.IsAny<Uri>()), Times.Once);
             }
         }
     }

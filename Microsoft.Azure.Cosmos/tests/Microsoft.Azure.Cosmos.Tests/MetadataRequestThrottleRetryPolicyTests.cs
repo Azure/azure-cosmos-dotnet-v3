@@ -107,6 +107,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 Assert.IsNotNull(serviceEndpointMarkedUnavailableForRead);
                 Assert.AreEqual(primaryServiceEndpoint, serviceEndpointMarkedUnavailableForRead, "Both the primary endpoint and the endpoint that was marked unavailable should match.");
+
+                mockedGlobalEndpointManager.Verify(gem => gem.MarkEndpointUnavailableForRead(primaryServiceEndpoint), Times.Once);
             }
             else
             {
