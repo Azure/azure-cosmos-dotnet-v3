@@ -287,6 +287,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 activityId: string.Empty,
                 responseLengthInBytes: 0,
                 cosmosQueryExecutionInfo: default,
+                distributionPlanSpec: default,
                 disallowContinuationTokenMessage: default,
                 additionalHeaders: default,
                 state: default);

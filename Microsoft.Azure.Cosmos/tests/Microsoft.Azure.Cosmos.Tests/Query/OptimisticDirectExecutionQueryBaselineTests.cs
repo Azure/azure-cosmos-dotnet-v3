@@ -7,6 +7,7 @@
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using System.Xml;
@@ -31,6 +32,7 @@
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class OptimisticDirectExecutionQueryBaselineTests : BaselineTests<OptimisticDirectExecutionTestInput, OptimisticDirectExecutionTestOutput>
@@ -579,6 +581,72 @@
             }
         }
 
+        [TestMethod]
+        public async Task TestTextDistributionPlanParsingFromStream()
+        {
+            string textPath = "../../../Query/DistributionPlans/Text";
+            string[] filePaths = Directory.GetFiles(textPath);
+            
+            foreach (string filePath in filePaths)
+            {
+                string testResponse = File.ReadAllText(filePath);
+                JObject jsonObject = JObject.Parse(testResponse);
+
+                string expectedBackendPlan = jsonObject["_distributionPlan"]["backendDistributionPlan"].ToString();
+                expectedBackendPlan = RemoveJsonFormattingFromString(expectedBackendPlan);
+
+                string expectedClientPlan = jsonObject["_distributionPlan"]["clientDistributionPlan"].ToString();
+                expectedClientPlan = RemoveJsonFormattingFromString(expectedClientPlan);
+
+                MemoryStream memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(testResponse));
+                CosmosQueryClientCore.ParseRestStream(
+                    memoryStream,
+                    Documents.ResourceType.Document,
+                    out CosmosArray documents,
+                    out CosmosObject distributionPlan);
+
+                if (distributionPlan.TryGetValue("backendDistributionPlan", out CosmosElement backendDistributionPlan) &&
+                    distributionPlan.TryGetValue("clientDistributionPlan", out CosmosElement clientDistributionPlan))
+                {
+                    Assert.AreEqual(expectedBackendPlan, RemoveJsonFormattingFromString(backendDistributionPlan.ToString()));
+                    Assert.AreEqual(expectedClientPlan, RemoveJsonFormattingFromString(clientDistributionPlan.ToString()));
+                }
+                else
+                {
+                    Assert.Fail();
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task TestBinaryDistributionPlanParsingFromStream()
+        {
+            string expectedBackendPlan = "{\"query\":\"\\nSELECT Count(r.a) AS count_a\\nFROM r\",\"obfuscatedQuery\":\"{\\\"query\\\":\\\"SELECT Count(r.a) AS p1\\\\nFROM r\\\",\\\"parameters\\\":[]}\",\"shape\":\"{\\\"Select\\\":{\\\"Type\\\":\\\"List\\\",\\\"AggCount\\\":1},\\\"From\\\":{\\\"Expr\\\":\\\"Aliased\\\"}}\",\"signature\":-4885972563975185329,\"shapeSignature\":-6171928203673877984,\"queryIL\":{\"Expression\":{\"Kind\":\"Aggregate\",\"Type\":{\"Kind\":\"Enum\",\"ItemType\":{\"Kind\":\"Base\",\"BaseTypeKind\":\"Number\",\"ExcludesUndefined\":true}},\"Aggregate\":{\"Kind\":\"Builtin\",\"Signature\":{\"ItemType\":{\"Kind\":\"Base\",\"BaseTypeKind\":\"Variant\",\"ExcludesUndefined\":false},\"ResultType\":{\"Kind\":\"Base\",\"BaseTypeKind\":\"Number\",\"ExcludesUndefined\":true}},\"OperatorKind\":\"Count\"},\"SourceExpression\":{\"Kind\":\"Select\",\"Type\":{\"Kind\":\"Enum\",\"ItemType\":{\"Kind\":\"Base\",\"BaseTypeKind\":\"Variant\",\"ExcludesUndefined\":false}},\"Delegate\":{\"Kind\":\"ScalarExpression\",\"Type\":{\"Kind\":\"Base\",\"BaseTypeKind\":\"Variant\",\"ExcludesUndefined\":false},\"DeclaredVariable\":{\"Name\":\"v0\",\"UniqueId\":0,\"Type\":{\"Kind\":\"Base\",\"BaseTypeKind\":\"Variant\",\"ExcludesUndefined\":true}},\"Expression\":{\"Kind\":\"PropertyRef\",\"Type\":{\"Kind\":\"Base\",\"BaseTypeKind\":\"Variant\",\"ExcludesUndefined\":false},\"Expression\":{\"Kind\":\"VariableRef\",\"Type\":{\"Kind\":\"Base\",\"BaseTypeKind\":\"Variant\",\"ExcludesUndefined\":true},\"Variable\":{\"Name\":\"v0\",\"UniqueId\":0,\"Type\":{\"Kind\":\"Base\",\"BaseTypeKind\":\"Variant\",\"ExcludesUndefined\":true}}},\"PropertyName\":\"a\"}},\"SourceExpression\":{\"Kind\":\"Input\",\"Type\":{\"Kind\":\"Enum\",\"ItemType\":{\"Kind\":\"Base\",\"BaseTypeKind\":\"Variant\",\"ExcludesUndefined\":true}},\"Name\":\"r\"}}}},\"noSpatial\":true,\"language\":\"QueryIL\"}";
+            string expectedClientPlan = "{\"clientQL\":{\"Kind\":\"Select\",\"DeclaredVariable\":{\"Name\":\"v0\",\"UniqueId\":2},\"Expression\":{\"Kind\":\"ObjectCreate\",\"ObjectKind\":\"Object\",\"Properties\":[{\"Name\":\"count_a\",\"Expression\":{\"Kind\":\"VariableRef\",\"Variable\":{\"Name\":\"v0\",\"UniqueId\":2}}}]},\"SourceExpression\":{\"Kind\":\"Aggregate\",\"Aggregate\":{\"Kind\":\"Builtin\",\"OperatorKind\":\"Sum\"},\"SourceExpression\":{\"Kind\":\"Input\",\"Name\":\"root\"}}}}";
+
+            string textPath = "../../../Query/DistributionPlans/Binary";
+            string[] filePaths = Directory.GetFiles(textPath);
+            string testResponse = File.ReadAllText(filePaths[0]);
+
+            MemoryStream memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(testResponse));
+            CosmosQueryClientCore.ParseRestStream(
+                memoryStream,
+                Documents.ResourceType.Document,
+                out CosmosArray documents,
+                out CosmosObject distributionPlan);
+
+            if (distributionPlan.TryGetValue("backendDistributionPlan", out CosmosElement backendDistributionPlan) &&
+                distributionPlan.TryGetValue("clientDistributionPlan", out CosmosElement clientDistributionPlan))
+            {
+                Assert.IsTrue(backendDistributionPlan.ToString().Equals(expectedBackendPlan));
+                Assert.IsTrue(clientDistributionPlan.ToString().Equals(expectedClientPlan));
+            }
+            else
+            {
+                Assert.Fail();
+            }
+        }
+
         // Creates a gone exception after the first MoveNexyAsync() call. This allows for the pipeline to return some documents before failing
         private static async Task<bool> ExecuteGoneExceptionOnODEPipeline(bool isMultiPartition)
         {
@@ -642,6 +710,11 @@
             }
 
             return false;
+        }
+
+        private static string RemoveJsonFormattingFromString(string jsonString)
+        {
+            return jsonString.Replace(" ", string.Empty).Replace("\t", string.Empty).Replace("\n", string.Empty).Replace("\r", string.Empty);
         }
 
         private static async Task<(MergeTestUtil, IQueryPipelineStage)> CreateFallbackPipelineTestInfrastructure(int numItems, bool isFailedFallbackPipelineTest, bool isMultiPartition, QueryRequestOptions queryRequestOptions)
@@ -1012,6 +1085,7 @@
                             activityId: Guid.NewGuid().ToString(),
                             responseLengthInBytes: 1337,
                             cosmosQueryExecutionInfo: default,
+                            distributionPlanSpec: default,
                             disallowContinuationTokenMessage: default,
                             additionalHeaders: additionalHeaders.ToImmutable(),
                             state: queryPage.Result.Result.State)));
