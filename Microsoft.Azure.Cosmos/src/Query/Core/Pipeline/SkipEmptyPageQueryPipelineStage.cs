@@ -56,6 +56,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                             activityId: Guid.Empty.ToString(),
                             responseLengthInBytes: this.cumulativeResponseLengthInBytes,
                             cosmosQueryExecutionInfo: default,
+                            distributionPlanSpec: default,
                             disallowContinuationTokenMessage: default,
                             additionalHeaders: this.cumulativeAdditionalHeaders,
                             state: default);
@@ -92,6 +93,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                             activityId: sourcePage.ActivityId,
                             responseLengthInBytes: sourcePage.ResponseLengthInBytes + this.cumulativeResponseLengthInBytes,
                             cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
+                            distributionPlanSpec: default,
                             disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
                             additionalHeaders: sourcePage.AdditionalHeaders,
                             state: default);
@@ -117,6 +119,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                             activityId: sourcePage.ActivityId,
                             responseLengthInBytes: sourcePage.ResponseLengthInBytes + this.cumulativeResponseLengthInBytes,
                             cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
+                            distributionPlanSpec: default,
                             disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
                             additionalHeaders: sourcePage.AdditionalHeaders,
                             state: sourcePage.State);
