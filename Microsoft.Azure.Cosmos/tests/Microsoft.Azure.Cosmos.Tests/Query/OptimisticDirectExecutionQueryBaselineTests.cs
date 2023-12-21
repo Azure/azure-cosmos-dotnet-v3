@@ -150,13 +150,7 @@
         public void TestDefaultQueryRequestOptionsSettings()
         {
             QueryRequestOptions requestOptions = new QueryRequestOptions();
-            bool odeExpectedValue =
-#if PREVIEW
-                    true;
-#else
-                    false;
-#endif
-
+            bool odeExpectedValue = true;
             Assert.AreEqual(odeExpectedValue, requestOptions.EnableOptimisticDirectExecution);
         }
 
