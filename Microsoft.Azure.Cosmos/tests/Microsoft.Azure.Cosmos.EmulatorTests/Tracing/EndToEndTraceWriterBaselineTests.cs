@@ -486,9 +486,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             List<Input> inputs = new List<Input>();
             QueryRequestOptions requestOptions = new QueryRequestOptions()
             {
-#if PREVIEW
-                    EnableOptimisticDirectExecution = false
-#endif
+                EnableOptimisticDirectExecution = false
             };
 
             int startLineNumber;

@@ -538,9 +538,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     MaxBufferedItemCount = 7000,
                     MaxConcurrency = 10,
                     MaxItemCount = 10,
-#if PREVIEW
                     EnableOptimisticDirectExecution = false
-#endif
                 };
 
                 string compositeAggregate = "SELECT COUNT(1) + 5 FROM c";
@@ -696,9 +694,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                                     MaxBufferedItemCount = 7000,
                                     MaxConcurrency = maxDegreeOfParallelism,
                                     MaxItemCount = maxItemCount,
-#if PREVIEW
                                     EnableOptimisticDirectExecution = false
-#endif
                                 };
 
                                 async Task<List<CosmosElement>> AssertPassthroughAsync(string query, Cosmos.PartitionKey? pk = default)

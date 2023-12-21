@@ -1221,9 +1221,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             List<DataObject> data = generatedData.Item2;
             QueryRequestOptions requestOptions = new QueryRequestOptions()
             {
-#if PREVIEW
                 EnableOptimisticDirectExecution = false
-#endif
             };
 
             IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true, requestOptions: requestOptions);

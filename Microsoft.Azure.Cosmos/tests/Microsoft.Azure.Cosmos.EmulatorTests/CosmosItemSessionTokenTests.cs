@@ -367,9 +367,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
                         PartitionKey = new Cosmos.PartitionKey(pk),
-#if PREVIEW
                         EnableOptimisticDirectExecution = false
-#endif
                     });
                 int itemCountOldContainer = 0;
                 while (queryIteratorOldContainer.HasMoreResults)

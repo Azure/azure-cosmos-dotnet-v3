@@ -308,9 +308,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             FeedOptions feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true };
             QueryRequestOptions requestOptions = new QueryRequestOptions()
             {
-#if PREVIEW
                 EnableOptimisticDirectExecution = false
-#endif
             };
 
             IOrderedQueryable<T> query = container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution: true, requestOptions: requestOptions);
@@ -350,9 +348,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             FeedOptions feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true };
             QueryRequestOptions requestOptions = new QueryRequestOptions()
             {
-#if PREVIEW
                 EnableOptimisticDirectExecution = false
-#endif
             };
 
             CosmosLinqSerializerOptions linqSerializerOptions = new CosmosLinqSerializerOptions { PropertyNamingPolicy = camelCaseSerialization ? CosmosPropertyNamingPolicy.CamelCase : CosmosPropertyNamingPolicy.Default };
@@ -538,9 +534,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             FeedOptions feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true };
             QueryRequestOptions requestOptions = new QueryRequestOptions()
             {
-#if PREVIEW
                 EnableOptimisticDirectExecution = false
-#endif
             };
 
             IOrderedQueryable<Data> query = container.GetItemLinqQueryable<Data>(allowSynchronousQueryExecution: true, requestOptions: requestOptions);
