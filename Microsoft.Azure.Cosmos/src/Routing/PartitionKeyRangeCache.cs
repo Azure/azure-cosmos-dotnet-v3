@@ -265,7 +265,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     AuthorizationTokenType.PrimaryMasterKey,
                     headers))
                 {
-                    retryPolicy?.OnBeforeSendRequest(request);
+                    retryPolicy.OnBeforeSendRequest(request);
                     string authorizationToken = null;
                     try
                     {

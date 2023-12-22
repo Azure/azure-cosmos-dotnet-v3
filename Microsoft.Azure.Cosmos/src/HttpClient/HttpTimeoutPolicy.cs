@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
                 return HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout;
             }
 
-            //Partition Key Requests
+            //Get Addresses Requests
             if (documentServiceRequest.ResourceType == ResourceType.Address)
             {
                 return HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance;
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
             //Meta Data Read
             if (HttpTimeoutPolicy.IsMetaData(documentServiceRequest) && documentServiceRequest.IsReadOnlyRequest)
             {
-                return HttpTimeoutPolicyMetadataRead.InstanceShouldThrow503OnTimeout;
+                return HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout;
             }
 
             //Default behavior
