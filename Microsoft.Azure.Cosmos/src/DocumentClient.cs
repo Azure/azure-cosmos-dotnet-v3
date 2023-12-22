@@ -488,7 +488,7 @@ namespace Microsoft.Azure.Cosmos
             this.transportClientHandlerFactory = transportClientHandlerFactory;
             this.IsLocalQuorumConsistency = isLocalQuorumConsistency;
             this.initTaskCache = new AsyncCacheNonBlocking<string, bool>(cancellationToken: this.cancellationTokenSource.Token);
-            this.chaosInterceptor = chaosInterceptorFactory.CreateInterceptor(this);
+            this.chaosInterceptor = chaosInterceptorFactory == null ? chaosInterceptorFactory.CreateInterceptor(this) : null;
 
             this.Initialize(
                 serviceEndpoint: serviceEndpoint,
