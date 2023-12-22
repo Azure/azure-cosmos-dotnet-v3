@@ -33,8 +33,6 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         Task RefreshLocationAsync(bool forceRefresh = false);
 
-        Uri ResolveFaultInjectionServiceEndpoint(string region, bool writeOnly);
-
         ReadOnlyDictionary<string, Uri> GetAvailableWriteEndpointsByLocation();
 
         ReadOnlyDictionary<string, Uri> GetAvailableReadEndpointsByLocation();

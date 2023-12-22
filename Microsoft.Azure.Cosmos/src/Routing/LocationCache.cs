@@ -361,26 +361,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             return new ReadOnlyCollection<Uri>(applicableEndpoints);
         }
 
-        public Uri ResolveFaultInjectionEndpoint(string region, bool writeOnly)
-        {
-            if (writeOnly)
-            {
-                if (this.locationInfo.AvailableWriteEndpointByLocation.TryGetValue(this.regionNameMapper.GetCosmosDBRegionName(region), out Uri faultInjectionEndpoint))
-                {
-                    return faultInjectionEndpoint;
-                }
-            }
-            else
-            {
-                if (this.locationInfo.AvailableReadEndpointByLocation.TryGetValue(this.regionNameMapper.GetCosmosDBRegionName(region), out Uri faultInjectionEndpoint))
-                {
-                    return faultInjectionEndpoint;
-                }
-            }
-
-            throw new ArgumentException($"Cannot find service endpoint for region: {region}");
-        }
-
         public bool ShouldRefreshEndpoints(out bool canRefreshInBackground)
         {
             canRefreshInBackground = true;
