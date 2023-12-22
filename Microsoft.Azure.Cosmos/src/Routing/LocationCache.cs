@@ -8,10 +8,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Globalization;
     using System.Linq;
-    using System.Net;
-    using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
 
@@ -366,17 +363,16 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public Uri ResolveFaultInjectionEndpoint(string region, bool writeOnly)
         {
-            RegionNameMapper regionNameMapper = new RegionNameMapper();
             if (writeOnly)
             {
-                if (this.locationInfo.AvailableWriteEndpointByLocation.TryGetValue(regionNameMapper.GetCosmosDBRegionName(region), out Uri faultInjectionEndpoint))
+                if (this.locationInfo.AvailableWriteEndpointByLocation.TryGetValue(this.regionNameMapper.GetCosmosDBRegionName(region), out Uri faultInjectionEndpoint))
                 {
                     return faultInjectionEndpoint;
                 }
             }
             else
             {
-                if (this.locationInfo.AvailableReadEndpointByLocation.TryGetValue(regionNameMapper.GetCosmosDBRegionName(region), out Uri faultInjectionEndpoint))
+                if (this.locationInfo.AvailableReadEndpointByLocation.TryGetValue(this.regionNameMapper.GetCosmosDBRegionName(region), out Uri faultInjectionEndpoint))
                 {
                     return faultInjectionEndpoint;
                 }
