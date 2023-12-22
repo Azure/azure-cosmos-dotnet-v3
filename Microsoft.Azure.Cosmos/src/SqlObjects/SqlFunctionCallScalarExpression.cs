@@ -274,6 +274,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public const string MapContainsValue = "C_MAPCONTAINSVALUE";
             public const string Set = "C_SET";
             public const string SetContains = "C_SETCONTAINS";
+            public const string SetIntersect = "SetIntersect";
             public const string Tuple = "C_TUPLE";
             public const string Udt = "C_UDT";
             public const string UInt32 = "C_UINT32";
@@ -417,6 +418,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public static readonly SqlIdentifier MapContainsValue = SqlIdentifier.Create(Names.MapContainsValue);
             public static readonly SqlIdentifier Set = SqlIdentifier.Create(Names.Set);
             public static readonly SqlIdentifier SetContains = SqlIdentifier.Create(Names.SetContains);
+            public static readonly SqlIdentifier SetIntersect = SqlIdentifier.Create(Names.SetIntersect);
             public static readonly SqlIdentifier Tuple = SqlIdentifier.Create(Names.Tuple);
             public static readonly SqlIdentifier Udt = SqlIdentifier.Create(Names.Udt);
             public static readonly SqlIdentifier UInt32 = SqlIdentifier.Create(Names.UInt32);

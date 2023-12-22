@@ -2,7 +2,7 @@
   <Result>
     <Input>
       <Description><![CDATA[Point distance]]></Description>
-      <Expression><![CDATA[query.Select(doc => doc.Point.Distance(new Point(20.1, 20)))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => doc.Point.Distance(new Point(20,1, 20)))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[

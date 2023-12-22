@@ -73,6 +73,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             RIGHT,
             ROUND,
             RTRIM,
+            SETINTERSECT,
             SIGN,
             SIN,
             SQRT,
@@ -393,6 +394,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                         BuiltinFunctionEvaluator.RTRIM,
                         builtinFunction,
                         arguments);
+                    break;
+
+                case BuiltinFunctionName.SETINTERSECT:
+                    result = ExecuteTwoArgumentFunction(
+                        BuiltinFunctionEvaluator.SetIntersect,
+                        builtinFunction,
+                        arguments
+                        );
                     break;
 
                 case BuiltinFunctionName.SIGN:
@@ -1146,6 +1155,25 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         private static CosmosElement RTRIM(CosmosElement str) => ExecuteOneArgumentStringFunction(
             (value) => CosmosString.Create(value.TrimEnd()),
             str);
+
+        private static CosmosElement SetIntersect(
+            CosmosElement first,
+            CosmosElement second)
+        {
+            if (!(first is CosmosArray firstArray))
+            {
+                return CosmosUndefined.Create();
+            }
+
+            if (!(second is CosmosArray secondArray))
+            {
+                return CosmosUndefined.Create();
+            }
+
+            List<CosmosElement> intersectedArray = firstArray.Intersect(secondArray).ToList();
+
+            return CosmosArray.Create(intersectedArray);
+        }
 
         /// <summary>
         /// Returns the sign value (-1, 0, 1) of the specified numeric expression.

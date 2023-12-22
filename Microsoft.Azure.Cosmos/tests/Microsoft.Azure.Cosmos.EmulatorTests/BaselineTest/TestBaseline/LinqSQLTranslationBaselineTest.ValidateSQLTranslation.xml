@@ -274,7 +274,7 @@ FROM root]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Select extension data]]></Description>
-      <Expression><![CDATA[query.Select(x => new complex() {NewtonsoftExtensionData = new Dictionary`2() {Void Add(System.String, System.Object)("test", Convert(1.5, Object))}, NetExtensionData = new Dictionary`2() {Void Add(System.String, System.Object)("OtherTest", Convert(1.5, Object))}})]]></Expression>
+      <Expression><![CDATA[query.Select(x => new complex() {NewtonsoftExtensionData = new Dictionary`2() {Void Add(System.String, System.Object)("test", Convert(1,5, Object))}, NetExtensionData = new Dictionary`2() {Void Add(System.String, System.Object)("OtherTest", Convert(1,5, Object))}})]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
