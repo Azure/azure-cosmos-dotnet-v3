@@ -13,6 +13,8 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Tracing;
     using System.Net;
+    using System.Reflection;
+    using static Microsoft.Azure.Cosmos.MetadataRequestThrottleRetryPolicy;
 
     /// <summary>
     /// Unit tests for <see cref="MetadataRequestThrottleRetryPolicy"/>.
@@ -26,15 +28,15 @@ namespace Microsoft.Azure.Cosmos.Tests
         [DataRow(false, true, DisplayName = "Test when an exception was thrown with a valid substatus code.")]
         [DataRow(true, false, DisplayName = "Test when a response message with an invalid substatus code was used.")]
         [DataRow(false, false, DisplayName = "Test when an exception was thrown with an invalid substatus code.")]
-        public async Task ShouldRetryAsync_WithValidAndInvalidSubStatusCodes_ShouldMarkReadEndpointUnavailableOrSkipMarkingEndpoint(
+        public async Task ShouldRetryAsync_WithValidAndInvalidSubStatusCodes_ShouldIncrementLocationIndexOrSkip(
             bool useResponseMessage,
             bool isValidSubStatusCode)
         {
             // Arrange.
             ShouldRetryResult retryResult;
             string collectionRid = "test-collection";
-            Uri primaryServiceEndpoint = new ("https://default-endpoint.net/");
-            Uri serviceEndpointMarkedUnavailableForRead = null;
+            Uri primaryServiceEndpoint = new ("https://default-endpoint-region1.net/");
+            Uri routedServiceEndpoint = new("https://default-endpoint-region2.net/");
 
             Documents.Collections.INameValueCollection headers = new Documents.Collections.RequestNameValueCollection();
 
@@ -50,18 +52,14 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Mock<IGlobalEndpointManager> mockedGlobalEndpointManager = new ();
             mockedGlobalEndpointManager
-                .Setup(gem => gem.ResolveServiceEndpoint(It.IsAny<DocumentServiceRequest>()))
-                .Returns(primaryServiceEndpoint);
-            mockedGlobalEndpointManager
-                .Setup(gem => gem.MarkEndpointUnavailableForRead(primaryServiceEndpoint))
-                .Callback((Uri endpoint) => 
-                {
-                    serviceEndpointMarkedUnavailableForRead = endpoint;
-                });
-
+                .SetupSequence(gem => gem.ResolveServiceEndpoint(It.IsAny<DocumentServiceRequest>()))
+                .Returns(primaryServiceEndpoint)
+                .Returns(isValidSubStatusCode ? routedServiceEndpoint : primaryServiceEndpoint);
 
             MetadataRequestThrottleRetryPolicy policy = new (mockedGlobalEndpointManager.Object, 0);
             policy.OnBeforeSendRequest(request);
+
+            Assert.AreEqual(primaryServiceEndpoint, request.RequestContext.LocationEndpointToRoute);
 
             // Act.
             if (useResponseMessage)
@@ -100,19 +98,31 @@ namespace Microsoft.Azure.Cosmos.Tests
                 retryResult = await policy.ShouldRetryAsync(exception, default);
             }
 
+            policy.OnBeforeSendRequest(request);
+
             // Assert.
+            FieldInfo fieldInfo = policy
+                .GetType()
+                .GetField(
+                    name: "retryContext",
+                    bindingAttr: BindingFlags.Instance | BindingFlags.NonPublic);
+
+            MetadataRetryContext retryContext = (MetadataRetryContext)fieldInfo
+                .GetValue(
+                    obj: policy);
+
             Assert.IsNotNull(retryResult);
-            Assert.AreEqual(false, retryResult.ShouldRetry, "ResourceThrottleRetryPolicy should return false since the status code does not indicate the request was throttled.");
             if (isValidSubStatusCode)
             {
-                Assert.IsNotNull(serviceEndpointMarkedUnavailableForRead);
-                Assert.AreEqual(primaryServiceEndpoint, serviceEndpointMarkedUnavailableForRead, "Both the primary endpoint and the endpoint that was marked unavailable should match.");
-
-                mockedGlobalEndpointManager.Verify(gem => gem.MarkEndpointUnavailableForRead(primaryServiceEndpoint), Times.Once);
+                Assert.AreEqual(true, retryResult.ShouldRetry, "MetadataRequestThrottleRetryPolicy should return true since the sub status code indicates to retry the request in the next preferred read region.");
+                Assert.AreEqual(1, retryContext.RetryLocationIndex, "Indicates that the retry location index was incremented.");
+                Assert.AreEqual(routedServiceEndpoint, request.RequestContext.LocationEndpointToRoute);
             }
             else
             {
-                Assert.IsNull(serviceEndpointMarkedUnavailableForRead);
+                Assert.AreEqual(false, retryResult.ShouldRetry, "ResourceThrottleRetryPolicy should return false since the status code does not indicate the request was throttled.");
+                Assert.AreEqual(0, retryContext.RetryLocationIndex, "Indicates that the retry location index remain unchanged.");
+                Assert.AreEqual(primaryServiceEndpoint, request.RequestContext.LocationEndpointToRoute);
             }
         }
     }

@@ -23,6 +23,11 @@ namespace Microsoft.Azure.Cosmos
         private const int DefaultMaxWaitTimeInSeconds = 60;
 
         /// <summary>
+        /// A constant integer defining the default maximum retry count on service unavailable.
+        /// </summary>
+        private const int DefaultMaxServiceUnavailableRetryCount = 1;
+
+        /// <summary>
         /// An instance of <see cref="IGlobalEndpointManager"/>.
         /// </summary>
         private readonly IGlobalEndpointManager globalEndpointManager;
@@ -33,10 +38,20 @@ namespace Microsoft.Azure.Cosmos
         private readonly IDocumentClientRetryPolicy throttlingRetryPolicy;
 
         /// <summary>
+        /// An integer defining the maximum retry count on service unavailable.
+        /// </summary>
+        private readonly int maxServiceUnavailableRetryCount;
+
+        /// <summary>
         /// An instance of <see cref="Uri"/> containing the location endpoint where the partition key
         /// range http request will be sent over.
         /// </summary>
-        private Uri metadataLocationEndpoint;
+        private MetadataRetryContext retryContext;
+
+        /// <summary>
+        /// An integer capturing the current retry count on service unavailable.
+        /// </summary>
+        private int serviceUnavailableRetryCount;
 
         /// <summary>
         /// The constructor to initialize an instance of <see cref="MetadataRequestThrottleRetryPolicy"/>.
@@ -51,9 +66,19 @@ namespace Microsoft.Azure.Cosmos
             int maxRetryWaitTimeInSeconds = DefaultMaxWaitTimeInSeconds)
         {
             this.globalEndpointManager = endpointManager;
+            this.maxServiceUnavailableRetryCount = Math.Max(
+                MetadataRequestThrottleRetryPolicy.DefaultMaxServiceUnavailableRetryCount,
+                this.globalEndpointManager.PreferredLocationCount);
+
             this.throttlingRetryPolicy = new ResourceThrottleRetryPolicy(
                 maxRetryAttemptsOnThrottledRequests,
                 maxRetryWaitTimeInSeconds);
+
+            this.retryContext = new MetadataRetryContext
+            {
+                RetryLocationIndex = 0,
+                RetryRequestOnPreferredLocations = true,
+            };
         }
 
         /// <summary> 
@@ -70,9 +95,9 @@ namespace Microsoft.Azure.Cosmos
                 && cosmosException.StatusCode == HttpStatusCode.ServiceUnavailable
                 && cosmosException.Headers.SubStatusCode == SubStatusCodes.TransportGenerated503)
             {
-                if (!this.MarkEndpointUnavailableForRead())
+                if (this.IncrementRetryIndexOnServiceUnavailableForMetadataRead())
                 {
-                    return Task.FromResult(ShouldRetryResult.NoRetry());
+                    return Task.FromResult(ShouldRetryResult.RetryAfter(TimeSpan.Zero));
                 }
             }
 
@@ -92,9 +117,9 @@ namespace Microsoft.Azure.Cosmos
             if (cosmosResponseMessage?.StatusCode == HttpStatusCode.ServiceUnavailable
                 && cosmosResponseMessage?.Headers?.SubStatusCode == SubStatusCodes.TransportGenerated503)
             {
-                if (!this.MarkEndpointUnavailableForRead())
+                if (this.IncrementRetryIndexOnServiceUnavailableForMetadataRead())
                 {
-                    return Task.FromResult(ShouldRetryResult.NoRetry());
+                    return Task.FromResult(ShouldRetryResult.RetryAfter(TimeSpan.Zero));
                 }
             }
 
@@ -108,26 +133,58 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="request">The request being sent to the service.</param>
         public void OnBeforeSendRequest(DocumentServiceRequest request)
         {
-            this.metadataLocationEndpoint = this.globalEndpointManager.ResolveServiceEndpoint(request);
+            // Clear the previous location-based routing directive.
+            request.RequestContext.ClearRouteToLocation();
+            request.RequestContext.RouteToLocation(
+                this.retryContext.RetryLocationIndex,
+                this.retryContext.RetryRequestOnPreferredLocations);
+
+            Uri metadataLocationEndpoint = this.globalEndpointManager.ResolveServiceEndpoint(request);
+
+            DefaultTrace.TraceInformation("MetadataRequestThrottleRetryPolicy: Routing the metadata request to: {0} for operation type: {1} and resource type: {2}.", metadataLocationEndpoint, request.OperationType, request.ResourceType);
+            request.RequestContext.RouteToLocation(metadataLocationEndpoint);
         }
 
         /// <summary>
         /// Marks an endpoint unavailable in the global endpoint manager, for any future read requests.
         /// </summary>
         /// <returns>A boolean flag indicating if the operation was successful.</returns>
-        private bool MarkEndpointUnavailableForRead()
+        private bool IncrementRetryIndexOnServiceUnavailableForMetadataRead()
         {
-            if (this.metadataLocationEndpoint != null)
+            if (this.serviceUnavailableRetryCount++ >= this.maxServiceUnavailableRetryCount)
             {
-                DefaultTrace.TraceWarning("MetadataRequestThrottleRetryPolicy: Marking the following endpoint unavailable for reads: {0}.", this.metadataLocationEndpoint);
-                this.globalEndpointManager.MarkEndpointUnavailableForRead(this.metadataLocationEndpoint);
-                return true;
-            }
-            else
-            {
-                DefaultTrace.TraceWarning("MetadataRequestThrottleRetryPolicy: location endpoint couldn't be resolved. Skip marking endpoint unavailable for reads.");
+                DefaultTrace.TraceWarning("MetadataRequestThrottleRetryPolicy: Retry count: {0} has exceeded the maximum permitted retry count on service unavailable: {1}.", this.serviceUnavailableRetryCount, this.maxServiceUnavailableRetryCount);
                 return false;
             }
+
+            // Retrying on second PreferredLocations.
+            // RetryCount is used as zero-based index.
+            DefaultTrace.TraceWarning("MetadataRequestThrottleRetryPolicy: Incrementing the metadata retry location index to: {0}.", this.serviceUnavailableRetryCount);
+            this.retryContext = new MetadataRetryContext()
+            {
+                RetryLocationIndex = this.serviceUnavailableRetryCount,
+                RetryRequestOnPreferredLocations = true,
+            };
+
+            return true;
+        }
+
+        /// <summary>
+        /// A helper class containing the required attributes for
+        /// metadata retry context.
+        /// </summary>
+        internal sealed class MetadataRetryContext
+        {
+            /// <summary>
+            /// An integer defining the current retry location index.
+            /// </summary>
+            public int RetryLocationIndex { get; set; }
+
+            /// <summary>
+            /// A boolean flag indicating if the request should retry on
+            /// preferred locations.
+            /// </summary>
+            public bool RetryRequestOnPreferredLocations { get; set; }
         }
     }
 }
