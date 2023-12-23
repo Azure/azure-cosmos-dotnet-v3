@@ -128,13 +128,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 return threadSafeGetAccountHelper.GetAccountPropertiesAsync();
             }
-            //GetAccountPropertiesHelper threadSafeGetAccountHelper = new GetAccountPropertiesHelper(
-            //   defaultEndpoint,
-            //   locations?.GetEnumerator(),
-            //   getDatabaseAccountFn,
-            //   cancellationToken);
-
-            //return threadSafeGetAccountHelper.GetAccountPropertiesAsync();
         }
 
         /// <summary>
