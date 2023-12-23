@@ -120,19 +120,27 @@ namespace Microsoft.Azure.Cosmos.Routing
             Func<Uri, Task<AccountProperties>> getDatabaseAccountFn,
             CancellationToken cancellationToken)
         {
-            GetAccountPropertiesHelper threadSafeGetAccountHelper = new GetAccountPropertiesHelper(
+            using (GetAccountPropertiesHelper threadSafeGetAccountHelper = new GetAccountPropertiesHelper(
                defaultEndpoint,
                locations?.GetEnumerator(),
                getDatabaseAccountFn,
-               cancellationToken);
+               cancellationToken))
+            {
+                return threadSafeGetAccountHelper.GetAccountPropertiesAsync();
+            }
+            //GetAccountPropertiesHelper threadSafeGetAccountHelper = new GetAccountPropertiesHelper(
+            //   defaultEndpoint,
+            //   locations?.GetEnumerator(),
+            //   getDatabaseAccountFn,
+            //   cancellationToken);
 
-            return threadSafeGetAccountHelper.GetAccountPropertiesAsync();
+            //return threadSafeGetAccountHelper.GetAccountPropertiesAsync();
         }
 
         /// <summary>
         /// This is a helper class to 
         /// </summary>
-        private class GetAccountPropertiesHelper
+        private class GetAccountPropertiesHelper : IDisposable
         {
             private readonly CancellationTokenSource CancellationTokenSource;
             private readonly Uri DefaultEndpoint;
@@ -141,6 +149,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             private readonly List<Exception> TransientExceptions = new List<Exception>();
             private AccountProperties? AccountProperties = null;
             private Exception? NonRetriableException = null;
+            private bool isDisposed = false;
 
             public GetAccountPropertiesHelper(
                 Uri defaultEndpoint,
@@ -345,6 +354,16 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
 
                 return false;
+            }
+
+            public void Dispose()
+            {
+                if (!this.isDisposed)
+                {
+                    this.CancellationTokenSource?.Cancel();
+                    this.CancellationTokenSource?.Dispose();
+                    this.isDisposed = true;
+                }
             }
         }
 
