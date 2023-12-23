@@ -135,8 +135,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
             List<Task<ResponseMessage>> tasks = this.RequestTaskBuilder(requestMessages, cancellationToken, parallelRequestCancellationToken);
             Task<ResponseMessage> response = await Task.WhenAny(tasks);
-            cancellationTokenSource.Cancel();
             
+            cancellationTokenSource.Cancel();
+            cancellationTokenSource.Dispose();
+
             return await response;
         }
 
