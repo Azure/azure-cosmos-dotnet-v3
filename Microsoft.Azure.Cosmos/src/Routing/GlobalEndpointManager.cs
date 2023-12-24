@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// The 2 additional tasks will go through all the preferred regions in parallel
         /// It will return the first success and stop the parallel tasks.
         /// </summary>
-        public static Task<AccountProperties> GetDatabaseAccountFromAnyLocationsAsync(
+        public static async Task<AccountProperties> GetDatabaseAccountFromAnyLocationsAsync(
             Uri defaultEndpoint,
             IList<string>? locations,
             Func<Uri, Task<AccountProperties>> getDatabaseAccountFn,
@@ -126,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                getDatabaseAccountFn,
                cancellationToken))
             {
-                return threadSafeGetAccountHelper.GetAccountPropertiesAsync();
+                return await threadSafeGetAccountHelper.GetAccountPropertiesAsync();
             }
         }
 
