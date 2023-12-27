@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
-    internal abstract class CosmosMessageHeadersInternal : ICloneable
+    internal abstract class CosmosMessageHeadersInternal 
     {
         public virtual string Authorization
         {
@@ -292,10 +292,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.Set(key, collection[key]);
             }
-        }
-        public object Clone()
-        {
-            return this.MemberwiseClone();
         }
     }
 }
