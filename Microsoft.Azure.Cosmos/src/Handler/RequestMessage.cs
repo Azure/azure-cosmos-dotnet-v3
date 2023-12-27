@@ -317,24 +317,51 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>a cloned copy of the RequestMessage</returns>
         public RequestMessage Clone()
         {
-            return new RequestMessage(
-                this.Method, 
-                this.RequestUriString, 
-                this.Trace, 
-                this.Headers.Clone(), 
-                this.Properties.ToDictionary(entry => entry.Key, entry => entry.Value))
+            RequestMessage clone = new RequestMessage(
+                this.Method,
+                this.RequestUriString,
+                this.Trace,
+                this.Headers.Clone(),
+                this.Properties.ToDictionary(entry => entry.Key, entry => entry.Value));
+            
+            if (this.Content != null)
             {
-               Content = this.Content,
-               RequestOptions = this.RequestOptions.ShallowCopy(),
-               ResourceType = this.ResourceType,
-               OperationType = this.OperationType,
-               PartitionKeyRangeId = this.PartitionKeyRangeId,
-               UseGatewayMode = this.UseGatewayMode,
-               DocumentServiceRequest = this.DocumentServiceRequest.Clone(),
-               OnBeforeSendRequestActions = this.OnBeforeSendRequestActions,
-               ContainerId = this.ContainerId,
-               DatabaseId = this.DatabaseId,
-            };
+                clone.Content = this.Content;
+            }
+
+            if (this.RequestOptions != null)
+            {
+                clone.RequestOptions = this.RequestOptions.ShallowCopy();
+            }
+
+            clone.ResourceType = this.ResourceType;
+
+            clone.OperationType = this.OperationType;
+
+            if (this.PartitionKeyRangeId != null)
+            {
+                clone.PartitionKeyRangeId = String.IsNullOrEmpty(this.PartitionKeyRangeId.CollectionRid)
+                    ? new PartitionKeyRangeIdentity(this.PartitionKeyRangeId.PartitionKeyRangeId)
+                    : new PartitionKeyRangeIdentity(this.PartitionKeyRangeId.CollectionRid, this.PartitionKeyRangeId.PartitionKeyRangeId);
+            }
+
+            clone.UseGatewayMode = this.UseGatewayMode;
+
+            if (this.DocumentServiceRequest != null)
+            {
+                clone.DocumentServiceRequest = this.DocumentServiceRequest.Clone();
+            }
+
+            if (this.OnBeforeSendRequestActions != null)
+            {
+                clone.OnBeforeSendRequestActions = this.OnBeforeSendRequestActions;
+            }
+
+            clone.ContainerId = this.ContainerId;
+
+            clone.DatabaseId = this.DatabaseId;
+
+            return clone;
         }
 
         private static Dictionary<string, object> CreateDictionary()

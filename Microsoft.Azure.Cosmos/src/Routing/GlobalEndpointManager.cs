@@ -93,7 +93,10 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public ReadOnlyCollection<Uri> AccountReadEndpoints => this.locationCache.AccountReadEndpoints;
 
-        public ReadOnlyCollection<string> AvailableReadLocations => this.locationCache.GetAvailableReadLocations();
+        public ReadOnlyCollection<string> GetAvailableReadLocations()
+        {
+            return this.locationCache.GetAvailableReadLocations();
+        }
 
         public ReadOnlyCollection<Uri> WriteEndpoints => this.locationCache.WriteEndpoints;
 
@@ -107,6 +110,12 @@ namespace Microsoft.Azure.Cosmos.Routing
         public Uri GetHubUri()
         {
             return this.locationCache.GetHubUri();
+        }
+
+        //Helps test multiregion scenarios on emulator
+        public void UpdateLocationCache(AccountProperties properties)
+        {
+            this.locationCache.OnDatabaseAccountRead(properties);
         }
 
         /// <summary>
@@ -585,6 +594,28 @@ namespace Microsoft.Azure.Cosmos.Routing
             TimeSpan timeSinceLastRefresh = DateTime.UtcNow - this.LastBackgroundRefreshUtc;
             return (this.isAccountRefreshInProgress || this.MinTimeBetweenAccountRefresh > timeSinceLastRefresh)
                 && !forceRefresh;
+        }
+
+        /// <summary>
+        /// Used for unit testing
+        /// </summary>
+        public GlobalEndpointManager(
+            ReadOnlyCollection<string> preferredLocations,
+            Uri serviceEndpoint,
+            IDocumentClientInternal owner,
+            ConnectionPolicy connectionPolicy)
+        {
+            this.locationCache = new LocationCache(
+                preferredLocations,
+                serviceEndpoint,
+                connectionPolicy.EnableEndpointDiscovery,
+                connectionPolicy.MaxConnectionLimit,
+                connectionPolicy.UseMultipleWriteLocations);
+
+            this.owner = owner;
+            this.defaultEndpoint = owner.ServiceEndpoint;
+            this.connectionPolicy = connectionPolicy;
+
         }
     }
 }

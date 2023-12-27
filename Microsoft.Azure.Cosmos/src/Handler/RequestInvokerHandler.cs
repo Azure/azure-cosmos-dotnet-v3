@@ -28,6 +28,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         private readonly CosmosClient client;
         private readonly Cosmos.ConsistencyLevel? RequestedClientConsistencyLevel;
+        private GlobalEndpointManager globalEndpointManager;
 
         private bool? IsLocalQuorumConsistency;
         private Cosmos.ConsistencyLevel? AccountConsistencyLevel = null;
@@ -37,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             Cosmos.ConsistencyLevel? requestedClientConsistencyLevel)
         {
             this.client = client;
-            this.RequestedClientConsistencyLevel = requestedClientConsistencyLevel;       
+            this.RequestedClientConsistencyLevel = requestedClientConsistencyLevel;
         }
 
         public override async Task<ResponseMessage> SendAsync(
@@ -79,22 +80,22 @@ namespace Microsoft.Azure.Cosmos.Handlers
             return await base.SendAsync(request, cancellationToken);
         }
 
-        private bool ShouldSpeculate(RequestMessage request)
+        internal bool ShouldSpeculate(RequestMessage request)
         {
             //No availability strategy options
-            if (request.RequestOptions.AvailabilityStrategyOptions == null && this.client.ClientOptions.AvailabilityStrategyOptions == null)
+            if (request.RequestOptions?.AvailabilityStrategyOptions == null && this.client.ClientOptions.AvailabilityStrategyOptions == null)
             {
                 return false;
             }
 
             //Request level availability strategy options override client level
-            if (request.RequestOptions.AvailabilityStrategyOptions != null && !request.RequestOptions.AvailabilityStrategyOptions.Enabled)
+            if (request.RequestOptions?.AvailabilityStrategyOptions != null && !request.RequestOptions.AvailabilityStrategyOptions.Enabled)
             {
                 return false;
             }
             
             //Client level availability strategy options are not enabled + no request level availability strategy options
-            if (request.RequestOptions.AvailabilityStrategyOptions == null && !this.client.ClientOptions.AvailabilityStrategyOptions.Enabled)
+            if (request.RequestOptions?.AvailabilityStrategyOptions == null && !this.client.ClientOptions.AvailabilityStrategyOptions.Enabled)
             {
                 return false;
             }
@@ -106,9 +107,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             //check to see if it is a not a read-only request
-            if (!(request.OperationType != OperationType.Read && request.OperationType != OperationType.ReadFeed && request.OperationType != OperationType.Head 
-                && request.OperationType != OperationType.HeadFeed && request.OperationType != OperationType.Query && request.OperationType != OperationType.SqlQuery)
-                && request.OperationType != OperationType.QueryPlan)
+            if (!OperationTypeExtensions.IsReadOperation(request.OperationType))
             {
                 return false;
             }
@@ -116,20 +115,42 @@ namespace Microsoft.Azure.Cosmos.Handlers
             return true;
         }
 
-        private async Task<ResponseMessage> SendWithAvailabilityStrategyAsync(RequestMessage request, CancellationToken cancellationToken)
+        internal async Task<ResponseMessage> SendWithAvailabilityStrategyAsync(RequestMessage request, CancellationToken cancellationToken)
         {
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             CancellationToken parallelRequestCancellationToken = cancellationTokenSource.Token;
 
             List<RequestMessage> requestMessages = new List<RequestMessage> { request };
-            IReadOnlyCollection<string> availableRegions = this.client.DocumentClient.GlobalEndpointManager.AvailableReadLocations;
+            IReadOnlyCollection<string> availableRegions = 
+                this.globalEndpointManager != null 
+                ? this.globalEndpointManager.GetAvailableReadLocations() 
+                : this.client.DocumentClient.GlobalEndpointManager.GetAvailableReadLocations();
             
             for (int i = 1; i < availableRegions.Count; i++)
             {
                 RequestMessage clonedRequest = request.Clone();
-                clonedRequest.RequestOptions.ExcludeRegions = request.RequestOptions.ExcludeRegions == null
-                    ? availableRegions.Skip(i).ToList()
-                    : availableRegions.Skip(i).Except(request.RequestOptions.ExcludeRegions).ToList();
+
+                if (clonedRequest.RequestOptions == null)
+                {
+                    clonedRequest.RequestOptions = new RequestOptions()
+                    { 
+                        ExcludeRegions = availableRegions
+                        .Where(s => s != availableRegions.ElementAt(i)).ToList()
+                    };
+                }
+                else
+                {
+                    if (clonedRequest.RequestOptions.ExcludeRegions == null)
+                    {
+                        clonedRequest.RequestOptions.ExcludeRegions = availableRegions
+                            .Where(s => s != availableRegions.ElementAt(i)).ToList();
+                    }
+                    else
+                    {
+                        clonedRequest.RequestOptions.ExcludeRegions
+                            .AddRange(availableRegions.Where(s => s != availableRegions.ElementAt(i)));
+                    }
+                }
 
                 requestMessages.Add(clonedRequest);
             }
@@ -147,11 +168,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
             CancellationToken cancellationToken, 
             CancellationToken parallelRequestCancellationToken)
         {
-            TimeSpan threshold = requests[0].RequestOptions.AvailabilityStrategyOptions == null
+            TimeSpan threshold = requests[0].RequestOptions?.AvailabilityStrategyOptions != null
                 ? requests[0].RequestOptions.AvailabilityStrategyOptions.Threshold 
                 : this.client.ClientOptions.AvailabilityStrategyOptions.Threshold;
 
-            int step = requests[0].RequestOptions.AvailabilityStrategyOptions == null
+            int step = requests[0].RequestOptions?.AvailabilityStrategyOptions != null
                 ? requests[0].RequestOptions.AvailabilityStrategyOptions.Step.Milliseconds
                 : this.client.ClientOptions.AvailabilityStrategyOptions.Step.Milliseconds;
 
@@ -160,7 +181,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 if (i == 0)
                 {
-                    tasks.Add(base.SendAsync(requests[i], parallelRequestCancellationToken));
+                    tasks.Add(this.BaseSendAsync(requests[i], parallelRequestCancellationToken));
                 }
                 else
                 {
@@ -179,6 +200,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
             CancellationToken parallelRequestCancellationToken)
         {
             await Task.Delay(delay, parallelRequestCancellationToken);
+            return await this.BaseSendAsync(request, cancellationToken);
+        }
+
+        internal virtual async Task<ResponseMessage> BaseSendAsync(
+            RequestMessage request,
+            CancellationToken cancellationToken)
+        {
             return await base.SendAsync(request, cancellationToken);
         }
 
@@ -613,6 +641,15 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             return feedRange;
+        }
+
+        /// <summary>
+        /// Used for unit testing only.
+        /// </summary>
+        /// <param name="globalEndpointManager"></param>
+        internal void SetGlobalEndpointManager(GlobalEndpointManager globalEndpointManager)
+        {
+            this.globalEndpointManager = globalEndpointManager;
         }
     }
 }
