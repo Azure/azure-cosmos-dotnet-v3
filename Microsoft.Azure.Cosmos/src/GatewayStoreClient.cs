@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
+    using System.Linq;
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Text;
@@ -150,8 +151,26 @@ namespace Microsoft.Azure.Cosmos
             // If service rejects the initial payload like header is to large it will return an HTML error instead of JSON.
             if (string.Equals(responseMessage.Content?.Headers?.ContentType?.MediaType, "application/json", StringComparison.OrdinalIgnoreCase))
             {
+                // For more information, see https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4162.
+                if (await GatewayStoreClient.IsJsonHTTPResponseFromGatewayInvalidAsync(responseMessage))
+                {
+                    return new DocumentClientException(
+                        new Error
+                        {
+                            Code = responseMessage.StatusCode.ToString(),
+                            Message = "Invalid JSON HTTP response from Gateway."
+                        },
+                        responseMessage.Headers,
+                        responseMessage.StatusCode)
+                    {
+                        StatusDescription = responseMessage.ReasonPhrase,
+                        ResourceAddress = resourceIdOrFullName,
+                        RequestStatistics = requestStatistics
+                    };
+                }
+
                 Stream readStream = await responseMessage.Content.ReadAsStreamAsync();
-                Error error = Documents.Resource.LoadFrom<Error>(readStream);
+                Error error = Resource.LoadFrom<Error>(readStream);
                 return new DocumentClientException(
                     error,
                     responseMessage.Headers,
@@ -195,6 +214,19 @@ namespace Microsoft.Azure.Cosmos
                     RequestStatistics = requestStatistics
                 };
             }
+        }
+
+        /// <summary>
+        /// Checking if exception response (deserializable Error object) is valid based on the content length.
+        /// For more information, see <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4162."/>.
+        /// </summary>
+        /// <param name="responseMessage"></param>
+        private static async Task<bool> IsJsonHTTPResponseFromGatewayInvalidAsync(HttpResponseMessage responseMessage)
+        {
+            string readString = await responseMessage.Content.ReadAsStringAsync();
+
+            return responseMessage.Content?.Headers?.ContentLength == 0 ||
+                readString.Trim().Length == 0;
         }
 
         internal static bool IsAllowedRequestHeader(string headerName)
