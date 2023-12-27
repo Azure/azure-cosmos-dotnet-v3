@@ -142,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             private readonly List<Exception> TransientExceptions = new List<Exception>();
             private AccountProperties? AccountProperties = null;
             private Exception? NonRetriableException = null;
-            private bool isDisposed = false;
+            private int disposeCounter = 0;
 
             public GetAccountPropertiesHelper(
                 Uri defaultEndpoint,
@@ -351,11 +351,14 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             public void Dispose()
             {
-                if (!this.isDisposed)
+                lock (this)
                 {
-                    this.CancellationTokenSource?.Cancel();
-                    this.CancellationTokenSource?.Dispose();
-                    this.isDisposed = true;
+                    if (this.disposeCounter == 0)
+                    {
+                        Interlocked.Increment(ref this.disposeCounter);
+                        this.CancellationTokenSource?.Cancel();
+                        this.CancellationTokenSource?.Dispose();
+                    }
                 }
             }
         }
