@@ -17,6 +17,7 @@
         private const string PartitionKeyField = "key";
         private const string NumberField = "numberField";
         private const string NullField = "nullField";
+        private const string ClientDisableOptimisticDirectExecution = "clientDisableOptimisticDirectExecution";
 
         private static class PageSizeOptions
         {
@@ -538,6 +539,22 @@
                 documents,
                 (container, documents) => RunFailingTests(container, invalidQueries),
                 "/" + PartitionKeyField);
+        }
+
+        //TODO: Remove Ignore flag once emulator is updated to 1101
+        [Ignore]
+        [TestMethod]
+        public async Task TestClientDisableOdeDefaultValue()
+        {
+            string authKey = Utils.ConfigurationManager.AppSettings["MasterKey"];
+            string endpoint = Utils.ConfigurationManager.AppSettings["GatewayEndpoint"];
+
+            CosmosClient client = new CosmosClient($"AccountEndpoint={endpoint};AccountKey={authKey}");
+            AccountProperties properties = await client.ReadAccountAsync();
+
+            bool success = bool.TryParse(properties.QueryEngineConfiguration[ClientDisableOptimisticDirectExecution].ToString(), out bool clientDisablOde);
+            Assert.IsTrue(success, $"Parsing must succeed. Value supplied '{ClientDisableOptimisticDirectExecution}'");
+            Assert.IsFalse(clientDisablOde);
         }
 
         private static async Task RunTests(IEnumerable<DirectExecutionTestCase> testCases, Container container)
