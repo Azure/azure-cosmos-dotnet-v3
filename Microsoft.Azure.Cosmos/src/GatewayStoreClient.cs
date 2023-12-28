@@ -170,7 +170,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 Stream readStream = await responseMessage.Content.ReadAsStreamAsync();
-                Error error = Resource.LoadFrom<Error>(readStream);
+                Error error = Documents.Resource.LoadFrom<Error>(readStream);
                 return new DocumentClientException(
                     error,
                     responseMessage.Headers,
