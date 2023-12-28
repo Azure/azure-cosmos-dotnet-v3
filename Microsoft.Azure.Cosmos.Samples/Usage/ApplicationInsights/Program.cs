@@ -4,19 +4,18 @@
     using System.Threading.Tasks;
     using Newtonsoft.Json;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Extensions.Logging;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.ApplicationInsights;
     using Microsoft.ApplicationInsights.WorkerService;
-    using Microsoft.Extensions.Logging.ApplicationInsights;
+    using Microsoft.ApplicationInsights.DataContracts;
 
     internal class Program
     {
         private static readonly string databaseName = "samples";
         private static readonly string containerName = "ai-sample";
 
-        private static TelemetryClient _telemetryClient;
+        private static TelemetryClient telemetryClient;
 
         static async Task Main()
         {
@@ -49,32 +48,54 @@
                 services.AddApplicationInsightsTelemetryWorkerService((ApplicationInsightsServiceOptions options) => options.ConnectionString = aiConnectionString);
 
                 IServiceProvider serviceProvider = services.BuildServiceProvider();
-                _telemetryClient = serviceProvider.GetRequiredService<TelemetryClient>();
+                telemetryClient = serviceProvider.GetRequiredService<TelemetryClient>();
                 // </SetUpApplicationInsights>
 
-                CosmosClientOptions options = new CosmosClientOptions()
-                {
-                    IsDistributedTracingEnabled = true // Defaults to true, set to false to disable
-                };
-                using (CosmosClient client = new CosmosClient(endpoint, authKey, options))
-                {
-                    Console.WriteLine($"Getting container reference for {containerName}.");
+                var infoOperation = telemetryClient.StartOperation<DependencyTelemetry>(".Net SDK : ApplicationInsights SDK"); // Application level activity to track the entire execution of the application
 
-                    ContainerProperties properties = new ContainerProperties(containerName, partitionKeyPath: "/id");
+                var gops = telemetryClient.StartOperation<DependencyTelemetry>("GATEWAY MODE"); // Activity to track the execution of the gateway mode
+                await Program.RunCosmosDbOperation(ConnectionMode.Gateway, endpoint, authKey);
+                telemetryClient.StopOperation(gops);
 
-                    await client.CreateDatabaseIfNotExistsAsync(databaseName);
-                    Container container = await client.GetDatabase(databaseName).CreateContainerIfNotExistsAsync(properties);
+                var dops = telemetryClient.StartOperation<DependencyTelemetry>("DIRECT MODE"); // Activity to track the execution of the direct mode
+                await Program.RunCosmosDbOperation(ConnectionMode.Direct, endpoint, authKey); 
+                telemetryClient.StopOperation(dops);
 
-                    await Program.RunCrudDemo(container);
-                }
+                telemetryClient.StopOperation(infoOperation);
             }
             finally
             {
                 // Explicitly calling Flush() followed by sleep is required for Application Insights logging in console apps to ensure that telemetry is sent to the back-end even if application terminates.
-                _telemetryClient?.Flush();
+                telemetryClient?.Flush();
                 await Task.Delay(5000);
 
                 Console.WriteLine("End of demo.");
+            }
+        }
+
+        private static async Task RunCosmosDbOperation(ConnectionMode connMode, string endpoint, string authKey)
+        {
+            // <EnableDistributedTracing>
+            CosmosClientOptions options = new CosmosClientOptions()
+            {
+                CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions()
+                {
+                    DisableDistributedTracing = false
+                },
+                ConnectionMode = connMode
+            };
+            // </EnableDistributedTracing>
+
+            using (CosmosClient client = new CosmosClient(endpoint, authKey, options))
+            {
+                Console.WriteLine($"Getting container reference for {containerName}.");
+
+                ContainerProperties properties = new ContainerProperties(containerName, partitionKeyPath: "/id");
+
+                await client.CreateDatabaseIfNotExistsAsync(databaseName);
+                Container container = await client.GetDatabase(databaseName).CreateContainerIfNotExistsAsync(properties);
+
+                await Program.RunCrudDemo(container);
             }
         }
 
