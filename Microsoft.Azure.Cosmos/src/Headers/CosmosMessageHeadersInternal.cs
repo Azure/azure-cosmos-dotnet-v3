@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
-    internal abstract class CosmosMessageHeadersInternal 
+    internal abstract class CosmosMessageHeadersInternal
     {
         public virtual string Authorization
         {
