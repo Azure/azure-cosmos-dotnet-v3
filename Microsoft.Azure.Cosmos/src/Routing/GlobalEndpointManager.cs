@@ -595,27 +595,5 @@ namespace Microsoft.Azure.Cosmos.Routing
             return (this.isAccountRefreshInProgress || this.MinTimeBetweenAccountRefresh > timeSinceLastRefresh)
                 && !forceRefresh;
         }
-
-        /// <summary>
-        /// Used for unit testing
-        /// </summary>
-        public GlobalEndpointManager(
-            ReadOnlyCollection<string> preferredLocations,
-            Uri serviceEndpoint,
-            IDocumentClientInternal owner,
-            ConnectionPolicy connectionPolicy)
-        {
-            this.locationCache = new LocationCache(
-                preferredLocations,
-                serviceEndpoint,
-                connectionPolicy.EnableEndpointDiscovery,
-                connectionPolicy.MaxConnectionLimit,
-                connectionPolicy.UseMultipleWriteLocations);
-
-            this.owner = owner;
-            this.defaultEndpoint = owner.ServiceEndpoint;
-            this.connectionPolicy = connectionPolicy;
-
-        }
     }
 }
