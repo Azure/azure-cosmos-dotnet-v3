@@ -351,14 +351,10 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             public void Dispose()
             {
-                lock (this)
+                if (Interlocked.Increment(ref this.disposeCounter) == 1)
                 {
-                    if (this.disposeCounter == 0)
-                    {
-                        Interlocked.Increment(ref this.disposeCounter);
-                        this.CancellationTokenSource?.Cancel();
-                        this.CancellationTokenSource?.Dispose();
-                    }
+                    this.CancellationTokenSource?.Cancel();
+                    this.CancellationTokenSource?.Dispose();
                 }
             }
         }
