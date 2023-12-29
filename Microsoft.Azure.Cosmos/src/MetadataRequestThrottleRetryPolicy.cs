@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Marks an endpoint unavailable in the global endpoint manager, for any future read requests.
+        /// Increments the location index when a service unavailable exception ocurrs, for any future read requests.
         /// </summary>
         /// <returns>A boolean flag indicating if the operation was successful.</returns>
         private bool IncrementRetryIndexOnServiceUnavailableForMetadataRead()

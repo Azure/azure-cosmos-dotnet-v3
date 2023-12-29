@@ -314,6 +314,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                             childTrace.AddDatum("Exception Message", ex.Message);
                             throw;
                         }
+                        catch (CosmosException ce)
+                        {
+                            childTrace.AddDatum("Exception Message", ce.Message);
+                            throw;
+                        }
                     }
                 }
             }
