@@ -29,6 +29,13 @@ namespace Microsoft.Azure.Cosmos
                 return HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout;
             }
 
+            //Get Partition Key Range Requests
+            if (documentServiceRequest.ResourceType == ResourceType.PartitionKeyRange
+                && documentServiceRequest.OperationType == OperationType.ReadFeed)
+            {
+                return HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout;
+            }
+
             //Get Addresses Requests
             if (documentServiceRequest.ResourceType == ResourceType.Address)
             {
