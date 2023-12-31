@@ -658,6 +658,10 @@ namespace Microsoft.Azure.Cosmos.Fluent
             return this;
         }
 
+        /// <summary>
+        /// Enables SDK to inject fault. Used for testing applications.  
+        /// </summary>
+        /// <param name="chaosInterceptorFactory"></param>
         internal CosmosClientBuilder WithFaultInjection(IChaosInterceptorFactory chaosInterceptorFactory)
         {
             this.clientOptions.ChaosInterceptorFactory = chaosInterceptorFactory;

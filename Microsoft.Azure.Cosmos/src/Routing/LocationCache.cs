@@ -226,16 +226,26 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         }
 
+        /// <summary>
+        /// Gets the default endpoint of the account
+        /// </summary>
+        /// <returns>the default endpoint.</returns>
         public Uri GetDefaultEndpoint()
         {
             return this.defaultEndpoint;
         }
 
+        /// <summary>
+        /// Gets the mapping of available write region names to the respective endpoints
+        /// </summary>
         public ReadOnlyDictionary<string, Uri> GetAvailableWriteEndpointsByLocation()
         {
             return this.locationInfo.AvailableWriteEndpointByLocation;
         }
 
+        /// <summary>
+        /// Gets the mapping of available read region names to the respective endpoints
+        /// </summary>
         public ReadOnlyDictionary<string, Uri> GetAvailableReadEndpointsByLocation()
         {
             return this.locationInfo.AvailableReadEndpointByLocation;

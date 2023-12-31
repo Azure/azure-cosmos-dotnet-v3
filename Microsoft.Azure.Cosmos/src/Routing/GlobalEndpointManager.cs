@@ -353,16 +353,26 @@ namespace Microsoft.Azure.Cosmos.Routing
             return this.locationCache.ResolveServiceEndpoint(request);
         }
 
+        /// <summary>
+        /// Gets the default endpoint of the account
+        /// </summary>
+        /// <returns>the default endpoint.</returns>
         public Uri GetDefaultEndpoint()
         {
             return this.locationCache.GetDefaultEndpoint();
         }
 
+        /// <summary>
+        /// Gets the mapping of available write region names to the respective endpoints
+        /// </summary>
         public ReadOnlyDictionary<string, Uri> GetAvailableWriteEndpointsByLocation()
         {
             return this.locationCache.GetAvailableWriteEndpointsByLocation();
         }
 
+        /// <summary>
+        /// Gets the mapping of available read region names to the respective endpoints
+        /// </summary>
         public ReadOnlyDictionary<string, Uri> GetAvailableReadEndpointsByLocation()
         {
             return this.locationCache.GetAvailableReadEndpointsByLocation();
