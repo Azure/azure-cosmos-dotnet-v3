@@ -89,12 +89,11 @@
             };
             connectionPolicy.PreferredLocations.Add("East US");
             connectionPolicy.PreferredLocations.Add("West US");
-
-            GlobalEndpointManager globalEndpointManager = new GlobalEndpointManager(mockedClient.Object, connectionPolicy);
-            globalEndpointManager.UpdateLocationCache(accountProperties);
             
             ResponseMessage responseMessageOK = new ResponseMessage(HttpStatusCode.OK);
             ResponseMessage responseMessageServiceUnavailable = new ResponseMessage(HttpStatusCode.ServiceUnavailable);
+
+            this.client.DocumentClient.GlobalEndpointManager.UpdateLocationCache(accountProperties);
 
             Mock<RequestInvokerHandler> mockRequestInvokerHandler = new Mock<RequestInvokerHandler>(
                 this.client,
@@ -118,7 +117,6 @@
 
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "\"1\"");
 
-            mockRequestInvokerHandler.Object.SetGlobalEndpointManager(globalEndpointManager);
             CancellationToken cancellationToken = new CancellationToken();
             ResponseMessage rm = await mockRequestInvokerHandler.Object
                 .SendWithAvailabilityStrategyAsync(requestMessage, cancellationToken);
@@ -167,11 +165,10 @@
             connectionPolicy.PreferredLocations.Add("East US");
             connectionPolicy.PreferredLocations.Add("West US");
 
-            GlobalEndpointManager globalEndpointManager = new GlobalEndpointManager(mockedClient.Object, connectionPolicy);
-            globalEndpointManager.UpdateLocationCache(accountProperties);
-
             ResponseMessage responseMessageOK = new ResponseMessage(HttpStatusCode.OK);
             ResponseMessage responseMessageServiceUnavailable = new ResponseMessage(HttpStatusCode.ServiceUnavailable);
+
+            this.client.DocumentClient.GlobalEndpointManager.UpdateLocationCache(accountProperties);
 
             Mock<RequestInvokerHandler> mockRequestInvokerHandler = new Mock<RequestInvokerHandler>(
                 this.client,
@@ -195,7 +192,6 @@
 
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "\"1\"");
 
-            mockRequestInvokerHandler.Object.SetGlobalEndpointManager(globalEndpointManager);
             CancellationToken cancellationToken = new CancellationToken();
             ResponseMessage rm = await mockRequestInvokerHandler.Object
                 .SendWithAvailabilityStrategyAsync(requestMessage, cancellationToken);
@@ -244,11 +240,10 @@
             connectionPolicy.PreferredLocations.Add("East US");
             connectionPolicy.PreferredLocations.Add("West US");
 
-            GlobalEndpointManager globalEndpointManager = new GlobalEndpointManager(mockedClient.Object, connectionPolicy);
-            globalEndpointManager.UpdateLocationCache(accountProperties);
-
             ResponseMessage responseMessageOK = new ResponseMessage(HttpStatusCode.OK);
             ResponseMessage responseMessageServiceUnavailable = new ResponseMessage(HttpStatusCode.ServiceUnavailable);
+
+            this.client.DocumentClient.GlobalEndpointManager.UpdateLocationCache(accountProperties);
 
             Mock<RequestInvokerHandler> mockRequestInvokerHandler = new Mock<RequestInvokerHandler>(
                 this.client,
@@ -257,9 +252,9 @@
                 x.BaseSendAsync(
                     It.IsAny<RequestMessage>(),
                     It.IsAny<CancellationToken>()))
-                .Returns(Task.Delay(TimeSpan.FromMilliseconds(125))
+                .Returns(Task.Delay(TimeSpan.FromMilliseconds(115))
                     .ContinueWith(_ => responseMessageOK))
-                .Returns(Task.Delay(TimeSpan.FromMilliseconds(100))
+                .Returns(Task.Delay(TimeSpan.FromMilliseconds(125))
                 .ContinueWith( _ => responseMessageServiceUnavailable));
 
             RequestMessage requestMessage = new RequestMessage(
@@ -274,7 +269,6 @@
 
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "\"1\"");
 
-            mockRequestInvokerHandler.Object.SetGlobalEndpointManager(globalEndpointManager);
             CancellationToken cancellationToken = new CancellationToken();
             ResponseMessage rm = await mockRequestInvokerHandler.Object
                 .SendWithAvailabilityStrategyAsync(requestMessage, cancellationToken);
@@ -329,12 +323,11 @@
             connectionPolicy.PreferredLocations.Add("West US");
             connectionPolicy.PreferredLocations.Add("South Central US");
 
-            GlobalEndpointManager globalEndpointManager = new GlobalEndpointManager(mockedClient.Object, connectionPolicy);
-            globalEndpointManager.UpdateLocationCache(accountProperties);
-
             ResponseMessage responseMessageOK = new ResponseMessage(HttpStatusCode.OK);
             ResponseMessage responseMessageServiceUnavailable = new ResponseMessage(HttpStatusCode.ServiceUnavailable);
             ResponseMessage responseMessageBadRequest = new ResponseMessage(HttpStatusCode.BadRequest);
+
+            this.client.DocumentClient.GlobalEndpointManager.UpdateLocationCache(accountProperties);
 
             Mock<RequestInvokerHandler> mockRequestInvokerHandler = new Mock<RequestInvokerHandler>(
                 this.client,
@@ -361,7 +354,6 @@
 
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "\"1\"");
 
-            mockRequestInvokerHandler.Object.SetGlobalEndpointManager(globalEndpointManager);
             CancellationToken cancellationToken = new CancellationToken();
             ResponseMessage rm = await mockRequestInvokerHandler.Object
                 .SendWithAvailabilityStrategyAsync(requestMessage, cancellationToken);

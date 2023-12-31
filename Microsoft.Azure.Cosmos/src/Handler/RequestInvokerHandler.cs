@@ -28,7 +28,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         private readonly CosmosClient client;
         private readonly Cosmos.ConsistencyLevel? RequestedClientConsistencyLevel;
-        private GlobalEndpointManager globalEndpointManager;
 
         private bool? IsLocalQuorumConsistency;
         private Cosmos.ConsistencyLevel? AccountConsistencyLevel = null;
@@ -77,9 +76,17 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 return await this.SendWithAvailabilityStrategyAsync(request, cancellationToken);
             }
+
             return await base.SendAsync(request, cancellationToken);
         }
 
+        /// <summary>
+        /// This method determines if the request should be sent with a speculative availability strategy.
+        /// This first checks to see if there is a vailid availability strategy to use, 
+        /// then checks to see if the request is a read-only request on a document request.
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns>whether the request should be a speculative request.</returns>
         internal bool ShouldSpeculate(RequestMessage request)
         {
             //No availability strategy options
@@ -117,50 +124,47 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         internal async Task<ResponseMessage> SendWithAvailabilityStrategyAsync(RequestMessage request, CancellationToken cancellationToken)
         {
-            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-            CancellationToken parallelRequestCancellationToken = cancellationTokenSource.Token;
-
-            List<RequestMessage> requestMessages = new List<RequestMessage> { request };
-            IReadOnlyCollection<string> availableRegions = 
-                this.globalEndpointManager != null 
-                ? this.globalEndpointManager.GetAvailableReadLocations() 
-                : this.client.DocumentClient.GlobalEndpointManager.GetAvailableReadLocations();
-            
-            for (int i = 1; i < availableRegions.Count; i++)
+            using (CancellationTokenSource cancellationTokenSource = new ())
             {
-                RequestMessage clonedRequest = request.Clone();
+                CancellationToken parallelRequestCancellationToken = cancellationTokenSource.Token;
 
-                if (clonedRequest.RequestOptions == null)
+                List<RequestMessage> requestMessages = new List<RequestMessage> { request };
+                IReadOnlyCollection<string> availableRegions = this.client.DocumentClient.GlobalEndpointManager.GetAvailableReadLocations();
+
+                for (int i = 1; i < availableRegions.Count; i++)
                 {
-                    clonedRequest.RequestOptions = new RequestOptions()
-                    { 
-                        ExcludeRegions = availableRegions
-                        .Where(s => s != availableRegions.ElementAt(i)).ToList()
-                    };
-                }
-                else
-                {
-                    if (clonedRequest.RequestOptions.ExcludeRegions == null)
+                    RequestMessage clonedRequest = request.Clone();
+
+                    if (clonedRequest.RequestOptions == null)
                     {
-                        clonedRequest.RequestOptions.ExcludeRegions = availableRegions
-                            .Where(s => s != availableRegions.ElementAt(i)).ToList();
+                        clonedRequest.RequestOptions = new RequestOptions()
+                        {
+                            ExcludeRegions = availableRegions
+                            .Where(s => s != availableRegions.ElementAt(i)).ToList()
+                        };
                     }
                     else
                     {
-                        clonedRequest.RequestOptions.ExcludeRegions
-                            .AddRange(availableRegions.Where(s => s != availableRegions.ElementAt(i)));
+                        if (clonedRequest.RequestOptions.ExcludeRegions == null)
+                        {
+                            clonedRequest.RequestOptions.ExcludeRegions = availableRegions
+                                .Where(s => s != availableRegions.ElementAt(i)).ToList();
+                        }
+                        else
+                        {
+                            clonedRequest.RequestOptions.ExcludeRegions
+                                .AddRange(availableRegions.Where(s => s != availableRegions.ElementAt(i)));
+                        }
                     }
+
+                    requestMessages.Add(clonedRequest);
                 }
+                List<Task<ResponseMessage>> tasks = this.RequestTaskBuilder(requestMessages, cancellationToken, parallelRequestCancellationToken);
+                Task<ResponseMessage> response = await Task.WhenAny(tasks);
 
-                requestMessages.Add(clonedRequest);
-            }
-            List<Task<ResponseMessage>> tasks = this.RequestTaskBuilder(requestMessages, cancellationToken, parallelRequestCancellationToken);
-            Task<ResponseMessage> response = await Task.WhenAny(tasks);
-            
-            cancellationTokenSource.Cancel();
-            cancellationTokenSource.Dispose();
-
-            return await response;
+                cancellationTokenSource.Cancel();
+                return await response;
+            }       
         }
 
         private List<Task<ResponseMessage>> RequestTaskBuilder(
@@ -641,15 +645,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             return feedRange;
-        }
-
-        /// <summary>
-        /// Used for unit testing only.
-        /// </summary>
-        /// <param name="globalEndpointManager"></param>
-        internal void SetGlobalEndpointManager(GlobalEndpointManager globalEndpointManager)
-        {
-            this.globalEndpointManager = globalEndpointManager;
         }
     }
 }

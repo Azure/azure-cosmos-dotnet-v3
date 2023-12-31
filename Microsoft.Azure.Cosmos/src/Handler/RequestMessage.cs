@@ -340,7 +340,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.PartitionKeyRangeId != null)
             {
-                clone.PartitionKeyRangeId = String.IsNullOrEmpty(this.PartitionKeyRangeId.CollectionRid)
+                clone.PartitionKeyRangeId = string.IsNullOrEmpty(this.PartitionKeyRangeId.CollectionRid)
                     ? new PartitionKeyRangeIdentity(this.PartitionKeyRangeId.PartitionKeyRangeId)
                     : new PartitionKeyRangeIdentity(this.PartitionKeyRangeId.CollectionRid, this.PartitionKeyRangeId.PartitionKeyRangeId);
             }

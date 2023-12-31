@@ -8,11 +8,20 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Text;
 
     /// <summary>
-    /// Cosmos availability strategy options
+    /// Cosmos availability strategy options. 
+    /// Availability allow the SDK to send out additional cross region requests to help 
+    /// reduce latency and increase availability. Currently there is one type of availability strategy, parallel request hedging. 
     /// </summary>
     public class AvailabilityStrategyOptions
     {
+        /// <summary>
+        /// When the SDK decided to activate the availability strategy.
+        /// </summary>
         private TimeSpan threshold;
+
+        /// <summary>
+        /// When the SDK will send out additional availability requests after the first one
+        /// </summary>
         private TimeSpan step;
 
         /// <summary>

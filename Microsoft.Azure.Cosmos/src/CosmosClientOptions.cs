@@ -607,7 +607,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Availability Stragey Options to be used for periods of high latency
+        /// Availability Strategy Options to be used for periods of high latency
         /// </summary>
         public AvailabilityStrategyOptions AvailabilityStrategyOptions { get; set; }
 
