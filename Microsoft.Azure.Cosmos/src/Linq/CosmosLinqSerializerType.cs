@@ -1,7 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Linq
+namespace Microsoft.Azure.Cosmos
 {
     /// <summary>
     /// Serializer type to be used for LINQ query translations.
@@ -11,10 +11,10 @@ namespace Microsoft.Azure.Cosmos.Linq
 #else
     internal
     #endif
-    enum LinqSerializerType
+    enum CosmosLinqSerializerType
     {
         /// <summary>
-        /// Follows the exisiting serializer pattern. This honors Newtonsoft attributes, followed by DataContract attributes. This will ignore System.Text.Json attributes.
+        /// This honors Newtonsoft attributes, followed by DataContract attributes. This will ignore System.Text.Json attributes.
         /// </summary>
         Default,
 

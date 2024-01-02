@@ -3,12 +3,11 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
 {
-    using System.IO;
     using System.Reflection;
 
     /// <summary>
-    /// This interface can be implemented to allow a custom serializer (Non [Json.NET serializer](https://www.newtonsoft.com/json/help/html/Introduction.htm)'s) to be used by the CosmosClient
-    /// for both CRUD operations and LINQ queries.
+    /// This interface can be implemented to allow a custom serializer (Non [Json.NET serializer](https://www.newtonsoft.com/json/help/html/Introduction.htm)'s) 
+    /// to be used by the CosmosClient for LINQ queries.
     /// </summary>
 #if PREVIEW
     public
@@ -23,6 +22,6 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="memberInfo">Any MemberInfo used in the query.</param>
         /// <returns>A serialized representation of the member.</returns>
-        public string SerializeLinqMemberName(MemberInfo memberInfo);
+        public string SerializeMemberName(MemberInfo memberInfo);
     }
 }

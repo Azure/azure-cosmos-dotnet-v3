@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
         public CosmosLinqSerializerOptions()
         {
             this.PropertyNamingPolicy = CosmosPropertyNamingPolicy.Default;
-            this.LinqSerializerType = LinqSerializerType.Default;
+            this.LinqSerializerType = CosmosLinqSerializerType.Default;
         }
 
         /// <summary>
@@ -35,13 +35,13 @@ namespace Microsoft.Azure.Cosmos
         /// Options are detailed in <see cref="LinqSerializerType"/>
         /// </summary>
         /// <remarks>
-        /// The default value is LinqSerializerType.Default
+        /// The default value is CosmosLinqSerializerType.Default
         /// </remarks>
         #if PREVIEW
         public
         #else
         internal
         #endif
-        LinqSerializerType LinqSerializerType { get; set; }
+        CosmosLinqSerializerType LinqSerializerType { get; set; }
     }
 }

@@ -23,12 +23,12 @@ namespace Microsoft.Azure.Cosmos.Linq
     {
         private readonly CosmosLinqSerializerOptions defaultPublicOptions = new()
         {
-            LinqSerializerType = LinqSerializerType.Default
+            LinqSerializerType = CosmosLinqSerializerType.Default
         };
 
         private readonly CosmosLinqSerializerOptions customPublicOptions = new()
         {
-            LinqSerializerType = LinqSerializerType.CustomCosmosSerializer
+            LinqSerializerType = CosmosLinqSerializerType.CustomCosmosSerializer
         };
 
         [TestMethod]
@@ -247,7 +247,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return stream;
             }
 
-            public string SerializeLinqMemberName(MemberInfo memberInfo)
+            public string SerializeMemberName(MemberInfo memberInfo)
             {
                 JsonPropertyNameAttribute jsonPropertyNameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(true);
 

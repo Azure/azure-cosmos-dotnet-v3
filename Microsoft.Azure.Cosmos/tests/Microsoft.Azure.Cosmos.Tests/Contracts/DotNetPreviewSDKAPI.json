@@ -355,24 +355,45 @@
     "Microsoft.Azure.Cosmos.CosmosLinqSerializerOptions;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "Microsoft.Azure.Cosmos.Linq.LinqSerializerType get_LinqSerializerType()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Microsoft.Azure.Cosmos.CosmosLinqSerializerType get_LinqSerializerType()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Linq.LinqSerializerType get_LinqSerializerType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosLinqSerializerType get_LinqSerializerType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.Linq.LinqSerializerType LinqSerializerType": {
+        "Microsoft.Azure.Cosmos.CosmosLinqSerializerType LinqSerializerType": {
           "Type": "Property",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Linq.LinqSerializerType LinqSerializerType;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.Linq.LinqSerializerType get_LinqSerializerType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_LinqSerializerType(Microsoft.Azure.Cosmos.Linq.LinqSerializerType);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosLinqSerializerType LinqSerializerType;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.CosmosLinqSerializerType get_LinqSerializerType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_LinqSerializerType(Microsoft.Azure.Cosmos.CosmosLinqSerializerType);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void set_LinqSerializerType(Microsoft.Azure.Cosmos.Linq.LinqSerializerType)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Void set_LinqSerializerType(Microsoft.Azure.Cosmos.CosmosLinqSerializerType)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Void set_LinqSerializerType(Microsoft.Azure.Cosmos.Linq.LinqSerializerType);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Void set_LinqSerializerType(Microsoft.Azure.Cosmos.CosmosLinqSerializerType);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.CosmosLinqSerializerType;System.Enum;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:True;IsClass:False;IsValueType:True;IsNested:False;IsGenericType:False;IsSerializable:True": {
+      "Subclasses": {},
+      "Members": {
+        "Int32 value__": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Int32 value__;IsInitOnly:False;IsStatic:False;"
+        },
+        "Microsoft.Azure.Cosmos.CosmosLinqSerializerType CustomCosmosSerializer": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosLinqSerializerType CustomCosmosSerializer;IsInitOnly:False;IsStatic:True;"
+        },
+        "Microsoft.Azure.Cosmos.CosmosLinqSerializerType Default": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosLinqSerializerType Default;IsInitOnly:False;IsStatic:True;"
         }
       },
       "NestedTypes": {}
@@ -454,10 +475,10 @@
     "Microsoft.Azure.Cosmos.ICosmosLinqSerializer;;IsAbstract:True;IsSealed:False;IsInterface:True;IsEnum:False;IsClass:False;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "System.String SerializeLinqMemberName(System.Reflection.MemberInfo)": {
+        "System.String SerializeMemberName(System.Reflection.MemberInfo)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.String SerializeLinqMemberName(System.Reflection.MemberInfo);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.String SerializeMemberName(System.Reflection.MemberInfo);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -471,27 +492,6 @@
             "ExtensionAttribute"
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.QueryDefinition ToQueryDefinition[T](System.Linq.IQueryable`1[T], System.Collections.Generic.IDictionary`2[System.Object,System.String]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
-        }
-      },
-      "NestedTypes": {}
-    },
-    "Microsoft.Azure.Cosmos.Linq.LinqSerializerType;System.Enum;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:True;IsClass:False;IsValueType:True;IsNested:False;IsGenericType:False;IsSerializable:True": {
-      "Subclasses": {},
-      "Members": {
-        "Int32 value__": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "Int32 value__;IsInitOnly:False;IsStatic:False;"
-        },
-        "Microsoft.Azure.Cosmos.Linq.LinqSerializerType CustomCosmosSerializer": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Linq.LinqSerializerType CustomCosmosSerializer;IsInitOnly:False;IsStatic:True;"
-        },
-        "Microsoft.Azure.Cosmos.Linq.LinqSerializerType Default": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Linq.LinqSerializerType Default;IsInitOnly:False;IsStatic:True;"
         }
       },
       "NestedTypes": {}

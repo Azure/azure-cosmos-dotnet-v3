@@ -35,12 +35,8 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public string SerializeMemberName(MemberInfo memberInfo)
         {
-            if (this.CustomCosmosSerializer is ICosmosLinqSerializer customLinqCosmosSerializer)
-            {
-                return customLinqCosmosSerializer.SerializeLinqMemberName(memberInfo);
-            }
-
-            throw new InvalidOperationException($"CosmosSerializer must implement ICosmosLinqSerializer if selecting linqSerializerOptions.CustomCosmosSerializer.");
+            ICosmosLinqSerializer customLinqCosmosSerializer = (ICosmosLinqSerializer)this.CustomCosmosSerializer;
+            return customLinqCosmosSerializer.SerializeMemberName(memberInfo);
         }
 
         private string SerializeWithCustomSerializer(object value)

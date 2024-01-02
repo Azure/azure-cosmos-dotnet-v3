@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         public void TestMemberInitializerDotNetCustomSerializer()
         {
             Func<bool, IQueryable<DataObjectDotNet>> getQuery;
-            (_, getQuery) = this.InsertDataAndGetQueryables<DataObjectDotNet>(LinqSerializerType.CustomCosmosSerializer);
+            (_, getQuery) = this.InsertDataAndGetQueryables<DataObjectDotNet>(CosmosLinqSerializerType.CustomCosmosSerializer);
 
             string insertedData = this.GetInsertedData().Result;
 
@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         {
             Func<bool, IQueryable<DataObjectNewtonsoft>> getQueryCamelCase;
             Func<bool, IQueryable<DataObjectNewtonsoft>> getQueryDefault;
-            (getQueryCamelCase, getQueryDefault) = this.InsertDataAndGetQueryables<DataObjectNewtonsoft>(LinqSerializerType.Default);
+            (getQueryCamelCase, getQueryDefault) = this.InsertDataAndGetQueryables<DataObjectNewtonsoft>(CosmosLinqSerializerType.Default);
 
             string insertedData = this.GetInsertedData().Result;
 
@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         {
             Func<bool, IQueryable<DataObjectDataMember>> getQueryCamelCase;
             Func<bool, IQueryable<DataObjectDataMember>> getQueryDefault;
-            (getQueryCamelCase, getQueryDefault) = this.InsertDataAndGetQueryables<DataObjectDataMember>(LinqSerializerType.Default);
+            (getQueryCamelCase, getQueryDefault) = this.InsertDataAndGetQueryables<DataObjectDataMember>(CosmosLinqSerializerType.Default);
 
             string insertedData = this.GetInsertedData().Result;
 
@@ -154,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         {
             Func<bool, IQueryable<DataObjectNewtonsoftDotNet>> getQueryCamelCase;
             Func<bool, IQueryable<DataObjectNewtonsoftDotNet>> getQueryDefault;
-            (getQueryCamelCase, getQueryDefault) = this.InsertDataAndGetQueryables<DataObjectNewtonsoftDotNet>(LinqSerializerType.Default);
+            (getQueryCamelCase, getQueryDefault) = this.InsertDataAndGetQueryables<DataObjectNewtonsoftDotNet>(CosmosLinqSerializerType.Default);
             
             string insertedData = this.GetInsertedData().Result;
 
@@ -183,7 +183,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         {
             Func<bool, IQueryable<DataObjectNewtonsoftDataMember>> getQueryCamelCase;
             Func<bool, IQueryable<DataObjectNewtonsoftDataMember>> getQueryDefault;
-            (getQueryCamelCase, getQueryDefault) = this.InsertDataAndGetQueryables<DataObjectNewtonsoftDataMember>(LinqSerializerType.Default);
+            (getQueryCamelCase, getQueryDefault) = this.InsertDataAndGetQueryables<DataObjectNewtonsoftDataMember>(CosmosLinqSerializerType.Default);
 
             string insertedData = this.GetInsertedData().Result;
 
@@ -212,7 +212,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         {
             Func<bool, IQueryable<DataObjectDotNetDataMember>> getQueryCamelCase;
             Func<bool, IQueryable<DataObjectDotNetDataMember>> getQueryDefault;
-            (getQueryCamelCase, getQueryDefault) = this.InsertDataAndGetQueryables<DataObjectDotNetDataMember>(LinqSerializerType.Default);
+            (getQueryCamelCase, getQueryDefault) = this.InsertDataAndGetQueryables<DataObjectDotNetDataMember>(CosmosLinqSerializerType.Default);
 
             string insertedData = this.GetInsertedData().Result;
 
@@ -236,7 +236,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             this.ExecuteTestSuite(inputs);
         }
 
-        private (Func<bool, IQueryable<T>>, Func<bool, IQueryable<T>>) InsertDataAndGetQueryables<T>(LinqSerializerType linqSerializerType) where T : LinqTestObject
+        private (Func<bool, IQueryable<T>>, Func<bool, IQueryable<T>>) InsertDataAndGetQueryables<T>(CosmosLinqSerializerType linqSerializerType) where T : LinqTestObject
         {
             static T createDataObj(int index, bool camelCase)
             {
@@ -259,7 +259,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             };
 
             Func<bool, IQueryable<T>> getQueryCamelCase = null;
-            if (linqSerializerType != LinqSerializerType.CustomCosmosSerializer)
+            if (linqSerializerType != CosmosLinqSerializerType.CustomCosmosSerializer)
             {
                 getQueryCamelCase = LinqTestsCommon.GenerateSerializationTestCosmosData(createDataObj, RecordCount, TestContainer, linqSerializerOptionsCamelCase);
             }

@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 CosmosPropertyNamingPolicy.CamelCase => CosmosSerializationUtil.camelCaseNamingStrategy.GetPropertyName(name, false),
                 CosmosPropertyNamingPolicy.Default => name,
-                _ => throw new InvalidOperationException("Unsupported CosmosPropertyNamingPolicy value"),
+                _ => throw new NotImplementedException("Unsupported CosmosPropertyNamingPolicy value"),
             };
         }
     }

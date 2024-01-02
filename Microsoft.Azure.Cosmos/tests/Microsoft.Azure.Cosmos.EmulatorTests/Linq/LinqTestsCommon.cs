@@ -879,7 +879,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             return streamPayload;
         }
 
-        public string SerializeLinqMemberName(MemberInfo memberInfo)
+        public string SerializeMemberName(MemberInfo memberInfo)
         {
             JsonPropertyNameAttribute jsonPropertyNameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(true);
 
