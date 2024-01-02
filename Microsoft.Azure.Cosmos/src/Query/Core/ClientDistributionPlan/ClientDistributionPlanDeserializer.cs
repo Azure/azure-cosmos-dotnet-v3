@@ -27,6 +27,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan
             public const string Distinct = "Distinct";
             public const string EnumerationKind = "EnumerationKind";
             public const string Expression = "Expression";
+            public const string Expressions = "Expressions";
             public const string FunctionKind = "FunctionKind";
             public const string GroupBy = "GroupBy";
             public const string Identifier = "Identifier";
@@ -118,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan
         {
             CqlEnumerableExpression sourceExpression = DeserializeCqlEnumerableExpression(GetValue<CosmosObject>(cosmosObject, Constants.SourceExpression));
             CqlVariable declaredVariable = DeserializeCqlVariable(GetValue<CosmosObject>(cosmosObject, Constants.DeclaredVariable));
-            IReadOnlyList<CqlScalarExpression> expressions = DeserializeScalarExpressionArray(GetValue<CosmosArray>(cosmosObject, Constants.Expression));
+            IReadOnlyList<CqlScalarExpression> expressions = DeserializeScalarExpressionArray(GetValue<CosmosArray>(cosmosObject, Constants.Expressions));
             return new CqlDistinctEnumerableExpression(sourceExpression, declaredVariable, expressions);
         }
 
