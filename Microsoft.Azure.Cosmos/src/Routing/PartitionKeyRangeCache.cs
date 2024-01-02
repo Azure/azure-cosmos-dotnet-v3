@@ -30,17 +30,20 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly ICosmosAuthorizationTokenProvider authorizationTokenProvider;
         private readonly IStoreModel storeModel;
         private readonly CollectionCache collectionCache;
+        private readonly IGlobalEndpointManager endpointManager;
 
         public PartitionKeyRangeCache(
             ICosmosAuthorizationTokenProvider authorizationTokenProvider,
             IStoreModel storeModel,
-            CollectionCache collectionCache)
+            CollectionCache collectionCache,
+            IGlobalEndpointManager endpointManager)
         {
             this.routingMapCache = new AsyncCacheNonBlocking<string, CollectionRoutingMap>(
                     keyEqualityComparer: StringComparer.Ordinal);
             this.authorizationTokenProvider = authorizationTokenProvider;
             this.storeModel = storeModel;
             this.collectionCache = collectionCache;
+            this.endpointManager = endpointManager;
         }
 
         public virtual async Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
@@ -121,10 +124,10 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return await this.routingMapCache.GetAsync(
                     key: collectionRid,
                     singleValueInitFunc: (_) => this.GetRoutingMapForCollectionAsync(
-                        collectionRid, 
-                        previousValue, 
-                        trace,
-                        request?.RequestContext?.ClientRequestStatistics),
+                        collectionRid: collectionRid,
+                        previousRoutingMap: previousValue,
+                        trace: trace,
+                        clientSideRequestStatistics: request?.RequestContext?.ClientRequestStatistics),
                     forceRefresh: (currentValue) => PartitionKeyRangeCache.ShouldForceRefresh(previousValue, currentValue));
             }
             catch (DocumentClientException ex)
@@ -174,35 +177,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             return previousValue.ChangeFeedNextIfNoneMatch == currentValue.ChangeFeedNextIfNoneMatch; 
         }
 
-        public async Task<PartitionKeyRange> TryGetRangeByPartitionKeyRangeIdAsync(string collectionRid, 
-                            string partitionKeyRangeId, 
-                            ITrace trace,
-                            IClientSideRequestStatistics clientSideRequestStatistics)
-        {
-            try
-            {
-                CollectionRoutingMap routingMap = await this.routingMapCache.GetAsync(
-                    key: collectionRid,
-                    singleValueInitFunc: (_) => this.GetRoutingMapForCollectionAsync(
-                        collectionRid: collectionRid,
-                        previousRoutingMap: null,
-                        trace: trace,
-                        clientSideRequestStatistics: clientSideRequestStatistics),
-                    forceRefresh: (_) => false);
-
-                return routingMap.TryGetRangeByPartitionKeyRangeId(partitionKeyRangeId);
-            }
-            catch (DocumentClientException ex)
-            {
-                if (ex.StatusCode == HttpStatusCode.NotFound)
-                {
-                    return null;
-                }
-
-                throw;
-            }
-        }
-
         private async Task<CollectionRoutingMap> GetRoutingMapForCollectionAsync(
             string collectionRid,
             CollectionRoutingMap previousRoutingMap,
@@ -213,6 +187,12 @@ namespace Microsoft.Azure.Cosmos.Routing
             string changeFeedNextIfNoneMatch = previousRoutingMap?.ChangeFeedNextIfNoneMatch;
 
             HttpStatusCode lastStatusCode = HttpStatusCode.OK;
+
+            RetryOptions retryOptions = new RetryOptions();
+            MetadataRequestThrottleRetryPolicy metadataRetryPolicy = new (
+                    endpointManager: this.endpointManager,
+                    maxRetryAttemptsOnThrottledRequests: retryOptions.MaxRetryAttemptsOnThrottledRequests,
+                    maxRetryWaitTimeInSeconds: retryOptions.MaxRetryWaitTimeInSeconds);
             do
             {
                 INameValueCollection headers = new RequestNameValueCollection();
@@ -224,10 +204,9 @@ namespace Microsoft.Azure.Cosmos.Routing
                     headers.Set(HttpConstants.HttpHeaders.IfNoneMatch, changeFeedNextIfNoneMatch);
                 }
 
-                RetryOptions retryOptions = new RetryOptions();
                 using (DocumentServiceResponse response = await BackoffRetryUtility<DocumentServiceResponse>.ExecuteAsync(
-                    () => this.ExecutePartitionKeyRangeReadChangeFeedAsync(collectionRid, headers, trace, clientSideRequestStatistics),
-                    new ResourceThrottleRetryPolicy(retryOptions.MaxRetryAttemptsOnThrottledRequests, retryOptions.MaxRetryWaitTimeInSeconds)))
+                    () => this.ExecutePartitionKeyRangeReadChangeFeedAsync(collectionRid, headers, trace, clientSideRequestStatistics, metadataRetryPolicy),
+                    retryPolicy: metadataRetryPolicy))
                 {
                     lastStatusCode = response.StatusCode;
                     changeFeedNextIfNoneMatch = response.Headers[HttpConstants.HttpHeaders.ETag];
@@ -274,7 +253,8 @@ namespace Microsoft.Azure.Cosmos.Routing
         private async Task<DocumentServiceResponse> ExecutePartitionKeyRangeReadChangeFeedAsync(string collectionRid, 
                                                                                 INameValueCollection headers, 
                                                                                 ITrace trace,
-                                                                                IClientSideRequestStatistics clientSideRequestStatistics)
+                                                                                IClientSideRequestStatistics clientSideRequestStatistics,
+                                                                                IDocumentClientRetryPolicy retryPolicy)
         {
             using (ITrace childTrace = trace.StartChild("Read PartitionKeyRange Change Feed", TraceComponent.Transport, Tracing.TraceLevel.Info))
             {
@@ -285,6 +265,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     AuthorizationTokenType.PrimaryMasterKey,
                     headers))
                 {
+                    retryPolicy.OnBeforeSendRequest(request);
                     string authorizationToken = null;
                     try
                     {
@@ -331,6 +312,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                         catch (DocumentClientException ex)
                         {
                             childTrace.AddDatum("Exception Message", ex.Message);
+                            throw;
+                        }
+                        catch (CosmosException ce)
+                        {
+                            childTrace.AddDatum("Exception Message", ce.Message);
                             throw;
                         }
                     }
