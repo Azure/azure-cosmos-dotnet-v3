@@ -158,7 +158,7 @@ namespace Microsoft.Azure.Cosmos
                         new Error
                         {
                             Code = responseMessage.StatusCode.ToString(),
-                            Message = "Invalid JSON HTTP response from Gateway."
+                            Message = "No response content from gateway."
                         },
                         responseMessage.Headers,
                         responseMessage.StatusCode)

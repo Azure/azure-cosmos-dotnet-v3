@@ -50,11 +50,11 @@ namespace Microsoft.Azure.Cosmos
 
             Assert.IsNotNull(value: documentClientException);
             Assert.AreEqual(expected: HttpStatusCode.NotFound, actual: documentClientException.StatusCode);
-            Assert.IsTrue(condition: documentClientException.Message.Contains("Invalid JSON HTTP response from Gateway."));
+            Assert.IsTrue(condition: documentClientException.Message.Contains("No response content from gateway."));
 
             Assert.IsNotNull(value: documentClientException.Error);
             Assert.AreEqual(expected: HttpStatusCode.NotFound.ToString(), actual: documentClientException.Error.Code);
-            Assert.AreEqual(expected: "Invalid JSON HTTP response from Gateway.", actual: documentClientException.Error.Message);
+            Assert.AreEqual(expected: "No response content from gateway.", actual: documentClientException.Error.Message);
         }
 
         /// <summary>
