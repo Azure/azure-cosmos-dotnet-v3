@@ -464,7 +464,7 @@
                 using (FeedIterator<Document> feedIterator = this.container.GetItemQueryIterator<Document>(
                     query,
                     null,
-                    new QueryRequestOptions() { PartitionKey = pKey }))
+                    new QueryRequestOptions() { EnableOptimisticDirectExecution = true, PartitionKey = pKey }))
                 {
                     Assert.IsTrue(feedIterator.HasMoreResults);
 
@@ -481,7 +481,7 @@
                 using (FeedIterator<Document> feedIterator = this.container.GetItemQueryIterator<Document>(
                     query,
                     null,
-                    new QueryRequestOptions() { PartitionKey = pKey }))
+                    new QueryRequestOptions() { EnableOptimisticDirectExecution = true, PartitionKey = pKey }))
                 {
                     Assert.IsTrue(feedIterator.HasMoreResults);
 
@@ -495,7 +495,7 @@
                 using (FeedIterator<Document> badFeedIterator = this.container.GetItemQueryIterator<Document>(
                     query,
                     null,
-                    new QueryRequestOptions() { PartitionKey = badPKey}))
+                    new QueryRequestOptions() { EnableOptimisticDirectExecution = true, PartitionKey = badPKey}))
                 {
                     FeedResponse<Document> queryDocBad = await badFeedIterator.ReadNextAsync();
                     Assert.ThrowsException<InvalidOperationException>(() =>
