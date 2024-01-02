@@ -66,7 +66,6 @@ namespace Microsoft.Azure.Cosmos.Query
             string resourceLink,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
-            bool forcePassthrough,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
             Documents.ResourceType resourceType)
         {
@@ -145,7 +144,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 partitionedQueryExecutionInfo: partitionedQueryExecutionInfo,
                 executionEnvironment: queryRequestOptions.ExecutionEnvironment,
                 returnResultsInDeterministicOrder: queryRequestOptions.ReturnResultsInDeterministicOrder,
-                forcePassthrough: forcePassthrough,
                 enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
                 testInjections: queryRequestOptions.TestSettings);
 

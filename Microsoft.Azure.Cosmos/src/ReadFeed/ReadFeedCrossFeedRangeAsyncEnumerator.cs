@@ -43,9 +43,11 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
             CrossFeedRangeState<ReadFeedState> crossFeedRangeState = innerReadFeedPage.State;
             ReadFeedCrossFeedRangeState? state = crossFeedRangeState != null ? new ReadFeedCrossFeedRangeState(crossFeedRangeState.Value) : (ReadFeedCrossFeedRangeState?)null;
 
-            CosmosArray documents = CosmosQueryClientCore.ParseElementsFromRestStream(
+            CosmosQueryClientCore.ParseRestStream(
                 innerReadFeedPage.Page.Content,
-                Documents.ResourceType.Document);
+                Documents.ResourceType.Document,
+                out CosmosArray documents,
+                out CosmosObject distributionPlan);
             ReadFeedPage page = new ReadFeedPage(
                 documents,
                 innerReadFeedPage.Page.RequestCharge,
