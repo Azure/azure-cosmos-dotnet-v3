@@ -6,9 +6,7 @@
     using System.Xml;
     using Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan;
     using Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan.Cql;
-    using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Cosmos.Test.BaselineTest;
-    using Microsoft.IdentityModel.Tokens;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -22,36 +20,57 @@
         {
             List<ClientDistributionPlanTestInput> testVariations = new List<ClientDistributionPlanTestInput>
             {
+                // Enumerable Expression
                 CreateInput(
                     description: @"Input Expression",
                     clientPlanJson: "{\"clientDistributionPlan\": {\"Cql\": {\"Kind\": \"Input\",\"Name\": \"root\"}}}"),
+                
+                CreateInput(
+                    description: @"Distinct-Select",
+                    clientPlanJson: "{\"clientDistributionPlan\": { \"Cql\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"s0\", \"UniqueId\": 3 }, \"Expression\": { \"Kind\": \"ObjectCreate\", \"ObjectKind\": \"Object\", \"Properties\": [ { \"Name\": \"a\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"s0\", \"UniqueId\": 3 } } } ] }, \"SourceExpression\": { \"Kind\": \"Distinct\", \"DeclaredVariable\": { \"Name\": \"s0\", \"UniqueId\": 3 }, \"Expressions\": [ { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"s0\", \"UniqueId\": 3 } } ], \"SourceExpression\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 6 }, \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 6 } }, \"Index\": 0 }, \"Index\": 0 }, \"SourceExpression\": { \"Kind\": \"Input\", \"Name\": \"root\" } } } } }}"),
+                
+                CreateInput(
+                    description: @"GroupBy",
+                    clientPlanJson: "{\"clientDistributionPlan\": { \"Cql\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 2 }, \"Expression\": { \"Kind\": \"ObjectCreate\", \"ObjectKind\": \"Object\", \"Properties\": [ { \"Name\": \"a\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 2 } }, \"Index\": 0 } }, { \"Name\": \"$1\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 2 } }, \"Index\": 1 } } ] }, \"SourceExpression\": { \"Kind\": \"GroupBy\", \"KeyCount\": 1, \"Aggregates\": [ { \"Kind\": \"Builtin\", \"OperatorKind\": \"Max\" } ], \"SourceExpression\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 9 }, \"Expression\": { \"Kind\": \"TupleCreate\", \"Items\": [ { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 9 } }, \"Index\": 0 }, { \"Kind\": \"Mux\", \"ConditionExpression\": { \"Kind\": \"BinaryOperator\", \"OperatorKind\": \"And\", \"LeftExpression\": { \"Kind\": \"BinaryOperator\", \"OperatorKind\": \"NotEqual\", \"LeftExpression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 9 } }, \"Index\": 1 }, \"Index\": 1 }, \"RightExpression\": { \"Kind\": \"Literal\", \"Literal\": { \"Kind\": \"Number\", \"Value\": 0 } } }, \"RightExpression\": { \"Kind\": \"UnaryOperator\", \"OperatorKind\": \"Not\", \"Expression\": { \"Kind\": \"SystemFunctionCall\", \"FunctionKind\": \"Is_Defined\", \"Arguments\": [ { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 9 } }, \"Index\": 1 }, \"Index\": 0 } ] } } }, \"LeftExpression\": { \"Kind\": \"Literal\", \"Literal\": { \"Kind\": \"Array\", \"Items\": [] } }, \"RightExpression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 9 } }, \"Index\": 1 }, \"Index\": 0 } } ] }, \"SourceExpression\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 8 }, \"Expression\": { \"Kind\": \"TupleCreate\", \"Items\": [ { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 8 } }, \"Index\": 0 }, \"Index\": 0 }, { \"Kind\": \"TupleCreate\", \"Items\": [ { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 8 } }, \"Index\": 1 }, \"Index\": 0 }, { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 8 } }, \"Index\": 2 } ] } ] }, \"SourceExpression\": { \"Kind\": \"Input\", \"Name\": \"root\" } } } } } }}"),
                 
                 CreateInput(
                     description: @"Aggregate",
                     clientPlanJson: "{\"clientDistributionPlan\": { \"Cql\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 2 }, \"Expression\": { \"Kind\": \"ObjectCreate\", \"ObjectKind\": \"Object\", \"Properties\": [ { \"Name\": \"$1\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 2 } } } ] }, \"SourceExpression\": { \"Kind\": \"Aggregate\", \"Aggregate\": { \"Kind\": \"Builtin\", \"OperatorKind\": \"Max\" }, \"SourceExpression\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 8 }, \"Expression\": { \"Kind\": \"Mux\", \"ConditionExpression\": { \"Kind\": \"BinaryOperator\", \"OperatorKind\": \"And\", \"LeftExpression\": { \"Kind\": \"BinaryOperator\", \"OperatorKind\": \"NotEqual\", \"LeftExpression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 8 } }, \"Index\": 1 }, \"RightExpression\": { \"Kind\": \"Literal\", \"Literal\": { \"Kind\": \"Number\", \"Value\": 0 } } }, \"RightExpression\": { \"Kind\": \"UnaryOperator\", \"OperatorKind\": \"Not\", \"Expression\": { \"Kind\": \"SystemFunctionCall\", \"FunctionKind\": \"Is_Defined\", \"Arguments\": [ { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 8 } }, \"Index\": 0 } ] } } }, \"LeftExpression\": { \"Kind\": \"Literal\", \"Literal\": { \"Kind\": \"Array\", \"Items\": [] } }, \"RightExpression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 8 } }, \"Index\": 0 } }, \"SourceExpression\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 7 }, \"Expression\": { \"Kind\": \"TupleCreate\", \"Items\": [ { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 7 } }, \"Index\": 0 }, \"Index\": 0 }, { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 7 } }, \"Index\": 1 } ] }, \"SourceExpression\": { \"Kind\": \"Input\", \"Name\": \"root\" } } } } } }}"),
                 
                 CreateInput(
-                    description: @"Select, Aggregate and BinaryOperator Expressions",
-                    clientPlanJson: "{\"clientDistributionPlan\": { \"Cql\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 3 }, \"Expression\": { \"Kind\": \"ObjectCreate\", \"ObjectKind\": \"Object\", \"Properties\": [ { \"Name\": \"F1\", \"Expression\": { \"Kind\": \"ObjectCreate\", \"ObjectKind\": \"Object\", \"Properties\": [ { \"Name\": \"FieldA\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 3 } }, \"Index\": 0 } }, { \"Name\": \"FieldSum\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 3 } }, \"Index\": 1 } }, { \"Name\": \"FieldAvg\", \"Expression\": { \"Kind\": \"Mux\", \"ConditionExpression\": { \"Kind\": \"BinaryOperator\", \"OperatorKind\": \"Equal\", \"LeftExpression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 3 } }, \"Index\": 2 }, \"Index\": 1 }, \"RightExpression\": { \"Kind\": \"Literal\", \"Literal\": { \"Kind\": \"Number\", \"Value\": 0 } } }, \"LeftExpression\": { \"Kind\": \"Literal\", \"Literal\": { \"Kind\": \"Undefined\" } }, \"RightExpression\": { \"Kind\": \"BinaryOperator\", \"OperatorKind\": \"Divide\", \"LeftExpression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 3 } }, \"Index\": 2 }, \"Index\": 0 }, \"RightExpression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 3 } }, \"Index\": 2 }, \"Index\": 1 } } } } ] } }, { \"Name\": \"F2\", \"Expression\": { \"Kind\": \"ObjectCreate\", \"ObjectKind\": \"Object\", \"Properties\": [ { \"Name\": \"OtherFieldA\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 3 } }, \"Index\": 0 } }, { \"Name\": \"OtherFieldMax\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 3 } }, \"Index\": 3 } } ] } } ] }, \"SourceExpression\": { \"Kind\": \"GroupBy\", \"KeyCount\": 1, \"Aggregates\": [ { \"Kind\": \"Builtin\", \"OperatorKind\": \"Sum\" }, { \"Kind\": \"Tuple\", \"Items\": [ { \"Kind\": \"Builtin\", \"OperatorKind\": \"Sum\" }, { \"Kind\": \"Builtin\", \"OperatorKind\": \"Sum\" } ] }, { \"Kind\": \"Builtin\", \"OperatorKind\": \"Max\" } ], \"SourceExpression\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 11 }, \"Expression\": { \"Kind\": \"TupleCreate\", \"Items\": [ { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 11 } }, \"Index\": 0 }, { \"Kind\": \"Mux\", \"ConditionExpression\": { \"Kind\": \"BinaryOperator\", \"OperatorKind\": \"And\", \"LeftExpression\": { \"Kind\": \"BinaryOperator\", \"OperatorKind\": \"NotEqual\", \"LeftExpression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 11 } }, \"Index\": 1 }, \"Index\": 1 }, \"RightExpression\": { \"Kind\": \"Literal\", \"Literal\": { \"Kind\": \"Number\", \"Value\": 0 } } }, \"RightExpression\": { \"Kind\": \"UnaryOperator\", \"OperatorKind\": \"Not\", \"Expression\": { \"Kind\": \"SystemFunctionCall\", \"FunctionKind\": \"Is_Defined\", \"Arguments\": [ { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 11 } }, \"Index\": 1 }, \"Index\": 0 } ] } } }, \"LeftExpression\": { \"Kind\": \"Literal\", \"Literal\": { \"Kind\": \"Array\", \"Items\": [] } }, \"RightExpression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 11 } }, \"Index\": 1 }, \"Index\": 0 } }, { \"Kind\": \"TupleCreate\", \"Items\": [ { \"Kind\": \"Mux\", \"ConditionExpression\": { \"Kind\": \"BinaryOperator\", \"OperatorKind\": \"And\", \"LeftExpression\": { \"Kind\": \"BinaryOperator\", \"OperatorKind\": \"NotEqual\", \"LeftExpression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 11 } }, \"Index\": 2 }, \"Index\": 0 }, \"Index\": 1 }, \"RightExpression\": { \"Kind\": \"Literal\", \"Literal\": { \"Kind\": \"Number\", \"Value\": 0 } } }, \"RightExpression\": { \"Kind\": \"UnaryOperator\", \"OperatorKind\": \"Not\", \"Expression\": { \"Kind\": \"SystemFunctionCall\", \"FunctionKind\": \"Is_Defined\", \"Arguments\": [ { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 11 } }, \"Index\": 2 }, \"Index\": 0 }, \"Index\": 0 } ] } } }, \"LeftExpression\": { \"Kind\": \"Literal\", \"Literal\": { \"Kind\": \"Array\", \"Items\": [] } }, \"RightExpression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 11 } }, \"Index\": 2 }, \"Index\": 0 }, \"Index\": 0 } }, { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 11 } }, \"Index\": 2 }, \"Index\": 1 } ] }, { \"Kind\": \"Mux\", \"ConditionExpression\": { \"Kind\": \"BinaryOperator\", \"OperatorKind\": \"And\", \"LeftExpression\": { \"Kind\": \"BinaryOperator\", \"OperatorKind\": \"NotEqual\", \"LeftExpression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 11 } }, \"Index\": 3 }, \"Index\": 1 }, \"RightExpression\": { \"Kind\": \"Literal\", \"Literal\": { \"Kind\": \"Number\", \"Value\": 0 } } }, \"RightExpression\": { \"Kind\": \"UnaryOperator\", \"OperatorKind\": \"Not\", \"Expression\": { \"Kind\": \"SystemFunctionCall\", \"FunctionKind\": \"Is_Defined\", \"Arguments\": [ { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 11 } }, \"Index\": 3 }, \"Index\": 0 } ] } } }, \"LeftExpression\": { \"Kind\": \"Literal\", \"Literal\": { \"Kind\": \"Array\", \"Items\": [] } }, \"RightExpression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 11 } }, \"Index\": 3 }, \"Index\": 0 } } ] }, \"SourceExpression\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 10 }, \"Expression\": { \"Kind\": \"TupleCreate\", \"Items\": [ { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 10 } }, \"Index\": 0 }, \"Index\": 0 }, { \"Kind\": \"TupleCreate\", \"Items\": [ { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 10 } }, \"Index\": 1 }, \"Index\": 0 }, { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 10 } }, \"Index\": 2 } ] }, { \"Kind\": \"TupleCreate\", \"Items\": [ { \"Kind\": \"TupleCreate\", \"Items\": [ { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 10 } }, \"Index\": 3 }, \"Index\": 0 }, { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 10 } }, \"Index\": 4 } ] }, { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 10 } }, \"Index\": 5 } ] }, { \"Kind\": \"TupleCreate\", \"Items\": [ { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 10 } }, \"Index\": 6 }, \"Index\": 0 }, { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 10 } }, \"Index\": 7 } ] } ] }, \"SourceExpression\": { \"Kind\": \"Input\", \"Name\": \"root\" } } } } } }}"),
-                
-                CreateInput(
-                    description: @"Select, Sum and VariableRef Expressions",
-                    clientPlanJson:
-                    "{\"clientDistributionPlan\": { \"Cql\": { \"Kind\": \"Distinct\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 1 }, \"Expressions\": [ { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 1 } } ], \"SourceExpression\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"s0\", \"UniqueId\": 3 }, \"Expression\": { \"Kind\": \"ObjectCreate\", \"ObjectKind\": \"Object\", \"Properties\": [ { \"Name\": \"$1\", \"Expression\": { \"Kind\": \"UnaryOperator\", \"OperatorKind\": \"Not\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"s0\", \"UniqueId\": 3 } } } } ] }, \"SourceExpression\": { \"Kind\": \"Distinct\", \"DeclaredVariable\": { \"Name\": \"s0\", \"UniqueId\": 3 }, \"Expressions\": [ { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"s0\", \"UniqueId\": 3 } } ], \"SourceExpression\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 6 }, \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 6 } }, \"Index\": 0 }, \"Index\": 0 }, \"SourceExpression\": { \"Kind\": \"Input\", \"Name\": \"root\" } } } } } }}"),
+                    description: @"SelectMany - ScalarAsEnumerable - Where",
+                    clientPlanJson: "{\"clientDistributionPlan\": { \"Cql\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 16 }, \"Expression\": { \"Kind\": \"ObjectCreate\", \"ObjectKind\": \"Object\", \"Properties\": [ { \"Name\": \"s\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 16 } } } ] }, \"SourceExpression\": { \"Kind\": \"SelectMany\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 7 }, \"SelectorExpression\": { \"Kind\": \"Aggregate\", \"Aggregate\": { \"Kind\": \"Builtin\", \"OperatorKind\": \"Count\" }, \"SourceExpression\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"v1\", \"UniqueId\": 9 }, \"Expression\": { \"Kind\": \"Literal\", \"Literal\": { \"Kind\": \"Number\", \"Value\": 1 } }, \"SourceExpression\": { \"Kind\": \"Where\", \"DeclaredVariable\": { \"Name\": \"v1\", \"UniqueId\": 9 }, \"Expression\": { \"Kind\": \"BinaryOperator\", \"OperatorKind\": \"Equal\", \"LeftExpression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v1\", \"UniqueId\": 9 } }, \"RightExpression\": { \"Kind\": \"Literal\", \"Literal\": { \"Kind\": \"Number\", \"Value\": 435 } } }, \"SourceExpression\": { \"Kind\": \"ScalarAsEnumerable\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 7 } }, \"EnumerationKind\": \"ArrayItems\" } } } }, \"SourceExpression\": { \"Kind\": \"Distinct\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 7 }, \"Expressions\": [ { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 7 } } ], \"SourceExpression\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 19 }, \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 19 } }, \"Index\": 0 }, \"Index\": 0 }, \"SourceExpression\": { \"Kind\": \"Input\", \"Name\": \"root\" } } } } } }}"),
                 
                 CreateInput(
                     description: @"Take",
                     clientPlanJson: "{\"clientDistributionPlan\": { \"Cql\": { \"Kind\": \"Take\", \"SkipValue\": 2, \"TakeValue\": 5, \"SourceExpression\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"s0\", \"UniqueId\": 4 }, \"Expression\": { \"Kind\": \"ObjectCreate\", \"ObjectKind\": \"Object\", \"Properties\": [ { \"Name\": \"a\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"s0\", \"UniqueId\": 4 } } } ] }, \"SourceExpression\": { \"Kind\": \"Distinct\", \"DeclaredVariable\": { \"Name\": \"s0\", \"UniqueId\": 4 }, \"Expressions\": [ { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"s0\", \"UniqueId\": 4 } } ], \"SourceExpression\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 7 }, \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 7 } }, \"Index\": 0 }, \"Index\": 0 }, \"SourceExpression\": { \"Kind\": \"Input\", \"Name\": \"root\" } } } } } }}"),
                 
+                // Scalar Expression
                 CreateInput(
-                    description: @"SelectMany - ScalarAsEnumerable - Where",
-                    clientPlanJson: "{\"clientDistributionPlan\": { \"Cql\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 16 }, \"Expression\": { \"Kind\": \"ObjectCreate\", \"ObjectKind\": \"Object\", \"Properties\": [ { \"Name\": \"s\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 16 } } } ] }, \"SourceExpression\": { \"Kind\": \"SelectMany\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 7 }, \"SelectorExpression\": { \"Kind\": \"Aggregate\", \"Aggregate\": { \"Kind\": \"Builtin\", \"OperatorKind\": \"Count\" }, \"SourceExpression\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"v1\", \"UniqueId\": 9 }, \"Expression\": { \"Kind\": \"Literal\", \"Literal\": { \"Kind\": \"Number\", \"Value\": 1 } }, \"SourceExpression\": { \"Kind\": \"Where\", \"DeclaredVariable\": { \"Name\": \"v1\", \"UniqueId\": 9 }, \"Expression\": { \"Kind\": \"BinaryOperator\", \"OperatorKind\": \"Equal\", \"LeftExpression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v1\", \"UniqueId\": 9 } }, \"RightExpression\": { \"Kind\": \"Literal\", \"Literal\": { \"Kind\": \"Number\", \"Value\": 435 } } }, \"SourceExpression\": { \"Kind\": \"ScalarAsEnumerable\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 7 } }, \"EnumerationKind\": \"ArrayItems\" } } } }, \"SourceExpression\": { \"Kind\": \"Distinct\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 7 }, \"Expressions\": [ { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 7 } } ], \"SourceExpression\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 19 }, \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 19 } }, \"Index\": 0 }, \"Index\": 0 }, \"SourceExpression\": { \"Kind\": \"Input\", \"Name\": \"root\" } } } } } }}"),
+                    description: @"ArrayCreate - ArrayIndexer - ObjectCreate - TupleCreate - VariableRef",
+                    clientPlanJson: "{\"clientDistributionPlan\": { \"Cql\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"s0\", \"UniqueId\": 3 }, \"Expression\": { \"Kind\": \"ObjectCreate\", \"ObjectKind\": \"Object\", \"Properties\": [ { \"Name\": \"arr\", \"Expression\": { \"Kind\": \"ArrayCreate\", \"ArrayKind\": \"Array\", \"Items\": [ { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"s0\", \"UniqueId\": 3 } }, \"Index\": 0 }, { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"s0\", \"UniqueId\": 3 } }, \"Index\": 1 } ] } } ] }, \"SourceExpression\": { \"Kind\": \"Distinct\", \"DeclaredVariable\": { \"Name\": \"s0\", \"UniqueId\": 3 }, \"Expressions\": [ { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"s0\", \"UniqueId\": 3 } }, \"Index\": 0 }, { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"s0\", \"UniqueId\": 3 } }, \"Index\": 1 } ], \"SourceExpression\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 6 }, \"Expression\": { \"Kind\": \"TupleCreate\", \"Items\": [ { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 6 } }, \"Index\": 0 }, \"Index\": 0 }, { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 6 } }, \"Index\": 1 }, \"Index\": 0 } ] }, \"SourceExpression\": { \"Kind\": \"Input\", \"Name\": \"root\" } } } } }}"),
                 
                 CreateInput(
-                    description: @"GroupBy",
-                    clientPlanJson: "{\"clientDistributionPlan\": { \"Cql\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 2 }, \"Expression\": { \"Kind\": \"ObjectCreate\", \"ObjectKind\": \"Object\", \"Properties\": [ { \"Name\": \"a\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 2 } }, \"Index\": 0 } }, { \"Name\": \"$1\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 2 } }, \"Index\": 1 } } ] }, \"SourceExpression\": { \"Kind\": \"GroupBy\", \"KeyCount\": 1, \"Aggregates\": [ { \"Kind\": \"Builtin\", \"OperatorKind\": \"Max\" } ], \"SourceExpression\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 9 }, \"Expression\": { \"Kind\": \"TupleCreate\", \"Items\": [ { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 9 } }, \"Index\": 0 }, { \"Kind\": \"Mux\", \"ConditionExpression\": { \"Kind\": \"BinaryOperator\", \"OperatorKind\": \"And\", \"LeftExpression\": { \"Kind\": \"BinaryOperator\", \"OperatorKind\": \"NotEqual\", \"LeftExpression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 9 } }, \"Index\": 1 }, \"Index\": 1 }, \"RightExpression\": { \"Kind\": \"Literal\", \"Literal\": { \"Kind\": \"Number\", \"Value\": 0 } } }, \"RightExpression\": { \"Kind\": \"UnaryOperator\", \"OperatorKind\": \"Not\", \"Expression\": { \"Kind\": \"SystemFunctionCall\", \"FunctionKind\": \"Is_Defined\", \"Arguments\": [ { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 9 } }, \"Index\": 1 }, \"Index\": 0 } ] } } }, \"LeftExpression\": { \"Kind\": \"Literal\", \"Literal\": { \"Kind\": \"Array\", \"Items\": [] } }, \"RightExpression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 9 } }, \"Index\": 1 }, \"Index\": 0 } } ] }, \"SourceExpression\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 8 }, \"Expression\": { \"Kind\": \"TupleCreate\", \"Items\": [ { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 8 } }, \"Index\": 0 }, \"Index\": 0 }, { \"Kind\": \"TupleCreate\", \"Items\": [ { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 8 } }, \"Index\": 1 }, \"Index\": 0 }, { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 8 } }, \"Index\": 2 } ] } ] }, \"SourceExpression\": { \"Kind\": \"Input\", \"Name\": \"root\" } } } } } }}"),
+                    description: @"BinaryOperator",
+                    clientPlanJson: "{\"clientDistributionPlan\": { \"Cql\": { \"Kind\": \"Distinct\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 1 }, \"Expressions\": [ { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 1 } } ], \"SourceExpression\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"s0\", \"UniqueId\": 3 }, \"Expression\": { \"Kind\": \"ObjectCreate\", \"ObjectKind\": \"Object\", \"Properties\": [ { \"Name\": \"$1\", \"Expression\": { \"Kind\": \"BinaryOperator\", \"OperatorKind\": \"And\", \"LeftExpression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"s0\", \"UniqueId\": 3 } }, \"Index\": 0 }, \"RightExpression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"s0\", \"UniqueId\": 3 } }, \"Index\": 1 } } } ] }, \"SourceExpression\": { \"Kind\": \"Distinct\", \"DeclaredVariable\": { \"Name\": \"s0\", \"UniqueId\": 3 }, \"Expressions\": [ { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"s0\", \"UniqueId\": 3 } }, \"Index\": 0 }, { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"s0\", \"UniqueId\": 3 } }, \"Index\": 1 } ], \"SourceExpression\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 6 }, \"Expression\": { \"Kind\": \"TupleCreate\", \"Items\": [ { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 6 } }, \"Index\": 0 }, \"Index\": 0 }, { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 6 } }, \"Index\": 1 }, \"Index\": 0 } ] }, \"SourceExpression\": { \"Kind\": \"Input\", \"Name\": \"root\" } } } } } }}"),
                 
+                CreateInput(
+                    description: @"Literal",
+                    clientPlanJson: "{\"clientDistributionPlan\": { \"Cql\": { \"Kind\": \"Distinct\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 1 }, \"Expressions\": [ { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 1 } } ], \"SourceExpression\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"s0\", \"UniqueId\": 3 }, \"Expression\": { \"Kind\": \"ObjectCreate\", \"ObjectKind\": \"Object\", \"Properties\": [ { \"Name\": \"EqualsFive\", \"Expression\": { \"Kind\": \"BinaryOperator\", \"OperatorKind\": \"Equal\", \"LeftExpression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"s0\", \"UniqueId\": 3 } }, \"RightExpression\": { \"Kind\": \"Literal\", \"Literal\": { \"Kind\": \"Number\", \"Value\": 5 } } } } ] }, \"SourceExpression\": { \"Kind\": \"Distinct\", \"DeclaredVariable\": { \"Name\": \"s0\", \"UniqueId\": 3 }, \"Expressions\": [ { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"s0\", \"UniqueId\": 3 } } ], \"SourceExpression\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 6 }, \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 6 } }, \"Index\": 0 }, \"Index\": 0 }, \"SourceExpression\": { \"Kind\": \"Input\", \"Name\": \"root\" } } } } } }}"),
+                
+                CreateInput(
+                    description: @"SystemFunctionCall",
+                    clientPlanJson: "{\"clientDistributionPlan\": { \"Cql\": { \"Kind\": \"Distinct\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 1 }, \"Expressions\": [ { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 1 } } ], \"SourceExpression\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"s0\", \"UniqueId\": 3 }, \"Expression\": { \"Kind\": \"ObjectCreate\", \"ObjectKind\": \"Object\", \"Properties\": [ { \"Name\": \"$1\", \"Expression\": { \"Kind\": \"SystemFunctionCall\", \"FunctionKind\": \"Is_Integer\", \"Arguments\": [ { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"s0\", \"UniqueId\": 3 } } ] } } ] }, \"SourceExpression\": { \"Kind\": \"Distinct\", \"DeclaredVariable\": { \"Name\": \"s0\", \"UniqueId\": 3 }, \"Expressions\": [ { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"s0\", \"UniqueId\": 3 } } ], \"SourceExpression\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 6 }, \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 6 } }, \"Index\": 0 }, \"Index\": 0 }, \"SourceExpression\": { \"Kind\": \"Input\", \"Name\": \"root\" } } } } } }}"),
+                
+                CreateInput(
+                    description: @"Unary",
+                    clientPlanJson: "{\"clientDistributionPlan\": { \"Cql\": { \"Kind\": \"Distinct\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 1 }, \"Expressions\": [ { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 1 } } ], \"SourceExpression\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"s0\", \"UniqueId\": 3 }, \"Expression\": { \"Kind\": \"ObjectCreate\", \"ObjectKind\": \"Object\", \"Properties\": [ { \"Name\": \"$1\", \"Expression\": { \"Kind\": \"UnaryOperator\", \"OperatorKind\": \"Not\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"s0\", \"UniqueId\": 3 } } } } ] }, \"SourceExpression\": { \"Kind\": \"Distinct\", \"DeclaredVariable\": { \"Name\": \"s0\", \"UniqueId\": 3 }, \"Expressions\": [ { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"s0\", \"UniqueId\": 3 } } ], \"SourceExpression\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 6 }, \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 6 } }, \"Index\": 0 }, \"Index\": 0 }, \"SourceExpression\": { \"Kind\": \"Input\", \"Name\": \"root\" } } } } } }}"),
+                
+                CreateInput(
+                    description: @"UserDefinedFunction",
+                    clientPlanJson: "{\"clientDistributionPlan\": { \"Cql\": { \"Kind\": \"Distinct\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 1 }, \"Expressions\": [ { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 1 } } ], \"SourceExpression\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"s0\", \"UniqueId\": 3 }, \"Expression\": { \"Kind\": \"ObjectCreate\", \"ObjectKind\": \"Object\", \"Properties\": [ { \"Name\": \"aUpper\", \"Expression\": { \"Kind\": \"UserDefinedFunctionCall\", \"Identifier\": { \"Name\": \"toUpper\" }, \"Arguments\": [ { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"s0\", \"UniqueId\": 3 } } ], \"Builtin\": false } } ] }, \"SourceExpression\": { \"Kind\": \"Distinct\", \"DeclaredVariable\": { \"Name\": \"s0\", \"UniqueId\": 3 }, \"Expressions\": [ { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"s0\", \"UniqueId\": 3 } } ], \"SourceExpression\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 6 }, \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 6 } }, \"Index\": 0 }, \"Index\": 0 }, \"SourceExpression\": { \"Kind\": \"Input\", \"Name\": \"root\" } } } } } }}"),
 
+                // Additional Cases
                 CreateInput(
                     description: @"Multiple Aggregates",
                     clientPlanJson: "{\"clientDistributionPlan\": { \"Cql\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 2 }, \"Expression\": { \"Kind\": \"ObjectCreate\", \"ObjectKind\": \"Object\", \"Properties\": [ { \"Name\": \"sum_a\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 2 } }, \"Index\": 0 } }, { \"Name\": \"sum_b\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 2 } }, \"Index\": 1 } } ] }, \"SourceExpression\": { \"Kind\": \"Aggregate\", \"Aggregate\": { \"Kind\": \"Tuple\", \"Items\": [ { \"Kind\": \"Builtin\", \"OperatorKind\": \"Sum\" }, { \"Kind\": \"Builtin\", \"OperatorKind\": \"Sum\" } ] }, \"SourceExpression\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 8 }, \"Expression\": { \"Kind\": \"TupleCreate\", \"Items\": [ { \"Kind\": \"Mux\", \"ConditionExpression\": { \"Kind\": \"BinaryOperator\", \"OperatorKind\": \"And\", \"LeftExpression\": { \"Kind\": \"BinaryOperator\", \"OperatorKind\": \"NotEqual\", \"LeftExpression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 8 } }, \"Index\": 0 }, \"Index\": 1 }, \"RightExpression\": { \"Kind\": \"Literal\", \"Literal\": { \"Kind\": \"Number\", \"Value\": 0 } } }, \"RightExpression\": { \"Kind\": \"UnaryOperator\", \"OperatorKind\": \"Not\", \"Expression\": { \"Kind\": \"SystemFunctionCall\", \"FunctionKind\": \"Is_Defined\", \"Arguments\": [ { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 8 } }, \"Index\": 0 }, \"Index\": 0 } ] } } }, \"LeftExpression\": { \"Kind\": \"Literal\", \"Literal\": { \"Kind\": \"Array\", \"Items\": [] } }, \"RightExpression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 8 } }, \"Index\": 0 }, \"Index\": 0 } }, { \"Kind\": \"Mux\", \"ConditionExpression\": { \"Kind\": \"BinaryOperator\", \"OperatorKind\": \"And\", \"LeftExpression\": { \"Kind\": \"BinaryOperator\", \"OperatorKind\": \"NotEqual\", \"LeftExpression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 8 } }, \"Index\": 1 }, \"Index\": 1 }, \"RightExpression\": { \"Kind\": \"Literal\", \"Literal\": { \"Kind\": \"Number\", \"Value\": 0 } } }, \"RightExpression\": { \"Kind\": \"UnaryOperator\", \"OperatorKind\": \"Not\", \"Expression\": { \"Kind\": \"SystemFunctionCall\", \"FunctionKind\": \"Is_Defined\", \"Arguments\": [ { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 8 } }, \"Index\": 1 }, \"Index\": 0 } ] } } }, \"LeftExpression\": { \"Kind\": \"Literal\", \"Literal\": { \"Kind\": \"Array\", \"Items\": [] } }, \"RightExpression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 8 } }, \"Index\": 1 }, \"Index\": 0 } } ] }, \"SourceExpression\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 7 }, \"Expression\": { \"Kind\": \"TupleCreate\", \"Items\": [ { \"Kind\": \"TupleCreate\", \"Items\": [ { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 7 } }, \"Index\": 0 }, \"Index\": 0 }, { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 7 } }, \"Index\": 1 } ] }, { \"Kind\": \"TupleCreate\", \"Items\": [ { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 7 } }, \"Index\": 2 }, \"Index\": 0 }, { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 7 } }, \"Index\": 3 } ] } ] }, \"SourceExpression\": { \"Kind\": \"Input\", \"Name\": \"root\" } } } } } }}"),
@@ -69,8 +88,8 @@
                     clientPlanJson: "{\"clientDistributionPlan\": { \"Cql\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 2 }, \"Expression\": { \"Kind\": \"ObjectCreate\", \"ObjectKind\": \"Object\", \"Properties\": [ { \"Name\": \"count_a_plus_five\", \"Expression\": { \"Kind\": \"BinaryOperator\", \"OperatorKind\": \"Add\", \"LeftExpression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 2 } }, \"RightExpression\": { \"Kind\": \"Literal\", \"Literal\": { \"Kind\": \"Number\", \"Value\": 5 } } } } ] }, \"SourceExpression\": { \"Kind\": \"Aggregate\", \"Aggregate\": { \"Kind\": \"Builtin\", \"OperatorKind\": \"Sum\" }, \"SourceExpression\": { \"Kind\": \"Input\", \"Name\": \"root\" } } } }}"),
 
                 CreateInput(
-                    description: @"ArrayCreate - ArrayIndexer - ObjectCreate - TupleCreate - VariableRef",
-                    clientPlanJson: "{\"clientDistributionPlan\": { \"Cql\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"s0\", \"UniqueId\": 3 }, \"Expression\": { \"Kind\": \"ObjectCreate\", \"ObjectKind\": \"Object\", \"Properties\": [ { \"Name\": \"arr\", \"Expression\": { \"Kind\": \"ArrayCreate\", \"ArrayKind\": \"Array\", \"Items\": [ { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"s0\", \"UniqueId\": 3 } }, \"Index\": 0 }, { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"s0\", \"UniqueId\": 3 } }, \"Index\": 1 } ] } } ] }, \"SourceExpression\": { \"Kind\": \"Distinct\", \"DeclaredVariable\": { \"Name\": \"s0\", \"UniqueId\": 3 }, \"Expressions\": [ { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"s0\", \"UniqueId\": 3 } }, \"Index\": 0 }, { \"Kind\": \"TupleItemRef\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"s0\", \"UniqueId\": 3 } }, \"Index\": 1 } ], \"SourceExpression\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 6 }, \"Expression\": { \"Kind\": \"TupleCreate\", \"Items\": [ { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 6 } }, \"Index\": 0 }, \"Index\": 0 }, { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 6 } }, \"Index\": 1 }, \"Index\": 0 } ] }, \"SourceExpression\": { \"Kind\": \"Input\", \"Name\": \"root\" } } } } }}"),
+                    description: @"Distinct-Select",
+                    clientPlanJson: "{\"clientDistributionPlan\": { \"Cql\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"s0\", \"UniqueId\": 3 }, \"Expression\": { \"Kind\": \"ObjectCreate\", \"ObjectKind\": \"Object\", \"Properties\": [ { \"Name\": \"a\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"s0\", \"UniqueId\": 3 } } } ] }, \"SourceExpression\": { \"Kind\": \"Distinct\", \"DeclaredVariable\": { \"Name\": \"s0\", \"UniqueId\": 3 }, \"Expressions\": [ { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"s0\", \"UniqueId\": 3 } } ], \"SourceExpression\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 6 }, \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 6 } }, \"Index\": 0 }, \"Index\": 0 }, \"SourceExpression\": { \"Kind\": \"Input\", \"Name\": \"root\" } } } } }}"),
             };
 
             this.ExecuteTestSuite(testVariations);
@@ -142,24 +161,11 @@
     {
         private StringBuilder output = new StringBuilder();
 
-        public string SerializedOutput => "clientDistributionPlan: { Cql: { " + this.output.ToString() + " } } ";
+        public string SerializedOutput => "clientDistributionPlan: { Cql: { " + this.output.ToString() + " } }";
 
         void ICqlVisitor.Visit(CqlAggregate cqlAggregate)
         {
-            CqlAggregateKind aggregateKind = cqlAggregate.Kind;
-            string aggregate = "";
-
-            switch (aggregateKind)
-            {
-                case CqlAggregateKind.Builtin:
-                    aggregate = "Builtin";
-                    break;
-                case CqlAggregateKind.Tuple:
-                    aggregate = "Tuple";
-                    break;
-            }
-
-            this.output.Append($"Kind: {aggregate},");
+            throw new NotImplementedException();
         }
 
         void ICqlVisitor.Visit(CqlAggregateEnumerableExpression cqlAggregateEnumerableExpression)
@@ -179,21 +185,7 @@
 
         void ICqlVisitor.Visit(CqlAggregateOperatorKind cqlAggregateOperatorKind)
         {
-            string kindString = cqlAggregateOperatorKind switch
-            {
-                CqlAggregateOperatorKind.All => "All",
-                CqlAggregateOperatorKind.Any => "Any",
-                CqlAggregateOperatorKind.Array => "Array",
-                CqlAggregateOperatorKind.Count => "Count",
-                CqlAggregateOperatorKind.First => "First",
-                CqlAggregateOperatorKind.Last => "Last",
-                CqlAggregateOperatorKind.Max => "Max",
-                CqlAggregateOperatorKind.Min => "Min",
-                CqlAggregateOperatorKind.Sum => "Sum",
-                _ => throw new NotSupportedException($"Invalid CqlExpression kind: {cqlAggregateOperatorKind}"),
-            };
-
-            this.output.Append($"Kind: {kindString}, ");
+            throw new NotImplementedException();
         }
 
         void ICqlVisitor.Visit(CqlArrayCreateScalarExpression cqlArrayCreateScalarExpression)
@@ -201,13 +193,13 @@
             this.output.Append("{Kind: ArrayCreate, ");
             string arrayKind = cqlArrayCreateScalarExpression.ArrayKind;
             this.output.Append($"ArrayKind: {arrayKind}, ");
-            IReadOnlyList<CqlScalarExpression> items = cqlArrayCreateScalarExpression.Items;
             this.output.Append("Items: [");
-
-            foreach (CqlScalarExpression item in items)
+            foreach (CqlScalarExpression item in cqlArrayCreateScalarExpression.Items)
             {
                 item.Accept(this);
             }
+
+            this.output.Append("]");
         }
 
         void ICqlVisitor.Visit(CqlArrayIndexerScalarExpression cqlArrayIndexerScalarExpression)
@@ -237,8 +229,10 @@
             this.output.Append($"OperatorKind: {cqlBinaryScalarExpression.OperatorKind.ToString()}, ");
             this.output.Append("LeftExpression: { ");
             cqlBinaryScalarExpression.LeftExpression.Accept(this);
+            this.output.Append("} ");
             this.output.Append("RightExpression: { ");
             cqlBinaryScalarExpression.RightExpression.Accept(this);
+            this.output.Append("} ");
         }
 
         void ICqlVisitor.Visit(CqlBinaryScalarOperatorKind cqlBinaryScalarOperatorKind)
@@ -283,24 +277,7 @@
 
         void ICqlVisitor.Visit(CqlEnumerableExpression cqlEnumerableExpression)
         {
-            CqlEnumerableExpressionKind kind = cqlEnumerableExpression.Kind;
-            string kindString = kind switch
-            {
-                CqlEnumerableExpressionKind.Aggregate => "Aggregate",
-                CqlEnumerableExpressionKind.Distinct => "Distinct",
-                CqlEnumerableExpressionKind.GroupBy => "GroupBy",
-                CqlEnumerableExpressionKind.Input => "Input",
-                CqlEnumerableExpressionKind.OrderBy => "OrderBy",
-                CqlEnumerableExpressionKind.ScalarAsEnumerable => "ScalarAsEnumerable",
-                CqlEnumerableExpressionKind.Select => "Select",
-                CqlEnumerableExpressionKind.SelectMany => "SelectMany",
-                CqlEnumerableExpressionKind.Take => "Take",
-                CqlEnumerableExpressionKind.Where => "Where",
-                _ => throw new NotSupportedException($"Invalid CqlExpression kind: {kind}"),
-            };
-
-            this.output.Append("SourceExpression: {");
-            this.output.Append($"Kind: {kindString}, ");
+            throw new NotImplementedException();
         }
 
         void ICqlVisitor.Visit(CqlEnumerableExpressionKind cqlEnumerableExpressionKind)
@@ -353,7 +330,7 @@
 
         void ICqlVisitor.Visit(CqlLetScalarExpression cqlLetScalarExpression)
         {
-            
+            throw new NotImplementedException();
         }
 
         void ICqlVisitor.Visit(CqlLiteral cqlLiteral)
@@ -371,7 +348,6 @@
             CqlLiteralKind literalKind = cqlLiteralScalarExpression.Literal.Kind;
             this.output.Append("Kind: Literal, ");
             this.output.Append("Literal: { ");
-            // problem here
             this.output.Append($"Kind: {literalKind}, ");
             cqlLiteralScalarExpression.Literal.Accept(this);
         }
@@ -406,10 +382,7 @@
             string objectKind = cqlObjectCreateScalarExpression.ObjectKind;
             this.output.Append($"ObjectKind: {objectKind}, ");
             this.output.Append("Properties: [ ");
-
-            IReadOnlyList<CqlObjectProperty> properties = cqlObjectCreateScalarExpression.Properties;
-
-            foreach (CqlObjectProperty property in properties)
+            foreach (CqlObjectProperty property in cqlObjectCreateScalarExpression.Properties)
             {
                 string name = property.Name;
                 this.output.Append($"{{ Name: {name}, ");
@@ -437,7 +410,7 @@
 
         void ICqlVisitor.Visit(CqlOrderByEnumerableExpression cqlOrderByEnumerableExpression)
         {
-            //throw new System.NotImplementedException();
+            throw new System.NotImplementedException();
         }
 
         void ICqlVisitor.Visit(CqlOrderByItem cqlOrderByItem)
@@ -452,7 +425,11 @@
 
         void ICqlVisitor.Visit(CqlScalarAsEnumerableExpression cqlScalarAsEnumerableExpression)
         {
-            //throw new System.NotImplementedException();
+            this.output.Append("Kind: ScalarAsEnumerable, ");
+            this.output.Append("Expression: { ");
+            cqlScalarAsEnumerableExpression.Expression.Accept(this);
+            this.output.Append("}, ");
+            this.output.Append($"EnumerationKind: {cqlScalarAsEnumerableExpression.EnumerationKind}");
         }
 
         void ICqlVisitor.Visit(CqlScalarExpression cqlScalarExpression)
@@ -622,15 +599,16 @@
 
         void ICqlVisitor.Visit(CqlWhereEnumerableExpression cqlWhereEnumerableExpression)
         {
-            cqlWhereEnumerableExpression.SourceExpression.Accept(this);
-            string name = cqlWhereEnumerableExpression.DeclaredVariable.Name;
-            long uniqueId = cqlWhereEnumerableExpression.DeclaredVariable.UniqueId;
-
+            this.output.Append("Kind: Where, ");
             this.output.Append("DeclaredVariable: {");
-            this.output.Append($"Name: {name}");
-            this.output.Append($"UniqueId: {uniqueId}, ");
-
+            this.output.Append($"Name: {cqlWhereEnumerableExpression.DeclaredVariable.Name}, ");
+            this.output.Append($"UniqueId: {cqlWhereEnumerableExpression.DeclaredVariable.UniqueId}, ");
+            this.output.Append("Expression: { ");
             cqlWhereEnumerableExpression.Expression.Accept(this);
+            this.output.Append("} ");
+            this.output.Append("SourceExpression: { ");
+            cqlWhereEnumerableExpression.SourceExpression.Accept(this);
+            this.output.Append(" }");
         }
     }
 }
