@@ -32,9 +32,9 @@
                 ConnectionMode = ConnectionMode.Direct,
                 ApplicationPreferredRegions = new List<string>() { "East US", "West US" },
                 AvailabilityStrategyOptions = new AvailabilityStrategyOptions(
-                    AvailabilityStrategyType.ParallelHedging,
-                    threshold: TimeSpan.FromMilliseconds(100),
-                    step: TimeSpan.FromMilliseconds(50))
+                    new ParallelHedging(
+                        threshold: TimeSpan.FromMilliseconds(100), 
+                        step: TimeSpan.FromMilliseconds(50)))
             };
 
             this.client = new CosmosClient(
@@ -359,6 +359,47 @@
                 .SendWithAvailabilityStrategyAsync(requestMessage, cancellationToken);
 
             Assert.AreEqual(HttpStatusCode.OK, rm.StatusCode);
+        }
+
+        [TestMethod]
+        public void RequestMessageCloneTests()
+        {
+            RequestMessage httpRequest = new RequestMessage(
+                HttpMethod.Get,
+                new Uri("/dbs/testdb/colls/testcontainer/docs/testId", UriKind.Relative));
+
+            string key = Guid.NewGuid().ToString();
+            Dictionary<string, object> properties = new Dictionary<string, object>()
+            {
+                { key, Guid.NewGuid() }
+            };
+
+            RequestOptions requestOptions = new RequestOptions()
+            {
+                Properties = properties
+            };
+
+            httpRequest.RequestOptions = requestOptions;
+            httpRequest.ResourceType = ResourceType.Document;
+            httpRequest.OperationType = OperationType.Read;
+            httpRequest.Headers.CorrelatedActivityId = Guid.NewGuid().ToString();
+            httpRequest.PartitionKeyRangeId = new PartitionKeyRangeIdentity("0", "1");
+            httpRequest.UseGatewayMode = true;
+            httpRequest.OnBeforeSendRequestActions = (request) => { };
+            httpRequest.ContainerId = "testcontainer";
+            httpRequest.DatabaseId = "testdb";
+
+            RequestMessage clone = httpRequest.Clone();
+
+            Assert.AreEqual(httpRequest.RequestOptions.Properties, clone.RequestOptions.Properties);
+            Assert.AreEqual(httpRequest.ResourceType, clone.ResourceType);
+            Assert.AreEqual(httpRequest.OperationType, clone.OperationType);
+            Assert.AreEqual(httpRequest.Headers.CorrelatedActivityId, clone.Headers.CorrelatedActivityId);
+            Assert.AreEqual(httpRequest.PartitionKeyRangeId, clone.PartitionKeyRangeId);
+            Assert.AreEqual(httpRequest.UseGatewayMode, clone.UseGatewayMode);
+            Assert.AreEqual(httpRequest.OnBeforeSendRequestActions, clone.OnBeforeSendRequestActions);
+            Assert.AreEqual(httpRequest.ContainerId, clone.ContainerId);
+            Assert.AreEqual(httpRequest.DatabaseId, clone.DatabaseId);
         }
     }
 }

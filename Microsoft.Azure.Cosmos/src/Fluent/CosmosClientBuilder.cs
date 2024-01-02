@@ -631,13 +631,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Availability Stragey Options to be used for periods of high latency
         /// </summary>
-        /// <param name="type"></param>
-        /// <param name="threshold"></param>
-        /// <param name="step"></param>
+        /// <param name="strategy"></param>
         /// <returns>The CosmosClientBuilder</returns>
-        public CosmosClientBuilder WithAvailibilityStrategy(AvailabilityStrategyType type, TimeSpan threshold, TimeSpan? step)
+        public CosmosClientBuilder WithAvailibilityStrategy(AvailabilityStrategy strategy)
         {
-            this.clientOptions.AvailabilityStrategyOptions = new AvailabilityStrategyOptions(type, threshold, step);
+            this.clientOptions.AvailabilityStrategyOptions = new AvailabilityStrategyOptions(strategy);
             return this;
         }
 

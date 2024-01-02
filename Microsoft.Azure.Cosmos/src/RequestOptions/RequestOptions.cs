@@ -78,6 +78,13 @@ namespace Microsoft.Azure.Cosmos
         public List<string> ExcludeRegions { get; set; }
 
         /// <summary>
+        /// Cosmos availability strategy options.
+        /// Availability allow the SDK to send out additional cross region requests to help 
+        /// reduce latency and increase availability. Currently there is one type of availability strategy, parallel request hedging.  
+        /// </summary>
+        public AvailabilityStrategyOptions AvailabilityStrategyOptions { get; set; }
+
+        /// <summary>
         /// Gets or sets the boolean to use effective partition key routing in the cosmos db request.
         /// </summary>
         internal bool IsEffectivePartitionKeyRouting { get; set; }
@@ -96,8 +103,6 @@ namespace Microsoft.Azure.Cosmos
         internal virtual ConsistencyLevel? BaseConsistencyLevel { get; set; }
 
         internal bool DisablePointOperationDiagnostics { get; set; }
-
-        internal AvailabilityStrategyOptions AvailabilityStrategyOptions { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties

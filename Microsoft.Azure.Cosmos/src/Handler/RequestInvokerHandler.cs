@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             await request.AssertPartitioningDetailsAsync(this.client, cancellationToken, request.Trace);
             this.FillMultiMasterContext(request);
-            if (this.ShouldSpeculate(request))
+            if (this.ShouldHedge(request))
             {
                 return await this.SendWithAvailabilityStrategyAsync(request, cancellationToken);
             }
@@ -81,13 +81,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
         }
 
         /// <summary>
-        /// This method determines if the request should be sent with a speculative availability strategy.
+        /// This method determines if the request should be sent with a parallel hedging availability strategy.
         /// This first checks to see if there is a vailid availability strategy to use, 
         /// then checks to see if the request is a read-only request on a document request.
         /// </summary>
         /// <param name="request"></param>
-        /// <returns>whether the request should be a speculative request.</returns>
-        internal bool ShouldSpeculate(RequestMessage request)
+        /// <returns>whether the request should be a parallel hedging request.</returns>
+        public bool ShouldHedge(RequestMessage request)
         {
             //No availability strategy options
             if (request.RequestOptions?.AvailabilityStrategyOptions == null && this.client.ClientOptions.AvailabilityStrategyOptions == null)
@@ -115,6 +115,17 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             //check to see if it is a not a read-only request
             if (!OperationTypeExtensions.IsReadOperation(request.OperationType))
+            {
+                return false;
+            }
+
+            Type type = this.client.ClientOptions.AvailabilityStrategyOptions?.AvailabilityStrategy.GetType();
+            if (request.RequestOptions?.AvailabilityStrategyOptions != null)
+            {
+                type = request.RequestOptions.AvailabilityStrategyOptions.AvailabilityStrategy.GetType();
+            }
+
+            if (type != typeof(ParallelHedging))
             {
                 return false;
             }
@@ -173,12 +184,12 @@ namespace Microsoft.Azure.Cosmos.Handlers
             CancellationToken parallelRequestCancellationToken)
         {
             TimeSpan threshold = requests[0].RequestOptions?.AvailabilityStrategyOptions != null
-                ? requests[0].RequestOptions.AvailabilityStrategyOptions.Threshold 
-                : this.client.ClientOptions.AvailabilityStrategyOptions.Threshold;
+                ? ((ParallelHedging)requests[0].RequestOptions.AvailabilityStrategyOptions.AvailabilityStrategy).Threshold
+                : ((ParallelHedging)this.client.ClientOptions.AvailabilityStrategyOptions.AvailabilityStrategy).Threshold;
 
             int step = requests[0].RequestOptions?.AvailabilityStrategyOptions != null
-                ? requests[0].RequestOptions.AvailabilityStrategyOptions.Step.Milliseconds
-                : this.client.ClientOptions.AvailabilityStrategyOptions.Step.Milliseconds;
+                ? ((ParallelHedging)requests[0].RequestOptions.AvailabilityStrategyOptions.AvailabilityStrategy).Step.Milliseconds
+                : ((ParallelHedging)this.client.ClientOptions.AvailabilityStrategyOptions.AvailabilityStrategy).Step.Milliseconds;
 
             List<Task<ResponseMessage>> tasks = new List<Task<ResponseMessage>>();
             for (int i = 0; i < requests.Count; i++)
