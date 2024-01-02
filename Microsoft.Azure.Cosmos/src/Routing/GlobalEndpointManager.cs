@@ -125,25 +125,26 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// The 2 additional tasks will go through all the preferred regions in parallel
         /// It will return the first success and stop the parallel tasks.
         /// </summary>
-        public static Task<AccountProperties> GetDatabaseAccountFromAnyLocationsAsync(
+        public static async Task<AccountProperties> GetDatabaseAccountFromAnyLocationsAsync(
             Uri defaultEndpoint,
             IList<string>? locations,
             Func<Uri, Task<AccountProperties>> getDatabaseAccountFn,
             CancellationToken cancellationToken)
         {
-            GetAccountPropertiesHelper threadSafeGetAccountHelper = new GetAccountPropertiesHelper(
+            using (GetAccountPropertiesHelper threadSafeGetAccountHelper = new GetAccountPropertiesHelper(
                defaultEndpoint,
                locations?.GetEnumerator(),
                getDatabaseAccountFn,
-               cancellationToken);
-
-            return threadSafeGetAccountHelper.GetAccountPropertiesAsync();
+               cancellationToken))
+            {
+                return await threadSafeGetAccountHelper.GetAccountPropertiesAsync();
+            }
         }
 
         /// <summary>
         /// This is a helper class to 
         /// </summary>
-        private class GetAccountPropertiesHelper
+        private class GetAccountPropertiesHelper : IDisposable
         {
             private readonly CancellationTokenSource CancellationTokenSource;
             private readonly Uri DefaultEndpoint;
@@ -152,6 +153,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             private readonly List<Exception> TransientExceptions = new List<Exception>();
             private AccountProperties? AccountProperties = null;
             private Exception? NonRetriableException = null;
+            private int disposeCounter = 0;
 
             public GetAccountPropertiesHelper(
                 Uri defaultEndpoint,
@@ -356,6 +358,15 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
 
                 return false;
+            }
+
+            public void Dispose()
+            {
+                if (Interlocked.Increment(ref this.disposeCounter) == 1)
+                {
+                    this.CancellationTokenSource?.Cancel();
+                    this.CancellationTokenSource?.Dispose();
+                }
             }
         }
 
