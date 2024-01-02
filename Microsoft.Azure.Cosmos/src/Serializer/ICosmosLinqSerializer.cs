@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Reflection;
 
     /// <summary>
-    /// This interface can be implemented to allow a custom serializer to be used by the CosmosClient
+    /// This interface can be implemented to allow a custom serializer (Non [Json.NET serializer](https://www.newtonsoft.com/json/help/html/Introduction.htm)'s) to be used by the CosmosClient
     /// for both CRUD operations and LINQ queries.
     /// </summary>
 #if PREVIEW
