@@ -134,39 +134,62 @@ namespace Microsoft.Azure.Cosmos
             return headers;
         }
 
+        /// <summary>
+        /// Creating a new DocumentClientException using the Gateway response message.
+        ///   Is the media type not "application/json"?
+        ///      return DocumentClientExcpetion with responseMessage and header information.
+        ///
+        ///   Is the header content-length == 0 and media type is "application/json"? Test case sensitivity.
+        ///      return DocumentClientException with message 'No response content from gateway.'
+        ///
+        ///   Is the content actual length == 0 after a trim and media type is "application/json"? Test case sensitivity. Whitespace scenarios.
+        ///      return DocumentClientException with message 'No response content from gateway.'
+        ///
+        ///   Is the content not parseable as json, but content length != 0 and media type is "application/json"? Test case sensitivity.
+        ///      return DocumentClientException with message set to raw non-json message from response.
+        /// </summary>
+        /// <param name="responseMessage"></param>
+        /// <param name="requestStatistics"></param>
         internal static async Task<DocumentClientException> CreateDocumentClientExceptionAsync(
             HttpResponseMessage responseMessage,
             IClientSideRequestStatistics requestStatistics)
         {
-            bool isNameBased = false;
-            bool isFeed = false;
-            string resourceTypeString;
-            string resourceIdOrFullName;
+            if (responseMessage is null)
+            {
+                throw new ArgumentNullException(nameof(responseMessage));
+            }
 
-            string resourceLink = responseMessage.RequestMessage.RequestUri.LocalPath;
-            if (!PathsHelper.TryParsePathSegments(resourceLink, out isFeed, out resourceTypeString, out resourceIdOrFullName, out isNameBased))
+            if (requestStatistics is null)
+            {
+                throw new ArgumentNullException(nameof(requestStatistics));
+            }
+
+            // Ask, what is the purpose of this, really?
+            // The only impact of try parse fail is an empty resourceIdOrFullName.
+
+            if (!PathsHelper.TryParsePathSegments(
+                resourceUrl: responseMessage.RequestMessage.RequestUri.LocalPath,
+                isFeed: out _,
+                resourcePath: out _,
+                resourceIdOrFullName: out string resourceIdOrFullName,
+                isNameBased: out _))
             {
                 // if resourceLink is invalid - we will not set resourceAddress in exception.
             }
 
-            // If service rejects the initial payload like header is to large it will return an HTML error instead of JSON.
-            if (string.Equals(responseMessage.Content?.Headers?.ContentType?.MediaType, "application/json", StringComparison.OrdinalIgnoreCase))
+            try
             {
-                // For more information, see https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4162.
-                Error error;
+                Stream readStream = await responseMessage.Content.ReadAsStreamAsync();
+                Error error = Documents.Resource.LoadFrom<Error>(readStream);
 
-                if (await GatewayStoreClient.IsJsonHTTPResponseFromGatewayInvalidAsync(responseMessage))
+                if (responseMessage.Content?.Headers?.ContentLength == 0 ||
+                    error.Message.Trim().Length == 0)
                 {
                     error = new Error
                     {
                         Code = responseMessage.StatusCode.ToString(),
                         Message = "No response content from gateway."
                     };
-                }
-                else
-                {
-                    Stream readStream = await responseMessage.Content.ReadAsStreamAsync();
-                    error = Documents.Resource.LoadFrom<Error>(readStream);
                 }
 
                 return new DocumentClientException(
@@ -179,7 +202,7 @@ namespace Microsoft.Azure.Cosmos
                     RequestStatistics = requestStatistics
                 };
             }
-            else
+            catch
             {
                 StringBuilder context = new StringBuilder();
                 context.AppendLine(await responseMessage.Content.ReadAsStringAsync());
@@ -187,7 +210,7 @@ namespace Microsoft.Azure.Cosmos
                 HttpRequestMessage requestMessage = responseMessage.RequestMessage;
                 if (requestMessage != null)
                 {
-                    context.AppendLine($"RequestUri: {requestMessage.RequestUri.ToString()};");
+                    context.AppendLine($"RequestUri: {requestMessage.RequestUri};");
                     context.AppendLine($"RequestMethod: {requestMessage.Method.Method};");
 
                     if (requestMessage.Headers != null)
@@ -199,7 +222,6 @@ namespace Microsoft.Azure.Cosmos
                     }
                 }
 
-                String message = await responseMessage.Content.ReadAsStringAsync();
                 return new DocumentClientException(
                     message: context.ToString(),
                     innerException: null,
@@ -212,29 +234,6 @@ namespace Microsoft.Azure.Cosmos
                     RequestStatistics = requestStatistics
                 };
             }
-        }
-
-        /// <summary>
-        /// Checking if exception response (deserializable Error object) is valid based on the content length.
-        /// For more information, see <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4162."/>.
-        /// </summary>
-        /// <param name="responseMessage"></param>
-        private static async Task<bool> IsJsonHTTPResponseFromGatewayInvalidAsync(HttpResponseMessage responseMessage)
-        {
-            string readString = await responseMessage.Content.ReadAsStringAsync();
-
-            try
-            {
-                _ = JToken.Parse(readString);
-
-                return responseMessage.Content?.Headers?.ContentLength == 0 ||
-                    readString.Trim().Length == 0;
-            }
-            catch (JsonReaderException)
-            {
-                return true;
-            }
-
         }
 
         internal static bool IsAllowedRequestHeader(string headerName)

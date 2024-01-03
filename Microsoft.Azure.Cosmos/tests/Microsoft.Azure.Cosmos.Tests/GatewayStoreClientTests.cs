@@ -6,6 +6,8 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Net;
     using System.Net.Http;
+    using System.Reflection.Metadata;
+    using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
@@ -20,22 +22,15 @@ namespace Microsoft.Azure.Cosmos
     public class GatewayStoreClientTests
     {
         /// <summary>
-        /// Testing the exception behavior when a response from the Gateway has no response (deserializable Error object) based on the content length.
-        /// For more information, see <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4162"/>.
+        /// Testing CreateDocumentClientExceptionAsync when media type is not application/json. Not meant to be an exhaustive test for all
+        /// legitimate content media types.
         /// </summary>
-        /// <returns></returns>
         [TestMethod]
-        [DataRow(@"")]
-        [DataRow(@"    ")]
-        [DataRow(@"<!DOCTYPE html><html><body></body></html>")]
-        [DataRow(@"   <!DOCTYPE html><html><body></body></html>")]
-        [DataRow(@"<!DOCTYPE html><html><body></body></html>   ")]
-        [DataRow(@"   <!DOCTYPE html><html><body></body></html>   ")]
-        [DataRow(@"ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890")]
-        [DataRow(@"   ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890")]
-        [DataRow(@"ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890   ")]
-        [DataRow(@"   ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890   ")]
-        public async Task CreateDocumentClientExceptionInvalidJsonResponseFromGatewayTestAsync(string content)
+        [DataRow("text/html", "<!DOCTYPE html><html><body></body></html>")]
+        [DataRow("text/plain", "This is a test error message.")]
+        public async Task TestCreateDocumentClientExceptionWhenMediaTypeIsNotApplicationJsonAsync(
+            string mediaType,
+            string contentMessage)
         {
             HttpResponseMessage responseMessage = new(statusCode: System.Net.HttpStatusCode.NotFound)
             {
@@ -43,13 +38,45 @@ namespace Microsoft.Azure.Cosmos
                     method: HttpMethod.Get,
                     requestUri: @"https://pt_ac_test_uri.com/"),
                 Content = new StringContent(
-                    content: content),
+                    mediaType: mediaType,
+                    encoding: Encoding.UTF8,
+                    content: JsonConvert.SerializeObject(
+                        value: new Error() { Code = HttpStatusCode.NotFound.ToString(), Message = contentMessage })),
             };
 
-            responseMessage.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
+            DocumentClientException documentClientException = await GatewayStoreClient.CreateDocumentClientExceptionAsync(
+                responseMessage: responseMessage,
+                requestStatistics: GatewayStoreClientTests.CreateClientSideRequestStatistics());
+
+            Assert.IsNotNull(value: documentClientException);
+            Assert.AreEqual(expected: HttpStatusCode.NotFound, actual: documentClientException.StatusCode);
+            Assert.IsTrue(condition: documentClientException.Message.Contains(contentMessage));
+
+            Assert.IsNotNull(value: documentClientException.Error);
+            Assert.AreEqual(expected: HttpStatusCode.NotFound.ToString(), actual: documentClientException.Error.Code);
+            Assert.IsTrue(documentClientException.Error.Message.Contains(contentMessage));
+        }
+
+        /// <summary>
+        /// Testing CreateDocumentClientExceptionAsync when media type is application/json and the header content length is zero.
+        /// </summary>
+        [TestMethod]
+        public async Task TestCreateDocumentClientExceptionWhenMediaTypeIsApplicationJsonAndHeaderContentLengthIsZeroAsync()
+        {
+            HttpResponseMessage responseMessage = new(statusCode: System.Net.HttpStatusCode.NotFound)
+            {
+                RequestMessage = new HttpRequestMessage(
+                    method: HttpMethod.Get,
+                    requestUri: @"https://pt_ac_test_uri.com/"),
+                Content = new StringContent(
+                    mediaType: "application/json",
+                    encoding: Encoding.UTF8,
+                    content: JsonConvert.SerializeObject(
+                        value: new Error() { Code = HttpStatusCode.NotFound.ToString(), Message = "" })),
+            };
 
             IClientSideRequestStatistics requestStatistics = new ClientSideRequestStatisticsTraceDatum(
-                startTime: DateTime.UtcNow, 
+                startTime: DateTime.UtcNow,
                 trace: NoOpTrace.Singleton);
 
             DocumentClientException documentClientException = await GatewayStoreClient.CreateDocumentClientExceptionAsync(
@@ -66,13 +93,57 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Testing the exception behavior when a response from the Gateway has a response (deserializable Error object) based the content length.
-        /// For more information, see <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4162"/>.
+        /// Testing CreateDocumentClientExceptionAsync when media type is application/json and the content is not valid json
+        /// and has a content length that is not zero after trim.
         /// </summary>
-        /// <returns></returns>
         [TestMethod]
-        [DataRow(@"This is the content of a test error message.")]
-        public async Task CreateDocumentClientExceptionValidJsonResponseFromGatewayTestAsync(string content)
+        [DataRow(@"<!DOCTYPE html><html><body></body></html>")]
+        [DataRow(@"   <!DOCTYPE html><html><body></body></html>")]
+        [DataRow(@"<!DOCTYPE html><html><body></body></html>   ")]
+        [DataRow(@"   <!DOCTYPE html><html><body></body></html>   ")]
+        [DataRow(@"ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890")]
+        [DataRow(@"   ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890")]
+        [DataRow(@"ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890   ")]
+        [DataRow(@"   ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890   ")]
+        public async Task TestCreateDocumentClientExceptionWhenMediaTypeIsApplicationJsonAndContentIsNotValidJsonAndContentLengthIsNotZeroAsync(string contentMessage)
+        {
+            HttpResponseMessage responseMessage = new(statusCode: System.Net.HttpStatusCode.NotFound)
+            {
+                RequestMessage = new HttpRequestMessage(
+                    method: HttpMethod.Get,
+                    requestUri: @"https://pt_ac_test_uri.com/"),
+                Content = new StringContent(
+                    mediaType: "application/json",
+                    encoding: Encoding.UTF8,
+                    content: JsonConvert.SerializeObject(
+                        value: new Error() { Code = HttpStatusCode.NotFound.ToString(), Message = contentMessage })),
+            };
+
+            IClientSideRequestStatistics requestStatistics = new ClientSideRequestStatisticsTraceDatum(
+                startTime: DateTime.UtcNow,
+                trace: NoOpTrace.Singleton);
+
+            DocumentClientException documentClientException = await GatewayStoreClient.CreateDocumentClientExceptionAsync(
+                    responseMessage: responseMessage,
+                    requestStatistics: requestStatistics);
+
+            Assert.IsNotNull(value: documentClientException);
+            Assert.AreEqual(expected: HttpStatusCode.NotFound, actual: documentClientException.StatusCode);
+            Assert.IsTrue(condition: documentClientException.Message.Contains(contentMessage));
+
+            Assert.IsNotNull(value: documentClientException.Error);
+            Assert.AreEqual(expected: HttpStatusCode.NotFound.ToString(), actual: documentClientException.Error.Code);
+            Assert.AreEqual(expected: contentMessage, actual: documentClientException.Error.Message);
+        }
+
+        /// <summary>
+        /// Testing CreateDocumentClientExceptionAsync when media type is application/json and the content is not valid json
+        /// and has a content length that is zero after trim.
+        /// </summary>
+        [TestMethod]
+        [DataRow(@"")]
+        [DataRow(@"    ")]
+        public async Task TestCreateDocumentClientExceptionWhenMediaTypeIsApplicationJsonAndContentIsNotValidJsonAndContentLengthIsZeroAsync(string contentMessage)
         {
             HttpResponseMessage responseMessage = new(statusCode: System.Net.HttpStatusCode.NotFound)
             {
@@ -81,26 +152,75 @@ namespace Microsoft.Azure.Cosmos
                     requestUri: @"https://pt_ac_test_uri.com/"),
                 Content = new StringContent(
                     content: JsonConvert.SerializeObject(
-                        value: new Error() { Code = HttpStatusCode.NotFound.ToString(), Message = content })),
+                        value: new Error() { Code = HttpStatusCode.NotFound.ToString(), Message = contentMessage })),
             };
-
-            responseMessage.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
 
             IClientSideRequestStatistics requestStatistics = new ClientSideRequestStatisticsTraceDatum(
                 startTime: DateTime.UtcNow,
                 trace: NoOpTrace.Singleton);
 
             DocumentClientException documentClientException = await GatewayStoreClient.CreateDocumentClientExceptionAsync(
-                responseMessage: responseMessage,
-                requestStatistics: requestStatistics);
+                    responseMessage: responseMessage,
+                    requestStatistics: requestStatistics);
 
             Assert.IsNotNull(value: documentClientException);
             Assert.AreEqual(expected: HttpStatusCode.NotFound, actual: documentClientException.StatusCode);
-            Assert.IsTrue(condition: documentClientException.Message.Contains(content));
+            Assert.IsTrue(condition: documentClientException.Message.Contains("No response content from gateway."));
 
             Assert.IsNotNull(value: documentClientException.Error);
             Assert.AreEqual(expected: HttpStatusCode.NotFound.ToString(), actual: documentClientException.Error.Code);
-            Assert.AreEqual(expected: content, actual: documentClientException.Error.Message);
+            Assert.AreEqual(expected: "No response content from gateway.", actual: documentClientException.Error.Message);
+        }
+
+        /// <summary>
+        /// Testing CreateDocumentClientExceptionAsync when response message argument is null, then expects an argumentNullException.
+        /// </summary>
+        [TestMethod]
+        public async Task TestCreateDocumentClientExceptionWhenResponseMessageIsNullExpectsArgumentNullException()
+        {
+            IClientSideRequestStatistics requestStatistics = new ClientSideRequestStatisticsTraceDatum(
+                startTime: DateTime.UtcNow,
+                trace: NoOpTrace.Singleton);
+
+            ArgumentNullException argumentNullException = await Assert.ThrowsExceptionAsync<ArgumentNullException>(async () => await GatewayStoreClient.CreateDocumentClientExceptionAsync(
+                    responseMessage: default,
+                    requestStatistics: requestStatistics)
+            );
+
+            Assert.IsNotNull(argumentNullException);
+            Assert.AreEqual(expected: "Value cannot be null. (Parameter 'responseMessage')", actual: argumentNullException.Message);
+        }
+
+        /// <summary>
+        /// Testing CreateDocumentClientExceptionAsync when request statistics argument is null, then expects an argumentNullException.
+        /// </summary>
+        [TestMethod]
+        public async Task TestCreateDocumentClientExceptionWhenRequestStatisticsIsNullExpectsArgumentNullException()
+        {
+            HttpResponseMessage responseMessage = new(statusCode: System.Net.HttpStatusCode.NotFound)
+            {
+                RequestMessage = new HttpRequestMessage(
+                    method: HttpMethod.Get,
+                    requestUri: @"https://pt_ac_test_uri.com/"),
+                Content = new StringContent(
+                    content: JsonConvert.SerializeObject(
+                        value: new Error() { Code = HttpStatusCode.NotFound.ToString(), Message = "" })),
+            };
+
+            ArgumentNullException argumentNullException = await Assert.ThrowsExceptionAsync<ArgumentNullException>(async () => await GatewayStoreClient.CreateDocumentClientExceptionAsync(
+                    responseMessage: responseMessage,
+                    requestStatistics: default)
+            );
+
+            Assert.IsNotNull(argumentNullException);
+            Assert.AreEqual(expected: "Value cannot be null. (Parameter 'requestStatistics')", actual: argumentNullException.Message);
+        }
+
+        private static IClientSideRequestStatistics CreateClientSideRequestStatistics()
+        {
+            return new ClientSideRequestStatisticsTraceDatum(
+                startTime: DateTime.UtcNow,
+                trace: NoOpTrace.Singleton);
         }
     }
 }
