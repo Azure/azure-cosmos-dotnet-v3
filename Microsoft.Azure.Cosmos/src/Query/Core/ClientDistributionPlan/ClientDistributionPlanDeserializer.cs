@@ -319,8 +319,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan
 
         private static CqlUserDefinedFunctionCallScalarExpression DeserializeUserDefinedFunctionCallScalarExpression(CosmosObject cosmosObject)
         {
-            string identifierString = GetValue<CosmosString>(cosmosObject, Constants.Identifier).Value;
-            CqlFunctionIdentifier functionIdentifier = new CqlFunctionIdentifier(identifierString);
+            CosmosObject identifier = GetValue<CosmosObject>(cosmosObject, Constants.Identifier);
+            string nameString = GetValue<CosmosString>(identifier, Constants.Name).Value;
+            CqlFunctionIdentifier functionIdentifier = new CqlFunctionIdentifier(nameString);
             IReadOnlyList<CqlScalarExpression> arguments = DeserializeScalarExpressionArray(GetValue<CosmosArray>(cosmosObject, Constants.Arguments));
             bool builtin = GetValue<CosmosBoolean>(cosmosObject, Constants.Builtin).Value;
             return new CqlUserDefinedFunctionCallScalarExpression(functionIdentifier, arguments, builtin);

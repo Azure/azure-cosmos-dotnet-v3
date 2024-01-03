@@ -7,6 +7,7 @@
     using Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan;
     using Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan.Cql;
     using Microsoft.Azure.Cosmos.Test.BaselineTest;
+    using Microsoft.VisualStudio.TestPlatform.ObjectModel;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -65,11 +66,11 @@
                 CreateInput(
                     description: @"Unary",
                     clientPlanJson: "{\"clientDistributionPlan\": { \"Cql\": { \"Kind\": \"Distinct\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 1 }, \"Expressions\": [ { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 1 } } ], \"SourceExpression\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"s0\", \"UniqueId\": 3 }, \"Expression\": { \"Kind\": \"ObjectCreate\", \"ObjectKind\": \"Object\", \"Properties\": [ { \"Name\": \"$1\", \"Expression\": { \"Kind\": \"UnaryOperator\", \"OperatorKind\": \"Not\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"s0\", \"UniqueId\": 3 } } } } ] }, \"SourceExpression\": { \"Kind\": \"Distinct\", \"DeclaredVariable\": { \"Name\": \"s0\", \"UniqueId\": 3 }, \"Expressions\": [ { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"s0\", \"UniqueId\": 3 } } ], \"SourceExpression\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 6 }, \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 6 } }, \"Index\": 0 }, \"Index\": 0 }, \"SourceExpression\": { \"Kind\": \"Input\", \"Name\": \"root\" } } } } } }}"),
-                /*
+
                 CreateInput(
                     description: @"UserDefinedFunction",
                     clientPlanJson: "{\"clientDistributionPlan\": { \"Cql\": { \"Kind\": \"Distinct\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 1 }, \"Expressions\": [ { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 1 } } ], \"SourceExpression\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"s0\", \"UniqueId\": 3 }, \"Expression\": { \"Kind\": \"ObjectCreate\", \"ObjectKind\": \"Object\", \"Properties\": [ { \"Name\": \"aUpper\", \"Expression\": { \"Kind\": \"UserDefinedFunctionCall\", \"Identifier\": { \"Name\": \"toUpper\" }, \"Arguments\": [ { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"s0\", \"UniqueId\": 3 } } ], \"Builtin\": false } } ] }, \"SourceExpression\": { \"Kind\": \"Distinct\", \"DeclaredVariable\": { \"Name\": \"s0\", \"UniqueId\": 3 }, \"Expressions\": [ { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"s0\", \"UniqueId\": 3 } } ], \"SourceExpression\": { \"Kind\": \"Select\", \"DeclaredVariable\": { \"Name\": \"v0\", \"UniqueId\": 6 }, \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"ArrayIndexer\", \"Expression\": { \"Kind\": \"VariableRef\", \"Variable\": { \"Name\": \"v0\", \"UniqueId\": 6 } }, \"Index\": 0 }, \"Index\": 0 }, \"SourceExpression\": { \"Kind\": \"Input\", \"Name\": \"root\" } } } } } }}"),
-                */
+  
                 // Additional Cases
                 CreateInput(
                     description: @"Multiple Aggregates",
@@ -161,7 +162,7 @@
     {
         private StringBuilder output = new StringBuilder();
 
-        public string SerializedOutput => "clientDistributionPlan: { Cql: { " + this.output.ToString() + " } }";
+        public string SerializedOutput => "\"clientDistributionPlan\": { \"Cql\": { " + this.output.ToString() + " } }";
 
         void ICqlVisitor.Visit(CqlAggregate cqlAggregate)
         {
@@ -170,10 +171,11 @@
 
         void ICqlVisitor.Visit(CqlAggregateEnumerableExpression cqlAggregateEnumerableExpression)
         {
-            this.output.Append("Kind: Aggregate, ");
-            this.output.Append("Aggregate: ");
+            this.output.Append("\"Kind\": \"Aggregate\", ");
+            this.output.Append("Aggregate: { ");
             cqlAggregateEnumerableExpression.Aggregate.Accept(this);
-            this.output.Append(" SourceExpression: { ");
+            this.output.Append(" }, ");
+            this.output.Append("SourceExpression: { ");
             cqlAggregateEnumerableExpression.SourceExpression.Accept(this);
             this.output.Append("}");
         }
@@ -190,10 +192,10 @@
 
         void ICqlVisitor.Visit(CqlArrayCreateScalarExpression cqlArrayCreateScalarExpression)
         {
-            this.output.Append("{Kind: ArrayCreate, ");
+            this.output.Append("{\"Kind\": \"ArrayCreate\", ");
             string arrayKind = cqlArrayCreateScalarExpression.ArrayKind;
-            this.output.Append($"ArrayKind: {arrayKind}, ");
-            this.output.Append("Items: [");
+            this.output.Append($"\"ArrayKind\": {arrayKind}, ");
+            this.output.Append("\"Items\": [");
             foreach (CqlScalarExpression item in cqlArrayCreateScalarExpression.Items)
             {
                 item.Accept(this);
@@ -204,16 +206,16 @@
 
         void ICqlVisitor.Visit(CqlArrayIndexerScalarExpression cqlArrayIndexerScalarExpression)
         {
-            this.output.Append("Kind: ArrayIndexer, ");
-            this.output.Append("Expression: { ");
+            this.output.Append("\"Kind\": \"ArrayIndexer\", ");
+            this.output.Append("\"Expression\": { ");
             cqlArrayIndexerScalarExpression.Expression.Accept(this);
             this.output.Append("}, ");
-            this.output.Append($"Index: {cqlArrayIndexerScalarExpression.Index}");
+            this.output.Append($"\"Index\": {cqlArrayIndexerScalarExpression.Index} ");
         }
 
         void ICqlVisitor.Visit(CqlArrayLiteral cqlArrayLiteral)
         {
-            this.output.Append("Items: [");
+            this.output.Append("\"Items\": [");
             foreach (CqlLiteral item in cqlArrayLiteral.Items)
             {
                 item.Accept(this);
@@ -224,12 +226,12 @@
 
         void ICqlVisitor.Visit(CqlBinaryScalarExpression cqlBinaryScalarExpression)
         {
-            this.output.Append("Kind: BinaryOperator, ");
-            this.output.Append($"OperatorKind: {cqlBinaryScalarExpression.OperatorKind.ToString()}, ");
-            this.output.Append("LeftExpression: { ");
+            this.output.Append("\"Kind\": \"BinaryOperator\", ");
+            this.output.Append($"\"OperatorKind\": \"{cqlBinaryScalarExpression.OperatorKind.ToString()}\", ");
+            this.output.Append("\"LeftExpression\": { ");
             cqlBinaryScalarExpression.LeftExpression.Accept(this);
-            this.output.Append("} ");
-            this.output.Append("RightExpression: { ");
+            this.output.Append("}, ");
+            this.output.Append("\"RightExpression\": { ");
             cqlBinaryScalarExpression.RightExpression.Accept(this);
             this.output.Append("} ");
         }
@@ -246,8 +248,8 @@
 
         void ICqlVisitor.Visit(CqlBuiltinAggregate cqlBuiltinAggregate)
         {
-            this.output.Append($"Kind: {cqlBuiltinAggregate.Kind.ToString()}, ");
-            this.output.Append($"OperatorKind: {cqlBuiltinAggregate.OperatorKind.ToString()}");
+            this.output.Append($"\"Kind\": \"{cqlBuiltinAggregate.Kind.ToString()}\", ");
+            this.output.Append($"\"OperatorKind\": {cqlBuiltinAggregate.OperatorKind.ToString()}");
         }
 
         void ICqlVisitor.Visit(CqlBuiltinScalarFunctionKind cqlBuiltinScalarFunctionKind)
@@ -257,18 +259,28 @@
 
         void ICqlVisitor.Visit(CqlDistinctEnumerableExpression cqlDistinctEnumerableExpression)
         {
-            this.output.Append("Kind: Distinct, ");
+            this.output.Append("\"Kind\": \"Distinct\", ");
             string name = cqlDistinctEnumerableExpression.DeclaredVariable.Name;
             long uniqueId = cqlDistinctEnumerableExpression.DeclaredVariable.UniqueId;
-            this.output.Append($"DeclaredVariable: {{ Name: {name}, UniqueId: {uniqueId} }}, ");
+            this.output.Append($"\"DeclaredVariable\": {{ \"Name\": \"{name}\", \"UniqueId\": {uniqueId} }}, ");
             IReadOnlyList<CqlScalarExpression> scalarExpressions = cqlDistinctEnumerableExpression.Expression;
-            this.output.Append("Expressions: [ { ");
+            this.output.Append("\"Expressions\": [ ");
+            int count = 0;
             foreach (CqlScalarExpression scalarExpression in scalarExpressions)
             {
+                if (count >= 1)
+                {
+                    this.output.Append(", ");
+                }
+
+                count++;
+                this.output.Append("{ ");
                 scalarExpression.Accept(this);
+                this.output.Append("} ");
             }
-            this.output.Append("} ], ");
-            this.output.Append("SourceExpression: { ");
+
+            this.output.Append(" ], ");
+            this.output.Append("\"SourceExpression\": { ");
             cqlDistinctEnumerableExpression.SourceExpression.Accept(this);
             this.output.Append(" }");
         }
@@ -295,23 +307,24 @@
 
         void ICqlVisitor.Visit(CqlGroupByEnumerableExpression cqlGroupByEnumerableExpression)
         {
-            this.output.Append("Kind: GroupBy, ");
-            this.output.Append($"KeyCount: {cqlGroupByEnumerableExpression.KeyCount}, Aggregates: [ ");
+            this.output.Append("\"Kind\": \"GroupBy\", ");
+            this.output.Append($"\"KeyCount\": {cqlGroupByEnumerableExpression.KeyCount}, \"Aggregates\": [ ");
             int count = 0;
             foreach (CqlAggregate aggregate in cqlGroupByEnumerableExpression.Aggregates)
             {
+                if (count >= 1)
+                {
+                    this.output.Append(", ");
+                }
+
                 count++;
                 this.output.Append("{ ");
                 aggregate.Accept(this);
                 this.output.Append("}");
-                if (count > 1)
-                {
-                    this.output.Append(", ");
-                }
             }
 
             this.output.Append("], ");
-            this.output.Append(" SourceExpression: { ");
+            this.output.Append("\"SourceExpression\": { ");
             cqlGroupByEnumerableExpression.SourceExpression.Accept(this);
             this.output.Append(" }, ");
         }
@@ -319,7 +332,7 @@
         void ICqlVisitor.Visit(CqlInputEnumerableExpression cqlInputEnumerableExpression)
         {
             string name = cqlInputEnumerableExpression.Name;
-            this.output.Append($"Kind: Input, Name: {name}");
+            this.output.Append($"\"Kind\": \"Input\", \"Name\": \"{name}\"");
         }
 
         void ICqlVisitor.Visit(CqlIsOperatorKind cqlIsOperatorKind)
@@ -329,8 +342,8 @@
 
         void ICqlVisitor.Visit(CqlIsOperatorScalarExpression cqlIsOperatorScalarExpression)
         {
-            this.output.Append("Kind: IsOperator, ");
-            this.output.Append("Expression: { ");
+            this.output.Append("\"Kind\": \"IsOperator\", ");
+            this.output.Append("\"Expression\": { ");
             cqlIsOperatorScalarExpression.Expression.Accept(this);
             this.output.Append(" }, ");
         }
@@ -353,22 +366,23 @@
         void ICqlVisitor.Visit(CqlLiteralScalarExpression cqlLiteralScalarExpression)
         {
             CqlLiteralKind literalKind = cqlLiteralScalarExpression.Literal.Kind;
-            this.output.Append("Kind: Literal, ");
-            this.output.Append("Literal: { ");
-            this.output.Append($"Kind: {literalKind}, ");
+            this.output.Append("\"Kind\": \"Literal\", ");
+            this.output.Append("\"Literal\": { ");
+            this.output.Append($"\"Kind\": \"{literalKind}\", ");
             cqlLiteralScalarExpression.Literal.Accept(this);
+            this.output.Append("}");
         }
 
         void ICqlVisitor.Visit(CqlMuxScalarExpression cqlMuxScalarExpression)
         {
-            this.output.Append("Kind: Mux, ");
-            this.output.Append("ConditionExpression: { ");
+            this.output.Append("\"Kind\": \"Mux\", ");
+            this.output.Append("\"ConditionExpression\": { ");
             cqlMuxScalarExpression.ConditionExpression.Accept(this);
             this.output.Append("}, ");
-            this.output.Append("LeftExpression: ");
+            this.output.Append("\"LeftExpression\": ");
             cqlMuxScalarExpression.LeftExpression.Accept(this);
             this.output.Append("}, ");
-            this.output.Append("RightExpression: ");
+            this.output.Append("\"RightExpression\": ");
             cqlMuxScalarExpression.RightExpression.Accept(this);
             this.output.Append("}, ");
         }
@@ -380,20 +394,20 @@
 
         void ICqlVisitor.Visit(CqlNumberLiteral cqlNumberLiteral)
         {
-            this.output.Append($"Value: {cqlNumberLiteral.Value} ");
+            this.output.Append($"\"Value\": {cqlNumberLiteral.Value} ");
         }
 
         void ICqlVisitor.Visit(CqlObjectCreateScalarExpression cqlObjectCreateScalarExpression)
         {
-            this.output.Append("Kind: ObjectCreate, ");
+            this.output.Append("\"Kind\": \"ObjectCreate\", ");
             string objectKind = cqlObjectCreateScalarExpression.ObjectKind;
-            this.output.Append($"ObjectKind: {objectKind}, ");
-            this.output.Append("Properties: [ ");
+            this.output.Append($"\"ObjectKind\": \"{objectKind}\", ");
+            this.output.Append("\"Properties\": [ ");
             foreach (CqlObjectProperty property in cqlObjectCreateScalarExpression.Properties)
             {
                 string name = property.Name;
-                this.output.Append($"{{ Name: {name}, ");
-                this.output.Append("Expression: { ");
+                this.output.Append($"{{ \"Name\": \"{name}\", ");
+                this.output.Append("\"Expression\": { ");
                 property.Expression.Accept(this);
                 this.output.Append("} } ");
             }
@@ -432,11 +446,11 @@
 
         void ICqlVisitor.Visit(CqlScalarAsEnumerableExpression cqlScalarAsEnumerableExpression)
         {
-            this.output.Append("Kind: ScalarAsEnumerable, ");
-            this.output.Append("Expression: { ");
+            this.output.Append("\"Kind\": \"ScalarAsEnumerable\", ");
+            this.output.Append("\"Expression\": { ");
             cqlScalarAsEnumerableExpression.Expression.Accept(this);
             this.output.Append("}, ");
-            this.output.Append($"EnumerationKind: {cqlScalarAsEnumerableExpression.EnumerationKind}");
+            this.output.Append($"\"EnumerationKind\": {cqlScalarAsEnumerableExpression.EnumerationKind}");
         }
 
         void ICqlVisitor.Visit(CqlScalarExpression cqlScalarExpression)
@@ -451,28 +465,28 @@
 
         void ICqlVisitor.Visit(CqlSelectEnumerableExpression cqlSelectEnumerableExpression)
         {
-            this.output.Append("Kind: Select, ");
+            this.output.Append("\"Kind\": \"Select\", ");
             string name = cqlSelectEnumerableExpression.DeclaredVariable.Name;
             long uniqueId = cqlSelectEnumerableExpression.DeclaredVariable.UniqueId;
-            this.output.Append($"DeclaredVariable: {{ Name: {name}, UniqueId: {uniqueId} }}, ");
-            this.output.Append("Expression: {");
+            this.output.Append($"\"DeclaredVariable\": {{ \"Name\": \"{name}\", \"UniqueId\": {uniqueId} }}, ");
+            this.output.Append("\"Expression\": { ");
             cqlSelectEnumerableExpression.Expression.Accept(this);
-            this.output.Append(" }, ");
-            this.output.Append("SourceExpression: { ");
+            this.output.Append("}, ");
+            this.output.Append("\"SourceExpression\": { ");
             cqlSelectEnumerableExpression.SourceExpression.Accept(this);
             this.output.Append(" }");
         }
 
         void ICqlVisitor.Visit(CqlSelectManyEnumerableExpression cqlSelectManyEnumerableExpression)
         {
-            this.output.Append("Kind: SelectMany, ");
+            this.output.Append("\"Kind\": \"SelectMany\", ");
             string name = cqlSelectManyEnumerableExpression.DeclaredVariable.Name;
             long uniqueId = cqlSelectManyEnumerableExpression.DeclaredVariable.UniqueId;
-            this.output.Append($"DeclaredVariable: {{ Name: {name}, UniqueId: {uniqueId} }}, ");
-            this.output.Append("SelectorExpression: { ");
+            this.output.Append($"\"DeclaredVariable\": {{ \"Name\": \"{name}\", \"UniqueId\": {uniqueId} }}, ");
+            this.output.Append("\"SelectorExpression\": { ");
             cqlSelectManyEnumerableExpression.SelectorExpression.Accept(this);
             this.output.Append("},");
-            this.output.Append("SourceExpression: { ");
+            this.output.Append("\"SourceExpression\": { ");
             cqlSelectManyEnumerableExpression.SourceExpression.Accept(this);
             this.output.Append('}');
         }
@@ -484,37 +498,45 @@
 
         void ICqlVisitor.Visit(CqlStringLiteral cqlStringLiteral)
         {
-            this.output.Append("Kind: StringLiteral, ");
-            this.output.Append($"Value: {cqlStringLiteral.Value}");
+            this.output.Append("\"Kind\": \"StringLiteral\", ");
+            this.output.Append($"\"Value\": {cqlStringLiteral.Value}");
         }
 
         void ICqlVisitor.Visit(CqlSystemFunctionCallScalarExpression cqlSystemFunctionCallScalarExpression)
         {
-            this.output.Append("Kind: SystemFunctionCall, ");
-            this.output.Append($"FunctionKind: {cqlSystemFunctionCallScalarExpression.FunctionKind.ToString()}, ");
+            this.output.Append("\"Kind\": \"SystemFunctionCall\", ");
+            this.output.Append($"\"FunctionKind\": \"{cqlSystemFunctionCallScalarExpression.FunctionKind.ToString()}\", ");
             IReadOnlyList<CqlScalarExpression> scalarExpressions = cqlSystemFunctionCallScalarExpression.Arguments;
-            this.output.Append("Arguments: [ ");
+            this.output.Append("\"Arguments\": [ ");
+            int count = 0;
             foreach (CqlScalarExpression scalarExpression in scalarExpressions)
             {
+                if (count >= 1)
+                {
+                    this.output.Append(", ");
+                }
+
+                count++;
                 this.output.Append("{ ");
                 scalarExpression.Accept(this);
-                this.output.Append("},");
+                this.output.Append("}");
             }
-            this.output.Append("],");
+
+            this.output.Append("]");
         }
 
         void ICqlVisitor.Visit(CqlTakeEnumerableExpression cqlTakeEnumerableExpression)
         {
-            this.output.Append($"Kind: Take, SkipValue: {cqlTakeEnumerableExpression.SkipValue}, TakeValue: {cqlTakeEnumerableExpression.TakeValue}, ");
-            this.output.Append("SourceExpression: { ");
+            this.output.Append($"\"Kind\": \"Take\", \"SkipValue\": {cqlTakeEnumerableExpression.SkipValue}, \"TakeValue\": {cqlTakeEnumerableExpression.TakeValue}, ");
+            this.output.Append("\"SourceExpression\": { ");
             cqlTakeEnumerableExpression.SourceExpression.Accept(this);
             this.output.Append(" } ");
         }
 
         void ICqlVisitor.Visit(CqlTupleAggregate cqlTupleAggregate)
         {
-            this.output.Append("Kind: Tuple, ");
-            this.output.Append("Items: [");
+            this.output.Append("\"Kind\": \"Tuple\", ");
+            this.output.Append("\"Items\": [");
             foreach (CqlAggregate item in cqlTupleAggregate.Items)
             {
                 item.Accept(this);
@@ -525,32 +547,39 @@
 
         void ICqlVisitor.Visit(CqlTupleCreateScalarExpression cqlTupleCreateScalarExpression)
         {
-            this.output.Append(" Kind: TupleCreate, ");
-            this.output.Append("Items: [");
+            this.output.Append(" \"Kind\": \"TupleCreate\", ");
+            this.output.Append("\"Items\": [");
+            int count = 0;
             foreach (CqlScalarExpression scalarExpression in cqlTupleCreateScalarExpression.Items)
             {
+                if (count >= 1)
+                {
+                    this.output.Append(", ");
+                }
+
+                count++;
                 this.output.Append("{ ");
                 scalarExpression.Accept(this);
-                this.output.Append("},");
+                this.output.Append("}");
             }
 
-            this.output.Append("],");
+            this.output.Append("]");
         }
 
         void ICqlVisitor.Visit(CqlTupleItemRefScalarExpression cqlTupleItemRefScalarExpression)
         {
-            this.output.Append("Kind: TupleItemRef, ");
-            this.output.Append("Expression: { ");
+            this.output.Append("\"Kind\": \"TupleItemRef\", ");
+            this.output.Append("\"Expression\": { ");
             cqlTupleItemRefScalarExpression.Expression.Accept(this);
             this.output.Append("}, ");
-            this.output.Append($"Index: {cqlTupleItemRefScalarExpression.Index}");
+            this.output.Append($"\"Index\": {cqlTupleItemRefScalarExpression.Index}");
         }
 
         void ICqlVisitor.Visit(CqlUnaryScalarExpression cqlUnaryScalarExpression)
         {
-            this.output.Append("Kind: UnaryOperator, ");
-            this.output.Append($"OperatorKind: {cqlUnaryScalarExpression.OperatorKind.ToString()}, ");
-            this.output.Append("Expression: { ");
+            this.output.Append("\"Kind\": \"UnaryOperator\", ");
+            this.output.Append($"\"OperatorKind\": \"{cqlUnaryScalarExpression.OperatorKind.ToString()}\", ");
+            this.output.Append("\"Expression\": { ");
             cqlUnaryScalarExpression.Expression.Accept (this);
             this.output.Append("} ");
         }
@@ -562,12 +591,30 @@
 
         void ICqlVisitor.Visit(CqlUndefinedLiteral cqlUndefinedLiteral)
         {
-            this.output.Append("Kind: Undefined");
+            this.output.Append("\"Kind\": \"Undefined\"");
         }
 
         void ICqlVisitor.Visit(CqlUserDefinedFunctionCallScalarExpression cqlUserDefinedFunctionCallScalarExpression)
         {
-            throw new System.NotImplementedException();
+            this.output.Append("\"Kind\": \"UserDefinedFunctionCall\", ");
+            this.output.Append($"\"Identifier\": {{ \"Name\": \"{cqlUserDefinedFunctionCallScalarExpression.Identifier.Name}\" }}, ");
+            this.output.Append("\"Arguments\": [ ");
+            int count = 0;
+            foreach (CqlScalarExpression argument in cqlUserDefinedFunctionCallScalarExpression.Arguments)
+            {
+                if (count >= 1)
+                {
+                    this.output.Append(", ");
+                }
+
+                count++;
+                this.output.Append("{ ");
+                argument.Accept(this);
+                this.output.Append("}");
+            }
+
+            this.output.Append(" ], ");
+            this.output.Append($"\"Builtin\": {cqlUserDefinedFunctionCallScalarExpression.Builtin.ToString().ToLower()} ");
         }
 
         void ICqlVisitor.Visit(CqlVariable cqlVariable)
@@ -577,20 +624,20 @@
 
         void ICqlVisitor.Visit(CqlVariableRefScalarExpression cqlVariableRefScalarExpression)
         {
-            this.output.Append("Kind: VariableRef, ");
-            this.output.Append($"Variable: {{ Name: {cqlVariableRefScalarExpression.Variable.Name}, UniqueId: {cqlVariableRefScalarExpression.Variable.UniqueId} }} ");
+            this.output.Append("\"Kind\": \"VariableRef\", ");
+            this.output.Append($"\"Variable\": {{ \"Name\": \"{cqlVariableRefScalarExpression.Variable.Name}\", \"UniqueId\": {cqlVariableRefScalarExpression.Variable.UniqueId} }} ");
         }
 
         void ICqlVisitor.Visit(CqlWhereEnumerableExpression cqlWhereEnumerableExpression)
         {
-            this.output.Append("Kind: Where, ");
-            this.output.Append("DeclaredVariable: {");
-            this.output.Append($"Name: {cqlWhereEnumerableExpression.DeclaredVariable.Name}, ");
-            this.output.Append($"UniqueId: {cqlWhereEnumerableExpression.DeclaredVariable.UniqueId}, ");
-            this.output.Append("Expression: { ");
+            this.output.Append("\"Kind\": \"Where\", ");
+            this.output.Append("\"DeclaredVariable\": {");
+            this.output.Append($"\"Name\": \"{cqlWhereEnumerableExpression.DeclaredVariable.Name}\", ");
+            this.output.Append($"\"UniqueId\": {cqlWhereEnumerableExpression.DeclaredVariable.UniqueId} }}, ");
+            this.output.Append("\"Expression\": { ");
             cqlWhereEnumerableExpression.Expression.Accept(this);
-            this.output.Append("} ");
-            this.output.Append("SourceExpression: { ");
+            this.output.Append("}, ");
+            this.output.Append("\"SourceExpression\": { ");
             cqlWhereEnumerableExpression.SourceExpression.Accept(this);
             this.output.Append(" }");
         }
