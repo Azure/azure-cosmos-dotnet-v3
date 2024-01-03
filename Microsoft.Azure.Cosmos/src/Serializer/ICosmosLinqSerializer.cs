@@ -9,6 +9,64 @@ namespace Microsoft.Azure.Cosmos
     /// This interface can be implemented to allow a custom serializer (Non [Json.NET serializer](https://www.newtonsoft.com/json/help/html/Introduction.htm)'s) 
     /// to be used by the CosmosClient for LINQ queries.
     /// </summary>
+    /// <example>
+    /// This example creates a <see cref="CosmosSerializer"/> with the ICosmosLinqSerializer interface implemented.
+    /// This example custom serializer will honor System.Text.Json attributes.
+    /// strategy.  This 
+    /// <code language="c#">
+    /// <![CDATA[
+    /// class SystemTextJsonSerializer : CosmosSerializer, ICosmosLinqSerializer
+    /// {
+    ///    private readonly JsonObjectSerializer systemTextJsonSerializer;
+    ///
+    ///    public SystemTextJsonSerializer(JsonSerializerOptions jsonSerializerOptions)
+    ///    {
+    ///        this.systemTextJsonSerializer = new JsonObjectSerializer(jsonSerializerOptions);
+    ///    }
+    ///
+    ///    public override T FromStream<T>(Stream stream)
+    ///    {
+    ///        if (stream == null)
+    ///            throw new ArgumentNullException(nameof(stream));
+    ///
+    ///        using (stream)
+    ///        {
+    ///            if (stream.CanSeek && stream.Length == 0)
+    ///            {
+    ///                return default;
+    ///            }
+    ///
+    ///            if (typeof(Stream).IsAssignableFrom(typeof(T)))
+    ///            {
+    ///                return (T)(object)stream;
+    ///            }
+    ///
+    ///            return (T)this.systemTextJsonSerializer.Deserialize(stream, typeof(T), default);
+    ///        }
+    ///    }
+    ///
+    ///    public override Stream ToStream<T>(T input)
+    ///    {
+    ///        MemoryStream streamPayload = new MemoryStream();
+    ///        this.systemTextJsonSerializer.Serialize(streamPayload, input, input.GetType(), default);
+    ///        streamPayload.Position = 0;
+    ///        return streamPayload;
+    ///    }
+    ///
+    ///    public string SerializeMemberName(MemberInfo memberInfo)
+    ///    {
+    ///        JsonPropertyNameAttribute jsonPropertyNameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(true);
+    ///
+    ///        string memberName = !string.IsNullOrEmpty(jsonPropertyNameAttribute?.Name)
+    ///            ? jsonPropertyNameAttribute.Name
+    ///            : memberInfo.Name;
+    ///
+    ///        return memberName;
+    ///    }
+    /// }
+    /// ]]>
+    /// </code>
+    /// </example>
 #if PREVIEW
     public
 #else

@@ -4,8 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using Microsoft.Azure.Cosmos.Linq;
-
     /// <summary>
     /// This class provides a way to configure Linq Serialization Properties
     /// </summary>
