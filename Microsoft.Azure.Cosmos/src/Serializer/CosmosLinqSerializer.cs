@@ -6,16 +6,16 @@ namespace Microsoft.Azure.Cosmos
     using System.Reflection;
 
     /// <summary>
-    /// This interface can be implemented to allow a custom serializer (Non [Json.NET serializer](https://www.newtonsoft.com/json/help/html/Introduction.htm)'s) 
+    /// This abstract class can be implemented to allow a custom serializer (Non [Json.NET serializer](https://www.newtonsoft.com/json/help/html/Introduction.htm)'s) 
     /// to be used by the CosmosClient for LINQ queries.
     /// </summary>
     /// <example>
-    /// This example creates a <see cref="CosmosSerializer"/> with the ICosmosLinqSerializer interface implemented.
+    /// This example implements the CosmosLinqSerializer contract.
     /// This example custom serializer will honor System.Text.Json attributes.
     /// strategy.  This 
     /// <code language="c#">
     /// <![CDATA[
-    /// class SystemTextJsonSerializer : CosmosSerializer, ICosmosLinqSerializer
+    /// class SystemTextJsonSerializer : CosmosLinqSerializer
     /// {
     ///    private readonly JsonObjectSerializer systemTextJsonSerializer;
     ///
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos
     ///        return streamPayload;
     ///    }
     ///
-    ///    public string SerializeMemberName(MemberInfo memberInfo)
+    ///    public override string SerializeMemberName(MemberInfo memberInfo)
     ///    {
     ///        JsonPropertyNameAttribute jsonPropertyNameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(true);
     ///
@@ -72,14 +72,14 @@ namespace Microsoft.Azure.Cosmos
 #else
     internal
 #endif
-    interface ICosmosLinqSerializer
+    abstract class CosmosLinqSerializer : CosmosSerializer
     {
         /// <summary>
-        /// Convert a <see cref="MemberInfo"/> to a string for use in LINQ query translation.
+        /// Convert a MemberInfo to a string for use in LINQ query translation.
         /// This must be implemented when using a custom serializer for LINQ queries.
         /// </summary>
         /// <param name="memberInfo">Any MemberInfo used in the query.</param>
         /// <returns>A serialized representation of the member.</returns>
-        public string SerializeMemberName(MemberInfo memberInfo);
+        public abstract string SerializeMemberName(MemberInfo memberInfo);
     }
 }

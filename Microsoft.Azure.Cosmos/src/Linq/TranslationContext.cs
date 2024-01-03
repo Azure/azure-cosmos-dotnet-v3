@@ -79,9 +79,9 @@ namespace Microsoft.Azure.Cosmos.Linq
             this.subqueryBindingStack = new Stack<SubqueryBinding>();
             this.Parameters = parameters;
 
-            if (linqSerializerOptionsInternal?.CustomCosmosSerializer != null)
+            if (linqSerializerOptionsInternal?.CustomCosmosLinqSerializer != null)
             {
-                this.CosmosLinqSerializer = new CustomCosmosLinqSerializer(linqSerializerOptionsInternal.CustomCosmosSerializer);
+                this.CosmosLinqSerializer = new CustomCosmosLinqSerializer(linqSerializerOptionsInternal.CustomCosmosLinqSerializer);
                 this.MemberNames = new MemberNames(new CosmosLinqSerializerOptions());
             }
             else

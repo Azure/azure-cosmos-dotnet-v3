@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         public void TestMemberInitializerDotNetCustomSerializer()
         {
             Func<bool, IQueryable<DataObjectDotNet>> getQuery;
-            (_, getQuery) = this.InsertDataAndGetQueryables<DataObjectDotNet>(CosmosLinqSerializerType.CustomCosmosSerializer);
+            (_, getQuery) = this.InsertDataAndGetQueryables<DataObjectDotNet>(CosmosLinqSerializerType.Custom);
 
             string insertedData = this.GetInsertedData().Result;
 
@@ -259,7 +259,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             };
 
             Func<bool, IQueryable<T>> getQueryCamelCase = null;
-            if (linqSerializerType != CosmosLinqSerializerType.CustomCosmosSerializer)
+            if (linqSerializerType != CosmosLinqSerializerType.Custom)
             {
                 getQueryCamelCase = LinqTestsCommon.GenerateSerializationTestCosmosData(createDataObj, RecordCount, TestContainer, linqSerializerOptionsCamelCase);
             }

@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
     /// <![CDATA[
     /// CosmosLinqSerializerOptions options = new()
     /// {
-    ///        LinqSerializerType = CosmosLinqSerializerType.CustomCosmosSerializer
+    ///        LinqSerializerType = CosmosLinqSerializerType.Custom
     /// };
     /// 
     /// Book book = container.GetItemLinqQueryable<Book>(true, linqSerializerOptions: options)
@@ -40,8 +40,8 @@ namespace Microsoft.Azure.Cosmos
         /// Uses the provided custom CosmosSerializer.
         /// This requires:
         /// 1. a <see cref="CosmosSerializer"/> to be provided on a client, and
-        /// 2. the custom CosmosSerializer implements <see cref="ICosmosLinqSerializer"/>
+        /// 2. the custom CosmosSerializer implements <see cref="CosmosLinqSerializer"/>
         /// </summary>
-        CustomCosmosSerializer,
+        Custom,
     }
 }

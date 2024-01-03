@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             CosmosLinqSerializerOptions linqSerializerOptions = new CosmosLinqSerializerOptions()
             {
-                LinqSerializerType = CosmosLinqSerializerType.CustomCosmosSerializer
+                LinqSerializerType = CosmosLinqSerializerType.Custom
             };
 
             List<Func<bool, IQueryable<DataObjectDotNet>>> getQueryList = new List<Func<bool, IQueryable<DataObjectDotNet>>> 

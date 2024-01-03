@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Serializer
 {
     using System;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Linq;
 
     /// <summary>
     /// This class stores user-provided LINQ Serialization Properties.
@@ -22,24 +21,24 @@ namespace Microsoft.Azure.Cosmos.Serializer
         {
             switch (cosmosLinqSerializerOptions.LinqSerializerType)
             {
-                case CosmosLinqSerializerType.CustomCosmosSerializer:
+                case CosmosLinqSerializerType.Custom:
                 {
                     if (customCosmosSerializer == null)
                     {
-                        throw new InvalidOperationException($"Must provide CosmosLinqSerializer if selecting linqSerializerOptions.CustomCosmosSerializer.");
+                        throw new InvalidOperationException($"Must provide CosmosLinqSerializer if selecting linqSerializerOptions.CustomCosmosLinqSerializer.");
                     }
 
                     if (cosmosLinqSerializerOptions.PropertyNamingPolicy != CosmosPropertyNamingPolicy.Default)
                     {
-                        throw new InvalidOperationException($"CosmosPropertyNamingPolicy must be CosmosPropertyNamingPolicy.Default if selecting linqSerializerOptions.CustomCosmosSerializer.");
+                        throw new InvalidOperationException($"CosmosPropertyNamingPolicy must be CosmosPropertyNamingPolicy.Default if selecting linqSerializerOptions.CustomCosmosLinqSerializer.");
                     }
 
-                    if (customCosmosSerializer is not ICosmosLinqSerializer)
+                    if (customCosmosSerializer is CosmosLinqSerializer customQueryCosmosSerializer)
                     {
-                        throw new InvalidOperationException($"CosmosSerializer must implement ICosmosLinqSerializer if selecting linqSerializerOptions.CustomCosmosSerializer.");
+                        return new CosmosLinqSerializerOptionsInternal(cosmosLinqSerializerOptions, customQueryCosmosSerializer);
                     }
 
-                    return new CosmosLinqSerializerOptionsInternal(cosmosLinqSerializerOptions, customCosmosSerializer);
+                    throw new InvalidOperationException($"CosmosSerializer must implement CosmosLinqSerializer if selecting linqSerializerOptions.CustomCosmosLinqSerializer.");
                 }
                 case CosmosLinqSerializerType.Default:
                 {
@@ -54,10 +53,10 @@ namespace Microsoft.Azure.Cosmos.Serializer
 
         private CosmosLinqSerializerOptionsInternal(
             CosmosLinqSerializerOptions cosmosLinqSerializerOptions, 
-            CosmosSerializer customCosmosSerializer)
+            CosmosLinqSerializer customCosmosLinqSerializer)
         {
             this.CosmosLinqSerializerOptions = cosmosLinqSerializerOptions;
-            this.CustomCosmosSerializer = customCosmosSerializer;
+            this.CustomCosmosLinqSerializer = customCosmosLinqSerializer;
         }
 
         /// <summary>
@@ -66,9 +65,9 @@ namespace Microsoft.Azure.Cosmos.Serializer
         public CosmosLinqSerializerOptions CosmosLinqSerializerOptions { get; }
 
         /// <summary>
-        /// User defined customer serializer, if CosmosLinqSerializerType is CustomCosmosSerializer. 
+        /// User defined customer serializer, if CosmosLinqSerializerType is CustomCosmosLinqSerializer. 
         /// Otherwise set to null.
         /// </summary>
-        public CosmosSerializer CustomCosmosSerializer { get; }
+        public CosmosLinqSerializer CustomCosmosLinqSerializer { get; }
     }
 }
