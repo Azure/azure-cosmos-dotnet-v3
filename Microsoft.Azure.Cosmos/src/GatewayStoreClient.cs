@@ -182,6 +182,8 @@ namespace Microsoft.Azure.Cosmos
                 Stream readStream = await responseMessage.Content.ReadAsStreamAsync();
                 Error error = Documents.Resource.LoadFrom<Error>(readStream);
 
+                // need to rethink dropping the check for media type "application/json".
+
                 if (responseMessage.Content?.Headers?.ContentLength == 0 ||
                     error.Message.Trim().Length == 0)
                 {
