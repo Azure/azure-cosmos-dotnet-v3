@@ -662,7 +662,7 @@ namespace Microsoft.Azure.Cosmos
                     tokenProvider: this, 
                     retryPolicy: this.retryPolicy,
                     telemetryToServiceHelper: this.telemetryToServiceHelper);
-                this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache);
+                this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager);
 
                 DefaultTrace.TraceWarning("{0} occurred while OpenAsync. Exception Message: {1}", ex.ToString(), ex.Message);
             }
@@ -1033,7 +1033,7 @@ namespace Microsoft.Azure.Cosmos
                     tokenProvider: this, 
                     retryPolicy: this.retryPolicy,
                     telemetryToServiceHelper: this.telemetryToServiceHelper);
-            this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache);
+            this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager);
             this.ResetSessionTokenRetryPolicy = new ResetSessionTokenRetryPolicyFactory(this.sessionContainer, this.collectionCache, this.retryPolicy);
 
             gatewayStoreModel.SetCaches(this.partitionKeyRangeCache, this.collectionCache);
@@ -1233,6 +1233,23 @@ namespace Microsoft.Azure.Cosmos
                 return this.desiredConsistencyLevel.HasValue ? this.desiredConsistencyLevel.Value :
                     this.accountServiceConfiguration.DefaultConsistencyLevel;
             }
+        }
+
+        /// <summary>
+        /// Returns the account properties available in the service configuration if the client was initialized.
+        /// </summary>
+        public bool TryGetCachedAccountProperties(out AccountProperties properties)
+        {
+            if (this.isSuccessfullyInitialized
+                && this.accountServiceConfiguration != null
+                && this.accountServiceConfiguration.AccountProperties != null)
+            {
+                properties = this.accountServiceConfiguration.AccountProperties;
+                return true;
+            }
+
+            properties = null;
+            return false;
         }
 
         /// <summary>

@@ -342,7 +342,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 partitionedQueryExecutionInfo: null,
                 executionEnvironment: null,
                 returnResultsInDeterministicOrder: null,
-                forcePassthrough: false,
                 enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
                 testInjections: queryRequestOptions.TestSettings);
 
@@ -391,8 +390,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     using StreamReader streamReader = new(serializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, Documents.ResourceType.Document));
                     string sqlQuerySpecJsonString = streamReader.ReadToEnd();
 
-                    TryCatch<PartitionedQueryExecutionInfo> queryPlan = OptimisticDirectExecutionQueryBaselineTests.TryGetPartitionedQueryExecutionInfo(sqlQuerySpecJsonString, partitionKeyDefinition);
-                    PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = queryPlan.Succeeded ? queryPlan.Result : throw queryPlan.Exception;
+                    (PartitionedQueryExecutionInfo partitionedQueryExecutionInfo, QueryPartitionProvider queryPartitionProvider) = OptimisticDirectExecutionQueryBaselineTests.GetPartitionedQueryExecutionInfoAndPartitionProvider(sqlQuerySpecJsonString, partitionKeyDefinition);
                     return Task.FromResult(TryCatch<PartitionedQueryExecutionInfo>.FromResult(partitionedQueryExecutionInfo));
                 }
                 );
