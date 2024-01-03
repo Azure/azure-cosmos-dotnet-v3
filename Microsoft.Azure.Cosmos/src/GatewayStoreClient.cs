@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     internal class GatewayStoreClient : TransportClient
     {
@@ -152,25 +153,22 @@ namespace Microsoft.Azure.Cosmos
             if (string.Equals(responseMessage.Content?.Headers?.ContentType?.MediaType, "application/json", StringComparison.OrdinalIgnoreCase))
             {
                 // For more information, see https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4162.
+                Error error;
+
                 if (await GatewayStoreClient.IsJsonHTTPResponseFromGatewayInvalidAsync(responseMessage))
                 {
-                    return new DocumentClientException(
-                        new Error
-                        {
-                            Code = responseMessage.StatusCode.ToString(),
-                            Message = "No response content from gateway."
-                        },
-                        responseMessage.Headers,
-                        responseMessage.StatusCode)
+                    error = new Error
                     {
-                        StatusDescription = responseMessage.ReasonPhrase,
-                        ResourceAddress = resourceIdOrFullName,
-                        RequestStatistics = requestStatistics
+                        Code = responseMessage.StatusCode.ToString(),
+                        Message = "No response content from gateway."
                     };
                 }
+                else
+                {
+                    Stream readStream = await responseMessage.Content.ReadAsStreamAsync();
+                    error = Documents.Resource.LoadFrom<Error>(readStream);
+                }
 
-                Stream readStream = await responseMessage.Content.ReadAsStreamAsync();
-                Error error = Documents.Resource.LoadFrom<Error>(readStream);
                 return new DocumentClientException(
                     error,
                     responseMessage.Headers,
@@ -225,8 +223,18 @@ namespace Microsoft.Azure.Cosmos
         {
             string readString = await responseMessage.Content.ReadAsStringAsync();
 
-            return responseMessage.Content?.Headers?.ContentLength == 0 ||
-                readString.Trim().Length == 0;
+            try
+            {
+                _ = JToken.Parse(readString);
+
+                return responseMessage.Content?.Headers?.ContentLength == 0 ||
+                    readString.Trim().Length == 0;
+            }
+            catch (JsonReaderException)
+            {
+                return true;
+            }
+
         }
 
         internal static bool IsAllowedRequestHeader(string headerName)

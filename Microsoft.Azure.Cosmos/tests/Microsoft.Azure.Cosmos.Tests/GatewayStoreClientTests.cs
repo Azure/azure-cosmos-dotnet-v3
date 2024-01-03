@@ -27,6 +27,14 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         [DataRow(@"")]
         [DataRow(@"    ")]
+        [DataRow(@"<!DOCTYPE html><html><body></body></html>")]
+        [DataRow(@"   <!DOCTYPE html><html><body></body></html>")]
+        [DataRow(@"<!DOCTYPE html><html><body></body></html>   ")]
+        [DataRow(@"   <!DOCTYPE html><html><body></body></html>   ")]
+        [DataRow(@"ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890")]
+        [DataRow(@"   ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890")]
+        [DataRow(@"ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890   ")]
+        [DataRow(@"   ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890   ")]
         public async Task CreateDocumentClientExceptionInvalidJsonResponseFromGatewayTestAsync(string content)
         {
             HttpResponseMessage responseMessage = new(statusCode: System.Net.HttpStatusCode.NotFound)
