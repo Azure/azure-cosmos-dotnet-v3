@@ -422,7 +422,9 @@
         }
 
         [TestMethod]
-        public async Task MultiHashQueryItemTest()
+        [DataRow(true)]
+        [DataRow(false)]
+        public async Task MultiHashQueryItemTest(bool odeEnabled)
         {
             Cosmos.PartitionKey pKey;
             Cosmos.PartitionKey badPKey;
@@ -464,7 +466,7 @@
                 using (FeedIterator<Document> feedIterator = this.container.GetItemQueryIterator<Document>(
                     query,
                     null,
-                    new QueryRequestOptions() { EnableOptimisticDirectExecution = true, PartitionKey = pKey }))
+                    new QueryRequestOptions() { EnableOptimisticDirectExecution = odeEnabled, PartitionKey = pKey }))
                 {
                     Assert.IsTrue(feedIterator.HasMoreResults);
 
@@ -481,7 +483,7 @@
                 using (FeedIterator<Document> feedIterator = this.container.GetItemQueryIterator<Document>(
                     query,
                     null,
-                    new QueryRequestOptions() { EnableOptimisticDirectExecution = true, PartitionKey = pKey }))
+                    new QueryRequestOptions() { EnableOptimisticDirectExecution = odeEnabled, PartitionKey = pKey }))
                 {
                     Assert.IsTrue(feedIterator.HasMoreResults);
 
@@ -495,7 +497,7 @@
                 using (FeedIterator<Document> badFeedIterator = this.container.GetItemQueryIterator<Document>(
                     query,
                     null,
-                    new QueryRequestOptions() { EnableOptimisticDirectExecution = true, PartitionKey = badPKey}))
+                    new QueryRequestOptions() { EnableOptimisticDirectExecution = odeEnabled, PartitionKey = badPKey}))
                 {
                     FeedResponse<Document> queryDocBad = await badFeedIterator.ReadNextAsync();
                     Assert.ThrowsException<InvalidOperationException>(() =>
