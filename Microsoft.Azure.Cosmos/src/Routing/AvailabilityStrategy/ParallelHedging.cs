@@ -4,6 +4,11 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Handlers;
 
     /// <summary>
     /// Parallel hedging availability strategy. Once threshold time is reached, 
@@ -43,5 +48,81 @@ namespace Microsoft.Azure.Cosmos
         /// Step time to wait before sending out additional parallel requests
         /// </summary>
         public TimeSpan Step => this.step;
+
+        internal override async Task<ResponseMessage> ExecuteAvailablityStrategyAsync(
+            RequestInvokerHandler requestInvokerHandler,
+            CosmosClient client,
+            RequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            using (CancellationTokenSource cancellationTokenSource = new ())
+            {
+                CancellationToken parallelRequestCancellationToken = cancellationTokenSource.Token;
+
+                List<RequestMessage> requestMessages = new List<RequestMessage> { request };
+                IReadOnlyCollection<string> availableRegions = client.DocumentClient.GlobalEndpointManager.GetAvailableReadLocations();
+
+                for (int i = 1; i < availableRegions.Count; i++)
+                {
+                    RequestMessage clonedRequest = request.Clone();
+
+                    if (clonedRequest.RequestOptions == null)
+                    {
+                        clonedRequest.RequestOptions = new RequestOptions()
+                        {
+                            ExcludeRegions = availableRegions
+                            .Where(s => s != availableRegions.ElementAt(i)).ToList()
+                        };
+                    }
+                    else
+                    {
+                        if (clonedRequest.RequestOptions.ExcludeRegions == null)
+                        {
+                            clonedRequest.RequestOptions.ExcludeRegions = availableRegions
+                                .Where(s => s != availableRegions.ElementAt(i)).ToList();
+                        }
+                        else
+                        {
+                            clonedRequest.RequestOptions.ExcludeRegions
+                                .AddRange(availableRegions.Where(s => s != availableRegions.ElementAt(i)));
+                        }
+                    }
+
+                    requestMessages.Add(clonedRequest);
+                }
+                List<Task<ResponseMessage>> tasks = this.RequestTaskBuilder(
+                    requestInvokerHandler, 
+                    requestMessages, 
+                    cancellationToken, 
+                    parallelRequestCancellationToken);
+                Task<ResponseMessage> response = await Task.WhenAny(tasks);
+
+                cancellationTokenSource.Cancel();
+                return await response;
+            }
+        }
+
+        private List<Task<ResponseMessage>> RequestTaskBuilder(
+            RequestInvokerHandler requestInvokerHandler,
+            List<RequestMessage> requests,
+            CancellationToken cancellationToken,
+            CancellationToken parallelRequestCancellationToken)
+        {
+            List<Task<ResponseMessage>> tasks = new List<Task<ResponseMessage>>();
+            for (int i = 0; i < requests.Count; i++)
+            {
+                if (i == 0)
+                {
+                    tasks.Add(requestInvokerHandler.BaseSendAsync(requests[i], parallelRequestCancellationToken));
+                }
+                else
+                {
+                    TimeSpan delay = this.threshold + TimeSpan.FromMilliseconds((i - 1) * this.step.Milliseconds);
+                    tasks.Add(requestInvokerHandler.SendWithDelayAsync(delay, requests[i], cancellationToken, parallelRequestCancellationToken));
+                }
+            }
+
+            return tasks;
+        }
     }
 }

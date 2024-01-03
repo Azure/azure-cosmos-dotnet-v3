@@ -74,7 +74,19 @@ namespace Microsoft.Azure.Cosmos.Handlers
             this.FillMultiMasterContext(request);
             if (this.ShouldHedge(request))
             {
-                return await this.SendWithAvailabilityStrategyAsync(request, cancellationToken);
+                if (request.RequestOptions?.AvailabilityStrategyOptions != null)
+                {
+                    return await request.RequestOptions.AvailabilityStrategyOptions.AvailabilityStrategy.ExecuteAvailablityStrategyAsync(
+                        this,
+                        this.client,
+                        request,
+                        cancellationToken);
+                }
+                return await this.client.ClientOptions.AvailabilityStrategyOptions.AvailabilityStrategy.ExecuteAvailablityStrategyAsync(
+                    this,
+                    this.client,
+                    request,
+                    cancellationToken);
             }
 
             return await base.SendAsync(request, cancellationToken);
@@ -131,84 +143,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             return true;
-        }
+        }       
 
-        internal async Task<ResponseMessage> SendWithAvailabilityStrategyAsync(RequestMessage request, CancellationToken cancellationToken)
-        {
-            using (CancellationTokenSource cancellationTokenSource = new ())
-            {
-                CancellationToken parallelRequestCancellationToken = cancellationTokenSource.Token;
-
-                List<RequestMessage> requestMessages = new List<RequestMessage> { request };
-                IReadOnlyCollection<string> availableRegions = this.client.DocumentClient.GlobalEndpointManager.GetAvailableReadLocations();
-
-                for (int i = 1; i < availableRegions.Count; i++)
-                {
-                    RequestMessage clonedRequest = request.Clone();
-
-                    if (clonedRequest.RequestOptions == null)
-                    {
-                        clonedRequest.RequestOptions = new RequestOptions()
-                        {
-                            ExcludeRegions = availableRegions
-                            .Where(s => s != availableRegions.ElementAt(i)).ToList()
-                        };
-                    }
-                    else
-                    {
-                        if (clonedRequest.RequestOptions.ExcludeRegions == null)
-                        {
-                            clonedRequest.RequestOptions.ExcludeRegions = availableRegions
-                                .Where(s => s != availableRegions.ElementAt(i)).ToList();
-                        }
-                        else
-                        {
-                            clonedRequest.RequestOptions.ExcludeRegions
-                                .AddRange(availableRegions.Where(s => s != availableRegions.ElementAt(i)));
-                        }
-                    }
-
-                    requestMessages.Add(clonedRequest);
-                }
-                List<Task<ResponseMessage>> tasks = this.RequestTaskBuilder(requestMessages, cancellationToken, parallelRequestCancellationToken);
-                Task<ResponseMessage> response = await Task.WhenAny(tasks);
-
-                cancellationTokenSource.Cancel();
-                return await response;
-            }       
-        }
-
-        private List<Task<ResponseMessage>> RequestTaskBuilder(
-            List<RequestMessage> requests, 
-            CancellationToken cancellationToken, 
-            CancellationToken parallelRequestCancellationToken)
-        {
-            TimeSpan threshold = requests[0].RequestOptions?.AvailabilityStrategyOptions != null
-                ? ((ParallelHedging)requests[0].RequestOptions.AvailabilityStrategyOptions.AvailabilityStrategy).Threshold
-                : ((ParallelHedging)this.client.ClientOptions.AvailabilityStrategyOptions.AvailabilityStrategy).Threshold;
-
-            int step = requests[0].RequestOptions?.AvailabilityStrategyOptions != null
-                ? ((ParallelHedging)requests[0].RequestOptions.AvailabilityStrategyOptions.AvailabilityStrategy).Step.Milliseconds
-                : ((ParallelHedging)this.client.ClientOptions.AvailabilityStrategyOptions.AvailabilityStrategy).Step.Milliseconds;
-
-            List<Task<ResponseMessage>> tasks = new List<Task<ResponseMessage>>();
-            for (int i = 0; i < requests.Count; i++)
-            {
-                if (i == 0)
-                {
-                    tasks.Add(this.BaseSendAsync(requests[i], parallelRequestCancellationToken));
-                }
-                else
-                {
-                    TimeSpan delay = threshold + TimeSpan.FromMilliseconds((i - 1) * step);
-                    tasks.Add(this.SendWithDelayAsync(delay, requests[i], cancellationToken, parallelRequestCancellationToken));
-                }
-            }
-
-            return tasks;
-        }
-
-        private async Task<ResponseMessage> SendWithDelayAsync(
+        internal async Task<ResponseMessage> SendWithDelayAsync(
             TimeSpan delay, 
             RequestMessage request, 
             CancellationToken cancellationToken, 

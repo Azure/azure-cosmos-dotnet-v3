@@ -118,8 +118,10 @@
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "\"1\"");
 
             CancellationToken cancellationToken = new CancellationToken();
-            ResponseMessage rm = await mockRequestInvokerHandler.Object
-                .SendWithAvailabilityStrategyAsync(requestMessage, cancellationToken);
+            ResponseMessage rm = await this.client.ClientOptions.AvailabilityStrategyOptions.AvailabilityStrategy.ExecuteAvailablityStrategyAsync(mockRequestInvokerHandler.Object,
+                this.client,
+                requestMessage,
+                cancellationToken);
             
             Assert.AreEqual(HttpStatusCode.OK, rm.StatusCode);
         }
@@ -193,8 +195,10 @@
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "\"1\"");
 
             CancellationToken cancellationToken = new CancellationToken();
-            ResponseMessage rm = await mockRequestInvokerHandler.Object
-                .SendWithAvailabilityStrategyAsync(requestMessage, cancellationToken);
+            ResponseMessage rm = await this.client.ClientOptions.AvailabilityStrategyOptions.AvailabilityStrategy.ExecuteAvailablityStrategyAsync(mockRequestInvokerHandler.Object,
+                this.client,
+                requestMessage,
+                cancellationToken);
 
             Assert.AreEqual(HttpStatusCode.OK, rm.StatusCode);
         }
@@ -270,8 +274,10 @@
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "\"1\"");
 
             CancellationToken cancellationToken = new CancellationToken();
-            ResponseMessage rm = await mockRequestInvokerHandler.Object
-                .SendWithAvailabilityStrategyAsync(requestMessage, cancellationToken);
+            ResponseMessage rm = await this.client.ClientOptions.AvailabilityStrategyOptions.AvailabilityStrategy.ExecuteAvailablityStrategyAsync(mockRequestInvokerHandler.Object,
+                this.client,
+                requestMessage,
+                cancellationToken);
 
             Assert.AreEqual(HttpStatusCode.OK, rm.StatusCode);
         }
@@ -355,8 +361,10 @@
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "\"1\"");
 
             CancellationToken cancellationToken = new CancellationToken();
-            ResponseMessage rm = await mockRequestInvokerHandler.Object
-                .SendWithAvailabilityStrategyAsync(requestMessage, cancellationToken);
+            ResponseMessage rm = await this.client.ClientOptions.AvailabilityStrategyOptions.AvailabilityStrategy.ExecuteAvailablityStrategyAsync(mockRequestInvokerHandler.Object,
+                this.client,
+                requestMessage,
+                cancellationToken);
 
             Assert.AreEqual(HttpStatusCode.OK, rm.StatusCode);
         }
