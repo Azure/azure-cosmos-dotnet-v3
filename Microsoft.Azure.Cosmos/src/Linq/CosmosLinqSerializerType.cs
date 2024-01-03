@@ -32,7 +32,8 @@ namespace Microsoft.Azure.Cosmos
         enum CosmosLinqSerializerType
     {
         /// <summary>
-        /// This honors Newtonsoft attributes, followed by DataContract attributes. This will ignore System.Text.Json attributes.
+        /// This honors default serializer (Newtonsoft.Json) attributes, followed by DataContract attributes. 
+        /// This will ignore custom serializer related attributes (including System.Text.Json).
         /// </summary>
         Default,
 

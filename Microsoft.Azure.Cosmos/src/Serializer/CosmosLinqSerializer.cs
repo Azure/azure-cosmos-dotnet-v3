@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos
     /// <example>
     /// This example implements the CosmosLinqSerializer contract.
     /// This example custom serializer will honor System.Text.Json attributes.
-    /// strategy.  This 
     /// <code language="c#">
     /// <![CDATA[
     /// class SystemTextJsonSerializer : CosmosLinqSerializer
