@@ -172,10 +172,10 @@
         void ICqlVisitor.Visit(CqlAggregateEnumerableExpression cqlAggregateEnumerableExpression)
         {
             this.output.Append("\"Kind\": \"Aggregate\", ");
-            this.output.Append("Aggregate: { ");
+            this.output.Append("\"Aggregate\": { ");
             cqlAggregateEnumerableExpression.Aggregate.Accept(this);
             this.output.Append(" }, ");
-            this.output.Append("SourceExpression: { ");
+            this.output.Append("\"SourceExpression\": { ");
             cqlAggregateEnumerableExpression.SourceExpression.Accept(this);
             this.output.Append("}");
         }
@@ -192,13 +192,21 @@
 
         void ICqlVisitor.Visit(CqlArrayCreateScalarExpression cqlArrayCreateScalarExpression)
         {
-            this.output.Append("{\"Kind\": \"ArrayCreate\", ");
-            string arrayKind = cqlArrayCreateScalarExpression.ArrayKind;
-            this.output.Append($"\"ArrayKind\": {arrayKind}, ");
+            this.output.Append("\"Kind\": \"ArrayCreate\", ");
+            this.output.Append($"\"ArrayKind\": \"{cqlArrayCreateScalarExpression.ArrayKind}\", ");
             this.output.Append("\"Items\": [");
+            int count = 0;
             foreach (CqlScalarExpression item in cqlArrayCreateScalarExpression.Items)
             {
+                if (count >= 1)
+                {
+                    this.output.Append(", ");
+                }
+
+                count++;
+                this.output.Append("{ ");
                 item.Accept(this);
+                this.output.Append("}");
             }
 
             this.output.Append("]");
@@ -216,9 +224,19 @@
         void ICqlVisitor.Visit(CqlArrayLiteral cqlArrayLiteral)
         {
             this.output.Append("\"Items\": [");
+            int count = 0;
+
             foreach (CqlLiteral item in cqlArrayLiteral.Items)
             {
+                if (count >= 1)
+                {
+                    this.output.Append(", ");
+                }
+
+                count++;
+                this.output.Append("{ ");
                 item.Accept(this);
+                this.output.Append("}");
             }
 
             this.output.Append("]");
@@ -249,7 +267,7 @@
         void ICqlVisitor.Visit(CqlBuiltinAggregate cqlBuiltinAggregate)
         {
             this.output.Append($"\"Kind\": \"{cqlBuiltinAggregate.Kind.ToString()}\", ");
-            this.output.Append($"\"OperatorKind\": {cqlBuiltinAggregate.OperatorKind.ToString()}");
+            this.output.Append($"\"OperatorKind\": \"{cqlBuiltinAggregate.OperatorKind.ToString()}\"");
         }
 
         void ICqlVisitor.Visit(CqlBuiltinScalarFunctionKind cqlBuiltinScalarFunctionKind)
@@ -368,8 +386,13 @@
             CqlLiteralKind literalKind = cqlLiteralScalarExpression.Literal.Kind;
             this.output.Append("\"Kind\": \"Literal\", ");
             this.output.Append("\"Literal\": { ");
-            this.output.Append($"\"Kind\": \"{literalKind}\", ");
-            cqlLiteralScalarExpression.Literal.Accept(this);
+            this.output.Append($"\"Kind\": \"{literalKind}\"");
+            if (literalKind != CqlLiteralKind.Undefined)
+            {
+                this.output.Append(", ");
+                cqlLiteralScalarExpression.Literal.Accept(this);
+            }
+
             this.output.Append("}");
         }
 
@@ -379,12 +402,12 @@
             this.output.Append("\"ConditionExpression\": { ");
             cqlMuxScalarExpression.ConditionExpression.Accept(this);
             this.output.Append("}, ");
-            this.output.Append("\"LeftExpression\": ");
+            this.output.Append("\"LeftExpression\": { ");
             cqlMuxScalarExpression.LeftExpression.Accept(this);
             this.output.Append("}, ");
-            this.output.Append("\"RightExpression\": ");
+            this.output.Append("\"RightExpression\": { ");
             cqlMuxScalarExpression.RightExpression.Accept(this);
-            this.output.Append("}, ");
+            this.output.Append("} ");
         }
 
         void ICqlVisitor.Visit(CqlNullLiteral cqlNullLiteral)
@@ -403,10 +426,16 @@
             string objectKind = cqlObjectCreateScalarExpression.ObjectKind;
             this.output.Append($"\"ObjectKind\": \"{objectKind}\", ");
             this.output.Append("\"Properties\": [ ");
+            int count = 0;
             foreach (CqlObjectProperty property in cqlObjectCreateScalarExpression.Properties)
             {
-                string name = property.Name;
-                this.output.Append($"{{ \"Name\": \"{name}\", ");
+                if (count >= 1)
+                {
+                    this.output.Append(", ");
+                }
+
+                count++;
+                this.output.Append($"{{ \"Name\": \"{property.Name}\", ");
                 this.output.Append("\"Expression\": { ");
                 property.Expression.Accept(this);
                 this.output.Append("} } ");
@@ -498,8 +527,8 @@
 
         void ICqlVisitor.Visit(CqlStringLiteral cqlStringLiteral)
         {
-            this.output.Append("\"Kind\": \"StringLiteral\", ");
-            this.output.Append($"\"Value\": {cqlStringLiteral.Value}");
+            this.output.Append("\"Kind\": \"String\", ");
+            this.output.Append($"\"Value\": \"{cqlStringLiteral.Value}\"");
         }
 
         void ICqlVisitor.Visit(CqlSystemFunctionCallScalarExpression cqlSystemFunctionCallScalarExpression)
@@ -537,12 +566,21 @@
         {
             this.output.Append("\"Kind\": \"Tuple\", ");
             this.output.Append("\"Items\": [");
+            int count = 0;
             foreach (CqlAggregate item in cqlTupleAggregate.Items)
             {
+                if (count >= 1)
+                {
+                    this.output.Append(", ");
+                }
+
+                count++;
+                this.output.Append("{ ");
                 item.Accept(this);
+                this.output.Append("}");
             }
 
-            this.output.Append("],");
+            this.output.Append("]");
         }
 
         void ICqlVisitor.Visit(CqlTupleCreateScalarExpression cqlTupleCreateScalarExpression)
@@ -591,7 +629,7 @@
 
         void ICqlVisitor.Visit(CqlUndefinedLiteral cqlUndefinedLiteral)
         {
-            this.output.Append("\"Kind\": \"Undefined\"");
+            throw new NotImplementedException();
         }
 
         void ICqlVisitor.Visit(CqlUserDefinedFunctionCallScalarExpression cqlUserDefinedFunctionCallScalarExpression)
