@@ -123,13 +123,9 @@ namespace Microsoft.Azure.Cosmos
                     content: contentMessage),
             };
 
-            IClientSideRequestStatistics requestStatistics = new ClientSideRequestStatisticsTraceDatum(
-                startTime: DateTime.UtcNow,
-                trace: NoOpTrace.Singleton);
-
             DocumentClientException documentClientException = await GatewayStoreClient.CreateDocumentClientExceptionAsync(
                     responseMessage: responseMessage,
-                    requestStatistics: requestStatistics);
+                    requestStatistics: GatewayStoreClientTests.CreateClientSideRequestStatistics());
 
             Assert.IsNotNull(value: documentClientException);
             Assert.AreEqual(expected: HttpStatusCode.NotFound, actual: documentClientException.StatusCode);
@@ -164,13 +160,9 @@ namespace Microsoft.Azure.Cosmos
                         value: new Error() { Code = HttpStatusCode.NotFound.ToString(), Message = errorMessage })),
             };
 
-            IClientSideRequestStatistics requestStatistics = new ClientSideRequestStatisticsTraceDatum(
-                startTime: DateTime.UtcNow,
-                trace: NoOpTrace.Singleton);
-
             DocumentClientException documentClientException = await GatewayStoreClient.CreateDocumentClientExceptionAsync(
                 responseMessage: responseMessage,
-                requestStatistics: requestStatistics);
+                requestStatistics: GatewayStoreClientTests.CreateClientSideRequestStatistics());
 
             Assert.IsNotNull(value: documentClientException);
             Assert.AreEqual(expected: HttpStatusCode.NotFound, actual: documentClientException.StatusCode);
@@ -210,14 +202,10 @@ namespace Microsoft.Azure.Cosmos
                     encoding: Encoding.UTF8,
                     content: contentMessage),
             };
-
-            IClientSideRequestStatistics requestStatistics = new ClientSideRequestStatisticsTraceDatum(
-                startTime: DateTime.UtcNow,
-                trace: NoOpTrace.Singleton);
-
+            
             DocumentClientException documentClientException = await GatewayStoreClient.CreateDocumentClientExceptionAsync(
                     responseMessage: responseMessage,
-                    requestStatistics: requestStatistics);
+                    requestStatistics: GatewayStoreClientTests.CreateClientSideRequestStatistics());
 
             Assert.IsNotNull(value: documentClientException);
             Assert.AreEqual(expected: HttpStatusCode.NotFound, actual: documentClientException.StatusCode);
@@ -246,13 +234,9 @@ namespace Microsoft.Azure.Cosmos
                     content: contentMessage),
             };
 
-            IClientSideRequestStatistics requestStatistics = new ClientSideRequestStatisticsTraceDatum(
-                startTime: DateTime.UtcNow,
-                trace: NoOpTrace.Singleton);
-
             DocumentClientException documentClientException = await GatewayStoreClient.CreateDocumentClientExceptionAsync(
                     responseMessage: responseMessage,
-                    requestStatistics: requestStatistics);
+                    requestStatistics: GatewayStoreClientTests.CreateClientSideRequestStatistics());
 
             Assert.IsNotNull(value: documentClientException);
             Assert.AreEqual(expected: HttpStatusCode.NotFound, actual: documentClientException.StatusCode);
@@ -270,11 +254,9 @@ namespace Microsoft.Azure.Cosmos
         [Owner("philipthomas-MSFT")]
         public async Task TestCreateDocumentClientExceptionWhenResponseMessageIsNullExpectsArgumentNullException()
         {
-            IClientSideRequestStatistics requestStatistics = GatewayStoreClientTests.CreateClientSideRequestStatistics();
-
             ArgumentNullException argumentNullException = await Assert.ThrowsExceptionAsync<ArgumentNullException>(async () => await GatewayStoreClient.CreateDocumentClientExceptionAsync(
                     responseMessage: default,
-                    requestStatistics: requestStatistics)
+                    requestStatistics: GatewayStoreClientTests.CreateClientSideRequestStatistics())
             );
 
             Assert.IsNotNull(argumentNullException);
