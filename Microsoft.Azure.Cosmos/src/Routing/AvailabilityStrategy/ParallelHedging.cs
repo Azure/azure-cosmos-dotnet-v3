@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Handlers;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Parallel hedging availability strategy. Once threshold time is reached, 
@@ -49,12 +50,40 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public TimeSpan Step => this.step;
 
+        /// <summary>
+        /// This method determines if the request should be sent with a parallel hedging availability strategy.
+        /// This availability strategy can only be used if the request is a read-only request on a document request.
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns>whether the request should be a parallel hedging request.</returns>
+        internal bool ShouldHedge(RequestMessage request)
+        {
+            //Only use availability strategy for document point operations
+            if (request.ResourceType != ResourceType.Document)
+            {
+                return false;
+            }
+
+            //check to see if it is a not a read-only request
+            if (!OperationTypeExtensions.IsReadOperation(request.OperationType))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
         internal override async Task<ResponseMessage> ExecuteAvailablityStrategyAsync(
             RequestInvokerHandler requestInvokerHandler,
             CosmosClient client,
             RequestMessage request,
             CancellationToken cancellationToken)
         {
+            if (!this.ShouldHedge(request))
+            {
+                return await requestInvokerHandler.BaseSendAsync(request, cancellationToken);
+            }
+
             using (CancellationTokenSource cancellationTokenSource = new ())
             {
                 CancellationToken parallelRequestCancellationToken = cancellationTokenSource.Token;

@@ -397,7 +397,7 @@
 
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "\"1\"");
 
-            bool shouldHedge = requestInvokerHandler.ShouldHedge(requestMessage);
+            bool shouldHedge = requestInvokerHandler.CanUseAvailabilityStrategy(requestMessage);
 
             Assert.IsFalse(shouldHedge);
         }

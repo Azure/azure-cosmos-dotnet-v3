@@ -72,34 +72,36 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             await request.AssertPartitioningDetailsAsync(this.client, cancellationToken, request.Trace);
             this.FillMultiMasterContext(request);
-            if (this.ShouldHedge(request))
+
+            if (this.CanUseAvailabilityStrategy(request))
             {
                 if (request.RequestOptions?.AvailabilityStrategyOptions != null)
                 {
                     return await request.RequestOptions.AvailabilityStrategyOptions.AvailabilityStrategy.ExecuteAvailablityStrategyAsync(
+                            this,
+                            this.client,
+                            request,
+                            cancellationToken);
+                }
+                else if (this.client.ClientOptions.AvailabilityStrategyOptions != null)
+                {
+                    return await this.client.ClientOptions.AvailabilityStrategyOptions.AvailabilityStrategy.ExecuteAvailablityStrategyAsync(
                         this,
                         this.client,
                         request,
                         cancellationToken);
                 }
-                return await this.client.ClientOptions.AvailabilityStrategyOptions.AvailabilityStrategy.ExecuteAvailablityStrategyAsync(
-                    this,
-                    this.client,
-                    request,
-                    cancellationToken);
             }
-
+            
             return await base.SendAsync(request, cancellationToken);
         }
 
         /// <summary>
-        /// This method determines if the request should be sent with a parallel hedging availability strategy.
-        /// This first checks to see if there is a vailid availability strategy to use, 
-        /// then checks to see if the request is a read-only request on a document request.
+        /// This method determines if the request can use an availability strategy
         /// </summary>
         /// <param name="request"></param>
         /// <returns>whether the request should be a parallel hedging request.</returns>
-        public bool ShouldHedge(RequestMessage request)
+        public bool CanUseAvailabilityStrategy(RequestMessage request)
         {
             //No availability strategy options
             if (request.RequestOptions?.AvailabilityStrategyOptions == null && this.client.ClientOptions.AvailabilityStrategyOptions == null)
@@ -114,19 +116,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
             
             //Client level availability strategy options are not enabled + no request level availability strategy options
-            if (request.RequestOptions?.AvailabilityStrategyOptions == null && this.client.ClientOptions.AvailabilityStrategyOptions == null)
-            {
-                return false;
-            }
-
-            //Only use availability strategy for document point operations
-            if (request.ResourceType != ResourceType.Document)
-            {
-                return false;
-            }
-
-            //check to see if it is a not a read-only request
-            if (!OperationTypeExtensions.IsReadOperation(request.OperationType))
+            if (request.RequestOptions?.AvailabilityStrategyOptions == null && !this.client.ClientOptions.AvailabilityStrategyOptions.Enabled)
             {
                 return false;
             }
