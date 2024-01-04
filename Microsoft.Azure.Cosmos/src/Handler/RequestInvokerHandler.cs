@@ -131,17 +131,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 return false;
             }
 
-            Type type = this.client.ClientOptions.AvailabilityStrategyOptions?.AvailabilityStrategy.GetType();
-            if (request.RequestOptions?.AvailabilityStrategyOptions != null)
-            {
-                type = request.RequestOptions.AvailabilityStrategyOptions.AvailabilityStrategy.GetType();
-            }
-
-            if (type != typeof(ParallelHedging))
-            {
-                return false;
-            }
-
             return true;
         }       
 
