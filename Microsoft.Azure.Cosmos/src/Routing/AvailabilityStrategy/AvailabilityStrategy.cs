@@ -3,6 +3,7 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Handlers;
@@ -19,10 +20,13 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="client"></param>
         /// <param name="requestMessage"></param>
         /// <param name="cancellationToken"></param>
-        internal abstract Task<ResponseMessage> ExecuteAvailablityStrategyAsync(
+        internal virtual Task<ResponseMessage> ExecuteAvailablityStrategyAsync(
             RequestInvokerHandler requestInvokerHandler,
             CosmosClient client,
             RequestMessage requestMessage,
-            CancellationToken cancellationToken);
+            CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
