@@ -361,6 +361,93 @@
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "\"1\"");
 
             CancellationToken cancellationToken = new CancellationToken();
+            ResponseMessage rm = await this.client.ClientOptions.AvailabilityStrategyOptions.AvailabilityStrategy.ExecuteAvailablityStrategyAsync(
+                mockRequestInvokerHandler.Object,
+                this.client,
+                requestMessage,
+                cancellationToken);
+
+            Assert.AreEqual(HttpStatusCode.OK, rm.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task AvailabilityStrategyDisableOverideTest()
+        {
+            AccountProperties accountProperties = new AccountProperties()
+            {
+                ReadLocationsInternal = new Collection<AccountRegion>()
+                    {
+                        new AccountRegion()
+                        {
+                            Name = "East US",
+                            Endpoint = "https://eastus.documents.azure.com:443/"
+                        },
+                        new AccountRegion()
+                        {
+                            Name = "West US",
+                            Endpoint = "https://westus.documents.azure.com:443/"
+                        }
+                    },
+                WriteLocationsInternal = new Collection<AccountRegion>()
+                    {
+                        new AccountRegion()
+                        {
+                            Name = "South Central US",
+                            Endpoint = "https://127.0.0.1:8081/"
+                        },
+                    },
+                EnableMultipleWriteLocations = false
+            };
+
+            Mock<IDocumentClientInternal> mockedClient = new Mock<IDocumentClientInternal>();
+            mockedClient.Setup(owner => owner.ServiceEndpoint).Returns(new Uri("https://default.documents.azure.com:443/"));
+            mockedClient.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>())).ReturnsAsync(accountProperties);
+
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy()
+            {
+                EnableEndpointDiscovery = false,
+                UseMultipleWriteLocations = false,
+            };
+            connectionPolicy.PreferredLocations.Add("East US");
+            connectionPolicy.PreferredLocations.Add("West US");
+
+            ResponseMessage responseMessageOK = new ResponseMessage(HttpStatusCode.OK);
+            ResponseMessage responseMessageServiceUnavailable = new ResponseMessage(HttpStatusCode.ServiceUnavailable);
+
+            this.client.DocumentClient.GlobalEndpointManager.UpdateLocationCache(accountProperties);
+
+            Mock<RequestInvokerHandler> mockRequestInvokerHandler = new Mock<RequestInvokerHandler>(
+                this.client,
+                null);
+            mockRequestInvokerHandler.SetupSequence(x =>
+                x.BaseSendAsync(
+                    It.IsAny<RequestMessage>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(Task.Delay(TimeSpan.FromMilliseconds(150))
+                    .ContinueWith(_ => responseMessageOK))
+                .Returns(Task.FromResult(responseMessageServiceUnavailable));
+
+            RequestOptions requestOptions = new RequestOptions()
+            {
+                AvailabilityStrategyOptions = new AvailabilityStrategyOptions(
+                    new DisabledStrategy(),
+                    enabled: false)
+            };
+
+            RequestMessage requestMessage = new RequestMessage(
+                HttpMethod.Get,
+                new Uri("https://eastus.documents.azure.com:443/testDb/test/1"))
+            {
+                ResourceType = ResourceType.Document,
+                OperationType = OperationType.Read,
+                DatabaseId = "testDb",
+                ContainerId = "test",
+                RequestOptions = requestOptions
+            };
+
+            requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "\"1\"");
+
+            CancellationToken cancellationToken = new CancellationToken();
             ResponseMessage rm = await this.client.ClientOptions.AvailabilityStrategyOptions.AvailabilityStrategy.ExecuteAvailablityStrategyAsync(mockRequestInvokerHandler.Object,
                 this.client,
                 requestMessage,

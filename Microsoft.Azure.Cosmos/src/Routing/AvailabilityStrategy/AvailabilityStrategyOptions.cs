@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
         public AvailabilityStrategyOptions(AvailabilityStrategy availabilityStrategy, bool enabled = true)
         {
             this.AvailabilityStrategy = availabilityStrategy;
-            this.Enabled = enabled;
+            this.Enabled = availabilityStrategy.GetType() != typeof(DisabledStrategy) && enabled;
         }
 
         /// <summary>
