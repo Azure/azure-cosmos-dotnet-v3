@@ -10,6 +10,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Linq;
+    using System.Linq.Expressions;
+    using System.Net;
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Text;
@@ -136,21 +138,138 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Creating a new DocumentClientException using the Gateway response message.
-        ///   Is the media type not "application/json"?
-        ///      return DocumentClientExcpetion with responseMessage and header information.
-        ///
-        ///   Is the header content-length == 0 and media type is "application/json"? Test case sensitivity.
-        ///      return DocumentClientException with message 'No response content from gateway.'
-        ///
-        ///   Is the content actual length == 0 after a trim and media type is "application/json"? Test case sensitivity. Whitespace scenarios.
-        ///      return DocumentClientException with message 'No response content from gateway.'
-        ///
-        ///   Is the content not parseable as json, but content length != 0 and media type is "application/json"? Test case sensitivity.
-        ///      return DocumentClientException with message set to raw non-json message from response.
         /// </summary>
         /// <param name="responseMessage"></param>
         /// <param name="requestStatistics"></param>
         internal static async Task<DocumentClientException> CreateDocumentClientExceptionAsync(
+            HttpResponseMessage responseMessage,
+            IClientSideRequestStatistics requestStatistics)
+        {
+            if (responseMessage is null)
+            {
+                throw new ArgumentNullException(nameof(responseMessage));
+            }
+
+            if (requestStatistics is null)
+            {
+                throw new ArgumentNullException(nameof(requestStatistics));
+            }
+
+            if (!PathsHelper.TryParsePathSegments(
+                resourceUrl: responseMessage.RequestMessage.RequestUri.LocalPath,
+                isFeed: out _,
+                resourcePath: out _,
+                resourceIdOrFullName: out string resourceIdOrFullName,
+                isNameBased: out _))
+            {
+                // if resourceLink is invalid - we will not set resourceAddress in exception.
+            }
+
+            try
+            {
+                Stream contentAsStream = await responseMessage.Content.ReadAsStreamAsync();
+                Error error = GatewayStoreClient.GetError(
+                    error: Documents.Resource.LoadFrom<Error>(stream: contentAsStream), 
+                    statusCode: responseMessage.StatusCode);
+
+                return new DocumentClientException(
+                    errorResource: error,
+                    responseHeaders: responseMessage.Headers,
+                    statusCode: responseMessage.StatusCode)
+                {
+                    StatusDescription = responseMessage.ReasonPhrase,
+                    ResourceAddress = resourceIdOrFullName,
+                    RequestStatistics = requestStatistics
+                };
+            }
+            catch
+            {
+                StringBuilder contextBuilder = new StringBuilder(
+                    value: GatewayStoreClient.GetError(
+                        error: await responseMessage.Content.ReadAsStringAsync(),
+                        statusCode: responseMessage.StatusCode));
+
+                HttpRequestMessage requestMessage = responseMessage.RequestMessage;
+
+                if (requestMessage != null)
+                {
+                    contextBuilder.AppendLine($"RequestUri: {requestMessage.RequestUri};");
+                    contextBuilder.AppendLine($"RequestMethod: {requestMessage.Method.Method};");
+
+                    if (requestMessage.Headers != null)
+                    {
+                        foreach (KeyValuePair<string, IEnumerable<string>> header in requestMessage.Headers)
+                        {
+                            contextBuilder.AppendLine($"Header: {header.Key} Length: {string.Join(",", header.Value).Length};");
+                        }
+                    }
+                }
+
+                return new DocumentClientException(
+                    message: contextBuilder.ToString(),
+                    innerException: null,
+                    responseHeaders: responseMessage.Headers,
+                    statusCode: responseMessage.StatusCode,
+                    requestUri: responseMessage.RequestMessage.RequestUri)
+                {
+                    StatusDescription = responseMessage.ReasonPhrase,
+                    ResourceAddress = resourceIdOrFullName,
+                    RequestStatistics = requestStatistics
+                };
+            }
+        }
+
+        private static readonly string NORESPONSECONTENTFROMGATEWAY = "No response content from gateway.";
+
+        /// <summary>
+        /// Get or create an Error type using an existing Error type.
+        /// </summary>
+        /// <param name="error"></param>
+        /// <param name="statusCode"></param>
+        private static Error GetError(
+            Error error, 
+            HttpStatusCode statusCode)
+        {
+            if (error.Message.Trim().Length == 0)
+            {
+                return new Error
+                {
+                    Code = statusCode.ToString(),
+                    Message = GatewayStoreClient.NORESPONSECONTENTFROMGATEWAY,
+                };
+            }
+
+            return error;
+        }
+
+        /// <summary>
+        /// Get or set an Error string using an existing Error string.
+        /// </summary>
+        /// <param name="error"></param>
+        /// <param name="statusCode"></param>
+        private static string GetError(
+            string error,
+            HttpStatusCode statusCode)
+        {
+            if (error.Trim().Length == 0)
+            {
+                return JsonConvert.SerializeObject(
+                    new Error
+                    {
+                        Code = statusCode.ToString(),
+                        Message = GatewayStoreClient.NORESPONSECONTENTFROMGATEWAY,
+                    });
+            }
+
+            return error;
+        }
+
+        /// <summary>
+        /// Creating a new DocumentClientException using the Gateway response message.
+        /// </summary>
+        /// <param name="responseMessage"></param>
+        /// <param name="requestStatistics"></param>
+        internal static async Task<DocumentClientException> WorkingCreateDocumentClientExceptionAsync(
             HttpResponseMessage responseMessage,
             IClientSideRequestStatistics requestStatistics)
         {
@@ -177,21 +296,36 @@ namespace Microsoft.Azure.Cosmos
                 // if resourceLink is invalid - we will not set resourceAddress in exception.
             }
 
+            Error error;
+
             try
-            {
-                Stream readStream = await responseMessage.Content.ReadAsStreamAsync();
-                Error error = Documents.Resource.LoadFrom<Error>(readStream);
+            {                
+                await Console.Out.WriteLineAsync($"ContentLength: {responseMessage.Content?.Headers?.ContentLength}");
 
-                // need to rethink dropping the check for media type "application/json".
-
-                if (responseMessage.Content?.Headers?.ContentLength == 0 ||
-                    error.Message.Trim().Length == 0)
+                if (!string.Equals(responseMessage.Content?.Headers?.ContentType?.MediaType, "application/json", StringComparison.OrdinalIgnoreCase))
                 {
-                    error = new Error
+                    throw new ArgumentNullException();
+                }
+
+                // Check ContentLength on Header and Length of trimmed Message's Content.
+
+                string messageContent = await responseMessage.Content.ReadAsStringAsync();
+                int messageContentLength = messageContent.Trim().Length;
+                long? headerContentLength = responseMessage.Content?.Headers?.ContentLength;
+
+                if (headerContentLength == 0 || messageContentLength == 0)
+                {
+                    error = new Error { Code = responseMessage.StatusCode.ToString(), Message = "No response content from gateway." };
+                }
+                else
+                {
+                    Stream readStream = await responseMessage.Content.ReadAsStreamAsync();
+                    error = Documents.Resource.LoadFrom<Error>(readStream);
+
+                    if (error.Message.Trim().Length == 0) 
                     {
-                        Code = responseMessage.StatusCode.ToString(),
-                        Message = "No response content from gateway."
-                    };
+                        error.Message = "No response content from gateway.";
+                    }
                 }
 
                 return new DocumentClientException(
@@ -207,7 +341,9 @@ namespace Microsoft.Azure.Cosmos
             catch
             {
                 StringBuilder context = new StringBuilder();
-                context.AppendLine(await responseMessage.Content.ReadAsStringAsync());
+                string readString = await responseMessage.Content.ReadAsStringAsync();
+
+                context.AppendLine(readString);
 
                 HttpRequestMessage requestMessage = responseMessage.RequestMessage;
                 if (requestMessage != null)

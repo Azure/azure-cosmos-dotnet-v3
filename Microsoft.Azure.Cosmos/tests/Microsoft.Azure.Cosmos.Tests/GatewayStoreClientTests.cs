@@ -58,10 +58,48 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Testing CreateDocumentClientExceptionAsync when media type is application/json and the header content length is zero.
+        /// Testing CreateDocumentClientExceptionAsync when media type is not application/json. Not meant to be an exhaustive test for all
+        /// legitimate content media types.
         /// </summary>
         [TestMethod]
-        public async Task TestCreateDocumentClientExceptionWhenMediaTypeIsApplicationJsonAndHeaderContentLengthIsZeroAsync()
+        [DataRow("text/html", "")]
+        [DataRow("text/html", "     ")]
+        [DataRow("text/plain", "")]
+        [DataRow("text/plain", "     ")]
+        public async Task TestCreateDocumentClientExceptionWhenMediaTypeIsNotApplicationJsonAndHeaderContentLengthIsZeroAsync(
+            string mediaType,
+            string contentMessage)
+        {
+            HttpResponseMessage responseMessage = new(statusCode: System.Net.HttpStatusCode.NotFound)
+            {
+                RequestMessage = new HttpRequestMessage(
+                    method: HttpMethod.Get,
+                    requestUri: @"https://pt_ac_test_uri.com/"),
+                Content = new StringContent(
+                    mediaType: mediaType,
+                    encoding: Encoding.UTF8,
+                    content: JsonConvert.SerializeObject(
+                        value: new Error() { Code = HttpStatusCode.NotFound.ToString(), Message = contentMessage })),
+            };
+
+            DocumentClientException documentClientException = await GatewayStoreClient.CreateDocumentClientExceptionAsync(
+                responseMessage: responseMessage,
+                requestStatistics: GatewayStoreClientTests.CreateClientSideRequestStatistics());
+
+            Assert.IsNotNull(value: documentClientException);
+            Assert.AreEqual(expected: HttpStatusCode.NotFound, actual: documentClientException.StatusCode);
+            Assert.IsTrue(condition: documentClientException.Message.Contains("No response content from gateway."));
+
+            Assert.IsNotNull(value: documentClientException.Error);
+            Assert.AreEqual(expected: HttpStatusCode.NotFound.ToString(), actual: documentClientException.Error.Code);
+            Assert.IsTrue(documentClientException.Error.Message.Contains("No response content from gateway."));
+        }
+
+        /// <summary>
+        /// Testing CreateDocumentClientExceptionAsync when media type is application/json and the error message length is zero.
+        /// </summary>
+        [TestMethod]
+        public async Task TestCreateDocumentClientExceptionWhenMediaTypeIsApplicationJsonAndErrorMessageLengthIsZeroAsync()
         {
             HttpResponseMessage responseMessage = new(statusCode: System.Net.HttpStatusCode.NotFound)
             {
@@ -143,7 +181,7 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         [DataRow(@"")]
         [DataRow(@"    ")]
-        public async Task TestCreateDocumentClientExceptionWhenMediaTypeIsApplicationJsonAndContentIsNotValidJsonAndContentLengthIsZeroAsync(string contentMessage)
+        public async Task TestCreateDocumentClientExceptionWhenMediaTypeIsApplicationJsonAndContentIsNotValidJsonAndHeaderContentLengthIsZeroAsync(string contentMessage)
         {
             HttpResponseMessage responseMessage = new(statusCode: System.Net.HttpStatusCode.NotFound)
             {
@@ -151,8 +189,9 @@ namespace Microsoft.Azure.Cosmos
                     method: HttpMethod.Get,
                     requestUri: @"https://pt_ac_test_uri.com/"),
                 Content = new StringContent(
-                    content: JsonConvert.SerializeObject(
-                        value: new Error() { Code = HttpStatusCode.NotFound.ToString(), Message = contentMessage })),
+                    mediaType: "application/json",
+                    encoding: Encoding.UTF8, 
+                    content: contentMessage),
             };
 
             IClientSideRequestStatistics requestStatistics = new ClientSideRequestStatisticsTraceDatum(
@@ -169,7 +208,7 @@ namespace Microsoft.Azure.Cosmos
 
             Assert.IsNotNull(value: documentClientException.Error);
             Assert.AreEqual(expected: HttpStatusCode.NotFound.ToString(), actual: documentClientException.Error.Code);
-            Assert.AreEqual(expected: "No response content from gateway.", actual: documentClientException.Error.Message);
+            Assert.IsTrue(documentClientException.Error.Message.Contains("No response content from gateway."));
         }
 
         /// <summary>
