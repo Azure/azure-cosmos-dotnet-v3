@@ -270,11 +270,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             DocumentContainer documentContainer = await CreateDocumentContainerAsync(documents, mockInMemoryContainer, numSplits: 4);
 
             // OFFSET/LIMIT with ORDER BY
-            await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 0 LIMIT 500", expectedPageSize: 315, expectedResults: 500, mockInMemoryContainer, documentContainer);
+            await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 0 LIMIT 500", expectedPageSize: 500, expectedResults: 500, mockInMemoryContainer, documentContainer);
             await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 10000 LIMIT 5000", expectedPageSize: 1000, expectedResults: 0, mockInMemoryContainer, documentContainer);
-            await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 10 LIMIT 100", expectedPageSize: 70, expectedResults: 100, mockInMemoryContainer, documentContainer);
-            await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 0 LIMIT 100", expectedPageSize: 65, expectedResults: 100, mockInMemoryContainer, documentContainer);
-            await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 100 LIMIT 0", expectedPageSize: 65, expectedResults: 0, mockInMemoryContainer, documentContainer);
+            await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 10 LIMIT 100", expectedPageSize: 110, expectedResults: 100, mockInMemoryContainer, documentContainer);
+            await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 0 LIMIT 100", expectedPageSize: 100, expectedResults: 100, mockInMemoryContainer, documentContainer);
+            await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 100 LIMIT 0", expectedPageSize: 1000, expectedResults: 0, mockInMemoryContainer, documentContainer);
 
             // OFFSET/LIMIT without ORDER BY
             await this.TestPageSizeAsync("SELECT c.pk FROM c OFFSET 10 LIMIT 100", expectedPageSize: 1000, expectedResults: 100, mockInMemoryContainer, documentContainer);
@@ -283,7 +283,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             // TOP with ORDER BY
             await this.TestPageSizeAsync("SELECT TOP 5 c.pk FROM c ORDER BY c.pk", expectedPageSize: 5, expectedResults: 5, mockInMemoryContainer, documentContainer);
-            await this.TestPageSizeAsync("SELECT TOP 100 c.pk FROM c ORDER BY c.pk", expectedPageSize: 65, expectedResults: 100, mockInMemoryContainer, documentContainer);
+            await this.TestPageSizeAsync("SELECT TOP 100 c.pk FROM c ORDER BY c.pk", expectedPageSize: 100, expectedResults: 100, mockInMemoryContainer, documentContainer);
             await this.TestPageSizeAsync("SELECT TOP 5000 c.pk FROM c ORDER BY c.pk", expectedPageSize: 1000, expectedResults: 1100, mockInMemoryContainer, documentContainer);
             await this.TestPageSizeAsync("SELECT TOP 15000 c.pk FROM c ORDER BY c.pk", expectedPageSize: 1000, expectedResults: 1100, mockInMemoryContainer, documentContainer);
 
@@ -346,67 +346,63 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 testInjections: queryRequestOptions.TestSettings);
 
             string databaseId = "db1234";
-            string resourceLink = $"dbs/{databaseId}/colls";
-
-            const string suffix = "-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF";
-
-            List<PartitionKeyRange> partitionKeyRanges = new List<PartitionKeyRange>
-            {
-                new PartitionKeyRange() { MinInclusive = Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey, MaxExclusive = "1F" + suffix },
-                new PartitionKeyRange() { MinInclusive = "1F" + suffix, MaxExclusive = "3F" + suffix },
-                new PartitionKeyRange() { MinInclusive = "3F" + suffix, MaxExclusive = "5F" + suffix },
-                new PartitionKeyRange() { MinInclusive = "5F" + suffix, MaxExclusive = "7F" + suffix },
-                new PartitionKeyRange() { MinInclusive = "7F" + suffix, MaxExclusive = "9F" + suffix },
-                new PartitionKeyRange() { MinInclusive = "9F" + suffix, MaxExclusive = "BF" + suffix },
-                new PartitionKeyRange() { MinInclusive = "BF" + suffix, MaxExclusive = "DF" + suffix },
-                new PartitionKeyRange() { MinInclusive = "DF" + suffix, MaxExclusive = Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey },
-            };
-
-            Mock<CosmosQueryClient> mockClient = new Mock<CosmosQueryClient>();
-
-            mockClient.Setup(x => x.GetTargetPartitionKeyRangesAsync(
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<IReadOnlyList<Documents.Routing.Range<string>>>(),
-                It.IsAny<bool>(),
-                It.IsAny<ITrace>()))
-                .Returns((string resourceLink, string collectionResourceId, IReadOnlyList<Documents.Routing.Range<string>> providedRanges, bool forceRefresh, ITrace trace) => Task.FromResult(partitionKeyRanges));
-
-            mockClient.Setup(x => x.TryGetPartitionedQueryExecutionInfoAsync(
-                It.IsAny<SqlQuerySpec>(),
-                It.IsAny<ResourceType>(),
-                It.IsAny<PartitionKeyDefinition>(),
-                It.IsAny<bool>(),
-                It.IsAny<bool>(),
-                It.IsAny<bool>(),
-                It.IsAny<bool>(),
-                It.IsAny<bool>(),
-                It.IsAny<bool>(),
-                It.IsAny<Cosmos.GeospatialType>(),
-                It.IsAny<CancellationToken>()))
-                .Returns((SqlQuerySpec sqlQuerySpec, ResourceType resourceType, PartitionKeyDefinition partitionKeyDefinition, bool requireFormattableOrderByQuery, bool isContinuationExpected, bool allowNonValueAggregateQuery, bool hasLogicalPartitionKey, bool allowDCount, bool useSystemPrefix, Cosmos.GeospatialType geospatialType, CancellationToken cancellationToken) =>
-                {
-                    CosmosSerializerCore serializerCore = new();
-                    using StreamReader streamReader = new(serializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, Documents.ResourceType.Document));
-                    string sqlQuerySpecJsonString = streamReader.ReadToEnd();
-
-                    (PartitionedQueryExecutionInfo partitionedQueryExecutionInfo, QueryPartitionProvider queryPartitionProvider) = OptimisticDirectExecutionQueryBaselineTests.GetPartitionedQueryExecutionInfoAndPartitionProvider(sqlQuerySpecJsonString, partitionKeyDefinition);
-                    return Task.FromResult(TryCatch<PartitionedQueryExecutionInfo>.FromResult(partitionedQueryExecutionInfo));
-                }
-                );
+            (PartitionedQueryExecutionInfo partitionedQueryExecutionInfo, QueryPartitionProvider queryPartitionProvider) = GetPartitionedQueryExecutionInfoAndPartitionProvider(sqlQuerySpecJsonString, partitionKeyDefinition);
 
             CosmosQueryContextCore cosmosQueryContextCore = new CosmosQueryContextCore(
-                client: mockClient.Object,
-                resourceTypeEnum: Documents.ResourceType.Document,
-                operationType: Documents.OperationType.Query,
-                resourceType: typeof(QueryResponseCore),
-                resourceLink: resourceLink,
-                isContinuationExpected: true,
-                allowNonValueAggregateQuery: true,
-                useSystemPrefix: false,
-                correlatedActivityId: Guid.NewGuid());
+                 client: new TestCosmosQueryClient(queryPartitionProvider),
+                 resourceTypeEnum: Documents.ResourceType.Document,
+                 operationType: Documents.OperationType.Query,
+                 resourceType: typeof(QueryResponseCore),
+                 resourceLink: $"dbs/{databaseId}/colls",
+                 isContinuationExpected: true,
+                 allowNonValueAggregateQuery: true,
+                 useSystemPrefix: false,
+                 correlatedActivityId: Guid.NewGuid());
 
             return Tuple.Create(inputParameters, cosmosQueryContextCore);
+        }
+
+        internal static Tuple<PartitionedQueryExecutionInfo, QueryPartitionProvider> GetPartitionedQueryExecutionInfoAndPartitionProvider(string querySpecJsonString, PartitionKeyDefinition pkDefinition)
+        {
+            IDictionary<string, object> DefaultQueryengineConfiguration = new Dictionary<string, object>()
+            {
+                {"maxSqlQueryInputLength", 30720},
+                {"maxJoinsPerSqlQuery", 5},
+                {"maxLogicalAndPerSqlQuery", 200},
+                {"maxLogicalOrPerSqlQuery", 200},
+                {"maxUdfRefPerSqlQuery", 2},
+                {"maxInExpressionItemsCount", 8000},
+                {"queryMaxInMemorySortDocumentCount", 500},
+                {"maxQueryRequestTimeoutFraction", 0.90},
+                {"sqlAllowNonFiniteNumbers", false},
+                {"sqlAllowAggregateFunctions", true},
+                {"sqlAllowSubQuery", true},
+                {"sqlAllowScalarSubQuery", false},
+                {"allowNewKeywords", true},
+                {"sqlAllowLike", true},
+                {"sqlAllowGroupByClause", false},
+                {"queryEnableMongoNativeRegex", true},
+                {"maxSpatialQueryCells", 12},
+                {"spatialMaxGeometryPointCount", 256},
+                {"sqlDisableOptimizationFlags", 0},
+                {"sqlEnableParameterExpansionCheck", true}
+            };
+
+            QueryPartitionProvider queryPartitionProvider = new QueryPartitionProvider(DefaultQueryengineConfiguration);
+
+            TryCatch<PartitionedQueryExecutionInfo> tryGetQueryPlan = queryPartitionProvider.TryGetPartitionedQueryExecutionInfo(
+                querySpecJsonString: querySpecJsonString,
+                partitionKeyDefinition: pkDefinition,
+                requireFormattableOrderByQuery: true,
+                isContinuationExpected: true,
+                allowNonValueAggregateQuery: true,
+                hasLogicalPartitionKey: false,
+                allowDCount: true,
+                useSystemPrefix: false,
+                geospatialType: Cosmos.GeospatialType.Geography);
+
+            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = tryGetQueryPlan.Succeeded ? tryGetQueryPlan.Result : throw tryGetQueryPlan.Exception;
+            return Tuple.Create(partitionedQueryExecutionInfo, queryPartitionProvider);
         }
 
         internal static async Task<List<CosmosElement>> ExecuteQueryAsync(
