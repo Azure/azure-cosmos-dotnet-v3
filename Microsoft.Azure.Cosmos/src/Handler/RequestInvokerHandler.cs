@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
             
             //Client level availability strategy options are not enabled + no request level availability strategy options
-            if (request.RequestOptions?.AvailabilityStrategyOptions == null && !this.client.ClientOptions.AvailabilityStrategyOptions.Enabled)
+            if (request.RequestOptions?.AvailabilityStrategyOptions == null && this.client.ClientOptions.AvailabilityStrategyOptions == null)
             {
                 return false;
             }
