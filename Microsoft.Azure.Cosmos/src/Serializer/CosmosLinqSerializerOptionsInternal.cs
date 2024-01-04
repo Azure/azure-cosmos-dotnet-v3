@@ -19,35 +19,18 @@ namespace Microsoft.Azure.Cosmos.Serializer
             CosmosLinqSerializerOptions cosmosLinqSerializerOptions, 
             CosmosSerializer customCosmosSerializer)
         {
-            switch (cosmosLinqSerializerOptions.LinqSerializerType)
+            if (customCosmosSerializer is CosmosLinqSerializer customQueryCosmosSerializer)
             {
-                case CosmosLinqSerializerType.Custom:
+                if (cosmosLinqSerializerOptions.PropertyNamingPolicy != CosmosPropertyNamingPolicy.Default)
                 {
-                    if (customCosmosSerializer == null)
-                    {
-                        throw new InvalidOperationException($"Must provide CosmosLinqSerializer if selecting CosmosLinqSerializerType.Custom. See https://aka.ms/CosmosDB/dotnetlinq for more information on custom serialization in LINQ.");
-                    }
-
-                    if (cosmosLinqSerializerOptions.PropertyNamingPolicy != CosmosPropertyNamingPolicy.Default)
-                    {
-                        throw new InvalidOperationException($"CosmosPropertyNamingPolicy must be CosmosPropertyNamingPolicy.Default if selecting CosmosLinqSerializerType.Custom. See https://aka.ms/CosmosDB/dotnetlinq for more information on custom serialization in LINQ.");
-                    }
-
-                    if (customCosmosSerializer is CosmosLinqSerializer customQueryCosmosSerializer)
-                    {
-                        return new CosmosLinqSerializerOptionsInternal(cosmosLinqSerializerOptions, customQueryCosmosSerializer);
-                    }
-
-                    throw new InvalidOperationException($"CosmosSerializer must implement CosmosLinqSerializer if selecting CosmosLinqSerializerType.Custom. See https://aka.ms/CosmosDB/dotnetlinq for more information on custom serialization in LINQ.");
+                    throw new InvalidOperationException($"CosmosPropertyNamingPolicy must be CosmosPropertyNamingPolicy.Default if using custom serializer for LINQ translations. See https://aka.ms/CosmosDB/dotnetlinq for more information.");
                 }
-                case CosmosLinqSerializerType.Default:
-                {
-                    return new CosmosLinqSerializerOptionsInternal(cosmosLinqSerializerOptions, null);
-                }
-                default:
-                {
-                    throw new InvalidOperationException("Unsupported CosmosLinqSerializerType value.");
-                }
+
+                return new CosmosLinqSerializerOptionsInternal(cosmosLinqSerializerOptions, customQueryCosmosSerializer);
+            }
+            else
+            {
+                return new CosmosLinqSerializerOptionsInternal(cosmosLinqSerializerOptions, null);
             }
         }
 
@@ -65,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.Serializer
         public CosmosLinqSerializerOptions CosmosLinqSerializerOptions { get; }
 
         /// <summary>
-        /// User defined customer serializer, if CosmosLinqSerializerType is CustomCosmosLinqSerializer. 
+        /// User defined customer serializer, if one exists. 
         /// Otherwise set to null.
         /// </summary>
         public CosmosLinqSerializer CustomCosmosLinqSerializer { get; }

@@ -16,7 +16,6 @@ namespace Microsoft.Azure.Cosmos
         public CosmosLinqSerializerOptions()
         {
             this.PropertyNamingPolicy = CosmosPropertyNamingPolicy.Default;
-            this.LinqSerializerType = CosmosLinqSerializerType.Default;
         }
 
         /// <summary>
@@ -27,19 +26,5 @@ namespace Microsoft.Azure.Cosmos
         /// The default value is CosmosPropertyNamingPolicy.Default
         /// </remarks>
         public CosmosPropertyNamingPolicy PropertyNamingPolicy { get; set; }
-
-        /// <summary>
-        /// Specifies the type of serializer to be used for LINQ translations.
-        /// Options are detailed in <see cref="LinqSerializerType"/>
-        /// </summary>
-        /// <remarks>
-        /// The default value is CosmosLinqSerializerType.Default
-        /// </remarks>
-        #if PREVIEW
-        public
-        #else
-        internal
-        #endif
-        CosmosLinqSerializerType LinqSerializerType { get; set; }
     }
 }

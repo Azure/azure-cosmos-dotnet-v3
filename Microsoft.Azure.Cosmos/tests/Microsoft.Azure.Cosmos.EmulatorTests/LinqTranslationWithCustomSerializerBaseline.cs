@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using System.Text.Json.Serialization;
     using System.Threading.Tasks;
     using BaselineTest;
-    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -24,6 +23,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     [SDK.EmulatorTests.TestClass]
     public class LinqTranslationWithCustomSerializerBaseline : BaselineTests<LinqTestInput, LinqTestOutput>
     {
+        private static CosmosClient CosmosLinqClient;
+        private static Database TestDbLinq;
+        private static Container TestLinqContainer;
+
         private static CosmosClient CosmosClient;
         private static Database TestDb;
         private static Container TestContainer;
@@ -36,8 +39,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [ClassInitialize]
         public async static Task Initialize(TestContext textContext)
         {
+            CosmosLinqClient = TestCommon.CreateCosmosClient((cosmosClientBuilder)
+                => cosmosClientBuilder.WithCustomSerializer(new SystemTextJsonLinqSerializer(new JsonSerializerOptions())));
+
+            string dbNameLinq = $"{nameof(LinqTranslationBaselineTests)}-{Guid.NewGuid():N}";
+            TestDbLinq = await CosmosLinqClient.CreateDatabaseAsync(dbNameLinq);
+
             CosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder)
-                => cosmosClientBuilder.WithCustomSerializer(new SystemTextJsonSerializer(new JsonSerializerOptions())));
+                 => cosmosClientBuilder.WithCustomSerializer(new SystemTextJsonSerializer(new JsonSerializerOptions())));
 
             string dbName = $"{nameof(LinqTranslationBaselineTests)}-{Guid.NewGuid():N}";
             TestDb = await CosmosClient.CreateDatabaseAsync(dbName);
@@ -46,6 +55,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [ClassCleanup]
         public async static Task Cleanup()
         {
+            if (TestDbLinq != null)
+            {
+                await TestDbLinq.DeleteStreamAsync();
+            }
+
             if (TestDb != null)
             {
                 await TestDb.DeleteStreamAsync();
@@ -55,12 +69,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestInitialize]
         public async Task TestInitialize()
         {
+            TestLinqContainer = await TestDbLinq.CreateContainerAsync(new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/Pk"));
             TestContainer = await TestDb.CreateContainerAsync(new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/Pk"));
         }
 
         [TestCleanup]
         public async Task TestCleanup()
         {
+            await TestLinqContainer.DeleteContainerStreamAsync();
             await TestContainer.DeleteContainerStreamAsync();
         }
 
@@ -73,9 +89,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         public void TestMemberInitializerDotNetCustomSerializer()
         {
             Func<bool, IQueryable<DataObjectDotNet>> getQuery;
-            (_, getQuery) = this.InsertDataAndGetQueryables<DataObjectDotNet>(CosmosLinqSerializerType.Custom);
+            (_, getQuery) = this.InsertDataAndGetQueryables<DataObjectDotNet>(true, TestLinqContainer);
 
-            string insertedData = this.GetInsertedData().Result;
+            string insertedData = this.GetInsertedData(TestLinqContainer).Result;
 
             List<LinqTestInput> inputs = new List<LinqTestInput>
             {
@@ -96,9 +112,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         {
             Func<bool, IQueryable<DataObjectNewtonsoft>> getQueryCamelCase;
             Func<bool, IQueryable<DataObjectNewtonsoft>> getQueryDefault;
-            (getQueryCamelCase, getQueryDefault) = this.InsertDataAndGetQueryables<DataObjectNewtonsoft>(CosmosLinqSerializerType.Default);
+            (getQueryCamelCase, getQueryDefault) = this.InsertDataAndGetQueryables<DataObjectNewtonsoft>(false, TestContainer);
 
-            string insertedData = this.GetInsertedData().Result;
+            string insertedData = this.GetInsertedData(TestContainer).Result;
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             foreach (bool useCamelCaseSerializer in new bool[] { true, false })
@@ -125,9 +141,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         {
             Func<bool, IQueryable<DataObjectDataMember>> getQueryCamelCase;
             Func<bool, IQueryable<DataObjectDataMember>> getQueryDefault;
-            (getQueryCamelCase, getQueryDefault) = this.InsertDataAndGetQueryables<DataObjectDataMember>(CosmosLinqSerializerType.Default);
+            (getQueryCamelCase, getQueryDefault) = this.InsertDataAndGetQueryables<DataObjectDataMember>(false, TestContainer);
 
-            string insertedData = this.GetInsertedData().Result;
+            string insertedData = this.GetInsertedData(TestContainer).Result;
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             foreach (bool useCamelCaseSerializer in new bool[] { true, false })
@@ -154,9 +170,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         {
             Func<bool, IQueryable<DataObjectNewtonsoftDotNet>> getQueryCamelCase;
             Func<bool, IQueryable<DataObjectNewtonsoftDotNet>> getQueryDefault;
-            (getQueryCamelCase, getQueryDefault) = this.InsertDataAndGetQueryables<DataObjectNewtonsoftDotNet>(CosmosLinqSerializerType.Default);
+            (getQueryCamelCase, getQueryDefault) = this.InsertDataAndGetQueryables<DataObjectNewtonsoftDotNet>(false, TestContainer);
             
-            string insertedData = this.GetInsertedData().Result;
+            string insertedData = this.GetInsertedData(TestContainer).Result;
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             foreach (bool useCamelCaseSerializer in new bool[] { true, false })
@@ -183,9 +199,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         {
             Func<bool, IQueryable<DataObjectNewtonsoftDataMember>> getQueryCamelCase;
             Func<bool, IQueryable<DataObjectNewtonsoftDataMember>> getQueryDefault;
-            (getQueryCamelCase, getQueryDefault) = this.InsertDataAndGetQueryables<DataObjectNewtonsoftDataMember>(CosmosLinqSerializerType.Default);
+            (getQueryCamelCase, getQueryDefault) = this.InsertDataAndGetQueryables<DataObjectNewtonsoftDataMember>(false, TestContainer);
 
-            string insertedData = this.GetInsertedData().Result;
+            string insertedData = this.GetInsertedData(TestContainer).Result;
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             foreach (bool useCamelCaseSerializer in new bool[] { true, false })
@@ -212,9 +228,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         {
             Func<bool, IQueryable<DataObjectDotNetDataMember>> getQueryCamelCase;
             Func<bool, IQueryable<DataObjectDotNetDataMember>> getQueryDefault;
-            (getQueryCamelCase, getQueryDefault) = this.InsertDataAndGetQueryables<DataObjectDotNetDataMember>(CosmosLinqSerializerType.Default);
+            (getQueryCamelCase, getQueryDefault) = this.InsertDataAndGetQueryables<DataObjectDotNetDataMember>(false, TestContainer);
 
-            string insertedData = this.GetInsertedData().Result;
+            string insertedData = this.GetInsertedData(TestContainer).Result;
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             foreach (bool useCamelCaseSerializer in new bool[] { true, false })
@@ -236,7 +252,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             this.ExecuteTestSuite(inputs);
         }
 
-        private (Func<bool, IQueryable<T>>, Func<bool, IQueryable<T>>) InsertDataAndGetQueryables<T>(CosmosLinqSerializerType linqSerializerType) where T : LinqTestObject
+        private (Func<bool, IQueryable<T>>, Func<bool, IQueryable<T>>) InsertDataAndGetQueryables<T>(bool customSerializer, Container container) where T : LinqTestObject
         {
             static T createDataObj(int index, bool camelCase)
             {
@@ -250,29 +266,25 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             CosmosLinqSerializerOptions linqSerializerOptionsCamelCase = new CosmosLinqSerializerOptions
             {
                 PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase,
-                LinqSerializerType = linqSerializerType
             };
 
-            CosmosLinqSerializerOptions linqSerializerOptionsDefault = new CosmosLinqSerializerOptions
-            {
-                LinqSerializerType = linqSerializerType
-            };
+            CosmosLinqSerializerOptions linqSerializerOptionsDefault = new CosmosLinqSerializerOptions();
 
             Func<bool, IQueryable<T>> getQueryCamelCase = null;
-            if (linqSerializerType != CosmosLinqSerializerType.Custom)
+            if (!customSerializer)
             {
-                getQueryCamelCase = LinqTestsCommon.GenerateSerializationTestCosmosData(createDataObj, RecordCount, TestContainer, linqSerializerOptionsCamelCase);
+                getQueryCamelCase = LinqTestsCommon.GenerateSerializationTestCosmosData(createDataObj, RecordCount, container, linqSerializerOptionsCamelCase);
             }
 
-            Func<bool, IQueryable<T>> getQueryDefault = LinqTestsCommon.GenerateSerializationTestCosmosData(createDataObj, RecordCount, TestContainer, linqSerializerOptionsDefault);
+            Func<bool, IQueryable<T>> getQueryDefault = LinqTestsCommon.GenerateSerializationTestCosmosData(createDataObj, RecordCount, container, linqSerializerOptionsDefault);
 
             return (getQueryCamelCase, getQueryDefault);
         }
 
-        private async Task<string> GetInsertedData()
+        private async Task<string> GetInsertedData(Container container)
         {
             List<string> insertedDataList = new List<string>();
-            using (FeedIterator feedIterator = TestContainer.GetItemQueryStreamIterator("SELECT * FROM c"))
+            using (FeedIterator feedIterator = container.GetItemQueryStreamIterator("SELECT * FROM c"))
             {
                 while (feedIterator.HasMoreResults)
                 {
@@ -302,8 +314,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 }
             }
 
-            string insertedData = JsonConvert.SerializeObject(insertedDataList.Select(item => item), new JsonSerializerSettings { Formatting = Newtonsoft.Json.Formatting.Indented });
-            return insertedData;
+            return JsonConvert.SerializeObject(insertedDataList.Select(item => item), new JsonSerializerSettings { Formatting = Newtonsoft.Json.Formatting.Indented });
         }
 
         private class DataObjectDotNet : LinqTestObject

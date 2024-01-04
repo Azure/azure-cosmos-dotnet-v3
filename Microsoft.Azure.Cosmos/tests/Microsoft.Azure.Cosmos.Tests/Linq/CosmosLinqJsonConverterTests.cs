@@ -21,15 +21,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     [TestClass]
     public class CosmosLinqJsonConverterTests
     {
-        private readonly CosmosLinqSerializerOptions defaultPublicOptions = new()
-        {
-            LinqSerializerType = CosmosLinqSerializerType.Default
-        };
-
-        private readonly CosmosLinqSerializerOptions customPublicOptions = new()
-        {
-            LinqSerializerType = CosmosLinqSerializerType.Custom
-        };
+        private readonly CosmosLinqSerializerOptions defaultOptions = new();
 
         [TestMethod]
         public void DateTimeKindIsPreservedTest()
@@ -50,8 +42,8 @@ namespace Microsoft.Azure.Cosmos.Linq
         [TestMethod]
         public void EnumIsPreservedAsINTest()
         {
-            CosmosLinqSerializerOptionsInternal options = CosmosLinqSerializerOptionsInternal.Create(this.customPublicOptions, new TestCustomJsonSerializer());
-            CosmosLinqSerializerOptionsInternal defaultOptions = CosmosLinqSerializerOptionsInternal.Create(this.defaultPublicOptions, new TestCustomJsonSerializer());
+            CosmosLinqSerializerOptionsInternal options = CosmosLinqSerializerOptionsInternal.Create(this.defaultOptions, new TestCustomJsonLinqSerializer());
+            CosmosLinqSerializerOptionsInternal defaultOptions = CosmosLinqSerializerOptionsInternal.Create(this.defaultOptions, new TestCustomJsonSerializer());
 
             TestEnum[] values = new[] { TestEnum.One, TestEnum.Two };
 
@@ -68,8 +60,8 @@ namespace Microsoft.Azure.Cosmos.Linq
         [TestMethod]
         public void EnumIsPreservedAsEQUALSTest()
         {
-            CosmosLinqSerializerOptionsInternal options = CosmosLinqSerializerOptionsInternal.Create(this.customPublicOptions, new TestCustomJsonSerializer());
-            CosmosLinqSerializerOptionsInternal defaultOptions = CosmosLinqSerializerOptionsInternal.Create(this.defaultPublicOptions, new TestCustomJsonSerializer());
+            CosmosLinqSerializerOptionsInternal options = CosmosLinqSerializerOptionsInternal.Create(this.defaultOptions, new TestCustomJsonLinqSerializer());
+            CosmosLinqSerializerOptionsInternal defaultOptions = CosmosLinqSerializerOptionsInternal.Create(this.defaultOptions, new TestCustomJsonSerializer());
 
             TestEnum statusValue = TestEnum.One;
 
@@ -86,8 +78,8 @@ namespace Microsoft.Azure.Cosmos.Linq
         [TestMethod]
         public void EnumIsPreservedAsEXPRESSIONTest()
         {
-            CosmosLinqSerializerOptionsInternal options = CosmosLinqSerializerOptionsInternal.Create(this.customPublicOptions, new TestCustomJsonSerializer());
-            CosmosLinqSerializerOptionsInternal defaultOptions = CosmosLinqSerializerOptionsInternal.Create(this.defaultPublicOptions, new TestCustomJsonSerializer());
+            CosmosLinqSerializerOptionsInternal options = CosmosLinqSerializerOptionsInternal.Create(this.defaultOptions, new TestCustomJsonLinqSerializer());
+            CosmosLinqSerializerOptionsInternal defaultOptions = CosmosLinqSerializerOptionsInternal.Create(this.defaultOptions, new TestCustomJsonSerializer());
 
             // Get status constant
             ConstantExpression status = Expression.Constant(TestEnum.One);
@@ -171,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         [TestMethod]
         public void TestNewtonsoftExtensionDataQuery()
         {
-            CosmosLinqSerializerOptionsInternal defaultOptions = CosmosLinqSerializerOptionsInternal.Create(this.defaultPublicOptions, null);
+            CosmosLinqSerializerOptionsInternal defaultOptions = CosmosLinqSerializerOptionsInternal.Create(this.defaultOptions, null);
 
             Expression<Func<DocumentWithExtensionData, bool>> expr = a => (string)a.NewtonsoftExtensionData["foo"] == "bar";
             string sql = SqlTranslator.TranslateExpression(expr.Body, defaultOptions);
@@ -182,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         [TestMethod]
         public void TestSystemTextJsonExtensionDataQuery()
         {
-            CosmosLinqSerializerOptionsInternal dotNetOptions = CosmosLinqSerializerOptionsInternal.Create(this.customPublicOptions, new TestCustomJsonSerializer());
+            CosmosLinqSerializerOptionsInternal dotNetOptions = CosmosLinqSerializerOptionsInternal.Create(this.defaultOptions, new TestCustomJsonLinqSerializer());
 
             Expression<Func<DocumentWithExtensionData, bool>> expr = a => ((object)a.NetExtensionData["foo"]) == "bar";
             string sql = SqlTranslator.TranslateExpression(expr.Body, dotNetOptions);
@@ -202,7 +194,67 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <remarks>
         // See: https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos.Samples/Usage/SystemTextJson/CosmosSystemTextJsonSerializer.cs
         /// </remarks>
-        class TestCustomJsonSerializer : CosmosLinqSerializer
+        class TestCustomJsonLinqSerializer : CosmosLinqSerializer
+        {
+            private readonly JsonObjectSerializer systemTextJsonSerializer;
+
+            public static readonly System.Text.Json.JsonSerializerOptions JsonOptions = new()
+            {
+                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+                PropertyNameCaseInsensitive = true,
+                Converters = {
+                    new System.Text.Json.Serialization.JsonStringEnumConverter(),
+                }
+            };
+
+            public TestCustomJsonLinqSerializer()
+            {
+                this.systemTextJsonSerializer = new JsonObjectSerializer(JsonOptions);
+            }
+
+            public override T FromStream<T>(Stream stream)
+            {
+                using (stream)
+                {
+                    if (stream.CanSeek && stream.Length == 0)
+                    {
+                        return default;
+                    }
+
+                    if (typeof(Stream).IsAssignableFrom(typeof(T)))
+                    {
+                        return (T)(object)stream;
+                    }
+
+                    return (T)this.systemTextJsonSerializer.Deserialize(stream, typeof(T), default);
+                }
+            }
+
+            public override Stream ToStream<T>(T input)
+            {
+                MemoryStream stream = new();
+
+                this.systemTextJsonSerializer.Serialize(stream, input, input.GetType(), default);
+                stream.Position = 0;
+                return stream;
+            }
+
+            public override string SerializeMemberName(MemberInfo memberInfo)
+            {
+                JsonPropertyNameAttribute jsonPropertyNameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(true);
+
+                string memberName = jsonPropertyNameAttribute != null && !string.IsNullOrEmpty(jsonPropertyNameAttribute.Name)
+                    ? jsonPropertyNameAttribute.Name
+                    : memberInfo.Name;
+
+                return memberName;
+            }
+        }
+
+        /// <remarks>
+        // See: https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos.Samples/Usage/SystemTextJson/CosmosSystemTextJsonSerializer.cs
+        /// </remarks>
+        class TestCustomJsonSerializer : CosmosSerializer
         {
             private readonly JsonObjectSerializer systemTextJsonSerializer;
 
@@ -245,17 +297,6 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.systemTextJsonSerializer.Serialize(stream, input, input.GetType(), default);
                 stream.Position = 0;
                 return stream;
-            }
-
-            public override string SerializeMemberName(MemberInfo memberInfo)
-            {
-                JsonPropertyNameAttribute jsonPropertyNameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(true);
-
-                string memberName = jsonPropertyNameAttribute != null && !string.IsNullOrEmpty(jsonPropertyNameAttribute.Name)
-                    ? jsonPropertyNameAttribute.Name
-                    : memberInfo.Name;
-
-                return memberName;
             }
         }
     }

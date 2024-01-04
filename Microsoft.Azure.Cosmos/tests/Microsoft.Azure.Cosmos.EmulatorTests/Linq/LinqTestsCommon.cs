@@ -841,11 +841,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         }
     }
 
-    class SystemTextJsonSerializer : CosmosLinqSerializer
+    class SystemTextJsonLinqSerializer : CosmosLinqSerializer
     {
         private readonly JsonObjectSerializer systemTextJsonSerializer;
 
-        public SystemTextJsonSerializer(JsonSerializerOptions jsonSerializerOptions)
+        public SystemTextJsonLinqSerializer(JsonSerializerOptions jsonSerializerOptions)
         {
             this.systemTextJsonSerializer = new JsonObjectSerializer(jsonSerializerOptions);
         }
@@ -888,6 +888,45 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 : memberInfo.Name;
 
             return memberName;
+        }
+    }
+
+    class SystemTextJsonSerializer : CosmosSerializer
+    {
+        private readonly JsonObjectSerializer systemTextJsonSerializer;
+
+        public SystemTextJsonSerializer(JsonSerializerOptions jsonSerializerOptions)
+        {
+            this.systemTextJsonSerializer = new JsonObjectSerializer(jsonSerializerOptions);
+        }
+
+        public override T FromStream<T>(Stream stream)
+        {
+            if (stream == null)
+                throw new ArgumentNullException(nameof(stream));
+
+            using (stream)
+            {
+                if (stream.CanSeek && stream.Length == 0)
+                {
+                    return default;
+                }
+
+                if (typeof(Stream).IsAssignableFrom(typeof(T)))
+                {
+                    return (T)(object)stream;
+                }
+
+                return (T)this.systemTextJsonSerializer.Deserialize(stream, typeof(T), default);
+            }
+        }
+
+        public override Stream ToStream<T>(T input)
+        {
+            MemoryStream streamPayload = new MemoryStream();
+            this.systemTextJsonSerializer.Serialize(streamPayload, input, input.GetType(), default);
+            streamPayload.Position = 0;
+            return streamPayload;
         }
     }
 }

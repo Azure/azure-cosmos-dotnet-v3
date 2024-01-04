@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -19,16 +18,35 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     [Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestClass]
     public class LinqAggregateCustomSerializationBaseline : BaselineTests<LinqAggregateInput, LinqAggregateOutput>
     {
+        private static CosmosSerializer customCosmosLinqSerializer;
+        private static CosmosClient clientLinq;
+        private static Cosmos.Database testDbLinq;
+        private static Container testContainerLinq;
+        private static IQueryable lastExecutedScalarQuery;
+
         private static CosmosSerializer customCosmosSerializer;
         private static CosmosClient client;
         private static Cosmos.Database testDb;
         private static Container testContainer;
-        private static IQueryable lastExecutedScalarQuery;
 
         [ClassInitialize]
         public async static Task Initialize(TestContext textContext)
         {
+            customCosmosLinqSerializer = new SystemTextJsonLinqSerializer(new JsonSerializerOptions());
+            clientLinq = TestCommon.CreateCosmosClient((cosmosClientBuilder)
+                => cosmosClientBuilder.WithCustomSerializer(customCosmosLinqSerializer));
+
+            // Set a callback to get the handle of the last executed query to do the verification
+            // This is neede because aggregate queries return type is a scalar so it can't be used 
+            // to verify the translated LINQ directly as other queries type.
+            clientLinq.DocumentClient.OnExecuteScalarQueryCallback = q => lastExecutedScalarQuery = q;
+
+            string dbName = $"{nameof(LinqAggregateCustomSerializationBaseline)}-{Guid.NewGuid().ToString("N")}";
+            testDbLinq = await clientLinq.CreateDatabaseAsync(dbName);
+            testContainerLinq = testDbLinq.CreateContainerAsync(new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/Pk")).Result;
+
             customCosmosSerializer = new SystemTextJsonSerializer(new JsonSerializerOptions());
+
             client = TestCommon.CreateCosmosClient((cosmosClientBuilder)
                 => cosmosClientBuilder.WithCustomSerializer(customCosmosSerializer));
 
@@ -37,15 +55,21 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             // to verify the translated LINQ directly as other queries type.
             client.DocumentClient.OnExecuteScalarQueryCallback = q => lastExecutedScalarQuery = q;
 
-            string dbName = $"{nameof(LinqAggregateCustomSerializationBaseline)}-{Guid.NewGuid().ToString("N")}";
+            dbName = $"{nameof(LinqAggregateCustomSerializationBaseline)}-{Guid.NewGuid().ToString("N")}";
             testDb = await client.CreateDatabaseAsync(dbName);
-
             testContainer = testDb.CreateContainerAsync(new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/Pk")).Result;
         }
 
         [ClassCleanup]
         public async static Task CleanUp()
         {
+            if (testDbLinq != null)
+            {
+                await testDbLinq.DeleteStreamAsync();
+            }
+
+            clientLinq?.Dispose();
+
             if (testDb != null)
             {
                 await testDb.DeleteStreamAsync();
@@ -71,14 +95,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 return obj;
             }
 
-            CosmosLinqSerializerOptions linqSerializerOptions = new CosmosLinqSerializerOptions()
-            {
-                LinqSerializerType = CosmosLinqSerializerType.Custom
-            };
-
             List<Func<bool, IQueryable<DataObjectDotNet>>> getQueryList = new List<Func<bool, IQueryable<DataObjectDotNet>>> 
             {
-                LinqTestsCommon.GenerateSerializationTestCosmosData<DataObjectDotNet>(createDataObj, 5, testContainer, linqSerializerOptions),
+                LinqTestsCommon.GenerateSerializationTestCosmosData<DataObjectDotNet>(createDataObj, 5, testContainerLinq, new CosmosLinqSerializerOptions()),
                 LinqTestsCommon.GenerateSerializationTestCosmosData<DataObjectDotNet>(createDataObj, 5, testContainer, new CosmosLinqSerializerOptions())
             };
 
