@@ -185,8 +185,8 @@ namespace Microsoft.Azure.Cosmos
             }
             catch
             {
-                StringBuilder contextBuilder = new StringBuilder(
-                    value: GatewayStoreClient.GetError(
+                StringBuilder contextBuilder = new StringBuilder();
+                contextBuilder.AppendLine(GatewayStoreClient.GetError(
                         error: await responseMessage.Content.ReadAsStringAsync(),
                         statusCode: responseMessage.StatusCode));
 
