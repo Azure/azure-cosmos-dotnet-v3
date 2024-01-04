@@ -30,6 +30,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosHttpClient httpClient;
         private readonly JsonSerializerSettings SerializerSettings;
         private static readonly HttpMethod httpPatchMethod = new HttpMethod(HttpConstants.HttpMethods.Patch);
+        private static readonly string NoResponseContentFromGateway = "No response content from gateway.";
 
         public GatewayStoreClient(
             CosmosHttpClient httpClient,
@@ -219,8 +220,6 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private static readonly string NORESPONSECONTENTFROMGATEWAY = "No response content from gateway.";
-
         /// <summary>
         /// Get or create an Error type using an existing Error type.
         /// </summary>
@@ -235,7 +234,7 @@ namespace Microsoft.Azure.Cosmos
                 return new Error
                 {
                     Code = statusCode.ToString(),
-                    Message = GatewayStoreClient.NORESPONSECONTENTFROMGATEWAY,
+                    Message = GatewayStoreClient.NoResponseContentFromGateway,
                 };
             }
 
@@ -257,7 +256,7 @@ namespace Microsoft.Azure.Cosmos
                     new Error
                     {
                         Code = statusCode.ToString(),
-                        Message = GatewayStoreClient.NORESPONSECONTENTFROMGATEWAY,
+                        Message = GatewayStoreClient.NoResponseContentFromGateway,
                     });
             }
 
