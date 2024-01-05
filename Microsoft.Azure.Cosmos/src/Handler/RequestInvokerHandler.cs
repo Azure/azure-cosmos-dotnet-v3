@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             //Request level availability strategy options override client level
-            if (request.RequestOptions?.AvailabilityStrategyOptions != null && !request.RequestOptions.AvailabilityStrategyOptions.Enabled)
+            if (!request.RequestOptions.AvailabilityStrategyOptions?.Enabled)
             {
                 return false;
             }
