@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             else
             {
                 this.CosmosLinqSerializer = TranslationContext.DefaultLinqSerializer;
-                this.MemberNames = DefaultMemberNames;
+                this.MemberNames = TranslationContext.DefaultMemberNames;
             }
         }
 
