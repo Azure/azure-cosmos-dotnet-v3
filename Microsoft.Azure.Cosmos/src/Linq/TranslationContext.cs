@@ -68,6 +68,10 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </summary>
         private Stack<SubqueryBinding> subqueryBindingStack;
 
+        private static readonly ICosmosLinqSerializerInternal DefaultLinqSerializer = new DefaultCosmosLinqSerializer(new CosmosLinqSerializerOptions().PropertyNamingPolicy);
+
+        private static readonly MemberNames DefaultMemberNames = new MemberNames(new CosmosLinqSerializerOptions());
+
         public TranslationContext(CosmosLinqSerializerOptionsInternal linqSerializerOptionsInternal, IDictionary<object, string> parameters = null)
         {
             this.InScope = new HashSet<ParameterExpression>();
@@ -84,12 +88,17 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.CosmosLinqSerializer = new CustomCosmosLinqSerializer(linqSerializerOptionsInternal.CustomCosmosLinqSerializer);
                 this.MemberNames = new MemberNames(new CosmosLinqSerializerOptions());
             }
-            else
+            else if (linqSerializerOptionsInternal?.CosmosLinqSerializerOptions != null)
             {
                 CosmosLinqSerializerOptions linqSerializerOptions = linqSerializerOptionsInternal?.CosmosLinqSerializerOptions ?? new CosmosLinqSerializerOptions();
 
                 this.CosmosLinqSerializer = new DefaultCosmosLinqSerializer(linqSerializerOptions.PropertyNamingPolicy);
                 this.MemberNames = new MemberNames(linqSerializerOptions);
+            }
+            else
+            {
+                this.CosmosLinqSerializer = TranslationContext.DefaultLinqSerializer;
+                this.MemberNames = DefaultMemberNames;
             }
         }
 
