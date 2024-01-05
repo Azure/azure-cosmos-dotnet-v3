@@ -75,22 +75,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             if (this.CanUseAvailabilityStrategy(request))
             {
-                if (request.RequestOptions?.AvailabilityStrategyOptions != null)
-                {
-                    return await request.RequestOptions.AvailabilityStrategyOptions.AvailabilityStrategy.ExecuteAvailablityStrategyAsync(
+                AvailabilityStrategy strategy = request.RequestOptions?.AvailabilityStrategyOptions?.AvailabilityStrategy 
+                    ?? this.client.ClientOptions.AvailabilityStrategyOptions.AvailabilityStrategy;
+                
+                return await strategy.ExecuteAvailablityStrategyAsync(
                             this,
                             this.client,
                             request,
                             cancellationToken);
-                }
-                else if (this.client.ClientOptions.AvailabilityStrategyOptions != null)
-                {
-                    return await this.client.ClientOptions.AvailabilityStrategyOptions.AvailabilityStrategy.ExecuteAvailablityStrategyAsync(
-                        this,
-                        this.client,
-                        request,
-                        cancellationToken);
-                }
             }
             
             return await base.SendAsync(request, cancellationToken);

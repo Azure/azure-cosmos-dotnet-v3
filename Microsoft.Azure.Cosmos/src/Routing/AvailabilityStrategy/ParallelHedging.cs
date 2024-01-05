@@ -50,6 +50,8 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public TimeSpan Step => this.step;
 
+        internal bool Enabled { get; private set; } = true;
+
         /// <summary>
         /// This method determines if the request should be sent with a parallel hedging availability strategy.
         /// This availability strategy can only be used if the request is a read-only request on a document request.

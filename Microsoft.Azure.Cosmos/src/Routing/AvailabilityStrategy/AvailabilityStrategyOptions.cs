@@ -14,11 +14,9 @@ namespace Microsoft.Azure.Cosmos
         /// Constustor for availability strategy options
         /// </summary>
         /// <param name="availabilityStrategy"></param>
-        /// <param name="enabled"></param>
-        public AvailabilityStrategyOptions(AvailabilityStrategy availabilityStrategy, bool enabled = true)
+        public AvailabilityStrategyOptions(AvailabilityStrategy availabilityStrategy)
         {
             this.AvailabilityStrategy = availabilityStrategy;
-            this.Enabled = availabilityStrategy.GetType() != typeof(DisabledStrategy) && enabled;
         }
 
         /// <summary>
@@ -29,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Whether or not the availability strategy is enabled
         /// </summary>
-        public bool Enabled { get; private set; }
+        public bool Enabled => this.AvailabilityStrategy.Enabled;
         
     }
 }

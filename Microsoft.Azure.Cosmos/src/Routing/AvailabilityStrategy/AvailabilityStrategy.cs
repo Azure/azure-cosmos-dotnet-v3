@@ -28,5 +28,7 @@ namespace Microsoft.Azure.Cosmos
         {
             throw new NotImplementedException();
         }
+
+        internal bool Endabled { get; private set; }
     }
 }

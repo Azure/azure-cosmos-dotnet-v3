@@ -12,6 +12,8 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public class DisabledStrategy : AvailabilityStrategy
     {
+        internal bool Enabled { get; private set; } = false;
+
         internal override Task<ResponseMessage> ExecuteAvailablityStrategyAsync(RequestInvokerHandler requestInvokerHandler, CosmosClient client, RequestMessage requestMessage, CancellationToken cancellationToken)
         {
             // This should never be called.
