@@ -50,7 +50,10 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public TimeSpan Step => this.step;
 
-        internal bool Enabled { get; private set; } = true;
+        internal override bool Enabled()
+        {
+            return true;
+        }
 
         /// <summary>
         /// This method determines if the request should be sent with a parallel hedging availability strategy.

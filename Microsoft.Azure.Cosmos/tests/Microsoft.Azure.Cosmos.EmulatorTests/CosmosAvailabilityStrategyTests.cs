@@ -379,9 +379,7 @@
 
             RequestOptions requestOptions = new RequestOptions()
             {
-                AvailabilityStrategyOptions = new AvailabilityStrategyOptions(
-                    new DisabledStrategy(),
-                    enabled: false)
+                AvailabilityStrategyOptions = new AvailabilityStrategyOptions(new DisabledStrategy())
             };
 
             RequestMessage requestMessage = new RequestMessage(

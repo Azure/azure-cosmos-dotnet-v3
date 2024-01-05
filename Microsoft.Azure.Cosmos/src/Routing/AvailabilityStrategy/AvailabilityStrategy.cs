@@ -29,6 +29,9 @@ namespace Microsoft.Azure.Cosmos
             throw new NotImplementedException();
         }
 
-        internal bool Endabled { get; private set; }
+        internal virtual bool Enabled()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

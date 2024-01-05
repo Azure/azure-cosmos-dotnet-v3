@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Whether or not the availability strategy is enabled
         /// </summary>
-        public bool Enabled => this.AvailabilityStrategy.Enabled;
+        public bool Enabled => this.AvailabilityStrategy.Enabled();
         
     }
 }
