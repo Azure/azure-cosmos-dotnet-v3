@@ -352,6 +352,34 @@
       },
       "NestedTypes": {}
     },
+    "Microsoft.Azure.Cosmos.CosmosLinqSerializer;Microsoft.Azure.Cosmos.CosmosSerializer;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "System.String SerializeMemberName(System.Reflection.MemberInfo)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.String SerializeMemberName(System.Reflection.MemberInfo);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.CosmosSerializer;System.Object;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {
+        "Microsoft.Azure.Cosmos.CosmosLinqSerializer;Microsoft.Azure.Cosmos.CosmosSerializer;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+          "Subclasses": {},
+          "Members": {
+            "System.String SerializeMemberName(System.Reflection.MemberInfo)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.String SerializeMemberName(System.Reflection.MemberInfo);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            }
+          },
+          "NestedTypes": {}
+        }
+      },
+      "Members": {},
+      "NestedTypes": {}
+    },
     "Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {

@@ -8,7 +8,7 @@
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["numericField"] = 1)]]></SqlQuery>
+WHERE (root["numericFieldDataMember"] = 1)]]></SqlQuery>
       <InputData><![CDATA[[
   "{\"numberValueDotNet\": 0, \"stringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
   "{\"numberValueDotNet\": 1, \"stringValueDotNet\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
@@ -23,13 +23,13 @@ WHERE (root["numericField"] = 1)]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Filter w/ DataObject initializer with constant value, camelcase = True]]></Description>
-      <Expression><![CDATA[query.Where(doc => (doc == new DataObjectDotNet() {NumericField = 1, StringField = "1"}))]]></Expression>
+      <Expression><![CDATA[query.Where(doc => (doc == new DataObjectDotNetDataMember() {NumericField = 1, StringField = "1"}))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root = {"NumericField": 1, "StringField": "1", "id": null, "Pk": null})]]></SqlQuery>
+WHERE (root = {"NumericFieldDataMember": 1, "StringFieldDataMember": "1"})]]></SqlQuery>
       <InputData><![CDATA[[
   "{\"numberValueDotNet\": 0, \"stringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
   "{\"numberValueDotNet\": 1, \"stringValueDotNet\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
@@ -44,11 +44,11 @@ WHERE (root = {"NumericField": 1, "StringField": "1", "id": null, "Pk": null})]]
   <Result>
     <Input>
       <Description><![CDATA[Select w/ DataObject initializer, camelcase = True]]></Description>
-      <Expression><![CDATA[query.Select(doc => new DataObjectDotNet() {NumericField = 1, StringField = "1"})]]></Expression>
+      <Expression><![CDATA[query.Select(doc => new DataObjectDotNetDataMember() {NumericField = 1, StringField = "1"})]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"NumericField": 1, "StringField": "1", "id": null, "Pk": null} 
+SELECT VALUE {"NumericFieldDataMember": 1, "StringFieldDataMember": "1"} 
 FROM root]]></SqlQuery>
       <InputData><![CDATA[[
   "{\"numberValueDotNet\": 0, \"stringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
@@ -71,11 +71,11 @@ FROM root]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Deeper than top level reference, camelcase = True]]></Description>
-      <Expression><![CDATA[query.Select(doc => IIF((doc.NumericField > 1), new DataObjectDotNet() {NumericField = 1, StringField = "1"}, new DataObjectDotNet() {NumericField = 1, StringField = "1"}))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => IIF((doc.NumericField > 1), new DataObjectDotNetDataMember() {NumericField = 1, StringField = "1"}, new DataObjectDotNetDataMember() {NumericField = 1, StringField = "1"}))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE ((root["numericField"] > 1) ? {"NumericField": 1, "StringField": "1", "id": null, "Pk": null} : {"NumericField": 1, "StringField": "1", "id": null, "Pk": null}) 
+SELECT VALUE ((root["numericFieldDataMember"] > 1) ? {"NumericFieldDataMember": 1, "StringFieldDataMember": "1"} : {"NumericFieldDataMember": 1, "StringFieldDataMember": "1"}) 
 FROM root]]></SqlQuery>
       <InputData><![CDATA[[
   "{\"numberValueDotNet\": 0, \"stringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
@@ -98,13 +98,13 @@ FROM root]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Filter w/ DataObject initializer with member initialization, camelcase = True]]></Description>
-      <Expression><![CDATA[query.Where(doc => (doc == new DataObjectDotNet() {NumericField = doc.NumericField, StringField = doc.StringField})).Select(b => "A")]]></Expression>
+      <Expression><![CDATA[query.Where(doc => (doc == new DataObjectDotNetDataMember() {NumericField = doc.NumericField, StringField = doc.StringField})).Select(b => "A")]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE "A" 
 FROM root 
-WHERE (root = {"numericField": root["numericField"], "stringField": root["stringField"]})]]></SqlQuery>
+WHERE (root = {"numericFieldDataMember": root["numericFieldDataMember"], "stringFieldDataMember": root["stringFieldDataMember"]})]]></SqlQuery>
       <InputData><![CDATA[[
   "{\"numberValueDotNet\": 0, \"stringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
   "{\"numberValueDotNet\": 1, \"stringValueDotNet\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
@@ -125,7 +125,7 @@ WHERE (root = {"numericField": root["numericField"], "stringField": root["string
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["NumericField"] = 1)]]></SqlQuery>
+WHERE (root["NumericFieldDataMember"] = 1)]]></SqlQuery>
       <InputData><![CDATA[[
   "{\"numberValueDotNet\": 0, \"stringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
   "{\"numberValueDotNet\": 1, \"stringValueDotNet\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
@@ -140,13 +140,13 @@ WHERE (root["NumericField"] = 1)]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Filter w/ DataObject initializer with constant value, camelcase = False]]></Description>
-      <Expression><![CDATA[query.Where(doc => (doc == new DataObjectDotNet() {NumericField = 1, StringField = "1"}))]]></Expression>
+      <Expression><![CDATA[query.Where(doc => (doc == new DataObjectDotNetDataMember() {NumericField = 1, StringField = "1"}))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root = {"NumericField": 1, "StringField": "1", "id": null, "Pk": null})]]></SqlQuery>
+WHERE (root = {"NumericFieldDataMember": 1, "StringFieldDataMember": "1"})]]></SqlQuery>
       <InputData><![CDATA[[
   "{\"numberValueDotNet\": 0, \"stringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
   "{\"numberValueDotNet\": 1, \"stringValueDotNet\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
@@ -161,11 +161,11 @@ WHERE (root = {"NumericField": 1, "StringField": "1", "id": null, "Pk": null})]]
   <Result>
     <Input>
       <Description><![CDATA[Select w/ DataObject initializer, camelcase = False]]></Description>
-      <Expression><![CDATA[query.Select(doc => new DataObjectDotNet() {NumericField = 1, StringField = "1"})]]></Expression>
+      <Expression><![CDATA[query.Select(doc => new DataObjectDotNetDataMember() {NumericField = 1, StringField = "1"})]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"NumericField": 1, "StringField": "1", "id": null, "Pk": null} 
+SELECT VALUE {"NumericFieldDataMember": 1, "StringFieldDataMember": "1"} 
 FROM root]]></SqlQuery>
       <InputData><![CDATA[[
   "{\"numberValueDotNet\": 0, \"stringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
@@ -188,11 +188,11 @@ FROM root]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Deeper than top level reference, camelcase = False]]></Description>
-      <Expression><![CDATA[query.Select(doc => IIF((doc.NumericField > 1), new DataObjectDotNet() {NumericField = 1, StringField = "1"}, new DataObjectDotNet() {NumericField = 1, StringField = "1"}))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => IIF((doc.NumericField > 1), new DataObjectDotNetDataMember() {NumericField = 1, StringField = "1"}, new DataObjectDotNetDataMember() {NumericField = 1, StringField = "1"}))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE ((root["NumericField"] > 1) ? {"NumericField": 1, "StringField": "1", "id": null, "Pk": null} : {"NumericField": 1, "StringField": "1", "id": null, "Pk": null}) 
+SELECT VALUE ((root["NumericFieldDataMember"] > 1) ? {"NumericFieldDataMember": 1, "StringFieldDataMember": "1"} : {"NumericFieldDataMember": 1, "StringFieldDataMember": "1"}) 
 FROM root]]></SqlQuery>
       <InputData><![CDATA[[
   "{\"numberValueDotNet\": 0, \"stringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
@@ -215,13 +215,13 @@ FROM root]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Filter w/ DataObject initializer with member initialization, camelcase = False]]></Description>
-      <Expression><![CDATA[query.Where(doc => (doc == new DataObjectDotNet() {NumericField = doc.NumericField, StringField = doc.StringField})).Select(b => "A")]]></Expression>
+      <Expression><![CDATA[query.Where(doc => (doc == new DataObjectDotNetDataMember() {NumericField = doc.NumericField, StringField = doc.StringField})).Select(b => "A")]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE "A" 
 FROM root 
-WHERE (root = {"NumericField": root["NumericField"], "StringField": root["StringField"]})]]></SqlQuery>
+WHERE (root = {"NumericFieldDataMember": root["NumericFieldDataMember"], "StringFieldDataMember": root["StringFieldDataMember"]})]]></SqlQuery>
       <InputData><![CDATA[[
   "{\"numberValueDotNet\": 0, \"stringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
   "{\"numberValueDotNet\": 1, \"stringValueDotNet\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
