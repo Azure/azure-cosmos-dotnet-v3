@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
             else if (linqSerializerOptionsInternal?.CosmosLinqSerializerOptions != null)
             {
-                CosmosLinqSerializerOptions linqSerializerOptions = linqSerializerOptionsInternal?.CosmosLinqSerializerOptions ?? new CosmosLinqSerializerOptions();
+                CosmosLinqSerializerOptions linqSerializerOptions = linqSerializerOptionsInternal.CosmosLinqSerializerOptions;
 
                 this.CosmosLinqSerializer = new DefaultCosmosLinqSerializer(linqSerializerOptions.PropertyNamingPolicy);
                 this.MemberNames = new MemberNames(linqSerializerOptions);
