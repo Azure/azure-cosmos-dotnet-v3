@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan
             public const string Aggregate = "Aggregate";
             public const string Aggregates = "Aggregates";
             public const string Builtin = "Builtin";
-            public const string Cql = "Cql";
+            public const string ClientQL = "clientQL";
             public const string ConditionExpression = "ConditionExpression";
             public const string ClientDistributionPlan = "clientDistributionPlan";
             public const string DeclaredVariable = "DeclaredVariable";
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan
         {
             CosmosObject cosmosObject = CosmosObject.Parse(jsonString);
             CosmosObject clientDistributionPlanElement = GetValue<CosmosObject>(cosmosObject, Constants.ClientDistributionPlan);
-            CosmosObject cqlElement = GetValue<CosmosObject>(clientDistributionPlanElement, Constants.Cql);
+            CosmosObject cqlElement = GetValue<CosmosObject>(clientDistributionPlanElement, Constants.ClientQL);
             CqlEnumerableExpression expression = DeserializeCqlEnumerableExpression(cqlElement);
 
             return new ClientDistributionPlan(expression);
