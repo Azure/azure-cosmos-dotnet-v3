@@ -12,8 +12,15 @@ namespace Microsoft.Azure.Cosmos.Linq
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
-    internal class DefaultCosmosLinqSerializer : ICosmosLinqSerializer
+    internal class DefaultCosmosLinqSerializer : ICosmosLinqSerializerInternal
     {
+        private readonly CosmosPropertyNamingPolicy PropertyNamingPolicy;
+
+        public DefaultCosmosLinqSerializer(CosmosPropertyNamingPolicy propertyNamingPolicy)
+        {
+            this.PropertyNamingPolicy = propertyNamingPolicy;
+        }
+
         public bool RequiresCustomSerialization(MemberExpression memberExpression, Type memberType)
         {
             // There are two ways to specify a custom attribute
@@ -63,9 +70,9 @@ namespace Microsoft.Azure.Cosmos.Linq
             return JsonConvert.SerializeObject(inputExpression.Value);
         }
 
-        public string SerializeMemberName(MemberInfo memberInfo, CosmosLinqSerializerOptions linqSerializerOptions = null)
+        public string SerializeMemberName(MemberInfo memberInfo)
         {
-            string memberName = null;
+            string memberName = memberInfo.Name;
 
             // Check if Newtonsoft JsonExtensionDataAttribute is present on the member, if so, return empty member name.
             Newtonsoft.Json.JsonExtensionDataAttribute jsonExtensionDataAttribute = memberInfo.GetCustomAttribute<Newtonsoft.Json.JsonExtensionDataAttribute>(true);
@@ -94,15 +101,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 }
             }
 
-            if (memberName == null)
-            {
-                memberName = memberInfo.Name;
-            }
-
-            if (linqSerializerOptions != null)
-            {
-                memberName = CosmosSerializationUtil.GetStringWithPropertyNamingPolicy(linqSerializerOptions, memberName);
-            }
+            memberName = CosmosSerializationUtil.GetStringWithPropertyNamingPolicy(this.PropertyNamingPolicy, memberName);
 
             return memberName;
         }
