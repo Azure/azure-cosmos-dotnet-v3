@@ -1,16 +1,12 @@
 ﻿namespace Microsoft.Azure.Cosmos.Tests.Query
 {
-    using System;
     using System.Collections.Generic;
     using System.IO;
-    using System.Text;
     using System.Xml;
     using Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan;
     using Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan.Cql;
     using Microsoft.Azure.Cosmos.Test.BaselineTest;
-    using Microsoft.VisualStudio.TestPlatform.ObjectModel;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
     [TestClass]
@@ -29,15 +25,15 @@
                 string testResponse = File.ReadAllText(filePath);
                 JObject jsonObject = JObject.Parse(testResponse);
 
-                string expectedClientPlan = jsonObject["_distributionPlan"].ToString();
-                expectedClientPlan = RemoveWhitespace(expectedClientPlan);
+                string expectedDistributionPlan = jsonObject["_distributionPlan"].ToString();
+                expectedDistributionPlan = RemoveWhitespace(expectedDistributionPlan);
 
                 string fileName = Path.GetFileName(filePath);
 
                 testVariations.Add(
                     CreateInput(
                         description: fileName,
-                        clientPlanJson: expectedClientPlan));
+                        distributionPlanJson: expectedDistributionPlan));
             }
 
             this.ExecuteTestSuite(testVariations);
@@ -50,16 +46,16 @@
 
         private static ClientDistributionPlanTestInput CreateInput(
             string description,
-            string clientPlanJson)
+            string distributionPlanJson)
         {
-            return new ClientDistributionPlanTestInput(description, clientPlanJson);
+            return new ClientDistributionPlanTestInput(description, distributionPlanJson);
         }
 
         public override ClientDistributionPlanTestOutput ExecuteTest(ClientDistributionPlanTestInput input)
         {
-            ClientDistributionPlan distributionPlan = ClientDistributionPlanDeserializer.DeserializeClientDistributionPlan(input.ClientPlanJson);
+            ClientDistributionPlan clientDistributionPlan = ClientDistributionPlanDeserializer.DeserializeClientDistributionPlan(input.DistributionPlanJson);
             DistributionPlanWriter visitor = new DistributionPlanWriter();
-            distributionPlan.Cql.Accept(visitor);
+            clientDistributionPlan.Cql.Accept(visitor);
             return new ClientDistributionPlanTestOutput(visitor.SerializedOutput);
         }
 
@@ -84,20 +80,21 @@
 
         public sealed class ClientDistributionPlanTestInput : BaselineTestInput
         {
-            internal string ClientPlanJson { get; set; }
+            internal string DistributionPlanJson { get; set; }
 
             internal ClientDistributionPlanTestInput(
                 string description,
-                string clientPlanJson)
+                string distributionPlanJson)
                 : base(description)
             {
-                this.ClientPlanJson = clientPlanJson;
+                this.DistributionPlanJson = distributionPlanJson;
             }
 
             public override void SerializeAsXml(XmlWriter xmlWriter)
             {
+                JObject distributionPlan = JObject.Parse(this.DistributionPlanJson);
                 xmlWriter.WriteElementString("Description", this.Description);
-                xmlWriter.WriteElementString("ClientDistributionPlanJson", this.ClientPlanJson);
+                xmlWriter.WriteElementString("ClientDistributionPlanJson", distributionPlan["clientDistributionPlan"].ToString());
             }
         }
     }
