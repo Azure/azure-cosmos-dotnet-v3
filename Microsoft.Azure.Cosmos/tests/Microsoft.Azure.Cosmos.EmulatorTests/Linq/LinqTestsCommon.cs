@@ -10,12 +10,17 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Diagnostics;
+    using System.IO;
     using System.Linq;
     using System.Linq.Expressions;
+    using System.Reflection;
     using System.Runtime.CompilerServices;
     using System.Text;
+    using System.Text.Json.Serialization;
+    using System.Text.Json;
     using System.Text.RegularExpressions;
     using System.Xml;
+    using global::Azure.Core.Serialization;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -333,13 +338,13 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="count">number of test data to be created</param>
         /// <param name="container">the target container</param>
         /// <param name="camelCaseSerialization">if theCosmosLinqSerializerOption of camelCaseSerialization should be applied</param>
-        /// <returns>a lambda that takes a boolean which indicate where the query should run against CosmosDB or against original data, and return a query results as IQueryable. Also the serialized payload.</returns>
-        public static Func<bool, IQueryable<T>> GenerateSerializationTestCosmosData<T>(Func<int, bool, T> func, int count, Container container, bool camelCaseSerialization = false)
+        /// <returns>a lambda that takes a boolean which indicate where the query should run against CosmosDB or against original data, and return a query results as IQueryable.</returns>
+        public static Func<bool, IQueryable<T>> GenerateSerializationTestCosmosData<T>(Func<int, bool, T> func, int count, Container container, CosmosLinqSerializerOptions linqSerializerOptions)
         {
             List<T> data = new List<T>();
             for (int i = 0; i < count; i++)
             {
-                data.Add(func(i, camelCaseSerialization));
+                data.Add(func(i, linqSerializerOptions.PropertyNamingPolicy == CosmosPropertyNamingPolicy.CamelCase));
             }
 
             foreach (T obj in data)
@@ -355,7 +360,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 #endif
             };
 
-            CosmosLinqSerializerOptions linqSerializerOptions = new CosmosLinqSerializerOptions { PropertyNamingPolicy = camelCaseSerialization ? CosmosPropertyNamingPolicy.CamelCase : CosmosPropertyNamingPolicy.Default };
             IOrderedQueryable<T> query = container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution: true, requestOptions: requestOptions, linqSerializerOptions: linqSerializerOptions);
 
             IQueryable<T> getQuery(bool useQuery) => useQuery ? query : data.AsQueryable();
@@ -834,6 +838,95 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 xmlWriter.WriteCData(LinqTestOutput.FormatErrorMessage(this.ErrorMessage));
                 xmlWriter.WriteEndElement();
             }
+        }
+    }
+
+    class SystemTextJsonLinqSerializer : CosmosLinqSerializer
+    {
+        private readonly JsonObjectSerializer systemTextJsonSerializer;
+
+        public SystemTextJsonLinqSerializer(JsonSerializerOptions jsonSerializerOptions)
+        {
+            this.systemTextJsonSerializer = new JsonObjectSerializer(jsonSerializerOptions);
+        }
+
+        public override T FromStream<T>(Stream stream)
+        {
+            if (stream == null)
+                throw new ArgumentNullException(nameof(stream));
+
+            using (stream)
+            {
+                if (stream.CanSeek && stream.Length == 0)
+                {
+                    return default;
+                }
+
+                if (typeof(Stream).IsAssignableFrom(typeof(T)))
+                {
+                    return (T)(object)stream;
+                }
+
+                return (T)this.systemTextJsonSerializer.Deserialize(stream, typeof(T), default);
+            }
+        }
+
+        public override Stream ToStream<T>(T input)
+        {
+            MemoryStream streamPayload = new MemoryStream();
+            this.systemTextJsonSerializer.Serialize(streamPayload, input, input.GetType(), default);
+            streamPayload.Position = 0;
+            return streamPayload;
+        }
+
+        public override string SerializeMemberName(MemberInfo memberInfo)
+        {
+            JsonPropertyNameAttribute jsonPropertyNameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(true);
+
+            string memberName = !string.IsNullOrEmpty(jsonPropertyNameAttribute?.Name)
+                ? jsonPropertyNameAttribute.Name
+                : memberInfo.Name;
+
+            return memberName;
+        }
+    }
+
+    class SystemTextJsonSerializer : CosmosSerializer
+    {
+        private readonly JsonObjectSerializer systemTextJsonSerializer;
+
+        public SystemTextJsonSerializer(JsonSerializerOptions jsonSerializerOptions)
+        {
+            this.systemTextJsonSerializer = new JsonObjectSerializer(jsonSerializerOptions);
+        }
+
+        public override T FromStream<T>(Stream stream)
+        {
+            if (stream == null)
+                throw new ArgumentNullException(nameof(stream));
+
+            using (stream)
+            {
+                if (stream.CanSeek && stream.Length == 0)
+                {
+                    return default;
+                }
+
+                if (typeof(Stream).IsAssignableFrom(typeof(T)))
+                {
+                    return (T)(object)stream;
+                }
+
+                return (T)this.systemTextJsonSerializer.Deserialize(stream, typeof(T), default);
+            }
+        }
+
+        public override Stream ToStream<T>(T input)
+        {
+            MemoryStream streamPayload = new MemoryStream();
+            this.systemTextJsonSerializer.Serialize(streamPayload, input, input.GetType(), default);
+            streamPayload.Position = 0;
+            return streamPayload;
         }
     }
 }
