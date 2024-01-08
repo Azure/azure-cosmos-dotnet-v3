@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
-    using System.Net;
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Text;
@@ -26,7 +25,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosHttpClient httpClient;
         private readonly JsonSerializerSettings SerializerSettings;
         private static readonly HttpMethod httpPatchMethod = new HttpMethod(HttpConstants.HttpMethods.Patch);
-        private static readonly string NoResponseContentFromGateway = "No response content from gateway.";
 
         public GatewayStoreClient(
             CosmosHttpClient httpClient,
@@ -162,101 +160,60 @@ namespace Microsoft.Azure.Cosmos
                 // if resourceLink is invalid - we will not set resourceAddress in exception.
             }
 
-            try
+            // If service rejects the initial payload like header is to large it will return an HTML error instead of JSON.
+            if (string.Equals(responseMessage.Content?.Headers?.ContentType?.MediaType, "application/json", StringComparison.OrdinalIgnoreCase) ||
+                responseMessage.Content?.Headers.ContentLength != 0)
             {
-                Stream contentAsStream = await responseMessage.Content.ReadAsStreamAsync();
-                Error error = GatewayStoreClient.GetError(
-                    error: Documents.Resource.LoadFrom<Error>(stream: contentAsStream), 
-                    statusCode: responseMessage.StatusCode);
-
-                return new DocumentClientException(
-                    errorResource: error,
-                    responseHeaders: responseMessage.Headers,
-                    statusCode: responseMessage.StatusCode)
+                try
                 {
-                    StatusDescription = responseMessage.ReasonPhrase,
-                    ResourceAddress = resourceIdOrFullName,
-                    RequestStatistics = requestStatistics
-                };
-            }
-            catch
-            {
-                StringBuilder contextBuilder = new StringBuilder();
-                contextBuilder.AppendLine(GatewayStoreClient.GetError(
-                        error: await responseMessage.Content.ReadAsStringAsync(),
-                        statusCode: responseMessage.StatusCode));
+                    Stream contentAsStream = await responseMessage.Content.ReadAsStreamAsync();
+                    Error error = JsonSerializable.LoadFrom<Error>(stream: contentAsStream);
 
-                HttpRequestMessage requestMessage = responseMessage.RequestMessage;
-
-                if (requestMessage != null)
-                {
-                    contextBuilder.AppendLine($"RequestUri: {requestMessage.RequestUri};");
-                    contextBuilder.AppendLine($"RequestMethod: {requestMessage.Method.Method};");
-
-                    if (requestMessage.Headers != null)
+                    return new DocumentClientException(
+                        errorResource: error,
+                        responseHeaders: responseMessage.Headers,
+                        statusCode: responseMessage.StatusCode)
                     {
-                        foreach (KeyValuePair<string, IEnumerable<string>> header in requestMessage.Headers)
-                        {
-                            contextBuilder.AppendLine($"Header: {header.Key} Length: {string.Join(",", header.Value).Length};");
-                        }
+                        StatusDescription = responseMessage.ReasonPhrase,
+                        ResourceAddress = resourceIdOrFullName,
+                        RequestStatistics = requestStatistics
+                    };
+                }
+                catch
+                {
+                }
+            }
+
+            StringBuilder contextBuilder = new StringBuilder();
+            contextBuilder.AppendLine(await responseMessage.Content.ReadAsStringAsync());
+
+            HttpRequestMessage requestMessage = responseMessage.RequestMessage;
+
+            if (requestMessage != null)
+            {
+                contextBuilder.AppendLine($"RequestUri: {requestMessage.RequestUri};");
+                contextBuilder.AppendLine($"RequestMethod: {requestMessage.Method.Method};");
+
+                if (requestMessage.Headers != null)
+                {
+                    foreach (KeyValuePair<string, IEnumerable<string>> header in requestMessage.Headers)
+                    {
+                        contextBuilder.AppendLine($"Header: {header.Key} Length: {string.Join(",", header.Value).Length};");
                     }
                 }
-
-                return new DocumentClientException(
-                    message: contextBuilder.ToString(),
-                    innerException: null,
-                    responseHeaders: responseMessage.Headers,
-                    statusCode: responseMessage.StatusCode,
-                    requestUri: responseMessage.RequestMessage.RequestUri)
-                {
-                    StatusDescription = responseMessage.ReasonPhrase,
-                    ResourceAddress = resourceIdOrFullName,
-                    RequestStatistics = requestStatistics
-                };
             }
-        }
 
-        /// <summary>
-        /// Get or create an Error type using an existing Error type.
-        /// </summary>
-        /// <param name="error"></param>
-        /// <param name="statusCode"></param>
-        private static Error GetError(
-            Error error, 
-            HttpStatusCode statusCode)
-        {
-            if (error.Message.Trim().Length == 0)
+            return new DocumentClientException(
+                message: contextBuilder.ToString(),
+                innerException: null,
+                responseHeaders: responseMessage.Headers,
+                statusCode: responseMessage.StatusCode,
+                requestUri: responseMessage.RequestMessage.RequestUri)
             {
-                return new Error
-                {
-                    Code = statusCode.ToString(),
-                    Message = GatewayStoreClient.NoResponseContentFromGateway,
-                };
-            }
-
-            return error;
-        }
-
-        /// <summary>
-        /// Get or set an Error string using an existing Error string.
-        /// </summary>
-        /// <param name="error"></param>
-        /// <param name="statusCode"></param>
-        private static string GetError(
-            string error,
-            HttpStatusCode statusCode)
-        {
-            if (error.Trim().Length == 0)
-            {
-                return JsonConvert.SerializeObject(
-                    new Error
-                    {
-                        Code = statusCode.ToString(),
-                        Message = GatewayStoreClient.NoResponseContentFromGateway,
-                    });
-            }
-
-            return error;
+                StatusDescription = responseMessage.ReasonPhrase,
+                ResourceAddress = resourceIdOrFullName,
+                RequestStatistics = requestStatistics
+            };
         }
 
         internal static bool IsAllowedRequestHeader(string headerName)
