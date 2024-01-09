@@ -151,8 +151,8 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // If service rejects the initial payload like header is to large it will return an HTML error instead of JSON.
-            if (string.Equals(responseMessage.Content?.Headers?.ContentType?.MediaType, "application/json", StringComparison.OrdinalIgnoreCase) ||
-                responseMessage.Content?.Headers.ContentLength != 0)
+            if (string.Equals(responseMessage.Content?.Headers?.ContentType?.MediaType, "application/json", StringComparison.OrdinalIgnoreCase) &&
+                responseMessage.Content?.Headers.ContentLength > 0)
             {
                 try
                 {
