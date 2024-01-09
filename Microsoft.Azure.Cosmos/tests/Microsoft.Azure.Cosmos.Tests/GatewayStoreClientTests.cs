@@ -246,48 +246,6 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsNotNull(value: documentClientException.Error.Message);
         }
 
-        /// <summary>
-        /// Testing CreateDocumentClientExceptionAsync when response message argument is null, then expects an argumentNullException.
-        /// </summary>
-        [TestMethod]
-        [Owner("philipthomas-MSFT")]
-        public async Task TestCreateDocumentClientExceptionWhenResponseMessageIsNullExpectsArgumentNullException()
-        {
-            ArgumentNullException argumentNullException = await Assert.ThrowsExceptionAsync<ArgumentNullException>(async () => await GatewayStoreClient.CreateDocumentClientExceptionAsync(
-                responseMessage: default,
-                requestStatistics: GatewayStoreClientTests.CreateClientSideRequestStatistics())
-            );
-
-            Assert.IsNotNull(argumentNullException);
-            Assert.AreEqual(expected: "Value cannot be null. (Parameter 'responseMessage')", actual: argumentNullException.Message);
-        }
-
-        /// <summary>
-        /// Testing CreateDocumentClientExceptionAsync when request statistics argument is null, then expects an argumentNullException.
-        /// </summary>
-        [TestMethod]
-        [Owner("philipthomas-MSFT")]
-        public async Task TestCreateDocumentClientExceptionWhenRequestStatisticsIsNullExpectsArgumentNullException()
-        {
-            HttpResponseMessage responseMessage = new(statusCode: HttpStatusCode.NotFound)
-            {
-                RequestMessage = new HttpRequestMessage(
-                    method: HttpMethod.Get,
-                    requestUri: @"https://pt_ac_test_uri.com/"),
-                Content = new StringContent(
-                    content: JsonConvert.SerializeObject(
-                        value: new Error() { Code = HttpStatusCode.NotFound.ToString(), Message = "" })),
-            };
-
-            ArgumentNullException argumentNullException = await Assert.ThrowsExceptionAsync<ArgumentNullException>(async () => await GatewayStoreClient.CreateDocumentClientExceptionAsync(
-                responseMessage: responseMessage,
-                requestStatistics: default)
-            );
-
-            Assert.IsNotNull(argumentNullException);
-            Assert.AreEqual(expected: "Value cannot be null. (Parameter 'requestStatistics')", actual: argumentNullException.Message);
-        }
-
         private static IClientSideRequestStatistics CreateClientSideRequestStatistics()
         {
             return new ClientSideRequestStatisticsTraceDatum(

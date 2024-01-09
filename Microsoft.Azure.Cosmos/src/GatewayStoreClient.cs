@@ -140,16 +140,6 @@ namespace Microsoft.Azure.Cosmos
             HttpResponseMessage responseMessage,
             IClientSideRequestStatistics requestStatistics)
         {
-            if (responseMessage is null)
-            {
-                throw new ArgumentNullException(nameof(responseMessage));
-            }
-
-            if (requestStatistics is null)
-            {
-                throw new ArgumentNullException(nameof(requestStatistics));
-            }
-
             if (!PathsHelper.TryParsePathSegments(
                 resourceUrl: responseMessage.RequestMessage.RequestUri.LocalPath,
                 isFeed: out _,
