@@ -575,11 +575,22 @@ namespace Microsoft.Azure.Cosmos.Routing
             return await this.databaseAccountCache.GetAsync(
                               key: string.Empty,
                               obsoleteValue: null,
-                              singleValueInitFunc: () => GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
-                                  this.defaultEndpoint,
-                                  this.connectionPolicy.PreferredLocations,
-                                  this.GetDatabaseAccountAsync,
-                                  this.cancellationTokenSource.Token),
+                              singleValueInitFunc: () =>
+                              {
+                                  Task<AccountProperties> accountPropertiesTask = GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
+                                      this.defaultEndpoint,
+                                      this.connectionPolicy.PreferredLocations,
+                                      this.GetDatabaseAccountAsync,
+                                      this.cancellationTokenSource.Token);
+
+                                  Task continuationTask = accountPropertiesTask.ContinueWith(
+                                      task => DefaultTrace.TraceVerbose("Failed to fetch database account from any locations with exception: {0}. Activity Id: '{1}'",
+                                        task.Exception,
+                                        System.Diagnostics.Trace.CorrelationManager.ActivityId),
+                                      TaskContinuationOptions.OnlyOnFaulted);
+
+                                  return accountPropertiesTask;
+                              },
                               cancellationToken: this.cancellationTokenSource.Token,
                               forceRefresh: forceRefresh);
 #nullable enable
