@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         queryDefinition: new QueryDefinition("select * from T where STARTSWITH(T.id, \"BasicItem\")"),
                         feedRange: feedRange,
                         continuationToken: null,
-                        requestOptions: new QueryRequestOptions() { EnableOptimisticDirectExecution = false }
+                        requestOptions: new QueryRequestOptions() { EnableOptimisticDirectExecution = true }
                         );
 
                 CosmosException exception = await Assert.ThrowsExceptionAsync<CosmosException>(() => feedIterator.ReadNextAsync());

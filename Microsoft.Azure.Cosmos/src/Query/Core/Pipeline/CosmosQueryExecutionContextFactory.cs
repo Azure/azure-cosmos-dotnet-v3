@@ -782,7 +782,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             Debug.Assert(containerQueryProperties.ResourceId != null, "CosmosQueryExecutionContextFactory Assert!", "Container ResourceId cannot be null!");
 
             List<Documents.PartitionKeyRange> targetRanges;
-            if (partitionedQueryExecutionInfo != null)
+            if (partitionedQueryExecutionInfo != null || inputParameters.InitialFeedRange != null)
             {
                 targetRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
                     cosmosQueryContext.QueryClient,

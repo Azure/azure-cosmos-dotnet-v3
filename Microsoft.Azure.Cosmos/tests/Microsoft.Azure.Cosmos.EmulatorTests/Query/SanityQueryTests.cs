@@ -538,7 +538,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     MaxBufferedItemCount = 7000,
                     MaxConcurrency = 10,
                     MaxItemCount = 10,
-                    EnableOptimisticDirectExecution = false
                 };
 
                 string compositeAggregate = "SELECT COUNT(1) + 5 FROM c";
