@@ -7,8 +7,11 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
 
     /// <summary>
-    /// This is an interface to allow a custom serializer to be used by the CosmosClient
+    /// This abstract class can be implemented to allow a custom serializer to be used by the CosmosClient.
     /// </summary>
+    /// <remark>
+    /// To use the custom serializer for LINQ queries, <see cref="CosmosLinqSerializer"/> must be implemented.
+    /// </remark> 
     public abstract class CosmosSerializer
     {
         /// <summary>
