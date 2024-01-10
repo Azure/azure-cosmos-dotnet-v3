@@ -61,6 +61,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 MyDocument document = cosmosDefaultJsonSerializer.FromStream<MyDocument>(result.ResourceStream);
                 Assert.AreEqual(i.ToString(), document.id);
+                Assert.IsNotNull(result.PartitionKeyRangeId);
 
                 ItemResponse<MyDocument> storedDoc = await this.cosmosContainer.ReadItemAsync<MyDocument>(i.ToString(), new Cosmos.PartitionKey(i.ToString()));
                 Assert.IsNotNull(storedDoc.Resource);
