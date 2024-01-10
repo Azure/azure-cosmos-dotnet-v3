@@ -41,7 +41,7 @@
 
         private static string RemoveWhitespace(string jsonString)
         {
-            return jsonString.Replace(" ", string.Empty).Replace("\t", string.Empty).Replace("\r", string.Empty);
+            return jsonString.Replace(" ", string.Empty);
         }
 
         private static ClientDistributionPlanTestInput CreateInput(
