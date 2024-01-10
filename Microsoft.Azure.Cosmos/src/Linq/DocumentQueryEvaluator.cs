@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public static SqlQuerySpec Evaluate(
             Expression expression,
-            CosmosLinqSerializerOptions linqSerializerOptions = null,
+            CosmosLinqSerializerOptionsInternal linqSerializerOptions = null,
             IDictionary<object, string> parameters = null)
         {
             switch (expression.NodeType)
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         private static SqlQuerySpec HandleMethodCallExpression(
             MethodCallExpression expression,
             IDictionary<object, string> parameters,
-            CosmosLinqSerializerOptions linqSerializerOptions = null)
+            CosmosLinqSerializerOptionsInternal linqSerializerOptions = null)
         {
             if (DocumentQueryEvaluator.IsTransformExpression(expression))
             {
