@@ -1,6 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
+#if PREVIEW
 namespace Microsoft.Azure.Cosmos
 {
     using System;
@@ -35,3 +36,4 @@ namespace Microsoft.Azure.Cosmos
         }
     }
 }
+#endif

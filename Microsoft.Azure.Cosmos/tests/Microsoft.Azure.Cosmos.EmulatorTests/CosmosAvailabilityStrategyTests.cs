@@ -1,4 +1,5 @@
-﻿namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
+﻿#if PREVIEW
+namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
@@ -442,3 +443,4 @@
         }
     }
 }
+#endif

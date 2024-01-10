@@ -76,14 +76,14 @@ namespace Microsoft.Azure.Cosmos
         /// If all regions are excluded, then the request will be routed to the primary/hub region.
         /// </summary>
         public List<string> ExcludeRegions { get; set; }
-
+#if PREVIEW
         /// <summary>
         /// Cosmos availability strategy options.
         /// Availability allow the SDK to send out additional cross region requests to help 
         /// reduce latency and increase availability. Currently there is one type of availability strategy, parallel request hedging.  
         /// </summary>
         public AvailabilityStrategyOptions AvailabilityStrategyOptions { get; set; }
-
+#endif
         /// <summary>
         /// Gets or sets the boolean to use effective partition key routing in the cosmos db request.
         /// </summary>

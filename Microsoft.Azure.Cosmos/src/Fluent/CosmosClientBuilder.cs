@@ -627,7 +627,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
             this.clientOptions.ApiType = apiType;
             return this;
         }
-
+#if PREVIEW
         /// <summary>
         /// Availability Stragey Options to be used for periods of high latency
         /// </summary>
@@ -638,7 +638,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
             this.clientOptions.AvailabilityStrategyOptions = new AvailabilityStrategyOptions(strategy);
             return this;
         }
-
+#endif
         /// <summary>
         /// Specify a store client factory to use for all transport requests for cosmos client.
         /// </summary>

@@ -114,9 +114,9 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly bool IsLocalQuorumConsistency = false;
         private readonly bool isReplicaAddressValidationEnabled;
-
+#if PREVIEW
         private readonly AvailabilityStrategyOptions availabilityStrategy;
-
+#endif
         //Auth
         internal readonly AuthorizationTokenProvider cosmosAuthorization;
 
@@ -435,7 +435,9 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cosmosClientId"></param>
         /// <param name="remoteCertificateValidationCallback">This delegate responsible for validating the third party certificate. </param>
         /// <param name="cosmosClientTelemetryOptions">This is distributed tracing flag</param>
+#if PREVIEW
         /// <param name="availabilityStrategy">This is the availability strategy to use for the client.</param>
+#endif
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal.
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
@@ -463,8 +465,12 @@ namespace Microsoft.Azure.Cosmos
                               bool isLocalQuorumConsistency = false,
                               string cosmosClientId = null,
                               RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
+#if PREVIEW
                               CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null,
                               AvailabilityStrategyOptions availabilityStrategy = null)
+#else
+                              CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null)
+#endif
         {
             if (sendingRequestEventArgs != null)
             {
@@ -487,7 +493,9 @@ namespace Microsoft.Azure.Cosmos
             this.transportClientHandlerFactory = transportClientHandlerFactory;
             this.IsLocalQuorumConsistency = isLocalQuorumConsistency;
             this.initTaskCache = new AsyncCacheNonBlocking<string, bool>(cancellationToken: this.cancellationTokenSource.Token);
+#if PREVIEW
             this.availabilityStrategy = availabilityStrategy;
+#endif
 
             this.Initialize(
                 serviceEndpoint: serviceEndpoint,

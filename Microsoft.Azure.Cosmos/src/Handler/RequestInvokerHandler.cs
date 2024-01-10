@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             await request.AssertPartitioningDetailsAsync(this.client, cancellationToken, request.Trace);
             this.FillMultiMasterContext(request);
-
+#if PREVIEW
             if (this.CanUseAvailabilityStrategy(request))
             {
                 AvailabilityStrategy strategy = request.RequestOptions?.AvailabilityStrategyOptions?.AvailabilityStrategy 
@@ -84,10 +84,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             request,
                             cancellationToken);
             }
-            
+#endif          
             return await base.SendAsync(request, cancellationToken);
         }
 
+#if PREVIEW
         /// <summary>
         /// This method determines if the request can use an availability strategy
         /// </summary>
@@ -129,6 +130,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         {
             return await base.SendAsync(request, cancellationToken);
         }
+#endif
 
         public virtual async Task<T> SendAsync<T>(
             string resourceUri,

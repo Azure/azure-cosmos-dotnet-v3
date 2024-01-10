@@ -1,6 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
+#if PREVIEW
 namespace Microsoft.Azure.Cosmos
 {
     /// <summary>
@@ -31,3 +32,4 @@ namespace Microsoft.Azure.Cosmos
         
     }
 }
+#endif
