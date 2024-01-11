@@ -146,7 +146,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response4.Diagnostics);
             CosmosTraceDiagnostics cosmosTraceDiagnostics2 = response4.Diagnostics as CosmosTraceDiagnostics;
 
-            CosmosTraceDiagnostics mergedDiagnostics1 = CosmosTraceDiagnostics.MergeDiagnostics(new List<CosmosTraceDiagnostics>() { cosmosTraceDiagnostics1, cosmosTraceDiagnostics2 });
+            CosmosTraceDiagnostics mergedDiagnostics1 = CosmosTraceDiagnostics.MergeDiagnostics(
+                new List<CosmosTraceDiagnostics>() { cosmosTraceDiagnostics1, cosmosTraceDiagnostics2 },
+                "Hedged Request");
             Assert.IsNotNull(mergedDiagnostics1);
             Assert.AreEqual(1, mergedDiagnostics1.GetContactedRegions().Count);
             Assert.AreEqual(cosmosTraceDiagnostics1.GetStartTimeUtc(), mergedDiagnostics1.GetStartTimeUtc());
@@ -175,7 +177,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             Assert.IsNotNull(cosmosTraceDiagnostics4);
 
-            CosmosTraceDiagnostics mergedDiagnostics2 = CosmosTraceDiagnostics.MergeDiagnostics(new List<CosmosTraceDiagnostics>() { cosmosTraceDiagnostics3, cosmosTraceDiagnostics4 });
+            CosmosTraceDiagnostics mergedDiagnostics2 = CosmosTraceDiagnostics.MergeDiagnostics(
+                new List<CosmosTraceDiagnostics>() { cosmosTraceDiagnostics3, cosmosTraceDiagnostics4 },
+                "Hedged Request");
             Assert.IsNotNull(mergedDiagnostics2);
             Assert.AreEqual(1, mergedDiagnostics2.GetContactedRegions().Count);
             Assert.AreEqual(cosmosTraceDiagnostics3.GetStartTimeUtc(), mergedDiagnostics2.GetStartTimeUtc());

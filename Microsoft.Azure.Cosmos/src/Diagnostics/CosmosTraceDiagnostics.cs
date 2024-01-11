@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.isMergedDiagnostics = false;
         }
 
-        private CosmosTraceDiagnostics(List<CosmosTraceDiagnostics> traceDiagnostics)
+        private CosmosTraceDiagnostics(List<CosmosTraceDiagnostics> traceDiagnostics, string mergeReason)
         {
             this.traceDiagnostics = traceDiagnostics;
             this.isMergedDiagnostics = true;
@@ -52,12 +52,13 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                 new List<ITrace>(this.traceDiagnostics.Select(trace => trace.Value)),
                 this.GetStartTimeUtc().Value,
                 this.GetClientElapsedTime(),
-                traceSummary);           
+                traceSummary, 
+                mergeReason);           
         }
 
-        public static CosmosTraceDiagnostics MergeDiagnostics(List<CosmosTraceDiagnostics> traceDiagnostics)
+        public static CosmosTraceDiagnostics MergeDiagnostics(List<CosmosTraceDiagnostics> traceDiagnostics, string mergeReason)
         {
-            return new CosmosTraceDiagnostics(traceDiagnostics);
+            return new CosmosTraceDiagnostics(traceDiagnostics, mergeReason);
         }
 
         public ITrace Value { get; }

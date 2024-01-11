@@ -19,7 +19,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
             List<ITrace> traces,
             DateTime startTime,
             TimeSpan elapsedTime,
-            TraceSummary summary)
+            TraceSummary summary,
+            string mergeResson)
         {
             this.children = traces;
             this.Id = Guid.NewGuid();
@@ -28,6 +29,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
             this.Summary = summary ?? throw new ArgumentNullException(nameof(summary));
             this.data = new Lazy<Dictionary<string, object>>();
 
+            int i = 0;
             foreach (ITrace trace in traces)
             {
                 if (trace.Data.Count > 0 
@@ -46,6 +48,12 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 {
                     this.data.Value.Add("totalRequestCharge", this.GetTraceRequestCharge(trace));
                 }
+                
+                if (i > 0)
+                {
+                    trace.AddDatum("Additional Request Context", mergeResson);
+                }
+                i++;
             }
         }
 
