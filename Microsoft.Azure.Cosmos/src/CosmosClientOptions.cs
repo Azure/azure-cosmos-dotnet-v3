@@ -609,7 +609,7 @@ namespace Microsoft.Azure.Cosmos
         /// Availability Strategy Options to be used for periods of high latency
         /// </summary>
 #if PREVIEW
-    public 
+        public 
 #else
         internal
 #endif
