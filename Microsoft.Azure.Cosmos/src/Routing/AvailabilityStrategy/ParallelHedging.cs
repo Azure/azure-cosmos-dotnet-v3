@@ -1,7 +1,6 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-#if PREVIEW
 namespace Microsoft.Azure.Cosmos
 {
     using System;
@@ -18,7 +17,12 @@ namespace Microsoft.Azure.Cosmos
     /// if the first parallel request or the original has not returned after the step time, 
     /// additional parallel requests will be sent out there is a response or all regions are exausted.
     /// </summary>
-    public class ParallelHedging : AvailabilityStrategy
+#if PREVIEW
+    public 
+#else
+    internal
+#endif
+    class ParallelHedging : AvailabilityStrategy
     {
         /// <summary>
         /// When the SDK decided to activate the availability strategy.
@@ -161,4 +165,3 @@ namespace Microsoft.Azure.Cosmos
         }
     }
 }
-#endif

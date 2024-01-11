@@ -1,7 +1,6 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-#if PREVIEW
 namespace Microsoft.Azure.Cosmos
 {
     using System;
@@ -12,7 +11,12 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Types of availability strategies supported
     /// </summary>
-    public abstract class AvailabilityStrategy
+#if PREVIEW
+    public 
+#else
+    internal
+#endif
+    abstract class AvailabilityStrategy
     {
         /// <summary>
         /// Execute the availability strategy
@@ -36,4 +40,3 @@ namespace Microsoft.Azure.Cosmos
         }
     }
 }
-#endif

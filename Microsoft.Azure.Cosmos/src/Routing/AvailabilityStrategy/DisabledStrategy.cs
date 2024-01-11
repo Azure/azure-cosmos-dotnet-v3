@@ -1,7 +1,6 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-#if PREVIEW
 namespace Microsoft.Azure.Cosmos
 {
     using System.Threading;
@@ -11,7 +10,12 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// A Disabled availability strategy that does not do anything. Used for overriding the default global availability strategy.
     /// </summary>
-    public class DisabledStrategy : AvailabilityStrategy
+#if PREVIEW
+    public 
+#else
+    internal
+#endif
+    class DisabledStrategy : AvailabilityStrategy
     {
         internal override bool Enabled()
         {
@@ -25,4 +29,3 @@ namespace Microsoft.Azure.Cosmos
         }
     }
 }
-#endif

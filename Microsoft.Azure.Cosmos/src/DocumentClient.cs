@@ -435,6 +435,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cosmosClientId"></param>
         /// <param name="remoteCertificateValidationCallback">This delegate responsible for validating the third party certificate. </param>
         /// <param name="cosmosClientTelemetryOptions">This is distributed tracing flag</param>
+        /// <param name="availabilityStrategy">This is the availability strategy for the client</param>"
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal.
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
@@ -462,12 +463,8 @@ namespace Microsoft.Azure.Cosmos
                               bool isLocalQuorumConsistency = false,
                               string cosmosClientId = null,
                               RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
-#if PREVIEW
                               CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null,
                               AvailabilityStrategyOptions availabilityStrategy = null)
-#else
-                              CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null)
-#endif
         {
             if (sendingRequestEventArgs != null)
             {
