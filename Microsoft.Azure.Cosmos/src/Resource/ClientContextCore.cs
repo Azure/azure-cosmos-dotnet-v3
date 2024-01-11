@@ -85,7 +85,6 @@ namespace Microsoft.Azure.Cosmos
                cosmosClientTelemetryOptions: clientOptions.CosmosClientTelemetryOptions,
                availabilityStrategy: clientOptions.AvailabilityStrategyOptions);
 
-
             return ClientContextCore.Create(
                 cosmosClient,
                 documentClient,

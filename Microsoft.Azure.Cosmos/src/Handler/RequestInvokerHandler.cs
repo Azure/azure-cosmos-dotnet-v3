@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             request,
                             cancellationToken);
             }
-#endif          
+#endif      
             return await base.SendAsync(request, cancellationToken);
         }
 
@@ -113,8 +113,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             return true;
         }       
-
-        internal async Task<ResponseMessage> SendWithDelayAsync(
+#endif
+        public async Task<ResponseMessage> SendWithDelayAsync(
             TimeSpan delay, 
             RequestMessage request, 
             CancellationToken cancellationToken, 
@@ -124,13 +124,12 @@ namespace Microsoft.Azure.Cosmos.Handlers
             return await this.BaseSendAsync(request, cancellationToken);
         }
 
-        internal virtual async Task<ResponseMessage> BaseSendAsync(
+        public virtual async Task<ResponseMessage> BaseSendAsync(
             RequestMessage request,
             CancellationToken cancellationToken)
         {
             return await base.SendAsync(request, cancellationToken);
         }
-#endif
 
         public virtual async Task<T> SendAsync<T>(
             string resourceUri,
