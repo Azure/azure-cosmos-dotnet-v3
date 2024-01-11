@@ -260,6 +260,8 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
+            // Currently, ReadItemAsync does not support the use of RequestOptions.IfMatchEtag property.
+            // See <see cref="RequestOptions.IfMatchEtag"/> for more details.
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReadItemAsync),
                 containerName: this.Id,
