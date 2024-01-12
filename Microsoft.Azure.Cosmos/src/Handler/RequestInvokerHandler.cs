@@ -88,7 +88,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
             return await base.SendAsync(request, cancellationToken);
         }
 
-#if PREVIEW
         /// <summary>
         /// This method determines if the request can use an availability strategy
         /// </summary>
@@ -112,8 +111,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             return true;
-        }       
-#endif
+        }
+
         public async Task<ResponseMessage> SendWithDelayAsync(
             TimeSpan delay, 
             RequestMessage request, 
