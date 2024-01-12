@@ -302,179 +302,185 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task InvalidSessionTokenAfterContainerRecreationAndCollectionCacheRefreshReproTest()
         {
-            // ingestionClinet is dedicated client simulating the writes / container recreation in
-            // the separate process - like Spark job
-            using CosmosClient ingestionClient = TestCommon.CreateCosmosClient();
-            Cosmos.Database ingestionDatabase = ingestionClient.GetDatabase(this.database.Id);
-
-            ContainerProperties multiPartitionContainerSettings =
-                new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/pk");
-            Container ingestionContainer = 
-                await ingestionDatabase.CreateContainerAsync(multiPartitionContainerSettings);
-
-            const int itemCountToBeIngested = 10;
-            string pk = Guid.NewGuid().ToString("N");
-            long? latestLsn = null;
-            Console.WriteLine("INGEST DOCUMENTS");
-            for (int i = 0; i < itemCountToBeIngested; i++)
+            foreach (bool enableODE in new bool[] { false, true })
             {
-                ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
-                testItem.pk = pk;
+                // ingestionClinet is dedicated client simulating the writes / container recreation in
+                // the separate process - like Spark job
+                using CosmosClient ingestionClient = TestCommon.CreateCosmosClient();
+                Cosmos.Database ingestionDatabase = ingestionClient.GetDatabase(this.database.Id);
 
-                ItemResponse<ToDoActivity> response = 
-                    await ingestionContainer.CreateItemAsync<ToDoActivity>(item: testItem);
-                Assert.IsNotNull(response);
-                Assert.IsNotNull(response.Resource);
-                Assert.IsNotNull(response.Diagnostics);
-                long? lsnAfterCreate = await GetLSNFromSessionContainer(
-                    ingestionContainer, multiPartitionContainerSettings, new PartitionKey(pk));
-                Assert.IsNotNull(lsnAfterCreate);
-                Assert.IsTrue(latestLsn == null || lsnAfterCreate.Value > latestLsn.Value);
-                latestLsn = lsnAfterCreate;
-                CosmosTraceDiagnostics diagnostics = (CosmosTraceDiagnostics)response.Diagnostics;
-                Assert.IsFalse(diagnostics.IsGoneExceptionHit());
-                Assert.IsFalse(string.IsNullOrEmpty(diagnostics.ToString()));
-                Assert.IsTrue(diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
-            }
+                ContainerProperties multiPartitionContainerSettings =
+                    new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/pk");
+                Container ingestionContainer =
+                    await ingestionDatabase.CreateContainerAsync(multiPartitionContainerSettings);
 
-            // Dedciated query client used only for queries simulating the customer's app
-            string lastRequestedSessionToken = null;
-            Container queryContainer = TransportClientHelper.GetContainerWithIntercepter(
-                this.database.Id,
-                ingestionContainer.Id,
-                (uri, operation, request) =>
+                const int itemCountToBeIngested = 10;
+                string pk = Guid.NewGuid().ToString("N");
+                long? latestLsn = null;
+                Console.WriteLine("INGEST DOCUMENTS");
+                for (int i = 0; i < itemCountToBeIngested; i++)
                 {
-                    if (request.ResourceType == ResourceType.Document &&
-                        request.OperationType == OperationType.Query)
+                    ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+                    testItem.pk = pk;
+
+                    ItemResponse<ToDoActivity> response =
+                        await ingestionContainer.CreateItemAsync<ToDoActivity>(item: testItem);
+                    Assert.IsNotNull(response);
+                    Assert.IsNotNull(response.Resource);
+                    Assert.IsNotNull(response.Diagnostics);
+                    long? lsnAfterCreate = await GetLSNFromSessionContainer(
+                        ingestionContainer, multiPartitionContainerSettings, new PartitionKey(pk));
+                    Assert.IsNotNull(lsnAfterCreate);
+                    Assert.IsTrue(latestLsn == null || lsnAfterCreate.Value > latestLsn.Value);
+                    latestLsn = lsnAfterCreate;
+                    CosmosTraceDiagnostics diagnostics = (CosmosTraceDiagnostics)response.Diagnostics;
+                    Assert.IsFalse(diagnostics.IsGoneExceptionHit());
+                    Assert.IsFalse(string.IsNullOrEmpty(diagnostics.ToString()));
+                    Assert.IsTrue(diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
+                }
+
+                // Dedciated query client used only for queries simulating the customer's app
+                string lastRequestedSessionToken = null;
+                Container queryContainer = TransportClientHelper.GetContainerWithIntercepter(
+                    this.database.Id,
+                    ingestionContainer.Id,
+                    (uri, operation, request) =>
                     {
-                        lastRequestedSessionToken = request.Headers[HttpConstants.HttpHeaders.SessionToken];
+                        if (request.ResourceType == ResourceType.Document &&
+                            request.OperationType == OperationType.Query)
+                        {
+                            lastRequestedSessionToken = request.Headers[HttpConstants.HttpHeaders.SessionToken];
+                        }
+                    },
+                    false,
+                    null);
+
+                long? lsnAfterQueryOnOldContainer = null;
+
+                // Issueing two queries - first won't use session tokens yet
+                // second will provide session tokens captured from first request in the request to the backend
+                for (int i = 0; i < 2; i++)
+                {
+                    Console.WriteLine("RUN QUERY ON OLD CONTAINER ({0})", i);
+                    using FeedIterator<JObject> queryIteratorOldContainer = queryContainer.GetItemQueryIterator<JObject>(
+                        new QueryDefinition("Select c.id FROM c"),
+                        continuationToken: null,
+                        new QueryRequestOptions
+                        {
+                            ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
+                            PartitionKey = new Cosmos.PartitionKey(pk),
+                            EnableOptimisticDirectExecution = enableODE
+                        });
+                    int itemCountOldContainer = 0;
+                    while (queryIteratorOldContainer.HasMoreResults)
+                    {
+                        FeedResponse<JObject> response = await queryIteratorOldContainer.ReadNextAsync();
+                        if(i == 0)
+                        {
+                            string diagnosticString = response.Diagnostics.ToString();
+                            Assert.IsTrue(diagnosticString.Contains("PKRangeCache Info("));
+                            JObject diagnosticJobject = JObject.Parse(diagnosticString);
+
+                            JToken actualToken = diagnosticJobject.SelectToken(enableODE ?
+                                "$.children[?(@.name=='Get Partition Key Ranges')].children[?(@.name=='Try Get Overlapping Ranges')].data" :
+                                "$.children[0].children[?(@.name=='Get Partition Key Ranges')].children[?(@.name=='Try Get Overlapping Ranges')].data");
+                            JToken actualNode = actualToken.Children().First().First();
+
+                            Assert.IsTrue(actualNode["Previous Continuation Token"].ToString().Length == 0);
+                            Assert.IsTrue(actualNode["Continuation Token"].ToString().Length > 0);
+                        }
+
+                        itemCountOldContainer += response.Count;
                     }
-                },
-                false,
-                null);
 
-            long? lsnAfterQueryOnOldContainer = null;
+                    Assert.AreEqual(itemCountToBeIngested, itemCountOldContainer);
+                    lsnAfterQueryOnOldContainer = await GetLSNFromSessionContainer(
+                            queryContainer, multiPartitionContainerSettings, new PartitionKey(pk));
+                    Assert.IsNotNull(lsnAfterQueryOnOldContainer);
+                    Assert.AreEqual(latestLsn.Value, lsnAfterQueryOnOldContainer.Value);
+                    if (i == 0)
+                    {
+                        Assert.IsNull(lastRequestedSessionToken);
+                    }
+                    else
+                    {
+                        Assert.IsNotNull(lastRequestedSessionToken);
+                        Assert.AreEqual(latestLsn.Value, SessionTokenHelper.Parse(lastRequestedSessionToken).LSN);
+                    }
+                }
 
-            // Issueing two queries - first won't use session tokens yet
-            // second will provide session tokens captured from first request in the request to the backend
-            for (int i = 0; i < 2; i++)
-            {
-                Console.WriteLine("RUN QUERY ON OLD CONTAINER ({0})", i);
-                using FeedIterator<JObject> queryIteratorOldContainer = queryContainer.GetItemQueryIterator<JObject>(
+                Console.WriteLine(
+                    "DELETE CONTAINER {0}",
+                    (await queryContainer.ReadContainerAsync()).Resource.ResourceId);
+                await ingestionContainer.DeleteContainerAsync();
+
+                Console.WriteLine("RECREATING CONTAINER...");
+                ContainerResponse ingestionContainerResponse =
+                    await ingestionDatabase.CreateContainerAsync(multiPartitionContainerSettings);
+                ingestionContainer = ingestionContainerResponse.Container;
+
+                string responseSessionTokenValue =
+                    ingestionContainerResponse.Headers[HttpConstants.HttpHeaders.SessionToken];
+                long? lsnAfterRecreatingContainerFromIngestionClient = responseSessionTokenValue != null ?
+                                SessionTokenHelper.Parse(responseSessionTokenValue).LSN : null;
+                Console.WriteLine(
+                    "RECREATED CONTAINER with new CollectionRid: {0} - LSN: {1}",
+                    ingestionContainerResponse.Resource.ResourceId,
+                    lsnAfterRecreatingContainerFromIngestionClient);
+
+                // validates that the query container still uses the LSN captured from the old LSN
+                long? lsnAfterCreatingNewContainerFromQueryClient = await GetLSNFromSessionContainer(
+                        queryContainer, multiPartitionContainerSettings, new PartitionKey(pk));
+                Assert.IsNotNull(lsnAfterCreatingNewContainerFromQueryClient);
+                Assert.AreEqual(latestLsn.Value, lsnAfterCreatingNewContainerFromQueryClient.Value);
+
+                Console.WriteLine("GET FEED RANGES");
+                // this will force a CollectionCache refresh - because no pk ranegs can be identified
+                // for the old container anymore
+                _ = await queryContainer.GetFeedRangesAsync();
+
+
+                Console.WriteLine("RUN QUERY ON NEW CONTAINER");
+                int itemCountNewContainer = 0;
+                using FeedIterator<JObject> queryIteratorNewContainer = queryContainer.GetItemQueryIterator<JObject>(
                     new QueryDefinition("Select c.id FROM c"),
                     continuationToken: null,
                     new QueryRequestOptions
                     {
                         ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
                         PartitionKey = new Cosmos.PartitionKey(pk),
-                        EnableOptimisticDirectExecution = false
                     });
-                int itemCountOldContainer = 0;
-                while (queryIteratorOldContainer.HasMoreResults)
+                Console.WriteLine("Query iterator created");
+                while (queryIteratorNewContainer.HasMoreResults)
                 {
-                    FeedResponse<JObject> response = await queryIteratorOldContainer.ReadNextAsync();
-                    if(i == 0)
+                    Console.WriteLine("Retrieving first page");
+                    try
                     {
-                        string diagnosticString = response.Diagnostics.ToString();
-                        Assert.IsTrue(diagnosticString.Contains("PKRangeCache Info("));
-                        JObject diagnosticJobject = JObject.Parse(diagnosticString);
-                        JToken actualToken = diagnosticJobject.SelectToken("$.children[0].children[?(@.name=='Get Partition Key Ranges')].children[?(@.name=='Try Get Overlapping Ranges')].data");
-                        JToken actualNode = actualToken.Children().First().First();
-
-                        Assert.IsTrue(actualNode["Previous Continuation Token"].ToString().Length == 0);
-                        Assert.IsTrue(actualNode["Continuation Token"].ToString().Length > 0);
+                        FeedResponse<JObject> response = await queryIteratorNewContainer.ReadNextAsync();
+                        Console.WriteLine("Request Diagnostics for query against new container: {0}",
+                            response.Diagnostics.ToString());
+                        itemCountNewContainer += response.Count;
                     }
-                    
-                    itemCountOldContainer += response.Count;
+                    catch (CosmosException cosmosException)
+                    {
+                        Console.WriteLine("COSMOS EXCEPTION: {0}", cosmosException);
+                        throw;
+                    }
                 }
 
-                Assert.AreEqual(itemCountToBeIngested, itemCountOldContainer);
-                lsnAfterQueryOnOldContainer = await GetLSNFromSessionContainer(
+                Assert.AreEqual(0, itemCountNewContainer);
+                long? lsnAfterQueryOnNewContainer = await GetLSNFromSessionContainer(
                         queryContainer, multiPartitionContainerSettings, new PartitionKey(pk));
-                Assert.IsNotNull(lsnAfterQueryOnOldContainer);
-                Assert.AreEqual(latestLsn.Value, lsnAfterQueryOnOldContainer.Value);
-                if (i == 0)
-                {
-                    Assert.IsNull(lastRequestedSessionToken);
-                }
-                else
-                {
-                    Assert.IsNotNull(lastRequestedSessionToken);
-                    Assert.AreEqual(latestLsn.Value, SessionTokenHelper.Parse(lastRequestedSessionToken).LSN);
-                }
+                Assert.IsNotNull(lsnAfterQueryOnNewContainer);
+                Assert.IsTrue(
+                    lastRequestedSessionToken == null ||
+                    SessionTokenHelper.Parse(lastRequestedSessionToken).LSN ==
+                        lsnAfterRecreatingContainerFromIngestionClient,
+                    $"The requested session token {lastRequestedSessionToken} on the last query request should be null " +
+                    $"or have LSN '{lsnAfterRecreatingContainerFromIngestionClient}' (which is the LSN after " +
+                    "re-creating the container) if the session cache or the new CollectionName to Rid mapping was " +
+                    "correctly populated in the SessionCache.");
             }
-            
-            Console.WriteLine(
-                "DELETE CONTAINER {0}",
-                (await queryContainer.ReadContainerAsync()).Resource.ResourceId);
-            await ingestionContainer.DeleteContainerAsync();
-
-            Console.WriteLine("RECREATING CONTAINER...");
-            ContainerResponse ingestionContainerResponse =
-                await ingestionDatabase.CreateContainerAsync(multiPartitionContainerSettings);
-            ingestionContainer = ingestionContainerResponse.Container;
-
-            string responseSessionTokenValue = 
-                ingestionContainerResponse.Headers[HttpConstants.HttpHeaders.SessionToken];
-            long? lsnAfterRecreatingContainerFromIngestionClient = responseSessionTokenValue != null ?
-                            SessionTokenHelper.Parse(responseSessionTokenValue).LSN : null;
-            Console.WriteLine(
-                "RECREATED CONTAINER with new CollectionRid: {0} - LSN: {1}",
-                ingestionContainerResponse.Resource.ResourceId,
-                lsnAfterRecreatingContainerFromIngestionClient);
-
-            // validates that the query container still uses the LSN captured from the old LSN
-            long? lsnAfterCreatingNewContainerFromQueryClient = await GetLSNFromSessionContainer(
-                    queryContainer, multiPartitionContainerSettings, new PartitionKey(pk));
-            Assert.IsNotNull(lsnAfterCreatingNewContainerFromQueryClient);
-            Assert.AreEqual(latestLsn.Value, lsnAfterCreatingNewContainerFromQueryClient.Value);
-
-            Console.WriteLine("GET FEED RANGES");
-            // this will force a CollectionCache refresh - because no pk ranegs can be identified
-            // for the old container anymore
-            _ = await queryContainer.GetFeedRangesAsync();
-
-
-            Console.WriteLine("RUN QUERY ON NEW CONTAINER");
-            int itemCountNewContainer = 0;
-            using FeedIterator<JObject> queryIteratorNewContainer = queryContainer.GetItemQueryIterator<JObject>(
-                new QueryDefinition("Select c.id FROM c"),
-                continuationToken: null,
-                new QueryRequestOptions
-                {
-                    ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
-                    PartitionKey = new Cosmos.PartitionKey(pk),
-                });
-            Console.WriteLine("Query iterator created");
-            while (queryIteratorNewContainer.HasMoreResults)
-            {
-                Console.WriteLine("Retrieving first page");
-                try
-                {
-                    FeedResponse<JObject> response = await queryIteratorNewContainer.ReadNextAsync();
-                    Console.WriteLine("Request Diagnostics for query against new container: {0}",
-                        response.Diagnostics.ToString());
-                    itemCountNewContainer += response.Count;
-                }
-                catch (CosmosException cosmosException)
-                {
-                    Console.WriteLine("COSMOS EXCEPTION: {0}", cosmosException);
-                    throw;
-                }
-            }
-
-            Assert.AreEqual(0, itemCountNewContainer);
-            long? lsnAfterQueryOnNewContainer = await GetLSNFromSessionContainer(
-                    queryContainer, multiPartitionContainerSettings, new PartitionKey(pk));
-            Assert.IsNotNull(lsnAfterQueryOnNewContainer);
-            Assert.IsTrue(
-                lastRequestedSessionToken == null || 
-                SessionTokenHelper.Parse(lastRequestedSessionToken).LSN == 
-                    lsnAfterRecreatingContainerFromIngestionClient,
-                $"The requested session token {lastRequestedSessionToken} on the last query request should be null " +
-                $"or have LSN '{lsnAfterRecreatingContainerFromIngestionClient}' (which is the LSN after " +
-                "re-creating the container) if the session cache or the new CollectionName to Rid mapping was " +
-                "correctly populated in the SessionCache.");
         }
 
         private static async Task<string> GetPKRangeIdForPartitionKey(
