@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Diagnostics;
     using System.Globalization;
     using System.IO;
-    using System.Linq;
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
