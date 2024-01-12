@@ -422,91 +422,91 @@
         }
 
         [TestMethod]
-        [DataRow(true)]
-        [DataRow(false)]
-        public async Task MultiHashQueryItemTest(bool odeEnabled)
+        public async Task MultiHashQueryItemTest()
         {
-            Cosmos.PartitionKey pKey;
-            Cosmos.PartitionKey badPKey;
-
-            //Create items for test
-            ItemResponse<Document>[] documents = new ItemResponse<Document>[3];
-            Document doc = new Document { Id = "document1" };
-            doc.SetValue("ZipCode", "500026");
-            doc.SetValue("City", "Secunderabad");
-            doc.SetValue("Type", "Residence");
-            documents[0] = await this.container.CreateItemAsync<Document>(doc);
-
-            doc = new Document { Id = "document2" };
-            doc.SetValue("ZipCode", "15232");
-            doc.SetValue("City", "Pittsburgh");
-            doc.SetValue("Type", "Business");
-            documents[1] = await this.container.CreateItemAsync<Document>(doc);
-
-            doc = new Document { Id = "document3" };
-            doc.SetValue("ZipCode", "11790");
-            doc.SetValue("City", "Stonybrook");
-            doc.SetValue("Type", "Goverment");
-            documents[2] = await this.container.CreateItemAsync<Document>(doc);
-
-            //Query
-            foreach (Document document in documents)
+            foreach (bool odeEnabled in new bool[] { false, true })
             {
-                pKey = new PartitionKeyBuilder()
-                    .Add(document.GetPropertyValue<string>("ZipCode"))
-                    .Add(document.GetPropertyValue<string>("City"))
-                .Build();
+                Cosmos.PartitionKey pKey;
+                Cosmos.PartitionKey badPKey;
 
-                badPKey = new PartitionKeyBuilder()
-                            .Add(document.GetPropertyValue<string>("City"))
-                            .Build();
+                //Create items for test
+                ItemResponse<Document>[] documents = new ItemResponse<Document>[3];
+                Document doc = new Document { Id = "document1" };
+                doc.SetValue("ZipCode", "500026");
+                doc.SetValue("City", "Secunderabad");
+                doc.SetValue("Type", "Residence");
+                documents[0] = await this.container.CreateItemAsync<Document>(doc);
 
-                String query = $"SELECT * from c where c.id = \"{document.GetPropertyValue<string>("id")}\"";
+                doc = new Document { Id = "document2" };
+                doc.SetValue("ZipCode", "15232");
+                doc.SetValue("City", "Pittsburgh");
+                doc.SetValue("Type", "Business");
+                documents[1] = await this.container.CreateItemAsync<Document>(doc);
 
-                using (FeedIterator<Document> feedIterator = this.container.GetItemQueryIterator<Document>(
-                    query,
-                    null,
-                    new QueryRequestOptions() { EnableOptimisticDirectExecution = odeEnabled, PartitionKey = pKey }))
+                doc = new Document { Id = "document3" };
+                doc.SetValue("ZipCode", "11790");
+                doc.SetValue("City", "Stonybrook");
+                doc.SetValue("Type", "Goverment");
+                documents[2] = await this.container.CreateItemAsync<Document>(doc);
+
+                //Query
+                foreach (Document document in documents)
                 {
-                    Assert.IsTrue(feedIterator.HasMoreResults);
+                    pKey = new PartitionKeyBuilder()
+                        .Add(document.GetPropertyValue<string>("ZipCode"))
+                        .Add(document.GetPropertyValue<string>("City"))
+                    .Build();
 
-                    FeedResponse<Document> queryDoc = await feedIterator.ReadNextAsync();
-                    queryDoc.First<Document>();
-                    Assert.IsTrue(queryDoc.Count == 1);
-                    feedIterator.Dispose();
-                }
+                    badPKey = new PartitionKeyBuilder()
+                                .Add(document.GetPropertyValue<string>("City"))
+                                .Build();
 
-                //Using an incomplete partition key with prefix of PK path definition
-                pKey = new PartitionKeyBuilder()
-                    .Add(document.GetPropertyValue<string>("ZipCode"))
-                .Build();
-                using (FeedIterator<Document> feedIterator = this.container.GetItemQueryIterator<Document>(
-                    query,
-                    null,
-                    new QueryRequestOptions() { EnableOptimisticDirectExecution = odeEnabled, PartitionKey = pKey }))
-                {
-                    Assert.IsTrue(feedIterator.HasMoreResults);
+                    String query = $"SELECT * from c where c.id = \"{document.GetPropertyValue<string>("id")}\"";
 
-                    FeedResponse<Document> queryDoc = await feedIterator.ReadNextAsync();
-                    queryDoc.First<Document>();
-                    Assert.IsTrue(queryDoc.Count == 1);
-                    feedIterator.Dispose();
-                }
+                    using (FeedIterator<Document> feedIterator = this.container.GetItemQueryIterator<Document>(
+                        query,
+                        null,
+                        new QueryRequestOptions() { EnableOptimisticDirectExecution = odeEnabled, PartitionKey = pKey }))
+                    {
+                        Assert.IsTrue(feedIterator.HasMoreResults);
 
-                //Negative test - using incomplete partition key
-                using (FeedIterator<Document> badFeedIterator = this.container.GetItemQueryIterator<Document>(
-                    query,
-                    null,
-                    new QueryRequestOptions() { EnableOptimisticDirectExecution = odeEnabled, PartitionKey = badPKey}))
-                {
-                    FeedResponse<Document> queryDocBad = await badFeedIterator.ReadNextAsync();
-                    Assert.ThrowsException<InvalidOperationException>(() =>
-                         queryDocBad.First<Document>()
-                    );
-                    badFeedIterator.Dispose();
+                        FeedResponse<Document> queryDoc = await feedIterator.ReadNextAsync();
+                        queryDoc.First<Document>();
+                        Assert.IsTrue(queryDoc.Count == 1);
+                        feedIterator.Dispose();
+                    }
+
+                    //Using an incomplete partition key with prefix of PK path definition
+                    pKey = new PartitionKeyBuilder()
+                        .Add(document.GetPropertyValue<string>("ZipCode"))
+                    .Build();
+                    using (FeedIterator<Document> feedIterator = this.container.GetItemQueryIterator<Document>(
+                        query,
+                        null,
+                        new QueryRequestOptions() { EnableOptimisticDirectExecution = odeEnabled, PartitionKey = pKey }))
+                    {
+                        Assert.IsTrue(feedIterator.HasMoreResults);
+
+                        FeedResponse<Document> queryDoc = await feedIterator.ReadNextAsync();
+                        queryDoc.First<Document>();
+                        Assert.IsTrue(queryDoc.Count == 1);
+                        feedIterator.Dispose();
+                    }
+
+                    //Negative test - using incomplete partition key
+                    using (FeedIterator<Document> badFeedIterator = this.container.GetItemQueryIterator<Document>(
+                        query,
+                        null,
+                        new QueryRequestOptions() { EnableOptimisticDirectExecution = odeEnabled, PartitionKey = badPKey }))
+                    {
+                        FeedResponse<Document> queryDocBad = await badFeedIterator.ReadNextAsync();
+                        Assert.ThrowsException<InvalidOperationException>(() =>
+                             queryDocBad.First<Document>()
+                        );
+                        badFeedIterator.Dispose();
+                    }
                 }
             }
         }
-
     }
 }

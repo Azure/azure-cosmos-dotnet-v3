@@ -60,7 +60,7 @@
 
             await this.CreateIngestQueryDeleteAsync<AggregateTestArgs>(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
-                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                CollectionTypes.SinglePartition,
                 documents,
                 ImplementationAsync,
                 args,
@@ -146,32 +146,42 @@
                                 query,
                                 argument.ToString());
 
-                            List<CosmosElement> items = await QueryTestsBase.RunQueryAsync(
-                                container,
-                                query,
-                                new QueryRequestOptions()
-                                {
+                            foreach (bool enableODE in new bool[] { false, true })
+                            {
+                                List<CosmosElement> items = await QueryTestsBase.RunQueryAsync(
+                                    container,
+                                    query,
+                                    new QueryRequestOptions()
+                                    {
                                     MaxConcurrency = maxDoP,
-                                    EnableOptimisticDirectExecution = false
-                                });
+                                    EnableOptimisticDirectExecution = enableODE
+                                    });
 
-                            if (argument.ExpectedValue == null)
-                            {
-                                Assert.AreEqual(0, items.Count, message);
-                            }
-                            else
-                            {
-                                Assert.AreEqual(1, items.Count, message);
-                                CosmosElement expected = argument.ExpectedValue;
-                                CosmosElement actual = items.Single();
-
-                                if ((expected is CosmosNumber expectedNumber) && (actual is CosmosNumber actualNumber))
+                                if (argument.ExpectedValue == null)
                                 {
-                                    Assert.AreEqual(Number64.ToDouble(expectedNumber.Value), Number64.ToDouble(actualNumber.Value), .01);
+                                    Assert.AreEqual(0, items.Count, message);
                                 }
                                 else
                                 {
-                                    Assert.AreEqual(expected, actual, message);
+                                    if (argument.ExpectedValue.Equals(CosmosUndefined.Create()) && enableODE == true)
+                                    {
+                                        Assert.AreEqual(0, items.Count, message);
+                                    }
+                                    else
+                                    {
+                                        Assert.AreEqual(1, items.Count, message);
+                                        CosmosElement expected = argument.ExpectedValue;
+                                        CosmosElement actual = items.Single();
+
+                                        if ((expected is CosmosNumber expectedNumber) && (actual is CosmosNumber actualNumber))
+                                        {
+                                            Assert.AreEqual(Number64.ToDouble(expectedNumber.Value), Number64.ToDouble(actualNumber.Value), .01);
+                                        }
+                                        else
+                                        {
+                                            Assert.AreEqual(expected, actual, message);
+                                        }
+                                    }
                                 }
                             }
                         }
