@@ -432,7 +432,8 @@ namespace Microsoft.Azure.Cosmos
         /// Items contain meta data that can be obtained by mapping these meta data attributes to properties in <typeparamref name="T"/>.
         /// * "_ts": Gets the last modified time stamp associated with the item from the Azure Cosmos DB service.
         /// * "_etag": Gets the entity tag associated with the item from the Azure Cosmos DB service.
-        /// * "ttl": Gets the time to live in seconds of the item in the Azure Cosmos DB service.
+        /// * "ttl": Gets the time to live in seconds of the item in the Azure Cosmos DB service. Note that, this API does not support
+        /// the usage of <see cref="RequestOptions.IfMatchEtag"/> property at the moment.
         /// </remarks>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
         /// <example>
