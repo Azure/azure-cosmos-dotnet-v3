@@ -195,7 +195,7 @@ namespace Microsoft.Azure.Cosmos
             : this(
                   CosmosClientOptions.GetAccountEndpoint(connectionString),
                   CosmosClientOptions.GetAccountKey(connectionString),
-                  clientOptions)
+                  CosmosClientOptions.GetCosmosClientOptionsWithCertificateFlag(connectionString, clientOptions))
         {
         }
 
@@ -339,8 +339,6 @@ namespace Microsoft.Azure.Cosmos
 
             this.Endpoint = new Uri(accountEndpoint);
             this.AuthorizationTokenProvider = authorizationTokenProvider ?? throw new ArgumentNullException(nameof(authorizationTokenProvider));
-
-            clientOptions ??= new CosmosClientOptions();
 
             this.ClientId = this.IncrementNumberOfClientsCreated();
             
@@ -504,6 +502,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new ArgumentNullException(nameof(containers));
             }
+            cosmosClientOptions = CosmosClientOptions.GetCosmosClientOptionsWithCertificateFlag(connectionString, cosmosClientOptions);
 
             CosmosClient cosmosClient = new CosmosClient(connectionString,
                                                          cosmosClientOptions);
