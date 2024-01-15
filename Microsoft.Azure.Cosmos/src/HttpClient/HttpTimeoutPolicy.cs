@@ -29,8 +29,15 @@ namespace Microsoft.Azure.Cosmos
                 return HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout;
             }
 
-            //Partition Key Requests
-            if (documentServiceRequest.ResourceType == ResourceType.PartitionKeyRange)
+            //Get Partition Key Range Requests
+            if (documentServiceRequest.ResourceType == ResourceType.PartitionKeyRange
+                && documentServiceRequest.OperationType == OperationType.ReadFeed)
+            {
+                return HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout;
+            }
+
+            //Get Addresses Requests
+            if (documentServiceRequest.ResourceType == ResourceType.Address)
             {
                 return HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance;
             }
@@ -44,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
             //Meta Data Read
             if (HttpTimeoutPolicy.IsMetaData(documentServiceRequest) && documentServiceRequest.IsReadOnlyRequest)
             {
-                return HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout;
+                return HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout;
             }
 
             //Default behavior

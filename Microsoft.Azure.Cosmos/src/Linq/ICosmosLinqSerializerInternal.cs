@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Linq.Expressions;
     using System.Reflection;
 
-    internal interface ICosmosLinqSerializer
+    internal interface ICosmosLinqSerializerInternal
     {
         /// <summary>
         /// Returns true if there are custom attributes on a member expression.
@@ -28,6 +28,6 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <summary>
         /// Serializes a member name with LINQ serializer options applied.
         /// </summary>
-        string SerializeMemberName(MemberInfo memberInfo, CosmosLinqSerializerOptions linqSerializerOptions = null);
+        string SerializeMemberName(MemberInfo memberInfo);
     }
 }
