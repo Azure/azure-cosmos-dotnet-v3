@@ -94,7 +94,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 {
                     queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics.FeedRange = currentTrace.Name;
                     queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics.PartitionKeyRangeId = WalkTraceTreeForPartitionKeyRangeId(currentTrace);
-                    queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics.RequestCharge = WalkTraceTreeForRequestCharge(currentTrace);
+                    queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics.RequestCharge = queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics.PartitionKeyRangeId != null
+                        ? WalkTraceTreeForRequestCharge(currentTrace)
+                        : WalkTraceTreeForRequestChargeGateway(currentTrace);
+
                     accumulator.Accumulate(queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics);
                     return;
                 }
@@ -169,6 +172,33 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             foreach (ITrace childTrace in currentTrace.Children)
             {
                 double? requestCharge = WalkTraceTreeForRequestCharge(childTrace);
+                if (requestCharge != null)
+                {
+                    return requestCharge;
+                }
+            }
+
+            return null;
+        }
+
+        private static double? WalkTraceTreeForRequestChargeGateway(ITrace currentTrace)
+        {
+            if (currentTrace == null)
+            {
+                return null;
+            }
+
+            foreach (Object datum in currentTrace.Data.Values)
+            {
+                if (datum is PointOperationStatisticsTraceDatum pointOperationStatisticsTraceDatum)
+                {
+                    return pointOperationStatisticsTraceDatum.RequestCharge;
+                }
+            }
+
+            foreach (ITrace childTrace in currentTrace.Children)
+            {
+                double? requestCharge = WalkTraceTreeForRequestChargeGateway(childTrace);
                 if (requestCharge != null)
                 {
                     return requestCharge;
