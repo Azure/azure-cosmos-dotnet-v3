@@ -33,7 +33,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Reflection;
     using System.Text.RegularExpressions;
     using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
 
     [TestClass]
     public class CosmosItemTests : BaseCosmosClientHelper

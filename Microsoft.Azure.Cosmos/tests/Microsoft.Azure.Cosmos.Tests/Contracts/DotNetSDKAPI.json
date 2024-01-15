@@ -9397,6 +9397,16 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.ServerSideMetrics ServerSideMetrics;CanRead:True;CanWrite:False;Microsoft.Azure.Cosmos.ServerSideMetrics get_ServerSideMetrics();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "System.Nullable`1[System.Double] get_RequestCharge()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Nullable`1[System.Double] get_RequestCharge();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[System.Double] RequestCharge": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.Nullable`1[System.Double] RequestCharge;CanRead:True;CanWrite:False;System.Nullable`1[System.Double] get_RequestCharge();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.Nullable`1[System.Int32] get_PartitionKeyRangeId()": {
           "Type": "Method",
           "Attributes": [],
