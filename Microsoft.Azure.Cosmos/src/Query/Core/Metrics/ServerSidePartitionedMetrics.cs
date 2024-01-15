@@ -26,5 +26,10 @@ namespace Microsoft.Azure.Cosmos
         /// Only has a value in direct mode. When using gateway mode, this is null.
         /// </remarks>
         public abstract int? PartitionKeyRangeId { get; }
+
+        /// <summary>
+        /// Gets the request charge for the operation.
+        /// </summary>
+        public abstract double? RequestCharge { get; }
     }
 }

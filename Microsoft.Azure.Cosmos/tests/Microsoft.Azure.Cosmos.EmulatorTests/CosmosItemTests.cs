@@ -1287,6 +1287,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 ServerSideCumulativeMetrics metrics = response.Diagnostics.GetQueryMetrics();
                 Assert.IsTrue(metrics.PartitionedMetrics.Count > 0);
+                Assert.IsTrue(metrics.PartitionedMetrics[0].RequestCharge > 0);
                 Assert.IsTrue(metrics.CumulativeMetrics.TotalTime > TimeSpan.Zero);
                 Assert.IsTrue(metrics.CumulativeMetrics.QueryPreparationTime > TimeSpan.Zero);
 
@@ -1381,6 +1382,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         Assert.IsNotNull(partitionedMetrics);
                         Assert.IsNotNull(partitionedMetrics.PartitionKeyRangeId);
+                        Assert.IsTrue(partitionedMetrics.RequestCharge > 0);
                     }
 
                     if (metrics.CumulativeMetrics.RetrievedDocumentCount >= 1)
@@ -1460,6 +1462,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         Assert.IsNotNull(partitionedMetrics);
                         Assert.IsNull(partitionedMetrics.PartitionKeyRangeId);
+                        Assert.IsTrue(partitionedMetrics.RequestCharge > 0);
                     }
 
                     if (metrics.CumulativeMetrics.RetrievedDocumentCount >= 1)

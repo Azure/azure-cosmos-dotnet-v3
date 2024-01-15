@@ -94,6 +94,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 {
                     queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics.FeedRange = currentTrace.Name;
                     queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics.PartitionKeyRangeId = WalkTraceTreeForPartitionKeyRangeId(currentTrace);
+                    queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics.RequestCharge = WalkTraceTreeForRequestCharge(currentTrace);
                     accumulator.Accumulate(queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics);
                     return;
                 }
@@ -137,6 +138,40 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 if (partitionKeyRangeId != null)
                 {
                     return partitionKeyRangeId;
+                }
+            }
+
+            return null;
+        }
+
+        private static double? WalkTraceTreeForRequestCharge(ITrace currentTrace)
+        {
+            if (currentTrace == null)
+            {
+                return null;
+            }
+
+            foreach (Object datum in currentTrace.Data.Values)
+            {
+                if (datum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
+                {
+                    if (clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList.Count > 0)
+                    {
+                        return clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList[0].StoreResult.RequestCharge;
+                    }
+                    else
+                    {
+                        return null;
+                    }
+                }
+            }
+
+            foreach (ITrace childTrace in currentTrace.Children)
+            {
+                double? requestCharge = WalkTraceTreeForRequestCharge(childTrace);
+                if (requestCharge != null)
+                {
+                    return requestCharge;
                 }
             }
 
