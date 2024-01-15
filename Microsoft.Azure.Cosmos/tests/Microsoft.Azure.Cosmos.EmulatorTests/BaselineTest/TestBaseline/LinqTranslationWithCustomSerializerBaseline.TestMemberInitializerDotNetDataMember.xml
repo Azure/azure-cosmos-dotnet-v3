@@ -29,7 +29,7 @@ WHERE (root["numericFieldDataMember"] = 1)]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root = {"numericFieldDataMember": 1, "stringFieldDataMember": "1"})]]></SqlQuery>
+WHERE (root = {"NumericFieldDataMember": 1, "StringFieldDataMember": "1"})]]></SqlQuery>
       <InputData><![CDATA[[
   "{\"numberValueDotNet\": 0, \"stringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
   "{\"numberValueDotNet\": 1, \"stringValueDotNet\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
@@ -48,7 +48,7 @@ WHERE (root = {"numericFieldDataMember": 1, "stringFieldDataMember": "1"})]]></S
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"numericFieldDataMember": 1, "stringFieldDataMember": "1"} 
+SELECT VALUE {"NumericFieldDataMember": 1, "StringFieldDataMember": "1"} 
 FROM root]]></SqlQuery>
       <InputData><![CDATA[[
   "{\"numberValueDotNet\": 0, \"stringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
@@ -75,7 +75,7 @@ FROM root]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE ((root["numericFieldDataMember"] > 1) ? {"numericFieldDataMember": 1, "stringFieldDataMember": "1"} : {"numericFieldDataMember": 1, "stringFieldDataMember": "1"}) 
+SELECT VALUE ((root["numericFieldDataMember"] > 1) ? {"NumericFieldDataMember": 1, "StringFieldDataMember": "1"} : {"NumericFieldDataMember": 1, "StringFieldDataMember": "1"}) 
 FROM root]]></SqlQuery>
       <InputData><![CDATA[[
   "{\"numberValueDotNet\": 0, \"stringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",

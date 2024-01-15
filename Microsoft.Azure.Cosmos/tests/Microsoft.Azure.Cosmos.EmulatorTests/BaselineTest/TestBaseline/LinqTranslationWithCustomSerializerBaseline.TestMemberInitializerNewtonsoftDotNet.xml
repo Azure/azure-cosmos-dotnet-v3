@@ -29,7 +29,7 @@ WHERE (root["numberValueNewtonsoft"] = 1)]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root = {"numberValueNewtonsoft": 1, "stringValueNewtonsoft": "1", "id": null, "pk": null})]]></SqlQuery>
+WHERE (root = {"NumberValueNewtonsoft": 1, "StringValueNewtonsoft": "1", "id": null, "Pk": null})]]></SqlQuery>
       <InputData><![CDATA[[
   "{\"numberValueDotNet\": 0, \"stringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
   "{\"numberValueDotNet\": 1, \"stringValueDotNet\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
@@ -48,7 +48,7 @@ WHERE (root = {"numberValueNewtonsoft": 1, "stringValueNewtonsoft": "1", "id": n
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"numberValueNewtonsoft": 1, "stringValueNewtonsoft": "1", "id": null, "pk": null} 
+SELECT VALUE {"NumberValueNewtonsoft": 1, "StringValueNewtonsoft": "1", "id": null, "Pk": null} 
 FROM root]]></SqlQuery>
       <InputData><![CDATA[[
   "{\"numberValueDotNet\": 0, \"stringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
@@ -75,7 +75,7 @@ FROM root]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE ((root["numberValueNewtonsoft"] > 1) ? {"numberValueNewtonsoft": 1, "stringValueNewtonsoft": "1", "id": null, "pk": null} : {"numberValueNewtonsoft": 1, "stringValueNewtonsoft": "1", "id": null, "pk": null}) 
+SELECT VALUE ((root["numberValueNewtonsoft"] > 1) ? {"NumberValueNewtonsoft": 1, "StringValueNewtonsoft": "1", "id": null, "Pk": null} : {"NumberValueNewtonsoft": 1, "StringValueNewtonsoft": "1", "id": null, "Pk": null}) 
 FROM root]]></SqlQuery>
       <InputData><![CDATA[[
   "{\"numberValueDotNet\": 0, \"stringValueDotNet\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
