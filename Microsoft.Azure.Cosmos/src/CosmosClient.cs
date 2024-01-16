@@ -184,6 +184,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         /// <remarks>
         /// The returned reference doesn't guarantee credentials or connectivity validations because creation doesn't make any network calls.
+        /// Alternatively, Connection string can have "IgnoreEndpointCertificate" flag to ignore SSL certificate validation for the service endpoint.It is NOT recommended to use this flag in production.
         /// </remarks>
         /// <seealso cref="CosmosClientOptions"/>
         /// <seealso cref="Fluent.CosmosClientBuilder"/>
@@ -471,7 +472,8 @@ namespace Microsoft.Azure.Cosmos
         /// of the application which enables efficient connection management and performance. Please refer to the
         /// <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3">performance guide</see>.
         /// </summary>
-        /// <param name="connectionString">The connection string to the cosmos account. ex: AccountEndpoint=https://XXXXX.documents.azure.com:443/;AccountKey=SuperSecretKey; </param>
+        /// <param name="connectionString">The connection string to the cosmos account. ex: AccountEndpoint=https://XXXXX.documents.azure.com:443/;AccountKey=SuperSecretKey;.
+        /// </param>
         /// <param name="containers">Containers to be initialized identified by it's database name and container name.</param>
         /// <param name="cosmosClientOptions">(Optional) client options</param>
         /// <param name="cancellationToken">(Optional) Cancellation Token</param>
@@ -493,6 +495,9 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <remarks>
+        /// Alternatively, Connection string can have "IgnoreEndpointCertificate" flag to ignore SSL certificate validation for the service endpoint.It is NOT recommended to use this flag in production.
+        /// </remarks>
         public static async Task<CosmosClient> CreateAndInitializeAsync(string connectionString,
                                                                         IReadOnlyList<(string databaseId, string containerId)> containers,
                                                                         CosmosClientOptions cosmosClientOptions = null,
