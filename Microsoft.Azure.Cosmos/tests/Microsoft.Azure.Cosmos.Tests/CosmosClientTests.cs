@@ -35,6 +35,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task TestDispose()
         {
             CosmosClient cosmosClient = new CosmosClient(ConnectionString);
+
             Database database = cosmosClient.GetDatabase("asdf");
             Container container = cosmosClient.GetContainer("asdf", "asdf");
             TransactionalBatch batch = container.CreateTransactionalBatch(new PartitionKey("asdf"));
@@ -88,7 +89,24 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
-        [DataTestMethod]
+        [TestMethod]
+        [DataRow(ConnectionString, false)]
+        [DataRow(ConnectionString + "IgnoreEndpointCertificate=true;", true)]
+        public void TestServerCertificatesValidationCallback(string connStr, bool expectedIgnoreCertificateFlag)
+        {
+            CosmosClient cosmosClient = new CosmosClient(connStr);
+
+            if (expectedIgnoreCertificateFlag)
+            {
+                Assert.IsNotNull(cosmosClient.ClientOptions.ServerCertificateCustomValidationCallback);
+            }
+            else 
+            {
+                Assert.IsNull(cosmosClient.ClientOptions.ServerCertificateCustomValidationCallback);
+            }
+        }
+
+            [DataTestMethod]
         [DataRow(null, "425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==")]
         [DataRow(AccountEndpoint, null)]
         [DataRow("", "425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==")]
