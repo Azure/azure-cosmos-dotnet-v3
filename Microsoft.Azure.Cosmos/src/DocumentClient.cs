@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly bool IsLocalQuorumConsistency = false;
         private readonly bool isReplicaAddressValidationEnabled;
 
-        private readonly AvailabilityStrategyOptions availabilityStrategy;
+        private readonly AvailabilityStrategy availabilityStrategy;
 
         private readonly IChaosInterceptor chaosInterceptor;
 
