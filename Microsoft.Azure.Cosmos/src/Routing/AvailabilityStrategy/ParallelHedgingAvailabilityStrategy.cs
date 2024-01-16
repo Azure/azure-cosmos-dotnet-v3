@@ -40,6 +40,10 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="step"></param>
         public ParallelHedgingAvailabilityStrategy(TimeSpan threshold, TimeSpan? step)
         {
+            if (threshold <= TimeSpan.Zero)
+            {
+                throw new ArgumentOutOfRangeException(nameof(threshold));
+            }
             this.Threshold = threshold;
             this.Step = step ?? TimeSpan.MaxValue;
         }
