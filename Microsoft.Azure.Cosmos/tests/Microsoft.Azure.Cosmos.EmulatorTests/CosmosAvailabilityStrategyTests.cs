@@ -32,10 +32,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 ConnectionMode = ConnectionMode.Direct,
                 ApplicationPreferredRegions = new List<string>() { "East US", "West US" },
-                AvailabilityStrategyOptions = new AvailabilityStrategyOptions(
-                    new ParallelHedging(
+                AvailabilityStrategy = new ParallelHedgingAvailabilityStrategy(
                         threshold: TimeSpan.FromMilliseconds(100), 
-                        step: TimeSpan.FromMilliseconds(50)))
+                        step: TimeSpan.FromMilliseconds(50))
             };
 
             this.client = new CosmosClient(
@@ -94,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ResponseMessage responseMessageOK = new ResponseMessage(HttpStatusCode.OK);
             ResponseMessage responseMessageServiceUnavailable = new ResponseMessage(HttpStatusCode.ServiceUnavailable);
 
-            this.client.DocumentClient.GlobalEndpointManager.UpdateLocationCache(accountProperties);
+            this.client.DocumentClient.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
 
             Mock<RequestInvokerHandler> mockRequestInvokerHandler = new Mock<RequestInvokerHandler>(
                 this.client,
@@ -119,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "\"1\"");
 
             CancellationToken cancellationToken = new CancellationToken();
-            ResponseMessage rm = await this.client.ClientOptions.AvailabilityStrategyOptions.AvailabilityStrategy.ExecuteAvailablityStrategyAsync(mockRequestInvokerHandler.Object,
+            ResponseMessage rm = await this.client.ClientOptions.AvailabilityStrategy.ExecuteAvailablityStrategyAsync(mockRequestInvokerHandler.Object,
                 this.client,
                 requestMessage,
                 cancellationToken);
@@ -171,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ResponseMessage responseMessageOK = new ResponseMessage(HttpStatusCode.OK);
             ResponseMessage responseMessageServiceUnavailable = new ResponseMessage(HttpStatusCode.ServiceUnavailable);
 
-            this.client.DocumentClient.GlobalEndpointManager.UpdateLocationCache(accountProperties);
+            this.client.DocumentClient.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
 
             Mock<RequestInvokerHandler> mockRequestInvokerHandler = new Mock<RequestInvokerHandler>(
                 this.client,
@@ -196,7 +195,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "\"1\"");
 
             CancellationToken cancellationToken = new CancellationToken();
-            ResponseMessage rm = await this.client.ClientOptions.AvailabilityStrategyOptions.AvailabilityStrategy.ExecuteAvailablityStrategyAsync(mockRequestInvokerHandler.Object,
+            ResponseMessage rm = await this.client.ClientOptions.AvailabilityStrategy.ExecuteAvailablityStrategyAsync(mockRequestInvokerHandler.Object,
                 this.client,
                 requestMessage,
                 cancellationToken);
@@ -248,7 +247,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ResponseMessage responseMessageOK = new ResponseMessage(HttpStatusCode.OK);
             ResponseMessage responseMessageServiceUnavailable = new ResponseMessage(HttpStatusCode.ServiceUnavailable);
 
-            this.client.DocumentClient.GlobalEndpointManager.UpdateLocationCache(accountProperties);
+            this.client.DocumentClient.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
 
             Mock<RequestInvokerHandler> mockRequestInvokerHandler = new Mock<RequestInvokerHandler>(
                 this.client,
@@ -275,7 +274,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "\"1\"");
 
             CancellationToken cancellationToken = new CancellationToken();
-            ResponseMessage rm = await this.client.ClientOptions.AvailabilityStrategyOptions.AvailabilityStrategy.ExecuteAvailablityStrategyAsync(mockRequestInvokerHandler.Object,
+            ResponseMessage rm = await this.client.ClientOptions.AvailabilityStrategy.ExecuteAvailablityStrategyAsync(mockRequestInvokerHandler.Object,
                 this.client,
                 requestMessage,
                 cancellationToken);
@@ -334,7 +333,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ResponseMessage responseMessageServiceUnavailable = new ResponseMessage(HttpStatusCode.ServiceUnavailable);
             ResponseMessage responseMessageBadRequest = new ResponseMessage(HttpStatusCode.BadRequest);
 
-            this.client.DocumentClient.GlobalEndpointManager.UpdateLocationCache(accountProperties);
+            this.client.DocumentClient.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
 
             Mock<RequestInvokerHandler> mockRequestInvokerHandler = new Mock<RequestInvokerHandler>(
                 this.client,
@@ -362,7 +361,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "\"1\"");
 
             CancellationToken cancellationToken = new CancellationToken();
-            ResponseMessage rm = await this.client.ClientOptions.AvailabilityStrategyOptions.AvailabilityStrategy.ExecuteAvailablityStrategyAsync(
+            ResponseMessage rm = await this.client.ClientOptions.AvailabilityStrategy.ExecuteAvailablityStrategyAsync(
                 mockRequestInvokerHandler.Object,
                 this.client,
                 requestMessage,
@@ -380,7 +379,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             RequestOptions requestOptions = new RequestOptions()
             {
-                AvailabilityStrategyOptions = new AvailabilityStrategyOptions(new DisabledStrategy())
+                AvailabilityStrategy = new DisabledAvailabilityStrategy()
             };
 
             RequestMessage requestMessage = new RequestMessage(

@@ -112,12 +112,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             return this.locationCache.GetHubUri();
         }
 
-        //Helps test multiregion scenarios on emulator
-        public void UpdateLocationCache(AccountProperties properties)
-        {
-            this.locationCache.OnDatabaseAccountRead(properties);
-        }
-
         /// <summary>
         /// This will get the account information.
         /// It will try the global endpoint first. 

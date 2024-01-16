@@ -629,13 +629,13 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 #if PREVIEW
         /// <summary>
-        /// Availability Stragey Options to be used for periods of high latency
+        /// Availability Stragey to be used for periods of high latency
         /// </summary>
         /// <param name="strategy"></param>
         /// <returns>The CosmosClientBuilder</returns>
         public CosmosClientBuilder WithAvailibilityStrategy(AvailabilityStrategy strategy)
         {
-            this.clientOptions.AvailabilityStrategyOptions = new AvailabilityStrategyOptions(strategy);
+            this.clientOptions.AvailabilityStrategyOptions = strategy;
             return this;
         }
 #endif

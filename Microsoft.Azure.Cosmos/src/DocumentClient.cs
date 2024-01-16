@@ -467,7 +467,7 @@ namespace Microsoft.Azure.Cosmos
                               string cosmosClientId = null,
                               RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
                               CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null,
-                              AvailabilityStrategyOptions availabilityStrategy = null,
+                              AvailabilityStrategy availabilityStrategy = null,
                               IChaosInterceptorFactory chaosInterceptorFactory = null)
         {
             if (sendingRequestEventArgs != null)

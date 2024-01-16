@@ -21,12 +21,12 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Execute the availability strategy
         /// </summary>
-        /// <param name="requestInvokerHandler"></param>
+        /// <param name="sender"></param>
         /// <param name="client"></param>
         /// <param name="requestMessage"></param>
         /// <param name="cancellationToken"></param>
         internal virtual Task<ResponseMessage> ExecuteAvailablityStrategyAsync(
-            RequestInvokerHandler requestInvokerHandler,
+            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender,
             CosmosClient client,
             RequestMessage requestMessage,
             CancellationToken cancellationToken)

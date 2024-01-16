@@ -71,19 +71,19 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             await request.AssertPartitioningDetailsAsync(this.client, cancellationToken, request.Trace);
             this.FillMultiMasterContext(request);
-#if PREVIEW
+
             if (this.CanUseAvailabilityStrategy(request))
             {
-                AvailabilityStrategy strategy = request.RequestOptions?.AvailabilityStrategyOptions?.AvailabilityStrategy 
-                    ?? this.client.ClientOptions.AvailabilityStrategyOptions.AvailabilityStrategy;
+                AvailabilityStrategy strategy = request.RequestOptions.AvailabilityStrategy 
+                    ?? this.client.ClientOptions.AvailabilityStrategy;
                 
                 return await strategy.ExecuteAvailablityStrategyAsync(
-                            this,
+                            this.BaseSendAsync,
                             this.client,
                             request,
                             cancellationToken);
             }
-#endif      
+            
             return await base.SendAsync(request, cancellationToken);
         }
 
@@ -95,31 +95,21 @@ namespace Microsoft.Azure.Cosmos.Handlers
         public bool CanUseAvailabilityStrategy(RequestMessage request)
         {
             //No availability strategy options
-            if (request.RequestOptions?.AvailabilityStrategyOptions == null && this.client.ClientOptions.AvailabilityStrategyOptions == null)
+            if (request.RequestOptions?.AvailabilityStrategy == null && this.client.ClientOptions.AvailabilityStrategy == null)
             {
                 return false;
             }
 
-            AvailabilityStrategyOptions strategyOptions = request.RequestOptions?.AvailabilityStrategyOptions
-                    ?? this.client.ClientOptions.AvailabilityStrategyOptions;
+            AvailabilityStrategy strategyOptions = request.RequestOptions?.AvailabilityStrategy
+                    ?? this.client.ClientOptions.AvailabilityStrategy;
             
             //Request level availability strategy options are disabled/override client level
-            if (!strategyOptions.Enabled)
+            if (!strategyOptions.Enabled())
             {
                 return false;
             }
 
             return true;
-        }
-
-        public async Task<ResponseMessage> SendWithDelayAsync(
-            TimeSpan delay, 
-            RequestMessage request, 
-            CancellationToken cancellationToken, 
-            CancellationToken parallelRequestCancellationToken)
-        {
-            await Task.Delay(delay, parallelRequestCancellationToken);
-            return await this.BaseSendAsync(request, cancellationToken);
         }
 
         public virtual async Task<ResponseMessage> BaseSendAsync(
