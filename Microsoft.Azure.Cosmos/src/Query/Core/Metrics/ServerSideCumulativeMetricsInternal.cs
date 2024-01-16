@@ -20,10 +20,13 @@ namespace Microsoft.Azure.Cosmos
         {
             this.PartitionedMetrics = serverSideMetricsList.ToList();
             this.CumulativeMetrics = ServerSideMetricsInternal.Create(serverSideMetricsList.Select(partitionedMetrics => partitionedMetrics.ServerSideMetricsInternal));
+            this.TotalRequestCharge = serverSideMetricsList.Sum(partitionedMetrics => partitionedMetrics.RequestCharge);
         }
 
         public override ServerSideMetrics CumulativeMetrics { get; }
 
         public override IReadOnlyList<ServerSidePartitionedMetrics> PartitionedMetrics { get; }
+
+        public override double TotalRequestCharge { get; }
     }
 }

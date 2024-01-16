@@ -147,11 +147,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             return null;
         }
 
-        private static double? WalkTraceTreeForRequestCharge(ITrace currentTrace, bool gatewayMode)
+        private static double WalkTraceTreeForRequestCharge(ITrace currentTrace, bool gatewayMode)
         {
             if (currentTrace == null)
             {
-                return null;
+                return 0;
             }
 
             foreach (Object datum in currentTrace.Data.Values)
@@ -164,7 +164,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                     }
                     else
                     {
-                        return null;
+                        return 0;
                     }
                 }
                 if (gatewayMode && datum is PointOperationStatisticsTraceDatum pointOperationStatisticsTraceDatum)
@@ -175,14 +175,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
             foreach (ITrace childTrace in currentTrace.Children)
             {
-                double? requestCharge = WalkTraceTreeForRequestCharge(childTrace, gatewayMode);
-                if (requestCharge != null)
+                double requestCharge = WalkTraceTreeForRequestCharge(childTrace, gatewayMode);
+                if (requestCharge != 0)
                 {
                     return requestCharge;
                 }
             }
 
-            return null;
+            return 0;
         }
     }
 }

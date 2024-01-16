@@ -124,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         public int? PartitionKeyRangeId { get; set; }
 
-        public double? RequestCharge { get; set; }
+        public double RequestCharge { get; set; }
 
         public static ServerSideMetricsInternal Create(IEnumerable<ServerSideMetricsInternal> serverSideMetricsEnumerable)
         {

@@ -30,6 +30,6 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the request charge for the operation on this partition.
         /// </summary>
-        public abstract double? RequestCharge { get; }
+        public abstract double RequestCharge { get; }
     }
 }

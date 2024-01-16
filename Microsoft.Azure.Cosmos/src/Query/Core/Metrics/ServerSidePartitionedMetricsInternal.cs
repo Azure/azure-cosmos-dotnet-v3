@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="feedRange"></param>
         /// <param name="partitionKeyRangeId"></param>
         /// <param name="requestCharge"></param>
-        internal ServerSidePartitionedMetricsInternal(ServerSideMetricsInternal serverSideMetricsInternal, string feedRange, int? partitionKeyRangeId, double? requestCharge)
+        internal ServerSidePartitionedMetricsInternal(ServerSideMetricsInternal serverSideMetricsInternal, string feedRange, int? partitionKeyRangeId, double requestCharge)
         {
             this.ServerSideMetricsInternal = serverSideMetricsInternal;
             this.FeedRange = feedRange;
@@ -39,6 +39,6 @@ namespace Microsoft.Azure.Cosmos
 
         public override int? PartitionKeyRangeId { get; }
 
-        public override double? RequestCharge { get; }
+        public override double RequestCharge { get; }
     }
 }
