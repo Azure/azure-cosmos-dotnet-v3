@@ -20,7 +20,6 @@ namespace Microsoft.Azure.Cosmos
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
@@ -30,6 +29,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
+    using Microsoft.Azure.Documents.FaultInjection;
     using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
 
@@ -116,6 +116,8 @@ namespace Microsoft.Azure.Cosmos
         private readonly bool isReplicaAddressValidationEnabled;
 
         private readonly AvailabilityStrategyOptions availabilityStrategy;
+
+        private readonly IChaosInterceptor chaosInterceptor;
 
         //Auth
         internal readonly AuthorizationTokenProvider cosmosAuthorization;
@@ -436,6 +438,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="remoteCertificateValidationCallback">This delegate responsible for validating the third party certificate. </param>
         /// <param name="cosmosClientTelemetryOptions">This is distributed tracing flag</param>
         /// <param name="availabilityStrategy">This is the availability strategy for the client</param>"
+        /// <param name="chaosInterceptorFactory">This is the chaos interceptor used for fault injection</param>
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal.
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
@@ -464,7 +467,8 @@ namespace Microsoft.Azure.Cosmos
                               string cosmosClientId = null,
                               RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
                               CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null,
-                              AvailabilityStrategyOptions availabilityStrategy = null)
+                              AvailabilityStrategyOptions availabilityStrategy = null,
+                              IChaosInterceptorFactory chaosInterceptorFactory = null)
         {
             if (sendingRequestEventArgs != null)
             {
@@ -488,6 +492,7 @@ namespace Microsoft.Azure.Cosmos
             this.IsLocalQuorumConsistency = isLocalQuorumConsistency;
             this.initTaskCache = new AsyncCacheNonBlocking<string, bool>(cancellationToken: this.cancellationTokenSource.Token);
             this.availabilityStrategy = availabilityStrategy;
+            this.chaosInterceptor = chaosInterceptorFactory?.CreateInterceptor(this);
 
             this.Initialize(
                 serviceEndpoint: serviceEndpoint,
@@ -6671,7 +6676,8 @@ namespace Microsoft.Azure.Cosmos
                     addressResolver: this.AddressResolver,
                     rntbdMaxConcurrentOpeningConnectionCount: this.rntbdMaxConcurrentOpeningConnectionCount,
                     remoteCertificateValidationCallback: this.remoteCertificateValidationCallback,
-                    distributedTracingOptions: distributedTracingOptions);
+                    distributedTracingOptions: distributedTracingOptions,
+                    chaosInterceptor: this.chaosInterceptor);
 
                 if (this.transportClientHandlerFactory != null)
                 {
