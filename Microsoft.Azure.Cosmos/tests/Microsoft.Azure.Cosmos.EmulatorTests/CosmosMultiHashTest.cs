@@ -424,31 +424,31 @@
         [TestMethod]
         public async Task MultiHashQueryItemTest()
         {
+            Cosmos.PartitionKey pKey;
+            Cosmos.PartitionKey badPKey;
+
+            //Create items for test
+            ItemResponse<Document>[] documents = new ItemResponse<Document>[3];
+            Document doc = new Document { Id = "document1" };
+            doc.SetValue("ZipCode", "500026");
+            doc.SetValue("City", "Secunderabad");
+            doc.SetValue("Type", "Residence");
+            documents[0] = await this.container.CreateItemAsync<Document>(doc);
+
+            doc = new Document { Id = "document2" };
+            doc.SetValue("ZipCode", "15232");
+            doc.SetValue("City", "Pittsburgh");
+            doc.SetValue("Type", "Business");
+            documents[1] = await this.container.CreateItemAsync<Document>(doc);
+
+            doc = new Document { Id = "document3" };
+            doc.SetValue("ZipCode", "11790");
+            doc.SetValue("City", "Stonybrook");
+            doc.SetValue("Type", "Goverment");
+            documents[2] = await this.container.CreateItemAsync<Document>(doc);
+
             foreach (bool odeEnabled in new bool[] { false, true })
             {
-                Cosmos.PartitionKey pKey;
-                Cosmos.PartitionKey badPKey;
-
-                //Create items for test
-                ItemResponse<Document>[] documents = new ItemResponse<Document>[3];
-                Document doc = new Document { Id = "document1" };
-                doc.SetValue("ZipCode", "500026");
-                doc.SetValue("City", "Secunderabad");
-                doc.SetValue("Type", "Residence");
-                documents[0] = await this.container.CreateItemAsync<Document>(doc);
-
-                doc = new Document { Id = "document2" };
-                doc.SetValue("ZipCode", "15232");
-                doc.SetValue("City", "Pittsburgh");
-                doc.SetValue("Type", "Business");
-                documents[1] = await this.container.CreateItemAsync<Document>(doc);
-
-                doc = new Document { Id = "document3" };
-                doc.SetValue("ZipCode", "11790");
-                doc.SetValue("City", "Stonybrook");
-                doc.SetValue("Type", "Goverment");
-                documents[2] = await this.container.CreateItemAsync<Document>(doc);
-
                 //Query
                 foreach (Document document in documents)
                 {
