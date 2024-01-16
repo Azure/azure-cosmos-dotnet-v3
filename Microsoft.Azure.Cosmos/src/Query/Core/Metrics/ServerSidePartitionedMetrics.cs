@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract int? PartitionKeyRangeId { get; }
 
         /// <summary>
-        /// Gets the request charge for the operation.
+        /// Gets the request charge for the operation on this partition.
         /// </summary>
         public abstract double? RequestCharge { get; }
     }

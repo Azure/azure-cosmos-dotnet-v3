@@ -94,9 +94,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 {
                     queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics.FeedRange = currentTrace.Name;
                     queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics.PartitionKeyRangeId = WalkTraceTreeForPartitionKeyRangeId(currentTrace);
-                    queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics.RequestCharge = queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics.PartitionKeyRangeId != null
-                        ? WalkTraceTreeForRequestCharge(currentTrace)
-                        : WalkTraceTreeForRequestChargeGateway(currentTrace);
+
+                    bool gatewayMode = queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics.PartitionKeyRangeId == null;
+                    queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics.RequestCharge = WalkTraceTreeForRequestCharge(currentTrace, gatewayMode);
 
                     accumulator.Accumulate(queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics);
                     return;
@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             return null;
         }
 
-        private static double? WalkTraceTreeForRequestCharge(ITrace currentTrace)
+        private static double? WalkTraceTreeForRequestCharge(ITrace currentTrace, bool gatewayMode)
         {
             if (currentTrace == null)
             {
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
             foreach (Object datum in currentTrace.Data.Values)
             {
-                if (datum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
+                if (!gatewayMode && datum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
                 {
                     if (clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList.Count > 0)
                     {
@@ -167,38 +167,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                         return null;
                     }
                 }
-            }
-
-            foreach (ITrace childTrace in currentTrace.Children)
+                if (gatewayMode && datum is PointOperationStatisticsTraceDatum pointOperationStatisticsTraceDatum)
             {
-                double? requestCharge = WalkTraceTreeForRequestCharge(childTrace);
-                if (requestCharge != null)
-                {
-                    return requestCharge;
-                }
-            }
-
-            return null;
-        }
-
-        private static double? WalkTraceTreeForRequestChargeGateway(ITrace currentTrace)
-        {
-            if (currentTrace == null)
-            {
-                return null;
-            }
-
-            foreach (Object datum in currentTrace.Data.Values)
-            {
-                if (datum is PointOperationStatisticsTraceDatum pointOperationStatisticsTraceDatum)
-                {
                     return pointOperationStatisticsTraceDatum.RequestCharge;
                 }
             }
 
             foreach (ITrace childTrace in currentTrace.Children)
             {
-                double? requestCharge = WalkTraceTreeForRequestChargeGateway(childTrace);
+                double? requestCharge = WalkTraceTreeForRequestCharge(childTrace, gatewayMode);
                 if (requestCharge != null)
                 {
                     return requestCharge;
