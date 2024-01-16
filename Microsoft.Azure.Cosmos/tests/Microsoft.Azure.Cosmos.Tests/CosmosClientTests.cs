@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
-            [DataTestMethod]
+        [DataTestMethod]
         [DataRow(null, "425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==")]
         [DataRow(AccountEndpoint, null)]
         [DataRow("", "425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==")]
