@@ -635,7 +635,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <returns>The CosmosClientBuilder</returns>
         public CosmosClientBuilder WithAvailibilityStrategy(AvailabilityStrategy strategy)
         {
-            this.clientOptions.AvailabilityStrategyOptions = strategy;
+            this.clientOptions.AvailabilityStrategy = strategy;
             return this;
         }
 #endif
