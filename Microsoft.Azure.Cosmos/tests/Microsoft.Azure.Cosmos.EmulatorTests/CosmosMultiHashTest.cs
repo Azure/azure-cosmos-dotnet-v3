@@ -471,8 +471,9 @@
                         Assert.IsTrue(feedIterator.HasMoreResults);
 
                         FeedResponse<Document> queryDoc = await feedIterator.ReadNextAsync();
-                        queryDoc.First<Document>();
+                        Document retrievedDocument = queryDoc.First<Document>();
                         Assert.IsTrue(queryDoc.Count == 1);
+                        Assert.AreEqual(document.Id, retrievedDocument.Id);
                         feedIterator.Dispose();
                     }
 
@@ -488,8 +489,9 @@
                         Assert.IsTrue(feedIterator.HasMoreResults);
 
                         FeedResponse<Document> queryDoc = await feedIterator.ReadNextAsync();
-                        queryDoc.First<Document>();
+                        Document retrievedDocument = queryDoc.First<Document>();
                         Assert.IsTrue(queryDoc.Count == 1);
+                        Assert.AreEqual(document.Id, retrievedDocument.Id);
                         feedIterator.Dispose();
                     }
 
