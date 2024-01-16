@@ -99,6 +99,11 @@ namespace Microsoft.Azure.Cosmos
         internal virtual string SessionToken { get; set; }
 
         /// <summary>
+        /// A string containing the partition key range id assigned to this result.
+        /// </summary>
+        internal virtual string PartitionKeyRangeId { get; set; }
+
+        /// <summary>
         /// ActivityId related to the operation
         /// </summary>
         internal virtual string ActivityId { get; set; }
@@ -218,6 +223,7 @@ namespace Microsoft.Azure.Cosmos
                 RetryAfter = this.RetryAfter,
                 RequestCharge = this.RequestCharge,
                 Session = this.SessionToken,
+                PartitionKeyRangeId = this.PartitionKeyRangeId,
                 ActivityId = this.ActivityId,
             };
 
