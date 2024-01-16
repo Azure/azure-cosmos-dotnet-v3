@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
-    using System.Collections.Generic;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Threading;
@@ -24,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         private readonly bool allowSynchronousQueryExecution;
         private readonly Action<IQueryable> onExecuteScalarQueryCallback;
         private readonly string continuationToken;
-        private readonly CosmosLinqSerializerOptions linqSerializerOptions;
+        private readonly CosmosLinqSerializerOptionsInternal linqSerializerOptions;
 
         public CosmosLinqQueryProvider(
            ContainerInternal container,
@@ -34,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Linq
            QueryRequestOptions cosmosQueryRequestOptions,
            bool allowSynchronousQueryExecution,
            Action<IQueryable> onExecuteScalarQueryCallback = null,
-           CosmosLinqSerializerOptions linqSerializerOptions = null)
+           CosmosLinqSerializerOptionsInternal linqSerializerOptions = null)
         {
             this.container = container;
             this.responseFactory = responseFactory;

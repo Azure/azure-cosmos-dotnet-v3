@@ -1,0 +1,58 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Avg]]></Description>
+      <Expression><![CDATA[query.Average(doc => doc.NumericField), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE AVG(root["NumericField"]) 
+FROM root]]></SqlQuery>
+      <ErrorMessage><![CDATA[Assert.AreEqual failed. Expected:<2>. Actual:<0>. ]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Sum]]></Description>
+      <Expression><![CDATA[query.Sum(doc => doc.NumericField), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE SUM(root["NumericField"]) 
+FROM root]]></SqlQuery>
+      <ErrorMessage><![CDATA[Assert.AreEqual failed. Expected:<10>. Actual:<0>. ]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Any]]></Description>
+      <Expression><![CDATA[query.Any(), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (COUNT(v0) > 0) 
+FROM (
+    SELECT VALUE root 
+    FROM root) AS v0
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"Errors":["Compositions of aggregates and other expressions are not allowed."]},0x800A0B00]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select many -> Filter -> Select -> Any]]></Description>
+      <Expression><![CDATA[query.SelectMany(doc => doc.ArrayField.Where(m => ((m % 3) == 0)).Select(m => m)).Any(), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (COUNT(v0) > 0) 
+FROM (
+    SELECT VALUE m0 
+    FROM root 
+    JOIN m0 IN root["ArrayField"] 
+    WHERE ((m0 % 3) = 0)) AS v0
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"Errors":["Compositions of aggregates and other expressions are not allowed."]},0x800A0B00]]></ErrorMessage>
+    </Output>
+  </Result>
+</Results>
