@@ -124,6 +124,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <example>"AccountEndpoint=https://mytestcosmosaccount.documents.azure.com:443/;AccountKey={SecretAccountKey};"</example>
         /// <param name="connectionString">The connection string must contain AccountEndpoint and AccountKey or ResourceToken.</param>
+        /// <remarks>Alternatively, Connection string can have "IgnoreEndpointCertificate" flag to ignore SSL certificate validation for the service endpoint.It is NOT recommended to use this flag in production.</remarks>
         public CosmosClientBuilder(string connectionString)
         {
             if (connectionString == null)
@@ -133,6 +134,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
             this.accountEndpoint = CosmosClientOptions.GetAccountEndpoint(connectionString);
             this.accountKey = CosmosClientOptions.GetAccountKey(connectionString);
+
+            if (CosmosClientOptions.IsIgnoreEndpointCertificateFlag(connectionString))
+            {
+                this.IgnoreCertificateCheck();
+            }
         }
 
         /// <summary>
@@ -234,6 +240,16 @@ namespace Microsoft.Azure.Cosmos.Fluent
         {
             DefaultTrace.TraceInformation($"CosmosClientBuilder.Build(DocumentClient) with configuration: {this.clientOptions.GetSerializedConfiguration()}");
             return new CosmosClient(this.accountEndpoint, this.accountKey, this.clientOptions, documentClient);
+        }
+
+        /// <summary>
+        /// To ignore SSL certificate validation for the service endpoint.It is NOT recommended to use this flag in production
+        /// </summary>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
+        public CosmosClientBuilder IgnoreCertificateCheck()
+        {
+            this.clientOptions.ServerCertificateCustomValidationCallback = (_, _, _) => true;
+            return this;
         }
 
         /// <summary>
