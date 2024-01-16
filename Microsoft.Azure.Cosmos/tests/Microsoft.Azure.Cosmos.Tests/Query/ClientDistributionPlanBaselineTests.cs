@@ -2,12 +2,12 @@
 {
     using System.Collections.Generic;
     using System.IO;
+    using System.Text.Json;
     using System.Xml;
     using Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan;
     using Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan.Cql;
     using Microsoft.Azure.Cosmos.Test.BaselineTest;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class ClientDistributionPlanBaselineTests : BaselineTests<ClientDistributionPlanBaselineTests.ClientDistributionPlanTestInput, ClientDistributionPlanBaselineTests.ClientDistributionPlanTestOutput>
@@ -23,10 +23,11 @@
             foreach (string filePath in filePaths)
             {
                 string testResponse = File.ReadAllText(filePath);
-                JObject jsonObject = JObject.Parse(testResponse);
+                JsonDocument jsonDocument = JsonDocument.Parse(testResponse);
 
-                string expectedDistributionPlan = jsonObject["_distributionPlan"].ToString();
-                expectedDistributionPlan = RemoveWhitespace(expectedDistributionPlan);
+                JsonElement root = jsonDocument.RootElement;
+                JsonElement distributionPlanElement = root.GetProperty("_distributionPlan");
+                string expectedDistributionPlan = distributionPlanElement.ToString();
 
                 string fileName = Path.GetFileName(filePath);
 
@@ -37,11 +38,6 @@
             }
 
             this.ExecuteTestSuite(testVariations);
-        }
-
-        private static string RemoveWhitespace(string jsonString)
-        {
-            return jsonString.Replace(" ", string.Empty);
         }
 
         private static ClientDistributionPlanTestInput CreateInput(
@@ -70,11 +66,21 @@
 
             public override void SerializeAsXml(XmlWriter xmlWriter)
             {
-                JObject jObject = JObject.Parse(this.SerializedClientPlanJson);
-                string jsonString = jObject.ToString();
-                xmlWriter.WriteStartElement("SerializedClientPlanJson");
-                xmlWriter.WriteString(jsonString);
-                xmlWriter.WriteEndElement();
+                JsonDocument clientPlan = JsonDocument.Parse(this.SerializedClientPlanJson);
+                JsonElement clientPlanElement = clientPlan.RootElement;
+                using (StringWriter stringWriter = new StringWriter())
+                {
+                    JsonSerializerOptions jsonOptions = new JsonSerializerOptions
+                    {
+                        WriteIndented = true
+                    };
+
+                    string formattedJson = JsonSerializer.Serialize(clientPlanElement.GetProperty("clientDistributionPlan"), jsonOptions);
+
+                    xmlWriter.WriteStartElement("SerializedClientDistributionPlan");
+                    xmlWriter.WriteString(formattedJson);
+                    xmlWriter.WriteEndElement();
+                }
             }
         }
 
@@ -92,9 +98,11 @@
 
             public override void SerializeAsXml(XmlWriter xmlWriter)
             {
-                JObject distributionPlan = JObject.Parse(this.DistributionPlanJson);
+                JsonDocument distributionPlan = JsonDocument.Parse(this.DistributionPlanJson);
+                JsonElement distributionPlanElement = distributionPlan.RootElement;
+
                 xmlWriter.WriteElementString("Description", this.Description);
-                xmlWriter.WriteElementString("ClientDistributionPlanJson", distributionPlan["clientDistributionPlan"].ToString());
+                xmlWriter.WriteElementString("ClientDistributionPlanJson", distributionPlanElement.GetProperty("clientDistributionPlan").ToString());
             }
         }
     }

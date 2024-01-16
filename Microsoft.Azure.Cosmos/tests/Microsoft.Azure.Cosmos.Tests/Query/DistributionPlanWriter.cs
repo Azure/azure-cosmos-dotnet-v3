@@ -195,7 +195,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan
             this.output.Append("], ");
             this.output.Append("\"SourceExpression\": { ");
             cqlGroupByEnumerableExpression.SourceExpression.Accept(this);
-            this.output.Append(" }, ");
+            this.output.Append(" } ");
         }
 
         void ICqlVisitor.Visit(CqlInputEnumerableExpression cqlInputEnumerableExpression)
