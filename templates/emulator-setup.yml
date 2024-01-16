@@ -2,7 +2,7 @@
 
 steps:
   - pwsh: |
-      $env:EMULATORMSIURL = "https://vikastest0705947883.blob.core.windows.net/emulator-drop/azure-cosmosdb-emulator-2.14.16-e9c2d6ea.msi"
+      $env:EMULATORMSIURL="https://vikastest0705947883.blob.core.windows.net/emulator-drop/azure-cosmosdb-emulator-2.14.16-e9c2d6ea.msi"
       Write-Host "Downloading Cosmos Emulator - $env:EMULATORMSIURL" -ForegroundColor green 
       Invoke-WebRequest "$env:EMULATORMSIURL" -OutFile "$env:temp\azure-cosmosdb-emulator.msi"
       Write-Host "Finished Downloading Cosmos Emulator - $env:temp\azure-cosmosdb-emulator.msi" -ForegroundColor green 
