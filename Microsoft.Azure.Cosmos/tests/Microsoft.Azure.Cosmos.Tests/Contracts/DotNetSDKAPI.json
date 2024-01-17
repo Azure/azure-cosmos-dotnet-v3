@@ -4534,11 +4534,6 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder AddCustomHandlers(Microsoft.Azure.Cosmos.RequestHandler[]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder IgnoreCertificateCheck()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder IgnoreCertificateCheck();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
         "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithApplicationName(System.String)": {
           "Type": "Method",
           "Attributes": [],
