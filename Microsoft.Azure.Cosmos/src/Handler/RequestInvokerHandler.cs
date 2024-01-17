@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -84,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             cancellationToken);
             }
             
-            return await base.SendAsync(request, cancellationToken);
+            return await this.BaseSendAsync(request, cancellationToken);
         }
 
         /// <summary>
@@ -116,7 +117,12 @@ namespace Microsoft.Azure.Cosmos.Handlers
             RequestMessage request,
             CancellationToken cancellationToken)
         {
-            return await base.SendAsync(request, cancellationToken);
+            ResponseMessage response = await base.SendAsync(request, cancellationToken);
+            if (request.RequestOptions?.ExcludeRegions != null)
+            {
+                ((CosmosTraceDiagnostics)response.Diagnostics).Value.AddDatum("ExcludedRegions", request.RequestOptions.ExcludeRegions);
+            }
+            return response;
         }
 
         public virtual async Task<T> SendAsync<T>(
