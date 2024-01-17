@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Cosmos
 
         private Protocol connectionProtocol;
         private ObservableCollection<string> preferredLocations;
+        private ObservableCollection<string> regionalEndpoints;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ConnectionPolicy"/> class to connect to the Azure Cosmos DB service.
@@ -43,6 +44,7 @@ namespace Microsoft.Azure.Cosmos
             this.MediaReadMode = MediaReadMode.Buffered;
             this.UserAgentContainer = new UserAgentContainer(clientId: 0);
             this.preferredLocations = new ObservableCollection<string>();
+            this.regionalEndpoints = new ObservableCollection<string>();
             this.EnableEndpointDiscovery = true;
             this.MaxConnectionLimit = defaultMaxConcurrentConnectionLimit;
             this.RetryOptions = new RetryOptions();
@@ -87,6 +89,20 @@ namespace Microsoft.Azure.Cosmos
             foreach (string preferredLocation in regions)
             {
                 this.preferredLocations.Add(preferredLocation);
+            }
+        }
+
+        public void SetRegionalEndpoints(IReadOnlyList<string> regionalEndpoints)
+        {
+            if (regionalEndpoints == null)
+            {
+                throw new ArgumentNullException(nameof(regionalEndpoints));
+            }
+
+            this.regionalEndpoints.Clear();
+            foreach (string endpoint in regionalEndpoints)
+            {
+                this.regionalEndpoints.Add(endpoint);
             }
         }
 
@@ -267,6 +283,29 @@ namespace Microsoft.Azure.Cosmos
             get
             {
                 return this.preferredLocations;
+            }
+        }
+
+        /// <summary>
+        /// Gets and sets the preferred locations (regions) for geo-replicated database accounts in the Azure Cosmos DB service.
+        /// For example, "East US" as the preferred location.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// When <see cref="EnableEndpointDiscovery"/> is true and the value of this property is non-empty,
+        /// the SDK uses the locations in the collection in the order they are specified to perform operations,
+        /// otherwise if the value of this property is not specified,
+        /// the SDK uses the write region as the preferred location for all operations.
+        /// </para>
+        /// <para>
+        /// If <see cref="EnableEndpointDiscovery"/> is set to false, the value of this property is ignored.
+        /// </para>
+        /// </remarks>
+        public Collection<string> RegionalEndpoints
+        {
+            get
+            {
+                return this.regionalEndpoints;
             }
         }
 
