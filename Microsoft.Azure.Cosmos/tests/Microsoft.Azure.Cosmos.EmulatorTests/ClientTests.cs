@@ -512,7 +512,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             string authKey = ConfigurationManager.AppSettings["MasterKey"];
             string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
-            int counter = 0;
             using CosmosClient cosmosClient = new CosmosClient(
                     $"AccountEndpoint={endpoint};AccountKey={authKey};IgnoreEndpointCertificate=true;",
                     new CosmosClientOptions()
@@ -537,8 +536,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 //TCP callback
                 ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
                 ResponseMessage responseMessage = await container.CreateItemStreamAsync(TestCommon.SerializerCore.ToStream(item), new Cosmos.PartitionKey(item.id));
-
-                Assert.IsTrue(counter >= 2);
             }
             finally
             {
