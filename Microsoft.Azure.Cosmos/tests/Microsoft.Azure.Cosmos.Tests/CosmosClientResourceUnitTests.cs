@@ -176,6 +176,40 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
 
         }
 
+        [TestMethod]
+        public void WithServerCertificateIgnoreFlagAddedInEndpoint_CreateContext_RemoteCertificateCallbackReturnsTrue()
+        {
+            //Arrange
+            X509Certificate2 x509Certificate2 = new CertificateRequest("cn=www.test", ECDsa.Create(), HashAlgorithmName.SHA256).CreateSelfSigned(DateTime.Now, DateTime.Now.AddYears(1));
+            X509Chain x509Chain = new X509Chain();
+            SslPolicyErrors sslPolicyErrors = new SslPolicyErrors();
+
+            string authKeyValue = "MockAuthKey";
+            Mock<AuthorizationTokenProvider> mockAuth = new Mock<AuthorizationTokenProvider>(MockBehavior.Strict);
+            mockAuth.Setup(x => x.Dispose());
+            mockAuth.Setup(x => x.AddAuthorizationHeaderAsync(
+                It.IsAny<Documents.Collections.INameValueCollection>(),
+                It.IsAny<Uri>(),
+                It.IsAny<string>(),
+                It.IsAny<Documents.AuthorizationTokenType>()))
+                .Callback<Documents.Collections.INameValueCollection, Uri, string, Documents.AuthorizationTokenType>(
+                (headers, uri, verb, tokenType) => headers.Add(Documents.HttpConstants.HttpHeaders.Authorization, authKeyValue))
+                .Returns(() => new ValueTask());
+
+            string ConnectionString = "AccountEndpoint=https://localtestcosmos.documents.azure.com:443/;AccountKey=425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==;";
+            CosmosClient client = new CosmosClient(
+                ConnectionString + "IgnoreEndpointCertificate=true;");
+
+            //Act
+            CosmosClientContext context = ClientContextCore.Create(
+                    client,
+                    client.ClientOptions);
+
+            //Assert
+            Assert.IsTrue(context.DocumentClient.remoteCertificateValidationCallback(new object(), x509Certificate2, x509Chain, sslPolicyErrors));
+
+        }
+
         private CosmosClientContext CreateMockClientContext(bool allowBulkExecution = false)
         {
             Mock<CosmosClient> mockClient = new Mock<CosmosClient>();

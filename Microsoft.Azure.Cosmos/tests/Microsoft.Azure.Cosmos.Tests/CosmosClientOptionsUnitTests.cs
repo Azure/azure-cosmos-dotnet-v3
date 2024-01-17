@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Collections;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
@@ -884,6 +883,23 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     ApplicationName = illegal
                 });
+            }
+        }
+
+        [TestMethod]
+        [DataRow(ConnectionString, false)]
+        [DataRow(ConnectionString + "IgnoreEndpointCertificate=true;", true)]
+        public void TestServerCertificatesValidationCallback(string connStr, bool expectedIgnoreCertificateFlag)
+        {
+            CosmosClient cosmosClient = new CosmosClient(connStr);
+
+            if (expectedIgnoreCertificateFlag)
+            {
+                Assert.IsNotNull(cosmosClient.ClientOptions.ServerCertificateCustomValidationCallback);
+            }
+            else
+            {
+                Assert.IsNull(cosmosClient.ClientOptions.ServerCertificateCustomValidationCallback);
             }
         }
 

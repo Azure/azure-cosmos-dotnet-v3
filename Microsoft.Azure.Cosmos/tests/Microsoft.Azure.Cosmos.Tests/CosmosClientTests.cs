@@ -89,23 +89,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
-        [TestMethod]
-        [DataRow(ConnectionString, false)]
-        [DataRow(ConnectionString + "IgnoreEndpointCertificate=true;", true)]
-        public void TestServerCertificatesValidationCallback(string connStr, bool expectedIgnoreCertificateFlag)
-        {
-            CosmosClient cosmosClient = new CosmosClient(connStr);
-
-            if (expectedIgnoreCertificateFlag)
-            {
-                Assert.IsNotNull(cosmosClient.ClientOptions.ServerCertificateCustomValidationCallback);
-            }
-            else 
-            {
-                Assert.IsNull(cosmosClient.ClientOptions.ServerCertificateCustomValidationCallback);
-            }
-        }
-
         [DataTestMethod]
         [DataRow(null, "425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==")]
         [DataRow(AccountEndpoint, null)]
