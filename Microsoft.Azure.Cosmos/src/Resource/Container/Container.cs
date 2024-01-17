@@ -720,6 +720,7 @@ namespace Microsoft.Azure.Cosmos
         /// To change an item's partition key value you must delete the original item and insert a new item.
         /// The patch operations are atomic and are executed sequentially.
         /// By default, resource body will be returned as part of the response. User can request no content by setting <see cref="ItemRequestOptions.EnableContentResponseOnWrite"/> flag to false.
+        /// Note that, this API does not support the usage of <see cref="RequestOptions.IfMatchEtag"/> property at the moment.
         /// </remarks>
         /// <param name="id">The Cosmos item id of the item to be patched.</param>
         /// <param name="partitionKey"><see cref="PartitionKey"/> for the item</param>
