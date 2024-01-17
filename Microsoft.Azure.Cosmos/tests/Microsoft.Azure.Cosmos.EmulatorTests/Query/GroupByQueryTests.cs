@@ -341,7 +341,63 @@
                         .ToList()
                 ),
 
+                // GROUP BY with SELECT VALUE on undefined aggregate fields
+                // sum and count default the counter at 0
+                (
+                    "SELECT VALUE SUM(c.doesNotExist) FROM c GROUP BY c.name",
+                    documents
+                        .GroupBy(document => document["name"])
+                        .Select(grouping => CosmosNumber64.Create(0))
+                        .ToList()
+                ),
+
+                (
+                    "SELECT VALUE COUNT(c.doesNotExist) FROM c GROUP BY c.name",
+                    documents
+                        .GroupBy(document => document["name"])
+                        .Select(grouping => CosmosNumber64.Create(0))
+                        .ToList()
+                ),
+
+                (
+                    "SELECT VALUE AVG(c.unKnownField) FROM c GROUP BY c.age",
+                    documents
+                        .GroupBy(document => new { age = document["age"]})
+                        .Select(grouping => CosmosUndefined.Create())
+                        .ToList()
+                ),
+
+
+                (
+                    "SELECT VALUE MIN(c.unKnownField) FROM c GROUP BY c.age",
+                    documents
+                        .GroupBy(document => new { age = document["age"]})
+                        .Select(grouping => CosmosUndefined.Create())
+                        .ToList()
+                ),
+
+
+                (
+                    "SELECT VALUE MAX(c.unKnownField) FROM c GROUP BY c.age",
+                    documents
+                        .GroupBy(document => new { age = document["age"]})
+                        .Select(grouping => CosmosUndefined.Create())
+                        .ToList()
+                ),
+
                 /* Composition of Aggregates currently not supported
+                (
+                    "SELECT VALUE {'count' : COUNT(1)} FROM c GROUP BY c.age",
+                    documents
+                        .GroupBy(document => new { age = document["age"]})
+                        .Select(grouping => CosmosObject.Create(
+                            new Dictionary<string, CosmosElement>()
+                            {
+                                { "count", CosmosNumber64.Create(grouping.Count()) }
+                            }))
+                        .ToList()
+                ),
+               
                 (
                     "SELECT VALUE { 'name' : c.name , 'count' : COUNT(1), 'min_age' : MIN(c.age), 'max_age' : c.age} FROM c GROUP BY c.name",
                     documents

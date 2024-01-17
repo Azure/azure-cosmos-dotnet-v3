@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
 {
     using System;
+    using System.Text.RegularExpressions;
     using Microsoft.Azure.Cosmos.CosmosElements;
 
     internal readonly struct AggregateItem
@@ -16,11 +17,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
 
         public AggregateItem(CosmosElement cosmosElement)
         {
+            // If the query is not a select value query then the top level is a an object
             CosmosObject cosmosObject = cosmosElement as CosmosObject;
 
             if (cosmosObject == null)
             {
-                // In case of Aggregate query with VALUE query plan, the top level is an array of one item
+                // In case of Aggregate query with VALUE query plan, the top level is an array of one item after it is rewritten
+                // For example, if the query is
+                // SELECT VALUE {"age": c.age}
+                // FROM c
+                // GROUP BY c.age
+                // Fhe rewritten query is 
+                // SELECT [{"item": c.age}] AS groupByItems, {"age": c.age} AS payload
+                // FROM c
+                // GROUP BY c.age
+
+                // In this case, the top level is an array of one item [{"item": c.age}]
                 CosmosArray cosmosArray = cosmosElement as CosmosArray;
                 if (cosmosArray.Count == 1)
                 {
