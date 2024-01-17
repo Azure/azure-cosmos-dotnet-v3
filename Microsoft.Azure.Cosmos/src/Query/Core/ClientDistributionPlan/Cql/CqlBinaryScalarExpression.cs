@@ -21,5 +21,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan.Cql
         public CqlScalarExpression LeftExpression { get; }
         
         public CqlScalarExpression RightExpression { get; }
+
+        public override void Accept(ICqlVisitor cqlVisitor) => cqlVisitor.Visit(this);
     }
 }

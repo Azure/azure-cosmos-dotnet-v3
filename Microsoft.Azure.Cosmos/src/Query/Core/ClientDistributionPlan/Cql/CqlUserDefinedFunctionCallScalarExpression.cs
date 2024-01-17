@@ -22,5 +22,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan.Cql
         public IReadOnlyList<CqlScalarExpression> Arguments { get; }
         
         public bool Builtin { get; }
+
+        public override void Accept(ICqlVisitor cqlVisitor) => cqlVisitor.Visit(this);
     }
 }
