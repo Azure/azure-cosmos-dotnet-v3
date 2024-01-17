@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         {
             if (this.onAllVersionsAndDeletesChanges != null)
             {
-                return this.AllVersionsAndDeleteStreamHandlerAsync(context, stream, cancellationToken);
+                return this.AllVersionsAndDeletesStreamHandlerAsync(context, stream, cancellationToken);
             }
 
             IReadOnlyCollection<T> changes = this.AsIReadOnlyCollection(stream, context);
@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             return this.onChangesWithManualCheckpoint(context, changes, context.CheckpointAsync, cancellationToken);
         }
 
-        private Task AllVersionsAndDeleteStreamHandlerAsync(
+        private Task AllVersionsAndDeletesStreamHandlerAsync(
             ChangeFeedObserverContextCore context,
             Stream stream,
             CancellationToken cancellationToken)
