@@ -1,0 +1,717 @@
+{
+  "_rid": "7+JyAOgQsps=",
+  "Documents": [],
+  "_count": 0,
+  "_distributionPlan": {
+    "backendDistributionPlan": {
+      "query": "SELECT DISTINCT r.FirstName, r.LastName FROM root r WHERE r.LastName = 'Marx'",
+      "obfuscatedQuery": "{\"query\":\"SELECT DISTINCT r.p1, r.p2\\nFROM r1 AS r\\nWHERE (r.p2 = 'str1')\",\"parameters\":[]}",
+      "shape": "{\"Select\":{\"Type\":\"List\",\"Distinct\":true},\"From\":{\"Expr\":\"Aliased\"},\"Where\":{\"Expr\":\"Binary\"}}",
+      "signature": -5425553105971744231,
+      "shapeSignature": -7076426752146404075,
+      "queryIL": {
+        "Expression": {
+          "Kind": "Select",
+          "Type": {
+            "Kind": "Enum",
+            "ItemType": {
+              "Kind": "Base",
+              "BaseTypeKind": "Array",
+              "ExcludesUndefined": true
+            }
+          },
+          "Delegate": {
+            "Kind": "ScalarExpression",
+            "Type": {
+              "Kind": "Base",
+              "BaseTypeKind": "Array",
+              "ExcludesUndefined": true
+            },
+            "DeclaredVariable": {
+              "Name": "v0",
+              "UniqueId": 5,
+              "Type": {
+                "Kind": "Tuple",
+                "Types": [
+                  {
+                    "Kind": "Base",
+                    "BaseTypeKind": "Variant",
+                    "ExcludesUndefined": false
+                  },
+                  {
+                    "Kind": "Base",
+                    "BaseTypeKind": "Variant",
+                    "ExcludesUndefined": false
+                  }
+                ]
+              }
+            },
+            "Expression": {
+              "Kind": "ArrayCreate",
+              "Type": {
+                "Kind": "Base",
+                "BaseTypeKind": "Array",
+                "ExcludesUndefined": true
+              },
+              "ArrayKind": "Array",
+              "Items": [
+                {
+                  "Kind": "ArrayCreate",
+                  "Type": {
+                    "Kind": "Base",
+                    "BaseTypeKind": "Array",
+                    "ExcludesUndefined": true
+                  },
+                  "ArrayKind": "Array",
+                  "Items": [
+                    {
+                      "Kind": "TupleItemRef",
+                      "Type": {
+                        "Kind": "Base",
+                        "BaseTypeKind": "Variant",
+                        "ExcludesUndefined": false
+                      },
+                      "Expression": {
+                        "Kind": "VariableRef",
+                        "Type": {
+                          "Kind": "Tuple",
+                          "Types": [
+                            {
+                              "Kind": "Base",
+                              "BaseTypeKind": "Variant",
+                              "ExcludesUndefined": false
+                            },
+                            {
+                              "Kind": "Base",
+                              "BaseTypeKind": "Variant",
+                              "ExcludesUndefined": false
+                            }
+                          ]
+                        },
+                        "Variable": {
+                          "Name": "v0",
+                          "UniqueId": 5,
+                          "Type": {
+                            "Kind": "Tuple",
+                            "Types": [
+                              {
+                                "Kind": "Base",
+                                "BaseTypeKind": "Variant",
+                                "ExcludesUndefined": false
+                              },
+                              {
+                                "Kind": "Base",
+                                "BaseTypeKind": "Variant",
+                                "ExcludesUndefined": false
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "Index": 0
+                    }
+                  ]
+                },
+                {
+                  "Kind": "ArrayCreate",
+                  "Type": {
+                    "Kind": "Base",
+                    "BaseTypeKind": "Array",
+                    "ExcludesUndefined": true
+                  },
+                  "ArrayKind": "Array",
+                  "Items": [
+                    {
+                      "Kind": "TupleItemRef",
+                      "Type": {
+                        "Kind": "Base",
+                        "BaseTypeKind": "Variant",
+                        "ExcludesUndefined": false
+                      },
+                      "Expression": {
+                        "Kind": "VariableRef",
+                        "Type": {
+                          "Kind": "Tuple",
+                          "Types": [
+                            {
+                              "Kind": "Base",
+                              "BaseTypeKind": "Variant",
+                              "ExcludesUndefined": false
+                            },
+                            {
+                              "Kind": "Base",
+                              "BaseTypeKind": "Variant",
+                              "ExcludesUndefined": false
+                            }
+                          ]
+                        },
+                        "Variable": {
+                          "Name": "v0",
+                          "UniqueId": 5,
+                          "Type": {
+                            "Kind": "Tuple",
+                            "Types": [
+                              {
+                                "Kind": "Base",
+                                "BaseTypeKind": "Variant",
+                                "ExcludesUndefined": false
+                              },
+                              {
+                                "Kind": "Base",
+                                "BaseTypeKind": "Variant",
+                                "ExcludesUndefined": false
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "Index": 1
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "SourceExpression": {
+            "Kind": "Distinct",
+            "Type": {
+              "Kind": "Enum",
+              "ItemType": {
+                "Kind": "Tuple",
+                "Types": [
+                  {
+                    "Kind": "Base",
+                    "BaseTypeKind": "Variant",
+                    "ExcludesUndefined": false
+                  },
+                  {
+                    "Kind": "Base",
+                    "BaseTypeKind": "Variant",
+                    "ExcludesUndefined": false
+                  }
+                ]
+              }
+            },
+            "DeclaredVariable": {
+              "Name": "s0",
+              "UniqueId": 3,
+              "Type": {
+                "Kind": "Tuple",
+                "Types": [
+                  {
+                    "Kind": "Base",
+                    "BaseTypeKind": "Variant",
+                    "ExcludesUndefined": false
+                  },
+                  {
+                    "Kind": "Base",
+                    "BaseTypeKind": "Variant",
+                    "ExcludesUndefined": false
+                  }
+                ]
+              }
+            },
+            "Expressions": [
+              {
+                "Kind": "TupleItemRef",
+                "Type": {
+                  "Kind": "Base",
+                  "BaseTypeKind": "Variant",
+                  "ExcludesUndefined": false
+                },
+                "Expression": {
+                  "Kind": "VariableRef",
+                  "Type": {
+                    "Kind": "Tuple",
+                    "Types": [
+                      {
+                        "Kind": "Base",
+                        "BaseTypeKind": "Variant",
+                        "ExcludesUndefined": false
+                      },
+                      {
+                        "Kind": "Base",
+                        "BaseTypeKind": "Variant",
+                        "ExcludesUndefined": false
+                      }
+                    ]
+                  },
+                  "Variable": {
+                    "Name": "s0",
+                    "UniqueId": 3,
+                    "Type": {
+                      "Kind": "Tuple",
+                      "Types": [
+                        {
+                          "Kind": "Base",
+                          "BaseTypeKind": "Variant",
+                          "ExcludesUndefined": false
+                        },
+                        {
+                          "Kind": "Base",
+                          "BaseTypeKind": "Variant",
+                          "ExcludesUndefined": false
+                        }
+                      ]
+                    }
+                  }
+                },
+                "Index": 0
+              },
+              {
+                "Kind": "TupleItemRef",
+                "Type": {
+                  "Kind": "Base",
+                  "BaseTypeKind": "Variant",
+                  "ExcludesUndefined": false
+                },
+                "Expression": {
+                  "Kind": "VariableRef",
+                  "Type": {
+                    "Kind": "Tuple",
+                    "Types": [
+                      {
+                        "Kind": "Base",
+                        "BaseTypeKind": "Variant",
+                        "ExcludesUndefined": false
+                      },
+                      {
+                        "Kind": "Base",
+                        "BaseTypeKind": "Variant",
+                        "ExcludesUndefined": false
+                      }
+                    ]
+                  },
+                  "Variable": {
+                    "Name": "s0",
+                    "UniqueId": 3,
+                    "Type": {
+                      "Kind": "Tuple",
+                      "Types": [
+                        {
+                          "Kind": "Base",
+                          "BaseTypeKind": "Variant",
+                          "ExcludesUndefined": false
+                        },
+                        {
+                          "Kind": "Base",
+                          "BaseTypeKind": "Variant",
+                          "ExcludesUndefined": false
+                        }
+                      ]
+                    }
+                  }
+                },
+                "Index": 1
+              }
+            ],
+            "SourceExpression": {
+              "Kind": "Select",
+              "Type": {
+                "Kind": "Enum",
+                "ItemType": {
+                  "Kind": "Tuple",
+                  "Types": [
+                    {
+                      "Kind": "Base",
+                      "BaseTypeKind": "Variant",
+                      "ExcludesUndefined": false
+                    },
+                    {
+                      "Kind": "Base",
+                      "BaseTypeKind": "Variant",
+                      "ExcludesUndefined": false
+                    }
+                  ]
+                }
+              },
+              "Delegate": {
+                "Kind": "ScalarExpression",
+                "Type": {
+                  "Kind": "Tuple",
+                  "Types": [
+                    {
+                      "Kind": "Base",
+                      "BaseTypeKind": "Variant",
+                      "ExcludesUndefined": false
+                    },
+                    {
+                      "Kind": "Base",
+                      "BaseTypeKind": "Variant",
+                      "ExcludesUndefined": false
+                    }
+                  ]
+                },
+                "DeclaredVariable": {
+                  "Name": "v0",
+                  "UniqueId": 0,
+                  "Type": {
+                    "Kind": "Base",
+                    "BaseTypeKind": "Variant",
+                    "ExcludesUndefined": true
+                  }
+                },
+                "Expression": {
+                  "Kind": "TupleCreate",
+                  "Type": {
+                    "Kind": "Tuple",
+                    "Types": [
+                      {
+                        "Kind": "Base",
+                        "BaseTypeKind": "Variant",
+                        "ExcludesUndefined": false
+                      },
+                      {
+                        "Kind": "Base",
+                        "BaseTypeKind": "Variant",
+                        "ExcludesUndefined": false
+                      }
+                    ]
+                  },
+                  "Items": [
+                    {
+                      "Kind": "PropertyRef",
+                      "Type": {
+                        "Kind": "Base",
+                        "BaseTypeKind": "Variant",
+                        "ExcludesUndefined": false
+                      },
+                      "Expression": {
+                        "Kind": "VariableRef",
+                        "Type": {
+                          "Kind": "Base",
+                          "BaseTypeKind": "Variant",
+                          "ExcludesUndefined": true
+                        },
+                        "Variable": {
+                          "Name": "v0",
+                          "UniqueId": 0,
+                          "Type": {
+                            "Kind": "Base",
+                            "BaseTypeKind": "Variant",
+                            "ExcludesUndefined": true
+                          }
+                        }
+                      },
+                      "PropertyName": "FirstName"
+                    },
+                    {
+                      "Kind": "PropertyRef",
+                      "Type": {
+                        "Kind": "Base",
+                        "BaseTypeKind": "Variant",
+                        "ExcludesUndefined": false
+                      },
+                      "Expression": {
+                        "Kind": "VariableRef",
+                        "Type": {
+                          "Kind": "Base",
+                          "BaseTypeKind": "Variant",
+                          "ExcludesUndefined": true
+                        },
+                        "Variable": {
+                          "Name": "v0",
+                          "UniqueId": 0,
+                          "Type": {
+                            "Kind": "Base",
+                            "BaseTypeKind": "Variant",
+                            "ExcludesUndefined": true
+                          }
+                        }
+                      },
+                      "PropertyName": "LastName"
+                    }
+                  ]
+                }
+              },
+              "SourceExpression": {
+                "Kind": "Where",
+                "Type": {
+                  "Kind": "Enum",
+                  "ItemType": {
+                    "Kind": "Base",
+                    "BaseTypeKind": "Variant",
+                    "ExcludesUndefined": true
+                  }
+                },
+                "Delegate": {
+                  "Kind": "ScalarExpression",
+                  "Type": {
+                    "Kind": "Base",
+                    "BaseTypeKind": "Boolean",
+                    "ExcludesUndefined": false
+                  },
+                  "DeclaredVariable": {
+                    "Name": "v0",
+                    "UniqueId": 0,
+                    "Type": {
+                      "Kind": "Base",
+                      "BaseTypeKind": "Variant",
+                      "ExcludesUndefined": true
+                    }
+                  },
+                  "Expression": {
+                    "Kind": "BinaryOperator",
+                    "Type": {
+                      "Kind": "Base",
+                      "BaseTypeKind": "Boolean",
+                      "ExcludesUndefined": false
+                    },
+                    "OperatorKind": "Equal",
+                    "LeftExpression": {
+                      "Kind": "PropertyRef",
+                      "Type": {
+                        "Kind": "Base",
+                        "BaseTypeKind": "Variant",
+                        "ExcludesUndefined": false
+                      },
+                      "Expression": {
+                        "Kind": "VariableRef",
+                        "Type": {
+                          "Kind": "Base",
+                          "BaseTypeKind": "Variant",
+                          "ExcludesUndefined": true
+                        },
+                        "Variable": {
+                          "Name": "v0",
+                          "UniqueId": 0,
+                          "Type": {
+                            "Kind": "Base",
+                            "BaseTypeKind": "Variant",
+                            "ExcludesUndefined": true
+                          }
+                        }
+                      },
+                      "PropertyName": "LastName"
+                    },
+                    "RightExpression": {
+                      "Kind": "Literal",
+                      "Type": {
+                        "Kind": "Base",
+                        "BaseTypeKind": "String",
+                        "ExcludesUndefined": true
+                      },
+                      "Literal": {
+                        "Kind": "String",
+                        "Value": "Marx"
+                      }
+                    }
+                  }
+                },
+                "SourceExpression": {
+                  "Kind": "Where",
+                  "Type": {
+                    "Kind": "Enum",
+                    "ItemType": {
+                      "Kind": "Base",
+                      "BaseTypeKind": "Variant",
+                      "ExcludesUndefined": true
+                    }
+                  },
+                  "Delegate": {
+                    "Kind": "ScalarExpression",
+                    "Type": {
+                      "Kind": "Base",
+                      "BaseTypeKind": "Boolean",
+                      "ExcludesUndefined": false
+                    },
+                    "DeclaredVariable": {
+                      "Name": "r",
+                      "UniqueId": 2,
+                      "Type": {
+                        "Kind": "Base",
+                        "BaseTypeKind": "Variant",
+                        "ExcludesUndefined": true
+                      }
+                    },
+                    "Expression": {
+                      "Kind": "BinaryOperator",
+                      "Type": {
+                        "Kind": "Base",
+                        "BaseTypeKind": "Boolean",
+                        "ExcludesUndefined": false
+                      },
+                      "OperatorKind": "Equal",
+                      "LeftExpression": {
+                        "Kind": "PropertyRef",
+                        "Type": {
+                          "Kind": "Base",
+                          "BaseTypeKind": "Variant",
+                          "ExcludesUndefined": false
+                        },
+                        "Expression": {
+                          "Kind": "VariableRef",
+                          "Type": {
+                            "Kind": "Base",
+                            "BaseTypeKind": "Variant",
+                            "ExcludesUndefined": true
+                          },
+                          "Variable": {
+                            "Name": "r",
+                            "UniqueId": 2,
+                            "Type": {
+                              "Kind": "Base",
+                              "BaseTypeKind": "Variant",
+                              "ExcludesUndefined": true
+                            }
+                          }
+                        },
+                        "PropertyName": "pk"
+                      },
+                      "RightExpression": {
+                        "Kind": "Literal",
+                        "Type": {
+                          "Kind": "Base",
+                          "BaseTypeKind": "String",
+                          "ExcludesUndefined": true
+                        },
+                        "Literal": {
+                          "Kind": "String",
+                          "Value": "90850703-b087-4580-91ee-e4a3918c3e85"
+                        }
+                      }
+                    }
+                  },
+                  "SourceExpression": {
+                    "Kind": "Input",
+                    "Type": {
+                      "Kind": "Enum",
+                      "ItemType": {
+                        "Kind": "Base",
+                        "BaseTypeKind": "Variant",
+                        "ExcludesUndefined": true
+                      }
+                    },
+                    "Name": "root"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "noSpatial": true,
+      "language": "QueryIL"
+    },
+    "clientDistributionPlan": {
+      "clientQL": {
+        "Kind": "Select",
+        "DeclaredVariable": {
+          "Name": "s0",
+          "UniqueId": 3
+        },
+        "Expression": {
+          "Kind": "ObjectCreate",
+          "ObjectKind": "Object",
+          "Properties": [
+            {
+              "Name": "FirstName",
+              "Expression": {
+                "Kind": "TupleItemRef",
+                "Expression": {
+                  "Kind": "VariableRef",
+                  "Variable": {
+                    "Name": "s0",
+                    "UniqueId": 3
+                  }
+                },
+                "Index": 0
+              }
+            },
+            {
+              "Name": "LastName",
+              "Expression": {
+                "Kind": "TupleItemRef",
+                "Expression": {
+                  "Kind": "VariableRef",
+                  "Variable": {
+                    "Name": "s0",
+                    "UniqueId": 3
+                  }
+                },
+                "Index": 1
+              }
+            }
+          ]
+        },
+        "SourceExpression": {
+          "Kind": "Distinct",
+          "DeclaredVariable": {
+            "Name": "s0",
+            "UniqueId": 3
+          },
+          "Expressions": [
+            {
+              "Kind": "TupleItemRef",
+              "Expression": {
+                "Kind": "VariableRef",
+                "Variable": {
+                  "Name": "s0",
+                  "UniqueId": 3
+                }
+              },
+              "Index": 0
+            },
+            {
+              "Kind": "TupleItemRef",
+              "Expression": {
+                "Kind": "VariableRef",
+                "Variable": {
+                  "Name": "s0",
+                  "UniqueId": 3
+                }
+              },
+              "Index": 1
+            }
+          ],
+          "SourceExpression": {
+            "Kind": "Select",
+            "DeclaredVariable": {
+              "Name": "v0",
+              "UniqueId": 6
+            },
+            "Expression": {
+              "Kind": "TupleCreate",
+              "Items": [
+                {
+                  "Kind": "ArrayIndexer",
+                  "Expression": {
+                    "Kind": "ArrayIndexer",
+                    "Expression": {
+                      "Kind": "VariableRef",
+                      "Variable": {
+                        "Name": "v0",
+                        "UniqueId": 6
+                      }
+                    },
+                    "Index": 0
+                  },
+                  "Index": 0
+                },
+                {
+                  "Kind": "ArrayIndexer",
+                  "Expression": {
+                    "Kind": "ArrayIndexer",
+                    "Expression": {
+                      "Kind": "VariableRef",
+                      "Variable": {
+                        "Name": "v0",
+                        "UniqueId": 6
+                      }
+                    },
+                    "Index": 1
+                  },
+                  "Index": 0
+                }
+              ]
+            },
+            "SourceExpression": {
+              "Kind": "Input",
+              "Name": "root"
+            }
+          }
+        }
+      }
+    }
+  }
+}

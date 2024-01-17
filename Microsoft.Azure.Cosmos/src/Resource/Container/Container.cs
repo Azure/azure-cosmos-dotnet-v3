@@ -433,6 +433,7 @@ namespace Microsoft.Azure.Cosmos
         /// * "_ts": Gets the last modified time stamp associated with the item from the Azure Cosmos DB service.
         /// * "_etag": Gets the entity tag associated with the item from the Azure Cosmos DB service.
         /// * "ttl": Gets the time to live in seconds of the item in the Azure Cosmos DB service.
+        /// Note that, this API does not support the usage of <see cref="RequestOptions.IfMatchEtag"/> property at the moment.
         /// </remarks>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
         /// <example>
@@ -719,6 +720,7 @@ namespace Microsoft.Azure.Cosmos
         /// To change an item's partition key value you must delete the original item and insert a new item.
         /// The patch operations are atomic and are executed sequentially.
         /// By default, resource body will be returned as part of the response. User can request no content by setting <see cref="ItemRequestOptions.EnableContentResponseOnWrite"/> flag to false.
+        /// Note that, this API does not support the usage of <see cref="RequestOptions.IfMatchEtag"/> property at the moment.
         /// </remarks>
         /// <param name="id">The Cosmos item id of the item to be patched.</param>
         /// <param name="partitionKey"><see cref="PartitionKey"/> for the item</param>
