@@ -608,7 +608,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Enable partition key level failover
         /// </summary>
-        internal bool EnablePartitionLevelFailover { get; set; } = false;
+        internal bool EnablePartitionLevelFailover { get; set; } = ConfigurationManager.IsPartitionLevelFailoverEnabled(defaultValue: false);
 
         /// <summary>
         /// Quorum Read allowed with eventual consistency account or consistent prefix account.
@@ -732,12 +732,9 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets or sets Client Telemetry Options like feature flags and corresponding options
         /// </summary>
-#if PREVIEW
-        public 
-#else
-        internal
-#endif 
-            CosmosClientTelemetryOptions CosmosClientTelemetryOptions { get; set; }
+        public CosmosClientTelemetryOptions CosmosClientTelemetryOptions { get; set; }
+
+        internal IChaosInterceptorFactory ChaosInterceptorFactory { get; set; }
 
         internal void SetSerializerIfNotConfigured(CosmosSerializer serializer)
         {
@@ -757,6 +754,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.ValidateDirectTCPSettings();
             this.ValidateLimitToEndpointSettings();
+            this.ValidatePartitionLevelFailoverSettings();
 
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
@@ -890,6 +888,15 @@ namespace Microsoft.Azure.Cosmos
             if (!string.IsNullOrEmpty(this.ApplicationRegion) && this.ApplicationPreferredRegions?.Count > 0)
             {
                 throw new ArgumentException($"Cannot specify {nameof(this.ApplicationPreferredRegions)} and {nameof(this.ApplicationRegion)}. Only one can be set.");
+            }
+        }
+
+        private void ValidatePartitionLevelFailoverSettings()
+        {
+            if (this.EnablePartitionLevelFailover
+                && (this.ApplicationPreferredRegions == null || this.ApplicationPreferredRegions.Count == 0))
+            {
+                throw new ArgumentException($"{nameof(this.ApplicationPreferredRegions)} is required when {nameof(this.EnablePartitionLevelFailover)} is enabled.");
             }
         }
 

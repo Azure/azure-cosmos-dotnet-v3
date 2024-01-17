@@ -149,8 +149,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             }
         }
 
-        private async Task ProcessPartitionAsync(PartitionSupervisor partitionSupervisor, DocumentServiceLease lease)
+        private async Task ProcessPartitionAsync(DocumentServiceLease lease)
         {
+            using PartitionSupervisor partitionSupervisor = this.partitionSupervisorFactory.Create(lease);
+
             try
             {
                 await partitionSupervisor.RunAsync(this.shutdownCts.Token).ConfigureAwait(false);

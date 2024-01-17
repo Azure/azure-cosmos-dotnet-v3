@@ -470,6 +470,13 @@ namespace Microsoft.Azure.Cosmos
         /// Check the HTTP status code on the response to check if the operation failed.
         /// </remarks>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#stream-api</exception>
+        /// <remarks>
+        /// <para>
+        /// Upsert result i.e. creation or replace can be identified by the status code:
+        /// 201 - item created
+        /// 200 - item replaced
+        /// </para>
+        /// </remarks>
         /// <example>
         /// Upsert a Stream containing the item to Cosmos
         /// <code language="c#">
@@ -506,6 +513,13 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The <see cref="ItemResponse{T}"/> that was upserted contained within a <see cref="System.Threading.Tasks.Task"/> object representing the service response for the asynchronous operation.</returns>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
+        /// <remarks>
+        /// <para>
+        /// Upsert result i.e. creation or replace can be identified by the status code:
+        /// 201 - item created
+        /// 200 - item replaced
+        /// </para>
+        /// </remarks>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[

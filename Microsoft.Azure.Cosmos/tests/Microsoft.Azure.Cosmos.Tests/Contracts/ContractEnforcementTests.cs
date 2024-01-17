@@ -10,6 +10,7 @@
     {
         private const string DllName = "Microsoft.Azure.Cosmos.Client";
         private const string OfficialBaselinePath = "DotNetSDKAPI.json";
+        private const string OfficialTelemetryBaselinePath = "DotNetSDKTelemetryAPI.json";
 
 #if PREVIEW
         [TestMethod]
@@ -29,6 +30,15 @@
                 dllName: DllName,
                 baselinePath: OfficialBaselinePath,
                 breakingChangesPath: "DotNetSDKAPIChanges.json");
+        }
+
+        [TestMethod]
+        public void TelemetryContractChanges()
+        {
+            ContractEnforcement.ValidateTelemetryContractContainBreakingChanges(
+                dllName: DllName,
+                baselinePath: OfficialTelemetryBaselinePath,
+                breakingChangesPath: "DotNetSDKTelemetryAPIChanges.json");
         }
 #endif
 

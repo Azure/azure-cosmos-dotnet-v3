@@ -659,6 +659,16 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Enables SDK to inject fault. Used for testing applications.  
+        /// </summary>
+        /// <param name="chaosInterceptorFactory"></param>
+        internal CosmosClientBuilder WithFaultInjection(IChaosInterceptorFactory chaosInterceptorFactory)
+        {
+            this.clientOptions.ChaosInterceptorFactory = chaosInterceptorFactory;
+            return this;
+        }
+
+        /// <summary>
         /// To enable LocalQuorum Consistency, i.e. Allows Quorum read with Eventual Consistency Account or with Consistent Prefix Account.
         /// Use By Compute Only
         /// </summary>
@@ -686,12 +696,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <param name="options"></param>
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
-#if PREVIEW
-        public 
-#else
-        internal
-#endif 
-            CosmosClientBuilder WithClientTelemetryOptions(CosmosClientTelemetryOptions options)
+        public CosmosClientBuilder WithClientTelemetryOptions(CosmosClientTelemetryOptions options)
         {
             this.clientOptions.CosmosClientTelemetryOptions = options;
             return this;

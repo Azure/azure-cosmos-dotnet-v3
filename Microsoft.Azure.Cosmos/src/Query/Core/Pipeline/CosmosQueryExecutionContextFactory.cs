@@ -32,6 +32,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
     internal static class CosmosQueryExecutionContextFactory
     {
+        internal const string ClientDisableOptimisticDirectExecution = "clientDisableOptimisticDirectExecution";
         private const string InternalPartitionKeyDefinitionProperty = "x-ms-query-partitionkey-definition";
         private const string QueryInspectionPattern = @"\s+(GROUP\s+BY\s+|COUNT\s*\(|MIN\s*\(|MAX\s*\(|AVG\s*\(|SUM\s*\(|DISTINCT\s+)";
         private const string OptimisticDirectExecution = "OptimisticDirectExecution";
@@ -161,29 +162,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 }
 
                 PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
-                if (inputParameters.ForcePassthrough)
-                {
-                    partitionedQueryExecutionInfo = new PartitionedQueryExecutionInfo()
-                    {
-                        QueryInfo = new QueryInfo()
-                        {
-                            Aggregates = null,
-                            DistinctType = DistinctQueryType.None,
-                            GroupByAliases = null,
-                            GroupByAliasToAggregateType = null,
-                            GroupByExpressions = null,
-                            HasSelectValue = false,
-                            Limit = null,
-                            Offset = null,
-                            OrderBy = null,
-                            OrderByExpressions = null,
-                            RewrittenQuery = null,
-                            Top = null,
-                        },
-                        QueryRanges = new List<Documents.Routing.Range<string>>(),
-                    };
-                }
-                else if (queryPlanFromContinuationToken != null)
+                if (queryPlanFromContinuationToken != null)
                 {
                     partitionedQueryExecutionInfo = queryPlanFromContinuationToken;
                 }
@@ -270,30 +249,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                    inputParameters.InitialFeedRange,
                    trace);
 
-            bool singleLogicalPartitionKeyQuery = inputParameters.PartitionKey.HasValue
-                || ((partitionedQueryExecutionInfo.QueryRanges.Count == 1)
-                && partitionedQueryExecutionInfo.QueryRanges[0].IsSingleValue);
-            bool serverStreamingQuery = !partitionedQueryExecutionInfo.QueryInfo.HasAggregates
-                && !partitionedQueryExecutionInfo.QueryInfo.HasDistinct
-                && !partitionedQueryExecutionInfo.QueryInfo.HasGroupBy;
-            bool streamingSinglePartitionQuery = singleLogicalPartitionKeyQuery && serverStreamingQuery;
-
-            bool clientStreamingQuery =
-                serverStreamingQuery
-                && !partitionedQueryExecutionInfo.QueryInfo.HasOrderBy
-                && !partitionedQueryExecutionInfo.QueryInfo.HasTop
-                && !partitionedQueryExecutionInfo.QueryInfo.HasLimit
-                && !partitionedQueryExecutionInfo.QueryInfo.HasOffset;
-            bool streamingCrossContinuationQuery = !singleLogicalPartitionKeyQuery && clientStreamingQuery;
-
-            bool createPassthroughQuery = streamingSinglePartitionQuery || streamingCrossContinuationQuery;
-            
             TryCatch<IQueryPipelineStage> tryCreatePipelineStage;
-
             Documents.PartitionKeyRange targetRange = await TryGetTargetRangeOptimisticDirectExecutionAsync(
-                inputParameters, 
-                partitionedQueryExecutionInfo, 
-                cosmosQueryContext, 
+                inputParameters,
+                partitionedQueryExecutionInfo,
+                cosmosQueryContext,
                 containerQueryProperties,
                 trace);
 
@@ -311,6 +271,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
             else
             {
+                bool singleLogicalPartitionKeyQuery = inputParameters.PartitionKey.HasValue
+                    || ((partitionedQueryExecutionInfo.QueryRanges.Count == 1)
+                    && partitionedQueryExecutionInfo.QueryRanges[0].IsSingleValue);
+                bool serverStreamingQuery = !partitionedQueryExecutionInfo.QueryInfo.HasAggregates
+                    && !partitionedQueryExecutionInfo.QueryInfo.HasDistinct
+                    && !partitionedQueryExecutionInfo.QueryInfo.HasGroupBy;
+                bool streamingSinglePartitionQuery = singleLogicalPartitionKeyQuery && serverStreamingQuery;
+
+                bool clientStreamingQuery = serverStreamingQuery
+                    && !partitionedQueryExecutionInfo.QueryInfo.HasOrderBy
+                    && !partitionedQueryExecutionInfo.QueryInfo.HasTop
+                    && !partitionedQueryExecutionInfo.QueryInfo.HasLimit
+                    && !partitionedQueryExecutionInfo.QueryInfo.HasOffset;
+                bool streamingCrossContinuationQuery = !singleLogicalPartitionKeyQuery && clientStreamingQuery;
+                bool createPassthroughQuery = streamingSinglePartitionQuery || streamingCrossContinuationQuery;
+
                 if (createPassthroughQuery)
                 {
                     SetTestInjectionPipelineType(inputParameters, Passthrough);
@@ -432,7 +408,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     inputParameters.PartitionedQueryExecutionInfo,
                     inputParameters.ExecutionEnvironment,
                     inputParameters.ReturnResultsInDeterministicOrder,
-                    inputParameters.ForcePassthrough,
                     inputParameters.EnableOptimisticDirectExecution,
                     inputParameters.TestInjections);
             }
@@ -551,7 +526,20 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             if (queryInfo.HasOrderBy)
             {
                 int top;
-                if (queryInfo.HasTop && (top = partitionedQueryExecutionInfo.QueryInfo.Top.Value) > 0)
+                if (queryInfo.HasTop && (partitionedQueryExecutionInfo.QueryInfo.Top.Value > 0))
+                {
+                    top = partitionedQueryExecutionInfo.QueryInfo.Top.Value;
+                }
+                else if (queryInfo.HasLimit && (partitionedQueryExecutionInfo.QueryInfo.Limit.Value > 0))
+                {
+                    top = (partitionedQueryExecutionInfo.QueryInfo.Offset ?? 0) + partitionedQueryExecutionInfo.QueryInfo.Limit.Value;
+                }
+                else
+                {
+                    top = 0;
+                }
+
+                if (top > 0)
                 {
                     // All partitions should initially fetch about 1/nth of the top value.
                     long pageSizeWithTop = (long)Math.Min(
@@ -733,7 +721,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 {
                     responseStats.PipelineType = TestInjections.PipelineType.Specialized;
                 }
-                else 
+                else
                 {
                     responseStats.PipelineType = TestInjections.PipelineType.Passthrough;
                 }
@@ -774,13 +762,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             ContainerQueryProperties containerQueryProperties,
             ITrace trace)
         {
-            if (!inputParameters.EnableOptimisticDirectExecution)
+            bool clientDisableOptimisticDirectExecution = await cosmosQueryContext.QueryClient.GetClientDisableOptimisticDirectExecutionAsync();
+
+            // Use the Ode code path only if ClientDisableOptimisticDirectExecution is false and EnableOptimisticDirectExecution is true
+            if (clientDisableOptimisticDirectExecution || !inputParameters.EnableOptimisticDirectExecution)
             {
-                if (inputParameters.InitialUserContinuationToken != null 
-                    && OptimisticDirectExecutionContinuationToken.IsOptimisticDirectExecutionContinuationToken(inputParameters.InitialUserContinuationToken))
+                if (inputParameters.InitialUserContinuationToken != null
+                          && OptimisticDirectExecutionContinuationToken.IsOptimisticDirectExecutionContinuationToken(inputParameters.InitialUserContinuationToken))
                 {
-                    throw new MalformedContinuationTokenException($"The continuation token supplied requires the Optimistic Direct Execution flag to be enabled in QueryRequestOptions for the query execution to resume. " +
-                            $"{inputParameters.InitialUserContinuationToken}");
+                    string errorMessage = "Execution of this query using the supplied continuation token requires EnableOptimisticDirectExecution to be set in QueryRequestOptions. " +
+                        "If the error persists after that, contact system administrator.";
+
+                    throw new MalformedContinuationTokenException($"{errorMessage} Continuation Token: {inputParameters.InitialUserContinuationToken}");
                 }
 
                 return null;
@@ -852,7 +845,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
                 ExecutionEnvironment? executionEnvironment,
                 bool? returnResultsInDeterministicOrder,
-                bool forcePassthrough,
                 bool enableOptimisticDirectExecution,
                 TestInjections testInjections)
             {
@@ -886,7 +878,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 this.PartitionedQueryExecutionInfo = partitionedQueryExecutionInfo;
                 this.ExecutionEnvironment = executionEnvironment.GetValueOrDefault(InputParameters.DefaultExecutionEnvironment);
                 this.ReturnResultsInDeterministicOrder = returnResultsInDeterministicOrder.GetValueOrDefault(InputParameters.DefaultReturnResultsInDeterministicOrder);
-                this.ForcePassthrough = forcePassthrough;
                 this.EnableOptimisticDirectExecution = enableOptimisticDirectExecution;
                 this.TestInjections = testInjections;
             }
@@ -903,7 +894,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             public ExecutionEnvironment ExecutionEnvironment { get; }
             public bool ReturnResultsInDeterministicOrder { get; }
             public TestInjections TestInjections { get; }
-            public bool ForcePassthrough { get; }
             public bool EnableOptimisticDirectExecution { get; }
 
             public InputParameters WithContinuationToken(CosmosElement token)
@@ -920,7 +910,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     this.PartitionedQueryExecutionInfo,
                     this.ExecutionEnvironment,
                     this.ReturnResultsInDeterministicOrder,
-                    this.ForcePassthrough,
                     this.EnableOptimisticDirectExecution,
                     this.TestInjections);
             }

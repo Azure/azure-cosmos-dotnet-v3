@@ -6,11 +6,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Runtime.InteropServices;
     using System.Text;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -45,6 +47,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         private bool disposed;
         private string queryengineConfiguration;
 
+        // TODO: Move this into a config class of its own
+        public bool ClientDisableOptimisticDirectExecution { get; private set; }
+
         public QueryPartitionProvider(IDictionary<string, object> queryengineConfiguration)
         {
             if (queryengineConfiguration == null)
@@ -59,6 +64,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
             this.disposed = false;
             this.queryengineConfiguration = JsonConvert.SerializeObject(queryengineConfiguration);
+            this.ClientDisableOptimisticDirectExecution = GetClientDisableOptimisticDirectExecution((IReadOnlyDictionary<string, object>)queryengineConfiguration);
             this.serviceProvider = IntPtr.Zero;
 
             this.serviceProviderStateLock = new object();
@@ -91,6 +97,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                     if (!string.Equals(this.queryengineConfiguration, newConfiguration))
                     {
                         this.queryengineConfiguration = newConfiguration;
+                        this.ClientDisableOptimisticDirectExecution = GetClientDisableOptimisticDirectExecution((IReadOnlyDictionary<string, object>)queryengineConfiguration);
 
                         if (!this.disposed && this.serviceProvider != IntPtr.Zero)
                         {
@@ -131,6 +138,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 allowDCount: allowDCount,
                 useSystemPrefix: useSystemPrefix,
                 geospatialType: geospatialType);
+
             if (!tryGetInternalQueryInfo.Succeeded)
             {
                 return TryCatch<PartitionedQueryExecutionInfo>.FromException(tryGetInternalQueryInfo.Exception);
@@ -138,6 +146,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
             PartitionedQueryExecutionInfo queryInfo = this.ConvertPartitionedQueryExecutionInfo(tryGetInternalQueryInfo.Result, partitionKeyDefinition);
             return TryCatch<PartitionedQueryExecutionInfo>.FromResult(queryInfo);
+        }
+
+        private static bool GetClientDisableOptimisticDirectExecution(IReadOnlyDictionary<string, object> queryengineConfiguration)
+        {
+            if (queryengineConfiguration.TryGetValue(CosmosQueryExecutionContextFactory.ClientDisableOptimisticDirectExecution, out object queryConfigProperty))
+            {
+                return (bool)queryConfigProperty;
+            }
+
+            return false;
         }
 
         internal PartitionedQueryExecutionInfo ConvertPartitionedQueryExecutionInfo(
@@ -289,6 +307,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                        DateParseHandling = DateParseHandling.None,
                        MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
                    });
+
+            Debug.Assert(!(queryInfoInternal.QueryInfo.HasTop && queryInfoInternal.QueryInfo.HasLimit));
 
             return TryCatch<PartitionedQueryExecutionInfoInternal>.FromResult(queryInfoInternal);
         }
