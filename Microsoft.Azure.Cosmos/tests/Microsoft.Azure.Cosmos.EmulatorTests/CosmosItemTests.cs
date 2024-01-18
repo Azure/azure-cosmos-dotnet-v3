@@ -1382,6 +1382,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     foreach (ServerSidePartitionedMetrics partitionedMetrics in metrics.PartitionedMetrics)
                     {
                         Assert.IsNotNull(partitionedMetrics);
+                        Assert.IsNotNull(partitionedMetrics.FeedRange);
                         Assert.IsNotNull(partitionedMetrics.PartitionKeyRangeId);
                         Assert.IsTrue(partitionedMetrics.RequestCharge > 0);
                     }
@@ -1463,6 +1464,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     foreach (ServerSidePartitionedMetrics partitionedMetrics in metrics.PartitionedMetrics)
                     {
                         Assert.IsNotNull(partitionedMetrics);
+                        Assert.IsNotNull(partitionedMetrics.FeedRange);
                         Assert.IsNull(partitionedMetrics.PartitionKeyRangeId);
                         Assert.IsTrue(partitionedMetrics.RequestCharge > 0);
                     }

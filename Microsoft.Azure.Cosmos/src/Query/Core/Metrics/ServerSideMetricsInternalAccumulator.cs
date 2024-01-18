@@ -92,14 +92,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             {
                 if (datum is QueryMetricsTraceDatum queryMetricsTraceDatum)
                 {
-                    queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics.FeedRange = currentTrace.Name;
-                    queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics.PartitionKeyRangeId = WalkTraceTreeForPartitionKeyRangeId(currentTrace);
-
-                    bool gatewayMode = queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics.PartitionKeyRangeId == null;
-                    queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics.RequestCharge = WalkTraceTreeForRequestCharge(currentTrace, gatewayMode);
-
-                    accumulator.Accumulate(queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics);
-                    return;
+                    ServerSideMetricsTraceExtractor traceExtractor = new ServerSideMetricsTraceExtractor(queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics, currentTrace);
+                    accumulator.Accumulate(traceExtractor.ServerSideMetrics);
                 }
             }
 
@@ -109,80 +103,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             }
 
             return;
-        }
-
-        private static int? WalkTraceTreeForPartitionKeyRangeId(ITrace currentTrace)
-        {
-            if (currentTrace == null)
-            {
-                return null;
-            }
-
-            foreach (Object datum in currentTrace.Data.Values)
-            {
-                if (datum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
-                {
-                    if (clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList.Count > 0)
-                    {
-                        return int.TryParse(clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList[0].StoreResult.PartitionKeyRangeId, out int pKRangeId)
-                            ? pKRangeId
-                            : null;
-                    }
-                    else
-                    {
-                        return null;
-                    }
-                }
-            }
-
-            foreach (ITrace childTrace in currentTrace.Children)
-            {
-                int? partitionKeyRangeId = WalkTraceTreeForPartitionKeyRangeId(childTrace);
-                if (partitionKeyRangeId != null)
-                {
-                    return partitionKeyRangeId;
-                }
-            }
-
-            return null;
-        }
-
-        private static double WalkTraceTreeForRequestCharge(ITrace currentTrace, bool gatewayMode)
-        {
-            if (currentTrace == null)
-            {
-                return 0;
-            }
-
-            foreach (Object datum in currentTrace.Data.Values)
-            {
-                if (!gatewayMode && datum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
-                {
-                    if (clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList.Count > 0)
-                    {
-                        return clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList[0].StoreResult.RequestCharge;
-                    }
-                    else
-                    {
-                        return 0;
-                    }
-                }
-                if (gatewayMode && datum is PointOperationStatisticsTraceDatum pointOperationStatisticsTraceDatum)
-            {
-                    return pointOperationStatisticsTraceDatum.RequestCharge;
-                }
-            }
-
-            foreach (ITrace childTrace in currentTrace.Children)
-            {
-                double requestCharge = WalkTraceTreeForRequestCharge(childTrace, gatewayMode);
-                if (requestCharge != 0)
-                {
-                    return requestCharge;
-                }
-            }
-
-            return 0;
         }
     }
 }
