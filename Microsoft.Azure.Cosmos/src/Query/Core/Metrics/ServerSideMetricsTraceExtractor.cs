@@ -32,8 +32,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             {
                 ServerSideMetricsTraceExtractor.WalkTraceTreeForQueryMetrics(childTrace, accumulator);
             }
-
-            return;
         }
 
         private static void WalkTraceTreeForPartitionInfo(ITrace currentTrace, ServerSideMetricsInternal serverSideMetrics)
@@ -57,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                         serverSideMetrics.RequestCharge = clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList[0].StoreResult.RequestCharge;
                     }
                 }
-                if (datum is PointOperationStatisticsTraceDatum pointOperationStatisticsTraceDatum)
+                else if (datum is PointOperationStatisticsTraceDatum pointOperationStatisticsTraceDatum)
                 {
                     serverSideMetrics.RequestCharge = pointOperationStatisticsTraceDatum.RequestCharge;
                 }
