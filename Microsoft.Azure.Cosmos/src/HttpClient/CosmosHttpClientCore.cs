@@ -469,8 +469,6 @@ namespace Microsoft.Azure.Cosmos
                 resourceType.ToResourceTypeString(),
                 requestMessage.Headers);
 
-            System.Net.ServicePointManager.ServerCertificateValidationCallback = (sender, cert, chain, sslPolicyErrors) => true;
-
             // Only read the header initially. The content gets copied into a memory stream later
             // if we read the content HTTP client will buffer the message and then it will get buffered
             // again when it is copied to the memory stream.

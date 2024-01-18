@@ -35,7 +35,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task TestDispose()
         {
             CosmosClient cosmosClient = new CosmosClient(ConnectionString);
-
             Database database = cosmosClient.GetDatabase("asdf");
             Container container = cosmosClient.GetContainer("asdf", "asdf");
             TransactionalBatch batch = container.CreateTransactionalBatch(new PartitionKey("asdf"));
