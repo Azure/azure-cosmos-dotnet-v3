@@ -8,6 +8,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 
     internal abstract class PartitionSupervisorFactory
     {
-        public abstract PartitionSupervisor Create(DocumentServiceLease lease);
+        public abstract PartitionSupervisor Create(DocumentServiceLease lease, ChangeFeedMode mode);
     }
 }

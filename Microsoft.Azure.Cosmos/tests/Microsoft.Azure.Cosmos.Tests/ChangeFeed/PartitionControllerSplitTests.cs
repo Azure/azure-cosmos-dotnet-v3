@@ -33,11 +33,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 .ReturnsAsync((new[] { this.CreateMockLease(), this.CreateMockLease() }, true));
 
             PartitionSupervisor partitionSupervisor = Mock.Of<PartitionSupervisor>(o => o.RunAsync(It.IsAny<CancellationToken>()) == Task.FromException(new FeedRangeGoneException("message", LastContinuationToken)));
-            PartitionSupervisorFactory partitionSupervisorFactory = Mock.Of<PartitionSupervisorFactory>(f => f.Create(lease) == partitionSupervisor);
+            PartitionSupervisorFactory partitionSupervisorFactory = Mock.Of<PartitionSupervisorFactory>(f => f.Create(lease, ChangeFeedMode.Incremental) == partitionSupervisor);
             DocumentServiceLeaseManager leaseManager = Mock.Of<DocumentServiceLeaseManager>(manager => manager.AcquireAsync(lease) == Task.FromResult(lease));
             DocumentServiceLeaseContainer leaseContainer = Mock.Of<DocumentServiceLeaseContainer>();
 
-            PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer, Mock.Of<ChangeFeedProcessorHealthMonitor>());
+            PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer, Mock.Of<ChangeFeedProcessorHealthMonitor>(), ChangeFeedMode.Incremental);
 
             await sut.InitializeAsync().ConfigureAwait(false);
 
@@ -64,11 +64,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 .ReturnsAsync((new[] { this.CreateMockLease(), this.CreateMockLease() }, true));
 
             PartitionSupervisor partitionSupervisor = Mock.Of<PartitionSupervisor>(o => o.RunAsync(It.IsAny<CancellationToken>()) == Task.FromException(new FeedRangeGoneException("message", LastContinuationToken)));
-            PartitionSupervisorFactory partitionSupervisorFactory = Mock.Of<PartitionSupervisorFactory>(f => f.Create(lease) == partitionSupervisor);
+            PartitionSupervisorFactory partitionSupervisorFactory = Mock.Of<PartitionSupervisorFactory>(f => f.Create(lease, ChangeFeedMode.Incremental) == partitionSupervisor);
             DocumentServiceLeaseManager leaseManager = Mock.Of<DocumentServiceLeaseManager>(manager => manager.AcquireAsync(lease) == Task.FromResult(lease));
             DocumentServiceLeaseContainer leaseContainer = Mock.Of<DocumentServiceLeaseContainer>();
 
-            PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer, Mock.Of<ChangeFeedProcessorHealthMonitor>());
+            PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer, Mock.Of<ChangeFeedProcessorHealthMonitor>(), ChangeFeedMode.Incremental);
 
             await sut.InitializeAsync().ConfigureAwait(false);
 
@@ -98,11 +98,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 .ReturnsAsync((new[] { leaseChild1, leaseChild2 }, true));
 
             PartitionSupervisor partitionSupervisor = Mock.Of<PartitionSupervisor>(o => o.RunAsync(It.IsAny<CancellationToken>()) == Task.FromException(new FeedRangeGoneException("message", LastContinuationToken)));
-            PartitionSupervisorFactory partitionSupervisorFactory = Mock.Of<PartitionSupervisorFactory>(f => f.Create(lease) == partitionSupervisor);
+            PartitionSupervisorFactory partitionSupervisorFactory = Mock.Of<PartitionSupervisorFactory>(f => f.Create(lease, ChangeFeedMode.Incremental) == partitionSupervisor);
             DocumentServiceLeaseManager leaseManager = Mock.Of<DocumentServiceLeaseManager>(manager => manager.AcquireAsync(lease) == Task.FromResult(lease));
             DocumentServiceLeaseContainer leaseContainer = Mock.Of<DocumentServiceLeaseContainer>();
 
-            PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer, Mock.Of<ChangeFeedProcessorHealthMonitor>());
+            PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer, Mock.Of<ChangeFeedProcessorHealthMonitor>(), ChangeFeedMode.Incremental);
 
             await sut.InitializeAsync().ConfigureAwait(false);
 
@@ -126,11 +126,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             DocumentServiceLease lease = this.CreateMockLease(PartitionId);
             PartitionSynchronizer synchronizer = Mock.Of<PartitionSynchronizer>(s => s.HandlePartitionGoneAsync(lease) == Task.FromException<(IEnumerable<DocumentServiceLease>,bool)>(new InvalidOperationException()));
             PartitionSupervisor partitionSupervisor = Mock.Of<PartitionSupervisor>(o => o.RunAsync(It.IsAny<CancellationToken>()) == Task.FromException(new FeedRangeGoneException("message", LastContinuationToken)));
-            PartitionSupervisorFactory partitionSupervisorFactory = Mock.Of<PartitionSupervisorFactory>(f => f.Create(lease) == partitionSupervisor);
+            PartitionSupervisorFactory partitionSupervisorFactory = Mock.Of<PartitionSupervisorFactory>(f => f.Create(lease, ChangeFeedMode.Incremental) == partitionSupervisor);
             DocumentServiceLeaseManager leaseManager = Mock.Of<DocumentServiceLeaseManager>();
             DocumentServiceLeaseContainer leaseContainer = Mock.Of<DocumentServiceLeaseContainer>();
 
-            PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer, Mock.Of<ChangeFeedProcessorHealthMonitor>());
+            PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer, Mock.Of<ChangeFeedProcessorHealthMonitor>(), ChangeFeedMode.Incremental);
 
             await sut.InitializeAsync().ConfigureAwait(false);
 
@@ -165,13 +165,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock.Get(partitionSupervisor2).Setup(o => o.RunAsync(It.IsAny<CancellationToken>())).Returns<CancellationToken>(token => Task.Delay(TimeSpan.FromHours(1), token));
 
             PartitionSupervisorFactory partitionSupervisorFactory = Mock.Of<PartitionSupervisorFactory>(f =>
-                f.Create(lease) == partitionSupervisor && f.Create(leaseChild1) == partitionSupervisor1 && f.Create(leaseChild2) == partitionSupervisor2);
+                f.Create(lease, ChangeFeedMode.Incremental) == partitionSupervisor && f.Create(leaseChild1, ChangeFeedMode.Incremental) == partitionSupervisor1 && f.Create(leaseChild2, ChangeFeedMode.Incremental) == partitionSupervisor2);
             DocumentServiceLeaseManager leaseManager = Mock.Of<DocumentServiceLeaseManager>(manager => manager.AcquireAsync(lease) == Task.FromResult(lease));
             DocumentServiceLeaseContainer leaseContainer = Mock.Of<DocumentServiceLeaseContainer>();
 
             Mock<ChangeFeedProcessorHealthMonitor> monitor = new Mock<ChangeFeedProcessorHealthMonitor>();
 
-            PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer, monitor.Object);
+            PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer, monitor.Object, ChangeFeedMode.Incremental);
 
             await sut.InitializeAsync().ConfigureAwait(false);
 
@@ -184,8 +184,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock.Get(leaseManager).Verify(manager => manager.AcquireAsync(leaseChild1), Times.Once);
             Mock.Get(leaseManager).Verify(manager => manager.AcquireAsync(leaseChild2), Times.Once);
 
-            Mock.Get(partitionSupervisorFactory).Verify(f => f.Create(leaseChild1), Times.Once);
-            Mock.Get(partitionSupervisorFactory).Verify(f => f.Create(leaseChild2), Times.Once);
+            Mock.Get(partitionSupervisorFactory).Verify(f => f.Create(leaseChild1, ChangeFeedMode.Incremental), Times.Once);
+            Mock.Get(partitionSupervisorFactory).Verify(f => f.Create(leaseChild2, ChangeFeedMode.Incremental), Times.Once);
 
             Mock.Get(partitionSupervisor1).Verify(p => p.RunAsync(It.IsAny<CancellationToken>()), Times.Once);
             Mock.Get(partitionSupervisor2).Verify(p => p.RunAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -214,11 +214,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             PartitionSupervisor partitionSupervisor = Mock.Of<PartitionSupervisor>(o => o.RunAsync(It.IsAny<CancellationToken>()) == Task.FromException(new FeedRangeGoneException("message", LastContinuationToken)));
 
             PartitionSupervisorFactory partitionSupervisorFactory = Mock.Of<PartitionSupervisorFactory>(f =>
-                f.Create(lease) == partitionSupervisor);
+                f.Create(lease, ChangeFeedMode.Incremental) == partitionSupervisor);
             DocumentServiceLeaseManager leaseManager = Mock.Of<DocumentServiceLeaseManager>(manager => manager.AcquireAsync(lease) == Task.FromResult(lease));
             DocumentServiceLeaseContainer leaseContainer = Mock.Of<DocumentServiceLeaseContainer>();
 
-            PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer, Mock.Of<ChangeFeedProcessorHealthMonitor>());
+            PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer, Mock.Of<ChangeFeedProcessorHealthMonitor>(), ChangeFeedMode.Incremental);
 
             await sut.InitializeAsync().ConfigureAwait(false);
 
@@ -250,11 +250,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock.Get(partitionSupervisor2).Setup(o => o.RunAsync(It.IsAny<CancellationToken>())).Returns<CancellationToken>(token => Task.Delay(TimeSpan.FromHours(1), token));
 
             PartitionSupervisorFactory partitionSupervisorFactory = Mock.Of<PartitionSupervisorFactory>(f =>
-                f.Create(lease) == partitionSupervisor && f.Create(leaseChild1) == partitionSupervisor1 && f.Create(leaseChild2) == partitionSupervisor2);
+                f.Create(lease, ChangeFeedMode.Incremental) == partitionSupervisor && f.Create(leaseChild1, ChangeFeedMode.Incremental) == partitionSupervisor1 && f.Create(leaseChild2, ChangeFeedMode.Incremental) == partitionSupervisor2);
             DocumentServiceLeaseManager leaseManager = Mock.Of<DocumentServiceLeaseManager>(manager => manager.AcquireAsync(lease) == Task.FromResult(lease));
             DocumentServiceLeaseContainer leaseContainer = Mock.Of<DocumentServiceLeaseContainer>();
 
-            PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer, Mock.Of<ChangeFeedProcessorHealthMonitor>());
+            PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer, Mock.Of<ChangeFeedProcessorHealthMonitor>(), ChangeFeedMode.Incremental);
 
             await sut.InitializeAsync().ConfigureAwait(false);
 
@@ -276,7 +276,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 .Verify(manager => manager.UpdatePropertiesAsync(leaseChild2), Times.Exactly(5));
 
             Mock.Get(partitionSupervisorFactory)
-                .Verify(f => f.Create(leaseChild2), Times.Once);
+                .Verify(f => f.Create(leaseChild2, ChangeFeedMode.Incremental), Times.Once);
         }
 
         [TestMethod]
@@ -290,13 +290,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 .ReturnsAsync((new DocumentServiceLease[] { }, true));
 
             PartitionSupervisor partitionSupervisor = Mock.Of<PartitionSupervisor>(o => o.RunAsync(It.IsAny<CancellationToken>()) == Task.FromException(new FeedRangeGoneException("message", LastContinuationToken)));
-            PartitionSupervisorFactory partitionSupervisorFactory = Mock.Of<PartitionSupervisorFactory>(f => f.Create(lease) == partitionSupervisor);
+            PartitionSupervisorFactory partitionSupervisorFactory = Mock.Of<PartitionSupervisorFactory>(f => f.Create(lease, ChangeFeedMode.Incremental) == partitionSupervisor);
             DocumentServiceLeaseManager leaseManager = Mock.Of<DocumentServiceLeaseManager>(manager =>
                 manager.AcquireAsync(lease) == Task.FromResult(lease)
             );
             DocumentServiceLeaseContainer leaseContainer = Mock.Of<DocumentServiceLeaseContainer>();
 
-            PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer, Mock.Of<ChangeFeedProcessorHealthMonitor>());
+            PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer, Mock.Of<ChangeFeedProcessorHealthMonitor>(), ChangeFeedMode.Incremental);
 
             await sut.InitializeAsync().ConfigureAwait(false);
 
@@ -321,7 +321,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 .ReturnsAsync((new[] { this.CreateMockLease(), leaseChild2 }, true));
 
             PartitionSupervisor partitionSupervisor = Mock.Of<PartitionSupervisor>(o => o.RunAsync(It.IsAny<CancellationToken>()) == Task.FromException(new FeedRangeGoneException("message", LastContinuationToken)));
-            PartitionSupervisorFactory partitionSupervisorFactory = Mock.Of<PartitionSupervisorFactory>(f => f.Create(lease) == partitionSupervisor);
+            PartitionSupervisorFactory partitionSupervisorFactory = Mock.Of<PartitionSupervisorFactory>(f => f.Create(lease, ChangeFeedMode.Incremental) == partitionSupervisor);
             DocumentServiceLeaseManager leaseManager = Mock.Of<DocumentServiceLeaseManager>(manager =>
                 manager.AcquireAsync(lease) == Task.FromResult(lease) &&
                 manager.AcquireAsync(leaseChild2) == Task.FromException<DocumentServiceLease>(new LeaseLostException())
@@ -330,7 +330,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Mock<ChangeFeedProcessorHealthMonitor> monitor = new Mock<ChangeFeedProcessorHealthMonitor>();
 
-            PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer, monitor.Object);
+            PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer, monitor.Object, ChangeFeedMode.Incremental);
 
             await sut.InitializeAsync().ConfigureAwait(false);
 

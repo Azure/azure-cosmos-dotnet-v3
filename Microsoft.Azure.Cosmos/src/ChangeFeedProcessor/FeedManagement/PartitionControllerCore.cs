@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         private readonly PartitionSupervisorFactory partitionSupervisorFactory;
         private readonly PartitionSynchronizer synchronizer;
         private readonly ChangeFeedProcessorHealthMonitor monitor;
+        private readonly ChangeFeedMode mode;
         private CancellationTokenSource shutdownCts;
 
         public PartitionControllerCore(
@@ -31,13 +32,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             DocumentServiceLeaseManager leaseManager,
             PartitionSupervisorFactory partitionSupervisorFactory,
             PartitionSynchronizer synchronizer,
-            ChangeFeedProcessorHealthMonitor monitor)
+            ChangeFeedProcessorHealthMonitor monitor,
+            ChangeFeedMode mode)
         {
             this.leaseContainer = leaseContainer;
             this.leaseManager = leaseManager;
             this.partitionSupervisorFactory = partitionSupervisorFactory;
             this.synchronizer = synchronizer;
             this.monitor = monitor;
+            this.mode = mode;
         }
 
         public override async Task InitializeAsync()
@@ -147,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 
         private async Task ProcessPartitionAsync(DocumentServiceLease lease)
         {
-            using PartitionSupervisor partitionSupervisor = this.partitionSupervisorFactory.Create(lease);
+            using PartitionSupervisor partitionSupervisor = this.partitionSupervisorFactory.Create(lease, this.mode);
 
             try
             {

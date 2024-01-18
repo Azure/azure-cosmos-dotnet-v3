@@ -16,7 +16,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         /// </summary>
         /// <param name="lease">Lease to be used for feed processing</param>
         /// <param name="observer">Observer to be used</param>
+        /// <param name="mode">mode</param>
         /// <returns>An instance of a <see cref="FeedProcessor"/>.</returns>
-        public abstract FeedProcessor Create(DocumentServiceLease lease, ChangeFeedObserver observer);
+        public abstract FeedProcessor Create(DocumentServiceLease lease, ChangeFeedObserver observer, ChangeFeedMode mode);
     }
 }
