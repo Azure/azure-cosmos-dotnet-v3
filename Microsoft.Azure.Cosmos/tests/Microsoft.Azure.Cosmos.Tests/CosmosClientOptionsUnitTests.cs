@@ -903,6 +903,20 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void TestServerCertificateIgnoreFlagAddedInEndpoint_With_HttpFactory()
+        {
+            string ConnectionString = "AccountEndpoint=https://localtestcosmos.documents.azure.com:443/;AccountKey=425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==;";
+            CosmosClient client = new CosmosClient(
+                ConnectionString + "IgnoreEndpointCertificate=true;",
+                    new CosmosClientOptions()
+                    {
+                        ConnectionMode = ConnectionMode.Direct,
+                        HttpClientFactory = () => new HttpClient()
+                    });
+        }
+
         private class TestWebProxy : IWebProxy
         {
             public ICredentials Credentials { get; set; }

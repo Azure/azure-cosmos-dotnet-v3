@@ -62,11 +62,6 @@ namespace Microsoft.Azure.Cosmos
                     throw new InvalidOperationException($"{nameof(connectionPolicy.HttpClientFactory)} can not be set at the same time as {nameof(sendingRequestEventArgs)} or {nameof(ReceivedResponseEventArgs)}");
                 }
 
-                if (connectionPolicy.ServerCertificateCustomValidationCallback != null)
-                {
-                    throw new InvalidOperationException($"{nameof(connectionPolicy.HttpClientFactory)} can not be set at the same time as {nameof(connectionPolicy.ServerCertificateCustomValidationCallback)}");
-                }
-
                 HttpClient userHttpClient = httpClientFactory.Invoke() ?? throw new ArgumentNullException($"{nameof(httpClientFactory)} returned null. {nameof(httpClientFactory)} must return a HttpClient instance.");
 
                 return CosmosHttpClientCore.CreateHelper(

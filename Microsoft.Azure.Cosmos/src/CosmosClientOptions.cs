@@ -756,6 +756,7 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateDirectTCPSettings();
             this.ValidateLimitToEndpointSettings();
             this.ValidatePartitionLevelFailoverSettings();
+            this.ValidateIgnoreCertFlagAndHttpFactorySettings();
 
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
@@ -917,6 +918,14 @@ namespace Microsoft.Azure.Cosmos
             if (!string.IsNullOrEmpty(this.ApplicationRegion) && this.ApplicationPreferredRegions?.Count > 0)
             {
                 throw new ArgumentException($"Cannot specify {nameof(this.ApplicationPreferredRegions)} and {nameof(this.ApplicationRegion)}. Only one can be set.");
+            }
+        }
+
+        private void ValidateIgnoreCertFlagAndHttpFactorySettings()
+        {
+            if (this.ServerCertificateCustomValidationCallback != null && this.HttpClientFactory != null)
+            {
+                throw new ArgumentException($"{nameof(this.ServerCertificateCustomValidationCallback)} can not be set along with {nameof(this.HttpClientFactory)}");
             }
         }
 
