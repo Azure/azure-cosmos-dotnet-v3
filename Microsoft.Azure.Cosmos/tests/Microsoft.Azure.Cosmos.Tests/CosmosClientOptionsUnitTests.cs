@@ -52,6 +52,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Cosmos.PortReuseMode portReuseMode = Cosmos.PortReuseMode.PrivatePortPool;
             IWebProxy webProxy = new TestWebProxy();
             Cosmos.ConsistencyLevel consistencyLevel = Cosmos.ConsistencyLevel.ConsistentPrefix;
+            Cosmos.PriorityLevel priorityLevel = Cosmos.PriorityLevel.Low;
 
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
                 accountEndpoint: endpoint,
@@ -80,6 +81,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(clientOptions.EnableTcpConnectionEndpointRediscovery);
             Assert.IsNull(clientOptions.HttpClientFactory);
             Assert.AreNotEqual(consistencyLevel, clientOptions.ConsistencyLevel);
+            Assert.AreNotEqual(priorityLevel, clientOptions.PriorityLevel);
             Assert.IsFalse(clientOptions.EnablePartitionLevelFailover);
             Assert.IsFalse(clientOptions.EnableAdvancedReplicaSelectionForTcp.HasValue);
 
@@ -115,7 +117,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .WithThrottlingRetryOptions(maxRetryWaitTime, maxRetryAttemptsOnThrottledRequests)
                 .WithBulkExecution(true)
                 .WithSerializerOptions(cosmosSerializerOptions)
-                .WithConsistencyLevel(consistencyLevel);
+                .WithConsistencyLevel(consistencyLevel)
+                .WithPriorityLevel(priorityLevel);
 
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             clientOptions = cosmosClient.ClientOptions;
@@ -138,6 +141,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(object.ReferenceEquals(webProxy, clientOptions.WebProxy));
             Assert.IsTrue(clientOptions.AllowBulkExecution);
             Assert.AreEqual(consistencyLevel, clientOptions.ConsistencyLevel);
+            Assert.AreEqual(priorityLevel, clientOptions.PriorityLevel);
             Assert.IsFalse(clientOptions.EnablePartitionLevelFailover);
             Assert.IsTrue(clientOptions.EnableAdvancedReplicaSelectionForTcp.HasValue && clientOptions.EnableAdvancedReplicaSelectionForTcp.Value);
 
@@ -236,6 +240,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 };
 
                 Cosmos.ConsistencyLevel consistencyLevel = Cosmos.ConsistencyLevel.ConsistentPrefix;
+                Cosmos.PriorityLevel priorityLevel = Cosmos.PriorityLevel.Low;
+
                 CosmosClientBuilder cosmosClientBuilder = new(
                     accountEndpoint: endpoint,
                     authKeyOrResourceToken: key);
@@ -248,7 +254,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     .WithApiType(apiType)
                     .WithThrottlingRetryOptions(maxRetryWaitTime, maxRetryAttemptsOnThrottledRequests)
                     .WithSerializerOptions(cosmosSerializerOptions)
-                    .WithConsistencyLevel(consistencyLevel);
+                    .WithConsistencyLevel(consistencyLevel)
+                    .WithPriorityLevel(priorityLevel);
 
                 if (!useEnvironmentVariable)
                 {
@@ -300,6 +307,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 };
 
                 Cosmos.ConsistencyLevel consistencyLevel = Cosmos.ConsistencyLevel.ConsistentPrefix;
+                Cosmos.PriorityLevel priorityLevel = Cosmos.PriorityLevel.Low;
                 CosmosClientBuilder cosmosClientBuilder = new(
                     accountEndpoint: endpoint,
                     authKeyOrResourceToken: key);
@@ -313,6 +321,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     .WithThrottlingRetryOptions(maxRetryWaitTime, maxRetryAttemptsOnThrottledRequests)
                     .WithSerializerOptions(cosmosSerializerOptions)
                     .WithConsistencyLevel(consistencyLevel)
+                    .WithPriorityLevel(priorityLevel)
                     .WithPartitionLevelFailoverEnabled()
                     .WithApplicationPreferredRegions(
                         new List<string>()
@@ -369,6 +378,32 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             Assert.IsNull(cosmosClientOptionsNull.GetDocumentsConsistencyLevel());
+        }
+
+        [TestMethod]
+        public void VerifyPriorityLevels()
+        {
+            List<Cosmos.PriorityLevel> cosmosLevels = Enum.GetValues(typeof(Cosmos.PriorityLevel)).Cast<Cosmos.PriorityLevel>().ToList();
+            List<Documents.PriorityLevel> documentLevels = Enum.GetValues(typeof(Documents.PriorityLevel)).Cast<Documents.PriorityLevel>().ToList();
+            CollectionAssert.AreEqual(cosmosLevels, documentLevels, new EnumComparer(), "Document priority level is different from cosmos priority level");
+
+            foreach (Cosmos.PriorityLevel priorityLevel in cosmosLevels)
+            {
+                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+                {
+                    PriorityLevel = priorityLevel
+                };
+
+                Assert.AreEqual((int)priorityLevel, (int)cosmosClientOptions.GetDocumentsPriorityLevel());
+                Assert.AreEqual(priorityLevel.ToString(), cosmosClientOptions.GetDocumentsPriorityLevel().ToString());
+            }
+
+            CosmosClientOptions cosmosClientOptionsNull = new CosmosClientOptions()
+            {
+                PriorityLevel = null
+            };
+
+            Assert.IsNull(cosmosClientOptionsNull.GetDocumentsPriorityLevel());
         }
 
         [TestMethod]
