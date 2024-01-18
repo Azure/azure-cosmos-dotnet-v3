@@ -176,4 +176,40 @@ WHERE (root["DataTypeField"] != null)]]></SqlQuery>
       <Results><![CDATA[[]]]></Results>
     </Output>
   </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ non-null nullable property]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.DateTimeField == Convert(DateTime.Now, Nullable`1)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["DateTimeFieldDotNet"] = "2024-01-17T16:43:49.1519186-08:00")]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+]]]></InputData>
+      <Results><![CDATA[[]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ non-null nullable enum]]></Description>
+      <Expression><![CDATA[query.Where(doc => (Convert(doc.DataTypeField, Nullable`1) == Convert(Point, Nullable`1)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["DataTypeField"] = 2)]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+]]]></InputData>
+      <Results><![CDATA[[]]]></Results>
+    </Output>
+  </Result>
 </Results>

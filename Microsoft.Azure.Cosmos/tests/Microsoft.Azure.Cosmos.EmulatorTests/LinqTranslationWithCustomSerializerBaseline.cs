@@ -104,7 +104,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("OrderBy query", b => getQuery(b).Select(x => x).OrderBy(x => x.NumericField).Take(5), skipVerification : true, inputData: insertedData),
                 new LinqTestInput("Conditional", b => getQuery(b).Select(c => c.NumericField > 1 ? "true" : "false"), skipVerification : true, inputData: insertedData),
                 new LinqTestInput("Filter w/ nullable property", b => getQuery(b).Where(doc => doc.DateTimeField != null), skipVerification : true, inputData: insertedData),
-                new LinqTestInput("Filter w/ nullable enum", b => getQuery(b).Where(doc => doc.DataTypeField != null), skipVerification : true, inputData: insertedData)
+                new LinqTestInput("Filter w/ nullable enum", b => getQuery(b).Where(doc => doc.DataTypeField != null), skipVerification : true, inputData: insertedData),
+                new LinqTestInput("Filter w/ non-null nullable property", b => getQuery(b).Where(doc => doc.DateTimeField == DateTime.Now), skipVerification : true, inputData: insertedData),
+                new LinqTestInput("Filter w/ non-null nullable enum", b => getQuery(b).Where(doc => doc.DataTypeField == DataType.Point), skipVerification : true, inputData: insertedData),
             };
 
             this.ExecuteTestSuite(inputs);
@@ -132,7 +134,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     new LinqTestInput("Deeper than top level reference, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Select(doc => doc.NumericField > 1 ? new DataObjectNewtonsoft() { NumericField = 1, StringField = "1" } : new DataObjectNewtonsoft() { NumericField = 1, StringField = "1" }), skipVerification : true, inputData: insertedData),
                     new LinqTestInput("Filter w/ DataObject initializer with member initialization, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc == new DataObjectNewtonsoft() { NumericField = doc.NumericField, StringField = doc.StringField }).Select(b => "A"), skipVerification : true, inputData: insertedData),
                     new LinqTestInput("Filter w/ nullable property, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc.DateTimeField != null), skipVerification : true, inputData: insertedData),
-                    new LinqTestInput("Filter w/ nullable enum, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc.DataTypeField != null), skipVerification : true, inputData: insertedData)
+                    new LinqTestInput("Filter w/ nullable enum, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc.DataTypeField != null), skipVerification : true, inputData: insertedData),
+                    new LinqTestInput("Filter w/ non-null nullable property", b => getQuery(b).Where(doc => doc.DateTimeField == DateTime.Now), skipVerification : true, inputData: insertedData),
+                    new LinqTestInput("Filter w/ non-null nullable enum", b => getQuery(b).Where(doc => doc.DataTypeField == DataType.Point), skipVerification : true, inputData: insertedData),
                 };
 
                 inputs.AddRange(camelCaseSettingInputs);
@@ -163,7 +167,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     new LinqTestInput("Deeper than top level reference, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Select(doc => doc.NumericField > 1 ? new DataObjectDataMember() { NumericField = 1, StringField = "1" } : new DataObjectDataMember() { NumericField = 1, StringField = "1" }), skipVerification : true, inputData: insertedData),
                     new LinqTestInput("Filter w/ DataObject initializer with member initialization, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc == new DataObjectDataMember() { NumericField = doc.NumericField, StringField = doc.StringField }).Select(b => "A"), skipVerification : true, inputData: insertedData),
                     new LinqTestInput("Filter w/ nullable property, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc.DateTimeField != null), skipVerification : true, inputData: insertedData),
-                    new LinqTestInput("Filter w/ nullable enum, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc.DataTypeField != null), skipVerification : true, inputData: insertedData)
+                    new LinqTestInput("Filter w/ nullable enum, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc.DataTypeField != null), skipVerification : true, inputData: insertedData),
+                    new LinqTestInput("Filter w/ non-null nullable property", b => getQuery(b).Where(doc => doc.DateTimeField == DateTime.Now), skipVerification : true, inputData: insertedData),
+                    new LinqTestInput("Filter w/ non-null nullable enum", b => getQuery(b).Where(doc => doc.DataTypeField == DataType.Point), skipVerification : true, inputData: insertedData),
                 };
 
                 inputs.AddRange(camelCaseSettingInputs);

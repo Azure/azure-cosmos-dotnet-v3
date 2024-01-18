@@ -160,6 +160,48 @@ WHERE (root["dataTypeField"] != null)]]></SqlQuery>
   </Result>
   <Result>
     <Input>
+      <Description><![CDATA[Filter w/ non-null nullable property]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.DateTimeField == Convert(DateTime.Now, Nullable`1)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["dateTimeField"] = "2024-01-17T16:43:51.1125352-08:00")]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\"}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\"}"
+]]]></InputData>
+      <Results><![CDATA[[]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ non-null nullable enum]]></Description>
+      <Expression><![CDATA[query.Where(doc => (Convert(doc.DataTypeField, Nullable`1) == Convert(Point, Nullable`1)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["dataTypeField"] = "Point")]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\"}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\"}"
+]]]></InputData>
+      <Results><![CDATA[[]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
       <Description><![CDATA[Filter w/ constant value, camelcase = False]]></Description>
       <Expression><![CDATA[query.Where(doc => (doc.NumericField == 1))]]></Expression>
     </Input>
@@ -306,6 +348,48 @@ WHERE (root["DateTimeField"] != null)]]></SqlQuery>
 SELECT VALUE root 
 FROM root 
 WHERE (root["DataTypeField"] != null)]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\"}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\"}"
+]]]></InputData>
+      <Results><![CDATA[[]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ non-null nullable property]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.DateTimeField == Convert(DateTime.Now, Nullable`1)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["DateTimeField"] = "2024-01-17T16:43:51.1262884-08:00")]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\"}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\"}"
+]]]></InputData>
+      <Results><![CDATA[[]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ non-null nullable enum]]></Description>
+      <Expression><![CDATA[query.Where(doc => (Convert(doc.DataTypeField, Nullable`1) == Convert(Point, Nullable`1)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["DataTypeField"] = "Point")]]></SqlQuery>
       <InputData><![CDATA[[
   "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\"}",
   "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\"}",

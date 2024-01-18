@@ -495,7 +495,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                 memberExpression = left as MemberExpression;
             }
 
-            if (memberExpression != null && right.Literal is not SqlNullLiteral)
+            if (memberExpression != null && 
+                right.Literal is not SqlNullLiteral)
             {
                 Type memberType = memberExpression.Type;
                 if (memberType.IsNullable())
