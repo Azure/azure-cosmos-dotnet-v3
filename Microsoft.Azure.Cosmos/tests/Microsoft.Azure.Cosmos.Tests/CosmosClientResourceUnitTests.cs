@@ -210,6 +210,21 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
 
         }
 
+        [TestMethod]
+        [ExpectedException(typeof(InvalidOperationException))]
+        public void WithServerCertificateIgnoreFlagAddedInEndpoint_With_HttpFactory()
+        {
+            string ConnectionString = "AccountEndpoint=https://localtestcosmos.documents.azure.com:443/;AccountKey=425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==;";
+            CosmosClient client = new CosmosClient(
+                ConnectionString + "IgnoreEndpointCertificate=true;",
+                    new CosmosClientOptions()
+                    {
+                        ConnectionMode = ConnectionMode.Direct,
+                        HttpClientFactory = () => new HttpClient()
+                    });
+        }
+
+
         private CosmosClientContext CreateMockClientContext(bool allowBulkExecution = false)
         {
             Mock<CosmosClient> mockClient = new Mock<CosmosClient>();
