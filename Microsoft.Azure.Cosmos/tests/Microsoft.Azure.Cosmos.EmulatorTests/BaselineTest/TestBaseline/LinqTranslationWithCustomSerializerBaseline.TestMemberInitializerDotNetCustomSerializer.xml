@@ -179,13 +179,13 @@ WHERE (root["DataTypeField"] != null)]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Filter w/ non-null nullable property]]></Description>
-      <Expression><![CDATA[query.Where(doc => (doc.DateTimeField == Convert(DateTime.Now, Nullable`1)))]]></Expression>
+      <Expression><![CDATA[query.Where(doc => (doc.DateTimeField == Convert(new DateTime(1970, 1, 1, 0, 0, 0, 0, Utc), Nullable`1)))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["DateTimeFieldDotNet"] = "2024-01-17T16:43:49.1519186-08:00")]]></SqlQuery>
+WHERE (root["DateTimeFieldDotNet"] = "1970-01-01T00:00:00Z")]]></SqlQuery>
       <InputData><![CDATA[[
   "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
   "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",

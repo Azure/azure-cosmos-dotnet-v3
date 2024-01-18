@@ -161,13 +161,13 @@ WHERE (root["dataTypeField"] != null)]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Filter w/ non-null nullable property]]></Description>
-      <Expression><![CDATA[query.Where(doc => (doc.DateTimeField == Convert(DateTime.Now, Nullable`1)))]]></Expression>
+      <Expression><![CDATA[query.Where(doc => (doc.DateTimeField == Convert(new DateTime(1970, 1, 1, 0, 0, 0, 0, Utc), Nullable`1)))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["dateTimeField"] = "2024-01-17T16:43:51.1125352-08:00")]]></SqlQuery>
+WHERE (root["dateTimeField"] = "1970-01-01T00:00:00Z")]]></SqlQuery>
       <InputData><![CDATA[[
   "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\"}",
   "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\"}",
@@ -362,13 +362,13 @@ WHERE (root["DataTypeField"] != null)]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Filter w/ non-null nullable property]]></Description>
-      <Expression><![CDATA[query.Where(doc => (doc.DateTimeField == Convert(DateTime.Now, Nullable`1)))]]></Expression>
+      <Expression><![CDATA[query.Where(doc => (doc.DateTimeField == Convert(new DateTime(1970, 1, 1, 0, 0, 0, 0, Utc), Nullable`1)))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["DateTimeField"] = "2024-01-17T16:43:51.1262884-08:00")]]></SqlQuery>
+WHERE (root["DateTimeField"] = "1970-01-01T00:00:00Z")]]></SqlQuery>
       <InputData><![CDATA[[
   "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\"}",
   "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\"}",

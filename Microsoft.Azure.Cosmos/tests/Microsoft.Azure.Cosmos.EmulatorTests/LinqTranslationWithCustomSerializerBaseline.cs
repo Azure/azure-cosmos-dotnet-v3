@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("Conditional", b => getQuery(b).Select(c => c.NumericField > 1 ? "true" : "false"), skipVerification : true, inputData: insertedData),
                 new LinqTestInput("Filter w/ nullable property", b => getQuery(b).Where(doc => doc.DateTimeField != null), skipVerification : true, inputData: insertedData),
                 new LinqTestInput("Filter w/ nullable enum", b => getQuery(b).Where(doc => doc.DataTypeField != null), skipVerification : true, inputData: insertedData),
-                new LinqTestInput("Filter w/ non-null nullable property", b => getQuery(b).Where(doc => doc.DateTimeField == DateTime.Now), skipVerification : true, inputData: insertedData),
+                new LinqTestInput("Filter w/ non-null nullable property", b => getQuery(b).Where(doc => doc.DateTimeField == new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)), skipVerification : true, inputData: insertedData),
                 new LinqTestInput("Filter w/ non-null nullable enum", b => getQuery(b).Where(doc => doc.DataTypeField == DataType.Point), skipVerification : true, inputData: insertedData),
             };
 
@@ -135,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     new LinqTestInput("Filter w/ DataObject initializer with member initialization, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc == new DataObjectNewtonsoft() { NumericField = doc.NumericField, StringField = doc.StringField }).Select(b => "A"), skipVerification : true, inputData: insertedData),
                     new LinqTestInput("Filter w/ nullable property, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc.DateTimeField != null), skipVerification : true, inputData: insertedData),
                     new LinqTestInput("Filter w/ nullable enum, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc.DataTypeField != null), skipVerification : true, inputData: insertedData),
-                    new LinqTestInput("Filter w/ non-null nullable property", b => getQuery(b).Where(doc => doc.DateTimeField == DateTime.Now), skipVerification : true, inputData: insertedData),
+                    new LinqTestInput("Filter w/ non-null nullable property", b => getQuery(b).Where(doc => doc.DateTimeField == new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)), skipVerification : true, inputData: insertedData),
                     new LinqTestInput("Filter w/ non-null nullable enum", b => getQuery(b).Where(doc => doc.DataTypeField == DataType.Point), skipVerification : true, inputData: insertedData),
                 };
 
@@ -168,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     new LinqTestInput("Filter w/ DataObject initializer with member initialization, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc == new DataObjectDataMember() { NumericField = doc.NumericField, StringField = doc.StringField }).Select(b => "A"), skipVerification : true, inputData: insertedData),
                     new LinqTestInput("Filter w/ nullable property, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc.DateTimeField != null), skipVerification : true, inputData: insertedData),
                     new LinqTestInput("Filter w/ nullable enum, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc.DataTypeField != null), skipVerification : true, inputData: insertedData),
-                    new LinqTestInput("Filter w/ non-null nullable property", b => getQuery(b).Where(doc => doc.DateTimeField == DateTime.Now), skipVerification : true, inputData: insertedData),
+                    new LinqTestInput("Filter w/ non-null nullable property", b => getQuery(b).Where(doc => doc.DateTimeField == new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)), skipVerification : true, inputData: insertedData),
                     new LinqTestInput("Filter w/ non-null nullable enum", b => getQuery(b).Where(doc => doc.DataTypeField == DataType.Point), skipVerification : true, inputData: insertedData),
                 };
 
