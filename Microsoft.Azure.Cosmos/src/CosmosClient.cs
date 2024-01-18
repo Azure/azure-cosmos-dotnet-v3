@@ -184,7 +184,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         /// <remarks>
         /// The returned reference doesn't guarantee credentials or connectivity validations because creation doesn't make any network calls.
-        /// Alternatively, Connection string can have "IgnoreEndpointCertificate" flag to ignore SSL certificate validation for the service endpoint.It cannot be used with custom HttpClientFactory and NOT recommended to use this flag in production.
+        /// Alternatively, Connection string can have "IgnoreSslCertificate" flag to ignore SSL certificate validation for the service endpoint. It cannot be used with custom HttpClientFactory and NOT recommended to use this flag in production.
         /// </remarks>
         /// <seealso cref="CosmosClientOptions"/>
         /// <seealso cref="Fluent.CosmosClientBuilder"/>
