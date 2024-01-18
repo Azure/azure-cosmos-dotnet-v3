@@ -42,6 +42,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             RuntimeExecutionTimesAccumulator runtimeExecutionTimesAccumulator = new RuntimeExecutionTimesAccumulator();
             TimeSpan documentWriteTime = TimeSpan.Zero;
             TimeSpan vMExecutionTime = TimeSpan.Zero;
+            double requestCharge = 0;
 
             foreach (ServerSideMetricsInternal serverSideMetrics in this.serverSideMetricsList)
             {
@@ -59,6 +60,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 runtimeExecutionTimesAccumulator.Accumulate(serverSideMetrics.RuntimeExecutionTimes);
                 documentWriteTime += serverSideMetrics.DocumentWriteTime;
                 vMExecutionTime += serverSideMetrics.VMExecutionTime;
+                requestCharge += serverSideMetrics.RequestCharge;
             }
 
             return new ServerSideMetricsInternal(
@@ -73,7 +75,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 documentLoadTime: documentLoadTime,
                 vmExecutionTime: vMExecutionTime,
                 runtimeExecutionTimes: runtimeExecutionTimesAccumulator.GetRuntimeExecutionTimes(),
-                documentWriteTime: documentWriteTime);
+                documentWriteTime: documentWriteTime,
+                requestCharge: requestCharge);
         }
 
         public List<ServerSideMetricsInternal> GetPartitionedServerSideMetrics()

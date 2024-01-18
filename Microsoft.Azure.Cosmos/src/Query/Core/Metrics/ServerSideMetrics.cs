@@ -70,5 +70,10 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the VMExecution Time.
         /// </summary>
         public abstract TimeSpan VMExecutionTime { get; }
+
+        /// <summary>
+        /// Gets the request charge.
+        /// </summary>
+        public abstract double RequestCharge { get; internal set; }
     }
 }

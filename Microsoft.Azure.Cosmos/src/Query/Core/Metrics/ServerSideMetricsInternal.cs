@@ -34,7 +34,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             documentLoadTime: TimeSpan.Zero,
             vmExecutionTime: TimeSpan.Zero,
             runtimeExecutionTimes: RuntimeExecutionTimesInternal.Empty,
-            documentWriteTime: TimeSpan.Zero);
+            documentWriteTime: TimeSpan.Zero,
+            requestCharge: 0);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ServerSideMetricsInternal"/> class.
@@ -53,6 +54,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// <param name="documentWriteTime"></param>
         /// <param name="feedRange"></param>
         /// <param name="partitionKeyRangeId"></param>
+        /// <param name="requestCharge"></param>
         public ServerSideMetricsInternal(
            long retrievedDocumentCount,
            long retrievedDocumentSize,
@@ -67,7 +69,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
            RuntimeExecutionTimesInternal runtimeExecutionTimes,
            TimeSpan documentWriteTime,
            string feedRange = null,
-           int? partitionKeyRangeId = null)
+           int? partitionKeyRangeId = null,
+           double requestCharge = 0)
         {
             this.RetrievedDocumentCount = retrievedDocumentCount;
             this.RetrievedDocumentSize = retrievedDocumentSize;
@@ -83,6 +86,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             this.DocumentWriteTime = documentWriteTime;
             this.FeedRange = feedRange;
             this.PartitionKeyRangeId = partitionKeyRangeId;
+            this.RequestCharge = requestCharge;
         }
 
         public override TimeSpan TotalTime { get; }
@@ -120,11 +124,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         public override TimeSpan VMExecutionTime { get; }
 
+        public override double RequestCharge { get; internal set; }
+
         public string FeedRange { get; set; }
 
         public int? PartitionKeyRangeId { get; set; }
-
-        public double RequestCharge { get; set; }
 
         public static ServerSideMetricsInternal Create(IEnumerable<ServerSideMetricsInternal> serverSideMetricsEnumerable)
         {
