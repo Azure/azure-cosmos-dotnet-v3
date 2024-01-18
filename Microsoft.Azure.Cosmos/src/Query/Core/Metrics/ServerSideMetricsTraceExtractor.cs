@@ -8,18 +8,35 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
-    internal class ServerSideMetricsTraceExtractor
+    internal static class ServerSideMetricsTraceExtractor
     {
-        public ServerSideMetricsInternal ServerSideMetrics { get; }
-
-        public ServerSideMetricsTraceExtractor(ServerSideMetricsInternal serverSideMetrics, ITrace trace)
+        public static void WalkTraceTreeForQueryMetrics(ITrace currentTrace, ServerSideMetricsInternalAccumulator accumulator)
         {
-            this.ServerSideMetrics = serverSideMetrics;
-            this.ServerSideMetrics.FeedRange = trace.Name;
-            this.WalkTraceTree(trace);
+            if (currentTrace == null)
+            {
+                return;
+            }
+
+            foreach (object datum in currentTrace.Data.Values)
+            {
+                if (datum is QueryMetricsTraceDatum queryMetricsTraceDatum)
+                {
+                    ServerSideMetricsInternal serverSideMetrics = queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics;
+                    serverSideMetrics.FeedRange = currentTrace.Name;
+                    ServerSideMetricsTraceExtractor.WalkTraceTreeForPartitionInfo(currentTrace, serverSideMetrics);
+                    accumulator.Accumulate(serverSideMetrics);
+                }
+            }
+
+            foreach (ITrace childTrace in currentTrace.Children)
+            {
+                ServerSideMetricsTraceExtractor.WalkTraceTreeForQueryMetrics(childTrace, accumulator);
+            }
+
+            return;
         }
 
-        private void WalkTraceTree(ITrace currentTrace)
+        private static void WalkTraceTreeForPartitionInfo(ITrace currentTrace, ServerSideMetricsInternal serverSideMetrics)
         {
             if (currentTrace == null)
             {
@@ -34,21 +51,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                     {
                         if (int.TryParse(clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList[0].StoreResult.PartitionKeyRangeId, out int pKRangeId))
                         {
-                            this.ServerSideMetrics.PartitionKeyRangeId = pKRangeId;
+                            serverSideMetrics.PartitionKeyRangeId = pKRangeId;
                         }
 
-                        this.ServerSideMetrics.RequestCharge = clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList[0].StoreResult.RequestCharge;
+                        serverSideMetrics.RequestCharge = clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList[0].StoreResult.RequestCharge;
                     }
                 }
                 if (datum is PointOperationStatisticsTraceDatum pointOperationStatisticsTraceDatum)
                 {
-                    this.ServerSideMetrics.RequestCharge = pointOperationStatisticsTraceDatum.RequestCharge;
+                    serverSideMetrics.RequestCharge = pointOperationStatisticsTraceDatum.RequestCharge;
                 }
             }
 
             foreach (ITrace childTrace in currentTrace.Children)
             {
-                this.WalkTraceTree(childTrace);
+                ServerSideMetricsTraceExtractor.WalkTraceTreeForPartitionInfo(childTrace, serverSideMetrics);
             }
         }
     }

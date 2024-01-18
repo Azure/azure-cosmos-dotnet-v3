@@ -80,29 +80,5 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         {
             return this.serverSideMetricsList;
         }
-
-        public static void WalkTraceTreeForQueryMetrics(ITrace currentTrace, ServerSideMetricsInternalAccumulator accumulator)
-        {
-            if (currentTrace == null)
-            {
-                return;
-            }
-
-            foreach (object datum in currentTrace.Data.Values)
-            {
-                if (datum is QueryMetricsTraceDatum queryMetricsTraceDatum)
-                {
-                    ServerSideMetricsTraceExtractor traceExtractor = new ServerSideMetricsTraceExtractor(queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics, currentTrace);
-                    accumulator.Accumulate(traceExtractor.ServerSideMetrics);
-                }
-            }
-
-            foreach (ITrace childTrace in currentTrace.Children)
-            {
-                WalkTraceTreeForQueryMetrics(childTrace, accumulator);
-            }
-
-            return;
-        }
     }
 }
