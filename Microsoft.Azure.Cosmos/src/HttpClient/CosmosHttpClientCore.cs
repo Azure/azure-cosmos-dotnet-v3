@@ -63,6 +63,18 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 HttpClient userHttpClient = httpClientFactory.Invoke() ?? throw new ArgumentNullException($"{nameof(httpClientFactory)} returned null. {nameof(httpClientFactory)} must return a HttpClient instance.");
+
+                if (connectionPolicy.ServerCertificateCustomValidationCallback != null)
+                {
+                    HttpClientHandler handler = (HttpClientHandler)typeof(HttpClient)
+                   .GetField("handler", BindingFlags.Instance | BindingFlags.NonPublic)
+                   .GetValue(userHttpClient);
+                    typeof(HttpClientHandler)
+                        .GetField("ServerCertificateCustomValidationCallback", BindingFlags.Instance | BindingFlags.NonPublic)
+                        .SetValue(handler, connectionPolicy.ServerCertificateCustomValidationCallback);
+
+                }
+
                 return CosmosHttpClientCore.CreateHelper(
                     httpClient: userHttpClient,
                     httpMessageHandler: httpMessageHandler,
@@ -456,6 +468,8 @@ namespace Microsoft.Azure.Cosmos
                 requestMessage.RequestUri.ToString(),
                 resourceType.ToResourceTypeString(),
                 requestMessage.Headers);
+
+            System.Net.ServicePointManager.ServerCertificateValidationCallback = (sender, cert, chain, sslPolicyErrors) => true;
 
             // Only read the header initially. The content gets copied into a memory stream later
             // if we read the content HTTP client will buffer the message and then it will get buffered
