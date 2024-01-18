@@ -925,7 +925,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.ServerCertificateCustomValidationCallback != null && this.HttpClientFactory != null)
             {
-                throw new ArgumentException($"{nameof(this.ServerCertificateCustomValidationCallback)} or {IgnoreEndpointCertificate} flag can not be set along with {nameof(this.HttpClientFactory)}");
+                throw new ArgumentException($"{nameof(this.ServerCertificateCustomValidationCallback)} or IgnoreEndpointCertificate flag in the connection string can not be set along with {nameof(this.HttpClientFactory)}");
             }
         }
 
