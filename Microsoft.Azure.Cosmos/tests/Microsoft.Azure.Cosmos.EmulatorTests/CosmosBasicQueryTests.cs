@@ -797,7 +797,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             QueryRequestOptions queryRequestOptions = new QueryRequestOptions
             {
                 MaxItemCount = 50,
-                EnableOptimisticDirectExecution = false
             };
 
             FeedIteratorInternal feedIterator =
@@ -812,6 +811,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             QueryRequestOptions newQueryRequestOptions = new QueryRequestOptions
             {
                 MaxItemCount = 50,
+                EnableOptimisticDirectExecution = false
             };
 
             // use Continuation Token to create new iterator and use same trace
@@ -826,7 +826,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 responseMessage = await feedIteratorNew.ReadNextAsync(CancellationToken.None);
             }
 
-            string expectedErrorMessage = "The continuation token supplied requires the Optimistic Direct Execution flag to be enabled in QueryRequestOptions for the query execution to resume. ";
+            string expectedErrorMessage = "Execution of this query using the supplied continuation token requires EnableOptimisticDirectExecution to be set in QueryRequestOptions. ";
             Assert.IsTrue(responseMessage.CosmosException.ToString().Contains(expectedErrorMessage));
         }
 

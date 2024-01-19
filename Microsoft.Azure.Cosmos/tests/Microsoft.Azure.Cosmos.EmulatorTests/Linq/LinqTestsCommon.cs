@@ -582,11 +582,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             {
                 if (ex is CosmosException cosmosException)
                 {
+                    // ODE scenario: The backend generates an error response message with significant variations when compared to the Service Interop which gets called in the Non ODE scenario. 
+                    // The objective is to standardize and normalize the backend response for consistency.
                     Match match = Regex.Match(ex.Message, @"Reason:(.*?}]})", RegexOptions.IgnoreCase);
                     if (match.Success)
                     {
-                        // ODE scenario: The backend generates an error response message with significant variations when compared to the Service Interop. 
-                        // The objective is to standardize and normalize the backend response for consistency.
                         string reason = match.Groups[1].Value;
                         reason = reason.Replace("\\", "");
 
