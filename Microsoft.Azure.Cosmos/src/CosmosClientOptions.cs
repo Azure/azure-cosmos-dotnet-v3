@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
 
         private const string ConnectionStringAccountEndpoint = "AccountEndpoint";
         private const string ConnectionStringAccountKey = "AccountKey";
-        private const string IgnoreEndpointCertificate = "IgnoreEndpointCertificate";
+        private const string ConnectionStringIgnoreEndpointCertificate = "IgnoreEndpointCertificate";
 
         private const ApiType DefaultApiType = ApiType.None;
 
@@ -652,7 +652,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <remarks>
         /// <para>
-        /// Customizing SSL verification is not recommended in production environments. It cannot be used with custom HttpClientFactory.
+        /// Customizing SSL verification is not recommended in production environments.
         /// </para>
         /// </remarks>
         public Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback { get; set; }
@@ -856,7 +856,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal static bool IsIgnoreEndpointCertificateFlag(string connectionString)
         {
-            return Convert.ToBoolean(CosmosClientOptions.GetValueFromConnectionString<bool>(connectionString, CosmosClientOptions.IgnoreEndpointCertificate, false));
+            return Convert.ToBoolean(CosmosClientOptions.GetValueFromConnectionString<bool>(connectionString, CosmosClientOptions.ConnectionStringIgnoreEndpointCertificate, false));
         }
 
         internal static CosmosClientOptions GetCosmosClientOptionsWithCertificateFlag(string connectionString, CosmosClientOptions clientOptions)
