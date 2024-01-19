@@ -82,13 +82,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
 
                         if (this.previousRequiresDistribution.HasValue && this.previousRequiresDistribution != requiresDistribution)
                         {
-                            // We should never enter this if statement as requiresDistribution flag can never switch mid execution.
+                            // We should never come here as requiresDistribution flag can never switch mid execution.
                             // Hence, this exception should never be thrown.
                             throw new InvalidOperationException($"Unexpected switch in {HttpConstants.HttpHeaders.RequiresDistribution} value. Previous value : {this.previousRequiresDistribution} Current value : {requiresDistribution}.");
                         }
 
                         if (requiresDistribution)
                         {
+                            // This is where we will unwrap tne continuation token and extract the client distribution plan
+                            // Pipelines to handle client distribution would be generated here
                             success = await this.SwitchToFallbackPipelineAsync(continuationToken: null, trace);
                         }
 

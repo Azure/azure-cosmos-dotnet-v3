@@ -1,0 +1,258 @@
+{
+  "_rid": "7+JyAOgQsps=",
+  "Documents": [
+    {
+      "count_a_plus_five": 5
+    }
+  ],
+  "_count": 1,
+  "_distributionPlan": {
+    "backendDistributionPlan": {
+      "query": "SELECT Count(r.a * 2) + 5 AS count_a_plus_five FROM r",
+      "obfuscatedQuery": "{\"query\":\"SELECT (Count((r.a * 2)) + 5) AS p1__17\\nFROM r\",\"parameters\":[]}",
+      "shape": "{\"Select\":{\"Type\":\"List\",\"AggCount\":1},\"From\":{\"Expr\":\"Aliased\"}}",
+      "signature": 2484093724948031272,
+      "shapeSignature": -995540351760288838,
+      "queryIL": {
+        "Expression": {
+          "Kind": "Aggregate",
+          "Type": {
+            "Kind": "Enum",
+            "ItemType": {
+              "Kind": "Base",
+              "BaseTypeKind": "Number",
+              "ExcludesUndefined": true
+            }
+          },
+          "Aggregate": {
+            "Kind": "Builtin",
+            "Signature": {
+              "ItemType": {
+                "Kind": "Base",
+                "BaseTypeKind": "Number",
+                "ExcludesUndefined": false
+              },
+              "ResultType": {
+                "Kind": "Base",
+                "BaseTypeKind": "Number",
+                "ExcludesUndefined": true
+              }
+            },
+            "OperatorKind": "Count"
+          },
+          "SourceExpression": {
+            "Kind": "Select",
+            "Type": {
+              "Kind": "Enum",
+              "ItemType": {
+                "Kind": "Base",
+                "BaseTypeKind": "Number",
+                "ExcludesUndefined": false
+              }
+            },
+            "Delegate": {
+              "Kind": "ScalarExpression",
+              "Type": {
+                "Kind": "Base",
+                "BaseTypeKind": "Number",
+                "ExcludesUndefined": false
+              },
+              "DeclaredVariable": {
+                "Name": "v0",
+                "UniqueId": 0,
+                "Type": {
+                  "Kind": "Base",
+                  "BaseTypeKind": "Variant",
+                  "ExcludesUndefined": true
+                }
+              },
+              "Expression": {
+                "Kind": "BinaryOperator",
+                "Type": {
+                  "Kind": "Base",
+                  "BaseTypeKind": "Number",
+                  "ExcludesUndefined": false
+                },
+                "OperatorKind": "Multiply",
+                "LeftExpression": {
+                  "Kind": "PropertyRef",
+                  "Type": {
+                    "Kind": "Base",
+                    "BaseTypeKind": "Variant",
+                    "ExcludesUndefined": false
+                  },
+                  "Expression": {
+                    "Kind": "VariableRef",
+                    "Type": {
+                      "Kind": "Base",
+                      "BaseTypeKind": "Variant",
+                      "ExcludesUndefined": true
+                    },
+                    "Variable": {
+                      "Name": "v0",
+                      "UniqueId": 0,
+                      "Type": {
+                        "Kind": "Base",
+                        "BaseTypeKind": "Variant",
+                        "ExcludesUndefined": true
+                      }
+                    }
+                  },
+                  "PropertyName": "a"
+                },
+                "RightExpression": {
+                  "Kind": "Literal",
+                  "Type": {
+                    "Kind": "Base",
+                    "BaseTypeKind": "Number",
+                    "ExcludesUndefined": true
+                  },
+                  "Literal": {
+                    "Kind": "Number",
+                    "Value": 2
+                  }
+                }
+              }
+            },
+            "SourceExpression": {
+              "Kind": "Where",
+              "Type": {
+                "Kind": "Enum",
+                "ItemType": {
+                  "Kind": "Base",
+                  "BaseTypeKind": "Variant",
+                  "ExcludesUndefined": true
+                }
+              },
+              "Delegate": {
+                "Kind": "ScalarExpression",
+                "Type": {
+                  "Kind": "Base",
+                  "BaseTypeKind": "Boolean",
+                  "ExcludesUndefined": false
+                },
+                "DeclaredVariable": {
+                  "Name": "r",
+                  "UniqueId": 4,
+                  "Type": {
+                    "Kind": "Base",
+                    "BaseTypeKind": "Variant",
+                    "ExcludesUndefined": true
+                  }
+                },
+                "Expression": {
+                  "Kind": "BinaryOperator",
+                  "Type": {
+                    "Kind": "Base",
+                    "BaseTypeKind": "Boolean",
+                    "ExcludesUndefined": false
+                  },
+                  "OperatorKind": "Equal",
+                  "LeftExpression": {
+                    "Kind": "PropertyRef",
+                    "Type": {
+                      "Kind": "Base",
+                      "BaseTypeKind": "Variant",
+                      "ExcludesUndefined": false
+                    },
+                    "Expression": {
+                      "Kind": "VariableRef",
+                      "Type": {
+                        "Kind": "Base",
+                        "BaseTypeKind": "Variant",
+                        "ExcludesUndefined": true
+                      },
+                      "Variable": {
+                        "Name": "r",
+                        "UniqueId": 4,
+                        "Type": {
+                          "Kind": "Base",
+                          "BaseTypeKind": "Variant",
+                          "ExcludesUndefined": true
+                        }
+                      }
+                    },
+                    "PropertyName": "pk"
+                  },
+                  "RightExpression": {
+                    "Kind": "Literal",
+                    "Type": {
+                      "Kind": "Base",
+                      "BaseTypeKind": "String",
+                      "ExcludesUndefined": true
+                    },
+                    "Literal": {
+                      "Kind": "String",
+                      "Value": "90850703-b087-4580-91ee-e4a3918c3e85"
+                    }
+                  }
+                }
+              },
+              "SourceExpression": {
+                "Kind": "Input",
+                "Type": {
+                  "Kind": "Enum",
+                  "ItemType": {
+                    "Kind": "Base",
+                    "BaseTypeKind": "Variant",
+                    "ExcludesUndefined": true
+                  }
+                },
+                "Name": "r"
+              }
+            }
+          }
+        }
+      },
+      "noSpatial": true,
+      "language": "QueryIL"
+    },
+    "clientDistributionPlan": {
+      "clientQL": {
+        "Kind": "Select",
+        "DeclaredVariable": {
+          "Name": "v0",
+          "UniqueId": 2
+        },
+        "Expression": {
+          "Kind": "ObjectCreate",
+          "ObjectKind": "Object",
+          "Properties": [
+            {
+              "Name": "count_a_plus_five",
+              "Expression": {
+                "Kind": "BinaryOperator",
+                "OperatorKind": "Add",
+                "LeftExpression": {
+                  "Kind": "VariableRef",
+                  "Variable": {
+                    "Name": "v0",
+                    "UniqueId": 2
+                  }
+                },
+                "RightExpression": {
+                  "Kind": "Literal",
+                  "Literal": {
+                    "Kind": "Number",
+                    "Value": 5
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "SourceExpression": {
+          "Kind": "Aggregate",
+          "Aggregate": {
+            "Kind": "Builtin",
+            "OperatorKind": "Sum"
+          },
+          "SourceExpression": {
+            "Kind": "Input",
+            "Name": "root"
+          }
+        }
+      }
+    }
+  }
+}
