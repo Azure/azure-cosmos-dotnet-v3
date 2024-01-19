@@ -83,6 +83,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 QueryRequestOptions requestOptions = new QueryRequestOptions()
                 {
+                    // ODE set to false in this scenario as using ODE could cause the query plan to not get invoked.
                     EnableOptimisticDirectExecution = false
                 };
 

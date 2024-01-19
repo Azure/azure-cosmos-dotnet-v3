@@ -304,7 +304,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             foreach (bool enableODE in new bool[] { false, true })
             {
-                // ingestionClinet is dedicated client simulating the writes / container recreation in
+                // ingestionClient is dedicated client simulating the writes / container recreation in
                 // the separate process - like Spark job
                 using CosmosClient ingestionClient = TestCommon.CreateCosmosClient();
                 Cosmos.Database ingestionDatabase = ingestionClient.GetDatabase(this.database.Id);

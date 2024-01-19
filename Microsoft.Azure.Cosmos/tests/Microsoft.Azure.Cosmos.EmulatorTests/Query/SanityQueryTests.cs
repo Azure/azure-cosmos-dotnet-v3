@@ -688,6 +688,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         {
                             foreach (Cosmos.PartitionKey? partitionKey in new Cosmos.PartitionKey?[] { new Cosmos.PartitionKey(5), default })
                             {
+                                // ODE is set to false to allow for the testing of other pipelines in single partition scenarios
                                 QueryRequestOptions feedOptions = new QueryRequestOptions
                                 {
                                     MaxBufferedItemCount = 7000,

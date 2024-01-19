@@ -240,7 +240,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         MaxItemCount = 1,
                         MaxConcurrency = 1,
-                        EnableOptimisticDirectExecution = true
                     }))
                 {
                     while (feedIterator.HasMoreResults)
@@ -269,7 +268,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     MaxItemCount = 1,
                     MaxConcurrency = 1,
-                    EnableOptimisticDirectExecution = true
                 });
 
             // First request should be a success
@@ -799,7 +797,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             QueryRequestOptions queryRequestOptions = new QueryRequestOptions
             {
                 MaxItemCount = 50,
-                EnableOptimisticDirectExecution = true
+                EnableOptimisticDirectExecution = false
             };
 
             FeedIteratorInternal feedIterator =
@@ -814,7 +812,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             QueryRequestOptions newQueryRequestOptions = new QueryRequestOptions
             {
                 MaxItemCount = 50,
-                EnableOptimisticDirectExecution = true
             };
 
             // use Continuation Token to create new iterator and use same trace

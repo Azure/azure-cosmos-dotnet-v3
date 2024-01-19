@@ -311,10 +311,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             }
 
             FeedOptions feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true };
-            QueryRequestOptions requestOptions = new QueryRequestOptions()
-            {
-                EnableOptimisticDirectExecution = false
-            };
+            QueryRequestOptions requestOptions = new QueryRequestOptions();
 
             IOrderedQueryable<T> query = container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution: true, requestOptions: requestOptions);
 
@@ -351,10 +348,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             }
 
             FeedOptions feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true };
-            QueryRequestOptions requestOptions = new QueryRequestOptions()
-            {
-                EnableOptimisticDirectExecution = false
-            };
+            QueryRequestOptions requestOptions = new QueryRequestOptions();
 
             IOrderedQueryable<T> query = container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution: true, requestOptions: requestOptions, linqSerializerOptions: linqSerializerOptions);
 
@@ -536,10 +530,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             }
 
             FeedOptions feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true };
-            QueryRequestOptions requestOptions = new QueryRequestOptions()
-            {
-                EnableOptimisticDirectExecution = false
-            };
+            QueryRequestOptions requestOptions = new QueryRequestOptions();
 
             IOrderedQueryable<Data> query = container.GetItemLinqQueryable<Data>(allowSynchronousQueryExecution: true, requestOptions: requestOptions);
 
@@ -591,7 +582,26 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             {
                 if (ex is CosmosException cosmosException)
                 {
-                    message.Append($"Status Code: {cosmosException.StatusCode}");
+                    Match match = Regex.Match(ex.Message, @"Reason:(.*?}]})", RegexOptions.IgnoreCase);
+                    if (match.Success)
+                    {
+                        // ODE scenario: The backend generates an error response message with significant variations when compared to the Service Interop. 
+                        // The objective is to standardize and normalize the backend response for consistency.
+                        string reason = match.Groups[1].Value;
+                        reason = reason.Replace("\\", "");
+
+                        string transformedString = "Status Code: " + reason;
+                        transformedString = transformedString.Replace(" (", "");
+                        transformedString = transformedString.Replace("{\"code\":\"", "");
+                        transformedString = transformedString.Replace("\",\"message\":\"Message: {\"errors\":[", ",{\"errors\":[");
+                        transformedString = transformedString.Replace("}]}", "}]},0x800A0B00");
+
+                        return transformedString;
+                    }
+                    else
+                    {
+                        message.Append($"Status Code: {cosmosException.StatusCode}");
+                    }
                 }
                 else if (ex is DocumentClientException documentClientException)
                 {
