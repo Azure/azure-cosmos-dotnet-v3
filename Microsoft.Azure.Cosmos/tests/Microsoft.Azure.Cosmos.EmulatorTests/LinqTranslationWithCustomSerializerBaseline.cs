@@ -107,6 +107,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("Filter w/ nullable enum", b => getQuery(b).Where(doc => doc.DataTypeField != null), skipVerification : true, inputData: insertedData),
                 new LinqTestInput("Filter w/ non-null nullable property", b => getQuery(b).Where(doc => doc.DateTimeField == new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)), skipVerification : true, inputData: insertedData),
                 new LinqTestInput("Filter w/ non-null nullable enum", b => getQuery(b).Where(doc => doc.DataTypeField == DataType.Point), skipVerification : true, inputData: insertedData),
+                new LinqTestInput("Filter w/ string null comparison", b => getQuery(b).Where(doc => doc.StringField != null), skipVerification : true, inputData: insertedData),
             };
 
             this.ExecuteTestSuite(inputs);
@@ -137,6 +138,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     new LinqTestInput("Filter w/ nullable enum, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc.DataTypeField != null), skipVerification : true, inputData: insertedData),
                     new LinqTestInput("Filter w/ non-null nullable property", b => getQuery(b).Where(doc => doc.DateTimeField == new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)), skipVerification : true, inputData: insertedData),
                     new LinqTestInput("Filter w/ non-null nullable enum", b => getQuery(b).Where(doc => doc.DataTypeField == DataType.Point), skipVerification : true, inputData: insertedData),
+                    new LinqTestInput("Filter w/ string null comparison, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc.StringField != null), skipVerification : true, inputData: insertedData),
                 };
 
                 inputs.AddRange(camelCaseSettingInputs);
@@ -170,6 +172,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     new LinqTestInput("Filter w/ nullable enum, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc.DataTypeField != null), skipVerification : true, inputData: insertedData),
                     new LinqTestInput("Filter w/ non-null nullable property", b => getQuery(b).Where(doc => doc.DateTimeField == new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)), skipVerification : true, inputData: insertedData),
                     new LinqTestInput("Filter w/ non-null nullable enum", b => getQuery(b).Where(doc => doc.DataTypeField == DataType.Point), skipVerification : true, inputData: insertedData),
+                    new LinqTestInput("Filter w/ string null comparison, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc.StringField != null), skipVerification : true, inputData: insertedData),
                 };
 
                 inputs.AddRange(camelCaseSettingInputs);

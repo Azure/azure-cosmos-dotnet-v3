@@ -202,6 +202,27 @@ WHERE (root["dataTypeField"] = "Point")]]></SqlQuery>
   </Result>
   <Result>
     <Input>
+      <Description><![CDATA[Filter w/ string null comparison, camelcase = True]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.StringField != null))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["stringValueNewtonsoft"] != null)]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\"}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\"}"
+]]]></InputData>
+      <Results><![CDATA[[]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
       <Description><![CDATA[Filter w/ constant value, camelcase = False]]></Description>
       <Expression><![CDATA[query.Where(doc => (doc.NumericField == 1))]]></Expression>
     </Input>
@@ -390,6 +411,27 @@ WHERE (root["DateTimeField"] = "1970-01-01T00:00:00Z")]]></SqlQuery>
 SELECT VALUE root 
 FROM root 
 WHERE (root["DataTypeField"] = "Point")]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\"}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\"}"
+]]]></InputData>
+      <Results><![CDATA[[]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ string null comparison, camelcase = False]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.StringField != null))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["StringValueNewtonsoft"] != null)]]></SqlQuery>
       <InputData><![CDATA[[
   "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\"}",
   "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\"}",

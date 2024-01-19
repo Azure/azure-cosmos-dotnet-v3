@@ -212,4 +212,26 @@ WHERE (root["DataTypeField"] = 2)]]></SqlQuery>
       <Results><![CDATA[[]]]></Results>
     </Output>
   </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ string null comparison]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.StringField != null))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["StringValueDotNet"] != null)]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+]]]></InputData>
+      <Results><![CDATA[[
+  "{NumericField:0,StringField:0,id:0-False,Pk:Test}",
+  "{NumericField:1,StringField:1,id:1-False,Pk:Test}",
+  "{NumericField:2,StringField:2,id:2-False,Pk:Test}"
+]]]></Results>
+    </Output>
+  </Result>
 </Results>

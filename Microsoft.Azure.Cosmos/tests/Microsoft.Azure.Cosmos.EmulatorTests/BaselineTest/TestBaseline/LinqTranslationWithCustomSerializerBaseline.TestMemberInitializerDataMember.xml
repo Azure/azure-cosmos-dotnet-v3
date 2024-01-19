@@ -202,6 +202,27 @@ WHERE (root["dataTypeFieldDataMember"] = 2)]]></SqlQuery>
   </Result>
   <Result>
     <Input>
+      <Description><![CDATA[Filter w/ string null comparison, camelcase = True]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.StringField != null))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["stringFieldDataMember"] != null)]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+]]]></InputData>
+      <Results><![CDATA[[]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
       <Description><![CDATA[Filter w/ constant value, camelcase = False]]></Description>
       <Expression><![CDATA[query.Where(doc => (doc.NumericField == 1))]]></Expression>
     </Input>
@@ -390,6 +411,27 @@ WHERE (root["DateTimeFieldDataMember"] = "1970-01-01T00:00:00Z")]]></SqlQuery>
 SELECT VALUE root 
 FROM root 
 WHERE (root["DataTypeFieldDataMember"] = 2)]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+]]]></InputData>
+      <Results><![CDATA[[]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ string null comparison, camelcase = False]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.StringField != null))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["StringFieldDataMember"] != null)]]></SqlQuery>
       <InputData><![CDATA[[
   "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
   "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
