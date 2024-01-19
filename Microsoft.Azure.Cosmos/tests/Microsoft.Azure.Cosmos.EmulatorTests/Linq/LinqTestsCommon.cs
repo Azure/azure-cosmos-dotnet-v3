@@ -585,7 +585,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                     // ODE scenario: The backend generates an error response message with significant variations when compared to the Service Interop which gets called in the Non ODE scenario. 
                     // The objective is to standardize and normalize the backend response for consistency.
                     Match match = Regex.Match(ex.Message, @"Reason:(.*?}]})", RegexOptions.IgnoreCase);
-                    if (match.Success)
+                    Match requestURIMatch = Regex.Match(ex.Message, @"Request URI", RegexOptions.IgnoreCase);
+                    if (match.Success && requestURIMatch.Success)
                     {
                         string reason = match.Groups[1].Value;
                         reason = reason.Replace("\\", "");

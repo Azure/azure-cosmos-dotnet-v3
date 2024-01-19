@@ -3846,7 +3846,7 @@
     <ATTRIBUTE key="db.cosmosdb.item_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US,South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Query Document">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
