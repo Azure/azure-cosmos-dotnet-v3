@@ -63,7 +63,6 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 HttpClient userHttpClient = httpClientFactory.Invoke() ?? throw new ArgumentNullException($"{nameof(httpClientFactory)} returned null. {nameof(httpClientFactory)} must return a HttpClient instance.");
-
                 return CosmosHttpClientCore.CreateHelper(
                     httpClient: userHttpClient,
                     httpMessageHandler: httpMessageHandler,
