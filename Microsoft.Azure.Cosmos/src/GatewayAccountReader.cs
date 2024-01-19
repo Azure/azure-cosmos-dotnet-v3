@@ -44,12 +44,14 @@ namespace Microsoft.Azure.Cosmos
                 serviceEndpoint
             };
 
-            if (this.connectionPolicy.RegionalEndpoints != null)
+            if (this.connectionPolicy.RegionalEndpoints != null
+                && this.connectionPolicy.RegionalEndpoints.Count > 0)
             {
                 foreach (string regionalEndpoint in this.connectionPolicy.RegionalEndpoints)
                 {
-                    // Do the regional endpoint lookup
-                    serviceEndpoints.Add(new Uri(regionalEndpoint));
+                    // Add all of the regional endpoints to the service endpoints list.
+                    serviceEndpoints.Add(
+                        new Uri(regionalEndpoint));
                 }
             }
 
@@ -121,13 +123,14 @@ namespace Microsoft.Azure.Cosmos
                 }
                 catch (Exception ex)
                 {
-                    DefaultTrace.TraceWarning("Attempt: {0}, Exception occurred while fetching account details: {1}", attemptCounter, ex.Message);
+                    DefaultTrace.TraceWarning("Attempt: {0}, Exception occurred while fetching account details: {1}", attemptCounter++, ex.Message);
                     exceptionList.Add(ex);
-                    attemptCounter++;
                 }
             }
 
-            throw new AggregateException("Unable to get account information.", exceptionList);
+            throw exceptionList.Count > 1
+                ? new AggregateException("Unable to get account information.", exceptionList)
+                : exceptionList[0];
         }
     }
 }

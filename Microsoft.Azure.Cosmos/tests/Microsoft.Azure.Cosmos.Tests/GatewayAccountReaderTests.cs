@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
+    using System.Collections.Generic;
 
     /// <summary>
     /// Tests for <see cref="GatewayAccountReader"/>.
@@ -98,6 +99,37 @@ namespace Microsoft.Azure.Cosmos
 
             Mock.Get(mockFactory.Object)
                 .Verify(f => f(), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task InitializeReaderAsync_WhenInvokedWithRegionalEndpoints_ShouldRetryWhenPrimaryEndpointFails()
+        {
+            HttpMessageHandler messageHandler = new CustomMessageHandler();
+            HttpClient staticHttpClient = new HttpClient(messageHandler);
+
+            Mock<HttpClient> mockedHttpClient = new();
+
+            ConnectionPolicy connectionPolicy = new()
+            {
+                EnablePartitionLevelFailover = true,
+                ConnectionMode = ConnectionMode.Direct,
+            };
+
+            connectionPolicy.SetRegionalEndpoints(
+                new List<string>()
+                {
+                    "https://dkppaf1.documents-test.windows-int.net:443/",
+                    "https://dkppaf2.documents-test.windows-int.net:443/",
+                    "https://dkppaf6.documents-test.windows-int.net:443/",
+                });
+
+            GatewayAccountReader accountReader = new GatewayAccountReader(
+                serviceEndpoint: new Uri("https://localhost"),
+                cosmosAuthorization: Mock.Of<AuthorizationTokenProvider>(),
+                connectionPolicy: connectionPolicy,
+                httpClient: MockCosmosUtil.CreateCosmosHttpClient(() => staticHttpClient));
+
+            AggregateException exception = await Assert.ThrowsExceptionAsync<AggregateException>(() => accountReader.InitializeReaderAsync());
         }
 
         public class CustomMessageHandler : HttpMessageHandler
