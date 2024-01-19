@@ -14,10 +14,10 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Linq.Expressions;
     using System.Reflection;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
     using static Microsoft.Azure.Cosmos.Linq.FromParameterBindings;
 
     // ReSharper disable UnusedParameter.Local
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         public static SqlQuery TranslateQuery(
             Expression inputExpression,
             IDictionary<object, string> parameters,
-            CosmosLinqSerializerOptions linqSerializerOptions)
+            CosmosLinqSerializerOptionsInternal linqSerializerOptions)
         {
             TranslationContext context = new TranslationContext(linqSerializerOptions, parameters);
             ExpressionToSql.Translate(inputExpression, context); // ignore result here
@@ -495,7 +495,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                 memberExpression = left as MemberExpression;
             }
 
-            if (memberExpression != null)
+            if (memberExpression != null && 
+                right.Literal is not SqlNullLiteral)
             {
                 Type memberType = memberExpression.Type;
                 if (memberType.IsNullable())
@@ -503,8 +504,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                     memberType = memberType.NullableUnderlyingType();
                 }
 
-                bool requiresCustomSerializatior = context.CosmosLinqSerializer.RequiresCustomSerialization(memberExpression, memberType);
-                if (requiresCustomSerializatior)
+                bool requiresCustomSerialization = context.CosmosLinqSerializer.RequiresCustomSerialization(memberExpression, memberType);
+                if (requiresCustomSerialization)
                 {
                     object value = default(object);
                     // Enum
