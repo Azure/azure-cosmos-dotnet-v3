@@ -25,14 +25,16 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="client"></param>
         /// <param name="requestMessage"></param>
         /// <param name="cancellationToken"></param>
-        internal virtual Task<ResponseMessage> ExecuteAvailablityStrategyAsync(
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        abstract Task<ResponseMessage> ExecuteAvailablityStrategyAsync(
             Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender,
             CosmosClient client,
             RequestMessage requestMessage,
-            CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
+            CancellationToken cancellationToken);
 
         internal virtual bool Enabled()
         {

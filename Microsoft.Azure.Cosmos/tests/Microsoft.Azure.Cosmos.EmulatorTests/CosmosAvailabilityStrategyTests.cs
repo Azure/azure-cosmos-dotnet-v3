@@ -1,4 +1,4 @@
-﻿#if PREVIEW
+﻿
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
@@ -8,14 +8,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using global::Azure.Core;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Handlers;
-    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
-    using PartitionKey = PartitionKey;
 
     [TestClass]
     public class CosmosAvailabilityStrategyTests
@@ -32,9 +29,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 ConnectionMode = ConnectionMode.Direct,
                 ApplicationPreferredRegions = new List<string>() { "East US", "West US" },
-                AvailabilityStrategy = new ParallelHedgingAvailabilityStrategy(
+                AvailabilityStrategy = new CrossRegionParallelHedgingAvailabilityStrategy(
                         threshold: TimeSpan.FromMilliseconds(100), 
-                        step: TimeSpan.FromMilliseconds(50))
+                        thresholdStep: TimeSpan.FromMilliseconds(50))
             };
 
             this.client = new CosmosClient(

@@ -89,7 +89,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
         }
 
         /// <summary>
-        /// This method determines if the request can use an availability strategy
+        /// This method determines if there is an availability strategy that the request can use.
+        /// Note that the request level availability strategy options override the client level options.
         /// </summary>
         /// <param name="request"></param>
         /// <returns>whether the request should be a parallel hedging request.</returns>
