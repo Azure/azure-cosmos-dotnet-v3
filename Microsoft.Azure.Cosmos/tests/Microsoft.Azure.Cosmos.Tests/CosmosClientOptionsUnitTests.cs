@@ -888,7 +888,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         [TestMethod]
         [DataRow(ConnectionString, false)]
-        [DataRow(ConnectionString + "IgnoreEndpointCertificate=true;", true)]
+        [DataRow(ConnectionString + "DisableServerCertificateValidation=true;", true)]
         public void TestServerCertificatesValidationCallback(string connStr, bool expectedIgnoreCertificateFlag)
         {
             CosmosClient cosmosClient = new CosmosClient(connStr);

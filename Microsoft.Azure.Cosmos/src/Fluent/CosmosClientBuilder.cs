@@ -124,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <example>"AccountEndpoint=https://mytestcosmosaccount.documents.azure.com:443/;AccountKey={SecretAccountKey};"</example>
         /// <param name="connectionString">The connection string must contain AccountEndpoint and AccountKey or ResourceToken.</param>
-        /// <remarks>Alternatively, Connection string can have "IgnoreEndpointCertificate" flag to ignore SSL certificate validation for the service endpoint.It cannot be used with custom HttpClientFactory.and NOT recommended to use this flag in production.</remarks>
+        /// <remarks>With emulator to ignore SSL Certificate please use connectionstring with "DisableServerCertificateValidation" flag. It cannot be used along with custom HttpClientFactory and NOT recommended to use this flag in production.</remarks>
         public CosmosClientBuilder(string connectionString)
         {
             if (connectionString == null)

@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
 
         private const string ConnectionStringAccountEndpoint = "AccountEndpoint";
         private const string ConnectionStringAccountKey = "AccountKey";
-        private const string ConnectionStringIgnoreEndpointCertificate = "IgnoreEndpointCertificate";
+        private const string ConnectionStringDisableServerCertificateValidation = "DisableServerCertificateValidation";
 
         private const ApiType DefaultApiType = ApiType.None;
 
@@ -854,15 +854,15 @@ namespace Microsoft.Azure.Cosmos
             return CosmosClientOptions.GetValueFromConnectionString<string>(connectionString, CosmosClientOptions.ConnectionStringAccountKey, null);
         }
 
-        internal static bool IsIgnoreEndpointCertificateFlag(string connectionString)
+        internal static bool IsConnectionStringDisableServerCertificateValidationFlag(string connectionString)
         {
-            return Convert.ToBoolean(CosmosClientOptions.GetValueFromConnectionString<bool>(connectionString, CosmosClientOptions.ConnectionStringIgnoreEndpointCertificate, false));
+            return Convert.ToBoolean(CosmosClientOptions.GetValueFromConnectionString<bool>(connectionString, CosmosClientOptions.ConnectionStringDisableServerCertificateValidation, false));
         }
 
         internal static CosmosClientOptions GetCosmosClientOptionsWithCertificateFlag(string connectionString, CosmosClientOptions clientOptions)
         {
             clientOptions ??= new CosmosClientOptions();
-            if (CosmosClientOptions.IsIgnoreEndpointCertificateFlag(connectionString))
+            if (CosmosClientOptions.IsConnectionStringDisableServerCertificateValidationFlag(connectionString))
             {
                 clientOptions.ServerCertificateCustomValidationCallback = (_, _, _) => true;
             }

@@ -184,28 +184,19 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             X509Chain x509Chain = new X509Chain();
             SslPolicyErrors sslPolicyErrors = new SslPolicyErrors();
 
-            string authKeyValue = "MockAuthKey";
-            Mock<AuthorizationTokenProvider> mockAuth = new Mock<AuthorizationTokenProvider>(MockBehavior.Strict);
-            mockAuth.Setup(x => x.Dispose());
-            mockAuth.Setup(x => x.AddAuthorizationHeaderAsync(
-                It.IsAny<Documents.Collections.INameValueCollection>(),
-                It.IsAny<Uri>(),
-                It.IsAny<string>(),
-                It.IsAny<Documents.AuthorizationTokenType>()))
-                .Callback<Documents.Collections.INameValueCollection, Uri, string, Documents.AuthorizationTokenType>(
-                (headers, uri, verb, tokenType) => headers.Add(Documents.HttpConstants.HttpHeaders.Authorization, authKeyValue))
-                .Returns(() => new ValueTask());
-
             string ConnectionString = "AccountEndpoint=https://localtestcosmos.documents.azure.com:443/;AccountKey=425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==;";
             CosmosClient client = new CosmosClient(
-                ConnectionString + "IgnoreEndpointCertificate=true;");
+                ConnectionString + "DisableServerCertificateValidation=true;");
+
+            // Assert for HTTP and TCP calls
+            Assert.IsTrue(client.ClientOptions.ServerCertificateCustomValidationCallback(x509Certificate2, x509Chain, sslPolicyErrors));
 
             //Act
             CosmosClientContext context = ClientContextCore.Create(
                     client,
                     client.ClientOptions);
 
-            //Assert
+            //Assert it for TCP calls
             Assert.IsTrue(context.DocumentClient.remoteCertificateValidationCallback(new object(), x509Certificate2, x509Chain, sslPolicyErrors));
 
         }

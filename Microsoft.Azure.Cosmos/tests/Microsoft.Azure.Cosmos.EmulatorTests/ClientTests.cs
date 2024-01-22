@@ -508,42 +508,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task Verify_CertificateCallBackGetsCalled_ForTCP_HTTP_WhenIgnoreFlag_Is_Passed_In_ConnectionString()
-        {
-            string authKey = ConfigurationManager.AppSettings["MasterKey"];
-            string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
-            using CosmosClient cosmosClient = new CosmosClient(
-                    $"AccountEndpoint={endpoint};AccountKey={authKey};IgnoreEndpointCertificate=true;",
-                    new CosmosClientOptions()
-                    {
-                        ConnectionMode = ConnectionMode.Direct,
-                        ConnectionProtocol = Protocol.Tcp
-                    });
-
-            Assert.IsNotNull(cosmosClient.ClientOptions.ServerCertificateCustomValidationCallback);
-
-            Cosmos.Database database = null;
-            try
-            {
-                string databaseName = Guid.NewGuid().ToString();
-                string databaseId = Guid.NewGuid().ToString();
-
-                //HTTP callback
-                database = await cosmosClient.CreateDatabaseAsync(databaseId);
-
-                Cosmos.Container container = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
-
-                //TCP callback
-                ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
-                ResponseMessage responseMessage = await container.CreateItemStreamAsync(TestCommon.SerializerCore.ToStream(item), new Cosmos.PartitionKey(item.id));
-            }
-            finally
-            {
-                await database?.DeleteStreamAsync();
-            }
-        }
-
-        [TestMethod]
         public void SqlQuerySpecSerializationTest()
         {
             Action<string, SqlQuerySpec> verifyJsonSerialization = (expectedText, query) =>
