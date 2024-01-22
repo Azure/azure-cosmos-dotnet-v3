@@ -183,10 +183,9 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <remarks>
-        /// The returned reference doesn't guarantee credentials or connectivity validations because creation doesn't make any network calls.
-        /// With emulator to ignore SSL Certificate please use connectionstring with "DisableServerCertificateValidation" flag. 
-        /// This flag will be overrided for HTTP calls if custom HttpClientFactory is used.
-        /// It is NOT recommended to use this flag in production.
+        /// Emulator: To ignore SSL Certificate please suffix connectionstring with "DisableServerCertificateValidation=True;". 
+        /// When CosmosClientOptions.HttpClientFactory is used, SSL certificate needs to be handled appropriately.
+        /// NOTE: DO NOT use this flag in production (only for emulator)
         /// </remarks>
         /// <seealso cref="CosmosClientOptions"/>
         /// <seealso cref="Fluent.CosmosClientBuilder"/>
@@ -499,9 +498,9 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <remarks>
-        /// With emulator to ignore SSL Certificate please use connectionstring with "DisableServerCertificateValidation" flag. 
-        /// This flag will be overrided for HTTP calls if custom HttpClientFactory is used.
-        /// It is NOT recommended to use this flag in production.
+        /// Emulator: To ignore SSL Certificate please suffix connectionstring with "DisableServerCertificateValidation=True;". 
+        /// When CosmosClientOptions.HttpClientFactory is used, SSL certificate needs to be handled appropriately.
+        /// NOTE: DO NOT use this flag in production (only for emulator)
         /// </remarks>
         public static async Task<CosmosClient> CreateAndInitializeAsync(string connectionString,
                                                                         IReadOnlyList<(string databaseId, string containerId)> containers,
