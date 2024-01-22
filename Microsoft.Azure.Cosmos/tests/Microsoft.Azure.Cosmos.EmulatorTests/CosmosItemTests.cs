@@ -33,7 +33,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Reflection;
     using System.Text.RegularExpressions;
     using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
 
     [TestClass]
     public class CosmosItemTests : BaseCosmosClientHelper
@@ -1287,8 +1286,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 ServerSideCumulativeMetrics metrics = response.Diagnostics.GetQueryMetrics();
                 Assert.IsTrue(metrics.PartitionedMetrics.Count > 0);
+                Assert.IsTrue(metrics.PartitionedMetrics[0].RequestCharge > 0);
                 Assert.IsTrue(metrics.CumulativeMetrics.TotalTime > TimeSpan.Zero);
                 Assert.IsTrue(metrics.CumulativeMetrics.QueryPreparationTime > TimeSpan.Zero);
+                Assert.IsTrue(metrics.TotalRequestCharge > 0);
 
                 if (metrics.CumulativeMetrics.RetrievedDocumentCount >= 1)
                 {
@@ -1376,11 +1377,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.IsTrue(metrics.PartitionedMetrics.Count == 3);
                     Assert.IsTrue(metrics.CumulativeMetrics.TotalTime > TimeSpan.Zero);
                     Assert.IsTrue(metrics.CumulativeMetrics.QueryPreparationTime > TimeSpan.Zero);
+                    Assert.IsTrue(metrics.TotalRequestCharge > 0);
 
                     foreach (ServerSidePartitionedMetrics partitionedMetrics in metrics.PartitionedMetrics)
                     {
                         Assert.IsNotNull(partitionedMetrics);
+                        Assert.IsNotNull(partitionedMetrics.FeedRange);
                         Assert.IsNotNull(partitionedMetrics.PartitionKeyRangeId);
+                        Assert.IsTrue(partitionedMetrics.RequestCharge > 0);
                     }
 
                     if (metrics.CumulativeMetrics.RetrievedDocumentCount >= 1)
@@ -1455,11 +1459,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.IsTrue(metrics.PartitionedMetrics.Count == 1);
                     Assert.IsTrue(metrics.CumulativeMetrics.TotalTime > TimeSpan.Zero);
                     Assert.IsTrue(metrics.CumulativeMetrics.QueryPreparationTime > TimeSpan.Zero);
+                    Assert.IsTrue(metrics.TotalRequestCharge > 0);
 
                     foreach (ServerSidePartitionedMetrics partitionedMetrics in metrics.PartitionedMetrics)
                     {
                         Assert.IsNotNull(partitionedMetrics);
+                        Assert.IsNotNull(partitionedMetrics.FeedRange);
                         Assert.IsNull(partitionedMetrics.PartitionKeyRangeId);
+                        Assert.IsTrue(partitionedMetrics.RequestCharge > 0);
                     }
 
                     if (metrics.CumulativeMetrics.RetrievedDocumentCount >= 1)
