@@ -25,6 +25,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="client"></param>
         /// <param name="requestMessage"></param>
         /// <param name="cancellationToken"></param>
+        /// <returns>The response from the service after the availability strategy is executed</returns>
 #if PREVIEW
         public
 #else

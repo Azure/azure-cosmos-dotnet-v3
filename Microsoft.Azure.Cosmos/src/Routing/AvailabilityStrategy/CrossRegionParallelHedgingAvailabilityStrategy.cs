@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="client"></param>
         /// <param name="request"></param>
         /// <param name="cancellationToken"></param>
-        /// <returns>The response after executing the availability strategy</returns>
+        /// <returns>The response after executing cross region hedging</returns>
 #if PREVIEW
         public
 #else
