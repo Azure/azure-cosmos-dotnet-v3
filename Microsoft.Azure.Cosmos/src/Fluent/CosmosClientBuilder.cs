@@ -438,10 +438,10 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Sets the priority level for requests created using cosmos client.
         /// </summary>
-        /// <remark>
+        /// <remarks>
         /// If priority level is also set at request level in <see cref="RequestOptions.PriorityLevel"/>, that priority is used.
         /// If <see cref="WithBulkExecution(bool)"/> is set to true, priority level set on the CosmosClient is used.
-        /// </remark>
+        /// </remarks>
         /// <param name="priorityLevel">The desired priority level for the client.</param>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso href="https://aka.ms/CosmosDB/PriorityBasedExecution"/>

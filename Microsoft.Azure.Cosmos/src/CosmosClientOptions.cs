@@ -282,10 +282,10 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Sets the priority level for requests created using cosmos client.
         /// </summary>
-        /// <remark>
+        /// <remarks>
         /// If priority level is also set at request level in <see cref="RequestOptions.PriorityLevel"/>, that priority is used.
         /// If <see cref="AllowBulkExecution"/> is set to true in CosmosClientOptions, priority level set on the CosmosClient is used.
-        /// </remark>
+        /// </remarks>
         /// <seealso href="https://aka.ms/CosmosDB/PriorityBasedExecution"/>
 #if PREVIEW
         public
