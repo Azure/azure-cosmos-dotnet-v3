@@ -86,6 +86,14 @@ namespace Microsoft.Azure.Cosmos
             return true;
         }
 
+        /// <summary>
+        /// Execute the parallel hedging availability strategy
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="client"></param>
+        /// <param name="request"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns>The response after executing the availability strategy</returns>
 #if PREVIEW
         public
 #else

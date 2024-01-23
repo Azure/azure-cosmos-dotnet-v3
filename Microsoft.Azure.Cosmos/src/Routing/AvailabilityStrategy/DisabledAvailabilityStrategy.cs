@@ -22,6 +22,14 @@ namespace Microsoft.Azure.Cosmos
             return false;
         }
 
+        /// <summary>
+        /// This method is not implemented and will throw an exception if called.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="client"></param>
+        /// <param name="requestMessage"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns>nothing, this will throw.</returns>
 #if PREVIEW
         public
 #else
