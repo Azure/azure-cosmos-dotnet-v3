@@ -47,6 +47,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// Setting priority level only has an effect if Priority Based Execution is enabled.
         /// If it is not enabled, the priority level is ignored by the backend.
+        /// If <see cref="CosmosClientOptions.AllowBulkExecution"/> is set to true on CosmosClient, priority level set in RequestOptions is ignored.
         /// Default PriorityLevel for each request is treated as High. It can be explicitly set to Low for some requests.
         /// When Priority based execution is enabled, if there are more requests than the configured RU/S in a second, 
         /// then Cosmos DB will throttle low priority requests to allow high priority requests to execute.

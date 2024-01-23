@@ -394,8 +394,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     PriorityLevel = priorityLevel
                 };
 
-                Assert.AreEqual((int)priorityLevel, (int)cosmosClientOptions.GetDocumentsPriorityLevel());
-                Assert.AreEqual(priorityLevel.ToString(), cosmosClientOptions.GetDocumentsPriorityLevel().ToString());
+                Assert.AreEqual(priorityLevel, cosmosClientOptions.PriorityLevel);
             }
 
             CosmosClientOptions cosmosClientOptionsNull = new CosmosClientOptions()
@@ -403,7 +402,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 PriorityLevel = null
             };
 
-            Assert.IsNull(cosmosClientOptionsNull.GetDocumentsPriorityLevel());
+            Assert.IsNull(cosmosClientOptionsNull.PriorityLevel);
         }
 
         [TestMethod]

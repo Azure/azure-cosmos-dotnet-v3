@@ -280,9 +280,13 @@ namespace Microsoft.Azure.Cosmos
         public ConsistencyLevel? ConsistencyLevel { get; set; }
 
         /// <summary>
-        /// Sets the PriorityLevel for requests created using cosmos client.
-        /// If PriorityLevel is also specified at request level in RequestOptions, that PriorityLevel takes precedence.
+        /// Sets the priority level for requests created using cosmos client.
         /// </summary>
+        /// <remark>
+        /// If priority level is also set at request level in <see cref="RequestOptions.PriorityLevel"/>, that priority is used.
+        /// If <see cref="AllowBulkExecution"/> is set to true in CosmosClientOptions, priority level set on the CosmosClient is used.
+        /// </remark>
+        /// <seealso href="https://aka.ms/CosmosDB/PriorityBasedExecution"/>
 #if PREVIEW
         public
 #else
@@ -852,16 +856,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return (Documents.ConsistencyLevel)this.ConsistencyLevel.Value;
-        }
-
-        internal Documents.PriorityLevel? GetDocumentsPriorityLevel()
-        {
-            if (!this.PriorityLevel.HasValue)
-            {
-                return null;
-            }
-
-            return (Documents.PriorityLevel)this.PriorityLevel.Value;
         }
 
         internal static string GetAccountEndpoint(string connectionString)
