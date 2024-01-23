@@ -21,5 +21,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan.Cql
         public IReadOnlyList<CqlObjectProperty> Properties { get; }
         
         public string ObjectKind { get; }
+
+        public override void Accept(ICqlVisitor cqlVisitor) => cqlVisitor.Visit(this);
     }
 }
