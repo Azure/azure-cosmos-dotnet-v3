@@ -17,8 +17,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.Text;
 
     /// <summary>
     /// Tests for <see cref="GatewayAccountReader"/>.
@@ -104,6 +102,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
+        [Owner("dkunda")]
         [DataRow(true, DisplayName = "Validate that when regional endpoints are provided in the connection policy, the request will be retried in the regional endpoints.")]
         [DataRow(false, DisplayName = "Validate that when regional endpoints are not provided in the connection policy, the request will be failed in the primary endpoint.")]
         public async Task InitializeReaderAsync_WhenRegionalEndpointsProvided_ShouldRetryWithRegionalEndpointsWhenPrimaryFails(
@@ -174,6 +173,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
+        [Owner("dkunda")]
         public async Task InitializeReaderAsync_WhenRegionalEndpointsProvided_ShouldThrowAggregateExceptionWithAllEndpointsFail()
         {
             Mock<CosmosHttpClient> mockHttpClient = new();
