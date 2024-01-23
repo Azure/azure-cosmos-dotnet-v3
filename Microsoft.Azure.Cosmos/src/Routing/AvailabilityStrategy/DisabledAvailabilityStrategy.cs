@@ -22,7 +22,12 @@ namespace Microsoft.Azure.Cosmos
             return false;
         }
 
-        internal override Task<ResponseMessage> ExecuteAvailablityStrategyAsync(Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender, CosmosClient client, RequestMessage requestMessage, CancellationToken cancellationToken)
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        override Task<ResponseMessage> ExecuteAvailablityStrategyAsync(Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender, CosmosClient client, RequestMessage requestMessage, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }

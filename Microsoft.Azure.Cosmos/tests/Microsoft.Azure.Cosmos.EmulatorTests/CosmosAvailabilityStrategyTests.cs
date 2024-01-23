@@ -442,4 +442,3 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
     }
 }
-#endif

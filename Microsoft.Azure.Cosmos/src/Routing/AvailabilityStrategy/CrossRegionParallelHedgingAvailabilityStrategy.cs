@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using global::Azure.Core;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow;
     using Microsoft.Azure.Documents;
 
@@ -85,7 +86,12 @@ namespace Microsoft.Azure.Cosmos
             return true;
         }
 
-        internal override async Task<ResponseMessage> ExecuteAvailablityStrategyAsync(
+#if PREVIEW
+        public
+#else
+        internal
+#endif 
+        override async Task<ResponseMessage> ExecuteAvailablityStrategyAsync(
             Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender,
             CosmosClient client,
             RequestMessage request,
@@ -118,24 +124,26 @@ namespace Microsoft.Azure.Cosmos
                     }
                 }
 
+                result = inFlightRequests[resultLocation].Result;
                 List<CosmosDiagnostics> allDiagnostics = new List<CosmosDiagnostics>();
                 int i = 0;
                 foreach (Task<Tuple<bool, ResponseMessage>> task in inFlightRequests)
                 {
                     if (i == 0)
                     {
-                        //add context of non-hedged request
+                        ((CosmosTraceDiagnostics)task.Result.Item2.Diagnostics).Value.AddDatum("Additional Request Context", "Non Hedged Request");
                     }
-                    //add context of hedged requests
+                    else
+                    {
+                        ((CosmosTraceDiagnostics)task.Result.Item2.Diagnostics).Value.AddDatum("Additional Request Context", "Hedged Request");
+                    }
 
                     if (task.IsCompleted && resultLocation != i)
                     {
                         allDiagnostics.Add(task.Result.Item2.Diagnostics);
+                        ((CosmosTraceDiagnostics)result.Item2.Diagnostics).Value.AddChild(((CosmosTraceDiagnostics)task.Result.Item2.Diagnostics).Value);
                     }
                 }
-                allDiagnostics.Insert(0, result.Item2.Diagnostics);
-
-                //merge diagnostics here
 
                 return result.Item2;
             }
