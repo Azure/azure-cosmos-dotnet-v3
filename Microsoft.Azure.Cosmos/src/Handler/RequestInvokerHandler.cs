@@ -444,7 +444,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         {
             Cosmos.PriorityLevel? priorityLevel = this.RequestedClientPriorityLevel;
             RequestOptions promotedRequestOptions = requestMessage.RequestOptions;
-            if ((bool)(promotedRequestOptions?.PriorityLevel.HasValue))
+            if (promotedRequestOptions?.PriorityLevel.HasValue == true)
             {
                 priorityLevel = promotedRequestOptions.PriorityLevel;
             }
