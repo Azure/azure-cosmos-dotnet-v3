@@ -142,7 +142,7 @@ namespace Microsoft.Azure.Cosmos
             if (regionalEndpointsProvided)
             {
                 connectionPolicy.SetRegionalEndpoints(
-                    new List<string>()
+                    new HashSet<string>()
                     {
                     "https://testfed2.documents-test.windows-int.net:443/",
                     "https://testfed3.documents-test.windows-int.net:443/",
@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos
             };
 
             connectionPolicy.SetRegionalEndpoints(
-                new List<string>()
+                new HashSet<string>()
                 {
                 "https://testfed2.documents-test.windows-int.net:443/",
                 "https://testfed3.documents-test.windows-int.net:443/",

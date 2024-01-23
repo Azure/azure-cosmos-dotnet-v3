@@ -2782,6 +2782,18 @@
           ],
           "MethodInfo": "System.Collections.Generic.IReadOnlyList`1[System.String] get_ApplicationPreferredRegions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "System.Collections.Generic.ISet`1[System.String] get_RegionalEndpoints()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.ISet`1[System.String] get_RegionalEndpoints();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.Generic.ISet`1[System.String] RegionalEndpoints": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.Collections.Generic.ISet`1[System.String] RegionalEndpoints;CanRead:True;CanWrite:True;System.Collections.Generic.ISet`1[System.String] get_RegionalEndpoints();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_RegionalEndpoints(System.Collections.Generic.ISet`1[System.String]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.RequestHandler] CustomHandlers[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Cosmos.CosmosClientOptions+ClientOptionJsonConverter))]": {
           "Type": "Property",
           "Attributes": [
@@ -3095,6 +3107,13 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Void set_PortReuseMode(System.Nullable`1[Microsoft.Azure.Cosmos.PortReuseMode]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_RegionalEndpoints(System.Collections.Generic.ISet`1[System.String])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_RegionalEndpoints(System.Collections.Generic.ISet`1[System.String]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_RequestTimeout(System.TimeSpan)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -4598,6 +4617,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithLimitToEndpoint(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithRegionalEndpoints(System.Collections.Generic.ISet`1[System.String])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithRegionalEndpoints(System.Collections.Generic.ISet`1[System.String]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithRequestTimeout(System.TimeSpan)": {
           "Type": "Method",

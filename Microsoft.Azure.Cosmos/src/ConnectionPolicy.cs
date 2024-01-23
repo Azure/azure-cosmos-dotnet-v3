@@ -92,7 +92,14 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public void SetRegionalEndpoints(IReadOnlyList<string> regionalEndpoints)
+        /// <summary>
+        /// Sets the regional endpoints required to fetch account information from
+        /// private domain names.
+        /// </summary>
+        /// <param name="regionalEndpoints">An instance of <see cref="ISet{T}"/> containing the regional endpoints
+        /// provided by the customer.</param>
+        public void SetRegionalEndpoints(
+            ISet<string> regionalEndpoints)
         {
             if (regionalEndpoints == null)
             {

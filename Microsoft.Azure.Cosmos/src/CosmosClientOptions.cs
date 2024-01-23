@@ -192,23 +192,19 @@ namespace Microsoft.Azure.Cosmos
         public IReadOnlyList<string> ApplicationPreferredRegions { get; set; }
 
         /// <summary>
-        /// Gets and sets the preferred regions for geo-replicated database accounts in the Azure Cosmos DB service. 
+        /// Gets and sets the regional private endpoints for geo-replicated database accounts in the Azure Cosmos DB service. 
         /// </summary>
         /// <remarks>
         /// <para>
         /// During the CosmosClient initialization the account information, including the available regions, is obtained from the <see cref="CosmosClient.Endpoint"/>.
-        /// The CosmosClient will use the value of <see cref="RegionalEndpoints"/> to populate the preferred list with the account available regions that intersect with its value.
-        /// If the value of <see cref="RegionalEndpoints"/> contains regions that are not an available region in the account, the values will be ignored. If the these invalid regions are added later to the account, the CosmosClient will use them if they are higher in the preference order.
+        /// Should the global endpoint become inaccessible, the CosmosClient will attempt to obtain the account information issuing requests to the regional endpoints provided in <see cref="RegionalEndpoints"/>.
         /// </para>
         /// <para>
-        /// If during CosmosClient initialization, the <see cref="CosmosClient.Endpoint"/> is not reachable, the CosmosClient will attempt to recover and obtain the account information issuing requests to the regions in <see cref="ApplicationPreferredRegions"/> in the order that they are listed.
+        /// Nevertheless, this parameter remains optional and is recommended for implementation when a customer has configured a private endpoint for their Cosmos DB account.
         /// </para>
         /// <para>
         /// See also <seealso href="https://docs.microsoft.com/azure/cosmos-db/sql/troubleshoot-sdk-availability">Diagnose
         /// and troubleshoot the availability of Cosmos SDKs</seealso> for more details.
-        /// </para>
-        /// <para>
-        /// This configuration is an alternative to <see cref="ApplicationRegion"/>, either one can be set but not both.
         /// </para>
         /// </remarks>
         /// <example>
@@ -216,7 +212,7 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// CosmosClientOptions clientOptions = new CosmosClientOptions()
         /// {
-        ///     RegionalEndpoints = new List<string>(){ "custom.p-1.documents.azure.com", "custom.p-2.documents.azure.com" }
+        ///     RegionalEndpoints = new HashSet<string>(){ "custom.p-1.documents.azure.com", "custom.p-2.documents.azure.com" }
         /// };
         /// 
         /// CosmosClient client = new CosmosClient("endpoint", "key", clientOptions);
@@ -224,7 +220,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability#high-availability-with-cosmos-db-in-the-event-of-regional-outages">High availability on regional outages</seealso>
-        public IReadOnlyList<string> RegionalEndpoints { get; set; }
+        public ISet<string> RegionalEndpoints { get; set; }
 
         /// <summary>
         /// Get or set the maximum number of concurrent connections allowed for the target
