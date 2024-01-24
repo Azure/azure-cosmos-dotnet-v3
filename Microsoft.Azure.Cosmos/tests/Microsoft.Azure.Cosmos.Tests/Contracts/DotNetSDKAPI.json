@@ -6859,11 +6859,6 @@
           "Attributes": [],
           "MethodInfo": "System.String GermanyWestCentral;IsInitOnly:False;IsStatic:True;"
         },
-        "System.String IsraelCentral": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "System.String IsraelCentral;IsInitOnly:False;IsStatic:True;"
-        },
         "System.String ItalyNorth": {
           "Type": "Field",
           "Attributes": [],
@@ -6903,6 +6898,11 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String MalaysiaSouth;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String MexicoCentral": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String MexicoCentral;IsInitOnly:False;IsStatic:True;"
         },
         "System.String NorthCentralUS": {
           "Type": "Field",
@@ -6958,6 +6958,11 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String SouthIndia;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String SpainCentral": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String SpainCentral;IsInitOnly:False;IsStatic:True;"
         },
         "System.String SwedenCentral": {
           "Type": "Field",
