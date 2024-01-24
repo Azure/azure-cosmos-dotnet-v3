@@ -299,10 +299,10 @@
     "Microsoft.Azure.Cosmos.Container;System.Object;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetAllVersionsChangeFeedProcessorBuilder[T](System.String, ChangeFeedHandler`1)": {
+        "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes[T](System.String, ChangeFeedHandler`1)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetAllVersionsChangeFeedProcessorBuilder[T](System.String, ChangeFeedHandler`1);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes[T](System.String, ChangeFeedHandler`1);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
         "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] DeleteAllItemsByPartitionKeyStreamAsync(Microsoft.Azure.Cosmos.PartitionKey, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
