@@ -1324,7 +1324,7 @@ namespace Microsoft.Azure.Cosmos
             ChangesHandler<T> onChangesDelegate);
 
         /// <summary>
-        /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing with all versions and deletes.
+        /// Initializes a <see cref="GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes"/> for change feed processing with all versions and deletes.
         /// </summary>
         /// <typeparam name="T">Document type</typeparam>
         /// <param name="processorName">A name that identifies the Processor and the particular work it will do.</param>

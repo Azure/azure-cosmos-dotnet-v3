@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
 
     [TestClass]
     [TestCategory("ChangeFeedProcessor with AllVersionsAndDeletes")]
@@ -51,6 +52,34 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             ChangeFeedProcessor processor = this.Container
                 .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: "processor", onChangesHandler: (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItemChange<dynamic>> docs, CancellationToken token) =>
                 {
+                    Console.WriteLine($"number of documents processed: {docs.Count}");
+
+                    string id = default;
+                    string pk = default;
+                    string description = default;
+
+                    foreach (ChangeFeedItemChange<dynamic> change in docs)
+                    {
+                        if (change.Metadata.OperationType != ChangeFeedOperationType.Delete)
+                        {
+                            id = change.Current.id.ToString();
+                            pk = change.Current.pk.ToString();
+                            description = change.Current.description.ToString();
+                        }
+                        else
+                        {
+                            id = change.Previous.id.ToString();
+                            pk = change.Previous.pk.ToString();
+                            description = change.Previous.description.ToString();
+                        }
+
+                        ChangeFeedOperationType operationType = change.Metadata.OperationType;
+                        long previousLsn = change.Metadata.PreviousLsn;
+                        DateTime m = change.Metadata.ConflictResolutionTimestamp;
+                        long lsn = change.Metadata.Lsn;
+                        bool isTimeToLiveExpired = change.Metadata.IsTimeToLiveExpired;
+                    }
+
                     Assert.IsNotNull(context.LeaseToken);
                     Assert.IsNotNull(context.Diagnostics);
                     Assert.IsNotNull(context.Headers);
@@ -98,6 +127,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 .WithErrorNotification((leaseToken, error) =>
                 {
                     exception = error.InnerException;
+                    Console.WriteLine(error.ToString());
 
                     return Task.CompletedTask;
                 })
@@ -115,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             await this.Container.UpsertItemAsync<dynamic>(new { id = "1", pk = "1", description = "test after replace" }, partitionKey: new PartitionKey("1"));
             await Task.Delay(1000);
 
-            await this.Container.DeleteItemAsync<dynamic>(id: "1", partitionKey: new PartitionKey("1"));            
+            await this.Container.DeleteItemAsync<dynamic>(id: "1", partitionKey: new PartitionKey("1"));
 
             bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
 
