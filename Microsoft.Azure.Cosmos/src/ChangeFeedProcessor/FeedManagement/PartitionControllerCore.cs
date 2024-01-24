@@ -170,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                     await this.monitor.NotifyErrorAsync(lease.CurrentLeaseToken, leaseLostException.InnerException);
                 }
 
-                DefaultTrace.TraceVerbose("Lease with token {0}: taken by another host during processing", lease.CurrentLeaseToken);
+                DefaultTrace.TraceVerbose("Lease with token {0}: lease was lost", lease.CurrentLeaseToken);
             }
             catch (Exception ex)
             {
