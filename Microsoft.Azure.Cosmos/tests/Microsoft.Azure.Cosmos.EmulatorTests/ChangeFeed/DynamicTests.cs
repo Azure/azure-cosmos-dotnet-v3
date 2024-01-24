@@ -80,14 +80,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             Assert.AreEqual("0.1.2.3.4.5.6.7.8.9.", accumulator);
         }
 
-        async Task CreateItems(int count, int partitionKey)
-        {
-            foreach (int id in Enumerable.Range(0, count))
-            {
-                await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString(), pk = partitionKey, test = "test" });
-            }
-        }
-
         [TestMethod]
         public async Task TestWithRunningProcessor_WithManualCheckpoint()
         {
