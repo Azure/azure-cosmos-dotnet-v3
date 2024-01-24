@@ -161,6 +161,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             {
                 DefaultTrace.TraceVerbose("Lease with token {0}: processing canceled", lease.CurrentLeaseToken);
             }
+            catch (LeaseLostException leaseLostException)
+            {
+                // LeaseLostException by itself is not loggable, unless it contains a related inner exception
+                // For cases when the lease or container has been deleted or the lease has been stolen
+                if (leaseLostException.InnerException != null)
+                {
+                    await this.monitor.NotifyErrorAsync(lease.CurrentLeaseToken, leaseLostException.InnerException);
+                }
+
+                DefaultTrace.TraceVerbose("Lease with token {0}: taken by another host during processing", lease.CurrentLeaseToken);
+            }
             catch (Exception ex)
             {
                 await this.monitor.NotifyErrorAsync(lease.CurrentLeaseToken, ex);
