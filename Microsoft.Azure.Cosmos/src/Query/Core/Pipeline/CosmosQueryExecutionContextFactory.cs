@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     {
         internal const string ClientDisableOptimisticDirectExecution = "clientDisableOptimisticDirectExecution";
         private const string InternalPartitionKeyDefinitionProperty = "x-ms-query-partitionkey-definition";
-        private const string QueryInspectionPattern = @"\s+(GROUP\s+BY\s+|COUNT\s*\(|MIN\s*\(|MAX\s*\(|AVG\s*\(|SUM\s*\(|DISTINCT\s+)";
+        private const string QueryInspectionPattern = @"\s*(GROUP\s+BY\s+|COUNT\s*\(|MIN\s*\(|MAX\s*\(|AVG\s*\(|SUM\s*\(|DISTINCT\s+)";
         private const string OptimisticDirectExecution = "OptimisticDirectExecution";
         private const string Passthrough = "Passthrough";
         private const string Specialized = "Specialized";
@@ -782,7 +782,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             Debug.Assert(containerQueryProperties.ResourceId != null, "CosmosQueryExecutionContextFactory Assert!", "Container ResourceId cannot be null!");
 
             List<Documents.PartitionKeyRange> targetRanges;
-            if (partitionedQueryExecutionInfo != null)
+            if (partitionedQueryExecutionInfo != null || inputParameters.InitialFeedRange != null)
             {
                 targetRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
                     cosmosQueryContext.QueryClient,
