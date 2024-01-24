@@ -13,6 +13,27 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.39.0-preview.0"/> [3.39.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.39.0-preview.0) - 2024-01-29
+
+#### Added
+- [4138](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4138) Query: Adds support for System.Text LINQ Custom Serializer (#4138)
+
+### <a name="3.38.0"/> [3.38.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.38.0) - 2024-01-29
+
+#### Fixed
+- [4205](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4205) Per Partition Automatic Failover: Fixes Metadata Requests Retry Policy (#4205)
+- [4229](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4229) GatewayClientStore: Fixes an issue with dealing with invalid JSON HTTP responses (#4229)
+- [4260](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4260) Query: Fixes LINQ Translation of SqlNullLiteral Values (#4260)
+
+#### Added
+- [4122](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4122) Query: Adds Optimistic Direct Execution configuration override support on the Client (#4122)
+- [4218](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4218) Distributed Tracing: Refactors Samples to use latest cosmosdb SDK (#4218)
+- [4220](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4220) Change Feed Processor: Fixes disposal of unused CancellationTokenSource (#4220)
+- [4240](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4240) BulkMode: Adds PartitionKeyRangeId in Bulk Mode and TransactionalBatch Response Headers (#4240)
+- [4252](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4252) Query: Adds Request Charge to Query Metrics (#4252)
+- [4225](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4225) Query: Refactors Optimistic Direct Execution to be turned on by default on .NET SDK (#4225)
+- [4251](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4251) Emulator : Adds support for flag in connection string to ignore SSL check (#4251)
+
 ### <a name="3.37.1-preview"/> [3.37.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.37.1-preview) - 2024-1-2
 ### <a name="3.37.1"/> [3.37.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.37.1) - 2024-1-2
 
