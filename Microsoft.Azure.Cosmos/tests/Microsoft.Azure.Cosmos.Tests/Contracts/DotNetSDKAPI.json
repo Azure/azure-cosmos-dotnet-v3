@@ -6859,6 +6859,11 @@
           "Attributes": [],
           "MethodInfo": "System.String GermanyWestCentral;IsInitOnly:False;IsStatic:True;"
         },
+        "System.String IsraelCentral": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String IsraelCentral;IsInitOnly:False;IsStatic:True;"
+        },
         "System.String ItalyNorth": {
           "Type": "Field",
           "Attributes": [],
