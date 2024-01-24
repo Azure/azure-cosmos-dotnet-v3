@@ -493,7 +493,6 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="processorName">A name that identifies the Processor and the particular work it will do.</param>
         /// <param name="onChangesDelegate">Delegate to receive all changes and deletes</param>
         /// <example>
-        /// 1. This example below shows LINQ query generation and blocked execution.
         /// <code language="c#">
         /// <![CDATA[
         /// Container leaseContainer = await this.database.CreateContainerAsync(
