@@ -1,0 +1,62 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy Single Value With Min]]></Description>
+      <Expression><![CDATA[query.GroupBy(k => k.FamilyId, (key, values) => values.Min())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE MIN(root) 
+FROM root GROUP BY root["FamilyId"] ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Cannot deserialize the current JSON array (e.g. [1,2,3]) into type 'Microsoft.Azure.Cosmos.Services.Management.Tests.Family' because the type requires a JSON object (e.g. {"name":"value"}) to deserialize correctly.To fix this error either change the JSON to a JSON object (e.g. {"name":"value"}) or change the deserialized type to an array or a type that implements a collection interface (e.g. ICollection, IList) like List<T> that can be deserialized from a JSON array. JsonArrayAttribute can also be added to the type to force it to deserialize from a JSON array.Path '[0]', line 1, position 2.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy Single Value With Max]]></Description>
+      <Expression><![CDATA[query.GroupBy(k => k.FamilyId, (key, values) => values.Max())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE MAX(root) 
+FROM root GROUP BY root["FamilyId"] ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Cannot deserialize the current JSON array (e.g. [1,2,3]) into type 'Microsoft.Azure.Cosmos.Services.Management.Tests.Family' because the type requires a JSON object (e.g. {"name":"value"}) to deserialize correctly.To fix this error either change the JSON to a JSON object (e.g. {"name":"value"}) or change the deserialized type to an array or a type that implements a collection interface (e.g. ICollection, IList) like List<T> that can be deserialized from a JSON array. JsonArrayAttribute can also be added to the type to force it to deserialize from a JSON array.Path '[0]', line 1, position 2.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy Single Value With Min]]></Description>
+      <Expression><![CDATA[query.GroupBy(k => k.FamilyId, (key, values) => values.Min(value => value.Int))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE MIN(root["Int"]) 
+FROM root GROUP BY root["FamilyId"] ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Unexpected character encountered while parsing value: [. Path '', line 1, position 2.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy Single Value With Max]]></Description>
+      <Expression><![CDATA[query.GroupBy(k => k.FamilyId, (key, values) => values.Max(value => value.Int))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE MAX(root["Int"]) 
+FROM root GROUP BY root["FamilyId"] ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Unexpected character encountered while parsing value: [. Path '', line 1, position 2.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy Single Value With Count]]></Description>
+      <Expression><![CDATA[query.GroupBy(k => k.FamilyId, (key, values) => values.Count())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE COUNT(1) 
+FROM root GROUP BY root["FamilyId"] ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Unexpected character encountered while parsing value: [. Path '', line 1, position 2.]]></ErrorMessage>
+    </Output>
+  </Result>
+</Results>

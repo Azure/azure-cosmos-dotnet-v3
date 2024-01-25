@@ -698,6 +698,35 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
+        public void TestGroupByTranslation()
+        {
+            List<LinqTestInput> inputs = new List<LinqTestInput>();
+            inputs.Add(new LinqTestInput("GroupBy Single Value Select Key", b => getQuery(b).GroupBy(k => k.Id /*keySelector*/,
+                                                                                (key, values) => key /*return the group by key */)));
+            inputs.Add(new LinqTestInput("GroupBy Single Value Select Key Alias", b => getQuery(b).GroupBy(k => k.Id /*keySelector*/,
+                                                                                (stringField, values) => stringField /*return the group by key */)));
+
+
+            inputs.Add(new LinqTestInput("GroupBy Single Value With Min", b => getQuery(b).GroupBy(k => k.Id /*keySelector*/,
+                                                                                (key, values) => values.Min(value => value.Int) /*return the Min of each group */)));
+            inputs.Add(new LinqTestInput("GroupBy Single Value With Max", b => getQuery(b).GroupBy(k => k.Id /*keySelector*/,
+                                                                                (key, values) => values.Max(value => value.Int) /*return the Max of each group */)));
+            inputs.Add(new LinqTestInput("GroupBy Single Value With Count", b => getQuery(b).GroupBy(k => k.Id /*keySelector*/,
+                                                                                (key, values) => values.Count() /*return the Count of each group */)));
+            inputs.Add(new LinqTestInput("GroupBy Single Value With Count", b => getQuery(b).GroupBy(k => k.Id /*keySelector*/,
+                                                                                (key, values) => values.Average(value => value.Int) /*return the Count of each group */)));
+
+            //Negative case - The translation is correct (SELECT VALUE MIN(root) FROM root GROUP BY root["Number"]
+            // but the behavior between LINQ and SQL is different
+            // In Linq, it requires the object to have comparer traits, where as in CosmosDB, we will return null
+            //inputs.Add(new LinqTestInput("GroupBy Single Value With Min", b => getQuery(b).GroupBy(k => k.Number /*keySelector*/,
+            //                                                                  (key, values) => values.Min() /*return the Min of each group */)));
+            //inputs.Add(new LinqTestInput("GroupBy Single Value With Max", b => getQuery(b).GroupBy(k => k.Number /*keySelector*/,
+            //                                                                    (key, values) => values.Max() /*return the Max of each group */)));
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
         [Ignore]
         public void DebuggingTest()
         {

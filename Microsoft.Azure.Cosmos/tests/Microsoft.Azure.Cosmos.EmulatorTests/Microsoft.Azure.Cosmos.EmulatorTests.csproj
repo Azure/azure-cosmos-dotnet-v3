@@ -185,6 +185,9 @@
     <Content Include="BaselineTest\TestBaseline\LinqGeneralBaselineTests.ValidateLinqQueries.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+	<Content Include="BaselineTest\TestBaseline\LinqGeneralBaselineTests.TestGroupByTranslation.xml">
+		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	</Content>
     <Content Include="BaselineTest\TestBaseline\LinqGeneralBaselineTests.TestOrderByTranslation.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -197,9 +200,6 @@
     <Content Include="BaselineTest\TestBaseline\LinqGeneralBaselineTests.TestSkipTake.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-	<Content Include="BaselineTest\TestBaseline\LinqGroupByBaselineTests.TestGroupByTranslation.xml">
-		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	</Content>
     <Content Include="BaselineTest\TestBaseline\LinqConstantFoldingBaselineTests.TestUnaryOperators.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
