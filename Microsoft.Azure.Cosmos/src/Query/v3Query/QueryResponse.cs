@@ -184,9 +184,8 @@ namespace Microsoft.Azure.Cosmos
                 cosmosArray: cosmosElements,
                 serializerCore: serializerCore);
 
-            // Chose how to decode depending on which PopulateIndexMetrics request header was sent
-            // If none was sent, we currently default to V1
-            // TODO: Switch the flag to false once V2 is deployed
+            // 1/25/2024: The default for request message is plain text
+            // for any release after this date, no longer base64 encoded
             this.IndexUtilizationText = ResponseMessage.DecodeIndexMetrics(
                 responseMessageHeaders, 
                 isBase64Encoded: false);
