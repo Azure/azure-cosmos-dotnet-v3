@@ -177,7 +177,7 @@ namespace Microsoft.Azure.Cosmos
                 await Task.Delay(delay, parallelRequestCancellationToken);
 
                 clonedRequest = originalMessage.Clone();
-
+                 
                 if (clonedRequest.RequestOptions == null)
                 {
                     clonedRequest.RequestOptions = new RequestOptions()
@@ -217,7 +217,7 @@ namespace Microsoft.Azure.Cosmos
                 return new Tuple<bool, ResponseMessage>(true, response);
             }
 
-            return new Tuple<bool, ResponseMessage>(true, response);
+            return new Tuple<bool, ResponseMessage>(false, response);
         }
 
         private static bool IsNonTransientResult(int statusCode, int subStatusCode)

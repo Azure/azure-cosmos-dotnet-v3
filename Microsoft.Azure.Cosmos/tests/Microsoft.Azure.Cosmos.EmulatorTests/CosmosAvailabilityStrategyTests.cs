@@ -193,6 +193,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "\"1\"");
 
             CancellationToken cancellationToken = new CancellationToken();
+            
+            this.client.DocumentClient.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
             ResponseMessage rm = await this.client.ClientOptions.AvailabilityStrategy.ExecuteAvailablityStrategyAsync(
                 mockRequestInvokerHandler.Object.BaseSendAsync,
                 this.client,
