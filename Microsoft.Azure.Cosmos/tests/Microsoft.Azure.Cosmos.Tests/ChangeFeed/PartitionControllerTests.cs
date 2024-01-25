@@ -254,7 +254,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                     manualResetEvent.Set();
                     throw exception;
                 });
-
+            
             Mock.Get(this.partitionSupervisorFactory)
                 .Setup(f => f.Create(this.lease))
                 .Returns(supervisor.Object);
@@ -531,6 +531,89 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             this.healthMonitor
                 .Verify(m => m.NotifyLeaseReleaseAsync(this.lease.CurrentLeaseToken), Times.Once);
         }
+
+        [TestMethod]
+        public async Task Renewer_ShouldNotNotify_IfLeaseAcquireFailsWithLeaseLost_WithoutInnerException()
+        {
+            Mock.Get(this.partitionProcessor)
+                .Reset();
+
+            Mock<PartitionSupervisor> supervisor = new Mock<PartitionSupervisor>();
+
+            LeaseLostException exception = new LeaseLostException();
+
+            ManualResetEvent manualResetEvent = new ManualResetEvent(false);
+
+            supervisor
+                .Setup(s => s.RunAsync(It.IsAny<CancellationToken>()))
+                .ThrowsAsync(exception)
+                .Callback((CancellationToken ct) =>
+                {
+                    manualResetEvent.Set();
+                    throw exception;
+                });
+
+            Mock.Get(this.partitionSupervisorFactory)
+                .Setup(f => f.Create(this.lease))
+                .Returns(supervisor.Object);
+
+            await this.sut.AddOrUpdateLeaseAsync(this.lease);
+
+            bool timeout = manualResetEvent.WaitOne(100);
+            Assert.IsTrue(timeout, "Partition supervisor not started");
+
+            this.healthMonitor
+                .Verify(m => m.NotifyErrorAsync(this.lease.CurrentLeaseToken, exception), Times.Never);
+
+            Mock.Get(this.leaseManager)
+                .Verify(manager => manager.ReleaseAsync(this.lease), Times.Once);
+
+            this.healthMonitor
+                .Verify(m => m.NotifyLeaseReleaseAsync(this.lease.CurrentLeaseToken), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task Renewer_ShouldNotify_IfLeaseAcquireFailsWithLeaseLost_WithInnerException()
+        {
+            Mock.Get(this.partitionProcessor)
+                .Reset();
+
+            Mock<PartitionSupervisor> supervisor = new Mock<PartitionSupervisor>();
+
+            Exception internalException = new Exception();
+
+            LeaseLostException exception = new LeaseLostException("some error", internalException);
+
+            ManualResetEvent manualResetEvent = new ManualResetEvent(false);
+
+            supervisor
+                .Setup(s => s.RunAsync(It.IsAny<CancellationToken>()))
+                .Callback((CancellationToken ct) =>
+                {
+                    manualResetEvent.Set();
+                    throw exception;
+                });
+
+            Mock.Get(this.partitionSupervisorFactory)
+                .Setup(f => f.Create(this.lease))
+                .Returns(supervisor.Object);
+
+            await this.sut.AddOrUpdateLeaseAsync(this.lease).ConfigureAwait(false);
+
+            bool timeout = manualResetEvent.WaitOne(100);
+            Assert.IsTrue(timeout, "Partition supervisor not started");
+
+            this.healthMonitor
+                .Verify(m => m.NotifyErrorAsync(this.lease.CurrentLeaseToken, internalException), Times.Once);
+
+            Mock.Get(this.leaseManager)
+                .Verify(manager => manager.ReleaseAsync(this.lease), Times.Once);
+
+            this.healthMonitor
+                .Verify(m => m.NotifyLeaseReleaseAsync(this.lease.CurrentLeaseToken), Times.Once);
+        }
+
+
 
         public Task InitializeAsync()
         {
