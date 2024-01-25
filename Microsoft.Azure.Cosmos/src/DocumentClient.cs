@@ -115,7 +115,8 @@ namespace Microsoft.Azure.Cosmos
         private readonly bool IsLocalQuorumConsistency = false;
         private readonly bool isReplicaAddressValidationEnabled;
 
-        private readonly IChaosInterceptor chaosInterceptor;
+        private readonly IChaosInterceptorFactory chaosInterceptorFactory;
+        private IChaosInterceptor chaosInterceptor;
 
         //Auth
         internal readonly AuthorizationTokenProvider cosmosAuthorization;
@@ -487,7 +488,7 @@ namespace Microsoft.Azure.Cosmos
             this.transportClientHandlerFactory = transportClientHandlerFactory;
             this.IsLocalQuorumConsistency = isLocalQuorumConsistency;
             this.initTaskCache = new AsyncCacheNonBlocking<string, bool>(cancellationToken: this.cancellationTokenSource.Token);
-            this.chaosInterceptor = chaosInterceptorFactory?.CreateInterceptor(this);
+            this.chaosInterceptorFactory = chaosInterceptorFactory;
 
             this.Initialize(
                 serviceEndpoint: serviceEndpoint,
@@ -1015,6 +1016,14 @@ namespace Microsoft.Azure.Cosmos
         // Always called from under the lock except when called from Intilialize method during construction.
         private async Task<bool> GetInitializationTaskAsync(IStoreClientFactory storeClientFactory)
         {
+            //Create the chaos interceptor if using fault injection
+            //Creating the chaos interceptor requires async calls, so we do it here instead of in the constructor
+            //This must also be done before creating the storeClientFactory for direct mode
+            if (this.chaosInterceptorFactory != null)
+            {
+                this.chaosInterceptor = await this.chaosInterceptorFactory.CreateInterceptorAsync(this);
+            }
+
             await this.InitializeGatewayConfigurationReaderAsync();
 
             if (this.desiredConsistencyLevel.HasValue)
