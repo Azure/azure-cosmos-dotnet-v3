@@ -75,7 +75,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                         Documents.OperationTypeExtensions.IsReadOperation(operationType)
                             && operationType != Documents.OperationType.Head
                             && operationType != Documents.OperationType.HeadFeed
-                            && operationType != Documents.OperationType.QueryPlan);
+                            && operationType != Documents.OperationType.QueryPlan
+                            && operationType != Documents.OperationType.MetadataCheckAccess);
             }
 
             return perOperationOverride;
