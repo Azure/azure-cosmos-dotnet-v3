@@ -761,10 +761,10 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             if (context.CurrentQuery.GroupByParameter != null)
             {
-                Expression groupbySubstitution = context.GroupByKeySubstitution.Lookup(inputExpression);
-                if (groupbySubstitution != null)
+                Expression groupBySubstitution = context.GroupByKeySubstitution.Lookup(inputExpression);
+                if (groupBySubstitution != null)
                 {
-                    return ExpressionToSql.VisitNonSubqueryScalarExpression(groupbySubstitution, context);
+                    return ExpressionToSql.VisitNonSubqueryScalarExpression(groupBySubstitution, context);
                 }
             }
             Expression subst = context.LookupSubstitution(inputExpression);

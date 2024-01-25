@@ -719,10 +719,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             //Negative case - The translation is correct (SELECT VALUE MIN(root) FROM root GROUP BY root["Number"]
             // but the behavior between LINQ and SQL is different
             // In Linq, it requires the object to have comparer traits, where as in CosmosDB, we will return null
-            //inputs.Add(new LinqTestInput("GroupBy Single Value With Min", b => getQuery(b).GroupBy(k => k.Number /*keySelector*/,
-            //                                                                  (key, values) => values.Min() /*return the Min of each group */)));
-            //inputs.Add(new LinqTestInput("GroupBy Single Value With Max", b => getQuery(b).GroupBy(k => k.Number /*keySelector*/,
-            //                                                                    (key, values) => values.Max() /*return the Max of each group */)));
+            inputs.Add(new LinqTestInput("GroupBy Single Value With Min", b => getQuery(b).GroupBy(k => k.Int /*keySelector*/,
+                                                                              (key, values) => values.Min() /*return the Min of each group */)));
+            inputs.Add(new LinqTestInput("GroupBy Single Value With Max", b => getQuery(b).GroupBy(k => k.Int /*keySelector*/,
+                                                                                (key, values) => values.Max() /*return the Max of each group */)));
             this.ExecuteTestSuite(inputs);
         }
 
