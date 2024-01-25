@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos
             this.CosmosException = cosmosException;
             this.Headers = headers ?? new Headers();
 
-            this.IndexUtilizationText = ResponseMessage.DecodeIndexMetrics(this.Headers, true);
+            this.IndexUtilizationText = ResponseMessage.DecodeIndexMetrics(this.Headers, isBase64Encoded: true);
 
             if (requestMessage != null && requestMessage.Trace != null)
             {
@@ -269,9 +269,9 @@ namespace Microsoft.Azure.Cosmos
 
                             return stringBuilder.ToString();
                         }
-
-                        // Return the JSON from the response header
-                        return responseMessageHeaders.IndexUtilizationText;
+                        
+                        // Return the JSON from the response header after url decode
+                        return System.Web.HttpUtility.UrlDecode(responseMessageHeaders.IndexUtilizationText, Encoding.UTF8); 
                     });
             }
 
