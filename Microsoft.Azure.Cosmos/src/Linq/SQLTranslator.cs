@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <returns>A string describing the expression translation.</returns>
         internal static string TranslateExpression(
             Expression inputExpression,
-            CosmosLinqSerializerOptions linqSerializerOptions = null)
+            CosmosLinqSerializerOptionsInternal linqSerializerOptions = null)
         {
             TranslationContext context = new TranslationContext(linqSerializerOptions);
 
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         internal static string TranslateExpressionOld(
             Expression inputExpression,
-            CosmosLinqSerializerOptions linqSerializerOptions = null)
+            CosmosLinqSerializerOptionsInternal linqSerializerOptions = null)
         {
             TranslationContext context = new TranslationContext(linqSerializerOptions);
 
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         internal static SqlQuerySpec TranslateQuery(
             Expression inputExpression,
-            CosmosLinqSerializerOptions linqSerializerOptions,
+            CosmosLinqSerializerOptionsInternal linqSerializerOptions,
             IDictionary<object, string> parameters)
         {
             inputExpression = ConstantEvaluator.PartialEval(inputExpression);

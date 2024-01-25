@@ -18,8 +18,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the If-Match (ETag) associated with the request in the Azure Cosmos DB service.
         /// </summary>
         /// <remarks>
-        /// Most commonly used with the Delete* and Replace* methods of <see cref="Container"/> such as <see cref="Container.ReplaceItemAsync{T}(T, string, PartitionKey?, ItemRequestOptions, System.Threading.CancellationToken)"/>
-        /// but can be used with other methods like <see cref="Container.ReadItemAsync{T}(string, PartitionKey, ItemRequestOptions, System.Threading.CancellationToken)"/> for caching scenarios.
+        /// Most commonly used with the Delete* and Replace* methods of <see cref="Container"/> such as <see cref="Container.ReplaceItemAsync{T}(T, string, PartitionKey?, ItemRequestOptions, System.Threading.CancellationToken)"/>.
         /// </remarks>
         public string IfMatchEtag { get; set; }
 
@@ -68,6 +67,13 @@ namespace Microsoft.Azure.Cosmos
         /// These values decides whether to generate operation level <see cref="System.Diagnostics.Tracing.EventSource"/> with request diagnostics or not.
         /// </summary>
         public CosmosThresholdOptions CosmosThresholdOptions { get; set; }
+
+        /// <summary>
+        /// List of regions to be excluded routing the request to.
+        /// This can be used to route a request to a specific region by excluding all other regions.
+        /// If all regions are excluded, then the request will be routed to the primary/hub region.
+        /// </summary>
+        public List<string> ExcludeRegions { get; set; }
 
         /// <summary>
         /// Gets or sets the boolean to use effective partition key routing in the cosmos db request.

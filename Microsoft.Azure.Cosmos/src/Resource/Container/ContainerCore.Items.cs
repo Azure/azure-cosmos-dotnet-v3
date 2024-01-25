@@ -16,8 +16,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
-    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Linq;
@@ -26,14 +24,11 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.ReadFeed;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
-    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
     /// Used to perform operations on items. There are two different types of operations.
@@ -342,119 +337,6 @@ namespace Microsoft.Azure.Cosmos
                                                                     cancellationToken);
         }
 
-        /// <summary>
-        /// Used in the compute gateway to support legacy gateway interface.
-        /// </summary>
-        public override async Task<TryExecuteQueryResult> TryExecuteQueryAsync(
-            QueryFeatures supportedQueryFeatures,
-            QueryDefinition queryDefinition,
-            string continuationToken,
-            FeedRangeInternal feedRangeInternal,
-            QueryRequestOptions requestOptions,
-            GeospatialType geospatialType,
-            CancellationToken cancellationToken = default)
-        {
-            if (queryDefinition == null)
-            {
-                throw new ArgumentNullException(nameof(queryDefinition));
-            }
-
-            if (requestOptions == null)
-            {
-                throw new ArgumentNullException(nameof(requestOptions));
-            }
-
-            if (feedRangeInternal != null)
-            {
-                // The user has scoped down to a physical partition or logical partition.
-                // In either case let the query execute as a passthrough.
-                QueryIterator passthroughQueryIterator = QueryIterator.Create(
-                    containerCore: this,
-                    client: this.queryClient,
-                    clientContext: this.ClientContext,
-                    sqlQuerySpec: queryDefinition.ToSqlQuerySpec(),
-                    continuationToken: continuationToken,
-                    feedRangeInternal: feedRangeInternal,
-                    queryRequestOptions: requestOptions,
-                    resourceLink: this.LinkUri,
-                    isContinuationExpected: false,
-                    allowNonValueAggregateQuery: true,
-                    forcePassthrough: true, // Forcing a passthrough, since we don't want to get the query plan nor try to rewrite it.
-                    partitionedQueryExecutionInfo: null);
-
-                return new QueryPlanIsSupportedResult(passthroughQueryIterator);
-            }
-
-            cancellationToken.ThrowIfCancellationRequested();
-
-            Documents.PartitionKeyDefinition partitionKeyDefinition;
-            if (requestOptions.Properties != null
-                && requestOptions.Properties.TryGetValue("x-ms-query-partitionkey-definition", out object partitionKeyDefinitionObject))
-            {
-                if (!(partitionKeyDefinitionObject is Documents.PartitionKeyDefinition definition))
-                {
-                    throw new ArgumentException(
-                        "partitionkeydefinition has invalid type",
-                        nameof(partitionKeyDefinitionObject));
-                }
-
-                partitionKeyDefinition = definition;
-            }
-            else
-            {
-                ContainerQueryProperties containerQueryProperties = await this.queryClient.GetCachedContainerQueryPropertiesAsync(
-                    this.LinkUri,
-                    requestOptions.PartitionKey,
-                    NoOpTrace.Singleton,
-                    cancellationToken);
-                partitionKeyDefinition = containerQueryProperties.PartitionKeyDefinition;
-            }
-
-            QueryPlanHandler queryPlanHandler = new QueryPlanHandler(this.queryClient);
-
-            TryCatch<(PartitionedQueryExecutionInfo queryPlan, bool supported)> tryGetQueryInfoAndIfSupported = await queryPlanHandler.TryGetQueryInfoAndIfSupportedAsync(
-                supportedQueryFeatures,
-                queryDefinition.ToSqlQuerySpec(),
-                ResourceType.Document,
-                partitionKeyDefinition,
-                requestOptions.PartitionKey.HasValue,
-                useSystemPrefix: QueryIterator.IsSystemPrefixExpected(requestOptions),
-                geospatialType: geospatialType,
-                cancellationToken);
-
-            if (tryGetQueryInfoAndIfSupported.Failed)
-            {
-                return new FailedToGetQueryPlanResult(tryGetQueryInfoAndIfSupported.Exception);
-            }
-
-            (PartitionedQueryExecutionInfo queryPlan, bool supported) = tryGetQueryInfoAndIfSupported.Result;
-            TryExecuteQueryResult tryExecuteQueryResult;
-            if (supported)
-            {
-                QueryIterator queryIterator = QueryIterator.Create(
-                    containerCore: this,
-                    client: this.queryClient,
-                    clientContext: this.ClientContext,
-                    sqlQuerySpec: queryDefinition.ToSqlQuerySpec(),
-                    continuationToken: continuationToken,
-                    feedRangeInternal: feedRangeInternal,
-                    queryRequestOptions: requestOptions,
-                    resourceLink: this.LinkUri,
-                    isContinuationExpected: false,
-                    allowNonValueAggregateQuery: true,
-                    forcePassthrough: false,
-                    partitionedQueryExecutionInfo: queryPlan);
-
-                tryExecuteQueryResult = new QueryPlanIsSupportedResult(queryIterator);
-            }
-            else
-            {
-                tryExecuteQueryResult = new QueryPlanNotSupportedResult(queryPlan);
-            }
-
-            return tryExecuteQueryResult;
-        }
-
         public override FeedIterator<T> GetItemQueryIterator<T>(
            string queryText = null,
            string continuationToken = null,
@@ -505,13 +387,15 @@ namespace Microsoft.Azure.Cosmos
         {
             requestOptions ??= new QueryRequestOptions();
 
-            if (linqSerializerOptions == null && this.ClientContext.ClientOptions.SerializerOptions != null)
+            if (this.ClientContext.ClientOptions != null)
             {
-                linqSerializerOptions = new CosmosLinqSerializerOptions
+                linqSerializerOptions ??= new CosmosLinqSerializerOptions
                 {
-                    PropertyNamingPolicy = this.ClientContext.ClientOptions.SerializerOptions.PropertyNamingPolicy
+                    PropertyNamingPolicy = this.ClientContext.ClientOptions.SerializerOptions?.PropertyNamingPolicy ?? CosmosPropertyNamingPolicy.Default             
                 };
             }
+
+            CosmosLinqSerializerOptionsInternal linqSerializerOptionsInternal = CosmosLinqSerializerOptionsInternal.Create(linqSerializerOptions, this.ClientContext.ClientOptions.Serializer);
 
             return new CosmosLinqQuery<T>(
                 this,
@@ -520,7 +404,7 @@ namespace Microsoft.Azure.Cosmos
                 continuationToken,
                 requestOptions,
                 allowSynchronousQueryExecution,
-                linqSerializerOptions);
+                linqSerializerOptionsInternal);
         }
 
         public override FeedIterator<T> GetItemQueryIterator<T>(
@@ -838,8 +722,8 @@ namespace Microsoft.Azure.Cosmos
                 resourceLink: this.LinkUri,
                 isContinuationExpected: isContinuationExcpected,
                 allowNonValueAggregateQuery: true,
-                forcePassthrough: false,
-                partitionedQueryExecutionInfo: null);
+                partitionedQueryExecutionInfo: null,
+                resourceType: ResourceType.Document);
         }
 
         public override FeedIteratorInternal GetReadFeedIterator(
@@ -876,8 +760,8 @@ namespace Microsoft.Azure.Cosmos
                     resourceLink: resourceLink,
                     isContinuationExpected: false,
                     allowNonValueAggregateQuery: true,
-                    forcePassthrough: false,
-                    partitionedQueryExecutionInfo: null);
+                    partitionedQueryExecutionInfo: null,
+                    resourceType: resourceType);
             }
             else
             {

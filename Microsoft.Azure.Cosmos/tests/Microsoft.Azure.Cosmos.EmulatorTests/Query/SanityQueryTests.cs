@@ -451,72 +451,84 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             QueryOracleUtil util = new QueryOracle2(seed);
             IEnumerable<string> inputDocuments = util.GetDocuments(numberOfDocuments);
 
-            ConnectionModes connectionModes = ConnectionModes.Direct;
-            await this.CreateIngestQueryDeleteAsync(
-                connectionModes,
-                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
-                inputDocuments,
-                ImplementationAsync);
-
-            connectionModes = ConnectionModes.Gateway;
-            await this.CreateIngestQueryDeleteAsync(
-                connectionModes,
-                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
-                inputDocuments,
-                ImplementationAsync);
-
-            async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
+            foreach (ConnectionModes connectionModes in new[] { ConnectionModes.Direct, ConnectionModes.Gateway })
             {
-                ContainerInternal containerCore = (ContainerInlineCore)container;
-
-                List<bool> isGatewayQueryPlanOptions = new List<bool> { true };
-                if (connectionModes == ConnectionModes.Direct)
+                foreach (CollectionTypes collectionTypes in new[]
                 {
-                    isGatewayQueryPlanOptions.Append(false);
-                }
-
-                foreach (bool isGatewayQueryPlan in isGatewayQueryPlanOptions)
+                    CollectionTypes.SinglePartition,
+                    CollectionTypes.MultiPartition
+                })
                 {
-                    MockCosmosQueryClient cosmosQueryClientCore = new MockCosmosQueryClient(
-                        containerCore.ClientContext,
-                        containerCore,
-                        isGatewayQueryPlan);
+                    await this.CreateIngestQueryDeleteAsync(
+                        connectionModes,
+                        collectionTypes,
+                        inputDocuments,
+                        ImplementationAsync);
 
-                    ContainerInternal containerWithForcedPlan = new ContainerInlineCore(
-                        containerCore.ClientContext,
-                        (DatabaseCore)containerCore.Database,
-                        containerCore.Id,
-                        cosmosQueryClientCore);
-
-                    int numOfQueries = 0;
-                    foreach (int maxDegreeOfParallelism in new int[] { 1, 100 })
+                    async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
                     {
-                        foreach (int maxItemCount in new int[] { 10, 100 })
+                        Assert.IsTrue(collectionTypes == CollectionTypes.SinglePartition ||
+                            collectionTypes == CollectionTypes.MultiPartition,
+                            "The test validation requires that single/multi-partition scenario be executed separately.");
+                        ContainerInternal containerCore = (ContainerInlineCore)container;
+
+                        List<bool> isGatewayQueryPlanOptions = new List<bool> { true };
+                        if (connectionModes == ConnectionModes.Direct)
                         {
-                            numOfQueries++;
-                            QueryRequestOptions feedOptions = new QueryRequestOptions
-                            {
-                                MaxBufferedItemCount = 7000,
-                                MaxConcurrency = maxDegreeOfParallelism,
-                                MaxItemCount = maxItemCount,
-                            };
-
-                            List<CosmosElement> queryResults = await QueryTestsBase.RunQueryAsync(
-                                containerWithForcedPlan,
-                                "SELECT * FROM c ORDER BY c._ts",
-                                feedOptions);
-
-                            Assert.AreEqual(documents.Count(), queryResults.Count);
+                            isGatewayQueryPlanOptions.Append(false);
                         }
-                    }
 
-                    if (isGatewayQueryPlan)
-                    {
-                        Assert.IsTrue(cosmosQueryClientCore.QueryPlanCalls > numOfQueries);
-                    }
-                    else
-                    {
-                        Assert.AreEqual(0, cosmosQueryClientCore.QueryPlanCalls, "ServiceInterop mode should not be calling gateway plan retriever");
+                        foreach (bool isGatewayQueryPlan in isGatewayQueryPlanOptions)
+                        {
+                            foreach (bool ode in new [] { true, false })
+                            {
+                                MockCosmosQueryClient cosmosQueryClientCore = new MockCosmosQueryClient(
+                                    containerCore.ClientContext,
+                                    containerCore,
+                                    isGatewayQueryPlan);
+
+                                ContainerInternal containerWithForcedPlan = new ContainerInlineCore(
+                                    containerCore.ClientContext,
+                                    (DatabaseCore)containerCore.Database,
+                                    containerCore.Id,
+                                    cosmosQueryClientCore);
+
+                                int numOfQueries = 0;
+                                foreach (int maxDegreeOfParallelism in new int[] { 1, 100 })
+                                {
+                                    foreach (int maxItemCount in new int[] { 10, 100 })
+                                    {
+                                        numOfQueries++;
+                                        QueryRequestOptions feedOptions = new QueryRequestOptions
+                                        {
+                                            MaxBufferedItemCount = 7000,
+                                            MaxConcurrency = maxDegreeOfParallelism,
+                                            MaxItemCount = maxItemCount,
+                                            EnableOptimisticDirectExecution = ode,
+                                        };
+
+                                        List<CosmosElement> queryResults = await QueryTestsBase.RunQueryAsync(
+                                            containerWithForcedPlan,
+                                            "SELECT * FROM c ORDER BY c._ts",
+                                            feedOptions);
+
+                                        Assert.AreEqual(documents.Count(), queryResults.Count);
+                                    }
+                                }
+
+                                if (isGatewayQueryPlan)
+                                {
+                                    bool expected = ode && (collectionTypes == CollectionTypes.SinglePartition) ?
+                                        cosmosQueryClientCore.QueryPlanCalls == 0 :
+                                        cosmosQueryClientCore.QueryPlanCalls > numOfQueries;
+                                    Assert.IsTrue(expected);
+                                }
+                                else
+                                {
+                                    Assert.AreEqual(0, cosmosQueryClientCore.QueryPlanCalls, "ServiceInterop mode should not be calling gateway plan retriever");
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -538,9 +550,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     MaxBufferedItemCount = 7000,
                     MaxConcurrency = 10,
                     MaxItemCount = 10,
-#if PREVIEW
-                    EnableOptimisticDirectExecution = false
-#endif
                 };
 
                 string compositeAggregate = "SELECT COUNT(1) + 5 FROM c";
@@ -566,105 +575,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                             e.Message);
                     }
                 }
-            }
-        }
-
-        [TestMethod]
-        public async Task TestTryExecuteQuery()
-        {
-            await this.CreateIngestQueryDeleteAsync(
-                ConnectionModes.Direct | ConnectionModes.Gateway,
-                CollectionTypes.SinglePartition,
-                QueryTestsBase.NoDocuments,
-                this.TestTryExecuteQueryHelper);
-        }
-
-        private async Task TestTryExecuteQueryHelper(
-            Container container,
-            IReadOnlyList<CosmosObject> documents)
-        {
-            ContainerInternal conatinerCore = (ContainerInlineCore)container;
-            foreach (int maxDegreeOfParallelism in new int[] { 1, 100 })
-            {
-                foreach (int maxItemCount in new int[] { 10, 100 })
-                {
-                    foreach ((string query, QueryFeatures queryFeatures, bool canSupportExpected) in new Tuple<string, QueryFeatures, bool>[]
-                    {
-                        new Tuple<string, QueryFeatures, bool>("SELECT * FROM c", QueryFeatures.None, true),
-                        new Tuple<string, QueryFeatures, bool>("SELECT * FROM c ORDER BY c._ts", QueryFeatures.None, false),
-                        new Tuple<string, QueryFeatures, bool>("SELECT * FROM c ORDER BY c._ts", QueryFeatures.OrderBy, true),
-                    })
-                    {
-                        string continuationToken = null;
-                        do
-                        {
-                            ContainerInternal.TryExecuteQueryResult tryExecuteQueryResult = await conatinerCore.TryExecuteQueryAsync(
-                                supportedQueryFeatures: queryFeatures,
-                                queryDefinition: new QueryDefinition(query),
-                                requestOptions: new QueryRequestOptions()
-                                {
-                                    MaxConcurrency = maxDegreeOfParallelism,
-                                    MaxItemCount = maxItemCount,
-                                },
-                                feedRangeInternal: null,
-                                continuationToken: continuationToken,
-                                geospatialType: Cosmos.GeospatialType.Geography);
-
-                            if (canSupportExpected)
-                            {
-                                Assert.IsTrue(tryExecuteQueryResult is ContainerInternal.QueryPlanIsSupportedResult);
-                            }
-                            else
-                            {
-                                Assert.IsTrue(tryExecuteQueryResult is ContainerInternal.QueryPlanNotSupportedResult);
-                            }
-
-                            if (canSupportExpected)
-                            {
-                                ContainerInternal.QueryPlanIsSupportedResult queryPlanIsSupportedResult = (ContainerInternal.QueryPlanIsSupportedResult)tryExecuteQueryResult;
-                                ResponseMessage cosmosQueryResponse = await queryPlanIsSupportedResult.QueryIterator.ReadNextAsync();
-                                continuationToken = cosmosQueryResponse.ContinuationToken;
-                            }
-                        } while (continuationToken != null);
-                    }
-                }
-            }
-
-            {
-                // Test the syntax error case
-                ContainerInternal.TryExecuteQueryResult tryExecuteQueryResult = await conatinerCore.TryExecuteQueryAsync(
-                    supportedQueryFeatures: QueryFeatures.None,
-                    queryDefinition: new QueryDefinition("This is not a valid query."),
-                    requestOptions: new QueryRequestOptions()
-                    {
-                        MaxConcurrency = 1,
-                        MaxItemCount = 1,
-                    },
-                    feedRangeInternal: null,
-                    continuationToken: null,
-                    geospatialType: Cosmos.GeospatialType.Geography);
-
-                Assert.IsTrue(tryExecuteQueryResult is ContainerInternal.FailedToGetQueryPlanResult);
-            }
-
-            {
-                // Test that the force passthrough mechanism works
-                ContainerInternal.TryExecuteQueryResult tryExecuteQueryResult = await conatinerCore.TryExecuteQueryAsync(
-                    supportedQueryFeatures: QueryFeatures.None, // Not supporting any features
-                    queryDefinition: new QueryDefinition("SELECT VALUE [{\"item\": {\"sum\": SUM(c.blah), \"count\": COUNT(c.blah)}}] FROM c"), // Query has aggregates
-                    requestOptions: new QueryRequestOptions()
-                    {
-                        MaxConcurrency = 1,
-                        MaxItemCount = 1,
-                    },
-                    feedRangeInternal: new FeedRangePartitionKeyRange("0"), // filtering on a PkRangeId.
-                    continuationToken: null,
-                    geospatialType: Cosmos.GeospatialType.Geography);
-
-                Assert.IsTrue(tryExecuteQueryResult is ContainerInternal.QueryPlanIsSupportedResult);
-                ContainerInternal.QueryPlanIsSupportedResult queryPlanIsSupportedResult = (ContainerInternal.QueryPlanIsSupportedResult)tryExecuteQueryResult;
-                ResponseMessage response = await queryPlanIsSupportedResult.QueryIterator.ReadNextAsync();
-                Assert.IsTrue(response.IsSuccessStatusCode, response.ErrorMessage);
             }
         }
 
@@ -790,14 +700,13 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         {
                             foreach (Cosmos.PartitionKey? partitionKey in new Cosmos.PartitionKey?[] { new Cosmos.PartitionKey(5), default })
                             {
+                                // ODE is set to false to allow for the testing of other pipelines in single partition scenarios
                                 QueryRequestOptions feedOptions = new QueryRequestOptions
                                 {
                                     MaxBufferedItemCount = 7000,
                                     MaxConcurrency = maxDegreeOfParallelism,
                                     MaxItemCount = maxItemCount,
-#if PREVIEW
                                     EnableOptimisticDirectExecution = false
-#endif
                                 };
 
                                 async Task<List<CosmosElement>> AssertPassthroughAsync(string query, Cosmos.PartitionKey? pk = default)

@@ -119,7 +119,7 @@ JOIN (
 SELECT VALUE root 
 FROM root 
 ORDER BY root["FamilyId"] ASC, root["FamilyId"] ASC]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest","message":"Message: {"Errors":["The order by query does not have a corresponding composite index that it can be served from."]}rn]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -132,7 +132,7 @@ ORDER BY root["FamilyId"] ASC, root["FamilyId"] ASC]]></SqlQuery>
 SELECT VALUE root 
 FROM root 
 ORDER BY root["FamilyId"] ASC, root["FamilyId"] DESC]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest","message":"Message: {"Errors":["The order by query does not have a corresponding composite index that it can be served from."]}rn]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -388,7 +388,6 @@ FROM (
         JOIN c0 IN root["Children"]) AS v1) AS r1 
         ORDER BY r1["FamilyId"] ASC, r1["FamilyNumber"] ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Underlying object does not have an '_rid' or '__sys_rid' field.]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -435,7 +434,6 @@ FROM (
         WHERE (p0["GivenName"]["Length"] > 5)) AS v0) AS r0 
         ORDER BY r0["FamilyId"] ASC, r0["FamilyNumber"] ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Underlying object does not have an '_rid' or '__sys_rid' field.]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -586,7 +584,7 @@ FROM root
 JOIN f0 IN root["Records"]["Transactions"] 
 WHERE (ARRAY_LENGTH(root["Children"]) > 0) 
 ORDER BY f0["Type"] ASC, f0["Amount"] ASC]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest","message":"Message: {"Errors":["Order-by over correlated collections is not supported."]}rn]]></ErrorMessage>
     </Output>
   </Result>
   <Result>

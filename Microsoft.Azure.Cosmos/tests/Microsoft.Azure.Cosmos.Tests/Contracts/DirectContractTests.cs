@@ -37,7 +37,6 @@ namespace Microsoft.Azure.Cosmos.Contracts
             Assert.IsTrue(ServiceInteropWrapper.AssembliesExist.Value);
 
             string configJson = "{}";
-            IntPtr provider;
             TryCatch<IntPtr> tryCreateServiceProvider = QueryPartitionProvider.TryCreateServiceProvider(configJson);
             Assert.IsFalse(tryCreateServiceProvider.Failed);
             // Don't leak on tests

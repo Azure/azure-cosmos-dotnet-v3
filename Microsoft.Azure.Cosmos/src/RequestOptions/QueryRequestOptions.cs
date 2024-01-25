@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.ComponentModel;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query;
@@ -51,15 +50,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// Direct (optimistic) execution offers improved performance for several kinds of queries such as a single partition streaming query.
         /// </value>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        bool EnableOptimisticDirectExecution { get; set; }
-#if PREVIEW 
-        = true;
-#endif
+        public bool EnableOptimisticDirectExecution { get; set; } = true;
 
         /// <summary>
         /// Gets or sets the maximum number of items that can be buffered client side during 

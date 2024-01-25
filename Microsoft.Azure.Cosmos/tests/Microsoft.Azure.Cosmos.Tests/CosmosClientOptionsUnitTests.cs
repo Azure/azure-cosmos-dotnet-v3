@@ -7,11 +7,12 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Collections;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
-    using Cosmos.Telemetry;
+    using System.Net.Security;
+    using System.Security.Cryptography;
+    using System.Security.Cryptography.X509Certificates;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
@@ -116,8 +117,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .WithThrottlingRetryOptions(maxRetryWaitTime, maxRetryAttemptsOnThrottledRequests)
                 .WithBulkExecution(true)
                 .WithSerializerOptions(cosmosSerializerOptions)
-                .WithConsistencyLevel(consistencyLevel)
-                .WithPartitionLevelFailoverEnabled();
+                .WithConsistencyLevel(consistencyLevel);
 
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             clientOptions = cosmosClient.ClientOptions;
@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(object.ReferenceEquals(webProxy, clientOptions.WebProxy));
             Assert.IsTrue(clientOptions.AllowBulkExecution);
             Assert.AreEqual(consistencyLevel, clientOptions.ConsistencyLevel);
-            Assert.IsTrue(clientOptions.EnablePartitionLevelFailover);
+            Assert.IsFalse(clientOptions.EnablePartitionLevelFailover);
             Assert.IsTrue(clientOptions.EnableAdvancedReplicaSelectionForTcp.HasValue && clientOptions.EnableAdvancedReplicaSelectionForTcp.Value);
 
             //Verify GetConnectionPolicy returns the correct values
@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(maxRetryAttemptsOnThrottledRequests, policy.RetryOptions.MaxRetryAttemptsOnThrottledRequests);
             Assert.AreEqual((int)maxRetryWaitTime.TotalSeconds, policy.RetryOptions.MaxRetryWaitTimeInSeconds);
             Assert.AreEqual((Documents.ConsistencyLevel)consistencyLevel, clientOptions.GetDocumentsConsistencyLevel());
-            Assert.IsTrue(policy.EnablePartitionLevelFailover);
+            Assert.IsFalse(policy.EnablePartitionLevelFailover);
             Assert.IsTrue(clientOptions.EnableAdvancedReplicaSelectionForTcp.Value);
 
             IReadOnlyList<string> preferredLocations = new List<string>() { Regions.AustraliaCentral, Regions.AustraliaCentral2 };
@@ -204,6 +204,147 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(portReuseMode, policy.PortReuseMode);
             Assert.IsTrue(policy.EnableTcpConnectionEndpointRediscovery);
             CollectionAssert.AreEqual(preferredLocations.ToArray(), policy.PreferredLocations.ToArray());
+        }
+
+        /// <summary>
+        /// Test to validate that when the partition level failover is enabled with the preferred regions list is missing, then the client
+        /// initialization should throw an argument exception and fail. This should hold true for both environment variable and CosmosClientOptions.
+        /// </summary>
+        [TestMethod]
+        [Owner("dkunda")]
+        [DataRow(true, DisplayName = "Validate that when enevironment variable is used to enable PPAF, the outcome of the test should be same.")]
+        [DataRow(false, DisplayName = "Validate that when CosmosClientOptions is used to enable PPAF, the outcome of the test should be same.")]
+        public void CosmosClientOptions_WhenPartitionLevelFailoverEnabledAndPreferredRegionsNotSet_ShouldThrowArgumentException(bool useEnvironmentVariable)
+        {
+            try
+            {
+                if (useEnvironmentVariable)
+                {
+                    Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelFailoverEnabled, "True");
+                }
+
+                string endpoint = AccountEndpoint;
+                string key = MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey;
+                TimeSpan requestTimeout = TimeSpan.FromDays(1);
+                string userAgentSuffix = "testSuffix";
+                RequestHandler preProcessHandler = new TestHandler();
+                ApiType apiType = ApiType.Sql;
+                int maxRetryAttemptsOnThrottledRequests = 9999;
+                TimeSpan maxRetryWaitTime = TimeSpan.FromHours(6);
+                CosmosSerializationOptions cosmosSerializerOptions = new CosmosSerializationOptions()
+                {
+                    IgnoreNullValues = true,
+                    PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase,
+                };
+
+                Cosmos.ConsistencyLevel consistencyLevel = Cosmos.ConsistencyLevel.ConsistentPrefix;
+                CosmosClientBuilder cosmosClientBuilder = new(
+                    accountEndpoint: endpoint,
+                    authKeyOrResourceToken: key);
+
+                cosmosClientBuilder
+                    .WithConnectionModeDirect()
+                    .WithRequestTimeout(requestTimeout)
+                    .WithApplicationName(userAgentSuffix)
+                    .AddCustomHandlers(preProcessHandler)
+                    .WithApiType(apiType)
+                    .WithThrottlingRetryOptions(maxRetryWaitTime, maxRetryAttemptsOnThrottledRequests)
+                    .WithSerializerOptions(cosmosSerializerOptions)
+                    .WithConsistencyLevel(consistencyLevel);
+
+                if (!useEnvironmentVariable)
+                {
+                    cosmosClientBuilder
+                        .WithPartitionLevelFailoverEnabled();
+                }
+
+                ArgumentException exception = Assert.ThrowsException<ArgumentException>(() => cosmosClientBuilder.Build());
+
+                Assert.AreEqual(
+                    expected: "ApplicationPreferredRegions is required when EnablePartitionLevelFailover is enabled.",
+                    actual: exception.Message);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelFailoverEnabled, null);
+            }
+        }
+
+        /// <summary>
+        /// Test to validate that when the partition level failover is enabled with the preferred regions list is provided, then the client
+        /// initialization should be successful. This holds true for both environment variable and CosmosClientOptions.
+        /// </summary>
+        [TestMethod]
+        [Owner("dkunda")]
+        [DataRow(true, DisplayName = "Validate that when enevironment variable is used to enable PPAF, the outcome of the test should be same.")]
+        [DataRow(false, DisplayName = "Validate that when CosmosClientOptions is used to enable PPAF, the outcome of the test should be same.")]
+        public void CosmosClientOptions_WhenPartitionLevelFailoverEnabledAndPreferredRegionsSet_ShouldInitializeSuccessfully(bool useEnvironmentVariable)
+        {
+            try
+            {
+                if (useEnvironmentVariable)
+                {
+                    Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelFailoverEnabled, "True");
+                }
+
+                string endpoint = AccountEndpoint;
+                string key = MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey;
+                TimeSpan requestTimeout = TimeSpan.FromDays(1);
+                string userAgentSuffix = "testSuffix";
+                RequestHandler preProcessHandler = new TestHandler();
+                ApiType apiType = ApiType.Sql;
+                int maxRetryAttemptsOnThrottledRequests = 9999;
+                TimeSpan maxRetryWaitTime = TimeSpan.FromHours(6);
+                CosmosSerializationOptions cosmosSerializerOptions = new CosmosSerializationOptions()
+                {
+                    IgnoreNullValues = true,
+                    PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase,
+                };
+
+                Cosmos.ConsistencyLevel consistencyLevel = Cosmos.ConsistencyLevel.ConsistentPrefix;
+                CosmosClientBuilder cosmosClientBuilder = new(
+                    accountEndpoint: endpoint,
+                    authKeyOrResourceToken: key);
+
+                cosmosClientBuilder
+                    .WithConnectionModeDirect()
+                    .WithRequestTimeout(requestTimeout)
+                    .WithApplicationName(userAgentSuffix)
+                    .AddCustomHandlers(preProcessHandler)
+                    .WithApiType(apiType)
+                    .WithThrottlingRetryOptions(maxRetryWaitTime, maxRetryAttemptsOnThrottledRequests)
+                    .WithSerializerOptions(cosmosSerializerOptions)
+                    .WithConsistencyLevel(consistencyLevel)
+                    .WithPartitionLevelFailoverEnabled()
+                    .WithApplicationPreferredRegions(
+                        new List<string>()
+                        {
+                        Regions.NorthCentralUS,
+                        Regions.WestUS,
+                        Regions.EastAsia,
+                        });
+
+                CosmosClientOptions clientOptions = cosmosClientBuilder.Build().ClientOptions;
+
+                Assert.AreEqual(ConnectionMode.Direct, clientOptions.ConnectionMode);
+                Assert.AreEqual(requestTimeout, clientOptions.RequestTimeout);
+                Assert.AreEqual(userAgentSuffix, clientOptions.ApplicationName);
+                Assert.AreEqual(preProcessHandler, clientOptions.CustomHandlers[0]);
+                Assert.AreEqual(apiType, clientOptions.ApiType);
+                Assert.AreEqual(maxRetryAttemptsOnThrottledRequests, clientOptions.MaxRetryAttemptsOnRateLimitedRequests);
+                Assert.AreEqual(maxRetryWaitTime, clientOptions.MaxRetryWaitTimeOnRateLimitedRequests);
+                Assert.AreEqual(cosmosSerializerOptions.IgnoreNullValues, clientOptions.SerializerOptions.IgnoreNullValues);
+                Assert.AreEqual(cosmosSerializerOptions.PropertyNamingPolicy, clientOptions.SerializerOptions.PropertyNamingPolicy);
+                Assert.AreEqual(cosmosSerializerOptions.Indented, clientOptions.SerializerOptions.Indented);
+                Assert.IsFalse(clientOptions.AllowBulkExecution);
+                Assert.AreEqual(consistencyLevel, clientOptions.ConsistencyLevel);
+                Assert.IsTrue(clientOptions.EnablePartitionLevelFailover);
+                Assert.IsNotNull(clientOptions.ApplicationPreferredRegions);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelFailoverEnabled, null);
+            }
         }
 
         [TestMethod]
@@ -745,6 +886,31 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     ApplicationName = illegal
                 });
+            }
+        }
+
+        [TestMethod]
+        [DataRow(ConnectionString, false)]
+        [DataRow(ConnectionString + "DisableServerCertificateValidation=true;", true)]
+        public void TestServerCertificatesValidationCallback(string connStr, bool expectedIgnoreCertificateFlag)
+        {
+            //Arrange
+            X509Certificate2 x509Certificate2 = new CertificateRequest("cn=www.test", ECDsa.Create(), HashAlgorithmName.SHA256).CreateSelfSigned(DateTime.Now, DateTime.Now.AddYears(1));
+            X509Chain x509Chain = new X509Chain();
+            SslPolicyErrors sslPolicyErrors = new SslPolicyErrors();
+
+            CosmosClient cosmosClient = new CosmosClient(connStr);
+
+            if (expectedIgnoreCertificateFlag)
+            {
+                Assert.IsNotNull(cosmosClient.ClientOptions.ServerCertificateCustomValidationCallback);
+                Assert.IsTrue(cosmosClient
+                    .ClientOptions
+                    .ServerCertificateCustomValidationCallback(x509Certificate2, x509Chain, sslPolicyErrors));
+            }
+            else
+            {
+                Assert.IsNull(cosmosClient.ClientOptions.ServerCertificateCustomValidationCallback);
             }
         }
 

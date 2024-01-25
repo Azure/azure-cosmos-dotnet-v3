@@ -124,6 +124,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <example>"AccountEndpoint=https://mytestcosmosaccount.documents.azure.com:443/;AccountKey={SecretAccountKey};"</example>
         /// <param name="connectionString">The connection string must contain AccountEndpoint and AccountKey or ResourceToken.</param>
+        /// <remarks>
+        /// Emulator: To ignore SSL Certificate please suffix connectionstring with "DisableServerCertificateValidation=True;". 
+        /// When CosmosClientOptions.HttpClientFactory is used, SSL certificate needs to be handled appropriately.
+        /// NOTE: DO NOT use this flag in production (only for emulator)
+        /// </remarks>
         public CosmosClientBuilder(string connectionString)
         {
             if (connectionString == null)
@@ -133,6 +138,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
             this.accountEndpoint = CosmosClientOptions.GetAccountEndpoint(connectionString);
             this.accountKey = CosmosClientOptions.GetAccountKey(connectionString);
+            
+            this.clientOptions = CosmosClientOptions.GetCosmosClientOptionsWithCertificateFlag(connectionString, this.clientOptions);
         }
 
         /// <summary>
@@ -655,6 +662,16 @@ namespace Microsoft.Azure.Cosmos.Fluent
         internal CosmosClientBuilder WithPartitionLevelFailoverEnabled()
         {
             this.clientOptions.EnablePartitionLevelFailover = true;
+            return this;
+        }
+
+        /// <summary>
+        /// Enables SDK to inject fault. Used for testing applications.  
+        /// </summary>
+        /// <param name="chaosInterceptorFactory"></param>
+        internal CosmosClientBuilder WithFaultInjection(IChaosInterceptorFactory chaosInterceptorFactory)
+        {
+            this.clientOptions.ChaosInterceptorFactory = chaosInterceptorFactory;
             return this;
         }
 
