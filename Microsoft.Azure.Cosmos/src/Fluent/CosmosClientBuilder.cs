@@ -326,7 +326,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </example>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientOptions.RegionalEndpoints"/>
-        public CosmosClientBuilder WithRegionalEndpoints(ISet<string> regionalEndpoints)
+        public CosmosClientBuilder WithRegionalEndpoints(IEnumerable<string> regionalEndpoints)
         {
             this.clientOptions.RegionalEndpoints = regionalEndpoints;
             return this;
