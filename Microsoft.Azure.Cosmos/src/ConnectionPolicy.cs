@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="regionalEndpoints">An instance of <see cref="ISet{T}"/> containing the regional endpoints
         /// provided by the customer.</param>
         public void SetRegionalEndpoints(
-            ISet<string> regionalEndpoints)
+            IEnumerable<string> regionalEndpoints)
         {
             if (regionalEndpoints == null)
             {

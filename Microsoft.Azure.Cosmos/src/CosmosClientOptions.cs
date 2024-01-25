@@ -200,7 +200,8 @@ namespace Microsoft.Azure.Cosmos
         /// Should the global endpoint become inaccessible, the CosmosClient will attempt to obtain the account information issuing requests to the regional endpoints provided in <see cref="RegionalEndpoints"/>.
         /// </para>
         /// <para>
-        /// Nevertheless, this parameter remains optional and is recommended for implementation when a customer has configured a private endpoint for their Cosmos DB account.
+        /// Nevertheless, this parameter remains optional and is recommended for implementation when a customer has configured a private endpoint with a custom DNS hostname
+        /// (instead of accountname-region.documents.azure.com) etc. for their Cosmos DB account.
         /// </para>
         /// <para>
         /// See also <seealso href="https://docs.microsoft.com/azure/cosmos-db/sql/troubleshoot-sdk-availability">Diagnose
@@ -220,7 +221,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability#high-availability-with-cosmos-db-in-the-event-of-regional-outages">High availability on regional outages</seealso>
-        public ISet<string> RegionalEndpoints { get; set; }
+        public IEnumerable<string> RegionalEndpoints { get; set; }
 
         /// <summary>
         /// Get or set the maximum number of concurrent connections allowed for the target

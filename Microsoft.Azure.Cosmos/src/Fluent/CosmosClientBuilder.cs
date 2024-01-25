@@ -309,7 +309,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <param name="regionalEndpoints">A set of string containing the regional private endpoints for the cosmos db account.</param>
         /// <remarks>
-        ///  This function is optional and is recommended for implementation when a customer has configured one or more private endpoints for their Cosmos DB account.
+        ///  This function is optional and is recommended for implementation when a customer has configured one or more private endpoints with a custom DNS
+        ///  hostname (instead of accountname-region.documents.azure.com) etc. for their Cosmos DB account.
         /// </remarks>
         /// <example>
         /// The example below creates a new instance of <see cref="CosmosClientBuilder"/> with the regional endpoints.
