@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<Company>Microsoft Corporation</Company>
+		<Product>Microsoft(R) Azure Cosmos</Product>
+		<Description>This client library enables client applications to inject faults into Azure CosmosD DB applications.</Description>
+		<Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
+		<NeutralLanguage>en-US</NeutralLanguage>
+		<CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</CurrentDate>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net6</TargetFramework>
+		<RootNamespace>Microsoft.Azure.Cosmos.FaultInjection</RootNamespace>
+		<AssemblyName>Microsoft.Azure.Cosmos.FaultInjection</AssemblyName>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
+	</ItemGroup>
+
+	<ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
+		<PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" PrivateAssets="All" />
+		<PackageReference Include="Microsoft.HybridRow" Version="[$(HybridRowVersion)]" PrivateAssets="All" />
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
+	</ItemGroup>
+	
+	<PropertyGroup>
+		<SignAssembly>true</SignAssembly>
+		<DelaySign>true</DelaySign>
+		<AssemblyOriginatorKeyFile>..\..\..\testkey.snk</AssemblyOriginatorKeyFile>
+	</PropertyGroup>
+</Project>
