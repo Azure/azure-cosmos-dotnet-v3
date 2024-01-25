@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Reflection;
     using System.Text.RegularExpressions;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Serialization.HybridRow;
     using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.Azure.Cosmos.SqlObjects;
@@ -1712,7 +1713,18 @@ namespace Microsoft.Azure.Cosmos.Linq
                 case ExpressionType.Call:
                     // Single Value Selector
                     MethodCallExpression methodCallExpression = (MethodCallExpression)valueSelectorExpression;
-                    ExpressionToSql.VisitMethodCall(methodCallExpression, context);
+                    switch (methodCallExpression.Method.Name)
+                    {
+                        case LinqMethods.Max:
+                        case LinqMethods.Min:
+                        case LinqMethods.Average:
+                        case LinqMethods.Count:
+                        case LinqMethods.Sum:
+                            ExpressionToSql.VisitMethodCall(methodCallExpression, context);
+                            break;
+                        default:
+                            throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.MethodNotSupported, methodCallExpression.Method.Name));
+                    }
 
                     break;
 

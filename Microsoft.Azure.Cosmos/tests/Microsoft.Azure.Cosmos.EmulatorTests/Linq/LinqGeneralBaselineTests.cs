@@ -716,13 +716,38 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqTestInput("GroupBy Single Value With Count", b => getQuery(b).GroupBy(k => k.Id /*keySelector*/,
                                                                                 (key, values) => values.Average(value => value.Int) /*return the Count of each group */)));
 
-            //Negative case - The translation is correct (SELECT VALUE MIN(root) FROM root GROUP BY root["Number"]
+            // Negative cases
+            
+            // The translation is correct (SELECT VALUE MIN(root) FROM root GROUP BY root["Number"]
             // but the behavior between LINQ and SQL is different
             // In Linq, it requires the object to have comparer traits, where as in CosmosDB, we will return null
             inputs.Add(new LinqTestInput("GroupBy Single Value With Min", b => getQuery(b).GroupBy(k => k.Int /*keySelector*/,
                                                                               (key, values) => values.Min() /*return the Min of each group */)));
             inputs.Add(new LinqTestInput("GroupBy Single Value With Max", b => getQuery(b).GroupBy(k => k.Int /*keySelector*/,
                                                                                 (key, values) => values.Max() /*return the Max of each group */)));
+            
+            // Unsupported node type
+            inputs.Add(new LinqTestInput("GroupBy Single Value With Min", b => getQuery(b).GroupBy(k => k.Int /*keySelector*/,
+                                                                              (key, values) => "string" /* Unsupported Nodetype*/ )));
+
+            // Incorrect number of arguments
+            inputs.Add(new LinqTestInput("GroupBy Single Value With Count", b => getQuery(b).GroupBy(k => k.Id)));
+            inputs.Add(new LinqTestInput("GroupBy Single Value With Min", b => getQuery(b).GroupBy(
+                                                                              k => k.Int, 
+                                                                              k2 => k2.Int,
+                                                                              (key, values) => "string" /* Unsupported Nodetype*/ )));
+
+
+            // Non-aggregate method calls
+            inputs.Add(new LinqTestInput("GroupBy Single Value With Count", b => getQuery(b).GroupBy(k => k.Id /*keySelector*/,
+                                                                                (key, values) => values.Select(value => value.Int) /*Not an aggregate*/)));
+            inputs.Add(new LinqTestInput("GroupBy Single Value With Count", b => getQuery(b).GroupBy(k => k.Id /*keySelector*/,
+                                                                                (key, values) => values.OrderBy(f => f.FamilyId) /*Not an aggregate*/)));
+
+            // Currently unsupported case 
+            inputs.Add(new LinqTestInput("GroupBy Single Value With Min", b => getQuery(b).GroupBy(k => k.FamilyId /*keySelector*/,
+                                                                              (key, values) => new { familyId = key, familyIdCount = values.Count() } /*multi-value select */)));
+
             this.ExecuteTestSuite(inputs);
         }
 

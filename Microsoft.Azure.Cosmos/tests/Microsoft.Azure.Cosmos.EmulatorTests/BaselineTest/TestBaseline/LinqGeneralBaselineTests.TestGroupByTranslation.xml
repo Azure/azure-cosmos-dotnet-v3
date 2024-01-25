@@ -89,4 +89,64 @@ FROM root GROUP BY root["Int"] ]]></SqlQuery>
       <ErrorMessage><![CDATA[At least one object must implement IComparable.]]></ErrorMessage>
     </Output>
   </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy Single Value With Min]]></Description>
+      <Expression><![CDATA[query.GroupBy(k => k.Int, (key, values) => "string")]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Expression with NodeType 'Constant' is not supported.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy Single Value With Count]]></Description>
+      <Expression><![CDATA[query.GroupBy(k => k.Id)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Incorrect number of arguments for method 'GroupBy'. Expected '3' but received '2'.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy Single Value With Min]]></Description>
+      <Expression><![CDATA[query.GroupBy(k => k.Int, k2 => k2.Int, (key, values) => "string")]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Incorrect number of arguments for method 'GroupBy'. Expected '3' but received '4'.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy Single Value With Count]]></Description>
+      <Expression><![CDATA[query.GroupBy(k => k.Id, (key, values) => values.Select(value => value.Int))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Method 'Select' is not supported.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy Single Value With Count]]></Description>
+      <Expression><![CDATA[query.GroupBy(k => k.Id, (key, values) => values.OrderBy(f => f.FamilyId))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Method 'OrderBy' is not supported.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy Single Value With Min]]></Description>
+      <Expression><![CDATA[query.GroupBy(k => k.FamilyId, (key, values) => new AnonymousType(familyId = key, familyIdCount = values.Count()))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Expression with NodeType 'Multiple value selector' is not supported.]]></ErrorMessage>
+    </Output>
+  </Result>
 </Results>

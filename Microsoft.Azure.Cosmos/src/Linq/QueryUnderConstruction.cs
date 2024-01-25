@@ -464,11 +464,6 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return null;
             }
 
-            if (spec is SqlSelectStarSpec)
-            {
-                return groupByClause;
-            }
-
             SqlSelectValueSpec selectValueSpec = spec as SqlSelectValueSpec;
             if (selectValueSpec != null)
             {
