@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System;
     using System.Collections.Generic;
     using System.Linq.Expressions;
+    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using static Microsoft.Azure.Cosmos.Linq.ExpressionToSql;
     using static Microsoft.Azure.Cosmos.Linq.FromParameterBindings;
@@ -24,12 +25,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <summary>
         /// The LINQ serializer 
         /// </summary>
-        public readonly ICosmosLinqSerializer CosmosLinqSerializer;
-
-        /// <summary>
-        /// User-provided LINQ serializer options
-        /// </summary>
-        public CosmosLinqSerializerOptions LinqSerializerOptions;
+        public readonly ICosmosLinqSerializerInternal CosmosLinqSerializer;
 
         /// <summary>
         /// Set of parameters in scope at any point; used to generate fresh parameter names if necessary.
@@ -77,7 +73,11 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </summary>
         private Stack<SubqueryBinding> subqueryBindingStack;
 
-        public TranslationContext(CosmosLinqSerializerOptions linqSerializerOptions, IDictionary<object, string> parameters = null)
+        private static readonly ICosmosLinqSerializerInternal DefaultLinqSerializer = new DefaultCosmosLinqSerializer(new CosmosLinqSerializerOptions().PropertyNamingPolicy);
+
+        private static readonly MemberNames DefaultMemberNames = new MemberNames(new CosmosLinqSerializerOptions());
+
+        public TranslationContext(CosmosLinqSerializerOptionsInternal linqSerializerOptionsInternal, IDictionary<object, string> parameters = null)
         {
             this.InScope = new HashSet<ParameterExpression>();
             this.substitutions = new ParameterSubstitution();
@@ -86,10 +86,26 @@ namespace Microsoft.Azure.Cosmos.Linq
             this.collectionStack = new List<Collection>();
             this.CurrentQuery = new QueryUnderConstruction(this.GetGenFreshParameterFunc());
             this.subqueryBindingStack = new Stack<SubqueryBinding>();
-            this.LinqSerializerOptions = linqSerializerOptions;
             this.Parameters = parameters;
-            this.MemberNames = new MemberNames(linqSerializerOptions);
-            this.CosmosLinqSerializer = new DefaultCosmosLinqSerializer();
+
+            if (linqSerializerOptionsInternal?.CustomCosmosLinqSerializer != null)
+            {
+                this.CosmosLinqSerializer = new CustomCosmosLinqSerializer(linqSerializerOptionsInternal.CustomCosmosLinqSerializer);
+                this.MemberNames = new MemberNames(new CosmosLinqSerializerOptions());
+            }
+            else if (linqSerializerOptionsInternal?.CosmosLinqSerializerOptions != null)
+            {
+                CosmosLinqSerializerOptions linqSerializerOptions = linqSerializerOptionsInternal.CosmosLinqSerializerOptions;
+
+                this.CosmosLinqSerializer = new DefaultCosmosLinqSerializer(linqSerializerOptions.PropertyNamingPolicy);
+                this.MemberNames = new MemberNames(linqSerializerOptions);
+            }
+            else
+            {
+                this.CosmosLinqSerializer = TranslationContext.DefaultLinqSerializer;
+                this.MemberNames = TranslationContext.DefaultMemberNames;
+            }
+
             this.GroupByKeySubstitution = new ParameterSubstitution();
         }
 

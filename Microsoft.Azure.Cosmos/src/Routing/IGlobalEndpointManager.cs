@@ -32,5 +32,9 @@ namespace Microsoft.Azure.Cosmos.Routing
         void InitializeAccountPropertiesAndStartBackgroundRefresh(AccountProperties databaseAccount);
 
         Task RefreshLocationAsync(bool forceRefresh = false);
+
+        ReadOnlyDictionary<string, Uri> GetAvailableWriteEndpointsByLocation();
+
+        ReadOnlyDictionary<string, Uri> GetAvailableReadEndpointsByLocation();
     }
 }

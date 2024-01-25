@@ -47,7 +47,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
             {
                 this.previousRequiresDistribution = false;
             }
-
         }
 
         public delegate Task<TryCatch<IQueryPipelineStage>> FallbackQueryPipelineStageFactory(CosmosElement continuationToken);
@@ -83,13 +82,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
 
                         if (this.previousRequiresDistribution.HasValue && this.previousRequiresDistribution != requiresDistribution)
                         {
-                            // We should never enter this if statement as requiresDistribution flag can never switch mid execution.
+                            // We should never come here as requiresDistribution flag can never switch mid execution.
                             // Hence, this exception should never be thrown.
                             throw new InvalidOperationException($"Unexpected switch in {HttpConstants.HttpHeaders.RequiresDistribution} value. Previous value : {this.previousRequiresDistribution} Current value : {requiresDistribution}.");
                         }
 
                         if (requiresDistribution)
                         {
+                            // This is where we will unwrap tne continuation token and extract the client distribution plan
+                            // Pipelines to handle client distribution would be generated here
                             success = await this.SwitchToFallbackPipelineAsync(continuationToken: null, trace);
                         }
 
@@ -165,6 +166,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
 
         private sealed class OptimisticDirectExecutionQueryPipelineImpl : IQueryPipelineStage
         {
+            private const int ClientQLCompatibilityLevel = 1;
             private readonly QueryPartitionRangePageAsyncEnumerator queryPartitionRangePageAsyncEnumerator;
 
             private OptimisticDirectExecutionQueryPipelineImpl(
@@ -230,6 +232,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                     backendQueryPage.ActivityId,
                     backendQueryPage.ResponseLengthInBytes,
                     backendQueryPage.CosmosQueryExecutionInfo,
+                    backendQueryPage.DistributionPlanSpec,
                     disallowContinuationTokenMessage: null,
                     backendQueryPage.AdditionalHeaders,
                     queryState);
@@ -268,10 +271,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                     return TryCatch<IQueryPipelineStage>.FromException(monadicExtractState.Exception);
                 }
 
+                SqlQuerySpec updatedSqlQuerySpec = new SqlQuerySpec(sqlQuerySpec.QueryText, sqlQuerySpec.Parameters)
+                {
+                    ClientQLCompatibilityLevel = ClientQLCompatibilityLevel
+                };
+
                 FeedRangeState<QueryState> feedRangeState = monadicExtractState.Result;
                 QueryPartitionRangePageAsyncEnumerator partitionPageEnumerator = new QueryPartitionRangePageAsyncEnumerator(
                     documentContainer,
-                    sqlQuerySpec,
+                    updatedSqlQuerySpec,
                     feedRangeState,
                     partitionKey,
                     queryPaginationOptions,
