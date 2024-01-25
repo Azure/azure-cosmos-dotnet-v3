@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -23,7 +22,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly AuthorizationTokenProvider cosmosAuthorization;
         private readonly CosmosHttpClient httpClient;
         private readonly Uri serviceEndpoint;
-        private readonly IEnumerator<Uri> serviceEndpointEnumerator;
         private readonly CancellationToken cancellationToken;
 
         // Backlog: Auth abstractions are spilling through. 4 arguments for this CTOR are result of it.
@@ -38,24 +36,6 @@ namespace Microsoft.Azure.Cosmos
             this.cosmosAuthorization = cosmosAuthorization ?? throw new ArgumentNullException(nameof(AuthorizationTokenProvider));
             this.connectionPolicy = connectionPolicy;
             this.cancellationToken = cancellationToken;
-
-            List<Uri> serviceEndpoints = new ()
-            {
-                serviceEndpoint
-            };
-
-            if (this.connectionPolicy.RegionalEndpoints != null
-                && this.connectionPolicy.RegionalEndpoints.Count > 0)
-            {
-                foreach (string regionalEndpoint in this.connectionPolicy.RegionalEndpoints)
-                {
-                    // Add all of the regional endpoints to the service endpoints list.
-                    serviceEndpoints.Add(
-                        new Uri(regionalEndpoint));
-                }
-            }
-
-            this.serviceEndpointEnumerator = serviceEndpoints.GetEnumerator();
         }
 
         private async Task<AccountProperties> GetDatabaseAccountAsync(Uri serviceEndpoint)
@@ -106,31 +86,14 @@ namespace Microsoft.Azure.Cosmos
 
         public async Task<AccountProperties> InitializeReaderAsync()
         {
-            int attemptCounter = 1;
-            List<Exception> exceptionList = new ();
+            AccountProperties databaseAccount = await GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
+                defaultEndpoint: this.serviceEndpoint,
+                locations: this.connectionPolicy.PreferredLocations,
+                regionalEndpoints: this.connectionPolicy.RegionalEndpoints,
+                getDatabaseAccountFn: this.GetDatabaseAccountAsync,
+                cancellationToken: this.cancellationToken);
 
-            while (this.serviceEndpointEnumerator.MoveNext())
-            {
-                try
-                {
-                    AccountProperties databaseAccount = await GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
-                        defaultEndpoint: this.serviceEndpointEnumerator.Current,
-                        locations: this.connectionPolicy.PreferredLocations,
-                        getDatabaseAccountFn: this.GetDatabaseAccountAsync,
-                        cancellationToken: this.cancellationToken);
-
-                    return databaseAccount;
-                }
-                catch (Exception ex)
-                {
-                    DefaultTrace.TraceWarning("Attempt: {0}, Exception occurred while fetching account details: {1}", attemptCounter++, ex.Message);
-                    exceptionList.Add(ex);
-                }
-            }
-
-            throw exceptionList.Count > 1
-                ? new AggregateException("Unable to get account information.", exceptionList)
-                : exceptionList[0];
+            return databaseAccount;
         }
     }
 }

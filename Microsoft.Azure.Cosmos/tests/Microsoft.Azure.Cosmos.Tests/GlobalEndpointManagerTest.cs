@@ -118,6 +118,7 @@ namespace Microsoft.Azure.Cosmos
                            "southeastasia",
                            "northcentralus"
                        },
+                   regionalEndpoints: null,
                        getDatabaseAccountFn: (uri) => throw new Exception("The operation should be canceled and never make the network call."),
                        cancellationTokenSource.Token);
 
@@ -147,6 +148,7 @@ namespace Microsoft.Azure.Cosmos
                        "southeastasia",
                        "northcentralus"
                     },
+                    regionalEndpoints: null,
                     getDatabaseAccountFn: (uri) =>
                     {
                         count++;
@@ -177,6 +179,7 @@ namespace Microsoft.Azure.Cosmos
                        "southeastasia",
                        "northcentralus"
                     },
+                    regionalEndpoints: null,
                     getDatabaseAccountFn: async (uri) =>
                     {
                         count++;
@@ -208,6 +211,7 @@ namespace Microsoft.Azure.Cosmos
                        "southeastasia",
                        "northcentralus"
                     },
+                    regionalEndpoints: null,
                     getDatabaseAccountFn: (uri) =>
                     {
                         count++;
@@ -239,6 +243,7 @@ namespace Microsoft.Azure.Cosmos
                        "southeastasia",
                        "northcentralus"
                     },
+                    regionalEndpoints: null,
                     getDatabaseAccountFn: (uri) =>
                     {
                         count++;
@@ -307,6 +312,7 @@ namespace Microsoft.Azure.Cosmos
                    "southeastasia",
                    "northcentralus"
                 },
+                regionalEndpoints: null,
                 getDatabaseAccountFn: (uri) => slowPrimaryRegionHelper.RequestHelper(uri),
                 cancellationToken: default);
 
@@ -329,6 +335,7 @@ namespace Microsoft.Azure.Cosmos
                        "southeastasia",
                        "northcentralus"
                     },
+                    regionalEndpoints: null,
                     getDatabaseAccountFn: (uri) => slowPrimaryRegionHelper.RequestHelper(uri),
                     cancellationToken: default);
                 stopwatch.Stop();
@@ -352,6 +359,7 @@ namespace Microsoft.Azure.Cosmos
                        "southeastasia",
                        "northcentralus"
                     },
+                    regionalEndpoints: null,
                     getDatabaseAccountFn: (uri) => slowPrimaryRegionHelper.RequestHelper(uri),
                     cancellationToken: default);
 
@@ -373,6 +381,7 @@ namespace Microsoft.Azure.Cosmos
                        "southeastasia",
                        "northcentralus"
                     },
+                    regionalEndpoints: null,
                     getDatabaseAccountFn: (uri) => slowPrimaryRegionHelper.RequestHelper(uri),
                     cancellationToken: default);
 
@@ -398,6 +407,7 @@ namespace Microsoft.Azure.Cosmos
                        "westus6",
                        "westus7",
                     },
+                    regionalEndpoints: null,
                     getDatabaseAccountFn: (uri) => slowPrimaryRegionHelper.RequestHelper(uri),
                     cancellationToken: default);
 

@@ -117,12 +117,31 @@ namespace Microsoft.Azure.Cosmos.Routing
         public static async Task<AccountProperties> GetDatabaseAccountFromAnyLocationsAsync(
             Uri defaultEndpoint,
             IList<string>? locations,
+            IList<string> regionalEndpoints,
             Func<Uri, Task<AccountProperties>> getDatabaseAccountFn,
             CancellationToken cancellationToken)
         {
+            IList<Uri> serviceEndpoints = new List<Uri>()
+            {
+                // Add the default endpoint to the service endpoints list.
+                defaultEndpoint
+            };
+
+            if (regionalEndpoints != null
+                && regionalEndpoints.Count > 0)
+            {
+                foreach (string regionalEndpoint in regionalEndpoints)
+                {
+                    // Add all of the regional endpoints to the service endpoints list.
+                    serviceEndpoints.Add(
+                        new Uri(regionalEndpoint));
+                }
+            }
+
             using (GetAccountPropertiesHelper threadSafeGetAccountHelper = new GetAccountPropertiesHelper(
                defaultEndpoint,
                locations?.GetEnumerator(),
+               serviceEndpoints.GetEnumerator(),
                getDatabaseAccountFn,
                cancellationToken))
             {
@@ -138,6 +157,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             private readonly CancellationTokenSource CancellationTokenSource;
             private readonly Uri DefaultEndpoint;
             private readonly IEnumerator<string>? Locations;
+            private readonly IEnumerator<Uri> ServiceEndpointEnumerator;
             private readonly Func<Uri, Task<AccountProperties>> GetDatabaseAccountFn;
             private readonly List<Exception> TransientExceptions = new List<Exception>();
             private AccountProperties? AccountProperties = null;
@@ -147,12 +167,14 @@ namespace Microsoft.Azure.Cosmos.Routing
             public GetAccountPropertiesHelper(
                 Uri defaultEndpoint,
                 IEnumerator<string>? locations,
+                IEnumerator<Uri> serviceEndpointEnumerator,
                 Func<Uri, Task<AccountProperties>> getDatabaseAccountFn,
                 CancellationToken cancellationToken)
             {
                 this.DefaultEndpoint = defaultEndpoint;
                 this.Locations = locations;
                 this.GetDatabaseAccountFn = getDatabaseAccountFn;
+                this.ServiceEndpointEnumerator = serviceEndpointEnumerator;
                 this.CancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             }
 
@@ -164,29 +186,39 @@ namespace Microsoft.Azure.Cosmos.Routing
                     return await this.GetOnlyGlobalEndpointAsync();
                 }
 
-                Task globalEndpointTask = this.GetAndUpdateAccountPropertiesAsync(this.DefaultEndpoint);
-
-                // Start a timer to start secondary requests in parallel.
-                Task timerTask = Task.Delay(TimeSpan.FromSeconds(5));
-                await Task.WhenAny(globalEndpointTask, timerTask);
-                if (this.AccountProperties != null)
+                // We first iterate through all the service endpoints, including the
+                // global and private endpoints to fetch the account information. If all the
+                // attempt fails to fetch the metadata, we will append the preferred region name
+                // as a suffix to the default global endpoint, and try to retrieve the account
+                // information.
+                HashSet<Task> tasksToWaitOn = new ();
+                while (this.ServiceEndpointEnumerator.MoveNext())
                 {
-                    return this.AccountProperties;
-                }
+                    Task serviceEndpointTask = this.GetAndUpdateAccountPropertiesAsync(
+                        endpoint: this.ServiceEndpointEnumerator.Current);
 
-                if (this.NonRetriableException != null)
-                {
-                    ExceptionDispatchInfo.Capture(this.NonRetriableException).Throw();
+                    // Start a timer to start secondary requests in parallel.
+                    Task timerTask = Task.Delay(TimeSpan.FromSeconds(5));
+                    await Task.WhenAny(serviceEndpointTask, timerTask);
+                    if (this.AccountProperties != null)
+                    {
+                        return this.AccountProperties;
+                    }
+                    else
+                    {
+                        tasksToWaitOn.Add(serviceEndpointTask);
+                    }
+
+                    if (this.NonRetriableException != null)
+                    {
+                        ExceptionDispatchInfo.Capture(this.NonRetriableException).Throw();
+                    }
                 }
 
                 // Start 2 additional tasks to try to get the account information
                 // from the preferred region list since global account has not succeed yet.
-                HashSet<Task> tasksToWaitOn = new HashSet<Task>
-                {
-                    globalEndpointTask,
-                    this.TryGetAccountPropertiesFromAllLocationsAsync(),
-                    this.TryGetAccountPropertiesFromAllLocationsAsync()
-                };
+                tasksToWaitOn.Add(this.TryGetAccountPropertiesFromAllLocationsAsync());
+                tasksToWaitOn.Add(this.TryGetAccountPropertiesFromAllLocationsAsync());
 
                 while (tasksToWaitOn.Any())
                 {
@@ -603,6 +635,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                               singleValueInitFunc: () => GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
                                   this.defaultEndpoint,
                                   this.connectionPolicy.PreferredLocations,
+                                  this.connectionPolicy.RegionalEndpoints,
                                   this.GetDatabaseAccountAsync,
                                   this.cancellationTokenSource.Token),
                               cancellationToken: this.cancellationTokenSource.Token,
