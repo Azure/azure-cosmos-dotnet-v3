@@ -270,11 +270,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             DocumentContainer documentContainer = await CreateDocumentContainerAsync(documents, mockInMemoryContainer, numSplits: 4);
 
             // OFFSET/LIMIT with ORDER BY
-            await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 0 LIMIT 500", expectedPageSize: 315, expectedResults: 500, mockInMemoryContainer, documentContainer);
+            await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 0 LIMIT 500", expectedPageSize: 500, expectedResults: 500, mockInMemoryContainer, documentContainer);
             await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 10000 LIMIT 5000", expectedPageSize: 1000, expectedResults: 0, mockInMemoryContainer, documentContainer);
-            await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 10 LIMIT 100", expectedPageSize: 70, expectedResults: 100, mockInMemoryContainer, documentContainer);
-            await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 0 LIMIT 100", expectedPageSize: 65, expectedResults: 100, mockInMemoryContainer, documentContainer);
-            await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 100 LIMIT 0", expectedPageSize: 65, expectedResults: 0, mockInMemoryContainer, documentContainer);
+            await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 10 LIMIT 100", expectedPageSize: 110, expectedResults: 100, mockInMemoryContainer, documentContainer);
+            await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 0 LIMIT 100", expectedPageSize: 100, expectedResults: 100, mockInMemoryContainer, documentContainer);
+            await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 100 LIMIT 0", expectedPageSize: 1000, expectedResults: 0, mockInMemoryContainer, documentContainer);
 
             // OFFSET/LIMIT without ORDER BY
             await this.TestPageSizeAsync("SELECT c.pk FROM c OFFSET 10 LIMIT 100", expectedPageSize: 1000, expectedResults: 100, mockInMemoryContainer, documentContainer);
@@ -283,7 +283,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             // TOP with ORDER BY
             await this.TestPageSizeAsync("SELECT TOP 5 c.pk FROM c ORDER BY c.pk", expectedPageSize: 5, expectedResults: 5, mockInMemoryContainer, documentContainer);
-            await this.TestPageSizeAsync("SELECT TOP 100 c.pk FROM c ORDER BY c.pk", expectedPageSize: 65, expectedResults: 100, mockInMemoryContainer, documentContainer);
+            await this.TestPageSizeAsync("SELECT TOP 100 c.pk FROM c ORDER BY c.pk", expectedPageSize: 100, expectedResults: 100, mockInMemoryContainer, documentContainer);
             await this.TestPageSizeAsync("SELECT TOP 5000 c.pk FROM c ORDER BY c.pk", expectedPageSize: 1000, expectedResults: 1100, mockInMemoryContainer, documentContainer);
             await this.TestPageSizeAsync("SELECT TOP 15000 c.pk FROM c ORDER BY c.pk", expectedPageSize: 1000, expectedResults: 1100, mockInMemoryContainer, documentContainer);
 
@@ -347,7 +347,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             string databaseId = "db1234";
             string resourceLink = $"dbs/{databaseId}/colls";
-
             const string suffix = "-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF";
 
             List<PartitionKeyRange> partitionKeyRanges = new List<PartitionKeyRange>
@@ -366,7 +365,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             mockClient.Setup(x => x.GetTargetPartitionKeyRangesAsync(
                 It.IsAny<string>(),
-                It.IsAny<string>(),
+                "HelloWorld",
                 It.IsAny<IReadOnlyList<Documents.Routing.Range<string>>>(),
                 It.IsAny<bool>(),
                 It.IsAny<ITrace>()))
@@ -396,17 +395,46 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 );
 
             CosmosQueryContextCore cosmosQueryContextCore = new CosmosQueryContextCore(
-                client: mockClient.Object,
-                resourceTypeEnum: Documents.ResourceType.Document,
-                operationType: Documents.OperationType.Query,
-                resourceType: typeof(QueryResponseCore),
-                resourceLink: resourceLink,
-                isContinuationExpected: true,
-                allowNonValueAggregateQuery: true,
-                useSystemPrefix: false,
-                correlatedActivityId: Guid.NewGuid());
+                 client: new TestCosmosQueryClient(GetQueryPartitionProvider()),
+                 resourceTypeEnum: Documents.ResourceType.Document,
+                 operationType: Documents.OperationType.Query,
+                 resourceType: typeof(QueryResponseCore),
+                 resourceLink: resourceLink,
+                 isContinuationExpected: true,
+                 allowNonValueAggregateQuery: true,
+                 useSystemPrefix: false,
+                 correlatedActivityId: Guid.NewGuid());
 
             return Tuple.Create(inputParameters, cosmosQueryContextCore);
+        }
+
+        internal static QueryPartitionProvider GetQueryPartitionProvider()
+        {
+            IDictionary<string, object> DefaultQueryengineConfiguration = new Dictionary<string, object>()
+            {
+                {"maxSqlQueryInputLength", 30720},
+                {"maxJoinsPerSqlQuery", 5},
+                {"maxLogicalAndPerSqlQuery", 200},
+                {"maxLogicalOrPerSqlQuery", 200},
+                {"maxUdfRefPerSqlQuery", 2},
+                {"maxInExpressionItemsCount", 8000},
+                {"queryMaxInMemorySortDocumentCount", 500},
+                {"maxQueryRequestTimeoutFraction", 0.90},
+                {"sqlAllowNonFiniteNumbers", false},
+                {"sqlAllowAggregateFunctions", true},
+                {"sqlAllowSubQuery", true},
+                {"sqlAllowScalarSubQuery", false},
+                {"allowNewKeywords", true},
+                {"sqlAllowLike", true},
+                {"sqlAllowGroupByClause", false},
+                {"queryEnableMongoNativeRegex", true},
+                {"maxSpatialQueryCells", 12},
+                {"spatialMaxGeometryPointCount", 256},
+                {"sqlDisableOptimizationFlags", 0},
+                {"sqlEnableParameterExpansionCheck", true}
+            };
+
+            return new QueryPartitionProvider(DefaultQueryengineConfiguration);
         }
 
         internal static async Task<List<CosmosElement>> ExecuteQueryAsync(
