@@ -64,6 +64,5 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         {
             return new FaultInjectionEndpoint(this.databaseName, this.containerName, this.feedRange, this.includePrimary, this.replicaCount);
         }
-
     }
 }

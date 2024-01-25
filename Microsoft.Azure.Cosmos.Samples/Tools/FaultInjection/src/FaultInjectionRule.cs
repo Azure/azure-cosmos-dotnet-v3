@@ -183,6 +183,5 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 this.hitLimit,
                 this.enabled);
         }
-
     }
 }

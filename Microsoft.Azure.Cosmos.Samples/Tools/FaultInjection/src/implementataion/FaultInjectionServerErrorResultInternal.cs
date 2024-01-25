@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
                     return storeResponse;
 
-                case FaultInjectionServerErrorType.RetryWith:                   
+                case FaultInjectionServerErrorType.RetryWith:
                     storeResponse = new StoreResponse()
                     {
                         Status = 449,
@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     
                     return storeResponse;
 
-                case FaultInjectionServerErrorType.TooManyRequests:                    
+                case FaultInjectionServerErrorType.TooManyRequests:
                     INameValueCollection tooManyRequestsHeaders = args.RequestHeaders;
                     tooManyRequestsHeaders.Add(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, "500");
 

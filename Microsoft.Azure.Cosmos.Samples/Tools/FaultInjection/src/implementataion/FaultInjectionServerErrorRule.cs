@@ -201,7 +201,5 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         {
             return this.condition.GetRegionEndpoints();
         }
-
-        
     }
 }

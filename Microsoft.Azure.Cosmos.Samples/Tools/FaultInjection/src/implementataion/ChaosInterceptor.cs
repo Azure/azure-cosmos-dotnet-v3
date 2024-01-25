@@ -72,9 +72,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <param name="args"></param>
         /// <param name="faultyResponse"></param>
         /// <returns></returns>
-        public async Task<(bool, StoreResponse)> OnRequestCallAsync(ChannelCallArguments args)
+        public async Task<(bool, StoreResponse?)> OnRequestCallAsync(ChannelCallArguments args)
         {
-            StoreResponse faultyRespose;
+            StoreResponse faultyResponse;
             FaultInjectionServerErrorRule? serverResponseErrorRule = this.ruleStore?.FindRntbdServerResponseErrorRule(args);
             if (serverResponseErrorRule != null)
             {
@@ -99,10 +99,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     throw transportException;
                 }
 
-                return (true, faultyRespose);
+                return (true, faultyResponse);
             }
 
-            return (false, faultyRespose);
+            return (false, null);
         }
 
         /// <summary>

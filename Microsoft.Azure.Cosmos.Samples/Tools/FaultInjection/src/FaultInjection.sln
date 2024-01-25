@@ -5,7 +5,7 @@ VisualStudioVersion = 17.5.33530.505
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FaultInjection", "FaultInjection.csproj", "{35F312B5-93FF-45E5-BAD9-513697476B7C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FaultInjectionTests", "..\FaultInjectionTests\FaultInjectionTests.csproj", "{C14C69A7-C282-4526-BCD1-CEADA4ECED8F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FaultInjectionTests", "..\tests\FaultInjectionTests.csproj", "{C14C69A7-C282-4526-BCD1-CEADA4ECED8F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

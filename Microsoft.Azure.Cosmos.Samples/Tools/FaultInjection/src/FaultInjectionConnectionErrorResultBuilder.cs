@@ -69,6 +69,5 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 this.interval,
                 this.threshold);
         }
-
     }
 }
