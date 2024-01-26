@@ -914,6 +914,18 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
+        [TestMethod]
+        [DataRow(ConnectionString + "DisableServerCertificateValidation=true;")]
+        [ExpectedException(typeof(ArgumentException))]
+        public void TestServerCertificatesValidationWithHttpFactoryCallback(string connStr)
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                HttpClientFactory = () => new HttpClient()
+            };
+            CosmosClient cosmosClient = new CosmosClient(connStr, options);
+        }
+
         private class TestWebProxy : IWebProxy
         {
             public ICredentials Credentials { get; set; }

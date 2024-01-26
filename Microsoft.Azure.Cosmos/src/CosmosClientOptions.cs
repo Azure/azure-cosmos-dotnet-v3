@@ -758,6 +758,7 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateDirectTCPSettings();
             this.ValidateLimitToEndpointSettings();
             this.ValidatePartitionLevelFailoverSettings();
+            this.ValidateServerCallbackSettings();
 
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
@@ -928,6 +929,14 @@ namespace Microsoft.Azure.Cosmos
                 && (this.ApplicationPreferredRegions == null || this.ApplicationPreferredRegions.Count == 0))
             {
                 throw new ArgumentException($"{nameof(this.ApplicationPreferredRegions)} is required when {nameof(this.EnablePartitionLevelFailover)} is enabled.");
+            }
+        }
+
+        private void ValidateServerCallbackSettings()
+        {
+            if (this.HttpClientFactory != null && this.ServerCertificateCustomValidationCallback != null)
+            {
+                throw new ArgumentException($"Cannot specify {nameof(this.HttpClientFactory)} and {nameof(this.ServerCertificateCustomValidationCallback)}. Only one can be set.");
             }
         }
 
