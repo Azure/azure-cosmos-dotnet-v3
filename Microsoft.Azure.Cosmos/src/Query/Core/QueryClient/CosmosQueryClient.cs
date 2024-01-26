@@ -63,6 +63,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             ITrace trace,
             CancellationToken cancellationToken);
 
+        public abstract Task<bool> GetClientDisableOptimisticDirectExecutionAsync();
+
         public abstract Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
             string resourceUri,
             Documents.ResourceType resourceType,
@@ -76,13 +78,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
 
         public abstract void ClearSessionTokenCache(string collectionFullName);
 
-        public abstract Task<List<Documents.PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkStringAsync(
-            string resourceLink,
-            string collectionResourceId,
-            string effectivePartitionKeyString,
-            bool forceRefresh,
-            ITrace trace);
-
         public abstract Task<List<Documents.PartitionKeyRange>> GetTargetPartitionKeyRangeByFeedRangeAsync(
             string resourceLink,
             string collectionResourceId,
@@ -94,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
         public abstract Task<List<Documents.PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(
             string resourceLink,
             string collectionResourceId,
-            List<Documents.Routing.Range<string>> providedRanges,
+            IReadOnlyList<Documents.Routing.Range<string>> providedRanges,
             bool forceRefresh,
             ITrace trace);
 

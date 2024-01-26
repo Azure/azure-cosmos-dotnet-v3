@@ -1,0 +1,237 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ constant value]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.NumericField == 1))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["NumberValueDotNet"] = 1)]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+]]]></InputData>
+      <Results><![CDATA[[
+  "{NumericField:1,StringField:1,id:1-False,Pk:Test}"
+]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ DataObject initializer with constant value]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc == new DataObjectDotNet() {NumericField = 1, StringField = "1"}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root = {"NumberValueDotNet": 1, "StringValueDotNet": "1", "id": null, "Pk": null, "DateTimeFieldDotNet": null, "DataTypeField": null})]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+]]]></InputData>
+      <Results><![CDATA[[]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select w/ DataObject initializer]]></Description>
+      <Expression><![CDATA[query.Select(doc => new DataObjectDotNet() {NumericField = 1, StringField = "1"})]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"NumberValueDotNet": 1, "StringValueDotNet": "1", "id": null, "Pk": null, "DateTimeFieldDotNet": null, "DataTypeField": null} 
+FROM root]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+]]]></InputData>
+      <Results><![CDATA[[
+  "{NumericField:1,StringField:1,id:,Pk:}",
+  "{NumericField:1,StringField:1,id:,Pk:}",
+  "{NumericField:1,StringField:1,id:,Pk:}"
+]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Deeper than top level reference]]></Description>
+      <Expression><![CDATA[query.Select(doc => IIF((doc.NumericField > 1), new DataObjectDotNet() {NumericField = 1, StringField = "1"}, new DataObjectDotNet() {NumericField = 1, StringField = "1"}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ((root["NumberValueDotNet"] > 1) ? {"NumberValueDotNet": 1, "StringValueDotNet": "1", "id": null, "Pk": null, "DateTimeFieldDotNet": null, "DataTypeField": null} : {"NumberValueDotNet": 1, "StringValueDotNet": "1", "id": null, "Pk": null, "DateTimeFieldDotNet": null, "DataTypeField": null}) 
+FROM root]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+]]]></InputData>
+      <Results><![CDATA[[
+  "{NumericField:1,StringField:1,id:,Pk:}",
+  "{NumericField:1,StringField:1,id:,Pk:}",
+  "{NumericField:1,StringField:1,id:,Pk:}"
+]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ DataObject initializer with member initialization]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc == new DataObjectDotNet() {NumericField = doc.NumericField, StringField = doc.StringField})).Select(b => "A")]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE "A" 
+FROM root 
+WHERE (root = {"NumberValueDotNet": root["NumberValueDotNet"], "StringValueDotNet": root["StringValueDotNet"]})]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+]]]></InputData>
+      <Results><![CDATA[[]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy query]]></Description>
+      <Expression><![CDATA[query.Select(x => x).OrderBy(x => x.NumericField).Take(5)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 5 VALUE root 
+FROM root 
+ORDER BY root["NumberValueDotNet"] ASC]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+]]]></InputData>
+      <Results><![CDATA[[
+  "{NumericField:0,StringField:0,id:0-False,Pk:Test}",
+  "{NumericField:1,StringField:1,id:1-False,Pk:Test}",
+  "{NumericField:2,StringField:2,id:2-False,Pk:Test}"
+]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Conditional]]></Description>
+      <Expression><![CDATA[query.Select(c => IIF((c.NumericField > 1), "true", "false"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ((root["NumberValueDotNet"] > 1) ? "true" : "false") 
+FROM root]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+]]]></InputData>
+      <Results><![CDATA[[
+  "false",
+  "false",
+  "true"
+]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ nullable property]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.DateTimeField != null))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["DateTimeFieldDotNet"] != null)]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+]]]></InputData>
+      <Results><![CDATA[[]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ nullable enum]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.DataTypeField != null))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["DataTypeField"] != null)]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+]]]></InputData>
+      <Results><![CDATA[[]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ non-null nullable property]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.DateTimeField == Convert(new DateTime(1970, 1, 1, 0, 0, 0, 0, Utc), Nullable`1)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["DateTimeFieldDotNet"] = "1970-01-01T00:00:00Z")]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+]]]></InputData>
+      <Results><![CDATA[[]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ non-null nullable enum]]></Description>
+      <Expression><![CDATA[query.Where(doc => (Convert(doc.DataTypeField, Nullable`1) == Convert(Point, Nullable`1)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["DataTypeField"] = 2)]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+]]]></InputData>
+      <Results><![CDATA[[]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ string null comparison]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.StringField != null))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["StringValueDotNet"] != null)]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+]]]></InputData>
+      <Results><![CDATA[[
+  "{NumericField:0,StringField:0,id:0-False,Pk:Test}",
+  "{NumericField:1,StringField:1,id:1-False,Pk:Test}",
+  "{NumericField:2,StringField:2,id:2-False,Pk:Test}"
+]]]></Results>
+    </Output>
+  </Result>
+</Results>

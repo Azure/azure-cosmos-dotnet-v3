@@ -40,6 +40,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                 CosmosElement requestContinuation,
                 CancellationToken cancellationToken,
                 MonadicCreatePipelineStage monadicCreatePipelineStage,
+                IReadOnlyList<AggregateOperator> aggregates,
                 IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
                 IReadOnlyList<string> orderedAliases,
                 bool hasSelectValue,
@@ -79,6 +80,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                 }
 
                 TryCatch<GroupingTable> tryCreateGroupingTable = GroupingTable.TryCreateFromContinuationToken(
+                    aggregates,
                     groupByAliasToAggregateType,
                     orderedAliases,
                     hasSelectValue,
@@ -142,6 +144,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                         activityId: sourcePage.ActivityId,
                         responseLengthInBytes: sourcePage.ResponseLengthInBytes,
                         cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
+                        distributionPlanSpec: default,
                         disallowContinuationTokenMessage: null,
                         additionalHeaders: sourcePage.AdditionalHeaders,
                         state: state);
@@ -172,6 +175,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                         activityId: default,
                         responseLengthInBytes: default,
                         cosmosQueryExecutionInfo: default,
+                        distributionPlanSpec: default,
                         disallowContinuationTokenMessage: default,
                         additionalHeaders: default,
                         state: state);

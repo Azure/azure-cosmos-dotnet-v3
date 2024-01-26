@@ -89,8 +89,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                 throw;
             }
 
-            PartitionSupervisor supervisor = this.partitionSupervisorFactory.Create(lease);
-            this.ProcessPartitionAsync(supervisor, lease).LogException();
+            this.ProcessPartitionAsync(lease).LogException();
         }
 
         public override async Task ShutdownAsync()
@@ -146,8 +145,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             }
         }
 
-        private async Task ProcessPartitionAsync(PartitionSupervisor partitionSupervisor, DocumentServiceLease lease)
+        private async Task ProcessPartitionAsync(DocumentServiceLease lease)
         {
+            using PartitionSupervisor partitionSupervisor = this.partitionSupervisorFactory.Create(lease);
+
             try
             {
                 await partitionSupervisor.RunAsync(this.shutdownCts.Token).ConfigureAwait(false);
@@ -159,6 +160,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             catch (OperationCanceledException) when (this.shutdownCts.IsCancellationRequested)
             {
                 DefaultTrace.TraceVerbose("Lease with token {0}: processing canceled", lease.CurrentLeaseToken);
+            }
+            catch (LeaseLostException leaseLostException)
+            {
+                // LeaseLostException by itself is not loggable, unless it contains a related inner exception
+                // For cases when the lease or container has been deleted or the lease has been stolen
+                if (leaseLostException.InnerException != null)
+                {
+                    await this.monitor.NotifyErrorAsync(lease.CurrentLeaseToken, leaseLostException.InnerException);
+                }
+
+                DefaultTrace.TraceVerbose("Lease with token {0}: lease was lost", lease.CurrentLeaseToken);
             }
             catch (Exception ex)
             {

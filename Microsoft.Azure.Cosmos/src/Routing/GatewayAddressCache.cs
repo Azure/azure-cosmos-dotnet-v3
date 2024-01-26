@@ -50,12 +50,14 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly ICosmosAuthorizationTokenProvider tokenProvider;
         private readonly bool enableTcpConnectionEndpointRediscovery;
 
+        private readonly SemaphoreSlim semaphore;
         private readonly CosmosHttpClient httpClient;
         private readonly bool isReplicaAddressValidationEnabled;
 
         private Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> masterPartitionAddressCache;
         private DateTime suboptimalMasterPartitionTimestamp;
         private bool disposedValue;
+        private bool validateUnknownReplicas;
         private IOpenConnectionsHandler openConnectionsHandler;
 
         public GatewayAddressCache(
@@ -90,8 +92,10 @@ namespace Microsoft.Azure.Cosmos.Routing
                 Constants.Properties.Protocol,
                 GatewayAddressCache.ProtocolString(this.protocol));
 
+            this.semaphore = new SemaphoreSlim(1, 1);
             this.openConnectionsHandler = openConnectionsHandler;
             this.isReplicaAddressValidationEnabled = replicaAddressValidationEnabled;
+            this.validateUnknownReplicas = false;
         }
 
         public Uri ServiceEndpoint => this.serviceEndpoint;
@@ -119,6 +123,14 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             List<Task> tasks = new ();
             int batchSize = GatewayAddressCache.DefaultBatchSize;
+
+            // By design, the Unknown replicas are validated only when the following two conditions meet:
+            // 1) The CosmosClient is initiated using the CreateAndInitializaAsync() flow.
+            // 2) The advanced replica selection feature enabled.
+            if (shouldOpenRntbdChannels)
+            {
+                this.validateUnknownReplicas = true;
+            }
 
 #if !(NETSTANDARD15 || NETSTANDARD16)
 #if NETSTANDARD20
@@ -302,11 +314,12 @@ namespace Microsoft.Azure.Cosmos.Routing
                     .ReplicaTransportAddressUris
                     .Any(x => x.ShouldRefreshHealthStatus()))
                 {
-                    Task refreshAddressesInBackgroundTask = Task.Run(async () =>
+                    bool slimAcquired = await this.semaphore.WaitAsync(0);
+                    try
                     {
-                        try
+                        if (slimAcquired)
                         {
-                            await this.serverPartitionAddressCache.RefreshAsync(
+                            this.serverPartitionAddressCache.Refresh(
                                 key: partitionKeyRangeIdentity,
                                 singleValueInitFunc: (currentCachedValue) => this.GetAddressesForRangeIdAsync(
                                     request,
@@ -315,14 +328,21 @@ namespace Microsoft.Azure.Cosmos.Routing
                                     partitionKeyRangeIdentity.PartitionKeyRangeId,
                                     forceRefresh: true));
                         }
-                        catch (Exception ex)
+                        else
                         {
-                            DefaultTrace.TraceWarning("Failed to refresh addresses in the background for the collection rid: {0} with exception: {1}. '{2}'",
+                            DefaultTrace.TraceVerbose("Failed to refresh addresses in the background for the collection rid: {0}, partition key range id: {1}, because the semaphore is already acquired. '{2}'",
                                 partitionKeyRangeIdentity.CollectionRid,
-                                ex,
+                                partitionKeyRangeIdentity.PartitionKeyRangeId,
                                 System.Diagnostics.Trace.CorrelationManager.ActivityId);
                         }
-                    });
+                    }
+                    finally
+                    {
+                        if (slimAcquired)
+                        {
+                            this.semaphore.Release();
+                        }
+                    }
                 }
 
                 return addresses;
@@ -1008,18 +1028,26 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// Returns a list of <see cref="TransportAddressUri"/> needed to validate their health status. Validating
         /// a uri is done by opening Rntbd connection to the backend replica, which is a costly operation by nature. Therefore
         /// vaidating both Unhealthy and Unknown replicas at the same time could impose a high CPU utilization. To avoid this
-        /// situation, the RntbdOpenConnectionHandler has good concurrency control mechanism to open the connections gracefully/>.
+        /// situation, the RntbdOpenConnectionHandler has good concurrency control mechanism to open the connections gracefully.
+        /// By default, this method only returns the Unhealthy replicas that requires to validate it's connectivity status. The
+        /// Unknown replicas are validated only when the CosmosClient is initiated using the CreateAndInitializaAsync() flow.
         /// </summary>
         /// <param name="transportAddresses">A read only list of <see cref="TransportAddressUri"/>s.</param>
         /// <returns>A list of <see cref="TransportAddressUri"/> that needs to validate their status.</returns>
         private IEnumerable<TransportAddressUri> GetAddressesNeededToValidateStatus(
             IReadOnlyList<TransportAddressUri> transportAddresses)
         {
-            return transportAddresses
-                .Where(address => address
+            return this.validateUnknownReplicas
+                ? transportAddresses
+                    .Where(address => address
                         .GetCurrentHealthState()
                         .GetHealthStatus() is
-                            TransportAddressHealthState.HealthStatus.Unknown or
+                            TransportAddressHealthState.HealthStatus.UnhealthyPending or
+                            TransportAddressHealthState.HealthStatus.Unknown)
+                : transportAddresses
+                    .Where(address => address
+                        .GetCurrentHealthState()
+                        .GetHealthStatus() is
                             TransportAddressHealthState.HealthStatus.UnhealthyPending);
         }
 

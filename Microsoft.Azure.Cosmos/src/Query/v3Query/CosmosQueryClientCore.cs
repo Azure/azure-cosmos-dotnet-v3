@@ -6,9 +6,11 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Globalization;
     using System.IO;
     using System.Linq;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -63,17 +65,26 @@ namespace Microsoft.Azure.Cosmos
                 trace,
                 cancellationToken);
 
-            string effectivePartitionKeyString = null;
+            List<Range<string>> effectivePartitionKeyRange = null;
             if (partitionKey != null)
             {
                 // Dis-ambiguate the NonePK if used 
                 PartitionKeyInternal partitionKeyInternal = partitionKey.Value.IsNone ? containerProperties.GetNoneValue() : partitionKey.Value.InternalKey;
-                effectivePartitionKeyString = partitionKeyInternal.GetEffectivePartitionKeyString(containerProperties.PartitionKey);
+                effectivePartitionKeyRange = new List<Range<string>>
+                {
+                    PartitionKeyInternal.GetEffectivePartitionKeyRange(
+                        containerProperties.PartitionKey,
+                        new Range<PartitionKeyInternal>(
+                            min: partitionKeyInternal,
+                            max: partitionKeyInternal,
+                            isMinInclusive: true,
+                            isMaxInclusive: true))
+                };
             }
 
             return new ContainerQueryProperties(
                 containerProperties.ResourceId,
-                effectivePartitionKeyString,
+                effectivePartitionKeyRange,
                 containerProperties.PartitionKey,
                 containerProperties.GeospatialConfig.GeospatialType);
         }
@@ -200,22 +211,10 @@ namespace Microsoft.Azure.Cosmos
             return partitionedQueryExecutionInfo;
         }
 
-        public override Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkStringAsync(
-            string resourceLink,
-            string collectionResourceId,
-            string effectivePartitionKeyString,
-            bool forceRefresh,
-            ITrace trace)
+        public override async Task<bool> GetClientDisableOptimisticDirectExecutionAsync()
         {
-            return this.GetTargetPartitionKeyRangesAsync(
-                resourceLink,
-                collectionResourceId,
-                new List<Range<string>>
-                {
-                    Range<string>.GetPointRange(effectivePartitionKeyString)
-                },
-                forceRefresh,
-                trace);
+            QueryPartitionProvider provider = await this.clientContext.DocumentClient.QueryPartitionProvider;
+            return provider.ClientDisableOptimisticDirectExecution;
         }
 
         public override async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangeByFeedRangeAsync(
@@ -243,7 +242,7 @@ namespace Microsoft.Azure.Cosmos
         public override async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(
             string resourceLink,
             string collectionResourceId,
-            List<Range<string>> providedRanges,
+            IReadOnlyList<Range<string>> providedRanges,
             bool forceRefresh,
             ITrace trace)
         {
@@ -332,9 +331,26 @@ namespace Microsoft.Azure.Cosmos
                     }
 
                     long responseLengthBytes = memoryStream.Length;
-                    CosmosArray documents = CosmosQueryClientCore.ParseElementsFromRestStream(
+                    CosmosQueryClientCore.ParseRestStream(
                         memoryStream,
-                        resourceType);
+                        resourceType,
+                        out CosmosArray documents,
+                        out CosmosObject distributionPlan);
+
+                    DistributionPlanSpec distributionPlanSpec = null;
+
+                    if (distributionPlan != null)
+                    {
+                        bool backendPlan = distributionPlan.TryGetValue("backendDistributionPlan", out CosmosElement backendDistributionPlan);
+                        bool clientPlan = distributionPlan.TryGetValue("clientDistributionPlan", out CosmosElement clientDistributionPlan);
+
+                        Debug.Assert(clientPlan == backendPlan, "Response Body Contract was violated. Out of the backend and client plans, only one is present in the distribution plan.");
+
+                        if (backendPlan && clientPlan)
+                        {
+                            distributionPlanSpec = new DistributionPlanSpec(backendDistributionPlan.ToString(), clientDistributionPlan.ToString());
+                        }
+                    }
 
                     QueryState queryState;
                     if (cosmosResponseMessage.Headers.ContinuationToken != null)
@@ -369,6 +385,7 @@ namespace Microsoft.Azure.Cosmos
                         cosmosResponseMessage.Headers.ActivityId,
                         responseLengthBytes,
                         cosmosQueryExecutionInfo,
+                        distributionPlanSpec,
                         disallowContinuationTokenMessage: null,
                         additionalHeaders,
                         queryState);
@@ -441,10 +458,13 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="stream">The memory stream response for the query REST response Azure Cosmos</param>
         /// <param name="resourceType">The resource type</param>
-        /// <returns>An array of CosmosElements parsed from the response body.</returns>
-        public static CosmosArray ParseElementsFromRestStream(
+        /// <param name="documents">An array of CosmosElements parsed from the response body</param>
+        /// <param name="distributionPlan">An object containing the distribution plan for the client</param>
+        public static void ParseRestStream(
             Stream stream,
-            ResourceType resourceType)
+            ResourceType resourceType,
+            out CosmosArray documents,
+            out CosmosObject distributionPlan)
         {
             if (!(stream is MemoryStream memoryStream))
             {
@@ -468,7 +488,25 @@ namespace Microsoft.Azure.Cosmos
             //        "_attachments": "attachments\/",
             //        "_ts": 1501107886
             //    }],
-            //    "_count": 1
+            //    "_count": 1,
+            //    "_distributionPlan": {
+            //         "backendDistributionPlan": {
+            //              "query": "\nSELECT Count(r.a) AS count_a\nFROM r",
+            //              "obfuscatedQuery": "{\"query\":\"SELECT Count(r.a) AS p1\\nFROM r\",\"parameters\":[]}",
+            //              "shape": "{\"Select\":{\"Type\":\"List\",\"AggCount\":1},\"From\":{\"Expr\":\"Aliased\"}}",
+            //              "signature":-4885972563975185329,
+            //              "shapeSignature":-6171928203673877984,
+            //              "queryIL": {...},
+            //              "noSpatial": true,
+            //              "language": "QueryIL"
+            //          },
+            //          "coordinatorDistributionPlan": {
+            //              "clientQL": {
+            //                  "Kind": "Input",
+            //                  "Name": "root"
+            //              }
+            //          }
+            //      }
             // }
             // You want to create a CosmosElement for each document in "Documents".
 
@@ -496,7 +534,29 @@ namespace Microsoft.Azure.Cosmos
                 throw new InvalidOperationException($"QueryResponse did not have an array of : {resourceName}");
             }
 
-            return cosmosArray;
+            documents = cosmosArray;
+
+            if (resourceType == ResourceType.Document && jsonNavigator.TryGetObjectProperty(jsonNavigator.GetRootNode(), "_distributionPlan", out ObjectProperty distributionPlanObjectProperty))
+            {
+                switch (CosmosElement.Dispatch(jsonNavigator, distributionPlanObjectProperty.ValueNode))
+                {
+                    case CosmosString binaryDistributionPlan:
+                        byte[] binaryJson = Convert.FromBase64String(binaryDistributionPlan.Value);
+                        IJsonNavigator binaryJsonNavigator = JsonNavigator.Create(binaryJson);
+                        IJsonNavigatorNode binaryJsonNavigatorNode = binaryJsonNavigator.GetRootNode();
+                        distributionPlan = CosmosObject.Create(binaryJsonNavigator, binaryJsonNavigatorNode);
+                        break;
+                    case CosmosObject textDistributionPlan:
+                        distributionPlan = textDistributionPlan;
+                        break;
+                    default:
+                        throw new InvalidOperationException($"Response Body Contract was violated. QueryResponse did not have property: {resourceName}");
+                }
+            }
+            else
+            {
+                distributionPlan = null;
+            }
         }
     }
 }

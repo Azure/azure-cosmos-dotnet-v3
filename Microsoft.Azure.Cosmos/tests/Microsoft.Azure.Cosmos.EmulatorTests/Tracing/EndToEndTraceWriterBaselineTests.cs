@@ -47,28 +47,48 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
         private static int MethodCount = 0;
         
         [ClassInitialize]
-        public static async Task ClassInitAsync(TestContext context)
+        public static async Task ClassInitAsync(TestContext _)
         {
             EndToEndTraceWriterBaselineTests.testListener = Util.ConfigureOpenTelemetryAndCustomListeners();
             
             client = Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestCommon.CreateCosmosClient(
                 useGateway: false,
-                enableDistributingTracing: true);
+                builder => builder
+                    .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
+                    {
+                        DisableDistributedTracing = false,
+                        CosmosThresholdOptions = new CosmosThresholdOptions()
+                        {
+                            PointOperationLatencyThreshold = TimeSpan.Zero,
+                            NonPointOperationLatencyThreshold = TimeSpan.Zero
+                        }
+                    }));
+
             bulkClient = TestCommon.CreateCosmosClient(builder => builder
                 .WithBulkExecution(true)
-                .WithDistributedTracingOptions(new DistributedTracingOptions()
-                {
-                    LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
-                }));
-            
+                .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
+                 {
+                    DisableDistributedTracing = false,
+                    CosmosThresholdOptions = new CosmosThresholdOptions()
+                    {
+                        PointOperationLatencyThreshold = TimeSpan.Zero,
+                        NonPointOperationLatencyThreshold = TimeSpan.Zero
+                    }
+                 }));
+
             // Set a small retry count to reduce test time
             miscCosmosClient = TestCommon.CreateCosmosClient(builder =>
                 builder
                     .AddCustomHandlers(requestHandler)
-                    .WithDistributedTracingOptions(new DistributedTracingOptions()
-                    {
-                        LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
-                    }));
+                    .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
+                     {
+                        DisableDistributedTracing = false,
+                        CosmosThresholdOptions = new CosmosThresholdOptions()
+                        {
+                            PointOperationLatencyThreshold = TimeSpan.Zero,
+                            NonPointOperationLatencyThreshold = TimeSpan.Zero
+                        }
+                     }));
 
             EndToEndTraceWriterBaselineTests.database = await client.CreateDatabaseAsync(
                     "databaseName",
@@ -464,12 +484,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
         public async Task QueryAsync()
         {
             List<Input> inputs = new List<Input>();
-            QueryRequestOptions requestOptions = new QueryRequestOptions()
-            {
-#if PREVIEW
-                    EnableOptimisticDirectExecution = false
-#endif
-            };
+            QueryRequestOptions requestOptions = new QueryRequestOptions();
 
             int startLineNumber;
             int endLineNumber;
@@ -682,7 +697,10 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             // It is not baseline test hence disable distributed tracing for this test
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
-                IsDistributedTracingEnabled = false
+                CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions()
+                {
+                    DisableDistributedTracing = true
+                }
             };
             
             using (CosmosClient client = new CosmosClient(
@@ -1015,9 +1033,14 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 Guid exceptionActivityId = Guid.NewGuid();
                 using CosmosClient throttleClient = TestCommon.CreateCosmosClient(builder =>
                     builder
-                     .WithDistributedTracingOptions(new DistributedTracingOptions()
+                    .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
                      {
-                         LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
+                        DisableDistributedTracing = false,
+                        CosmosThresholdOptions = new CosmosThresholdOptions()
+                        {
+                            PointOperationLatencyThreshold = TimeSpan.Zero,
+                            NonPointOperationLatencyThreshold = TimeSpan.Zero
+                        }
                      })
                     .WithThrottlingRetryOptions(
                         maxRetryWaitTimeOnThrottledRequests: TimeSpan.FromSeconds(1),
@@ -1303,9 +1326,14 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                         maxRetryWaitTimeOnThrottledRequests: TimeSpan.FromSeconds(1),
                         maxRetryAttemptsOnThrottledRequests: 3)
                         .WithBulkExecution(true)
-                        .WithDistributedTracingOptions(new DistributedTracingOptions()
+                        .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
                          {
-                             LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
+                            DisableDistributedTracing = false,
+                            CosmosThresholdOptions = new CosmosThresholdOptions()
+                            {
+                                PointOperationLatencyThreshold = TimeSpan.Zero,
+                                NonPointOperationLatencyThreshold = TimeSpan.Zero
+                            }
                          })
                         .WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
                             transportClient,

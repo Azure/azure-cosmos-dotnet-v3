@@ -128,6 +128,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     continuationToken,
                     cancellationToken,
                     monadicCreateSourceStage,
+                    queryInfo.Aggregates,
                     queryInfo.GroupByAliasToAggregateType,
                     queryInfo.GroupByAliases,
                     queryInfo.HasSelectValue,

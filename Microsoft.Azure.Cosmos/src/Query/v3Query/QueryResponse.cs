@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Represents the template class used by feed methods (enumeration operations) for the Azure Cosmos DB service.
@@ -183,7 +184,12 @@ namespace Microsoft.Azure.Cosmos
                 cosmosArray: cosmosElements,
                 serializerCore: serializerCore);
 
-            this.IndexUtilizationText = ResponseMessage.DecodeIndexMetrics(responseMessageHeaders, true);
+            // 1/25/2024: The default for request message is plain text
+            // for any release after this date, no longer base64 encoded
+            this.IndexUtilizationText = ResponseMessage.DecodeIndexMetrics(
+                responseMessageHeaders, 
+                isBase64Encoded: false);
+            
             this.RequestMessage = requestMessage;
         }
 

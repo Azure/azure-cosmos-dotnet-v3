@@ -183,7 +183,9 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <remarks>
-        /// The returned reference doesn't guarantee credentials or connectivity validations because creation doesn't make any network calls.
+        /// Emulator: To ignore SSL Certificate please suffix connectionstring with "DisableServerCertificateValidation=True;". 
+        /// When CosmosClientOptions.HttpClientFactory is used, SSL certificate needs to be handled appropriately.
+        /// NOTE: DO NOT use this flag in production (only for emulator)
         /// </remarks>
         /// <seealso cref="CosmosClientOptions"/>
         /// <seealso cref="Fluent.CosmosClientBuilder"/>
@@ -195,7 +197,7 @@ namespace Microsoft.Azure.Cosmos
             : this(
                   CosmosClientOptions.GetAccountEndpoint(connectionString),
                   CosmosClientOptions.GetAccountKey(connectionString),
-                  clientOptions)
+                  CosmosClientOptions.GetCosmosClientOptionsWithCertificateFlag(connectionString, clientOptions))
         {
         }
 
@@ -495,6 +497,11 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <remarks>
+        /// Emulator: To ignore SSL Certificate please suffix connectionstring with "DisableServerCertificateValidation=True;". 
+        /// When CosmosClientOptions.HttpClientFactory is used, SSL certificate needs to be handled appropriately.
+        /// NOTE: DO NOT use this flag in production (only for emulator)
+        /// </remarks>
         public static async Task<CosmosClient> CreateAndInitializeAsync(string connectionString,
                                                                         IReadOnlyList<(string databaseId, string containerId)> containers,
                                                                         CosmosClientOptions cosmosClientOptions = null,
@@ -504,6 +511,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new ArgumentNullException(nameof(containers));
             }
+            cosmosClientOptions = CosmosClientOptions.GetCosmosClientOptionsWithCertificateFlag(connectionString, cosmosClientOptions);
 
             CosmosClient cosmosClient = new CosmosClient(connectionString,
                                                          cosmosClientOptions);

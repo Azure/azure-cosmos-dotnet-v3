@@ -11,6 +11,7 @@
     using Microsoft.Extensions.Logging;
     using Microsoft.Extensions.Configuration;
     using Azure.Monitor.OpenTelemetry.Exporter;
+    using System.Diagnostics;
 
     internal class Program
     {
@@ -52,15 +53,15 @@
                             serviceVersion: "1.0.0");
 
                 // Set up logging to forward logs to chosen exporter
-                using ILoggerFactory loggerFactory 
+                using ILoggerFactory loggerFactory
                     = LoggerFactory.Create(builder => builder
                                                         .AddConfiguration(configuration.GetSection("Logging"))
                                                         .AddOpenTelemetry(options =>
-                                                            {
-                                                                options.IncludeFormattedMessage = true;
-                                                                options.SetResourceBuilder(resource);
-                                                                options.AddAzureMonitorLogExporter(o => o.ConnectionString = aiConnectionString); // Set up exporter of your choice
-                                                            }));
+                                                        {
+                                                            options.IncludeFormattedMessage = true;
+                                                            options.SetResourceBuilder(resource);
+                                                            options.AddAzureMonitorLogExporter(o => o.ConnectionString = aiConnectionString); // Set up exporter of your choice
+                                                        }));
                 /*.AddFilter(level => level == LogLevel.Error) // Filter  is irrespective of event type or event name*/
 
                 AzureEventSourceLogForwarder logforwader = new AzureEventSourceLogForwarder(loggerFactory);
@@ -69,30 +70,28 @@
                 // Configure OpenTelemetry trace provider
                 AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
                 _traceProvider = Sdk.CreateTracerProviderBuilder()
-                    .AddSource("Azure.Cosmos.Operation") // Cosmos DB source for operation level telemetry
+                    .AddSource("Azure.Cosmos.Operation", // Cosmos DB source for operation level telemetry
+                               "Azure.Cosmos.Request", // Cosmos DB source for DIRECT Mode network request level telemetry
+                               "Sample.Application") 
                     .AddAzureMonitorTraceExporter(o => o.ConnectionString = aiConnectionString) // Set up exporter of your choice
+                    .AddHttpClientInstrumentation() // Added to capture HTTP telemetry
                     .SetResourceBuilder(resource)
                     .Build();
                 // </SetUpOpenTelemetry>
 
-                // <EnableDistributedTracing>
-                CosmosClientOptions options = new CosmosClientOptions()
+                ActivitySource source = new ActivitySource("Sample.Application");
+                using (_ = source.StartActivity(".Net SDK : Azure Monitor : Open Telemetry Sample")) // Application level activity to track the entire execution of the application
                 {
-                    IsDistributedTracingEnabled = true // Defaults to true, set to false to disable
-                };
-                
-                // </EnableDistributedTracing>
-                using (CosmosClient client = new CosmosClient(endpoint, authKey, options))
-                {
-                    Console.WriteLine($"Getting container reference for {containerName}.");
-
-                    ContainerProperties properties = new ContainerProperties(containerName, partitionKeyPath: "/id");
-
-                    await client.CreateDatabaseIfNotExistsAsync(databaseName);
-                    Container container = await client.GetDatabase(databaseName).CreateContainerIfNotExistsAsync(properties);
-
-                    await Program.RunCrudDemo(container);
+                    using (_ = source.StartActivity("GATEWAY MODE")) // Activity to track the execution of the gateway mode
+                    {
+                        await Program.RunCosmosDbOperation(ConnectionMode.Gateway, endpoint, authKey);
+                    }
+                    using (_ = source.StartActivity("DIRECT MODE")) // Activity to track the execution of the direct mode
+                    {
+                        await Program.RunCosmosDbOperation(ConnectionMode.Direct, endpoint, authKey);
+                    }
                 }
+               
             }
             finally
             {
@@ -101,6 +100,32 @@
                 await Task.Delay(5000);
 
                 Console.WriteLine("End of demo.");
+            }
+        }
+
+        private static async Task RunCosmosDbOperation(ConnectionMode connMode, string endpoint, string authKey)
+        {
+            // <EnableDistributedTracing>
+            CosmosClientOptions options = new CosmosClientOptions()
+            {
+                CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions()
+                {
+                    DisableDistributedTracing = false
+                },
+                ConnectionMode = connMode
+            };
+            // </EnableDistributedTracing>
+
+            using (CosmosClient client = new CosmosClient(endpoint, authKey, options))
+            {
+                Console.WriteLine($"Getting container reference for {containerName}.");
+
+                ContainerProperties properties = new ContainerProperties(containerName, partitionKeyPath: "/id");
+
+                await client.CreateDatabaseIfNotExistsAsync(databaseName);
+                Container container = await client.GetDatabase(databaseName).CreateContainerIfNotExistsAsync(properties);
+
+                await Program.RunCrudDemo(container);
             }
         }
 

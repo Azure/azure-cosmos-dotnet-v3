@@ -7,16 +7,7 @@ FROM c
 WHERE STARTSWITH(c.statement, 'The quick brown fox jumps over the lazy dog', false)]]></Query>
     </Input>
     <Output>
-      <IndexMetric><![CDATA[
-Index Utilization Information
-  Utilized Single Indexes
-    Index Spec: /statement/?
-    Index Impact Score: High
-    ---
-  Potential Single Indexes
-  Utilized Composite Indexes
-  Potential Composite Indexes
-]]></IndexMetric>
+      <IndexMetric><![CDATA[{"UtilizedSingleIndexes":[{"FilterExpression":"","IndexSpec":"\/statement\/?","FilterPreciseSet":true,"IndexPreciseSet":true,"IndexImpactScore":"High"}],"PotentialSingleIndexes":[],"UtilizedCompositeIndexes":[],"PotentialCompositeIndexes":[]}]]></IndexMetric>
     </Output>
   </Result>
   <Result>
@@ -27,16 +18,7 @@ FROM c
 WHERE STARTSWITH(c['Î— Î³ÏÎ®Î³Î¿ÏÎ· ÎºÎ±Ï†Î­ Î±Î»ÎµÏ€Î¿Ï Ï€Î·Î´Î¬ÎµÎ¹ Ï€Î¬Î½Ï‰ Î±Ï€ÏŒ Ï„Î¿ Ï„ÎµÎ¼Ï€Î­Î»Î¹ÎºÎ¿ ÏƑÎºÏ…Î»Î¯'], 's', false)]]></Query>
     </Input>
     <Output>
-      <IndexMetric><![CDATA[
-Index Utilization Information
-  Utilized Single Indexes
-    Index Spec: /"Î— Î³ÏÎ®Î³Î¿ÏÎ· ÎºÎ±Ï†Î­ Î±Î»ÎµÏ€Î¿Ï Ï€Î·Î´Î¬ÎµÎ¹ Ï€Î¬Î½Ï‰ Î±Ï€ÏŒ Ï„Î¿ Ï„ÎµÎ¼Ï€Î­Î»Î¹ÎºÎ¿ ÏƑÎºÏ…Î»Î¯"/?
-    Index Impact Score: High
-    ---
-  Potential Single Indexes
-  Utilized Composite Indexes
-  Potential Composite Indexes
-]]></IndexMetric>
+      <IndexMetric><![CDATA[{"UtilizedSingleIndexes":[{"FilterExpression":"","IndexSpec":"\/\"Î— Î³ÏÎ®Î³Î¿ÏÎ· ÎºÎ±Ï†Î­ Î±Î»ÎµÏ€Î¿Ï Ï€Î·Î´Î¬ÎµÎ¹ Ï€Î¬Î½Ï‰ Î±Ï€ÏŒ Ï„Î¿ Ï„ÎµÎ¼Ï€Î­Î»Î¹ÎºÎ¿ ÏƑÎºÏ…Î»Î¯\"\/?","FilterPreciseSet":true,"IndexPreciseSet":true,"IndexImpactScore":"High"}],"PotentialSingleIndexes":[],"UtilizedCompositeIndexes":[],"PotentialCompositeIndexes":[]}]]></IndexMetric>
     </Output>
   </Result>
   <Result>
@@ -45,16 +27,7 @@ Index Utilization Information
       <Query><![CDATA[SELECT VALUE STARTSWITH(r['ı'], 's', false) FROM root r]]></Query>
     </Input>
     <Output>
-      <IndexMetric><![CDATA[
-Index Utilization Information
-  Utilized Single Indexes
-    Index Spec: /ı/?
-    Index Impact Score: Low
-    ---
-  Potential Single Indexes
-  Utilized Composite Indexes
-  Potential Composite Indexes
-]]></IndexMetric>
+      <IndexMetric><![CDATA[{"UtilizedSingleIndexes":[{"FilterExpression":"","IndexSpec":"\/ı\/?","FilterPreciseSet":true,"IndexPreciseSet":true,"IndexImpactScore":"High"}],"PotentialSingleIndexes":[],"UtilizedCompositeIndexes":[],"PotentialCompositeIndexes":[]}]]></IndexMetric>
     </Output>
   </Result>
   <Result>
@@ -63,16 +36,7 @@ Index Utilization Information
       <Query><![CDATA[SELECT VALUE STARTSWITH(r['ZZZzzz'], 's', true) FROM root r]]></Query>
     </Input>
     <Output>
-      <IndexMetric><![CDATA[
-Index Utilization Information
-  Utilized Single Indexes
-    Index Spec: /ZZZzzz/?
-    Index Impact Score: Low
-    ---
-  Potential Single Indexes
-  Utilized Composite Indexes
-  Potential Composite Indexes
-]]></IndexMetric>
+      <IndexMetric><![CDATA[{"UtilizedSingleIndexes":[{"FilterExpression":"","IndexSpec":"\/ZZZzzz\/?","FilterPreciseSet":true,"IndexPreciseSet":true,"IndexImpactScore":"High"}],"PotentialSingleIndexes":[],"UtilizedCompositeIndexes":[],"PotentialCompositeIndexes":[]}]]></IndexMetric>
     </Output>
   </Result>
   <Result>
@@ -81,16 +45,7 @@ Index Utilization Information
       <Query><![CDATA[SELECT VALUE STARTSWITH(r[' !"!@#$%^&*()<>?:"{}|ßÃŒÆ12ếàưỏốởặ'], 's', true) FROM root r]]></Query>
     </Input>
     <Output>
-      <IndexMetric><![CDATA[
-Index Utilization Information
-  Utilized Single Indexes
-    Index Spec: /" !\"!@#$%^&*()<>?:\"{}|ßÃŒÆ12ếàưỏốởặ"/?
-    Index Impact Score: Low
-    ---
-  Potential Single Indexes
-  Utilized Composite Indexes
-  Potential Composite Indexes
-]]></IndexMetric>
+      <IndexMetric><![CDATA[{"UtilizedSingleIndexes":[{"FilterExpression":"","IndexSpec":"\/\" !\\\"!@#$%^&*()<>?:\\\"{}|ßÃŒÆ12ếàưỏốởặ\"\/?","FilterPreciseSet":true,"IndexPreciseSet":true,"IndexImpactScore":"High"}],"PotentialSingleIndexes":[],"UtilizedCompositeIndexes":[],"PotentialCompositeIndexes":[]}]]></IndexMetric>
     </Output>
   </Result>
   <Result>
@@ -99,16 +54,7 @@ Index Utilization Information
       <Query><![CDATA[SELECT VALUE STARTSWITH(r['Der schnelle Braunfuchs springt über den faulen Hund'], 's', true) FROM root r]]></Query>
     </Input>
     <Output>
-      <IndexMetric><![CDATA[
-Index Utilization Information
-  Utilized Single Indexes
-    Index Spec: /"Der schnelle Braunfuchs springt über den faulen Hund"/?
-    Index Impact Score: Low
-    ---
-  Potential Single Indexes
-  Utilized Composite Indexes
-  Potential Composite Indexes
-]]></IndexMetric>
+      <IndexMetric><![CDATA[{"UtilizedSingleIndexes":[{"FilterExpression":"","IndexSpec":"\/\"Der schnelle Braunfuchs springt über den faulen Hund\"\/?","FilterPreciseSet":true,"IndexPreciseSet":true,"IndexImpactScore":"High"}],"PotentialSingleIndexes":[],"UtilizedCompositeIndexes":[],"PotentialCompositeIndexes":[]}]]></IndexMetric>
     </Output>
   </Result>
   <Result>
@@ -117,16 +63,7 @@ Index Utilization Information
       <Query><![CDATA[SELECT VALUE STARTSWITH(r['Η γρήγορη καφέ αλεπού πηδάει πάνω από το τεμπέλικο σκυλί'], 's', true) FROM root r]]></Query>
     </Input>
     <Output>
-      <IndexMetric><![CDATA[
-Index Utilization Information
-  Utilized Single Indexes
-    Index Spec: /"Η γρήγορη καφέ αλεπού πηδάει πάνω από το τεμπέλικο σκυλί"/?
-    Index Impact Score: Low
-    ---
-  Potential Single Indexes
-  Utilized Composite Indexes
-  Potential Composite Indexes
-]]></IndexMetric>
+      <IndexMetric><![CDATA[{"UtilizedSingleIndexes":[{"FilterExpression":"","IndexSpec":"\/\"Η γρήγορη καφέ αλεπού πηδάει πάνω από το τεμπέλικο σκυλί\"\/?","FilterPreciseSet":true,"IndexPreciseSet":true,"IndexImpactScore":"High"}],"PotentialSingleIndexes":[],"UtilizedCompositeIndexes":[],"PotentialCompositeIndexes":[]}]]></IndexMetric>
     </Output>
   </Result>
   <Result>
@@ -135,16 +72,7 @@ Index Utilization Information
       <Query><![CDATA[SELECT VALUE STARTSWITH(r['الثعلب البني السريع يقفز فوق الكلب الكسول'], 's', true) FROM root r]]></Query>
     </Input>
     <Output>
-      <IndexMetric><![CDATA[
-Index Utilization Information
-  Utilized Single Indexes
-    Index Spec: /"الثعلب البني السريع يقفز فوق الكلب الكسول"/?
-    Index Impact Score: Low
-    ---
-  Potential Single Indexes
-  Utilized Composite Indexes
-  Potential Composite Indexes
-]]></IndexMetric>
+      <IndexMetric><![CDATA[{"UtilizedSingleIndexes":[{"FilterExpression":"","IndexSpec":"\/\"الثعلب البني السريع يقفز فوق الكلب الكسول\"\/?","FilterPreciseSet":true,"IndexPreciseSet":true,"IndexImpactScore":"High"}],"PotentialSingleIndexes":[],"UtilizedCompositeIndexes":[],"PotentialCompositeIndexes":[]}]]></IndexMetric>
     </Output>
   </Result>
   <Result>
@@ -153,16 +81,7 @@ Index Utilization Information
       <Query><![CDATA[SELECT VALUE STARTSWITH(r['Быстрая коричневая лиса прыгает через ленивую собаку'], 's', true) FROM root r]]></Query>
     </Input>
     <Output>
-      <IndexMetric><![CDATA[
-Index Utilization Information
-  Utilized Single Indexes
-    Index Spec: /"Быстрая коричневая лиса прыгает через ленивую собаку"/?
-    Index Impact Score: Low
-    ---
-  Potential Single Indexes
-  Utilized Composite Indexes
-  Potential Composite Indexes
-]]></IndexMetric>
+      <IndexMetric><![CDATA[{"UtilizedSingleIndexes":[{"FilterExpression":"","IndexSpec":"\/\"Быстрая коричневая лиса прыгает через ленивую собаку\"\/?","FilterPreciseSet":true,"IndexPreciseSet":true,"IndexImpactScore":"High"}],"PotentialSingleIndexes":[],"UtilizedCompositeIndexes":[],"PotentialCompositeIndexes":[]}]]></IndexMetric>
     </Output>
   </Result>
   <Result>
@@ -171,16 +90,7 @@ Index Utilization Information
       <Query><![CDATA[SELECT VALUE STARTSWITH(r['素早く茶色のキツネが怠惰な犬を飛び越えます'], 's', true) FROM root r]]></Query>
     </Input>
     <Output>
-      <IndexMetric><![CDATA[
-Index Utilization Information
-  Utilized Single Indexes
-    Index Spec: /素早く茶色のキツネが怠惰な犬を飛び越えます/?
-    Index Impact Score: Low
-    ---
-  Potential Single Indexes
-  Utilized Composite Indexes
-  Potential Composite Indexes
-]]></IndexMetric>
+      <IndexMetric><![CDATA[{"UtilizedSingleIndexes":[{"FilterExpression":"","IndexSpec":"\/素早く茶色のキツネが怠惰な犬を飛び越えます\/?","FilterPreciseSet":true,"IndexPreciseSet":true,"IndexImpactScore":"High"}],"PotentialSingleIndexes":[],"UtilizedCompositeIndexes":[],"PotentialCompositeIndexes":[]}]]></IndexMetric>
     </Output>
   </Result>
   <Result>
@@ -189,16 +99,7 @@ Index Utilization Information
       <Query><![CDATA[SELECT VALUE STARTSWITH(r['तेज, भूरी लोमडी आलसी कुत्ते के उपर कूद गई'], 's', true) FROM root r]]></Query>
     </Input>
     <Output>
-      <IndexMetric><![CDATA[
-Index Utilization Information
-  Utilized Single Indexes
-    Index Spec: /"तेज, भूरी लोमडी आलसी कुत्ते के उपर कूद गई"/?
-    Index Impact Score: Low
-    ---
-  Potential Single Indexes
-  Utilized Composite Indexes
-  Potential Composite Indexes
-]]></IndexMetric>
+      <IndexMetric><![CDATA[{"UtilizedSingleIndexes":[{"FilterExpression":"","IndexSpec":"\/\"तेज, भूरी लोमडी आलसी कुत्ते के उपर कूद गई\"\/?","FilterPreciseSet":true,"IndexPreciseSet":true,"IndexImpactScore":"High"}],"PotentialSingleIndexes":[],"UtilizedCompositeIndexes":[],"PotentialCompositeIndexes":[]}]]></IndexMetric>
     </Output>
   </Result>
 </Results>

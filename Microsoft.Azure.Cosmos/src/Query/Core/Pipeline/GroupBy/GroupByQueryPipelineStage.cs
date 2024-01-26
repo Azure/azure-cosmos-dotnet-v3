@@ -67,6 +67,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
             CosmosElement continuationToken,
             CancellationToken cancellationToken,
             MonadicCreatePipelineStage monadicCreatePipelineStage,
+            IReadOnlyList<AggregateOperator> aggregates,
             IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
             IReadOnlyList<string> orderedAliases,
             bool hasSelectValue,
@@ -76,6 +77,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                     continuationToken,
                     cancellationToken,
                     monadicCreatePipelineStage,
+                    aggregates,
                     groupByAliasToAggregateType,
                     orderedAliases,
                     hasSelectValue,
@@ -84,6 +86,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                     continuationToken,
                     cancellationToken,
                     monadicCreatePipelineStage,
+                    aggregates,
                     groupByAliasToAggregateType,
                     orderedAliases,
                     hasSelectValue,
@@ -166,15 +169,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
             private static readonly IReadOnlyList<AggregateOperator> EmptyAggregateOperators = new AggregateOperator[] { };
 
             private readonly Dictionary<UInt128, SingleGroupAggregator> table;
+            private readonly IReadOnlyList<AggregateOperator> aggregates;
             private readonly IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType;
             private readonly IReadOnlyList<string> orderedAliases;
             private readonly bool hasSelectValue;
 
             private GroupingTable(
+                IReadOnlyList<AggregateOperator> aggregates,
                 IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
                 IReadOnlyList<string> orderedAliases,
                 bool hasSelectValue)
             {
+                this.aggregates = aggregates ?? throw new ArgumentNullException(nameof(aggregates));
                 this.groupByAliasToAggregateType = groupByAliasToAggregateType ?? throw new ArgumentNullException(nameof(groupByAliasToAggregateType));
                 this.orderedAliases = orderedAliases;
                 this.hasSelectValue = hasSelectValue;
@@ -195,7 +201,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                     if (!this.table.TryGetValue(groupByKeysHash, out SingleGroupAggregator singleGroupAggregator))
                     {
                         singleGroupAggregator = SingleGroupAggregator.TryCreate(
-                            EmptyAggregateOperators,
+                            this.aggregates,
                             this.groupByAliasToAggregateType,
                             this.orderedAliases,
                             this.hasSelectValue,
@@ -225,7 +231,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                 List<CosmosElement> results = new List<CosmosElement>();
                 foreach (SingleGroupAggregator singleGroupAggregator in singleGroupAggregators)
                 {
-                    results.Add(singleGroupAggregator.GetResult());
+                        results.Add(singleGroupAggregator.GetResult());
                 }
 
                 if (this.Count == 0)
@@ -250,12 +256,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
             public IEnumerator<KeyValuePair<UInt128, SingleGroupAggregator>> GetEnumerator => this.table.GetEnumerator();
 
             public static TryCatch<GroupingTable> TryCreateFromContinuationToken(
+                IReadOnlyList<AggregateOperator> aggregates,
                 IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
                 IReadOnlyList<string> orderedAliases,
                 bool hasSelectValue,
                 CosmosElement continuationToken)
             {
                 GroupingTable groupingTable = new GroupingTable(
+                    aggregates,
                     groupByAliasToAggregateType,
                     orderedAliases,
                     hasSelectValue);
@@ -282,7 +290,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                         }
 
                         TryCatch<SingleGroupAggregator> tryCreateSingleGroupAggregator = SingleGroupAggregator.TryCreate(
-                            EmptyAggregateOperators,
+                            aggregates,
                             groupByAliasToAggregateType,
                             orderedAliases,
                             hasSelectValue,

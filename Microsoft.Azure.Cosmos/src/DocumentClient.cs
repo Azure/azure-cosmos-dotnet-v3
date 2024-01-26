@@ -20,7 +20,6 @@ namespace Microsoft.Azure.Cosmos
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
@@ -30,6 +29,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
+    using Microsoft.Azure.Documents.FaultInjection;
     using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
 
@@ -115,6 +115,8 @@ namespace Microsoft.Azure.Cosmos
         private readonly bool IsLocalQuorumConsistency = false;
         private readonly bool isReplicaAddressValidationEnabled;
 
+        private readonly IChaosInterceptor chaosInterceptor;
+
         //Auth
         internal readonly AuthorizationTokenProvider cosmosAuthorization;
 
@@ -171,7 +173,7 @@ namespace Microsoft.Azure.Cosmos
         internal RemoteCertificateValidationCallback remoteCertificateValidationCallback;
 
         //Distributed Tracing Flag
-        internal bool isDistributedTracingEnabled;
+        internal CosmosClientTelemetryOptions cosmosClientTelemetryOptions;
 
         //SessionContainer.
         internal ISessionContainer sessionContainer;
@@ -432,7 +434,8 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="isLocalQuorumConsistency">Flag to allow Quorum Read with Eventual Consistency Account</param>
         /// <param name="cosmosClientId"></param>
         /// <param name="remoteCertificateValidationCallback">This delegate responsible for validating the third party certificate. </param>
-        /// <param name="isDistributedTracingEnabled">This is distributed tracing flag</param>
+        /// <param name="cosmosClientTelemetryOptions">This is distributed tracing flag</param>
+        /// <param name="chaosInterceptorFactory">This is the chaos interceptor used for fault injection</param>
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal.
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
@@ -460,7 +463,8 @@ namespace Microsoft.Azure.Cosmos
                               bool isLocalQuorumConsistency = false,
                               string cosmosClientId = null,
                               RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
-                              bool isDistributedTracingEnabled = false)
+                              CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null,
+                              IChaosInterceptorFactory chaosInterceptorFactory = null)
         {
             if (sendingRequestEventArgs != null)
             {
@@ -483,6 +487,7 @@ namespace Microsoft.Azure.Cosmos
             this.transportClientHandlerFactory = transportClientHandlerFactory;
             this.IsLocalQuorumConsistency = isLocalQuorumConsistency;
             this.initTaskCache = new AsyncCacheNonBlocking<string, bool>(cancellationToken: this.cancellationTokenSource.Token);
+            this.chaosInterceptor = chaosInterceptorFactory?.CreateInterceptor(this);
 
             this.Initialize(
                 serviceEndpoint: serviceEndpoint,
@@ -494,7 +499,7 @@ namespace Microsoft.Azure.Cosmos
                 storeClientFactory: storeClientFactory,
                 cosmosClientId: cosmosClientId,
                 remoteCertificateValidationCallback: remoteCertificateValidationCallback,
-                isDistributedTracingEnabled: isDistributedTracingEnabled);
+                cosmosClientTelemetryOptions: cosmosClientTelemetryOptions);
         }
 
         /// <summary>
@@ -662,7 +667,7 @@ namespace Microsoft.Azure.Cosmos
                     tokenProvider: this, 
                     retryPolicy: this.retryPolicy,
                     telemetryToServiceHelper: this.telemetryToServiceHelper);
-                this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache);
+                this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager);
 
                 DefaultTrace.TraceWarning("{0} occurred while OpenAsync. Exception Message: {1}", ex.ToString(), ex.Message);
             }
@@ -678,7 +683,7 @@ namespace Microsoft.Azure.Cosmos
             TokenCredential tokenCredential = null,
             string cosmosClientId = null,
             RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
-            bool isDistributedTracingEnabled = false)
+            CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null)
         {
             if (serviceEndpoint == null)
             {
@@ -687,7 +692,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.clientId = cosmosClientId;
             this.remoteCertificateValidationCallback = remoteCertificateValidationCallback;
-            this.isDistributedTracingEnabled = isDistributedTracingEnabled;
+            this.cosmosClientTelemetryOptions = cosmosClientTelemetryOptions ?? new CosmosClientTelemetryOptions();
 
             this.queryPartitionProvider = new AsyncLazy<QueryPartitionProvider>(async () =>
             {
@@ -1033,7 +1038,7 @@ namespace Microsoft.Azure.Cosmos
                     tokenProvider: this, 
                     retryPolicy: this.retryPolicy,
                     telemetryToServiceHelper: this.telemetryToServiceHelper);
-            this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache);
+            this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager);
             this.ResetSessionTokenRetryPolicy = new ResetSessionTokenRetryPolicyFactory(this.sessionContainer, this.collectionCache, this.retryPolicy);
 
             gatewayStoreModel.SetCaches(this.partitionKeyRangeCache, this.collectionCache);
@@ -1233,6 +1238,23 @@ namespace Microsoft.Azure.Cosmos
                 return this.desiredConsistencyLevel.HasValue ? this.desiredConsistencyLevel.Value :
                     this.accountServiceConfiguration.DefaultConsistencyLevel;
             }
+        }
+
+        /// <summary>
+        /// Returns the account properties available in the service configuration if the client was initialized.
+        /// </summary>
+        public bool TryGetCachedAccountProperties(out AccountProperties properties)
+        {
+            if (this.isSuccessfullyInitialized
+                && this.accountServiceConfiguration != null
+                && this.accountServiceConfiguration.AccountProperties != null)
+            {
+                properties = this.accountServiceConfiguration.AccountProperties;
+                return true;
+            }
+
+            properties = null;
+            return false;
         }
 
         /// <summary>
@@ -6623,7 +6645,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 Documents.Telemetry.DistributedTracingOptions distributedTracingOptions = new ()
                 {
-                    IsDistributedTracingEnabled = this.isDistributedTracingEnabled
+                    IsDistributedTracingEnabled = !this.cosmosClientTelemetryOptions.DisableDistributedTracing
                 };
 
                 StoreClientFactory newClientFactory = new StoreClientFactory(
@@ -6649,7 +6671,8 @@ namespace Microsoft.Azure.Cosmos
                     addressResolver: this.AddressResolver,
                     rntbdMaxConcurrentOpeningConnectionCount: this.rntbdMaxConcurrentOpeningConnectionCount,
                     remoteCertificateValidationCallback: this.remoteCertificateValidationCallback,
-                    distributedTracingOptions: distributedTracingOptions);
+                    distributedTracingOptions: distributedTracingOptions,
+                    chaosInterceptor: this.chaosInterceptor);
 
                 if (this.transportClientHandlerFactory != null)
                 {

@@ -31,12 +31,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         [NonEvent]
         public static void RecordDiagnosticsForRequests(
-            DistributedTracingOptions config,
+            CosmosThresholdOptions config,
             Documents.OperationType operationType,
             OpenTelemetryAttributes response)
         {
             if (!DiagnosticsFilterHelper.IsSuccessfulResponse(
-                        response: response) && CosmosDbEventSource.IsEnabled(EventLevel.Warning))
+                        response.StatusCode, response.SubStatusCode) && CosmosDbEventSource.IsEnabled(EventLevel.Warning))
             {
                 CosmosDbEventSource.Singleton.FailedRequest(response.Diagnostics.ToString());
             } 
