@@ -96,18 +96,18 @@ namespace Microsoft.Azure.Cosmos
         /// Sets the regional endpoints required to fetch account information from
         /// private domain names.
         /// </summary>
-        /// <param name="regionalEndpoints">An instance of <see cref="ISet{T}"/> containing the regional endpoints
+        /// <param name="customEndpoints">An instance of <see cref="IEnumerable{T}"/> containing the custom DNS endpoints
         /// provided by the customer.</param>
-        public void SetRegionalEndpoints(
-            IEnumerable<string> regionalEndpoints)
+        public void SetCustomEndpoints(
+            IEnumerable<string> customEndpoints)
         {
-            if (regionalEndpoints == null)
+            if (customEndpoints == null)
             {
-                throw new ArgumentNullException(nameof(regionalEndpoints));
+                throw new ArgumentNullException(nameof(customEndpoints));
             }
 
             this.regionalEndpoints.Clear();
-            foreach (string endpoint in regionalEndpoints)
+            foreach (string endpoint in customEndpoints)
             {
                 this.regionalEndpoints.Add(endpoint);
             }

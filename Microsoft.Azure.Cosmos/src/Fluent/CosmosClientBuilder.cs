@@ -302,12 +302,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Sets the regional private endpoints for geo-replicated database accounts in the Azure Cosmos DB service. 
+        /// Sets the custom private endpoints for geo-replicated database accounts in the Azure Cosmos DB service. 
         /// During the CosmosClient initialization the account information, including the available regions, is obtained from the <see cref="CosmosClient.Endpoint"/>.
-        /// Should the global endpoint become inaccessible, the CosmosClient will attempt to obtain the account information issuing requests to the regional endpoints
-        /// provided in the regionalEndpoints set.
+        /// Should the global endpoint become inaccessible, the CosmosClient will attempt to obtain the account information issuing requests to the custom endpoints
+        /// provided in the customAccountEndpoints list.
         /// </summary>
-        /// <param name="regionalEndpoints">A set of string containing the regional private endpoints for the cosmos db account.</param>
+        /// <param name="customAccountEndpoints">An instance of <see cref="IEnumerable{T}"/> of string containing the custom private endpoints for the cosmos db account.</param>
         /// <remarks>
         ///  This function is optional and is recommended for implementation when a customer has configured one or more private endpoints with a custom DNS
         ///  hostname (instead of accountname-region.documents.azure.com) etc. for their Cosmos DB account.
@@ -319,16 +319,16 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
         ///     accountEndpoint: "https://testcosmos.documents.azure.com:443/",
         ///     authKeyOrResourceToken: "SuperSecretKey")
-        /// .WithRegionalEndpoints(new HashSet<string>() { "https://region-1.documents-test.windows-int.net:443/", "https://region-2.documents-test.windows-int.net:443/" });
+        /// .WithCustomAccountEndpoints(new HashSet<string>() { "https://region-1.documents-test.windows-int.net:443/", "https://region-2.documents-test.windows-int.net:443/" });
         /// CosmosClient client = cosmosClientBuilder.Build();
         /// ]]>
         /// </code>
         /// </example>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-        /// <seealso cref="CosmosClientOptions.RegionalEndpoints"/>
-        public CosmosClientBuilder WithRegionalEndpoints(IEnumerable<string> regionalEndpoints)
+        /// <seealso cref="CosmosClientOptions.AccountInitializationCustomEndpoints"/>
+        public CosmosClientBuilder WithCustomAccountEndpoints(IEnumerable<string> customAccountEndpoints)
         {
-            this.clientOptions.RegionalEndpoints = regionalEndpoints;
+            this.clientOptions.AccountInitializationCustomEndpoints = customAccountEndpoints;
             return this;
         }
 

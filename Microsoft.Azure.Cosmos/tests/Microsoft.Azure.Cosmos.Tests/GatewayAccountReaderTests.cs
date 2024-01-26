@@ -103,10 +103,10 @@ namespace Microsoft.Azure.Cosmos
 
         [TestMethod]
         [Owner("dkunda")]
-        [DataRow(true, DisplayName = "Validate that when regional endpoints are provided in the connection policy, the request will be retried in the regional endpoints.")]
-        [DataRow(false, DisplayName = "Validate that when regional endpoints are not provided in the connection policy, the request will be failed in the primary endpoint.")]
-        public async Task InitializeReaderAsync_WhenRegionalEndpointsProvided_ShouldRetryWithRegionalEndpointsWhenPrimaryFails(
-            bool regionalEndpointsProvided)
+        [DataRow(true, DisplayName = "Validate that when custom endpoints are provided in the connection policy, the request will be retried in the regional endpoints.")]
+        [DataRow(false, DisplayName = "Validate that when custom endpoints are not provided in the connection policy, the request will be failed in the primary endpoint.")]
+        public async Task InitializeReaderAsync_WhenCustomEndpointsProvided_ShouldRetryWithPrivateCustomEndpointsWhenPrimaryFails(
+            bool customEndpointsProvided)
         {
             string accountPropertiesResponse = "{\r\n    \"_self\": \"\",\r\n    \"id\": \"localhost\",\r\n    \"_rid\": \"127.0.0.1\",\r\n    \"media\": \"//media/\",\r\n    \"addresses\": \"//addresses/\",\r\n    \"_dbs\": \"//dbs/\",\r\n    \"writableLocations\": [\r\n        {\r\n            \"name\": \"South Central US\",\r\n            \"databaseAccountEndpoint\": \"https://127.0.0.1:8081/\"\r\n        }" +
                 "\r\n    ],\r\n    \"readableLocations\": [\r\n        {\r\n            \"name\": \"South Central US\",\r\n            \"databaseAccountEndpoint\": \"https://127.0.0.1:8081/\"\r\n        }\r\n    ],\r\n    \"enableMultipleWriteLocations\": false,\r\n    \"userReplicationPolicy\": {\r\n        \"asyncReplication\": false,\r\n        \"minReplicaSetSize\": 1,\r\n        \"maxReplicasetSize\": 4\r\n    },\r\n    \"userConsistencyPolicy\": {\r\n        " +
@@ -139,9 +139,9 @@ namespace Microsoft.Azure.Cosmos
                 ConnectionMode = ConnectionMode.Direct,
             };
 
-            if (regionalEndpointsProvided)
+            if (customEndpointsProvided)
             {
-                connectionPolicy.SetRegionalEndpoints(
+                connectionPolicy.SetCustomEndpoints(
                     new HashSet<string>()
                     {
                     "https://testfed2.documents-test.windows-int.net:443/",
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos
                 connectionPolicy: connectionPolicy,
                 httpClient: mockHttpClient.Object);
 
-            if (regionalEndpointsProvided)
+            if (customEndpointsProvided)
             {
                 AccountProperties accountProperties = await accountReader.InitializeReaderAsync();
 
@@ -192,7 +192,7 @@ namespace Microsoft.Azure.Cosmos
                 ConnectionMode = ConnectionMode.Direct,
             };
 
-            connectionPolicy.SetRegionalEndpoints(
+            connectionPolicy.SetCustomEndpoints(
                 new HashSet<string>()
                 {
                 "https://testfed2.documents-test.windows-int.net:443/",

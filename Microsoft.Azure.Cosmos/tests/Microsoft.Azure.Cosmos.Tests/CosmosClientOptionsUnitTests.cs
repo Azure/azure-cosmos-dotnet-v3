@@ -171,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 portReuseMode,
                 enableTcpConnectionEndpointRediscovery)
                 .WithApplicationPreferredRegions(preferredLocations)
-                .WithRegionalEndpoints(regionalEndpoints)
+                .WithCustomAccountEndpoints(regionalEndpoints)
                 .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
                 {
                     DisableDistributedTracing = false,
@@ -192,7 +192,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(portReuseMode, clientOptions.PortReuseMode);
             Assert.IsTrue(clientOptions.EnableTcpConnectionEndpointRediscovery);
             CollectionAssert.AreEqual(preferredLocations.ToArray(), clientOptions.ApplicationPreferredRegions.ToArray());
-            CollectionAssert.AreEqual(regionalEndpoints.ToArray(), clientOptions.RegionalEndpoints.ToArray());
+            CollectionAssert.AreEqual(regionalEndpoints.ToArray(), clientOptions.AccountInitializationCustomEndpoints.ToArray());
             Assert.AreEqual(TimeSpan.FromMilliseconds(100), clientOptions.CosmosClientTelemetryOptions.CosmosThresholdOptions.PointOperationLatencyThreshold);
             Assert.AreEqual(TimeSpan.FromMilliseconds(100), clientOptions.CosmosClientTelemetryOptions.CosmosThresholdOptions.NonPointOperationLatencyThreshold);
             Assert.IsFalse(clientOptions.CosmosClientTelemetryOptions.DisableDistributedTracing);
@@ -325,7 +325,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         Regions.WestUS,
                         Regions.EastAsia,
                         })
-                    .WithRegionalEndpoints(
+                    .WithCustomAccountEndpoints(
                         new HashSet<string>()
                         {
                         "https://testfed2.documents-test.windows-int.net:443/",
@@ -349,7 +349,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.AreEqual(consistencyLevel, clientOptions.ConsistencyLevel);
                 Assert.IsTrue(clientOptions.EnablePartitionLevelFailover);
                 Assert.IsNotNull(clientOptions.ApplicationPreferredRegions);
-                Assert.IsNotNull(clientOptions.RegionalEndpoints);
+                Assert.IsNotNull(clientOptions.AccountInitializationCustomEndpoints);
             }
             finally
             {
