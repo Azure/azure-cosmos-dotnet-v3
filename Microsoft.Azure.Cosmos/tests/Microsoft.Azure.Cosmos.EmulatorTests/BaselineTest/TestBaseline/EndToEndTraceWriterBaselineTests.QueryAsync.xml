@@ -34,8 +34,12 @@
     │   │   ├── Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   │   │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │   ├── Service Interop Query Plan(00000000-0000-0000-0000-000000000000)  Query-Component  00:00:00:000  0.00 milliseconds  
+    │   │   ├── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │   │   └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │   └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │       └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   ├── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │   └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
     │       ├── Prefetching(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
     │       └── [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
@@ -215,6 +219,26 @@
                   "duration in milliseconds": 0
                 }
               ]
+            },
+            {
+              "name": "Get Partition Key Ranges",
+              "duration in milliseconds": 0,
+              "children": [
+                {
+                  "name": "Try Get Overlapping Ranges",
+                  "duration in milliseconds": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Get Partition Key Ranges",
+          "duration in milliseconds": 0,
+          "children": [
+            {
+              "name": "Try Get Overlapping Ranges",
+              "duration in milliseconds": 0
             }
           ]
         },
@@ -755,8 +779,12 @@
     │   │   ├── Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   │   │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │   ├── Service Interop Query Plan(00000000-0000-0000-0000-000000000000)  Query-Component  00:00:00:000  0.00 milliseconds  
+    │   │   ├── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │   │   └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │   └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │       └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   ├── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │   └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
     │   │   ├── Prefetching(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
     │   │   └── [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
@@ -940,6 +968,26 @@
                   "duration in milliseconds": 0
                 }
               ]
+            },
+            {
+              "name": "Get Partition Key Ranges",
+              "duration in milliseconds": 0,
+              "children": [
+                {
+                  "name": "Try Get Overlapping Ranges",
+                  "duration in milliseconds": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Get Partition Key Ranges",
+          "duration in milliseconds": 0,
+          "children": [
+            {
+              "name": "Try Get Overlapping Ranges",
+              "duration in milliseconds": 0
             }
           ]
         },
@@ -1497,8 +1545,12 @@
     │   │   ├── Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   │   │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │   ├── Service Interop Query Plan(00000000-0000-0000-0000-000000000000)  Query-Component  00:00:00:000  0.00 milliseconds  
+    │   │   ├── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │   │   └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │   └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │       └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   ├── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │   └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
     │       ├── Prefetching(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
     │       └── [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
@@ -1678,6 +1730,26 @@
                   "duration in milliseconds": 0
                 }
               ]
+            },
+            {
+              "name": "Get Partition Key Ranges",
+              "duration in milliseconds": 0,
+              "children": [
+                {
+                  "name": "Try Get Overlapping Ranges",
+                  "duration in milliseconds": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Get Partition Key Ranges",
+          "duration in milliseconds": 0,
+          "children": [
+            {
+              "name": "Try Get Overlapping Ranges",
+              "duration in milliseconds": 0
             }
           ]
         },
@@ -2219,8 +2291,12 @@
     │   │   ├── Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   │   │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │   ├── Service Interop Query Plan(00000000-0000-0000-0000-000000000000)  Query-Component  00:00:00:000  0.00 milliseconds  
+    │   │   ├── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │   │   └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │   └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │       └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   ├── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │   └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
     │   │   ├── Prefetching(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
     │   │   └── [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
@@ -2404,6 +2480,26 @@
                   "duration in milliseconds": 0
                 }
               ]
+            },
+            {
+              "name": "Get Partition Key Ranges",
+              "duration in milliseconds": 0,
+              "children": [
+                {
+                  "name": "Try Get Overlapping Ranges",
+                  "duration in milliseconds": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Get Partition Key Ranges",
+          "duration in milliseconds": 0,
+          "children": [
+            {
+              "name": "Try Get Overlapping Ranges",
+              "duration in milliseconds": 0
             }
           ]
         },
@@ -2985,8 +3081,12 @@
     │   │   │                                   [PointOperationStatisticsTraceDatum]
     │   │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │   │                               )
+    │   │   ├── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │   │   └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │   └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │       └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   ├── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │   └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
     │   │   ├── Prefetching(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
     │   │   └── [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
@@ -3220,6 +3320,26 @@
                   "duration in milliseconds": 0
                 }
               ]
+            },
+            {
+              "name": "Get Partition Key Ranges",
+              "duration in milliseconds": 0,
+              "children": [
+                {
+                  "name": "Try Get Overlapping Ranges",
+                  "duration in milliseconds": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Get Partition Key Ranges",
+          "duration in milliseconds": 0,
+          "children": [
+            {
+              "name": "Try Get Overlapping Ranges",
+              "duration in milliseconds": 0
             }
           ]
         },
@@ -3779,9 +3899,15 @@
     │   │   ├── Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   │   │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │   ├── Service Interop Query Plan(00000000-0000-0000-0000-000000000000)  Query-Component  00:00:00:000  0.00 milliseconds  
+    │   │   ├── Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │   │   └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │   │       └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │   └── Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │       └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │           └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   ├── Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │   └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │       └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
     │       ├── Prefetching(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
     │       └── [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
@@ -3965,6 +4091,38 @@
                       "duration in milliseconds": 0
                     }
                   ]
+                }
+              ]
+            },
+            {
+              "name": "Get Overlapping Feed Ranges",
+              "duration in milliseconds": 0,
+              "children": [
+                {
+                  "name": "Get Partition Key Ranges",
+                  "duration in milliseconds": 0,
+                  "children": [
+                    {
+                      "name": "Try Get Overlapping Ranges",
+                      "duration in milliseconds": 0
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Get Overlapping Feed Ranges",
+          "duration in milliseconds": 0,
+          "children": [
+            {
+              "name": "Get Partition Key Ranges",
+              "duration in milliseconds": 0,
+              "children": [
+                {
+                  "name": "Try Get Overlapping Ranges",
+                  "duration in milliseconds": 0
                 }
               ]
             }
@@ -4510,9 +4668,15 @@
     │   │   ├── Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   │   │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │   ├── Service Interop Query Plan(00000000-0000-0000-0000-000000000000)  Query-Component  00:00:00:000  0.00 milliseconds  
+    │   │   ├── Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │   │   └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │   │       └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │   └── Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │       └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │           └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   ├── Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │   └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │       └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
     │   │   ├── Prefetching(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
     │   │   └── [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
@@ -4700,6 +4864,38 @@
                       "duration in milliseconds": 0
                     }
                   ]
+                }
+              ]
+            },
+            {
+              "name": "Get Overlapping Feed Ranges",
+              "duration in milliseconds": 0,
+              "children": [
+                {
+                  "name": "Get Partition Key Ranges",
+                  "duration in milliseconds": 0,
+                  "children": [
+                    {
+                      "name": "Try Get Overlapping Ranges",
+                      "duration in milliseconds": 0
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Get Overlapping Feed Ranges",
+          "duration in milliseconds": 0,
+          "children": [
+            {
+              "name": "Get Partition Key Ranges",
+              "duration in milliseconds": 0,
+              "children": [
+                {
+                  "name": "Try Get Overlapping Ranges",
+                  "duration in milliseconds": 0
                 }
               ]
             }
