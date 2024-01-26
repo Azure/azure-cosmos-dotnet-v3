@@ -846,6 +846,7 @@ namespace Microsoft.Azure.Cosmos
         public const string KoreaCentral = "Korea Central";
         public const string KoreaSouth = "Korea South";
         public const string MalaysiaSouth = "Malaysia South";
+        public const string MexicoCentral = "Mexico Central";
         public const string NorthCentralUS = "North Central US";
         public const string NorthEurope = "North Europe";
         public const string NorwayEast = "Norway East";
@@ -857,6 +858,7 @@ namespace Microsoft.Azure.Cosmos
         public const string SouthCentralUS = "South Central US";
         public const string SoutheastAsia = "Southeast Asia";
         public const string SouthIndia = "South India";
+        public const string SpainCentral = "Spain Central";
         public const string SwedenCentral = "Sweden Central";
         public const string SwedenSouth = "Sweden South";
         public const string SwitzerlandNorth = "Switzerland North";
