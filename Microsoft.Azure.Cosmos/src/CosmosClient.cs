@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
+    using ResourceType = Microsoft.Azure.Documents.ResourceType;
 
     /// <summary>
     /// Provides a client-side logical representation of the Azure Cosmos DB account.
