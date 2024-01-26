@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         public static async Task<AccountProperties> GetDatabaseAccountFromAnyLocationsAsync(
             Uri defaultEndpoint,
             IList<string>? locations,
-            IList<string> regionalEndpoints,
+            IList<string> customPrivateEndpoints,
             Func<Uri, Task<AccountProperties>> getDatabaseAccountFn,
             CancellationToken cancellationToken)
         {
@@ -127,14 +127,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                 defaultEndpoint
             };
 
-            if (regionalEndpoints != null
-                && regionalEndpoints.Count > 0)
+            if (customPrivateEndpoints != null
+                && customPrivateEndpoints.Count > 0)
             {
-                foreach (string regionalEndpoint in regionalEndpoints)
+                foreach (string customEndpoint in customPrivateEndpoints)
                 {
-                    // Add all of the regional endpoints to the service endpoints list.
+                    // Add all of the custom private endpoints to the service endpoints list.
                     serviceEndpoints.Add(
-                        new Uri(regionalEndpoint));
+                        new Uri(customEndpoint));
                 }
             }
 
@@ -635,7 +635,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                               singleValueInitFunc: () => GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
                                   this.defaultEndpoint,
                                   this.connectionPolicy.PreferredLocations,
-                                  this.connectionPolicy.RegionalEndpoints,
+                                  this.connectionPolicy.CustomPrivateEndpoints,
                                   this.GetDatabaseAccountAsync,
                                   this.cancellationTokenSource.Token),
                               cancellationToken: this.cancellationTokenSource.Token,

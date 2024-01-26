@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
 
         private Protocol connectionProtocol;
         private ObservableCollection<string> preferredLocations;
-        private ObservableCollection<string> regionalEndpoints;
+        private ObservableCollection<string> customPrivateEndpoints;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ConnectionPolicy"/> class to connect to the Azure Cosmos DB service.
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
             this.MediaReadMode = MediaReadMode.Buffered;
             this.UserAgentContainer = new UserAgentContainer(clientId: 0);
             this.preferredLocations = new ObservableCollection<string>();
-            this.regionalEndpoints = new ObservableCollection<string>();
+            this.customPrivateEndpoints = new ObservableCollection<string>();
             this.EnableEndpointDiscovery = true;
             this.MaxConnectionLimit = defaultMaxConcurrentConnectionLimit;
             this.RetryOptions = new RetryOptions();
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Sets the regional endpoints required to fetch account information from
+        /// Sets the custom private endpoints required to fetch account information from
         /// private domain names.
         /// </summary>
         /// <param name="customEndpoints">An instance of <see cref="IEnumerable{T}"/> containing the custom DNS endpoints
@@ -106,10 +106,10 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(customEndpoints));
             }
 
-            this.regionalEndpoints.Clear();
+            this.customPrivateEndpoints.Clear();
             foreach (string endpoint in customEndpoints)
             {
-                this.regionalEndpoints.Add(endpoint);
+                this.customPrivateEndpoints.Add(endpoint);
             }
         }
 
@@ -294,25 +294,20 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets and sets the preferred locations (regions) for geo-replicated database accounts in the Azure Cosmos DB service.
-        /// For example, "East US" as the preferred location.
+        /// Gets the custom private endpoints for geo-replicated database accounts in the Azure Cosmos DB service. 
         /// </summary>
         /// <remarks>
         /// <para>
-        /// When <see cref="EnableEndpointDiscovery"/> is true and the value of this property is non-empty,
-        /// the SDK uses the locations in the collection in the order they are specified to perform operations,
-        /// otherwise if the value of this property is not specified,
-        /// the SDK uses the write region as the preferred location for all operations.
-        /// </para>
-        /// <para>
-        /// If <see cref="EnableEndpointDiscovery"/> is set to false, the value of this property is ignored.
+        /// During the CosmosClient initialization the account information, including the available regions, is obtained from the <see cref="CosmosClient.Endpoint"/>.
+        /// Should the global endpoint become inaccessible, the CosmosClient will attempt to obtain the account information issuing requests to the custom endpoints
+        /// provided in the customAccountEndpoints list.
         /// </para>
         /// </remarks>
-        public Collection<string> RegionalEndpoints
+        public Collection<string> CustomPrivateEndpoints
         {
             get
             {
-                return this.regionalEndpoints;
+                return this.customPrivateEndpoints;
             }
         }
 

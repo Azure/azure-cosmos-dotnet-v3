@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.Generic;
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
@@ -89,7 +88,7 @@ namespace Microsoft.Azure.Cosmos
             AccountProperties databaseAccount = await GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
                 defaultEndpoint: this.serviceEndpoint,
                 locations: this.connectionPolicy.PreferredLocations,
-                regionalEndpoints: this.connectionPolicy.RegionalEndpoints,
+                customPrivateEndpoints: this.connectionPolicy.CustomPrivateEndpoints,
                 getDatabaseAccountFn: this.GetDatabaseAccountAsync,
                 cancellationToken: this.cancellationToken);
 
