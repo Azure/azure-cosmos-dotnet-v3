@@ -127,12 +127,23 @@ WHERE (root["Flag"] AND (NOT root["Flag"]))]]></SqlQuery>
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[FirstOrDefault with explicit default]]></Description>
+      <Description><![CDATA[FirstOrDefault with explicit (inline) default]]></Description>
       <Expression><![CDATA[query.FirstOrDefault(new Data())]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Method 'FirstOrDefault' is not supported.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Incorrect number of arguments for method 'FirstOrDefault'. Expected '0' but received '1'.]]></ErrorMessage>
+      <SerializedResults><![CDATA[null]]></SerializedResults>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FirstOrDefault with explicit default from function invocation]]></Description>
+      <Expression><![CDATA[query.FirstOrDefault(value(Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests.LinqScalarFunctionBaselineTests).GetDefaultData())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Incorrect number of arguments for method 'FirstOrDefault'. Expected '0' but received '1'.]]></ErrorMessage>
       <SerializedResults><![CDATA[null]]></SerializedResults>
     </Output>
   </Result>
@@ -143,24 +154,35 @@ WHERE (root["Flag"] AND (NOT root["Flag"]))]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Method 'FirstOrDefault' is not supported.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Incorrect number of arguments for method 'FirstOrDefault'. Expected '0' but received '1'.]]></ErrorMessage>
       <SerializedResults><![CDATA[null]]></SerializedResults>
     </Output>
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[FirstOrDefault with explicit default and predicate]]></Description>
+      <Description><![CDATA[FirstOrDefault with explicit (inline) default and predicate]]></Description>
       <Expression><![CDATA[query.FirstOrDefault(_ => True, new Data())]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Method 'FirstOrDefault' is not supported.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Incorrect number of arguments for method 'FirstOrDefault'. Expected '0' but received '2'.]]></ErrorMessage>
       <SerializedResults><![CDATA[null]]></SerializedResults>
     </Output>
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[Select (FirstOrDefault) -> Min 1]]></Description>
+      <Description><![CDATA[FirstOrDefault with explicit default from function invocation and predicate]]></Description>
+      <Expression><![CDATA[query.FirstOrDefault(_ => True, value(Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests.LinqScalarFunctionBaselineTests).GetDefaultData())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Incorrect number of arguments for method 'FirstOrDefault'. Expected '0' but received '2'.]]></ErrorMessage>
+      <SerializedResults><![CDATA[null]]></SerializedResults>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Nested FirstOrDefault 1]]></Description>
       <Expression><![CDATA[query.Select(data => data.Multiples.FirstOrDefault()).Min(), Object)]]></Expression>
     </Input>
     <Output>
@@ -171,7 +193,7 @@ WHERE (root["Flag"] AND (NOT root["Flag"]))]]></SqlQuery>
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[Select (FirstOrDefault) -> Min 2]]></Description>
+      <Description><![CDATA[Nested FirstOrDefault 2]]></Description>
       <Expression><![CDATA[query.Select(data => new List`1() {Void Add(Int32)(1), Void Add(Int32)(2), Void Add(Int32)(3)}.FirstOrDefault()).Min(), Object)]]></Expression>
     </Input>
     <Output>

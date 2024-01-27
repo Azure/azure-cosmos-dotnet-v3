@@ -1271,7 +1271,6 @@ namespace Microsoft.Azure.Cosmos.Linq
                     {
                         if (inputExpression.Arguments.Count == 1)
                         {
-                            // ISSUE-TODO-adityasa-2024/1/26 - Disallow other overloads of FirstOrDefault.
                             SqlNumberLiteral sqlNumberLiteral;
                             bool success = TryGetSqlNumberLiteral(1, out sqlNumberLiteral);
                             Debug.Assert(success, "ExpressionToSQL Assert!", "SqlNumberLiteral Construction must succeed!");
@@ -1281,8 +1280,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                         }
                         else
                         {
-                            // ISSUE-TODO-adityasa-2024/1/26 - Improve error message.
-                            throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.MethodNotSupported, inputExpression.Method.Name));
+                            throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.InvalidArgumentsCount, inputExpression.Method.Name, 0, inputExpression.Arguments.Count - 1));
                         }
 
                         break;

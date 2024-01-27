@@ -126,12 +126,20 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             /////////////////
 
             // ISSUE-TODO-adityasa-2024/1/26 - Support FirstOrDefault overloads.
+            // Please note, this requires potential support for user code invocation in context of rest of the client code (except maybe some simple cases).
+            // We do not currently do this for any other scenarios.
 
             // Unsupported
             inputs.Add(new LinqScalarFunctionInput(
-                "FirstOrDefault with explicit default",
+                "FirstOrDefault with explicit (inline) default",
                 b => getQuery(b)
                     .FirstOrDefault(new Data())));
+
+            // Unsupported
+            inputs.Add(new LinqScalarFunctionInput(
+                "FirstOrDefault with explicit default from function invocation",
+                b => getQuery(b)
+                    .FirstOrDefault(this.GetDefaultData())));
 
             // Unsupported
             inputs.Add(new LinqScalarFunctionInput(
@@ -141,20 +149,26 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             // Unsupported
             inputs.Add(new LinqScalarFunctionInput(
-                "FirstOrDefault with explicit default and predicate",
+                "FirstOrDefault with explicit (inline) default and predicate",
                 b => getQuery(b)
                     .FirstOrDefault(_ => true, new Data())));
 
             // Unsupported
             inputs.Add(new LinqScalarFunctionInput(
-                "Select (FirstOrDefault) -> Min 1",
+                "FirstOrDefault with explicit default from function invocation and predicate",
+                b => getQuery(b)
+                    .FirstOrDefault(_ => true, this.GetDefaultData())));
+
+            // Unsupported
+            inputs.Add(new LinqScalarFunctionInput(
+                "Nested FirstOrDefault 1",
                 b => getQuery(b)
                     .Select(data => data.Multiples.FirstOrDefault())
                     .Min()));
 
             // Unsupported
             inputs.Add(new LinqScalarFunctionInput(
-                "Select (FirstOrDefault) -> Min 2",
+                "Nested FirstOrDefault 2",
                 b => getQuery(b)
                     .Select(data => new List<int> { 1, 2, 3 }.FirstOrDefault())
                     .Min()));
@@ -176,6 +190,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     .FirstOrDefault()));
 
             this.ExecuteTestSuite(inputs);
+        }
+
+        private Data GetDefaultData()
+        {
+            return new Data();
         }
 
         public override LinqScalarFunctionOutput ExecuteTest(LinqScalarFunctionInput input)
