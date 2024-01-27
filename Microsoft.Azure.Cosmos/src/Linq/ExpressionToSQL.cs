@@ -59,18 +59,22 @@ namespace Microsoft.Azure.Cosmos.Linq
             public const string Any = "Any";
             public const string Average = "Average";
             public const string Count = "Count";
+            public const string Distinct = "Distinct";
+            public const string First = "First";
+            public const string FirstOrDefault = "FirstOrDefault";
             public const string Max = "Max";
             public const string Min = "Min";
             public const string OrderBy = "OrderBy";
-            public const string ThenBy = "ThenBy";
             public const string OrderByDescending = "OrderByDescending";
-            public const string ThenByDescending = "ThenByDescending";
             public const string Select = "Select";
             public const string SelectMany = "SelectMany";
-            public const string Sum = "Sum";
+            public const string Single = "Single";
+            public const string SingleOrDefault = "SingleOrDefault";
             public const string Skip = "Skip";
+            public const string Sum = "Sum";
+            public const string ThenBy = "ThenBy";
+            public const string ThenByDescending = "ThenByDescending";
             public const string Take = "Take";
-            public const string Distinct = "Distinct";
             public const string Where = "Where";
         }
 
@@ -84,11 +88,13 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="inputExpression">An Expression representing a Query on a IDocumentQuery object.</param>
         /// <param name="parameters">Optional dictionary for parameter name and value</param>
         /// <param name="linqSerializerOptions">Optional serializer options.</param>
+        /// <param name="clientOperation">Indicates the client operation that needs to be performed on the results of SqlQuery.</param>
         /// <returns>The corresponding SQL query.</returns>
         public static SqlQuery TranslateQuery(
             Expression inputExpression,
             IDictionary<object, string> parameters,
-            CosmosLinqSerializerOptionsInternal linqSerializerOptions)
+            CosmosLinqSerializerOptionsInternal linqSerializerOptions,
+            out ClientOperation clientOperation)
         {
             TranslationContext context = new TranslationContext(linqSerializerOptions, parameters);
             ExpressionToSql.Translate(inputExpression, context); // ignore result here
@@ -96,6 +102,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             QueryUnderConstruction query = context.CurrentQuery;
             query = query.FlattenAsPossible();
             SqlQuery result = query.GetSqlQuery();
+            clientOperation = context.ClientOperation;
 
             return result;
         }
@@ -1256,6 +1263,16 @@ namespace Microsoft.Azure.Cosmos.Linq
                             SqlWhereClause where = ExpressionToSql.VisitWhere(inputExpression.Arguments, context);
                             context.CurrentQuery = context.CurrentQuery.AddWhereClause(where, context);
                         }
+                        break;
+                    }
+                case LinqMethods.FirstOrDefault:
+                    {
+                        SqlNumberLiteral sqlNumberLiteral;
+                        bool success = TryGetSqlNumberLiteral(1, out sqlNumberLiteral);
+                        Debug.Assert(success, "ExpressionToSQL Assert!", "SqlNumberLiteral Construction must succeed!");
+                        SqlTopSpec topSpec = SqlTopSpec.Create(sqlNumberLiteral);
+                        context.CurrentQuery = context.CurrentQuery.AddTopSpec(topSpec);
+                        context.SetClientOperation(ClientOperation.FirstOrDefault);
                         break;
                     }
                 default:

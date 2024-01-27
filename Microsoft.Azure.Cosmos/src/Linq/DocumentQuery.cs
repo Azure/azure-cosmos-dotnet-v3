@@ -273,10 +273,10 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public override string ToString()
         {
-            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression);
-            if (querySpec != null)
+            LinqQuery querySpec = DocumentQueryEvaluator.Evaluate(this.Expression);
+            if (querySpec.SqlQuerySpec != null)
             {
-                return JsonConvert.SerializeObject(querySpec);
+                return JsonConvert.SerializeObject(querySpec.SqlQuerySpec);
             }
 
             return new Uri(this.client.ServiceEndpoint, this.documentsFeedOrDatabaseLink).ToString();

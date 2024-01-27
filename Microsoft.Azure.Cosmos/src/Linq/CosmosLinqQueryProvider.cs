@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Threading;
@@ -88,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.allowSynchronousQueryExecution,
                 this.linqSerializerOptions);
             this.onExecuteScalarQueryCallback?.Invoke(cosmosLINQQuery);
-            return cosmosLINQQuery.ToList().FirstOrDefault();
+            return cosmosLINQQuery.ExecuteScalar();
         }
 
         //Sync execution of query via direct invoke on IQueryProvider.

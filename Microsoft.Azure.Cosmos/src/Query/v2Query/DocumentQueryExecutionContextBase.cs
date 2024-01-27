@@ -134,7 +134,14 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (!this.isExpressionEvaluated)
                 {
-                    this.querySpec = DocumentQueryEvaluator.Evaluate(this.expression);
+                    LinqQuery linqQuery = DocumentQueryEvaluator.Evaluate(this.expression);
+
+                    if (linqQuery.ClientOperation != ClientOperation.None)
+                    {
+                        throw new InvalidOperationException($"This operation does not support support LINQ expression that contains client operation {linqQuery.ClientOperation}");
+                    }
+
+                    this.querySpec = linqQuery.SqlQuerySpec;
                     this.isExpressionEvaluated = true;
                 }
 

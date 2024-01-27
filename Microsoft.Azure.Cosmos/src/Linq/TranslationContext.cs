@@ -72,6 +72,8 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private static readonly MemberNames DefaultMemberNames = new MemberNames(new CosmosLinqSerializerOptions());
 
+        private ClientOperation? clientOperation;
+
         public TranslationContext(CosmosLinqSerializerOptionsInternal linqSerializerOptionsInternal, IDictionary<object, string> parameters = null)
         {
             this.InScope = new HashSet<ParameterExpression>();
@@ -82,6 +84,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             this.CurrentQuery = new QueryUnderConstruction(this.GetGenFreshParameterFunc());
             this.subqueryBindingStack = new Stack<SubqueryBinding>();
             this.Parameters = parameters;
+            this.clientOperation = null;
 
             if (linqSerializerOptionsInternal?.CustomCosmosLinqSerializer != null)
             {
@@ -100,6 +103,21 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.CosmosLinqSerializer = TranslationContext.DefaultLinqSerializer;
                 this.MemberNames = TranslationContext.DefaultMemberNames;
             }
+        }
+
+        public ClientOperation ClientOperation => this.clientOperation ?? ClientOperation.None;
+
+        public void SetClientOperation(ClientOperation clientOperation)
+        {
+            if (this.clientOperation != null)
+            {
+                // Currently all client operations are scalar expressions which cannot be nested or chained.
+                // At some point we may need to relax this requirement at which point client operation is best
+                //  represented by a nested/chained structure.
+                throw new InvalidOperationException("ClientOperation can be set at most once!");
+            }
+
+            this.clientOperation = clientOperation;
         }
 
         public Expression LookupSubstitution(ParameterExpression parameter)

@@ -108,7 +108,13 @@ namespace Microsoft.Azure.Cosmos.Linq
                     " use GetItemQueryIterator to execute asynchronously");
             }
 
-            FeedIterator<T> localFeedIterator = this.CreateFeedIterator(false);
+            FeedIterator<T> localFeedIterator = this.CreateFeedIterator(false, out ClientOperation clientOperation);
+
+            if (clientOperation != ClientOperation.None)
+            {
+                throw new InvalidOperationException($"Linq expression cannot be converted to query directly since it involves client side operation : {clientOperation}");
+            }
+
             while (localFeedIterator.HasMoreResults)
             {
 #pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
@@ -133,7 +139,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public override string ToString()
         {
-            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.linqSerializationOptions);
+            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.linqSerializationOptions).SqlQuerySpec;
             if (querySpec != null)
             {
                 return JsonConvert.SerializeObject(querySpec);
@@ -144,20 +150,36 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public QueryDefinition ToQueryDefinition(IDictionary<object, string> parameters = null)
         {
-            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.linqSerializationOptions, parameters);
-            return QueryDefinition.CreateFromQuerySpec(querySpec);
+            LinqQuery linqQuery = DocumentQueryEvaluator.Evaluate(this.Expression, this.linqSerializationOptions, parameters);
+
+            if (linqQuery.ClientOperation != ClientOperation.None)
+            {
+                throw new InvalidOperationException($"Linq expression cannot be converted to query directly since it involves client side operation : {linqQuery.ClientOperation}");
+            }
+
+            return QueryDefinition.CreateFromQuerySpec(linqQuery.SqlQuerySpec);
         }
 
         public FeedIterator<T> ToFeedIterator()
         {
-            return new FeedIteratorInlineCore<T>(this.CreateFeedIterator(true),
-                                                 this.container.ClientContext);
+            FeedIterator<T> iterator = this.CreateFeedIterator(true, out ClientOperation clientOperation);
+            if (clientOperation != ClientOperation.None)
+            {
+                throw new InvalidOperationException($"This operation does not support LINQ expression that contains client operation {clientOperation}");
+            }
+
+            return new FeedIteratorInlineCore<T>(iterator, this.container.ClientContext);
         }
 
         public FeedIterator ToStreamIterator()
         {
-            return new FeedIteratorInlineCore(this.CreateStreamIterator(true),
-                                              this.container.ClientContext);
+            FeedIterator iterator = this.CreateStreamIterator(true, out ClientOperation clientOperation);
+            if (clientOperation != ClientOperation.None)
+            {
+                throw new InvalidOperationException($"This operation does not support LINQ expression that contains client operation {clientOperation}");
+            }
+
+            return new FeedIteratorInlineCore(iterator, this.container.ClientContext);
         }
 
         public void Dispose()
@@ -180,15 +202,18 @@ namespace Microsoft.Azure.Cosmos.Linq
             List<T> result = new List<T>();
             Headers headers = new Headers();
 
-            FeedIterator<T> localFeedIterator = this.CreateFeedIterator(isContinuationExpected: false);
-            FeedIteratorInternal<T> localFeedIteratorInternal = (FeedIteratorInternal<T>)localFeedIterator;
+            FeedIteratorInlineCore<T> localFeedIterator = this.CreateFeedIterator(isContinuationExpected: false, clientOperation: out ClientOperation clientOperation);
+            if (clientOperation != ClientOperation.None)
+            {
+                throw new InvalidOperationException($"This operation does not support LINQ expression that contains client operation {clientOperation}");
+            }
 
             ITrace rootTrace;
             using (rootTrace = Trace.GetRootTrace("Aggregate LINQ Operation"))
             {
                 while (localFeedIterator.HasMoreResults)
                 {
-                    FeedResponse<T> response = await localFeedIteratorInternal.ReadNextAsync(rootTrace, cancellationToken);
+                    FeedResponse<T> response = await localFeedIterator.ReadNextAsync(rootTrace, cancellationToken);
                     headers.RequestCharge += response.RequestCharge;
                     result.AddRange(response);
                 }
@@ -202,23 +227,56 @@ namespace Microsoft.Azure.Cosmos.Linq
                 null);
         }
 
-        private FeedIteratorInternal CreateStreamIterator(bool isContinuationExcpected)
+        internal T ExecuteScalar()
         {
-            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.linqSerializationOptions);
+            FeedIteratorInlineCore<T> localFeedIterator = this.CreateFeedIterator(isContinuationExpected: false, out ClientOperation clientOperation);
+            Headers headers = new Headers();
+
+            List<T> result = new List<T>();
+            ITrace rootTrace;
+            using (rootTrace = Trace.GetRootTrace("Aggregate LINQ Operation"))
+            {
+                while (localFeedIterator.HasMoreResults)
+                {
+                    FeedResponse<T> response = localFeedIterator.ReadNextAsync(rootTrace, cancellationToken: default).Result;
+                    headers.RequestCharge += response.RequestCharge;
+                    result.AddRange(response);
+                }
+            }
+
+            switch (clientOperation)
+            {
+                case ClientOperation.FirstOrDefault:
+                    System.Diagnostics.Debug.Assert(result.Count <= 1, "CosmosLinqQuery Assert!", "At most one result is expected!");
+                    return result.FirstOrDefault();
+
+                // None typically gets returned during invocation of this method when aggregates are called and evaluates to FirstOrDefault.
+                case ClientOperation.None:
+                    return result.FirstOrDefault();
+
+                default:
+                    throw new InvalidOperationException($"Unsupported client operation {clientOperation}");
+            }
+        }
+
+        private FeedIteratorInternal CreateStreamIterator(bool isContinuationExcpected, out ClientOperation clientOperation)
+        {
+            LinqQuery querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.linqSerializationOptions);
+            clientOperation = querySpec.ClientOperation;
 
             return this.container.GetItemQueryStreamIteratorInternal(
-                sqlQuerySpec: querySpec,
+                sqlQuerySpec: querySpec.SqlQuerySpec,
                 isContinuationExcpected: isContinuationExcpected,
                 continuationToken: this.continuationToken,
                 feedRange: null,
                 requestOptions: this.cosmosQueryRequestOptions);
         }
 
-        private FeedIterator<T> CreateFeedIterator(bool isContinuationExpected)
+        private FeedIteratorInlineCore<T> CreateFeedIterator(bool isContinuationExpected, out ClientOperation clientOperation)
         {
-            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.linqSerializationOptions);
-
-            FeedIteratorInternal streamIterator = this.CreateStreamIterator(isContinuationExpected);
+            FeedIteratorInternal streamIterator = this.CreateStreamIterator(
+                isContinuationExpected,
+                out clientOperation);
             return new FeedIteratorInlineCore<T>(new FeedIteratorCore<T>(
                 streamIterator,
                 this.responseFactory.CreateQueryFeedUserTypeResponse<T>),

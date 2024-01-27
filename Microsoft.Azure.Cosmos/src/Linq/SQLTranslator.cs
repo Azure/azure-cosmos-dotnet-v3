@@ -42,14 +42,13 @@ namespace Microsoft.Azure.Cosmos.Linq
             return scalarExpression.ToString();
         }
 
-        internal static SqlQuerySpec TranslateQuery(
+        internal static LinqQuery TranslateQuery(
             Expression inputExpression,
             CosmosLinqSerializerOptionsInternal linqSerializerOptions,
             IDictionary<object, string> parameters)
         {
             inputExpression = ConstantEvaluator.PartialEval(inputExpression);
-            SqlQuery query = ExpressionToSql.TranslateQuery(inputExpression, parameters, linqSerializerOptions);
-            string queryText = null;
+            SqlQuery query = ExpressionToSql.TranslateQuery(inputExpression, parameters, linqSerializerOptions, out ClientOperation clientOperation);
             SqlParameterCollection sqlParameters = new SqlParameterCollection();
             if (parameters != null && parameters.Count > 0)
             {
@@ -58,10 +57,11 @@ namespace Microsoft.Azure.Cosmos.Linq
                     sqlParameters.Add(new Microsoft.Azure.Cosmos.Query.Core.SqlParameter(keyValuePair.Value, keyValuePair.Key));
                 }
             }
-            queryText = query.ToString();
+
+            string queryText = query.ToString();
 
             SqlQuerySpec sqlQuerySpec = new SqlQuerySpec(queryText, sqlParameters);
-            return sqlQuerySpec;
+            return new LinqQuery(sqlQuerySpec, clientOperation);
         }
     }
 }
