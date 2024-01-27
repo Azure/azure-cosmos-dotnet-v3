@@ -234,11 +234,11 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             List<T> result = new List<T>();
             ITrace rootTrace;
-            using (rootTrace = Trace.GetRootTrace("Aggregate LINQ Operation"))
+            using (rootTrace = Trace.GetRootTrace("Scalar LINQ Operation"))
             {
                 while (localFeedIterator.HasMoreResults)
                 {
-                    FeedResponse<T> response = localFeedIterator.ReadNextAsync(rootTrace, cancellationToken: default).Result;
+                    FeedResponse<T> response = localFeedIterator.ReadNextAsync(rootTrace, cancellationToken: default).GetAwaiter().GetResult();
                     headers.RequestCharge += response.RequestCharge;
                     result.AddRange(response);
                 }
