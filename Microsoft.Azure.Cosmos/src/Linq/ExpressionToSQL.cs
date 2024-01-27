@@ -1257,6 +1257,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                 case LinqMethods.Any:
                     {
                         result = new Collection(string.Empty);
+
+                        // ISSUE-TODO-adityasa-2024/1/26 - Investigate what happens in cases when argCount != 2?
                         if (inputExpression.Arguments.Count == 2)
                         {
                             // Any is translated to an SELECT VALUE EXISTS() where Any operation itself is treated as a Where.
@@ -1267,12 +1269,22 @@ namespace Microsoft.Azure.Cosmos.Linq
                     }
                 case LinqMethods.FirstOrDefault:
                     {
-                        SqlNumberLiteral sqlNumberLiteral;
-                        bool success = TryGetSqlNumberLiteral(1, out sqlNumberLiteral);
-                        Debug.Assert(success, "ExpressionToSQL Assert!", "SqlNumberLiteral Construction must succeed!");
-                        SqlTopSpec topSpec = SqlTopSpec.Create(sqlNumberLiteral);
-                        context.CurrentQuery = context.CurrentQuery.AddTopSpec(topSpec);
-                        context.SetClientOperation(ClientOperation.FirstOrDefault);
+                        if (inputExpression.Arguments.Count == 1)
+                        {
+                            // ISSUE-TODO-adityasa-2024/1/26 - Disallow other overloads of FirstOrDefault.
+                            SqlNumberLiteral sqlNumberLiteral;
+                            bool success = TryGetSqlNumberLiteral(1, out sqlNumberLiteral);
+                            Debug.Assert(success, "ExpressionToSQL Assert!", "SqlNumberLiteral Construction must succeed!");
+                            SqlTopSpec topSpec = SqlTopSpec.Create(sqlNumberLiteral);
+                            context.CurrentQuery = context.CurrentQuery.AddTopSpec(topSpec);
+                            context.SetClientOperation(ClientOperation.FirstOrDefault);
+                        }
+                        else
+                        {
+                            // ISSUE-TODO-adityasa-2024/1/26 - Improve error message.
+                            throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.MethodNotSupported, inputExpression.Method.Name));
+                        }
+
                         break;
                     }
                 default:

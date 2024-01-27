@@ -105,6 +105,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     .SelectMany(data => data.Multiples)
                     .FirstOrDefault()));
 
+            inputs.Add(new LinqScalarFunctionInput(
+                "Take -> FirstOrDefault",
+                b => getQuery(b)
+                    .Take(10)
+                    .FirstOrDefault()));
+
             ///////////////////////////////////////////////////
             // Positive cases - With no results
             ///////////////////////////////////////////////////
@@ -118,6 +124,26 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             /////////////////
             // Negative cases
             /////////////////
+
+            // ISSUE-TODO-adityasa-2024/1/26 - Support FirstOrDefault overloads.
+
+            // Unsupported
+            inputs.Add(new LinqScalarFunctionInput(
+                "FirstOrDefault with explicit default",
+                b => getQuery(b)
+                    .FirstOrDefault(new Data())));
+
+            // Unsupported
+            inputs.Add(new LinqScalarFunctionInput(
+                "FirstOrDefault with predicate",
+                b => getQuery(b)
+                    .FirstOrDefault(_ => true)));
+
+            // Unsupported
+            inputs.Add(new LinqScalarFunctionInput(
+                "FirstOrDefault with explicit default and predicate",
+                b => getQuery(b)
+                    .FirstOrDefault(_ => true, new Data())));
 
             // Unsupported
             inputs.Add(new LinqScalarFunctionInput(
@@ -140,6 +166,13 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     .Select(data => data)
                     .Skip(5)
                     .Take(5)
+                    .FirstOrDefault()));
+
+            // ERROR - A TOP cannot be used in the same query or subquery as an OFFSET.
+            inputs.Add(new LinqScalarFunctionInput(
+                "Skip -> FirstOrDefault",
+                b => getQuery(b)
+                    .Skip(3)
                     .FirstOrDefault()));
 
             this.ExecuteTestSuite(inputs);

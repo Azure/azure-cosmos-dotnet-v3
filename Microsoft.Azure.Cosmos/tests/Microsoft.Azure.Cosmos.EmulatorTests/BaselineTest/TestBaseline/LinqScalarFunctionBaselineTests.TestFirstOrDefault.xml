@@ -102,6 +102,18 @@ JOIN data0 IN root["Multiples"]]]></SqlQuery>
   </Result>
   <Result>
     <Input>
+      <Description><![CDATA[Take -> FirstOrDefault]]></Description>
+      <Expression><![CDATA[query.Take(10).FirstOrDefault()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 1 VALUE root 
+FROM root]]></SqlQuery>
+      <SerializedResults><![CDATA[{  "id": "0",  "Number": 0,  "Pk": "Test",  "Flag": true,  "Multiples": [    0,    0,    0,    0  ]}]]></SerializedResults>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
       <Description><![CDATA[FirstOrDefault (default)]]></Description>
       <Expression><![CDATA[query.Where(data => (data.Flag AndAlso Not(data.Flag))).FirstOrDefault()]]></Expression>
     </Input>
@@ -110,6 +122,39 @@ JOIN data0 IN root["Multiples"]]]></SqlQuery>
 SELECT TOP 1 VALUE root 
 FROM root 
 WHERE (root["Flag"] AND (NOT root["Flag"]))]]></SqlQuery>
+      <SerializedResults><![CDATA[null]]></SerializedResults>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FirstOrDefault with explicit default]]></Description>
+      <Expression><![CDATA[query.FirstOrDefault(new Data())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Method 'FirstOrDefault' is not supported.]]></ErrorMessage>
+      <SerializedResults><![CDATA[null]]></SerializedResults>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FirstOrDefault with predicate]]></Description>
+      <Expression><![CDATA[query.FirstOrDefault(_ => True)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Method 'FirstOrDefault' is not supported.]]></ErrorMessage>
+      <SerializedResults><![CDATA[null]]></SerializedResults>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FirstOrDefault with explicit default and predicate]]></Description>
+      <Expression><![CDATA[query.FirstOrDefault(_ => True, new Data())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Method 'FirstOrDefault' is not supported.]]></ErrorMessage>
       <SerializedResults><![CDATA[null]]></SerializedResults>
     </Output>
   </Result>
@@ -146,6 +191,20 @@ SELECT TOP 1 VALUE root
 FROM root 
 OFFSET 5 LIMIT 5]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":0,"end":50},"code":"SC2205","message":"A TOP cannot be used in the same query or subquery as an OFFSET."}]},0x800A0B00]]></ErrorMessage>
+      <SerializedResults><![CDATA[null]]></SerializedResults>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip -> FirstOrDefault]]></Description>
+      <Expression><![CDATA[query.Skip(3).FirstOrDefault()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 1 VALUE root 
+FROM root 
+OFFSET 3 LIMIT 2147483647]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":0,"end":59},"code":"SC2205","message":"A TOP cannot be used in the same query or subquery as an OFFSET."}]},0x800A0B00]]></ErrorMessage>
       <SerializedResults><![CDATA[null]]></SerializedResults>
     </Output>
   </Result>
