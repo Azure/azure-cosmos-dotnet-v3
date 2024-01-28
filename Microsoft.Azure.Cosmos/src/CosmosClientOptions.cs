@@ -733,6 +733,11 @@ namespace Microsoft.Azure.Cosmos
         internal bool? EnableCpuMonitor { get; set; }
 
         /// <summary>
+        /// Flag indicates the value of DisableServerCertificateValidation flag set at connection string level.Default it is false.
+        /// </summary>
+        internal bool DisableServerCertificateValidation { get; set; }
+
+        /// <summary>
         /// Gets or sets Client Telemetry Options like feature flags and corresponding options
         /// </summary>
         public CosmosClientTelemetryOptions CosmosClientTelemetryOptions { get; set; }
@@ -758,7 +763,7 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateDirectTCPSettings();
             this.ValidateLimitToEndpointSettings();
             this.ValidatePartitionLevelFailoverSettings();
-            this.ValidateServerCallbackSettings();
+            this.ValidateAndSetServerCallbackSettings();
 
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
@@ -867,7 +872,7 @@ namespace Microsoft.Azure.Cosmos
             clientOptions ??= new CosmosClientOptions();
             if (CosmosClientOptions.IsConnectionStringDisableServerCertificateValidationFlag(connectionString))
             {
-                clientOptions.ServerCertificateCustomValidationCallback = (_, _, _) => true;
+                clientOptions.DisableServerCertificateValidation = true;
             }
 
             return clientOptions;
@@ -932,11 +937,16 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private void ValidateServerCallbackSettings()
+        private void ValidateAndSetServerCallbackSettings()
         {
-            if (this.HttpClientFactory != null && this.ServerCertificateCustomValidationCallback != null)
+            if (this.DisableServerCertificateValidation && this.ServerCertificateCustomValidationCallback != null)
             {
-                throw new ArgumentException($"Cannot specify {nameof(this.HttpClientFactory)} and {nameof(this.ServerCertificateCustomValidationCallback)}. Only one can be set.");
+                throw new ArgumentException($"Cannot specify {nameof(this.DisableServerCertificateValidation)} flag in Connection String and {nameof(this.ServerCertificateCustomValidationCallback)}. Only one can be set.");
+            }
+            
+            if (this.DisableServerCertificateValidation)
+            {
+                this.ServerCertificateCustomValidationCallback = (_, _, _) => true;
             }
         }
 
