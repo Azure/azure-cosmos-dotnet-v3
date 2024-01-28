@@ -32,7 +32,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents.FaultInjection;
     using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
-    using ResourceType = Microsoft.Azure.Documents.ResourceType;
 
     /// <summary>
     /// Provides a client-side logical representation for the Azure Cosmos DB service.

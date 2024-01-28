@@ -33,7 +33,6 @@
     using Moq;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
-    using ResourceType = Microsoft.Azure.Documents.ResourceType;
 
     [TestClass]
     public class OptimisticDirectExecutionQueryBaselineTests : BaselineTests<OptimisticDirectExecutionTestInput, OptimisticDirectExecutionTestOutput>
