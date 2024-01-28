@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     [TestClass]
     public class LinqCleanupTests
     {
-        [Ignore]
+        // [Ignore]
         [TestMethod]
         public async Task CleanupLinqTestDatabases()
         {

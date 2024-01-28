@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
+    using Microsoft.Azure.Cosmos.Linq;
 
     /// <summary>
     /// LINQ tests for Non aggregate scalar functions such as FirstOrDefault

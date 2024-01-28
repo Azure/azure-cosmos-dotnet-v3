@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Tracing;
     using Newtonsoft.Json;
+    using Debug = System.Diagnostics.Debug;
 
     /// <summary>
     /// This is the entry point for LINQ query creation/execution, it generate query provider, implements IOrderedQueryable.
@@ -109,11 +110,10 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             FeedIterator<T> localFeedIterator = this.CreateFeedIterator(false, out ClientOperation clientOperation);
-
-            if (clientOperation != ClientOperation.None)
-            {
-                throw new InvalidOperationException($"Linq expression cannot be converted to query directly since it involves client side operation : {clientOperation}");
-            }
+            Debug.Assert(
+                clientOperation == ClientOperation.None,
+                "CosmosLinqQuery Assert!",
+                $"Unexpected client operation. Expected 'None', Received '{clientOperation}'");
 
             while (localFeedIterator.HasMoreResults)
             {
@@ -151,11 +151,11 @@ namespace Microsoft.Azure.Cosmos.Linq
         public QueryDefinition ToQueryDefinition(IDictionary<object, string> parameters = null)
         {
             LinqQuery linqQuery = DocumentQueryEvaluator.Evaluate(this.Expression, this.linqSerializationOptions, parameters);
-
-            if (linqQuery.ClientOperation != ClientOperation.None)
-            {
-                throw new InvalidOperationException($"Linq expression cannot be converted to query directly since it involves client side operation : {linqQuery.ClientOperation}");
-            }
+            ClientOperation clientOperation = linqQuery.ClientOperation;
+            Debug.Assert(
+                clientOperation == ClientOperation.None,
+                "CosmosLinqQuery Assert!",
+                $"Unexpected client operation. Expected 'None', Received '{clientOperation}'");
 
             return QueryDefinition.CreateFromQuerySpec(linqQuery.SqlQuerySpec);
         }
@@ -163,10 +163,10 @@ namespace Microsoft.Azure.Cosmos.Linq
         public FeedIterator<T> ToFeedIterator()
         {
             FeedIterator<T> iterator = this.CreateFeedIterator(true, out ClientOperation clientOperation);
-            if (clientOperation != ClientOperation.None)
-            {
-                throw new InvalidOperationException($"This operation does not support LINQ expression that contains client operation {clientOperation}");
-            }
+            Debug.Assert(
+                clientOperation == ClientOperation.None,
+                "CosmosLinqQuery Assert!",
+                $"Unexpected client operation. Expected 'None', Received '{clientOperation}'");
 
             return new FeedIteratorInlineCore<T>(iterator, this.container.ClientContext);
         }
@@ -174,10 +174,10 @@ namespace Microsoft.Azure.Cosmos.Linq
         public FeedIterator ToStreamIterator()
         {
             FeedIterator iterator = this.CreateStreamIterator(true, out ClientOperation clientOperation);
-            if (clientOperation != ClientOperation.None)
-            {
-                throw new InvalidOperationException($"This operation does not support LINQ expression that contains client operation {clientOperation}");
-            }
+            Debug.Assert(
+                clientOperation == ClientOperation.None,
+                "CosmosLinqQuery Assert!",
+                $"Unexpected client operation. Expected 'None', Received '{clientOperation}'");
 
             return new FeedIteratorInlineCore(iterator, this.container.ClientContext);
         }
@@ -203,10 +203,10 @@ namespace Microsoft.Azure.Cosmos.Linq
             Headers headers = new Headers();
 
             FeedIteratorInlineCore<T> localFeedIterator = this.CreateFeedIterator(isContinuationExpected: false, clientOperation: out ClientOperation clientOperation);
-            if (clientOperation != ClientOperation.None)
-            {
-                throw new InvalidOperationException($"This operation does not support LINQ expression that contains client operation {clientOperation}");
-            }
+            Debug.Assert(
+                clientOperation == ClientOperation.None,
+                "CosmosLinqQuery Assert!",
+                $"Unexpected client operation. Expected 'None', Received '{clientOperation}'");
 
             ITrace rootTrace;
             using (rootTrace = Trace.GetRootTrace("Aggregate LINQ Operation"))
@@ -250,7 +250,9 @@ namespace Microsoft.Azure.Cosmos.Linq
                     System.Diagnostics.Debug.Assert(result.Count <= 1, "CosmosLinqQuery Assert!", "At most one result is expected!");
                     return result.FirstOrDefault();
 
-                // None typically gets returned during invocation of this method when aggregates are called and evaluates to FirstOrDefault.
+                // ExecuteScalar gets called when (sync) aggregates such as Max, Min, Sum are invoked on the IQueryable.
+                // Since query fully supprots these operations, there is no client operation involved.
+                // In these cases we return FirstOrDefault which handles empty/undefined/null result set from the backend.
                 case ClientOperation.None:
                     return result.FirstOrDefault();
 

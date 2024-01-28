@@ -138,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
                     if (linqQuery.ClientOperation != ClientOperation.None)
                     {
-                        throw new InvalidOperationException($"This operation does not support support LINQ expression that contains client operation {linqQuery.ClientOperation}");
+                        throw new NotSupportedException($"This operation does not support the supplied LINQ expression since it involves client side operation : {linqQuery.ClientOperation}");
                     }
 
                     this.querySpec = linqQuery.SqlQuerySpec;
