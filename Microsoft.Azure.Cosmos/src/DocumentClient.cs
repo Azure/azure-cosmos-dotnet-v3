@@ -115,6 +115,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly bool IsLocalQuorumConsistency = false;
         private readonly bool isReplicaAddressValidationEnabled;
 
+        //Fault Injection
         private readonly IChaosInterceptorFactory chaosInterceptorFactory;
         private IChaosInterceptor chaosInterceptor;
 
