@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                      "error.type"
                 };
 
-                foreach (KeyValuePair<string, string> actualTag in activity.Tags)
+                foreach (KeyValuePair<string, object> actualTag in activity.TagObjects)
                 {
                     Assert.IsTrue(expectedTags.Contains(actualTag.Key), $"{actualTag.Key} is not allowed for {activity.OperationName}");
 
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     .OrderBy(x => x.Id)));
         }
 
-        private static void AssertDatabaseAndContainerName(string name, KeyValuePair<string, string> tag)
+        private static void AssertDatabaseAndContainerName(string name, KeyValuePair<string, object> tag)
         {
             IList<string> exceptionsForContainerAttribute = new List<string>
             {

@@ -113,6 +113,9 @@
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.response_content_length_bytes">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
@@ -120,6 +123,8 @@
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
     <ATTRIBUTE key="rntbd.url">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.status_code">201</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="LatencyOverThreshold" />
 </OTelActivities></Output>
@@ -232,6 +237,9 @@
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Read</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.response_content_length_bytes">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
@@ -239,6 +247,8 @@
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
     <ATTRIBUTE key="rntbd.url">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.status_code">200</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="LatencyOverThreshold" />
 </OTelActivities></Output>
@@ -359,6 +369,9 @@
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Replace</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.response_content_length_bytes">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
@@ -366,6 +379,8 @@
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
     <ATTRIBUTE key="rntbd.url">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.status_code">200</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="LatencyOverThreshold" />
 </OTelActivities></Output>
@@ -480,6 +495,9 @@
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Delete</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
@@ -487,6 +505,8 @@
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
     <ATTRIBUTE key="rntbd.url">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.status_code">204</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="LatencyOverThreshold" />
 </OTelActivities></Output>

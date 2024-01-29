@@ -268,7 +268,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             
             StringBuilder builder = new StringBuilder();
             builder.Append($"<ACTIVITY source='{activity.Source.Name}' operationName='{activity.OperationName}' displayName='{activity.DisplayName}'>");
-            foreach (KeyValuePair<string, string> tag in activity.Tags)
+            foreach (KeyValuePair<string, object> tag in activity.TagObjects)
             {
                 if (tagsWithStaticValue.Contains(tag.Key))
                 {
