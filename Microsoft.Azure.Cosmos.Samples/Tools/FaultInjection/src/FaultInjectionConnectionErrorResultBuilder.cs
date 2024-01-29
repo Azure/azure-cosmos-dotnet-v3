@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     {
         private readonly FaultInjectionConnectionErrorType connectionErrorType;
         private TimeSpan interval;
-        private double threshold = 1.0;
+        private double thresholdPercentage = 1.0;
 
         /// <summary>
         /// Creates a new instance of the <see cref="FaultInjectionConnectionErrorResult"/>.
@@ -40,21 +40,22 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             this.interval = interval;
             return this;
         }
+
         /// <summary>
         /// Percentage of establised conection that will be impacted by the fault injection.
         /// Values must be between within the range (0, 1].
         /// The default value is 1.
         /// </summary>
-        /// <param name="threshold"></param>
+        /// <param name="thresholdPercentage"></param>
         /// <returns>the <see cref="FaultInjectionConnectionErrorResultBuilder"/>.</returns>
-        public FaultInjectionConnectionErrorResultBuilder WithThreshold(double threshold)
+        public FaultInjectionConnectionErrorResultBuilder WithThreshold(double thresholdPercentage)
         {
-            if (threshold <= 0 || threshold > 1)
+            if (thresholdPercentage <= 0 || thresholdPercentage > 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(threshold), "Argument 'threshold' must be within the range (0, 1].");
+                throw new ArgumentOutOfRangeException(nameof(thresholdPercentage), "Argument 'thresholdPercentage' must be within the range (0, 1].");
             }
 
-            this.threshold = threshold;
+            this.thresholdPercentage = thresholdPercentage;
             return this;
         }
 
@@ -67,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             return new FaultInjectionConnectionErrorResult(
                 this.connectionErrorType,
                 this.interval,
-                this.threshold);
+                this.thresholdPercentage);
         }
     }
 }

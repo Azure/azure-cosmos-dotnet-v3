@@ -12,22 +12,22 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     {
         private readonly FaultInjectionConnectionErrorType connectionErrorType;
         private readonly TimeSpan interval;
-        private readonly double threshold;
+        private readonly double thresholdPercentage;
 
-         /// <summary>
-         /// Creates a new FaultInjectionConnectionErrorResult
-         /// </summary>
-         /// <param name="connectionErrorType">Specifies the connection error type.</param>
-         /// <param name="interval">Timespan representing the ammount of time the SDK will wait before returning the error.</param>
-         /// <param name="threshold">Percentage of the established connections that will be impaceted.</param>
+        /// <summary>
+        /// Creates a new FaultInjectionConnectionErrorResult
+        /// </summary>
+        /// <param name="connectionErrorType">Specifies the connection error type.</param>
+        /// <param name="interval">Timespan representing the ammount of time the SDK will wait before returning the error.</param>
+        /// <param name="thresholdPercentage">Percentage of the established connections that will be impaceted.</param>
         public FaultInjectionConnectionErrorResult(
             FaultInjectionConnectionErrorType connectionErrorType,
             TimeSpan interval,
-            double threshold)
+            double thresholdPercentage)
         {
             this.connectionErrorType = connectionErrorType;
             this.interval = interval;
-            this.threshold = threshold;
+            this.thresholdPercentage = thresholdPercentage;
         }
 
         /// <summary>
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <returns>the threshold represented as a double.</returns>
         public double GetThresholdPercentage()
         {
-            return this.threshold;
+            return this.thresholdPercentage;
         }
 
         /// <summary>
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 "FaultInjectionConnection{{ ConnectionErrorType: {0}, Interval: {1}, Threshold: {2}%}}",
                 this.connectionErrorType,
                 this.interval,
-                this.threshold);
+                this.thresholdPercentage);
         }
     }
 }
