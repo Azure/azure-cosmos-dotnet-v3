@@ -108,12 +108,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                     {
                         if (producedDiagnosticScope.Activity.Id == Activity.Current.Id)
                         {
-                            if (producedDiagnosticScope.Activity.OperationName.Contains("Operation."))
+                            if (producedDiagnosticScope.Activity.OperationName.StartsWith("Operation."))
                             {
                                 AssertActivity.IsValidOperationActivity(producedDiagnosticScope.Activity);
                                 CustomListener.CollectedOperationActivities.Add(producedDiagnosticScope.Activity);
                             }
-                            else if (producedDiagnosticScope.Activity.OperationName.Contains("Request."))
+                            else if (producedDiagnosticScope.Activity.OperationName.StartsWith("Request."))
                             {
                                 CustomListener.CollectedNetworkActivities.Add(producedDiagnosticScope.Activity);
                             }

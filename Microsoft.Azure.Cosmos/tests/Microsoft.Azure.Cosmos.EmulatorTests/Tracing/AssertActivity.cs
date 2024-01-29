@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
     {
         public static void IsValidOperationActivity(Activity activity)
         {
-            if (activity.OperationName.Contains("Operation.", StringComparison.OrdinalIgnoreCase))
+            if (activity.OperationName.StartsWith("Operation.", StringComparison.OrdinalIgnoreCase))
             {
                 Assert.IsFalse(string.IsNullOrEmpty(activity.GetTagItem("db.cosmosdb.connection_mode").ToString()), $"connection mode is empty for {activity.OperationName}");
 
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
             Assert.AreEqual(
                 JsonConvert.SerializeObject(CustomListener.CollectedOperationActivities.OrderBy(x => x.Id)),
                 JsonConvert.SerializeObject(CustomOtelExporter.CollectedActivities
-                    .Where(activity => activity.Source.Name == $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation")
+                    .Where(activity => activity.OperationName.StartsWith("Operation."))
                     .OrderBy(x => x.Id)));
         }
 
@@ -93,11 +93,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
         {
             IList<string> exceptionsForContainerAttribute = new List<string>
             {
-                "CreateDatabaseAsync",
-                "CreateDatabaseIfNotExistsAsync",
-                "ReadAsync",
-                "DeleteAsync",
-                "DeleteStreamAsync"
+                "Operation.CreateDatabaseAsync",
+                "Operation.CreateDatabaseIfNotExistsAsync",
+                "Operation.ReadAsync",
+                "Operation.DeleteAsync",
+                "Operation.DeleteStreamAsync"
             };
             
             if ((tag.Key == OpenTelemetryAttributeKeys.ContainerName && !exceptionsForContainerAttribute.Contains(name)) ||
