@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// Returns the percentage of the established connections that will be impacted. By default, the threshold is 1.
         /// </summary>
         /// <returns>the threshold represented as a double.</returns>
-        public double GetThreshold()
+        public double GetThresholdPercentage()
         {
             return this.threshold;
         }

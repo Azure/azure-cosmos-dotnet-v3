@@ -70,7 +70,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// Used to inject faults on request call
         /// </summary>
         /// <param name="args"></param>
-        /// <param name="faultyResponse"></param>
         /// <returns></returns>
         public async Task<(bool, StoreResponse?)> OnRequestCallAsync(ChannelCallArguments args)
         {

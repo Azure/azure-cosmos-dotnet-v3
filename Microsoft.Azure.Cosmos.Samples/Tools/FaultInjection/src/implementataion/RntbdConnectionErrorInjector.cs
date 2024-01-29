@@ -61,7 +61,7 @@
                         {
                             addresses.ForEach(addressUri => allChannels.Where(channel => channel.GetServerUri().Equals(addressUri)).ToList().ForEach(channel =>
                             {
-                                if (random.NextDouble() < rule.GetResult().GetThreshold())
+                                if (random.NextDouble() < rule.GetResult().GetThresholdPercentage())
                                 {
                                     rule.ApplyRule();
                                     DefaultTrace.TraceInformation("FaultInjection: Injecting {0} connection error rule: {1}, for address {2}", 
@@ -84,7 +84,7 @@
                                     .Equals(this.ParseRntbdEndpointForNormalizedRegion(regionEndpoint))).ToList()
                                 .ForEach(channel =>
                                 {
-                                    if (random.NextDouble() < rule.GetResult().GetThreshold())
+                                    if (random.NextDouble() < rule.GetResult().GetThresholdPercentage())
                                     {
                                         rule.ApplyRule();
                                         DefaultTrace.TraceInformation("FaultInjection: Injecting {0} connection error rule: {1} for region {2}", 
@@ -101,7 +101,7 @@
                         //Case 3: Inject connection error for all endpoints of all regions when there is no specific physical address and region
                         allChannels.ForEach(channel =>
                         {
-                            if (random.NextDouble() < rule.GetResult().GetThreshold())
+                            if (random.NextDouble() < rule.GetResult().GetThresholdPercentage())
                             {
                                 rule.ApplyRule();
                                 DefaultTrace.TraceInformation("FaultInjection: Injecting {0} connection error rule: {1}",
