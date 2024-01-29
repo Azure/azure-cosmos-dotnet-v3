@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private readonly DateTime expireTime;
         private readonly List<Uri> regionEndpoints;
         private readonly List<Uri> addresses;
-        private readonly FaultInjectionConnectionType? connectionType;
+        private readonly FaultInjectionConnectionType connectionType;
         private readonly FaultInjectionConnectionErrorResult result;
         
         private long hitCount;
@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             TimeSpan duration,
             List<Uri> regionEndpoints,
             List<Uri> addresses,
-            FaultInjectionConnectionType? connectionType,
+            FaultInjectionConnectionType connectionType,
             FaultInjectionConnectionErrorResult result)
         {
             this.id = string.IsNullOrEmpty(id) ? throw new ArgumentException("Argument {nameof(id)} cannot be null or empty") : id;

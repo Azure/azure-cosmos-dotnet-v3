@@ -63,7 +63,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
         private void ValidateRule(FaultInjectionRule rule)
         {
-            if (rule.GetCondition().GetConnectionType() == FaultInjectionConnectionType.Direct
+            if ((rule.GetCondition().GetConnectionType() == FaultInjectionConnectionType.Direct
+                || rule.GetCondition().GetConnectionType() == FaultInjectionConnectionType.All)
                 && this.connectionMode != ConnectionMode.Direct)
             {
                 throw new ArgumentException("Direct connection mode is not supported when client is not in direct mode");
@@ -90,10 +91,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             FaultInjectionServerErrorType errorType = ((FaultInjectionServerErrorResult)rule.GetResult()).GetServerErrorType();
             FaultInjectionConditionInternal effectiveCondition = new FaultInjectionConditionInternal();
 
-            FaultInjectionOperationType? operationType = rule.GetCondition().GetOperationType();
-            if ((operationType != null) && this.CanErrorLimitToOperation(errorType))
+            FaultInjectionOperationType operationType = rule.GetCondition().GetOperationType();
+            if ((operationType != FaultInjectionOperationType.All) && this.CanErrorLimitToOperation(errorType))
             {
-                effectiveCondition.SetOperationType(this.GetEffectiveOperationType(operationType.Value));
+                effectiveCondition.SetOperationType(this.GetEffectiveOperationType(operationType));
             }
 
             if (rule.GetCondition().GetEndpoint() != FaultInjectionEndpoint.Empty)
@@ -199,7 +200,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 && errorType != FaultInjectionServerErrorType.ConnectionDelay;
         }
 
-        private OperationType GetEffectiveOperationType(FaultInjectionOperationType? faultInjectionOperationType)
+        private OperationType GetEffectiveOperationType(FaultInjectionOperationType faultInjectionOperationType)
         {
             return faultInjectionOperationType switch
             {
@@ -232,7 +233,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
         private bool IsWriteOnly(FaultInjectionCondition condition)
         {
-            return condition.GetOperationType() != null 
+            return condition.GetOperationType() != FaultInjectionOperationType.All 
                 && this.GetEffectiveOperationType(condition.GetOperationType()).IsWriteOperation();
         }
 

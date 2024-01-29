@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private readonly DateTime expireTime;
         private readonly int hitLimit;
         private readonly ConcurrentDictionary<string, long> hitCountDetails;
-        private readonly FaultInjectionConnectionType? connectionType; 
+        private readonly FaultInjectionConnectionType connectionType; 
         private readonly FaultInjectionConditionInternal condition;
         private readonly FaultInjectionServerErrorResultInternal result;
 
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             TimeSpan delay,
             TimeSpan duration,
             int hitLimit,
-            FaultInjectionConnectionType? connectionType,
+            FaultInjectionConnectionType connectionType,
             FaultInjectionConditionInternal condition,
             FaultInjectionServerErrorResultInternal result)
         {
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             return this.hitCountDetails;
         }
 
-        public FaultInjectionConnectionType? GetConnectionType()
+        public FaultInjectionConnectionType GetConnectionType()
         {
             return this.connectionType;
         }

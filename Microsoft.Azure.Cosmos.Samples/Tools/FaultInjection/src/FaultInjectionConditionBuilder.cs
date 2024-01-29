@@ -11,10 +11,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     /// </summary>
     public sealed class FaultInjectionConditionBuilder
     {
-        private FaultInjectionOperationType operationType;
-        private FaultInjectionConnectionType connectionType;
+        private FaultInjectionOperationType operationType = FaultInjectionOperationType.All;
+        private FaultInjectionConnectionType connectionType = FaultInjectionConnectionType.All;
         private string region = string.Empty;
-        private FaultInjectionEndpoint? endpoint;
+        private FaultInjectionEndpoint endpoint = FaultInjectionEndpoint.Empty;
 
         /// <summary>
         /// Optional. Specifies which operation type rule will target. Once set, the rule will only target requests with this operation type.
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 this.operationType, 
                 this.connectionType, 
                 this.region, 
-                this.endpoint ?? FaultInjectionEndpoint.Empty);
+                this.endpoint);
         }
 
     }

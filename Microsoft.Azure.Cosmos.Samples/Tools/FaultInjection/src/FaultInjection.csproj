@@ -15,7 +15,15 @@
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
 
-	<ItemGroup>
+	<ItemGroup Condition=" '$(SdkProjectRef)' != 'True' AND '$(IsPreview)' != 'True' ">
+		<PackageReference Include="Microsoft.Azure.Cosmos" Version="$(ClientOfficialVersion)" />
+	</ItemGroup>
+	
+	<ItemGroup Condition=" '$(SdkProjectRef)' != 'True' AND '$(IsPreview)' == 'True' ">
+		<PackageReference Include="Microsoft.Azure.Cosmos" Version="$(ClientPreviewVersion)-$(ClientPreviewSuffixVersion)" />
+	</ItemGroup>
+
+	<ItemGroup Condition=" '$(SdkProjectRef)' == 'True' ">
 		<ProjectReference Include="..\..\..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
 	</ItemGroup>
 

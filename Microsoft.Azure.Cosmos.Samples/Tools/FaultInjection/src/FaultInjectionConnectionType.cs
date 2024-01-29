@@ -14,8 +14,13 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         Direct,
 
         /// <summary>
-        /// Client using Gateway Mode
+        /// Client using Gateway Mode CURRENTLY NOT SUPPORTED
         /// </summary>
         Gateway,
+
+        /// <summary>
+        /// All connection types. Default value.
+        /// </summary>
+        All,
     }
 }

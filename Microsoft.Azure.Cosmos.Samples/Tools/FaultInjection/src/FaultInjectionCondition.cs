@@ -10,8 +10,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     /// </summary>
     public sealed class FaultInjectionCondition
     {
-        private readonly FaultInjectionOperationType? operationType;
-        private readonly FaultInjectionConnectionType? connectionType;
+        private readonly FaultInjectionOperationType operationType;
+        private readonly FaultInjectionConnectionType connectionType;
         private readonly string region;
         private readonly FaultInjectionEndpoint endpoint;
 
@@ -22,25 +22,23 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <param name="connectionType">Specifies which connection type rule will target.</param>
         /// <param name="region">Specifies wich region the rule will target.</param>
         /// <param name="endpoint">Specifies which endpoint the rule will tareget.</param>
-        /// <param name="databaseName">Specifies which database the rule will target.</param>
-        /// <param name="containerName">Specifies which container the rule will target.</param>
         public FaultInjectionCondition(
-            FaultInjectionOperationType operationType,
-            FaultInjectionConnectionType connectionType,
-            string region,
-            FaultInjectionEndpoint endpoint)
+            FaultInjectionOperationType? operationType = null,
+            FaultInjectionConnectionType? connectionType = null,
+            string? region = null,
+            FaultInjectionEndpoint? endpoint = null)
         {
-            this.operationType = operationType;
-            this.connectionType = connectionType;
-            this.region = region;
-            this.endpoint = endpoint;
+            this.operationType = operationType ?? FaultInjectionOperationType.All;
+            this.connectionType = connectionType ?? FaultInjectionConnectionType.All;
+            this.region = region ?? string.Empty;
+            this.endpoint = endpoint ?? FaultInjectionEndpoint.Empty;
         }
 
         /// <summary>
         /// The operation type the rule will target.
         /// </summary>
         /// <returns>the <see cref="FaultInjectionOperationType"/>.</returns>
-        public FaultInjectionOperationType? GetOperationType() 
+        public FaultInjectionOperationType GetOperationType() 
         { 
             return this.operationType;
         }
@@ -49,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// The connection type the rule will target.
         /// </summary>
         /// <returns>the <see cref="FaultInjectionConnectionType"/>.</returns>
-        public FaultInjectionConnectionType? GetConnectionType()
+        public FaultInjectionConnectionType GetConnectionType()
         {
             return this.connectionType;
         }
@@ -60,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <returns>the region represented as a string.</returns>
         public string GetRegion()
         {
-            return this.region;
+            return this.region ?? string.Empty;
         }
 
         /// <summary>

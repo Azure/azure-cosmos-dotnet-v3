@@ -71,7 +71,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         {
             foreach (FaultInjectionServerErrorRule rule in this.serverResponseErrorRuleSet.Keys)
             {
-                if (rule.GetConnectionType() == FaultInjectionConnectionType.Direct
+                if ((rule.GetConnectionType() == FaultInjectionConnectionType.Direct
+                    || rule.GetConnectionType() == FaultInjectionConnectionType.All)
                     && rule.IsApplicable(args))
                 {
                     return rule;
@@ -85,7 +86,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         {
             foreach (FaultInjectionServerErrorRule rule in this.serverResponseDelayRuleSet.Keys)
             {
-                if (rule.GetConnectionType() == FaultInjectionConnectionType.Direct
+                if ((rule.GetConnectionType() == FaultInjectionConnectionType.Direct 
+                    || rule.GetConnectionType() == FaultInjectionConnectionType.All)
                     && rule.IsApplicable(args))
                 {
                     return rule;
@@ -102,7 +104,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         {
             foreach (FaultInjectionServerErrorRule rule in this.serverConnectionDelayRuleSet.Keys)
             {
-                if (rule.GetConnectionType() == FaultInjectionConnectionType.Direct
+                if ((rule.GetConnectionType() == FaultInjectionConnectionType.Direct 
+                    || rule.GetConnectionType() == FaultInjectionConnectionType.All)
                     && rule.IsApplicable(
                         callUri,
                         request,

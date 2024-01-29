@@ -42,5 +42,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// Patch items.
         /// </summary>  
         PatchItem,
+
+        /// <summary>
+        /// All operation types. Default value.
+        /// </summary>
+        All,
     }
 }
