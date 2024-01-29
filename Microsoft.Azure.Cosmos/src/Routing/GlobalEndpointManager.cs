@@ -121,27 +121,10 @@ namespace Microsoft.Azure.Cosmos.Routing
             Func<Uri, Task<AccountProperties>> getDatabaseAccountFn,
             CancellationToken cancellationToken)
         {
-            IList<Uri> serviceEndpoints = new List<Uri>()
-            {
-                // Add the default endpoint to the service endpoints list.
-                defaultEndpoint
-            };
-
-            if (customPrivateEndpoints != null
-                && customPrivateEndpoints.Count > 0)
-            {
-                foreach (string customEndpoint in customPrivateEndpoints)
-                {
-                    // Add all of the custom private endpoints to the service endpoints list.
-                    serviceEndpoints.Add(
-                        new Uri(customEndpoint));
-                }
-            }
-
             using (GetAccountPropertiesHelper threadSafeGetAccountHelper = new GetAccountPropertiesHelper(
                defaultEndpoint,
-               locations?.GetEnumerator(),
-               serviceEndpoints.GetEnumerator(),
+               locations,
+               customPrivateEndpoints,
                getDatabaseAccountFn,
                cancellationToken))
             {
@@ -166,16 +149,19 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             public GetAccountPropertiesHelper(
                 Uri defaultEndpoint,
-                IEnumerator<string>? locations,
-                IEnumerator<Uri> serviceEndpointEnumerator,
+                IList<string>? locations,
+                IList<string> customPrivateEndpoints,
                 Func<Uri, Task<AccountProperties>> getDatabaseAccountFn,
                 CancellationToken cancellationToken)
             {
                 this.DefaultEndpoint = defaultEndpoint;
-                this.Locations = locations;
+                this.Locations = locations?.GetEnumerator();
                 this.GetDatabaseAccountFn = getDatabaseAccountFn;
-                this.ServiceEndpointEnumerator = serviceEndpointEnumerator;
                 this.CancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                this.ServiceEndpointEnumerator = GetAccountPropertiesHelper.GetServiceEndpointEnumerator(
+                    defaultEndpoint,
+                    locations,
+                    customPrivateEndpoints);
             }
 
             public async Task<AccountProperties> GetAccountPropertiesAsync()
@@ -186,39 +172,29 @@ namespace Microsoft.Azure.Cosmos.Routing
                     return await this.GetOnlyGlobalEndpointAsync();
                 }
 
-                // We first iterate through all the service endpoints, including the
-                // global and private endpoints to fetch the account information. If all the
-                // attempt fails to fetch the metadata, we will append the preferred region name
-                // as a suffix to the default global endpoint, and try to retrieve the account
-                // information.
-                HashSet<Task> tasksToWaitOn = new ();
-                while (this.ServiceEndpointEnumerator.MoveNext())
+                Task globalEndpointTask = this.GetAndUpdateAccountPropertiesAsync(this.DefaultEndpoint);
+
+                // Start a timer to start secondary requests in parallel.
+                Task timerTask = Task.Delay(TimeSpan.FromSeconds(5));
+                await Task.WhenAny(globalEndpointTask, timerTask);
+                if (this.AccountProperties != null)
                 {
-                    Task serviceEndpointTask = this.GetAndUpdateAccountPropertiesAsync(
-                        endpoint: this.ServiceEndpointEnumerator.Current);
+                    return this.AccountProperties;
+                }
 
-                    // Start a timer to start secondary requests in parallel.
-                    Task timerTask = Task.Delay(TimeSpan.FromSeconds(5));
-                    await Task.WhenAny(serviceEndpointTask, timerTask);
-                    if (this.AccountProperties != null)
-                    {
-                        return this.AccountProperties;
-                    }
-                    else
-                    {
-                        tasksToWaitOn.Add(serviceEndpointTask);
-                    }
-
-                    if (this.NonRetriableException != null)
-                    {
-                        ExceptionDispatchInfo.Capture(this.NonRetriableException).Throw();
-                    }
+                if (this.NonRetriableException != null)
+                {
+                    ExceptionDispatchInfo.Capture(this.NonRetriableException).Throw();
                 }
 
                 // Start 2 additional tasks to try to get the account information
                 // from the preferred region list since global account has not succeed yet.
-                tasksToWaitOn.Add(this.TryGetAccountPropertiesFromAllLocationsAsync());
-                tasksToWaitOn.Add(this.TryGetAccountPropertiesFromAllLocationsAsync());
+                HashSet<Task> tasksToWaitOn = new HashSet<Task>
+                {
+                    globalEndpointTask,
+                    this.TryGetAccountPropertiesFromAllLocationsAsync(),
+                    this.TryGetAccountPropertiesFromAllLocationsAsync()
+                };
 
                 while (tasksToWaitOn.Any())
                 {
@@ -287,46 +263,20 @@ namespace Microsoft.Azure.Cosmos.Routing
             /// </summary>
             private async Task TryGetAccountPropertiesFromAllLocationsAsync()
             {
-                while (this.TryMoveNextLocationThreadSafe(
-                        out string? location))
+                if (this.CancellationTokenSource.IsCancellationRequested)
                 {
-                    if (location == null)
-                    {
-                        DefaultTrace.TraceCritical("GlobalEndpointManager: location is null for TryMoveNextLocationThreadSafe");
-                        return;
-                    }
-
-                    await this.TryGetAccountPropertiesFromRegionalEndpointsAsync(location);
-                }
-            }
-
-            private bool TryMoveNextLocationThreadSafe(
-                out string? location)
-            {
-                if (this.CancellationTokenSource.IsCancellationRequested
-                    || this.Locations == null)
-                {
-                    location = null;
-                    return false;
+                    return;
                 }
 
-                lock (this.Locations)
+                // We first iterate through all the private endpoints to fetch the account information.
+                // If all the attempt fails to fetch the metadata from the private endpoints, we will
+                // attempt to retrieve the account information from the regional endpoints constructed
+                // using the preferred regions list.
+                while (this.ServiceEndpointEnumerator.MoveNext())
                 {
-                    if (!this.Locations.MoveNext())
-                    {
-                        location = null;
-                        return false;
-                    }
-
-                    location = this.Locations.Current;
-                    return true;
+                    await this.GetAndUpdateAccountPropertiesAsync(
+                        endpoint: this.ServiceEndpointEnumerator.Current);
                 }
-            }
-
-            private Task TryGetAccountPropertiesFromRegionalEndpointsAsync(string location)
-            {
-                return this.GetAndUpdateAccountPropertiesAsync(
-                    LocationHelper.GetLocationEndpoint(this.DefaultEndpoint, location));
             }
 
             private async Task GetAndUpdateAccountPropertiesAsync(Uri endpoint)
@@ -379,6 +329,49 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
 
                 return false;
+            }
+
+            /// <summary>
+            /// Returns an enumerator containing the private and regional service endpoints to iterate over.
+            /// </summary>
+            /// <param name="defaultEndpoint">An instance of <see cref="Uri"/> containing the default global endpoint.</param>
+            /// <param name="locations">An instance of <see cref="IList{T}"/> containing the preferred location names.</param>
+            /// <param name="customPrivateEndpoints">An instance of <see cref="IList{T}"/> containing the private endpoints.</param>
+            /// <returns>An instance of <see cref="IEnumerator{T}"/> containing the service endpoints.</returns>
+            private static IEnumerator<Uri> GetServiceEndpointEnumerator(
+                Uri defaultEndpoint,
+                IList<string>? locations,
+                IList<string> customPrivateEndpoints)
+            {
+                // We first iterate through all the private endpoints and add them to the service endpoints list.
+                IList<Uri> serviceEndpoints = new List<Uri>();
+
+                if (customPrivateEndpoints != null
+                    && customPrivateEndpoints.Count > 0)
+                {
+                    foreach (string customEndpoint in customPrivateEndpoints)
+                    {
+                        // Add all of the custom private endpoints to the service endpoints list.
+                        serviceEndpoints.Add(
+                            new Uri(customEndpoint));
+                    }
+                }
+
+                // The next step is to construct and add all of the regional endpoints to the service endpoints list.
+                // The regional endpoints will be created by appending the preferred region name as a suffix to the
+                // default global endpoint.
+                if (locations != null
+                    && locations.Count > 0)
+                {
+                    foreach (string location in locations)
+                    {
+                        // Add all of the regional endpoints to the service endpoints list.
+                        serviceEndpoints.Add(
+                            LocationHelper.GetLocationEndpoint(defaultEndpoint, location));
+                    }
+                }
+
+                return serviceEndpoints.GetEnumerator();
             }
 
             public void Dispose()
