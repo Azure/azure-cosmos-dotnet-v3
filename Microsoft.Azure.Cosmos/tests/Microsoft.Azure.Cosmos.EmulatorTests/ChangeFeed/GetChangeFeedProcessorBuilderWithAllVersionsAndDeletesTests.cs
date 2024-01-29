@@ -51,8 +51,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             ChangeFeedProcessor processor = this.Container
                 .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: "processor", onChangesHandler: (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItemChange<dynamic>> docs, CancellationToken token) =>
                 {
-                    Console.WriteLine($"number of documents processed: {docs.Count}");
-
                     string id = default;
                     string pk = default;
                     string description = default;
@@ -118,7 +116,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     Assert.IsTrue(condition: replaceChange.Metadata.ConflictResolutionTimestamp < deleteChange.Metadata.ConflictResolutionTimestamp, message: "The replace operation must happen before the delete operation.");
                     Assert.IsTrue(condition: createChange.Metadata.Lsn < replaceChange.Metadata.Lsn, message: "The create operation must happen before the replace operation.");
                     Assert.IsTrue(condition: createChange.Metadata.Lsn < replaceChange.Metadata.Lsn, message: "The replace operation must happen before the delete operation.");
-                    
+
+                    Console.WriteLine("Assertions completed.");
+
                     return Task.CompletedTask;
                 })
                 .WithInstanceName(Guid.NewGuid().ToString())

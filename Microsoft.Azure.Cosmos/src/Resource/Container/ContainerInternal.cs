@@ -148,6 +148,9 @@ namespace Microsoft.Azure.Cosmos
             FeedRange feedRange,
             CancellationToken cancellationToken = default);
 
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
+            string processorName,
+            ChangeFeedHandler<ChangeFeedItemChange<T>> onChangesHandler);
 #endif
 
         public abstract class TryExecuteQueryResult
