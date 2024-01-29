@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             //No query specified.
-            return new LinqQuery(sqlQuerySpec: null, clientOperation: ClientOperation.None);
+            return new LinqQuery(sqlQuerySpec: null, scalarOperationKind: ScalarOperationKind.None);
         }
 
         private static LinqQuery HandleMethodCallExpression(
@@ -134,11 +134,11 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
             else if (value.GetType() == typeof(SqlQuerySpec))
             {
-                return new LinqQuery((SqlQuerySpec)value, ClientOperation.None);
+                return new LinqQuery((SqlQuerySpec)value, ScalarOperationKind.None);
             }
             else if (value.GetType() == typeof(string))
             {
-                return new LinqQuery(new SqlQuerySpec((string)value), ClientOperation.None);
+                return new LinqQuery(new SqlQuerySpec((string)value), ScalarOperationKind.None);
             }
             else
             {

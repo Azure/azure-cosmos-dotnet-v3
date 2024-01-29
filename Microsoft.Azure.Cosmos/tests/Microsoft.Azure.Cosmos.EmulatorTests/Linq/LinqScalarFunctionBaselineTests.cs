@@ -112,6 +112,20 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     .Take(10)
                     .FirstOrDefault()));
 
+            inputs.Add(new LinqScalarFunctionInput(
+                "Select -> Skip -> Take -> FirstOrDefault",
+                b => getQuery(b)
+                    .Select(data => data)
+                    .Skip(5)
+                    .Take(5)
+                    .FirstOrDefault()));
+
+            inputs.Add(new LinqScalarFunctionInput(
+                "Skip -> FirstOrDefault",
+                b => getQuery(b)
+                    .Skip(3)
+                    .FirstOrDefault()));
+
             ///////////////////////////////////////////////////
             // Positive cases - With no results
             ///////////////////////////////////////////////////
@@ -173,22 +187,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 b => getQuery(b)
                     .Select(data => new List<int> { 1, 2, 3 }.FirstOrDefault())
                     .Min()));
-
-            // ERROR - A TOP cannot be used in the same query or subquery as an OFFSET.
-            inputs.Add(new LinqScalarFunctionInput(
-                "Select -> Skip -> Take -> FirstOrDefault",
-                b => getQuery(b)
-                    .Select(data => data)
-                    .Skip(5)
-                    .Take(5)
-                    .FirstOrDefault()));
-
-            // ERROR - A TOP cannot be used in the same query or subquery as an OFFSET.
-            inputs.Add(new LinqScalarFunctionInput(
-                "Skip -> FirstOrDefault",
-                b => getQuery(b)
-                    .Skip(3)
-                    .FirstOrDefault()));
 
             this.ExecuteTestSuite(inputs);
         }
@@ -271,7 +269,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
         public string SerializedResults { get; }
 
-        public LinqScalarFunctionOutput(string sqlQuery, string errorMessage, string serializedResults)
+        internal LinqScalarFunctionOutput(string sqlQuery, string errorMessage, string serializedResults)
         {
             this.SqlQuery = sqlQuery;
             this.ErrorMessage = errorMessage;
@@ -312,7 +310,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             this.Expression = expression;
         }
 
-        internal Expression<Func<bool, object>> Expression { get; }
+        public Expression<Func<bool, object>> Expression { get; }
 
         public override void SerializeAsXml(XmlWriter xmlWriter)
         {

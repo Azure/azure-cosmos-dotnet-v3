@@ -114,6 +114,32 @@ FROM root]]></SqlQuery>
   </Result>
   <Result>
     <Input>
+      <Description><![CDATA[Select -> Skip -> Take -> FirstOrDefault]]></Description>
+      <Expression><![CDATA[query.Select(data => data).Skip(5).Take(5).FirstOrDefault()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+OFFSET 5 LIMIT 5]]></SqlQuery>
+      <SerializedResults><![CDATA[{  "id": "5",  "Number": 5000,  "Pk": "Test",  "Flag": false,  "Multiples": [    5,    10,    15,    20  ]}]]></SerializedResults>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip -> FirstOrDefault]]></Description>
+      <Expression><![CDATA[query.Skip(3).FirstOrDefault()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+OFFSET 3 LIMIT 2147483647]]></SqlQuery>
+      <SerializedResults><![CDATA[{  "id": "3",  "Number": 3000,  "Pk": "Test",  "Flag": false,  "Multiples": [    3,    6,    9,    12  ]}]]></SerializedResults>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
       <Description><![CDATA[FirstOrDefault (default)]]></Description>
       <Expression><![CDATA[query.Where(data => (data.Flag AndAlso Not(data.Flag))).FirstOrDefault()]]></Expression>
     </Input>
@@ -199,34 +225,6 @@ WHERE (root["Flag"] AND (NOT root["Flag"]))]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
       <ErrorMessage><![CDATA[Method 'FirstOrDefault' is not supported.]]></ErrorMessage>
-      <SerializedResults><![CDATA[null]]></SerializedResults>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description><![CDATA[Select -> Skip -> Take -> FirstOrDefault]]></Description>
-      <Expression><![CDATA[query.Select(data => data).Skip(5).Take(5).FirstOrDefault()]]></Expression>
-    </Input>
-    <Output>
-      <SqlQuery><![CDATA[
-SELECT TOP 1 VALUE root 
-FROM root 
-OFFSET 5 LIMIT 5]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":0,"end":50},"code":"SC2205","message":"A TOP cannot be used in the same query or subquery as an OFFSET."}]},0x800A0B00]]></ErrorMessage>
-      <SerializedResults><![CDATA[null]]></SerializedResults>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description><![CDATA[Skip -> FirstOrDefault]]></Description>
-      <Expression><![CDATA[query.Skip(3).FirstOrDefault()]]></Expression>
-    </Input>
-    <Output>
-      <SqlQuery><![CDATA[
-SELECT TOP 1 VALUE root 
-FROM root 
-OFFSET 3 LIMIT 2147483647]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":0,"end":59},"code":"SC2205","message":"A TOP cannot be used in the same query or subquery as an OFFSET."}]},0x800A0B00]]></ErrorMessage>
       <SerializedResults><![CDATA[null]]></SerializedResults>
     </Output>
   </Result>

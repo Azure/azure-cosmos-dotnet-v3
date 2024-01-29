@@ -11,14 +11,14 @@ namespace Microsoft.Azure.Cosmos.Linq
     /// </summary>
     internal class LinqQuery
     {
-        public LinqQuery(SqlQuerySpec sqlQuerySpec, ClientOperation clientOperation)
+        public LinqQuery(SqlQuerySpec sqlQuerySpec, ScalarOperationKind scalarOperationKind)
         {
             this.SqlQuerySpec = sqlQuerySpec;
-            this.ClientOperation = clientOperation;
+            this.ScalarOperationKind = scalarOperationKind;
         }
 
         public SqlQuerySpec SqlQuerySpec { get; }
 
-        public ClientOperation ClientOperation { get; }
+        public ScalarOperationKind ScalarOperationKind { get; }
     }
 }

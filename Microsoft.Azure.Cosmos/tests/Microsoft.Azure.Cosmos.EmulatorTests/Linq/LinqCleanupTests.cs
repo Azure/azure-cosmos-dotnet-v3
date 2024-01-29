@@ -15,11 +15,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
     /// <summary>
     /// Contains test that cleans up databases left over during debugging of LINQ tests.
+    /// This test does not run by default, but automates the process of deleting the databases left over during debugging session.
     /// </summary>
     [TestClass]
     public class LinqCleanupTests
     {
-        // [Ignore]
+        [Ignore]
         [TestMethod]
         public async Task CleanupLinqTestDatabases()
         {

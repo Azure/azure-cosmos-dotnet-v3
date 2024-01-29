@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             IDictionary<object, string> parameters)
         {
             inputExpression = ConstantEvaluator.PartialEval(inputExpression);
-            SqlQuery query = ExpressionToSql.TranslateQuery(inputExpression, parameters, linqSerializerOptions, out ClientOperation clientOperation);
+            SqlQuery query = ExpressionToSql.TranslateQuery(inputExpression, parameters, linqSerializerOptions, out ScalarOperationKind clientOperation);
             SqlParameterCollection sqlParameters = new SqlParameterCollection();
             if (parameters != null && parameters.Count > 0)
             {

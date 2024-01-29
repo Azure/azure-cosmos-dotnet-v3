@@ -8,12 +8,11 @@ namespace Microsoft.Azure.Cosmos.Linq
     /// Represents the operation that needs to be performed on the client side.
     /// </summary>
     /// <remarks>
-    /// At the moment, this enum only represents non-aggregate scalar operations such as FirstOrDefault.
-    /// Furthermore, scalar operations are disallowed in sub-expressions/sub-queries.
+    /// This enum represents scalar operations such as FirstOrDefault. Scalar operations are disallowed in sub-expressions/sub-queries.
     /// With these restrictations, enum is sufficient, but in future for a larger surface area we may need 
     ///   to use an object model like ClientQL to represent these operations better.
     /// </remarks>
-    internal enum ClientOperation
+    internal enum ScalarOperationKind
     {
         /// <summary>
         /// Indicates that client does not need to perform any operation on query results.

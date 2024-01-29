@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             Expression inputExpression,
             IDictionary<object, string> parameters,
             CosmosLinqSerializerOptionsInternal linqSerializerOptions,
-            out ClientOperation clientOperation)
+            out ScalarOperationKind clientOperation)
         {
             TranslationContext context = new TranslationContext(linqSerializerOptions, parameters);
             ExpressionToSql.Translate(inputExpression, context); // ignore result here
@@ -1156,22 +1156,67 @@ namespace Microsoft.Azure.Cosmos.Linq
             context.PushSubqueryBinding(shouldBeOnNewQuery);
             switch (inputExpression.Method.Name)
             {
-                case LinqMethods.Select:
+                case LinqMethods.Any:
                     {
-                        SqlSelectClause select = ExpressionToSql.VisitSelect(inputExpression.Arguments, context);
+                        result = new Collection(string.Empty);
+
+                        if (inputExpression.Arguments.Count == 2)
+                        {
+                            // Any is translated to an SELECT VALUE EXISTS() where Any operation itself is treated as a Where.
+                            SqlWhereClause where = ExpressionToSql.VisitWhere(inputExpression.Arguments, context);
+                            context.CurrentQuery = context.CurrentQuery.AddWhereClause(where, context);
+                        }
+                        break;
+                    }
+                case LinqMethods.Average:
+                    {
+                        SqlSelectClause select = ExpressionToSql.VisitAggregateFunction(inputExpression.Arguments, context, SqlFunctionCallScalarExpression.Names.Avg);
                         context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
                         break;
                     }
-                case LinqMethods.Where:
+                case LinqMethods.Count:
                     {
-                        SqlWhereClause where = ExpressionToSql.VisitWhere(inputExpression.Arguments, context);
-                        context.CurrentQuery = context.CurrentQuery.AddWhereClause(where, context);
+                        SqlSelectClause select = ExpressionToSql.VisitCount(inputExpression.Arguments, context);
+                        context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
                         break;
                     }
-                case LinqMethods.SelectMany:
+                case LinqMethods.Distinct:
                     {
-                        context.CurrentQuery = context.PackageCurrentQueryIfNeccessary();
-                        result = ExpressionToSql.VisitSelectMany(inputExpression.Arguments, context);
+                        SqlSelectClause select = ExpressionToSql.VisitDistinct(inputExpression.Arguments, context);
+                        context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
+                        break;
+                    }
+                case LinqMethods.FirstOrDefault:
+                    {
+                        if (inputExpression.Arguments.Count == 1)
+                        {
+                            // TOP is not allowed when OFFSET ... LIMIT is present.
+                            if (!context.CurrentQuery.HasOffsetSpec())
+                            {
+                                SqlNumberLiteral sqlNumberLiteral = SqlNumberLiteral.Create(1);
+                                SqlTopSpec topSpec = SqlTopSpec.Create(sqlNumberLiteral);
+                                context.CurrentQuery = context.CurrentQuery.AddTopSpec(topSpec);
+                            }
+
+                            context.SetClientOperation(ScalarOperationKind.FirstOrDefault);
+                        }
+                        else
+                        {
+                            throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.InvalidArgumentsCount, inputExpression.Method.Name, 0, inputExpression.Arguments.Count - 1));
+                        }
+
+                        break;
+                    }
+                case LinqMethods.Max:
+                    {
+                        SqlSelectClause select = ExpressionToSql.VisitAggregateFunction(inputExpression.Arguments, context, SqlFunctionCallScalarExpression.Names.Max);
+                        context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
+                        break;
+                    }
+                case LinqMethods.Min:
+                    {
+                        SqlSelectClause select = ExpressionToSql.VisitAggregateFunction(inputExpression.Arguments, context, SqlFunctionCallScalarExpression.Names.Min);
+                        context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
                         break;
                     }
                 case LinqMethods.OrderBy:
@@ -1186,22 +1231,28 @@ namespace Microsoft.Azure.Cosmos.Linq
                         context.CurrentQuery = context.CurrentQuery.AddOrderByClause(orderBy, context);
                         break;
                     }
-                case LinqMethods.ThenBy:
+                case LinqMethods.Select:
                     {
-                        SqlOrderByClause thenBy = ExpressionToSql.VisitOrderBy(inputExpression.Arguments, false, context);
-                        context.CurrentQuery = context.CurrentQuery.UpdateOrderByClause(thenBy, context);
+                        SqlSelectClause select = ExpressionToSql.VisitSelect(inputExpression.Arguments, context);
+                        context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
                         break;
                     }
-                case LinqMethods.ThenByDescending:
+                case LinqMethods.SelectMany:
                     {
-                        SqlOrderByClause thenBy = ExpressionToSql.VisitOrderBy(inputExpression.Arguments, true, context);
-                        context.CurrentQuery = context.CurrentQuery.UpdateOrderByClause(thenBy, context);
+                        context.CurrentQuery = context.PackageCurrentQueryIfNeccessary();
+                        result = ExpressionToSql.VisitSelectMany(inputExpression.Arguments, context);
                         break;
                     }
                 case LinqMethods.Skip:
                     {
                         SqlOffsetSpec offsetSpec = ExpressionToSql.VisitSkip(inputExpression.Arguments, context);
                         context.CurrentQuery = context.CurrentQuery.AddOffsetSpec(offsetSpec, context);
+                        break;
+                    }
+                case LinqMethods.Sum:
+                    {
+                        SqlSelectClause select = ExpressionToSql.VisitAggregateFunction(inputExpression.Arguments, context, SqlFunctionCallScalarExpression.Names.Sum);
+                        context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
                         break;
                     }
                 case LinqMethods.Take:
@@ -1218,71 +1269,22 @@ namespace Microsoft.Azure.Cosmos.Linq
                         }
                         break;
                     }
-                case LinqMethods.Distinct:
+                case LinqMethods.ThenBy:
                     {
-                        SqlSelectClause select = ExpressionToSql.VisitDistinct(inputExpression.Arguments, context);
-                        context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
+                        SqlOrderByClause thenBy = ExpressionToSql.VisitOrderBy(inputExpression.Arguments, false, context);
+                        context.CurrentQuery = context.CurrentQuery.UpdateOrderByClause(thenBy, context);
                         break;
                     }
-                case LinqMethods.Max:
+                case LinqMethods.ThenByDescending:
                     {
-                        SqlSelectClause select = ExpressionToSql.VisitAggregateFunction(inputExpression.Arguments, context, SqlFunctionCallScalarExpression.Names.Max);
-                        context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
+                        SqlOrderByClause thenBy = ExpressionToSql.VisitOrderBy(inputExpression.Arguments, true, context);
+                        context.CurrentQuery = context.CurrentQuery.UpdateOrderByClause(thenBy, context);
                         break;
                     }
-                case LinqMethods.Min:
+                case LinqMethods.Where:
                     {
-                        SqlSelectClause select = ExpressionToSql.VisitAggregateFunction(inputExpression.Arguments, context, SqlFunctionCallScalarExpression.Names.Min);
-                        context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
-                        break;
-                    }
-                case LinqMethods.Average:
-                    {
-                        SqlSelectClause select = ExpressionToSql.VisitAggregateFunction(inputExpression.Arguments, context, SqlFunctionCallScalarExpression.Names.Avg);
-                        context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
-                        break;
-                    }
-                case LinqMethods.Count:
-                    {
-                        SqlSelectClause select = ExpressionToSql.VisitCount(inputExpression.Arguments, context);
-                        context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
-                        break;
-                    }
-                case LinqMethods.Sum:
-                    {
-                        SqlSelectClause select = ExpressionToSql.VisitAggregateFunction(inputExpression.Arguments, context, SqlFunctionCallScalarExpression.Names.Sum);
-                        context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
-                        break;
-                    }
-                case LinqMethods.Any:
-                    {
-                        result = new Collection(string.Empty);
-
-                        // ISSUE-TODO-adityasa-2024/1/26 - Investigate what happens in cases when argCount != 2?
-                        if (inputExpression.Arguments.Count == 2)
-                        {
-                            // Any is translated to an SELECT VALUE EXISTS() where Any operation itself is treated as a Where.
-                            SqlWhereClause where = ExpressionToSql.VisitWhere(inputExpression.Arguments, context);
-                            context.CurrentQuery = context.CurrentQuery.AddWhereClause(where, context);
-                        }
-                        break;
-                    }
-                case LinqMethods.FirstOrDefault:
-                    {
-                        if (inputExpression.Arguments.Count == 1)
-                        {
-                            SqlNumberLiteral sqlNumberLiteral;
-                            bool success = TryGetSqlNumberLiteral(1, out sqlNumberLiteral);
-                            Debug.Assert(success, "ExpressionToSQL Assert!", "SqlNumberLiteral Construction must succeed!");
-                            SqlTopSpec topSpec = SqlTopSpec.Create(sqlNumberLiteral);
-                            context.CurrentQuery = context.CurrentQuery.AddTopSpec(topSpec);
-                            context.SetClientOperation(ClientOperation.FirstOrDefault);
-                        }
-                        else
-                        {
-                            throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.InvalidArgumentsCount, inputExpression.Method.Name, 0, inputExpression.Arguments.Count - 1));
-                        }
-
+                        SqlWhereClause where = ExpressionToSql.VisitWhere(inputExpression.Arguments, context);
+                        context.CurrentQuery = context.CurrentQuery.AddWhereClause(where, context);
                         break;
                     }
                 default:

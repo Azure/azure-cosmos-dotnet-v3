@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq.Expressions;
     using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.SqlObjects;
@@ -72,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private static readonly MemberNames DefaultMemberNames = new MemberNames(new CosmosLinqSerializerOptions());
 
-        private ClientOperation? clientOperation;
+        private ScalarOperationKind? clientOperation;
 
         public TranslationContext(CosmosLinqSerializerOptionsInternal linqSerializerOptionsInternal, IDictionary<object, string> parameters = null)
         {
@@ -105,17 +106,14 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
         }
 
-        public ClientOperation ClientOperation => this.clientOperation ?? ClientOperation.None;
+        public ScalarOperationKind ClientOperation => this.clientOperation ?? ScalarOperationKind.None;
 
-        public void SetClientOperation(ClientOperation clientOperation)
+        public void SetClientOperation(ScalarOperationKind clientOperation)
         {
-            if (this.clientOperation != null)
-            {
-                // Currently all client operations are scalar expressions which cannot be nested or chained.
-                // At some point we may need to relax this requirement at which point client operation is best
-                //  represented by a nested/chained structure.
-                throw new InvalidOperationException("ClientOperation can be set at most once!");
-            }
+            // CosmosLinqQuery which is the only indirect sole consumer of this class can only see at most one scalar operation at the top level, since the return type of scalar operation is no longer IQueryable<T>.
+            // Furthermore, any nested scalar operations (on nested properties of type IEnumerable) are not handled in the same way as the top level operations.
+            // As a result clientOperation can only be set at most once.
+            Debug.Assert(this.clientOperation == null, "TranslationContext Assert!", "ClientOperation can be set at most once!");
 
             this.clientOperation = clientOperation;
         }

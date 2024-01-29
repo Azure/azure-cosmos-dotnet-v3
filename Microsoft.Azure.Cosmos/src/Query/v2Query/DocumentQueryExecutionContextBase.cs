@@ -136,9 +136,9 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     LinqQuery linqQuery = DocumentQueryEvaluator.Evaluate(this.expression);
 
-                    if (linqQuery.ClientOperation != ClientOperation.None)
+                    if (linqQuery.ScalarOperationKind != ScalarOperationKind.None)
                     {
-                        throw new NotSupportedException($"This operation does not support the supplied LINQ expression since it involves client side operation : {linqQuery.ClientOperation}");
+                        throw new NotSupportedException($"This operation does not support the supplied LINQ expression since it involves client side operation : {linqQuery.ScalarOperationKind}");
                     }
 
                     this.querySpec = linqQuery.SqlQuerySpec;
