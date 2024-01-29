@@ -6904,6 +6904,11 @@
           "Attributes": [],
           "MethodInfo": "System.String MalaysiaSouth;IsInitOnly:False;IsStatic:True;"
         },
+        "System.String MexicoCentral": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String MexicoCentral;IsInitOnly:False;IsStatic:True;"
+        },
         "System.String NorthCentralUS": {
           "Type": "Field",
           "Attributes": [],
@@ -6958,6 +6963,11 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String SouthIndia;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String SpainCentral": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String SpainCentral;IsInitOnly:False;IsStatic:True;"
         },
         "System.String SwedenCentral": {
           "Type": "Field",
