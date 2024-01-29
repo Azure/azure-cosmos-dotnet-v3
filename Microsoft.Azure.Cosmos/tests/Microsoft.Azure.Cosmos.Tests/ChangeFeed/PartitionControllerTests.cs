@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             this.partitionProcessor = MockPartitionProcessor();
             this.leaseRenewer = MockRenewer();
             this.observer = Mock.Of<ChangeFeedObserver>();
-            this.partitionSupervisorFactory = Mock.Of<PartitionSupervisorFactory>(f => f.Create(this.lease, ChangeFeedMode.LatestVersion) == new PartitionSupervisorCore(this.lease, this.observer, this.partitionProcessor, this.leaseRenewer));
+            this.partitionSupervisorFactory = Mock.Of<PartitionSupervisorFactory>(f => f.Create(this.lease) == new PartitionSupervisorCore(this.lease, this.observer, this.partitionProcessor, this.leaseRenewer));
 
             this.leaseManager = Mock.Of<DocumentServiceLeaseManager>();
             Mock.Get(this.leaseManager).Reset(); // Reset implicit/by default setup of properties.
@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             this.synchronizer = Mock.Of<PartitionSynchronizer>();
             this.healthMonitor = new Mock<ChangeFeedProcessorHealthMonitor>();
-            this.sut = new PartitionControllerCore(leaseContainer, this.leaseManager, this.partitionSupervisorFactory, this.synchronizer, this.healthMonitor.Object, ChangeFeedMode.LatestVersion);
+            this.sut = new PartitionControllerCore(leaseContainer, this.leaseManager, this.partitionSupervisorFactory, this.synchronizer, this.healthMonitor.Object);
         }
 
         [TestInitialize]
@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             FeedProcessor processorDuplicate = MockPartitionProcessor();
             Mock.Get(this.partitionSupervisorFactory)
-                .Setup(f => f.Create(this.lease, ChangeFeedMode.LatestVersion))
+                .Setup(f => f.Create(this.lease))
                 .Returns(new PartitionSupervisorCore(this.lease, this.observer, processorDuplicate, this.leaseRenewer));
 
             await this.sut.AddOrUpdateLeaseAsync(this.lease).ConfigureAwait(false);
@@ -173,7 +173,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 .Returns("partitionId2");
 
             Mock.Get(this.partitionSupervisorFactory)
-                .Setup(f => f.Create(lease2, ChangeFeedMode.LatestVersion))
+                .Setup(f => f.Create(lease2))
                 .Returns(new PartitionSupervisorCore(lease2, this.observer, MockPartitionProcessor(), this.leaseRenewer));
 
             await this.sut.AddOrUpdateLeaseAsync(this.lease).ConfigureAwait(false);
@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             FeedProcessor partitionProcessor2 = MockPartitionProcessor();
             Mock.Get(this.partitionSupervisorFactory)
-                .Setup(f => f.Create(lease2, ChangeFeedMode.LatestVersion))
+                .Setup(f => f.Create(lease2))
                 .Returns(new PartitionSupervisorCore(lease2, this.observer, partitionProcessor2, this.leaseRenewer));
 
             await this.sut.AddOrUpdateLeaseAsync(this.lease).ConfigureAwait(false);
@@ -225,7 +225,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 .Reset();
 
             Mock.Get(this.partitionSupervisorFactory)
-                .Setup(f => f.Create(this.lease, ChangeFeedMode.LatestVersion))
+                .Setup(f => f.Create(this.lease))
                 .Returns(new PartitionSupervisorCore(this.lease, this.observer, this.partitionProcessor, this.leaseRenewer));
 
             await this.sut.AddOrUpdateLeaseAsync(this.lease).ConfigureAwait(false);
@@ -256,7 +256,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 });
 
             Mock.Get(this.partitionSupervisorFactory)
-                .Setup(f => f.Create(this.lease, ChangeFeedMode.LatestVersion))
+                .Setup(f => f.Create(this.lease))
                 .Returns(supervisor.Object);
 
             await this.sut.AddOrUpdateLeaseAsync(this.lease).ConfigureAwait(false);
@@ -300,7 +300,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 });
 
             Mock.Get(this.partitionSupervisorFactory)
-                .Setup(f => f.Create(this.lease, ChangeFeedMode.LatestVersion))
+                .Setup(f => f.Create(this.lease))
                 .Returns(supervisor.Object);
 
             await this.sut.AddOrUpdateLeaseAsync(this.lease).ConfigureAwait(false);

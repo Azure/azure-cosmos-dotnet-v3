@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             this.partitionProcessorFactory = partitionProcessorFactory ?? throw new ArgumentNullException(nameof(partitionProcessorFactory));
         }
 
-        public override PartitionSupervisor Create(DocumentServiceLease lease, ChangeFeedMode mode)
+        public override PartitionSupervisor Create(DocumentServiceLease lease)
         {
             if (lease == null)
             {

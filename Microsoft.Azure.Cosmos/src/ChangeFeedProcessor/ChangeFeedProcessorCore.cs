@@ -121,8 +121,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 this.documentServiceLeaseStoreManager.LeaseManager, 
                 partitionSuperviserFactory, 
                 synchronizer,
-                this.changeFeedProcessorOptions.HealthMonitor,
-                this.changeFeedProcessorOptions.Mode);
+                this.changeFeedProcessorOptions.HealthMonitor);
 
             PartitionLoadBalancerCore partitionLoadBalancer = new PartitionLoadBalancerCore(
                 partitionController,
