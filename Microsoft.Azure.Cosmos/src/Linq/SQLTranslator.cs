@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             return scalarExpression.ToString();
         }
 
-        internal static LinqQuery TranslateQuery(
+        internal static LinqQueryOperation TranslateQuery(
             Expression inputExpression,
             CosmosLinqSerializerOptionsInternal linqSerializerOptions,
             IDictionary<object, string> parameters)
@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             string queryText = query.ToString();
 
             SqlQuerySpec sqlQuerySpec = new SqlQuerySpec(queryText, sqlParameters);
-            return new LinqQuery(sqlQuerySpec, clientOperation);
+            return new LinqQueryOperation(sqlQuerySpec, clientOperation);
         }
     }
 }

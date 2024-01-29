@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     {
         private const string SQLMethod = "AsSQL";
 
-        public static LinqQuery Evaluate(
+        public static LinqQueryOperation Evaluate(
             Expression expression,
             CosmosLinqSerializerOptionsInternal linqSerializerOptions = null,
             IDictionary<object, string> parameters = null)
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// foreach(Database db in client.CreateDatabaseQuery()) {}        
         /// </summary>
         /// <param name="expression"></param>
-        private static LinqQuery HandleEmptyQuery(ConstantExpression expression)
+        private static LinqQueryOperation HandleEmptyQuery(ConstantExpression expression)
         {
             if (expression.Value == null)
             {
@@ -71,10 +71,10 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             //No query specified.
-            return new LinqQuery(sqlQuerySpec: null, scalarOperationKind: ScalarOperationKind.None);
+            return new LinqQueryOperation(sqlQuerySpec: null, scalarOperationKind: ScalarOperationKind.None);
         }
 
-        private static LinqQuery HandleMethodCallExpression(
+        private static LinqQueryOperation HandleMethodCallExpression(
             MethodCallExpression expression,
             IDictionary<object, string> parameters,
             CosmosLinqSerializerOptionsInternal linqSerializerOptions = null)
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// foreach(string record in client.CreateDocumentQuery().Navigate("Raw JQuery"))
         /// </summary>
         /// <param name="expression"></param>
-        private static LinqQuery HandleAsSqlTransformExpression(MethodCallExpression expression)
+        private static LinqQueryOperation HandleAsSqlTransformExpression(MethodCallExpression expression)
         {
             Expression paramExpression = expression.Arguments[1];
 
@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
         }
 
-        private static LinqQuery GetSqlQuerySpec(object value)
+        private static LinqQueryOperation GetSqlQuerySpec(object value)
         {
             if (value == null)
             {
@@ -134,11 +134,11 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
             else if (value.GetType() == typeof(SqlQuerySpec))
             {
-                return new LinqQuery((SqlQuerySpec)value, ScalarOperationKind.None);
+                return new LinqQueryOperation((SqlQuerySpec)value, ScalarOperationKind.None);
             }
             else if (value.GetType() == typeof(string))
             {
-                return new LinqQuery(new SqlQuerySpec((string)value), ScalarOperationKind.None);
+                return new LinqQueryOperation(new SqlQuerySpec((string)value), ScalarOperationKind.None);
             }
             else
             {

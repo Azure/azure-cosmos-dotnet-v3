@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (!this.isExpressionEvaluated)
                 {
-                    LinqQuery linqQuery = DocumentQueryEvaluator.Evaluate(this.expression);
+                    LinqQueryOperation linqQuery = DocumentQueryEvaluator.Evaluate(this.expression);
 
                     if (linqQuery.ScalarOperationKind != ScalarOperationKind.None)
                     {

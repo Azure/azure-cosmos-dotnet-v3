@@ -150,14 +150,14 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public QueryDefinition ToQueryDefinition(IDictionary<object, string> parameters = null)
         {
-            LinqQuery linqQuery = DocumentQueryEvaluator.Evaluate(this.Expression, this.linqSerializationOptions, parameters);
-            ScalarOperationKind scalarOperationKind = linqQuery.ScalarOperationKind;
+            LinqQueryOperation linqQueryOperation = DocumentQueryEvaluator.Evaluate(this.Expression, this.linqSerializationOptions, parameters);
+            ScalarOperationKind scalarOperationKind = linqQueryOperation.ScalarOperationKind;
             Debug.Assert(
                 scalarOperationKind == ScalarOperationKind.None,
                 "CosmosLinqQuery Assert!",
                 $"Unexpected client operation. Expected 'None', Received '{scalarOperationKind}'");
 
-            return QueryDefinition.CreateFromQuerySpec(linqQuery.SqlQuerySpec);
+            return QueryDefinition.CreateFromQuerySpec(linqQueryOperation.SqlQuerySpec);
         }
 
         public FeedIterator<T> ToFeedIterator()
@@ -262,11 +262,11 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private FeedIteratorInternal CreateStreamIterator(bool isContinuationExcpected, out ScalarOperationKind scalarOperationKind)
         {
-            LinqQuery querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.linqSerializationOptions);
-            scalarOperationKind = querySpec.ScalarOperationKind;
+            LinqQueryOperation linqQueryOperation = DocumentQueryEvaluator.Evaluate(this.Expression, this.linqSerializationOptions);
+            scalarOperationKind = linqQueryOperation.ScalarOperationKind;
 
             return this.container.GetItemQueryStreamIteratorInternal(
-                sqlQuerySpec: querySpec.SqlQuerySpec,
+                sqlQuerySpec: linqQueryOperation.SqlQuerySpec,
                 isContinuationExcpected: isContinuationExcpected,
                 continuationToken: this.continuationToken,
                 feedRange: null,

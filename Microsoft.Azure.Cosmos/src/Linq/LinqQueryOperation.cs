@@ -9,9 +9,9 @@ namespace Microsoft.Azure.Cosmos.Linq
     /// <summary>
     /// Represents a linq expression as a combination of sql query and client operation.
     /// </summary>
-    internal class LinqQuery
+    internal class LinqQueryOperation
     {
-        public LinqQuery(SqlQuerySpec sqlQuerySpec, ScalarOperationKind scalarOperationKind)
+        public LinqQueryOperation(SqlQuerySpec sqlQuerySpec, ScalarOperationKind scalarOperationKind)
         {
             this.SqlQuerySpec = sqlQuerySpec;
             this.ScalarOperationKind = scalarOperationKind;
