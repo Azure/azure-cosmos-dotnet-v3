@@ -108,12 +108,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                     {
                         if (producedDiagnosticScope.Activity.Id == Activity.Current.Id)
                         {
-                            if (producedDiagnosticScope.Activity.Source.Name.EndsWith("Operation"))
+                            if (producedDiagnosticScope.Activity.OperationName.Contains("Operation."))
                             {
                                 AssertActivity.IsValidOperationActivity(producedDiagnosticScope.Activity);
                                 CustomListener.CollectedOperationActivities.Add(producedDiagnosticScope.Activity);
                             }
-                            else if (producedDiagnosticScope.Activity.Source.Name.EndsWith("Request"))
+                            else if (producedDiagnosticScope.Activity.OperationName.Contains("Request."))
                             {
                                 CustomListener.CollectedNetworkActivities.Add(producedDiagnosticScope.Activity);
                             }
@@ -302,8 +302,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .OrderBy(act => 
                             act.Source.Name + 
                             act.OperationName + 
-                            act.GetTagItem("tcp.status_code") + 
-                            act.GetTagItem("tcp.sub_status_code"))
+                            act.GetTagItem("rntbd.status_code") + 
+                            act.GetTagItem("rntbd.sub_status_code"))
                 .ToList();
             foreach (Activity activity in orderedUniqueNetworkActivities)
             {
@@ -369,15 +369,15 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             public bool Equals(Activity x, Activity y)
             {
-                string xData = x.Source.Name + x.OperationName + x.GetTagItem("tcp.status_code") + x.GetTagItem("tcp.sub_status_code");
-                string yData = y.Source.Name + y.OperationName + y.GetTagItem("tcp.status_code") + y.GetTagItem("tcp.sub_status_code");
+                string xData = x.Source.Name + x.OperationName + x.GetTagItem("rntbd.status_code") + x.GetTagItem("rntbd.sub_status_code");
+                string yData = y.Source.Name + y.OperationName + y.GetTagItem("rntbd.status_code") + y.GetTagItem("rntbd.sub_status_code");
 
                 return xData.Equals(yData, StringComparison.OrdinalIgnoreCase);
             }
 
             public int GetHashCode(Activity obj)
             {
-                return (obj.Source.Name + obj.OperationName + obj.GetTagItem("tcp.status_code") + obj.GetTagItem("tcp.sub_status_code")).GetHashCode() ;
+                return (obj.Source.Name + obj.OperationName + obj.GetTagItem("rntbd.status_code") + obj.GetTagItem("rntbd.sub_status_code")).GetHashCode() ;
             }
         }
 

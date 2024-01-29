@@ -148,6 +148,7 @@
   </ACTIVITY>
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
+  <EVENT name="Exception" />
 </OTelActivities></Output>
   </Result>
   <Result>
