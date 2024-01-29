@@ -36,22 +36,22 @@
         /// Gets all application of fault injection rules by DateTime, RuleId, ActivityId
         /// </summary>
         /// <returns><see cref="BlockingCollection{T}"/> of Application Time, RuleId, ActivityId</returns>
-        public BlockingCollection<(DateTime, string, Guid)> GetAllApplications()
+        public BlockingCollection<(DateTime, string, Guid)> GetAllRuleApplications()
         {
             return this.values;
         }
 
-        public ConcurrentDictionary<string, List<(DateTime, Guid)>> GetApplicationsByRuleId()
+        public ConcurrentDictionary<string, List<(DateTime, Guid)>> GetRuleApplicationsByRuleId()
         {
             return this.applicationsByRuleId;
         }
 
-        public ConcurrentDictionary<Guid, (DateTime, string)> GetApplicationsByActivityId()
+        public ConcurrentDictionary<Guid, (DateTime, string)> GetRuleApplicationsByActivityId()
         {
             return this.applicationsByActivityId;
         }
 
-        public List<(DateTime, Guid)>? GetApplicationByRuleId(string ruleId)
+        public List<(DateTime, Guid)>? GetRuleApplicationByRuleId(string ruleId)
         {
             if (this.applicationsByRuleId.TryGetValue(ruleId, out List<(DateTime, Guid)>? application))
             {
@@ -61,7 +61,7 @@
             return null;
         }
 
-        public (DateTime, string)? GetApplicationByActivityId(Guid activityId)
+        public (DateTime, string)? GetRuleApplicationByActivityId(Guid activityId)
         {
             if (this.applicationsByActivityId.TryGetValue(activityId, out (DateTime, string) application))
             {

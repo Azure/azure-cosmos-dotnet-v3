@@ -190,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <returns>the fault injection rule id</returns>
         public string GetFaultInjectionRuleId(Guid activityId)
         {
-            return this.applicationContext.GetApplicationByActivityId(activityId)?.Item2.ToString() ?? string.Empty;
+            return this.applicationContext.GetRuleApplicationByActivityId(activityId)?.Item2.ToString() ?? string.Empty;
         }
 
         public FaultInjectionApplicationContext GetApplicationContext()
