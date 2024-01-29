@@ -462,7 +462,7 @@ namespace Microsoft.Azure.Cosmos
                 new ChangeFeedObserverFactoryCore<T>(onChangesDelegate, this.ClientContext.SerializerCore),
                 withManualCheckpointing: false);
             return this.GetChangeFeedProcessorBuilderPrivate(processorName,
-                observerFactory, ChangeFeedMode.Incremental);
+                observerFactory, ChangeFeedMode.LatestVersion);
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
