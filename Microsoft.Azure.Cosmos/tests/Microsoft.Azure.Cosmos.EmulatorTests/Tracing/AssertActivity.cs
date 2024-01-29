@@ -60,7 +60,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
                      "exception.message",
                      "exception.stacktrace",
                      "db.cosmosdb.activity_id",
-                     "db.cosmosdb.correlated_activity_id"
+                     "db.cosmosdb.correlated_activity_id",
+                     "error.type"
                 };
 
                 foreach (KeyValuePair<string, string> actualTag in activity.Tags)
