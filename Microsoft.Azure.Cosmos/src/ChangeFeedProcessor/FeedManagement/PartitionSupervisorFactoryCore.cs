@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             }
 
             ChangeFeedObserver changeFeedObserver = this.observerFactory.CreateObserver();
-            FeedProcessor processor = this.partitionProcessorFactory.Create(lease, changeFeedObserver, mode);
+            FeedProcessor processor = this.partitionProcessorFactory.Create(lease, changeFeedObserver);
             LeaseRenewerCore renewer = new LeaseRenewerCore(lease, this.leaseManager, this.changeFeedLeaseOptions.LeaseRenewInterval);
 
             return new PartitionSupervisorCore(lease, changeFeedObserver, processor, renewer);

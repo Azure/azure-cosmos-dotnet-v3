@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
 
     [TestClass]
     [TestCategory("ChangeFeedProcessor with AllVersionsAndDeletes")]

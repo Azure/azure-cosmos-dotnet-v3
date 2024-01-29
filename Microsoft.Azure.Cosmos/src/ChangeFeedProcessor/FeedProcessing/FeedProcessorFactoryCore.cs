@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             this.leaseCheckpointer = leaseCheckpointer ?? throw new ArgumentNullException(nameof(leaseCheckpointer));
         }
 
-        public override FeedProcessor Create(DocumentServiceLease lease, ChangeFeedObserver observer, ChangeFeedMode mode)
+        public override FeedProcessor Create(DocumentServiceLease lease, ChangeFeedObserver observer)
         {
             if (observer == null) throw new ArgumentNullException(nameof(observer));
             if (lease == null) throw new ArgumentNullException(nameof(lease));
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             PartitionCheckpointerCore checkpointer = new PartitionCheckpointerCore(this.leaseCheckpointer, lease);
             ChangeFeedPartitionKeyResultSetIteratorCore iterator = ChangeFeedPartitionKeyResultSetIteratorCore.Create(
                 lease: lease,
-                mode: mode,
+                mode: this.changeFeedProcessorOptions.Mode,
                 continuationToken: options.StartContinuation,
                 maxItemCount: options.MaxItemCount,
                 container: this.container,

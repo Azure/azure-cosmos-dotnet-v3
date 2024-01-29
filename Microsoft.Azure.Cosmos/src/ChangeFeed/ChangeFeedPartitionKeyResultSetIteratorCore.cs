@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     }
 
                     // Add the necessary mode headers
-                    mode.Accept(requestMessage);
+                    this.mode.Accept(requestMessage);
                 },
                 feedRange: this.changeFeedStartFrom.FeedRange,
                 streamPayload: default,
