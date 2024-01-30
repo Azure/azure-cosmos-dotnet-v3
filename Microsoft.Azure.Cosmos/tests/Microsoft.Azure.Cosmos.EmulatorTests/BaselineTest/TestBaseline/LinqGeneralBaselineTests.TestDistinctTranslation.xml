@@ -404,7 +404,7 @@ JOIN (
     WHERE (LENGTH(v2["FamilyName"]) > 10) 
     ORDER BY v2 ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest","message":"Message: {"Errors":["Order-by over correlated collections is not supported."]}rn]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -423,7 +423,7 @@ JOIN (
     WHERE ((LENGTH(v2["FamilyName"]) > 10) AND (LENGTH(v2["FamilyName"]) < 20)) 
     ORDER BY v2 ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest","message":"Message: {"Errors":["Order-by over correlated collections is not supported."]}rn]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -442,7 +442,7 @@ JOIN (
     WHERE ((LENGTH(v2["FamilyName"]) > 10) AND (LENGTH(v2["FamilyName"]) < 20)) 
     ORDER BY v2 ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest","message":"Message: {"Errors":["Order-by over correlated collections is not supported."]}rn]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -482,7 +482,7 @@ JOIN (
     WHERE (LENGTH(v2["FamilyName"]) > 10) 
     ORDER BY v2 ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest","message":"Message: {"Errors":["Order-by over correlated collections is not supported."]}rn]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -559,7 +559,7 @@ JOIN (
     WHERE (LENGTH(v2["FamilyName"]) > 10) 
     ORDER BY v2 ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest","message":"Message: {"Errors":["Order-by over correlated collections is not supported."]}rn]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -578,7 +578,7 @@ JOIN (
     WHERE (LENGTH(v2["FamilyName"]) > 10) 
     ORDER BY v2 ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest","message":"Message: {"Errors":["Order-by over correlated collections is not supported."]}rn]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -597,7 +597,7 @@ JOIN (
     WHERE (LENGTH(v2["FamilyName"]) > 10) 
     ORDER BY v2["GivenName"]["Length"] ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest","message":"Message: {"Errors":["Order-by over correlated collections is not supported."]}rn]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -616,7 +616,7 @@ JOIN (
     WHERE (LENGTH(v2["FamilyName"]) > 10) 
     ORDER BY v2["GivenName"]["Length"] ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest","message":"Message: {"Errors":["Order-by over correlated collections is not supported."]}rn]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -635,7 +635,7 @@ JOIN (
     WHERE (LENGTH(v2["FamilyName"]) > 10) 
     ORDER BY v2 ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest","message":"Message: {"Errors":["Order-by over correlated collections is not supported."]}rn]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -654,7 +654,7 @@ JOIN (
     WHERE (LENGTH(v2["FamilyName"]) > 10) 
     ORDER BY v2 ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest","message":"Message: {"Errors":["Order-by over correlated collections is not supported."]}rn]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -689,7 +689,7 @@ JOIN (
     JOIN v0 IN root["Parents"]) AS v2 
     ORDER BY v2["FamilyName"] ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest","message":"Message: {"Errors":["Order-by over correlated collections is not supported."]}rn]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -707,7 +707,7 @@ JOIN (
     JOIN v0 IN root["Parents"]) AS v2 
     ORDER BY v2["FamilyName"] ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest","message":"Message: {"Errors":["Order-by over correlated collections is not supported."]}rn]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -773,7 +773,7 @@ JOIN (
     JOIN p0 IN root["Parents"]) AS v1 
     ORDER BY v1 ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest","message":"Message: {"Errors":["Order-by over correlated collections is not supported."]}rn]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -792,7 +792,7 @@ JOIN (
     WHERE (LENGTH(v1) > 10) 
     ORDER BY v1 ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest","message":"Message: {"Errors":["Order-by over correlated collections is not supported."]}rn]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
