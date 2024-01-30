@@ -25,6 +25,22 @@
     {
         [TestMethod]
         [Owner("brchon")]
+        public void TestIndexAdvisorQueryPlan()
+        {
+            List<QueryPlanBaselineTestInput> testVariations = new List<QueryPlanBaselineTestInput>
+            {
+                Hash(
+                @"Baseline",
+                @"SELECT VALUE COUNT(1) FROM c WHERE c.customerId = ""df165b31-7641-4664-9549-37862ed806ee"" AND c.label = 'popular'",
+                @"/customerId", @"/id")
+            };
+
+            this.ExecuteTestSuite(testVariations);
+        }
+
+
+        [TestMethod]
+        [Owner("brchon")]
         public void Aggregates()
         {
             List<QueryPlanBaselineTestInput> testVariations = new List<QueryPlanBaselineTestInput>

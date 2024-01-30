@@ -1613,6 +1613,44 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
+        public async Task TestIndexMetrics()
+        {
+            CosmosClient client = new CosmosClient(@"AccountEndpoint=https://adityasa-test3.documents.azure.com:443/;AccountKey=dUdhSz38OZpPZnUrmBzJNbHajUjjeYuFWmWFsnF9ykoL39jbzTP4x7rrmxmspmQL6vuENJMpUVrCPMKzC0TScg==");
+            var customerId = Guid.Parse("df165b31-7641-4664-9549-37862ed806ee");
+            var label = "popular";
+            // var database = client.GetDatabase("AggregationIssue");
+            var nonSubpartitionedContainer = client.GetContainer("AggregationIssue", "NonSubpartitioned");
+            var subpartitionedContainer = client.GetContainer("AggregationIssue", "Subpartitioned");
+
+            await AnalyzeQueryAsync(nonSubpartitionedContainer, customerId, label, new Microsoft.Azure.Cosmos.PartitionKey(customerId.ToString()));
+            await AnalyzeQueryAsync(subpartitionedContainer, customerId, label, new Microsoft.Azure.Cosmos.PartitionKey(customerId.ToString()));
+            await AnalyzeQueryAsync(subpartitionedContainer, customerId, label, partitionKey: null);
+        }
+#nullable enable
+        static async Task AnalyzeQueryAsync(Container container, Guid customerId, string label, Microsoft.Azure.Cosmos.PartitionKey? partitionKey)
+        {
+            var requestOptions = new QueryRequestOptions
+            {
+                PopulateIndexMetrics = true,
+                PartitionKey = partitionKey
+            };
+            var queryDefinition = new QueryDefinition("SELECT VALUE COUNT(1) FROM c WHERE c.customerId = @customerId AND c.label = @label")
+                .WithParameter("@customerId", customerId)
+                .WithParameter("@label", label);
+            var iterator = container.GetItemQueryIterator<long>(queryDefinition, requestOptions: requestOptions);
+            var response = await iterator.ReadNextAsync();
+            var partitionKeyText = partitionKey.HasValue ? partitionKey.Value.ToString() : "<none>";
+            var indexUtilizationMetrics = response.IndexMetrics;
+
+            Console.WriteLine();
+            Console.WriteLine($"Container: {container.Id}");
+            Console.WriteLine($"Partition key: {partitionKeyText}");
+            Console.WriteLine($"Request charge: {response.RequestCharge:n2}");
+            Console.WriteLine($"Index Metrics: {response.IndexMetrics}");
+            Console.WriteLine($"Index Utilization Text: {response.Headers.IndexUtilizationText}");
+        }
+#nullable disable
+        [TestMethod]
         public void TestDistinctTranslation()
         {
             static LinqTestInput DistinctTestInput(string description, System.Linq.Expressions.Expression<Func<bool, IQueryable>> expr)
