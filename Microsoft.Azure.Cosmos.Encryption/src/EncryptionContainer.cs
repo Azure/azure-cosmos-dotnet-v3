@@ -592,51 +592,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 });
         }
 
-#if SDKPROJECTREF
-        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
-            string processorName,
-            ChangeFeedHandler<ChangeFeedItemChange<T>> onChangesDelegate)
-        {
-            return this.Container.GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName,
-                async (
-                        ChangeFeedProcessorContext context,
-    IReadOnlyCollection<ChangeFeedItemChange<JObject>> documents,
-    CancellationToken cancellationToken) =>
-                {
-                    List<ChangeFeedItemChange<T>> decryptedItems = new List<ChangeFeedItemChange<T>>();
-
-                    foreach (ChangeFeedItemChange<JObject> document in documents)
-                    {
-                        T decryptedCurrent = default;
-                        if (document.Current != null)
-                        {
-                            decryptedCurrent = await this.DecryptChangeFeedDocumentAsync<T>(
-                                document.Current, cancellationToken);
-                        }
-
-                        T decryptedPrevious = default;
-                        if (document.Previous != null)
-                        {
-                            decryptedPrevious = await this.DecryptChangeFeedDocumentAsync<T>(
-                                document.Previous, cancellationToken);
-                        }
-
-                        ChangeFeedItemChange<T> item = new ChangeFeedItemChange<T>
-                        {
-                            Current = decryptedCurrent,
-                            Previous = decryptedPrevious,
-                            Metadata = document.Metadata,
-                        };
-
-                        decryptedItems.Add(item);
-                    }
-
-                    // Call the original passed in delegate
-                    await onChangesDelegate(context, decryptedItems, cancellationToken);
-                });
-        }
-#endif
-
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint<T>(
             string processorName,
             ChangeFeedHandlerWithManualCheckpoint<T> onChangesDelegate)
@@ -800,20 +755,47 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return this.Container.GetPartitionKeyRangesAsync(feedRange, cancellationToken);
         }
 
-        /// <summary>
-        /// Initializes a <see cref="GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes"/> for change feed processing with all versions and deletes.
-        /// </summary>
-        /// <typeparam name="T">Document type</typeparam>
-        /// <param name="processorName">A name that identifies the Processor and the particular work it will do.</param>
-        /// <param name="onChangesHandler">Delegate to receive all changes and deletes</param>
-        /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
             string processorName,
-            ChangeFeedHandler<ChangeFeedItemChange<T>> onChangesHandler)
+            ChangeFeedHandler<ChangeFeedItemChange<T>> onChangesDelegate)
         {
-            return this.Container.GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(
-                processorName, 
-                onChangesHandler);
+            return this.Container.GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName,
+                async (
+                        ChangeFeedProcessorContext context,
+    IReadOnlyCollection<ChangeFeedItemChange<JObject>> documents,
+    CancellationToken cancellationToken) =>
+                {
+                    List<ChangeFeedItemChange<T>> decryptedItems = new List<ChangeFeedItemChange<T>>();
+
+                    foreach (ChangeFeedItemChange<JObject> document in documents)
+                    {
+                        T decryptedCurrent = default;
+                        if (document.Current != null)
+                        {
+                            decryptedCurrent = await this.DecryptChangeFeedDocumentAsync<T>(
+                                document.Current, cancellationToken);
+                        }
+
+                        T decryptedPrevious = default;
+                        if (document.Previous != null)
+                        {
+                            decryptedPrevious = await this.DecryptChangeFeedDocumentAsync<T>(
+                                document.Previous, cancellationToken);
+                        }
+
+                        ChangeFeedItemChange<T> item = new ChangeFeedItemChange<T>
+                        {
+                            Current = decryptedCurrent,
+                            Previous = decryptedPrevious,
+                            Metadata = document.Metadata,
+                        };
+
+                        decryptedItems.Add(item);
+                    }
+
+                    // Call the original passed in delegate
+                    await onChangesDelegate(context, decryptedItems, cancellationToken);
+                });
         }
 #endif
 
