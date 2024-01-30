@@ -807,7 +807,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="processorName">A name that identifies the Processor and the particular work it will do.</param>
         /// <param name="onChangesHandler">Delegate to receive all changes and deletes</param>
         /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
-        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
+        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
             string processorName,
             ChangeFeedHandler<ChangeFeedItemChange<T>> onChangesHandler);
 #endif
