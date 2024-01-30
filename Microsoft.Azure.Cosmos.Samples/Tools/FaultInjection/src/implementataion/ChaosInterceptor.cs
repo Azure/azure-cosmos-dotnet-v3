@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             FaultInjectionServerErrorRule? serverResponseErrorRule = this.ruleStore?.FindRntbdServerResponseErrorRule(args);
             if (serverResponseErrorRule != null)
             {
-                this.applicationContext.AddRuleApplication(serverResponseErrorRule.GetId(), args.CommonArguments.ActivityId);
+                this.applicationContext.AddRuleExecution(serverResponseErrorRule.GetId(), args.CommonArguments.ActivityId);
 
                 faultyResponse = serverResponseErrorRule.GetInjectedServerError(args);
 
@@ -124,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             {
                 serverConnectionDelayRule.GetDelay();
              
-                this.applicationContext.AddRuleApplication(serverConnectionDelayRule.GetId(), activityId);
+                this.applicationContext.AddRuleExecution(serverConnectionDelayRule.GetId(), activityId);
 
                 DefaultTrace.TraceInformation("FaultInjection: FaultInjection Rule {0} Inserted {1} duration connection delay for request {2}",
                                     serverConnectionDelayRule.GetId(), serverConnectionDelayRule.GetDelay(), activityId);
@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                        
             if (serverResponseDelayRule != null)
             {
-                this.applicationContext.AddRuleApplication(serverResponseDelayRule.GetId(), args.CommonArguments.ActivityId);
+                this.applicationContext.AddRuleExecution(serverResponseDelayRule.GetId(), args.CommonArguments.ActivityId);
                 TimeSpan delay = serverResponseDelayRule.GetDelay();
 
                 DefaultTrace.TraceInformation("FaultInjection: FaultInjection Rule {0} Inserted {1} duration response delay for request {2}",
@@ -173,7 +173,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
             if (serverResponseDelayRule != null)
             {
-                this.applicationContext.AddRuleApplication(serverResponseDelayRule.GetId(), args.CommonArguments.ActivityId);
+                this.applicationContext.AddRuleExecution(serverResponseDelayRule.GetId(), args.CommonArguments.ActivityId);
                 TimeSpan delay = serverResponseDelayRule.GetDelay();
 
                 DefaultTrace.TraceInformation("FaultInjection: FaultInjection Rule {0} Inserted {1} duration response delay for request {2}",
@@ -190,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <returns>the fault injection rule id</returns>
         public string GetFaultInjectionRuleId(Guid activityId)
         {
-            return this.applicationContext.GetRuleApplicationByActivityId(activityId)?.Item2.ToString() ?? string.Empty;
+            return this.applicationContext.GetRuleExecutionsByActivityId(activityId)?.Item2.ToString() ?? string.Empty;
         }
 
         public FaultInjectionApplicationContext GetApplicationContext()

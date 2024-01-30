@@ -6,66 +6,66 @@
     public class FaultInjectionApplicationContext
     { 
 
-        private readonly ConcurrentDictionary<string, List<(DateTime, Guid)>> applicationsByRuleId;
-        private readonly ConcurrentDictionary<Guid, (DateTime, string)> applicationsByActivityId;
+        private readonly ConcurrentDictionary<string, List<(DateTime, Guid)>> executionsByRuleId;
+        private readonly ConcurrentDictionary<Guid, (DateTime, string)> executionsByActivityId;
         private readonly BlockingCollection<(DateTime, string, Guid)> values;
         
         public FaultInjectionApplicationContext()
         {
-            this.applicationsByActivityId = new ConcurrentDictionary<Guid, (DateTime, string)>();
-            this.applicationsByRuleId = new ConcurrentDictionary<string, List<(DateTime, Guid)>>();
+            this.executionsByActivityId = new ConcurrentDictionary<Guid, (DateTime, string)>();
+            this.executionsByRuleId = new ConcurrentDictionary<string, List<(DateTime, Guid)>>();
             this.values = new BlockingCollection<(DateTime, string, Guid)>();
         }      
         
-        public void AddRuleApplication(string ruleId, Guid activityId)
+        public void AddRuleExecution(string ruleId, Guid activityId)
         {
-            if (!this.applicationsByRuleId.ContainsKey(ruleId))
+            if (!this.executionsByRuleId.ContainsKey(ruleId))
             {
-                this.applicationsByRuleId.TryAdd(ruleId, new List<(DateTime, Guid)>() { (DateTime.UtcNow, activityId)});
+                this.executionsByRuleId.TryAdd(ruleId, new List<(DateTime, Guid)>() { (DateTime.UtcNow, activityId)});
             }
             else
             {
-                this.applicationsByRuleId[ruleId].Add((DateTime.UtcNow, activityId));
+                this.executionsByRuleId[ruleId].Add((DateTime.UtcNow, activityId));
             }
 
-            this.applicationsByActivityId.TryAdd(activityId, (DateTime.UtcNow, ruleId));
+            this.executionsByActivityId.TryAdd(activityId, (DateTime.UtcNow, ruleId));
             this.values.Add((DateTime.UtcNow, ruleId, activityId));
         }
 
         /// <summary>
-        /// Gets all application of fault injection rules by DateTime, RuleId, ActivityId
+        /// Gets all execution of fault injection rules by DateTime, RuleId, ActivityId
         /// </summary>
-        /// <returns><see cref="BlockingCollection{T}"/> of Application Time, RuleId, ActivityId</returns>
-        public BlockingCollection<(DateTime, string, Guid)> GetAllRuleApplications()
+        /// <returns><see cref="BlockingCollection{T}"/> of Execution Time, RuleId, ActivityId</returns>
+        public BlockingCollection<(DateTime, string, Guid)> GetAllRuleExecutions()
         {
             return this.values;
         }
 
-        public ConcurrentDictionary<string, List<(DateTime, Guid)>> GetRuleApplicationsByRuleId()
+        public ConcurrentDictionary<string, List<(DateTime, Guid)>> GetAllRuleExecutionsByRuleId()
         {
-            return this.applicationsByRuleId;
+            return this.executionsByRuleId;
         }
 
-        public ConcurrentDictionary<Guid, (DateTime, string)> GetRuleApplicationsByActivityId()
+        public ConcurrentDictionary<Guid, (DateTime, string)> GetAllRuleExecutionsByActivityId()
         {
-            return this.applicationsByActivityId;
+            return this.executionsByActivityId;
         }
 
-        public List<(DateTime, Guid)>? GetRuleApplicationByRuleId(string ruleId)
+        public List<(DateTime, Guid)>? GetRuleExecutionsByRuleId(string ruleId)
         {
-            if (this.applicationsByRuleId.TryGetValue(ruleId, out List<(DateTime, Guid)>? application))
+            if (this.executionsByRuleId.TryGetValue(ruleId, out List<(DateTime, Guid)>? execution))
             {
-                return application;
+                return execution;
             }
 
             return null;
         }
 
-        public (DateTime, string)? GetRuleApplicationByActivityId(Guid activityId)
+        public (DateTime, string)? GetRuleExecutionsByActivityId(Guid activityId)
         {
-            if (this.applicationsByActivityId.TryGetValue(activityId, out (DateTime, string) application))
+            if (this.executionsByActivityId.TryGetValue(activityId, out (DateTime, string) execution))
             {
-                return application;
+                return execution;
             }
 
             return null;
