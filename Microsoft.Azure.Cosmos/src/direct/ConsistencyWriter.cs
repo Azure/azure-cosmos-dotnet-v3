@@ -41,6 +41,12 @@ For globally strong write:
     {
         private const int maxNumberOfWriteBarrierReadRetries = 30;
         private const int delayBetweenWriteBarrierCallsInMs = 30;
+        private const int extensiveLsnGapThreshold = 10_000;
+        private const int extensiveLsnGapDelayBetweenWriteBarrierCallsInMs = 5000;
+        private const int highLsnGapThreshold = 1_000;
+        private const int highLsnGapDelayBetweenWriteBarrierCallsInMs = 1000;
+        private const int mediumLsnGapThreshold = 100;
+        private const int mediumLsnGapDelayBetweenWriteBarrierCallsInMs = 100;
 
         private const int maxShortBarrierRetriesForMultiRegion = 4;
         private const int shortbarrierRetryIntervalInMsForMultiRegion = 10;
@@ -250,7 +256,7 @@ For globally strong write:
                     {
                         using (DocumentServiceRequest barrierRequest = await BarrierRequestHelper.CreateAsync(request, this.authorizationTokenProvider, null, request.RequestContext.GlobalCommittedSelectedLSN))
                         {
-                            if (!await this.WaitForWriteBarrierAsync(barrierRequest, request.RequestContext.GlobalCommittedSelectedLSN))
+                            if (!await this.WaitForWriteBarrierAsync(barrierRequest, globalCommittedLsn, request.RequestContext.GlobalCommittedSelectedLSN))
                             {
                                 DefaultTrace.TraceError("ConsistencyWriter: Write barrier has not been met for global strong request. SelectedGlobalCommittedLsn: {0}", request.RequestContext.GlobalCommittedSelectedLSN);
                                 throw new GoneException(RMResources.GlobalStrongWriteBarrierNotMet, SubStatusCodes.Server_GlobalStrongWriteBarrierNotMet);
@@ -267,7 +273,7 @@ For globally strong write:
             {
                 using (DocumentServiceRequest barrierRequest = await BarrierRequestHelper.CreateAsync(request, this.authorizationTokenProvider, null, request.RequestContext.GlobalCommittedSelectedLSN))
                 {
-                    if (!await this.WaitForWriteBarrierAsync(barrierRequest, request.RequestContext.GlobalCommittedSelectedLSN))
+                    if (!await this.WaitForWriteBarrierAsync(barrierRequest, null, request.RequestContext.GlobalCommittedSelectedLSN))
                     {
                         DefaultTrace.TraceWarning("ConsistencyWriter: Write barrier has not been met for global strong request. SelectedGlobalCommittedLsn: {0}", request.RequestContext.GlobalCommittedSelectedLSN);
                         throw new GoneException(RMResources.GlobalStrongWriteBarrierNotMet, SubStatusCodes.Server_GlobalStrongWriteBarrierNotMet);
@@ -294,13 +300,80 @@ For globally strong write:
             return false;
         }
 
-        private async Task<bool> WaitForWriteBarrierAsync(DocumentServiceRequest barrierRequest, long selectedGlobalCommittedLsn)
+        private async Task delayInitialHeadRequestAsync(long? currentGlobalCommitedLsn, long selectedTargetGlobalCommittedLsn)
         {
-            int writeBarrierRetryCount = ConsistencyWriter.maxNumberOfWriteBarrierReadRetries;
+            if (currentGlobalCommitedLsn != null &&
+                currentGlobalCommitedLsn < selectedTargetGlobalCommittedLsn - extensiveLsnGapThreshold)
+            {
+                await Task.Delay(highLsnGapDelayBetweenWriteBarrierCallsInMs);
+            }
+            else if (currentGlobalCommitedLsn != null &&
+                currentGlobalCommitedLsn < selectedTargetGlobalCommittedLsn - highLsnGapThreshold)
+            {
+                await Task.Delay(mediumLsnGapDelayBetweenWriteBarrierCallsInMs);
+            }
+        }
+
+        private async Task delayBetweenHeadRequestsAsync(int remainingWriteBarrierRetryCount, IList<ReferenceCountedDisposable<StoreResult>> responses)
+        {
+            int minLSNGap = extensiveLsnGapThreshold + 1;
+            foreach (ReferenceCountedDisposable<StoreResult> response in responses)
+            {
+                if (response.Target.StatusCode == StatusCodes.NoContent)
+                {
+                    switch (response.Target.SubStatusCode)
+                    {
+                        case SubStatusCodes.MissedTargetGlobalCommittedLsn:
+                            minLSNGap = Math.Min(1, minLSNGap);
+                            break;
+                        case SubStatusCodes.MissedTargetGlobalCommittedLsnOver100:
+                            minLSNGap = Math.Min(100, minLSNGap);
+                            break;
+                        case SubStatusCodes.MissedTargetGlobalCommittedLsnOver1000:
+                            minLSNGap = Math.Min(1000, minLSNGap);
+                            break;
+                        case SubStatusCodes.MissedTargetGlobalCommittedLsnOver10000:
+                            minLSNGap = Math.Min(10000, minLSNGap);
+                            break;
+                    }
+                }
+            }
+
+            if (minLSNGap >= extensiveLsnGapThreshold)
+            {
+                await Task.Delay(ConsistencyWriter.extensiveLsnGapThreshold);
+            }
+            else if (minLSNGap >= highLsnGapThreshold)
+            {
+                await Task.Delay(ConsistencyWriter.highLsnGapThreshold);
+            }
+            else if (minLSNGap >= mediumLsnGapThreshold)
+            {
+                await Task.Delay(ConsistencyWriter.mediumLsnGapThreshold);
+            }
+            else
+            {
+                if ((ConsistencyWriter.maxNumberOfWriteBarrierReadRetries - remainingWriteBarrierRetryCount) > ConsistencyWriter.maxShortBarrierRetriesForMultiRegion)
+                {
+                    await Task.Delay(ConsistencyWriter.delayBetweenWriteBarrierCallsInMs);
+                }
+                else
+                {
+                    await Task.Delay(ConsistencyWriter.shortbarrierRetryIntervalInMsForMultiRegion);
+                }
+            }
+        }
+
+        private async Task<bool> WaitForWriteBarrierAsync(DocumentServiceRequest barrierRequest, long? currentGlobalCommitedLsn, long selectedTargetGlobalCommittedLsn)
+        {
+            int remainingWriteBarrierRetryCount = ConsistencyWriter.maxNumberOfWriteBarrierReadRetries;
 
             long maxGlobalCommittedLsnReceived = 0;
-            while (writeBarrierRetryCount-- > 0)
+            while (remainingWriteBarrierRetryCount-- > 0)
             {
+                barrierRequest.RequestContext.TimeoutHelper.ThrowTimeoutIfElapsed();
+                await this.delayInitialHeadRequestAsync(currentGlobalCommitedLsn, selectedTargetGlobalCommittedLsn);
+
                 barrierRequest.RequestContext.TimeoutHelper.ThrowTimeoutIfElapsed();
                 IList<ReferenceCountedDisposable<StoreResult>> responses = await this.storeReader.ReadMultipleReplicaAsync(
                     barrierRequest,
@@ -312,7 +385,7 @@ For globally strong write:
                     checkMinLSN: false,
                     forceReadAll: false);
 
-                if (responses != null && responses.Any(response => response.Target.GlobalCommittedLSN >= selectedGlobalCommittedLsn))
+                if (responses != null && responses.Any(response => response.Target.GlobalCommittedLSN >= selectedTargetGlobalCommittedLsn))
                 {
                     return true;
                 }
@@ -325,21 +398,14 @@ For globally strong write:
                 barrierRequest.RequestContext.ForceRefreshAddressCache = false;
 
                 //trace on last retry.
-                if (writeBarrierRetryCount == 0)
+                if (remainingWriteBarrierRetryCount == 0)
                 {
                     DefaultTrace.TraceInformation("ConsistencyWriter: WaitForWriteBarrierAsync - Last barrier multi-region strong. Responses: {0}",
                         string.Join("; ", responses));
                 }
                 else
                 {
-                    if ((ConsistencyWriter.maxNumberOfWriteBarrierReadRetries - writeBarrierRetryCount) > ConsistencyWriter.maxShortBarrierRetriesForMultiRegion)
-                    {
-                        await Task.Delay(ConsistencyWriter.delayBetweenWriteBarrierCallsInMs);
-                    }
-                    else
-                    {
-                        await Task.Delay(ConsistencyWriter.shortbarrierRetryIntervalInMsForMultiRegion);
-                    }
+                    await this.delayBetweenHeadRequestsAsync(remainingWriteBarrierRetryCount, responses);
                 }
             }
 

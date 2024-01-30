@@ -48,6 +48,19 @@ namespace Microsoft.Azure.Documents
         Unknown = 0,
         TooManyRequests = 429,
 
+        // 204 Head requests
+        // Difference from target lsn
+        MissedTargetLsn = 2001,
+        MissedTargetLsnOver100 = 2002,
+        MissedTargetLsnOver1000 = 2003,
+        MissedTargetLsnOver10000 = 2004,
+
+        // Difference from target global committed lsn
+        MissedTargetGlobalCommittedLsn = 2011,
+        MissedTargetGlobalCommittedLsnOver100 = 2012,
+        MissedTargetGlobalCommittedLsnOver1000 = 2013,
+        MissedTargetGlobalCommittedLsnOver10000 = 2014,
+
         // 400: Bad Request Substatus
         PartitionKeyMismatch = 1001,
         CrossPartitionQueryNotServable = 1004,
