@@ -809,7 +809,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
             string processorName,
-            ChangeFeedHandler<ChangeFeedItemChange<T>> onChangesHandler);
+            ChangeFeedHandler<ChangeFeedItemChange<T>> onChangesHandler)
+        {
+            return this.Container.GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(
+                processorName, 
+                onChangesHandler);
+        }
 #endif
 
         /// <summary>
