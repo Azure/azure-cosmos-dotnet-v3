@@ -288,12 +288,7 @@ namespace Microsoft.Azure.Cosmos
         /// If <see cref="AllowBulkExecution"/> is set to true in CosmosClientOptions, priority level set on the CosmosClient is used.
         /// </remarks>
         /// <seealso href="https://aka.ms/CosmosDB/PriorityBasedExecution"/>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        PriorityLevel? PriorityLevel { get; set; }
+        public PriorityLevel? PriorityLevel { get; set; }
 
         /// <summary>
         /// Gets or sets the maximum number of retries in the case where the request fails

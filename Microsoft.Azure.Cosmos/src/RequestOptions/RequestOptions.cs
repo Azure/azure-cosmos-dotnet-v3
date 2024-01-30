@@ -56,12 +56,7 @@ namespace Microsoft.Azure.Cosmos
         /// configured RU/s, low priority requests start getting throttled first to allow execution of mission critical workloads.
         /// </remarks>
         /// <seealso href="https://aka.ms/CosmosDB/PriorityBasedExecution"/>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        PriorityLevel? PriorityLevel { get; set; }
+        public PriorityLevel? PriorityLevel { get; set; }
 
         /// <summary>
         /// Threshold values for Distributed Tracing. 
