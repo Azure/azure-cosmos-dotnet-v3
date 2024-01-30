@@ -309,14 +309,14 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Sets the custom private endpoints for geo-replicated database accounts in the Azure Cosmos DB service. 
+        /// Sets the custom endpoints to use for account initialization for geo-replicated database accounts in the Azure Cosmos DB service. 
         /// During the CosmosClient initialization the account information, including the available regions, is obtained from the <see cref="CosmosClient.Endpoint"/>.
         /// Should the global endpoint become inaccessible, the CosmosClient will attempt to obtain the account information issuing requests to the custom endpoints
         /// provided in the customAccountEndpoints list.
         /// </summary>
         /// <param name="customAccountEndpoints">An instance of <see cref="IEnumerable{T}"/> of string containing the custom private endpoints for the cosmos db account.</param>
         /// <remarks>
-        ///  This function is optional and is recommended for implementation when a customer has configured one or more private endpoints with a custom DNS
+        ///  This function is optional and is recommended for implementation when a customer has configured one or more endpoints with a custom DNS
         ///  hostname (instead of accountname-region.documents.azure.com) etc. for their Cosmos DB account.
         /// </remarks>
         /// <example>

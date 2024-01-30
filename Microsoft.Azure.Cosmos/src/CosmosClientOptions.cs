@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos
         public IReadOnlyList<string> ApplicationPreferredRegions { get; set; }
 
         /// <summary>
-        /// Gets and sets the custom private endpoints for geo-replicated database accounts in the Azure Cosmos DB service. 
+        /// Gets and sets the custom endpoints to use for account initialization for geo-replicated database accounts in the Azure Cosmos DB service. 
         /// </summary>
         /// <remarks>
         /// <para>
@@ -201,7 +201,7 @@ namespace Microsoft.Azure.Cosmos
         /// Should the global endpoint become inaccessible, the CosmosClient will attempt to obtain the account information issuing requests to the custom endpoints provided in <see cref="AccountInitializationCustomEndpoints"/>.
         /// </para>
         /// <para>
-        /// Nevertheless, this parameter remains optional and is recommended for implementation when a customer has configured a private endpoint with a custom DNS hostname
+        /// Nevertheless, this parameter remains optional and is recommended for implementation when a customer has configured an endpoint with a custom DNS hostname
         /// (instead of accountname-region.documents.azure.com) etc. for their Cosmos DB account.
         /// </para>
         /// <para>
@@ -833,7 +833,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.AccountInitializationCustomEndpoints != null)
             {
-                connectionPolicy.SetCustomEndpoints(this.AccountInitializationCustomEndpoints);
+                connectionPolicy.SetAccountInitializationCustomEndpoints(this.AccountInitializationCustomEndpoints);
             }
 
             if (this.MaxRetryAttemptsOnRateLimitedRequests != null)

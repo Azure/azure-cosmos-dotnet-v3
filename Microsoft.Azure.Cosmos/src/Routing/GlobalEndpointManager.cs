@@ -117,14 +117,14 @@ namespace Microsoft.Azure.Cosmos.Routing
         public static async Task<AccountProperties> GetDatabaseAccountFromAnyLocationsAsync(
             Uri defaultEndpoint,
             IList<string>? locations,
-            IList<string> customPrivateEndpoints,
+            IList<string> accountInitializationCustomEndpoints,
             Func<Uri, Task<AccountProperties>> getDatabaseAccountFn,
             CancellationToken cancellationToken)
         {
             using (GetAccountPropertiesHelper threadSafeGetAccountHelper = new GetAccountPropertiesHelper(
                defaultEndpoint,
                locations,
-               customPrivateEndpoints,
+               accountInitializationCustomEndpoints,
                getDatabaseAccountFn,
                cancellationToken))
             {
@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             public GetAccountPropertiesHelper(
                 Uri defaultEndpoint,
                 IList<string>? locations,
-                IList<string> customPrivateEndpoints,
+                IList<string> accountInitializationCustomEndpoints,
                 Func<Uri, Task<AccountProperties>> getDatabaseAccountFn,
                 CancellationToken cancellationToken)
             {
@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.ServiceEndpointEnumerator = GetAccountPropertiesHelper.GetServiceEndpointEnumerator(
                     defaultEndpoint,
                     locations,
-                    customPrivateEndpoints);
+                    accountInitializationCustomEndpoints);
             }
 
             public async Task<AccountProperties> GetAccountPropertiesAsync()
@@ -336,20 +336,20 @@ namespace Microsoft.Azure.Cosmos.Routing
             /// </summary>
             /// <param name="defaultEndpoint">An instance of <see cref="Uri"/> containing the default global endpoint.</param>
             /// <param name="locations">An instance of <see cref="IList{T}"/> containing the preferred location names.</param>
-            /// <param name="customPrivateEndpoints">An instance of <see cref="IList{T}"/> containing the private endpoints.</param>
+            /// <param name="accountInitializationCustomEndpoints">An instance of <see cref="IList{T}"/> containing the custom private endpoints.</param>
             /// <returns>An instance of <see cref="IEnumerator{T}"/> containing the service endpoints.</returns>
             private static IEnumerator<Uri> GetServiceEndpointEnumerator(
                 Uri defaultEndpoint,
                 IList<string>? locations,
-                IList<string> customPrivateEndpoints)
+                IList<string> accountInitializationCustomEndpoints)
             {
                 // We first iterate through all the private endpoints and add them to the service endpoints list.
                 IList<Uri> serviceEndpoints = new List<Uri>();
 
-                if (customPrivateEndpoints != null
-                    && customPrivateEndpoints.Count > 0)
+                if (accountInitializationCustomEndpoints != null
+                    && accountInitializationCustomEndpoints.Count > 0)
                 {
-                    foreach (string customEndpoint in customPrivateEndpoints)
+                    foreach (string customEndpoint in accountInitializationCustomEndpoints)
                     {
                         // Add all of the custom private endpoints to the service endpoints list.
                         serviceEndpoints.Add(
@@ -628,7 +628,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                               singleValueInitFunc: () => GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
                                   this.defaultEndpoint,
                                   this.connectionPolicy.PreferredLocations,
-                                  this.connectionPolicy.CustomPrivateEndpoints,
+                                  this.connectionPolicy.AccountInitializationCustomEndpoints,
                                   this.GetDatabaseAccountAsync,
                                   this.cancellationTokenSource.Token),
                               cancellationToken: this.cancellationTokenSource.Token,

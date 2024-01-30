@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (customEndpointsProvided)
             {
-                connectionPolicy.SetCustomEndpoints(
+                connectionPolicy.SetAccountInitializationCustomEndpoints(
                     new HashSet<string>()
                     {
                     "https://testfed2.documents-test.windows-int.net:443/",
@@ -192,7 +192,7 @@ namespace Microsoft.Azure.Cosmos
                 ConnectionMode = ConnectionMode.Direct,
             };
 
-            connectionPolicy.SetCustomEndpoints(
+            connectionPolicy.SetAccountInitializationCustomEndpoints(
                 new HashSet<string>()
                 {
                 "https://testfed2.documents-test.windows-int.net:443/",

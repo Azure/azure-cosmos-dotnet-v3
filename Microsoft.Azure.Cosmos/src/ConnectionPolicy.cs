@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
 
         private Protocol connectionProtocol;
         private ObservableCollection<string> preferredLocations;
-        private ObservableCollection<string> customPrivateEndpoints;
+        private ObservableCollection<string> accountInitializationCustomEndpoints;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ConnectionPolicy"/> class to connect to the Azure Cosmos DB service.
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
             this.MediaReadMode = MediaReadMode.Buffered;
             this.UserAgentContainer = new UserAgentContainer(clientId: 0);
             this.preferredLocations = new ObservableCollection<string>();
-            this.customPrivateEndpoints = new ObservableCollection<string>();
+            this.accountInitializationCustomEndpoints = new ObservableCollection<string>();
             this.EnableEndpointDiscovery = true;
             this.MaxConnectionLimit = defaultMaxConcurrentConnectionLimit;
             this.RetryOptions = new RetryOptions();
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="customEndpoints">An instance of <see cref="IEnumerable{T}"/> containing the custom DNS endpoints
         /// provided by the customer.</param>
-        public void SetCustomEndpoints(
+        public void SetAccountInitializationCustomEndpoints(
             IEnumerable<string> customEndpoints)
         {
             if (customEndpoints == null)
@@ -106,10 +106,10 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(customEndpoints));
             }
 
-            this.customPrivateEndpoints.Clear();
+            this.accountInitializationCustomEndpoints.Clear();
             foreach (string endpoint in customEndpoints)
             {
-                this.customPrivateEndpoints.Add(endpoint);
+                this.accountInitializationCustomEndpoints.Add(endpoint);
             }
         }
 
@@ -303,11 +303,11 @@ namespace Microsoft.Azure.Cosmos
         /// provided in the customAccountEndpoints list.
         /// </para>
         /// </remarks>
-        public Collection<string> CustomPrivateEndpoints
+        public Collection<string> AccountInitializationCustomEndpoints
         {
             get
             {
-                return this.customPrivateEndpoints;
+                return this.accountInitializationCustomEndpoints;
             }
         }
 

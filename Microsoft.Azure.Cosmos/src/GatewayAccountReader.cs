@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos
             AccountProperties databaseAccount = await GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
                 defaultEndpoint: this.serviceEndpoint,
                 locations: this.connectionPolicy.PreferredLocations,
-                customPrivateEndpoints: this.connectionPolicy.CustomPrivateEndpoints,
+                accountInitializationCustomEndpoints: this.connectionPolicy.AccountInitializationCustomEndpoints,
                 getDatabaseAccountFn: this.GetDatabaseAccountAsync,
                 cancellationToken: this.cancellationToken);
 
