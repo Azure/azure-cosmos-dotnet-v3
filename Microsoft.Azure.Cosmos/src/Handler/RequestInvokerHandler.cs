@@ -446,7 +446,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             RequestOptions promotedRequestOptions = requestMessage.RequestOptions;
             if (promotedRequestOptions?.PriorityLevel.HasValue == true)
             {
-                priorityLevel = promotedRequestOptions.PriorityLevel;
+                priorityLevel = promotedRequestOptions.PriorityLevel.Value;
             }
 
             if (priorityLevel.HasValue)
