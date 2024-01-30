@@ -904,6 +904,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         [DataRow(ConnectionString, false)]
         [DataRow(ConnectionString + "DisableServerCertificateValidation=true;", true)]
+        [DataRow(ConnectionString + "DisableServerCertificateValidation=false;", false)]
         public void TestServerCertificatesValidationCallback(string connStr, bool expectedIgnoreCertificateFlag)
         {
             //Arrange
@@ -924,6 +925,18 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 Assert.IsNull(cosmosClient.ClientOptions.ServerCertificateCustomValidationCallback);
             }
+        }
+
+        [TestMethod]
+        [DataRow(ConnectionString + "DisableServerCertificateValidation=true;")]
+        [ExpectedException(typeof(ArgumentException))]
+        public void TestServerCertificatesValidationWithDisableSSLFlagTrue(string connStr)
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+               ServerCertificateCustomValidationCallback = (certificate, chain, sslPolicyErrors) => true
+            };
+            CosmosClient cosmosClient = new CosmosClient(connStr, options);
         }
 
         private class TestWebProxy : IWebProxy
