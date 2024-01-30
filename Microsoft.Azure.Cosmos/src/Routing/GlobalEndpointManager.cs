@@ -559,7 +559,12 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 this.LastBackgroundRefreshUtc = DateTime.UtcNow;
                 this.locationCache.OnDatabaseAccountRead(await this.GetDatabaseAccountAsync(true));
-
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceWarning("Failed to refresh database account with exception: {0}. Activity Id: '{1}'",
+                    ex,
+                    System.Diagnostics.Trace.CorrelationManager.ActivityId);
             }
             finally
             {
@@ -575,22 +580,11 @@ namespace Microsoft.Azure.Cosmos.Routing
             return await this.databaseAccountCache.GetAsync(
                               key: string.Empty,
                               obsoleteValue: null,
-                              singleValueInitFunc: () =>
-                              {
-                                  Task<AccountProperties> accountPropertiesTask = GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
-                                      this.defaultEndpoint,
-                                      this.connectionPolicy.PreferredLocations,
-                                      this.GetDatabaseAccountAsync,
-                                      this.cancellationTokenSource.Token);
-
-                                  Task continuationTask = accountPropertiesTask.ContinueWith(
-                                      task => DefaultTrace.TraceVerbose("Failed to fetch database account from any locations with exception: {0}. Activity Id: '{1}'",
-                                        task.Exception,
-                                        System.Diagnostics.Trace.CorrelationManager.ActivityId),
-                                      TaskContinuationOptions.OnlyOnFaulted);
-
-                                  return accountPropertiesTask;
-                              },
+                              singleValueInitFunc: () => GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
+                                  this.defaultEndpoint,
+                                  this.connectionPolicy.PreferredLocations,
+                                  this.GetDatabaseAccountAsync,
+                                  this.cancellationTokenSource.Token),
                               cancellationToken: this.cancellationTokenSource.Token,
                               forceRefresh: forceRefresh);
 #nullable enable
