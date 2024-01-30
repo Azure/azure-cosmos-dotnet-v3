@@ -27,6 +27,25 @@ namespace Microsoft.Azure.Cosmos.Tests
         private readonly Func<string, bool> sourceNameFilter;
         private readonly string eventName;
         private readonly bool suppressAllEvents;
+        private static readonly List<string> TagsWithStaticValue = new List<string>
+        {
+            "az.schema_url",
+            "kind",
+            "az.namespace",
+            "db.operation",
+            "db.system",
+            "net.peer.name",
+            "db.name",
+            "db.cosmosdb.container",
+            "db.cosmosdb.connection_mode",
+            "db.cosmosdb.operation_type",
+            "db.cosmosdb.regions_contacted",
+            "db.cosmosdb.status_code",
+            "db.cosmosdb.sub_status_code",
+            "rntbd.sub_status_code",
+            "rntbd.status_code",
+            "error.type"
+        };
 
         private ConcurrentBag<IDisposable> subscriptions = new();
         private ConcurrentBag<ProducedDiagnosticScope> Scopes { get; } = new();
@@ -249,29 +268,12 @@ namespace Microsoft.Azure.Cosmos.Tests
         
         private string GenerateTagForBaselineTest(Activity activity)
         {
-            List<string> tagsWithStaticValue = new List<string>
-            {
-                "az.schema_url",
-                "kind",
-                "az.namespace",
-                "db.operation",
-                "db.system",
-                "net.peer.name",
-                "db.name",
-                "db.cosmosdb.container",
-                "db.cosmosdb.connection_mode",
-                "db.cosmosdb.operation_type",
-                "db.cosmosdb.regions_contacted",
-                "rntbd.sub_status_code",
-                "rntbd.status_code",
-                "error.type"
-            };
-            
             StringBuilder builder = new StringBuilder();
             builder.Append($"<ACTIVITY source='{activity.Source.Name}' operationName='{activity.OperationName}' displayName='{activity.DisplayName}'>");
+
             foreach (KeyValuePair<string, object> tag in activity.TagObjects)
             {
-                if (tagsWithStaticValue.Contains(tag.Key))
+                if (TagsWithStaticValue.Contains(tag.Key))
                 {
                     builder
                     .Append($"<ATTRIBUTE key='{tag.Key}'>{tag.Value}</ATTRIBUTE>");
@@ -292,7 +294,21 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             List<string> generatedActivityTagsForBaselineXmls = new();
             
+            // Get all the recorded operation level activities
             List<Activity> collectedOperationActivities = new List<Activity>(CustomListener.CollectedOperationActivities);
+
+            // Order them by the static values. This is to make sure that the order of the attributes is same across all the platforms.
+            List<Activity> orderedUniqueOperationActivities = collectedOperationActivities
+               .OrderBy(act =>
+               {
+                   string key = act.Source.Name + act.OperationName;
+                   foreach (string tagName in TagsWithStaticValue)
+                   {
+                       key+= act.GetTagItem(tagName);
+                   }
+                   return key;
+               }).ToList();
+
             foreach (Activity activity in collectedOperationActivities)
             {
                 generatedActivityTagsForBaselineXmls.Add(this.GenerateTagForBaselineTest(activity));
