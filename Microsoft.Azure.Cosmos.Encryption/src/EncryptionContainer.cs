@@ -799,6 +799,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             return this.Container.GetPartitionKeyRangesAsync(feedRange, cancellationToken);
         }
+
+        /// <summary>
+        /// Initializes a <see cref="GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes"/> for change feed processing with all versions and deletes.
+        /// </summary>
+        /// <typeparam name="T">Document type</typeparam>
+        /// <param name="processorName">A name that identifies the Processor and the particular work it will do.</param>
+        /// <param name="onChangesHandler">Delegate to receive all changes and deletes</param>
+        /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
+            string processorName,
+            ChangeFeedHandler<ChangeFeedItemChange<T>> onChangesHandler);
 #endif
 
         /// <summary>
