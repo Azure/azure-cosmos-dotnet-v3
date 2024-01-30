@@ -16,6 +16,11 @@ namespace Microsoft.Azure.Cosmos
         public abstract ServerSideMetrics CumulativeMetrics { get; }
 
         /// <summary>
+        /// Gets the total request charge for all partitions.
+        /// </summary>
+        public abstract double TotalRequestCharge { get; }
+
+        /// <summary>
         /// Gets the list of ServerSideMetrics, one for for each partition.
         /// </summary>
         public abstract IReadOnlyList<ServerSidePartitionedMetrics> PartitionedMetrics { get; }

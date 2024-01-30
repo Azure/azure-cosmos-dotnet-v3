@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Threading;
@@ -60,6 +61,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public IQueryable CreateQuery(Expression expression)
         {
+            // ISSUE-TODO-adityasa-2024/1/26 - Investigate if reflection usage can be removed.
             Type expressionType = TypeSystem.GetElementType(expression.Type);
             Type documentQueryType = typeof(CosmosLinqQuery<bool>).GetGenericTypeDefinition().MakeGenericType(expressionType);
             return (IQueryable)Activator.CreateInstance(
@@ -76,6 +78,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public TResult Execute<TResult>(Expression expression)
         {
+            // ISSUE-TODO-adityasa-2024/1/26 - We should be able to delegate the implementation to ExecuteAggregateAsync method below by providing an Async implementation of ExecuteScalar.
             Type cosmosQueryType = typeof(CosmosLinqQuery<bool>).GetGenericTypeDefinition().MakeGenericType(typeof(TResult));
             CosmosLinqQuery<TResult> cosmosLINQQuery = (CosmosLinqQuery<TResult>)Activator.CreateInstance(
                 cosmosQueryType,
@@ -88,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.allowSynchronousQueryExecution,
                 this.linqSerializerOptions);
             this.onExecuteScalarQueryCallback?.Invoke(cosmosLINQQuery);
-            return cosmosLINQQuery.ToList().FirstOrDefault();
+            return cosmosLINQQuery.ExecuteScalar();
         }
 
         //Sync execution of query via direct invoke on IQueryProvider.

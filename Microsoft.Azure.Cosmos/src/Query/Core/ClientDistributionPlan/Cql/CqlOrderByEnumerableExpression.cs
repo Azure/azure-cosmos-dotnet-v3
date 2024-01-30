@@ -22,5 +22,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan.Cql
         public CqlVariable DeclaredVariable { get; }
         
         public IReadOnlyList<CqlOrderByItem> Items { get; }
+
+        public override void Accept(ICqlVisitor cqlVisitor) => cqlVisitor.Visit(this);
     }
 }

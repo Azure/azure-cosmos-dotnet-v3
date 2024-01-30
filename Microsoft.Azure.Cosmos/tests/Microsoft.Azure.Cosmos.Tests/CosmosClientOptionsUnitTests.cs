@@ -7,10 +7,12 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Collections;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Net.Security;
+    using System.Security.Cryptography;
+    using System.Security.Cryptography.X509Certificates;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
@@ -885,6 +887,44 @@ namespace Microsoft.Azure.Cosmos.Tests
                     ApplicationName = illegal
                 });
             }
+        }
+
+        [TestMethod]
+        [DataRow(ConnectionString, false)]
+        [DataRow(ConnectionString + "DisableServerCertificateValidation=true;", true)]
+        [DataRow(ConnectionString + "DisableServerCertificateValidation=false;", false)]
+        public void TestServerCertificatesValidationCallback(string connStr, bool expectedIgnoreCertificateFlag)
+        {
+            //Arrange
+            X509Certificate2 x509Certificate2 = new CertificateRequest("cn=www.test", ECDsa.Create(), HashAlgorithmName.SHA256).CreateSelfSigned(DateTime.Now, DateTime.Now.AddYears(1));
+            X509Chain x509Chain = new X509Chain();
+            SslPolicyErrors sslPolicyErrors = new SslPolicyErrors();
+
+            CosmosClient cosmosClient = new CosmosClient(connStr);
+
+            if (expectedIgnoreCertificateFlag)
+            {
+                Assert.IsNotNull(cosmosClient.ClientOptions.ServerCertificateCustomValidationCallback);
+                Assert.IsTrue(cosmosClient
+                    .ClientOptions
+                    .ServerCertificateCustomValidationCallback(x509Certificate2, x509Chain, sslPolicyErrors));
+            }
+            else
+            {
+                Assert.IsNull(cosmosClient.ClientOptions.ServerCertificateCustomValidationCallback);
+            }
+        }
+
+        [TestMethod]
+        [DataRow(ConnectionString + "DisableServerCertificateValidation=true;")]
+        [ExpectedException(typeof(ArgumentException))]
+        public void TestServerCertificatesValidationWithDisableSSLFlagTrue(string connStr)
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+               ServerCertificateCustomValidationCallback = (certificate, chain, sslPolicyErrors) => true
+            };
+            CosmosClient cosmosClient = new CosmosClient(connStr, options);
         }
 
         private class TestWebProxy : IWebProxy

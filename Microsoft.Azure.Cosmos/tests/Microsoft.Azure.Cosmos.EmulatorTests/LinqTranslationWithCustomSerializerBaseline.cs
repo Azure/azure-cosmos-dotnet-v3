@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Converters;
     using Newtonsoft.Json.Linq;
 
     [SDK.EmulatorTests.TestClass]
@@ -102,6 +103,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("Filter w/ DataObject initializer with member initialization", b => getQuery(b).Where(doc => doc == new DataObjectDotNet() { NumericField = doc.NumericField, StringField = doc.StringField }).Select(b => "A"), skipVerification : true, inputData: insertedData),
                 new LinqTestInput("OrderBy query", b => getQuery(b).Select(x => x).OrderBy(x => x.NumericField).Take(5), skipVerification : true, inputData: insertedData),
                 new LinqTestInput("Conditional", b => getQuery(b).Select(c => c.NumericField > 1 ? "true" : "false"), skipVerification : true, inputData: insertedData),
+                new LinqTestInput("Filter w/ nullable property", b => getQuery(b).Where(doc => doc.DateTimeField != null), skipVerification : true, inputData: insertedData),
+                new LinqTestInput("Filter w/ nullable enum", b => getQuery(b).Where(doc => doc.DataTypeField != null), skipVerification : true, inputData: insertedData),
+                new LinqTestInput("Filter w/ non-null nullable property", b => getQuery(b).Where(doc => doc.DateTimeField == new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)), skipVerification : true, inputData: insertedData),
+                new LinqTestInput("Filter w/ non-null nullable enum", b => getQuery(b).Where(doc => doc.DataTypeField == DataType.Point), skipVerification : true, inputData: insertedData),
+                new LinqTestInput("Filter w/ string null comparison", b => getQuery(b).Where(doc => doc.StringField != null), skipVerification : true, inputData: insertedData),
             };
 
             this.ExecuteTestSuite(inputs);
@@ -127,7 +133,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     new LinqTestInput("Filter w/ DataObject initializer with constant value, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc == new DataObjectNewtonsoft() { NumericField = 1, StringField = "1" }), skipVerification : true, inputData: insertedData),
                     new LinqTestInput("Select w/ DataObject initializer, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Select(doc => new DataObjectNewtonsoft() { NumericField = 1, StringField = "1" }), skipVerification : true, inputData: insertedData),
                     new LinqTestInput("Deeper than top level reference, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Select(doc => doc.NumericField > 1 ? new DataObjectNewtonsoft() { NumericField = 1, StringField = "1" } : new DataObjectNewtonsoft() { NumericField = 1, StringField = "1" }), skipVerification : true, inputData: insertedData),
-                    new LinqTestInput("Filter w/ DataObject initializer with member initialization, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc == new DataObjectNewtonsoft() { NumericField = doc.NumericField, StringField = doc.StringField }).Select(b => "A"), skipVerification : true, inputData: insertedData)
+                    new LinqTestInput("Filter w/ DataObject initializer with member initialization, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc == new DataObjectNewtonsoft() { NumericField = doc.NumericField, StringField = doc.StringField }).Select(b => "A"), skipVerification : true, inputData: insertedData),
+                    new LinqTestInput("Filter w/ nullable property, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc.DateTimeField != null), skipVerification : true, inputData: insertedData),
+                    new LinqTestInput("Filter w/ nullable enum, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc.DataTypeField != null), skipVerification : true, inputData: insertedData),
+                    new LinqTestInput("Filter w/ non-null nullable property", b => getQuery(b).Where(doc => doc.DateTimeField == new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)), skipVerification : true, inputData: insertedData),
+                    new LinqTestInput("Filter w/ non-null nullable enum", b => getQuery(b).Where(doc => doc.DataTypeField == DataType.Point), skipVerification : true, inputData: insertedData),
+                    new LinqTestInput("Filter w/ string null comparison, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc.StringField != null), skipVerification : true, inputData: insertedData),
                 };
 
                 inputs.AddRange(camelCaseSettingInputs);
@@ -156,7 +167,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     new LinqTestInput("Filter w/ DataObject initializer with constant value, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc == new DataObjectDataMember() { NumericField = 1, StringField = "1" }), skipVerification : true, inputData: insertedData),
                     new LinqTestInput("Select w/ DataObject initializer, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Select(doc => new DataObjectDataMember() { NumericField = 1, StringField = "1" }), skipVerification : true, inputData: insertedData),
                     new LinqTestInput("Deeper than top level reference, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Select(doc => doc.NumericField > 1 ? new DataObjectDataMember() { NumericField = 1, StringField = "1" } : new DataObjectDataMember() { NumericField = 1, StringField = "1" }), skipVerification : true, inputData: insertedData),
-                    new LinqTestInput("Filter w/ DataObject initializer with member initialization, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc == new DataObjectDataMember() { NumericField = doc.NumericField, StringField = doc.StringField }).Select(b => "A"), skipVerification : true, inputData: insertedData)
+                    new LinqTestInput("Filter w/ DataObject initializer with member initialization, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc == new DataObjectDataMember() { NumericField = doc.NumericField, StringField = doc.StringField }).Select(b => "A"), skipVerification : true, inputData: insertedData),
+                    new LinqTestInput("Filter w/ nullable property, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc.DateTimeField != null), skipVerification : true, inputData: insertedData),
+                    new LinqTestInput("Filter w/ nullable enum, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc.DataTypeField != null), skipVerification : true, inputData: insertedData),
+                    new LinqTestInput("Filter w/ non-null nullable property", b => getQuery(b).Where(doc => doc.DateTimeField == new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)), skipVerification : true, inputData: insertedData),
+                    new LinqTestInput("Filter w/ non-null nullable enum", b => getQuery(b).Where(doc => doc.DataTypeField == DataType.Point), skipVerification : true, inputData: insertedData),
+                    new LinqTestInput("Filter w/ string null comparison, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc.StringField != null), skipVerification : true, inputData: insertedData),
                 };
 
                 inputs.AddRange(camelCaseSettingInputs);
@@ -332,6 +348,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             public string Pk { get; set; }
 
+            [JsonPropertyName("DateTimeFieldDotNet")]
+            public DateTime? DateTimeField { get; set; }
+
+            [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]
+            public DataType? DataTypeField { get; set; }
+
             public DataObjectDotNet() { }
 
             public DataObjectDotNet(double numericField, string stringField, string id, string pk)
@@ -364,6 +386,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             public string Pk { get; set; }
 
+            [Newtonsoft.Json.JsonConverter(typeof(IsoDateTimeConverter))]
+            public DateTime? DateTimeField { get; set; }
+
+            [Newtonsoft.Json.JsonConverter(typeof(StringEnumConverter))]
+            public DataType? DataTypeField { get; set; }
+
             public DataObjectNewtonsoft() { }
 
             public DataObjectNewtonsoft(double numericField, string stringField, string id, string pk)
@@ -395,6 +423,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             [DataMember(Name = "Pk")]
             public string Pk { get; set; }
+
+            [DataMember(Name = "DateTimeFieldDataMember")]
+            public DateTime? DateTimeField { get; set; }
+
+            [DataMember(Name = "DataTypeFieldDataMember")]
+            public DataType? DataTypeField { get; set; }
 
             public DataObjectDataMember() { }
 

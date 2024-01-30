@@ -12,5 +12,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan.Cql
         }
 
         public CqlLiteralKind Kind { get; }
+
+        public abstract void Accept(ICqlVisitor cqlVisitor);
     }
 }

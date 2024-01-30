@@ -150,14 +150,7 @@
         public void TestDefaultQueryRequestOptionsSettings()
         {
             QueryRequestOptions requestOptions = new QueryRequestOptions();
-            bool odeExpectedValue =
-#if PREVIEW
-                    true;
-#else
-                    false;
-#endif
-
-            Assert.AreEqual(odeExpectedValue, requestOptions.EnableOptimisticDirectExecution);
+            Assert.AreEqual(true, requestOptions.EnableOptimisticDirectExecution);
         }
 
         // test checks that the pipeline can take a query to the backend and returns its associated document(s).
@@ -593,10 +586,10 @@
                 JObject jsonObject = JObject.Parse(testResponse);
 
                 string expectedBackendPlan = jsonObject["_distributionPlan"]["backendDistributionPlan"].ToString();
-                expectedBackendPlan = RemoveJsonFormattingFromString(expectedBackendPlan);
+                expectedBackendPlan = RemoveWhitespace(expectedBackendPlan);
 
                 string expectedClientPlan = jsonObject["_distributionPlan"]["clientDistributionPlan"].ToString();
-                expectedClientPlan = RemoveJsonFormattingFromString(expectedClientPlan);
+                expectedClientPlan = RemoveWhitespace(expectedClientPlan);
 
                 MemoryStream memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(testResponse));
                 CosmosQueryClientCore.ParseRestStream(
@@ -608,8 +601,8 @@
                 if (distributionPlan.TryGetValue("backendDistributionPlan", out CosmosElement backendDistributionPlan) &&
                     distributionPlan.TryGetValue("clientDistributionPlan", out CosmosElement clientDistributionPlan))
                 {
-                    Assert.AreEqual(expectedBackendPlan, RemoveJsonFormattingFromString(backendDistributionPlan.ToString()));
-                    Assert.AreEqual(expectedClientPlan, RemoveJsonFormattingFromString(clientDistributionPlan.ToString()));
+                    Assert.AreEqual(expectedBackendPlan, RemoveWhitespace(backendDistributionPlan.ToString()));
+                    Assert.AreEqual(expectedClientPlan, RemoveWhitespace(clientDistributionPlan.ToString()));
                 }
                 else
                 {
@@ -712,9 +705,9 @@
             return false;
         }
 
-        private static string RemoveJsonFormattingFromString(string jsonString)
+        private static string RemoveWhitespace(string jsonString)
         {
-            return jsonString.Replace(" ", string.Empty).Replace("\t", string.Empty).Replace("\n", string.Empty).Replace("\r", string.Empty);
+            return jsonString.Replace(" ", string.Empty);
         }
 
         private static async Task<(MergeTestUtil, IQueryPipelineStage)> CreateFallbackPipelineTestInfrastructure(int numItems, bool isFailedFallbackPipelineTest, bool isMultiPartition, QueryRequestOptions queryRequestOptions)

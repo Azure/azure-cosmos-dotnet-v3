@@ -98,19 +98,19 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 string feedRangeSerialization = JsonConvert.SerializeObject(new { PKRangeId = "10" });
                 FeedRange feedRange = FeedRange.FromJsonString(feedRangeSerialization);
 
-                FeedIterator<ToDoActivity> feedIterator = container.GetItemQueryIterator<ToDoActivity>(
-                        queryDefinition: new QueryDefinition("select * from T where STARTSWITH(T.id, \"BasicItem\")"),
-                        feedRange: feedRange,
-                        continuationToken: null
+                foreach (bool enableODE in new bool[] { false, true })
+                {
+                    FeedIterator<ToDoActivity> feedIterator = container.GetItemQueryIterator<ToDoActivity>(
+                            queryDefinition: new QueryDefinition("select * from T where STARTSWITH(T.id, \"BasicItem\")"),
+                            feedRange: feedRange,
+                            continuationToken: null,
+                            requestOptions: new QueryRequestOptions() { EnableOptimisticDirectExecution = enableODE }
+                            );
 
-#if PREVIEW
-                        , requestOptions: new QueryRequestOptions() { EnableOptimisticDirectExecution = false }
-#endif
-                        );
-
-                CosmosException exception = await Assert.ThrowsExceptionAsync<CosmosException>(() => feedIterator.ReadNextAsync());
-                Assert.AreEqual(HttpStatusCode.Gone, exception.StatusCode);
-                Assert.AreEqual((int)Documents.SubStatusCodes.PartitionKeyRangeGone, exception.SubStatusCode);
+                    CosmosException exception = await Assert.ThrowsExceptionAsync<CosmosException>(() => feedIterator.ReadNextAsync());
+                    Assert.AreEqual(HttpStatusCode.Gone, exception.StatusCode);
+                    Assert.AreEqual((int)Documents.SubStatusCodes.PartitionKeyRangeGone, exception.SubStatusCode);
+                }
             }
             finally
             {
@@ -151,65 +151,68 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
                 Assert.IsTrue(feedTokens.Count > 1, " RUs of the container needs to be increased to ensure at least 2 partitions.");
 
-                List<Task<List<string>>> tasks = feedTokens.Select(async feedToken =>
+                foreach (bool enableODE in new bool[] { false, true })
                 {
-                    List<string> results = new List<string>();
-                    FeedIteratorInternal feedIterator = container.GetItemQueryStreamIterator(
-                        queryDefinition: new QueryDefinition("select * from T where STARTSWITH(T.id, \"BasicItem\")"),
-                        feedRange: feedToken,
-                        continuationToken: null,
-                        requestOptions: new QueryRequestOptions() { MaxItemCount = 10 }) as FeedIteratorInternal;
-                    string continuation = null;
-                    while (feedIterator.HasMoreResults)
+                    List<Task<List<string>>> tasks = feedTokens.Select(async feedToken =>
                     {
-                        using (ResponseMessage responseMessage =
-                            await feedIterator.ReadNextAsync(this.cancellationToken))
+                        List<string> results = new List<string>();
+                        FeedIteratorInternal feedIterator = container.GetItemQueryStreamIterator(
+                            queryDefinition: new QueryDefinition("select * from T where STARTSWITH(T.id, \"BasicItem\")"),
+                            feedRange: feedToken,
+                            continuationToken: null,
+                            requestOptions: new QueryRequestOptions() { MaxItemCount = 10, EnableOptimisticDirectExecution = enableODE }) as FeedIteratorInternal;
+                        string continuation = null;
+                        while (feedIterator.HasMoreResults)
                         {
-                            if (responseMessage.IsSuccessStatusCode)
+                            using (ResponseMessage responseMessage =
+                                await feedIterator.ReadNextAsync(this.cancellationToken))
                             {
-                                using (StreamReader reader = new StreamReader(responseMessage.Content))
+                                if (responseMessage.IsSuccessStatusCode)
                                 {
-                                    string json = await reader.ReadToEndAsync();
-                                    JArray documents = (JArray)JObject.Parse(json).SelectToken("Documents");
-                                    foreach(JObject document in documents)
+                                    using (StreamReader reader = new StreamReader(responseMessage.Content))
                                     {
-                                        results.Add(document.SelectToken("id").ToString());
+                                        string json = await reader.ReadToEndAsync();
+                                        JArray documents = (JArray)JObject.Parse(json).SelectToken("Documents");
+                                        foreach (JObject document in documents)
+                                        {
+                                            results.Add(document.SelectToken("id").ToString());
+                                        }
+                                    }
+                                }
+
+                                continuation = responseMessage.ContinuationToken;
+                                break;
+                            }
+                        }
+
+                        feedIterator = container.GetItemQueryStreamIterator(queryDefinition: new QueryDefinition("select * from T where STARTSWITH(T.id, \"BasicItem\")"), feedRange: feedToken, continuationToken: continuation, requestOptions: new QueryRequestOptions() { MaxItemCount = 10, EnableOptimisticDirectExecution = enableODE }) as FeedIteratorInternal;
+                        while (feedIterator.HasMoreResults)
+                        {
+                            using (ResponseMessage responseMessage =
+                                await feedIterator.ReadNextAsync(this.cancellationToken))
+                            {
+                                if (responseMessage.IsSuccessStatusCode)
+                                {
+                                    using (StreamReader reader = new StreamReader(responseMessage.Content))
+                                    {
+                                        string json = await reader.ReadToEndAsync();
+                                        JArray documents = (JArray)JObject.Parse(json).SelectToken("Documents");
+                                        foreach (JObject document in documents)
+                                        {
+                                            results.Add(document.SelectToken("id").ToString());
+                                        }
                                     }
                                 }
                             }
-
-                            continuation = responseMessage.ContinuationToken;
-                            break;
                         }
-                    }
 
-                    feedIterator = container.GetItemQueryStreamIterator(queryDefinition: new QueryDefinition("select * from T where STARTSWITH(T.id, \"BasicItem\")"), feedRange: feedToken, continuationToken: continuation, requestOptions: new QueryRequestOptions() { MaxItemCount = 10 }) as FeedIteratorInternal;
-                    while (feedIterator.HasMoreResults)
-                    {
-                        using (ResponseMessage responseMessage =
-                            await feedIterator.ReadNextAsync(this.cancellationToken))
-                        {
-                            if (responseMessage.IsSuccessStatusCode)
-                            {
-                                using (StreamReader reader = new StreamReader(responseMessage.Content))
-                                {
-                                    string json = await reader.ReadToEndAsync();
-                                    JArray documents = (JArray)JObject.Parse(json).SelectToken("Documents");
-                                    foreach (JObject document in documents)
-                                    {
-                                        results.Add(document.SelectToken("id").ToString());
-                                    }
-                                }
-                            }
-                        }
-                    }
+                        return results;
+                    }).ToList();
 
-                    return results;
-                }).ToList();
+                    await Task.WhenAll(tasks);
 
-                await Task.WhenAll(tasks);
-
-                CollectionAssert.AreEquivalent(generatedIds, tasks.SelectMany(t => t.Result).ToList());
+                    CollectionAssert.AreEquivalent(generatedIds, tasks.SelectMany(t => t.Result).ToList());
+                }
             }
             finally
             {
@@ -250,39 +253,42 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
                 Assert.IsTrue(feedTokens.Count > 1, " RUs of the container needs to be increased to ensure at least 2 partitions.");
 
-                List<Task<List<string>>> tasks = feedTokens.Select(async feedToken =>
+                foreach (bool enableODE in new bool[] { false, true })
                 {
-                    List<string> results = new List<string>();
-                    FeedIterator<ToDoActivity> feedIterator = container.GetItemQueryIterator<ToDoActivity>(queryDefinition: new QueryDefinition("select * from T where STARTSWITH(T.id, \"BasicItem\")"), feedRange: feedToken, requestOptions: new QueryRequestOptions() { MaxItemCount = 10 });
-                    string continuation = null;
-                    while (feedIterator.HasMoreResults)
+                    List<Task<List<string>>> tasks = feedTokens.Select(async feedToken =>
                     {
-                        FeedResponse<ToDoActivity> response = await feedIterator.ReadNextAsync();
-                        foreach (ToDoActivity toDoActivity in response)
+                        List<string> results = new List<string>();
+                        FeedIterator<ToDoActivity> feedIterator = container.GetItemQueryIterator<ToDoActivity>(queryDefinition: new QueryDefinition("select * from T where STARTSWITH(T.id, \"BasicItem\")"), feedRange: feedToken, requestOptions: new QueryRequestOptions() { MaxItemCount = 10, EnableOptimisticDirectExecution = enableODE });
+                        string continuation = null;
+                        while (feedIterator.HasMoreResults)
                         {
-                            results.Add(toDoActivity.id);
+                            FeedResponse<ToDoActivity> response = await feedIterator.ReadNextAsync();
+                            foreach (ToDoActivity toDoActivity in response)
+                            {
+                                results.Add(toDoActivity.id);
+                            }
+
+                            continuation = response.ContinuationToken;
+                            break;
                         }
 
-                        continuation = response.ContinuationToken;
-                        break;
-                    }
-
-                    feedIterator = container.GetItemQueryIterator<ToDoActivity>(queryDefinition: new QueryDefinition("select * from T where STARTSWITH(T.id, \"BasicItem\")"), feedRange: feedToken, continuationToken: continuation, requestOptions: new QueryRequestOptions() { MaxItemCount = 10 });
-                    while (feedIterator.HasMoreResults)
-                    {
-                        FeedResponse<ToDoActivity> response = await feedIterator.ReadNextAsync();
-                        foreach (ToDoActivity toDoActivity in response)
+                        feedIterator = container.GetItemQueryIterator<ToDoActivity>(queryDefinition: new QueryDefinition("select * from T where STARTSWITH(T.id, \"BasicItem\")"), feedRange: feedToken, continuationToken: continuation, requestOptions: new QueryRequestOptions() { MaxItemCount = 10, EnableOptimisticDirectExecution = enableODE });
+                        while (feedIterator.HasMoreResults)
                         {
-                            results.Add(toDoActivity.id);
+                            FeedResponse<ToDoActivity> response = await feedIterator.ReadNextAsync();
+                            foreach (ToDoActivity toDoActivity in response)
+                            {
+                                results.Add(toDoActivity.id);
+                            }
                         }
-                    }
 
-                    return results;
-                }).ToList();
+                        return results;
+                    }).ToList();
 
-                await Task.WhenAll(tasks);
+                    await Task.WhenAll(tasks);
 
-                CollectionAssert.AreEquivalent(generatedIds, tasks.SelectMany(t => t.Result).ToList());
+                    CollectionAssert.AreEquivalent(generatedIds, tasks.SelectMany(t => t.Result).ToList());
+                }
             }
             finally
             {
