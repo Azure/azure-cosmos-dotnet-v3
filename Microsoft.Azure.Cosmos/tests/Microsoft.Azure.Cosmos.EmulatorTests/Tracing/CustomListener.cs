@@ -47,6 +47,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             "error.type"
         };
 
+        private static readonly List<string> TagsToSkip = new List<string>
+        {
+             "db.cosmosdb.request_content_length_bytes",
+             "db.cosmosdb.response_content_length_bytes"
+        };
+
         private ConcurrentBag<IDisposable> subscriptions = new();
         private ConcurrentBag<ProducedDiagnosticScope> Scopes { get; } = new();
         
@@ -273,6 +279,11 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             foreach (KeyValuePair<string, object> tag in activity.TagObjects)
             {
+                if (TagsToSkip.Contains(tag.Key))
+                {
+                    continue;
+                }
+
                 if (TagsWithStaticValue.Contains(tag.Key))
                 {
                     builder
@@ -297,24 +308,28 @@ namespace Microsoft.Azure.Cosmos.Tests
             // Get all the recorded operation level activities
             List<Activity> collectedOperationActivities = new List<Activity>(CustomListener.CollectedOperationActivities);
 
-            // Order them by the static values. This is to make sure that the order of the attributes is same across all the platforms.
+            // Order them by the static values. This is to make sure that the order of the attributes is always same.
             List<Activity> orderedUniqueOperationActivities = collectedOperationActivities
                .OrderBy(act =>
                {
                    string key = act.Source.Name + act.OperationName;
                    foreach (string tagName in TagsWithStaticValue)
                    {
-                       key+= act.GetTagItem(tagName);
+                       key += act.GetTagItem(tagName);
                    }
                    return key;
                }).ToList();
 
+            // Generate XML tags for Baseline xmls
             foreach (Activity activity in collectedOperationActivities)
             {
                 generatedActivityTagsForBaselineXmls.Add(this.GenerateTagForBaselineTest(activity));
             }
 
+            // Get all the recorded network level activities
             HashSet<Activity> collectedNetworkActivities = new HashSet<Activity>(CustomListener.CollectedNetworkActivities, new NetworkActivityComparer());
+            
+            // Order them by the static values. This is to make sure that the order of the attributes is always same.
             List<Activity> orderedUniqueNetworkActivities = collectedNetworkActivities
                 .OrderBy(act => 
                             act.Source.Name + 
@@ -322,6 +337,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                             act.GetTagItem("rntbd.status_code") + 
                             act.GetTagItem("rntbd.sub_status_code"))
                 .ToList();
+
+            // Generate XML tags for Baseline xmls
             foreach (Activity activity in orderedUniqueNetworkActivities)
             {
                 generatedActivityTagsForBaselineXmls.Add(this.GenerateTagForBaselineTest(activity));
