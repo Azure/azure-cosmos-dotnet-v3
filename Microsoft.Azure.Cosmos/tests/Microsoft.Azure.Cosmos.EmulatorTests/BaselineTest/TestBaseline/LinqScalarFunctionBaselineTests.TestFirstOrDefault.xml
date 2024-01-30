@@ -1,0 +1,231 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[FirstOrDefault]]></Description>
+      <Expression><![CDATA[query.FirstOrDefault()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 1 VALUE root 
+FROM root]]></SqlQuery>
+      <SerializedResults><![CDATA[{  "id": "0",  "Number": 0,  "Pk": "Test",  "Flag": true,  "Multiples": [    0,    0,    0,    0  ]}]]></SerializedResults>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select -> FirstOrDefault 1]]></Description>
+      <Expression><![CDATA[query.Select(data => data.Flag).FirstOrDefault(), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 1 VALUE root["Flag"] 
+FROM root]]></SqlQuery>
+      <SerializedResults><![CDATA[true]]></SerializedResults>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select -> FirstOrDefault 2]]></Description>
+      <Expression><![CDATA[query.Select(data => data.Multiples).FirstOrDefault()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 1 VALUE root["Multiples"] 
+FROM root]]></SqlQuery>
+      <SerializedResults><![CDATA[[  0,  0,  0,  0]]]></SerializedResults>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where -> FirstOrDefault 1]]></Description>
+      <Expression><![CDATA[query.Where(data => (data.Id == "1")).FirstOrDefault()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 1 VALUE root 
+FROM root 
+WHERE (root["id"] = "1")]]></SqlQuery>
+      <SerializedResults><![CDATA[{  "id": "1",  "Number": 1000,  "Pk": "Test",  "Flag": false,  "Multiples": [    1,    2,    3,    4  ]}]]></SerializedResults>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where -> FirstOrDefault 2]]></Description>
+      <Expression><![CDATA[query.Where(data => data.Flag).FirstOrDefault()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 1 VALUE root 
+FROM root 
+WHERE root["Flag"]]]></SqlQuery>
+      <SerializedResults><![CDATA[{  "id": "0",  "Number": 0,  "Pk": "Test",  "Flag": true,  "Multiples": [    0,    0,    0,    0  ]}]]></SerializedResults>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select -> Where -> FirstOrDefault]]></Description>
+      <Expression><![CDATA[query.Select(data => data.Flag).Where(flag => flag).FirstOrDefault(), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 1 VALUE root["Flag"] 
+FROM root 
+WHERE root["Flag"]]]></SqlQuery>
+      <SerializedResults><![CDATA[true]]></SerializedResults>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy -> Select -> FirstOrDefault]]></Description>
+      <Expression><![CDATA[query.OrderBy(data => data.Id).Select(data => data.Flag).FirstOrDefault(), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 1 VALUE root["Flag"] 
+FROM root 
+ORDER BY root["id"] ASC]]></SqlQuery>
+      <SerializedResults><![CDATA[true]]></SerializedResults>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany -> FirstOrDefault]]></Description>
+      <Expression><![CDATA[query.SelectMany(data => data.Multiples).FirstOrDefault(), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 1 VALUE data0 
+FROM root 
+JOIN data0 IN root["Multiples"]]]></SqlQuery>
+      <SerializedResults><![CDATA[0]]></SerializedResults>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Take -> FirstOrDefault]]></Description>
+      <Expression><![CDATA[query.Take(10).FirstOrDefault()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 1 VALUE root 
+FROM root]]></SqlQuery>
+      <SerializedResults><![CDATA[{  "id": "0",  "Number": 0,  "Pk": "Test",  "Flag": true,  "Multiples": [    0,    0,    0,    0  ]}]]></SerializedResults>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select -> Skip -> Take -> FirstOrDefault]]></Description>
+      <Expression><![CDATA[query.Select(data => data).Skip(5).Take(5).FirstOrDefault()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+OFFSET 5 LIMIT 5]]></SqlQuery>
+      <SerializedResults><![CDATA[{  "id": "5",  "Number": 5000,  "Pk": "Test",  "Flag": false,  "Multiples": [    5,    10,    15,    20  ]}]]></SerializedResults>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip -> FirstOrDefault]]></Description>
+      <Expression><![CDATA[query.Skip(3).FirstOrDefault()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+OFFSET 3 LIMIT 2147483647]]></SqlQuery>
+      <SerializedResults><![CDATA[{  "id": "3",  "Number": 3000,  "Pk": "Test",  "Flag": false,  "Multiples": [    3,    6,    9,    12  ]}]]></SerializedResults>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FirstOrDefault (default)]]></Description>
+      <Expression><![CDATA[query.Where(data => (data.Flag AndAlso Not(data.Flag))).FirstOrDefault()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 1 VALUE root 
+FROM root 
+WHERE (root["Flag"] AND (NOT root["Flag"]))]]></SqlQuery>
+      <SerializedResults><![CDATA[null]]></SerializedResults>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FirstOrDefault with explicit (inline) default]]></Description>
+      <Expression><![CDATA[query.FirstOrDefault(new Data())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Incorrect number of arguments for method 'FirstOrDefault'. Expected '0' but received '1'.]]></ErrorMessage>
+      <SerializedResults><![CDATA[null]]></SerializedResults>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FirstOrDefault with explicit default from function invocation]]></Description>
+      <Expression><![CDATA[query.FirstOrDefault(value(Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests.LinqScalarFunctionBaselineTests).GetDefaultData())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Incorrect number of arguments for method 'FirstOrDefault'. Expected '0' but received '1'.]]></ErrorMessage>
+      <SerializedResults><![CDATA[null]]></SerializedResults>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FirstOrDefault with predicate]]></Description>
+      <Expression><![CDATA[query.FirstOrDefault(_ => True)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Incorrect number of arguments for method 'FirstOrDefault'. Expected '0' but received '1'.]]></ErrorMessage>
+      <SerializedResults><![CDATA[null]]></SerializedResults>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FirstOrDefault with explicit (inline) default and predicate]]></Description>
+      <Expression><![CDATA[query.FirstOrDefault(_ => True, new Data())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Incorrect number of arguments for method 'FirstOrDefault'. Expected '0' but received '2'.]]></ErrorMessage>
+      <SerializedResults><![CDATA[null]]></SerializedResults>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FirstOrDefault with explicit default from function invocation and predicate]]></Description>
+      <Expression><![CDATA[query.FirstOrDefault(_ => True, value(Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests.LinqScalarFunctionBaselineTests).GetDefaultData())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Incorrect number of arguments for method 'FirstOrDefault'. Expected '0' but received '2'.]]></ErrorMessage>
+      <SerializedResults><![CDATA[null]]></SerializedResults>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Nested FirstOrDefault 1]]></Description>
+      <Expression><![CDATA[query.Select(data => data.Multiples.FirstOrDefault()).Min(), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Method 'FirstOrDefault' is not supported.]]></ErrorMessage>
+      <SerializedResults><![CDATA[null]]></SerializedResults>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Nested FirstOrDefault 2]]></Description>
+      <Expression><![CDATA[query.Select(data => new List`1() {Void Add(Int32)(1), Void Add(Int32)(2), Void Add(Int32)(3)}.FirstOrDefault()).Min(), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Method 'FirstOrDefault' is not supported.]]></ErrorMessage>
+      <SerializedResults><![CDATA[null]]></SerializedResults>
+    </Output>
+  </Result>
+</Results>
