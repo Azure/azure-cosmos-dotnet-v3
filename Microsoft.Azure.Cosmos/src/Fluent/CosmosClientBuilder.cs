@@ -452,12 +452,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="priorityLevel">The desired priority level for the client.</param>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso href="https://aka.ms/CosmosDB/PriorityBasedExecution"/>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        CosmosClientBuilder WithPriorityLevel(Cosmos.PriorityLevel priorityLevel)
+        public CosmosClientBuilder WithPriorityLevel(Cosmos.PriorityLevel priorityLevel)
         {
             this.clientOptions.PriorityLevel = priorityLevel;
             return this;
