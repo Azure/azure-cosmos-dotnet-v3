@@ -263,7 +263,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "db.cosmosdb.operation_type",
                 "db.cosmosdb.regions_contacted",
                 "rntbd.sub_status_code",
-                "rntbd.status_code"
+                "rntbd.status_code",
+                "error.type"
             };
             
             StringBuilder builder = new StringBuilder();

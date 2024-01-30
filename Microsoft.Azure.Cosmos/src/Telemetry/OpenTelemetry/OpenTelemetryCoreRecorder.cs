@@ -226,12 +226,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                 if (this.response != null)
                 {
-                    this.scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.RequestContentLength, Convert.ToInt32(this.response.RequestContentLength));
-                    this.scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.ResponseContentLength, Convert.ToInt32(this.response.ResponseContentLength));
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestContentLength, this.response.RequestContentLength);
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.ResponseContentLength, this.response.ResponseContentLength);
                     this.scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.StatusCode, (int)this.response.StatusCode);
                     this.scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.SubStatusCode, this.response.SubStatusCode);
                     this.scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.RequestCharge, (int)this.response.RequestCharge);
-                    this.scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.ItemCount, Convert.ToInt32(this.response.ItemCount));
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.ItemCount, this.response.ItemCount);
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.ActivityId, this.response.ActivityId);
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.CorrelatedActivityId, this.response.CorrelatedActivityId);
 
