@@ -31,7 +31,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [4229](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4229) GatewayClientStore: Fixes an issue with dealing with invalid JSON HTTP responses (#4229)
 - [4260](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4260) Query: Fixes LINQ Translation of SqlNullLiteral Values (#4260)
 - [4276](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4276) Change Feed Processor: Fixes LeaseLostException on Notifications API for Renewer (#4276)
-- [4291](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4291) Documentation: Fixes DeleteItem API will not return context in response (#4291)
 - [4241](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4241) GlobalEndpointManager: Fixes Unobserved and Unhandled Exception from Getting Thrown (#4241)
 
 #### Added
