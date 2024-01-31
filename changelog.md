@@ -13,6 +13,36 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.39.0-preview.0"/> [3.39.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.39.0-preview.0) - 2024-01-31
+
+#### Added
+- [4138](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4138) Query: Adds support for LINQ Custom Serializer (#4138)
+
+### <a name="3.38.0"/> [3.38.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.38.0) - 2024-01-31
+  > :warning: Note: Starting with version `3.38.0`, the .NET SDK enables the ODE feature by default. This can potentially cause a new type of continuation token to be generated. Such a token is not recognized by the older SDKs by design and this could result in a Malformed Continuation Token Exception.
+  > If you have a scenario where tokens generated from the newer SDKs are used by an older SDK, we recommend a 2 step approach to upgrade:
+  > - Upgrade to the new SDK and disable ODE, both together as part of a single deployment. Wait for all nodes to upgrade.
+  >    - In order to disable ODE, set EnableOptimisticDirectExecution to false in the QueryRequestOptions.
+  > - Enable ODE as part of second deployment for all nodes.
+
+#### Fixed
+- [4205](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4205) ClientRetryPolicy: Fixes Metadata Requests Retry Policy (#4205)
+- [4220](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4220) Change Feed Processor: Fixes disposal of unused CancellationTokenSource (#4220)
+- [4229](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4229) GatewayClientStore: Fixes an issue with dealing with invalid JSON HTTP responses (#4229)
+- [4260](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4260) Query: Fixes LINQ Translation of SqlNullLiteral Values (#4260)
+- [4276](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4276) Change Feed Processor: Fixes LeaseLostException on Notifications API for Renewer (#4276)
+- [4241](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4241) GlobalEndpointManager: Fixes Unobserved and Unhandled Exception from Getting Thrown (#4241)
+
+#### Added
+- [4122](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4122) Query: Adds Optimistic Direct Execution configuration override support on the Client (#4122)
+- [4240](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4240) BulkMode: Adds PartitionKeyRangeId in Bulk Mode and TransactionalBatch Response Headers (#4240)
+- [4252](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4252) Query: Adds Request Charge to Query Metrics (#4252)
+- [4225](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4225) Query: Refactors Optimistic Direct Execution to be turned on by default on .NET SDK (#4225). **WARNING:** This is breaking change for GA. For more details, please take a look at the `3.38.0` Note section.
+- [4251](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4251) Emulator : Adds support for flag in connection string to ignore SSL check (#4251)
+- [4279](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4279) Region Availability: Adds Spain Central and Mexico Central Regions For Public Usage (#4279)
+- [4286](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4286) Query: Adds LINQ Support for FirstOrDefault (#4286)
+- [4262](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4262) PriorityBasedExecution: Adds PriorityLevel in CosmosClientOptions (#4262)
+
 ### <a name="3.37.1-preview"/> [3.37.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.37.1-preview) - 2024-1-2
 ### <a name="3.37.1"/> [3.37.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.37.1) - 2024-1-2
 
