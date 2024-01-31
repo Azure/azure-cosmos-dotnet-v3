@@ -328,7 +328,6 @@
         {
             List<QueryPlanBaselineTestInput> testVariations = new List<QueryPlanBaselineTestInput>
             {
-
                 //-------------------------
                 //      Negative
                 //-------------------------
@@ -369,6 +368,27 @@
                 SELECT VALUE {""age"": c.age}
                 FROM c
                 GROUP BY {""age"": c.age}"),
+
+                Hash(
+                @"SELECT VALUE object create with non-object create GROUP BY",
+                @"
+                SELECT VALUE {""age"": c.age}
+                FROM c
+                GROUP BY c.age"),
+
+                Hash(
+                @"SELECT VALUE aggregate average",
+                @"
+                SELECT VALUE AVG(c.age)
+                FROM c
+                GROUP BY c.age"),
+
+                Hash(
+                @"SELECT VALUE aggregate COUNT",
+                @"
+                SELECT VALUE COUNT(1)
+                FROM c
+                GROUP BY c.age"),
 
                 Hash(
                 @"Simple GROUP BY with no aggregates",
