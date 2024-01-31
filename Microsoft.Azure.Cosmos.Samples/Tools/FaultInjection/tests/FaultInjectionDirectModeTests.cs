@@ -96,12 +96,13 @@
         {
             //Test Server gone, operation type will be ignored after getting the address
             string serverGoneRuleId = "serverGoneRule-" + Guid.NewGuid().ToString();
-            FaultInjectionRule serverGoneRule = new FaultInjectionRuleBuilder(serverGoneRuleId)
-                .WithCondition(
+            FaultInjectionRule serverGoneRule = new FaultInjectionRuleBuilder(
+                id: serverGoneRuleId,
+                condition:
                     new FaultInjectionConditionBuilder()
                         .WithOperationType(FaultInjectionOperationType.ReadItem)
-                        .Build())
-                .WithResult(
+                        .Build(),
+                result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.Gone)
                         .WithTimes(1)
                         .Build())
@@ -109,12 +110,13 @@
                 .Build();
 
             string tooManyRequestsRuleId = "tooManyRequestsRule-" + Guid.NewGuid().ToString();
-            FaultInjectionRule tooManyRequestsRule = new FaultInjectionRuleBuilder(tooManyRequestsRuleId)
-                .WithCondition(
+            FaultInjectionRule tooManyRequestsRule = new FaultInjectionRuleBuilder(
+                id: tooManyRequestsRuleId,
+                condition:
                     new FaultInjectionConditionBuilder()
                         .WithOperationType(FaultInjectionOperationType.ReadItem)
-                        .Build())
-                .WithResult(
+                        .Build(),
+                result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.TooManyRequests)
                         .WithTimes(1)
                         .Build())
@@ -250,12 +252,13 @@
             JObject item = JObject.FromObject(new { id = Guid.NewGuid().ToString(), Pk = Guid.NewGuid().ToString() });
 
             string writeRegionServerGoneRuleId = "writeRegionServerGoneRule-" + Guid.NewGuid().ToString();
-            FaultInjectionRule writeRegionServerGoneRule = new FaultInjectionRuleBuilder(writeRegionServerGoneRuleId)
-                .WithCondition(
+            FaultInjectionRule writeRegionServerGoneRule = new FaultInjectionRuleBuilder(
+                id: writeRegionServerGoneRuleId,
+                condition:
                     new FaultInjectionConditionBuilder()
                         .WithOperationType(FaultInjectionOperationType.CreateItem)
-                        .Build())
-                .WithResult(
+                        .Build(),
+                result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.Gone)
                         .WithTimes(1)
                         .Build())
@@ -264,8 +267,9 @@
                 .Build();
 
             string primaryReplicaServerGoneRuleId = "primaryReplicaServerGoneRule-" + Guid.NewGuid().ToString();
-            FaultInjectionRule primaryReplicaServerGoneRule = new FaultInjectionRuleBuilder(primaryReplicaServerGoneRuleId)
-                .WithCondition(
+            FaultInjectionRule primaryReplicaServerGoneRule = new FaultInjectionRuleBuilder(
+                id: primaryReplicaServerGoneRuleId,
+                condition:
                     new FaultInjectionConditionBuilder()
                         .WithOperationType(FaultInjectionOperationType.CreateItem)
                         .WithEndpoint(
@@ -275,8 +279,8 @@
                                 FeedRange.FromPartitionKey(new Cosmos.PartitionKey((string)item["Pk"])))
                                 .WithReplicaCount(3)
                                 .Build())
-                        .Build())
-                .WithResult(
+                        .Build(),
+                result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.Gone)
                         .WithTimes(1)
                         .Build())
@@ -372,12 +376,13 @@
             this.client?.Dispose();
 
             string localRegionRuleId = "localRegionRule-" + Guid.NewGuid().ToString();
-            FaultInjectionRule localRegionRule = new FaultInjectionRuleBuilder(localRegionRuleId)
-                .WithCondition(
+            FaultInjectionRule localRegionRule = new FaultInjectionRuleBuilder(
+                id: localRegionRuleId,
+                condition:
                     new FaultInjectionConditionBuilder()
                         .WithRegion(preferredRegions[0])
-                        .Build())
-                .WithResult(
+                        .Build(),
+                result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.Gone)
                         .WithTimes(1)
                         .Build())
@@ -385,12 +390,13 @@
                 .Build();
 
             string remoteRegionRuleId = "remoteRegionRule-" + Guid.NewGuid().ToString();
-            FaultInjectionRule remoteRegionRule = new FaultInjectionRuleBuilder(remoteRegionRuleId)
-                .WithCondition(
+            FaultInjectionRule remoteRegionRule = new FaultInjectionRuleBuilder(
+                id: remoteRegionRuleId,
+                condition:
                     new FaultInjectionConditionBuilder()
                         .WithRegion(preferredRegions[1])
-                        .Build())
-                .WithResult(
+                        .Build(),
+                result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.Gone)
                         .WithTimes(1)
                         .Build())
@@ -480,14 +486,15 @@
                 this.client?.Dispose();
 
                 string serverErrorFeedRangeRuleId = "serverErrorFeedRangeRule-" + Guid.NewGuid().ToString();
-                FaultInjectionRule serverErrorFeedRangeRule = new FaultInjectionRuleBuilder(serverErrorFeedRangeRuleId)
-                    .WithCondition(
+                FaultInjectionRule serverErrorFeedRangeRule = new FaultInjectionRuleBuilder(
+                    id: serverErrorFeedRangeRuleId,
+                    condition:
                         new FaultInjectionConditionBuilder()
                             .WithEndpoint(
                                 new FaultInjectionEndpointBuilder("testDb", "testContianer", feedRanges[0])
                                     .Build())
-                            .Build())
-                    .WithResult(
+                            .Build(),
+                    result:
                         FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.TooManyRequests)
                         .WithTimes(1)
                         .Build())
@@ -556,12 +563,13 @@
         private async Task Timeout_FaultInjectionServerErrorRule_ServerResponseDelay()
         {
             string timeoutRuleId = "timeoutRule-" + Guid.NewGuid().ToString();
-            FaultInjectionRule timeoutRule = new FaultInjectionRuleBuilder(timeoutRuleId)
-                .WithCondition(
+            FaultInjectionRule timeoutRule = new FaultInjectionRuleBuilder(
+                id: timeoutRuleId,
+                condition:
                     new FaultInjectionConditionBuilder()
                         .WithOperationType(FaultInjectionOperationType.ReadItem)
-                        .Build())
-                .WithResult(
+                        .Build(),
+                result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.Timeout)
                         .WithDelay(TimeSpan.FromSeconds(6))
                         .WithTimes(1)
@@ -632,12 +640,13 @@
         private async Task Timeout_FaultInjectionServerErrorRule_ConnecitonTimeout()
         {
             string connectionTimeoutRuleId = "serverConnectionTimeoutRule-" + Guid.NewGuid().ToString();
-            FaultInjectionRule connectionTimeoutRule = new FaultInjectionRuleBuilder(connectionTimeoutRuleId)
-                .WithCondition(
+            FaultInjectionRule connectionTimeoutRule = new FaultInjectionRuleBuilder(
+                id: connectionTimeoutRuleId,
+                condition:
                     new FaultInjectionConditionBuilder()
                         .WithOperationType(FaultInjectionOperationType.CreateItem)
-                        .Build())
-                .WithResult(
+                        .Build(),
+                result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ConnectionDelay)
                         .WithDelay(TimeSpan.FromSeconds(2))
                         .WithTimes(10)
@@ -696,12 +705,13 @@
         private async Task Timeout_FaultInjectionServerErrorRule_ConnecitonDelay()
         {
             string connectionDelayRuleId = "serverConnectionDelayRule-" + Guid.NewGuid().ToString();
-            FaultInjectionRule connectionDelayRule = new FaultInjectionRuleBuilder(connectionDelayRuleId)
-                .WithCondition(
+            FaultInjectionRule connectionDelayRule = new FaultInjectionRuleBuilder(
+                id: connectionDelayRuleId,
+                condition:
                     new FaultInjectionConditionBuilder()
                         .WithOperationType(FaultInjectionOperationType.CreateItem)
-                        .Build())
-                .WithResult(
+                        .Build(),
+                result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ConnectionDelay)
                         .WithDelay(TimeSpan.FromMilliseconds(100))
                         .WithTimes(1)
@@ -799,12 +809,13 @@
             this.client?.Dispose();
 
             string serverErrorResponseRuleId = "serverErrorResponseRule-" + Guid.NewGuid().ToString();
-            FaultInjectionRule serverErrorResponseRule = new FaultInjectionRuleBuilder(serverErrorResponseRuleId)
-                .WithCondition(
+            FaultInjectionRule serverErrorResponseRule = new FaultInjectionRuleBuilder(
+                id: serverErrorResponseRuleId,
+                condition:
                     new FaultInjectionConditionBuilder()
                     .WithOperationType(faultInjectionOperationType)
-                    .Build())
-                .WithResult(
+                    .Build(),
+                result:
                     FaultInjectionResultBuilder.GetResultBuilder(serverErrorType)
                         .WithTimes(1)
                         .Build())
@@ -860,11 +871,12 @@
         private async Task Timeout_FaultInjectionServerErrorRule_HitCountTest()
         {
             string hitCountRuleId = "hitCountRule-" + Guid.NewGuid().ToString();
-            FaultInjectionRule hitCountRule = new FaultInjectionRuleBuilder(hitCountRuleId)
-                .WithCondition(
+            FaultInjectionRule hitCountRule = new FaultInjectionRuleBuilder(
+                id: hitCountRuleId,
+                condition:
                     new FaultInjectionConditionBuilder()
-                    .Build())
-                .WithResult(
+                    .Build(),
+                result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.Gone)
                         .WithTimes(1)
                         .Build())
@@ -937,8 +949,9 @@
             JObject item = JObject.FromObject(new { id = Guid.NewGuid().ToString(), Pk = Guid.NewGuid().ToString() });
 
             string includePrimaryServerGoneRuleId = "includePrimaryServerGoneRule-" + Guid.NewGuid().ToString();
-            FaultInjectionRule includePrimaryServerGoneRule = new FaultInjectionRuleBuilder(includePrimaryServerGoneRuleId)
-                .WithCondition(
+            FaultInjectionRule includePrimaryServerGoneRule = new FaultInjectionRuleBuilder(
+                id: includePrimaryServerGoneRuleId,
+                condition:
                     new FaultInjectionConditionBuilder()
                         .WithOperationType(FaultInjectionOperationType.CreateItem)
                         .WithEndpoint(
@@ -946,8 +959,8 @@
                                 .WithReplicaCount(1)
                                 .WithIncludePrimary(true)
                                 .Build())
-                        .Build())
-                .WithResult(
+                        .Build(),
+                result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.Gone)
                         .WithTimes(1)
                         .Build())
@@ -1006,13 +1019,14 @@
         private async Task Timeout_FaultInjectionConnectionErrorRule_Test()
         {
             string ruldId = "connectionErrorRule-close-" + Guid.NewGuid().ToString();
-            FaultInjectionRule connectionErrorRule = new FaultInjectionRuleBuilder(ruldId)
-                .WithCondition(
+            FaultInjectionRule connectionErrorRule = new FaultInjectionRuleBuilder(
+                id: ruldId,
+                condition:
                     new FaultInjectionConditionBuilder()
                         .WithOperationType(FaultInjectionOperationType.ReadItem)
-                        .Build())
-                .WithResult(
-                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionConnectionErrorType.RecieveFailed)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionConnectionErrorType.ReceiveFailed)
                         .WithInterval(TimeSpan.FromSeconds(1))
                         .WithThreshold(1.0)
                         .Build())

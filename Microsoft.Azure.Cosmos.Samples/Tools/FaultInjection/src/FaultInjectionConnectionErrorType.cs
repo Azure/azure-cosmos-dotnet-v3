@@ -9,13 +9,13 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     public enum FaultInjectionConnectionErrorType
     {
         /// <summary>
-        /// Emulates a connection close because of a recieved stream close
+        /// Emulates a connection close because of a received stream close
         /// </summary>
-        RecievedStreamClosed,
+        ReceiveStreamClosed,
 
         /// <summary>
         /// Emulates a connection close because of a failure to recieve a response
         /// </summary>
-        RecieveFailed,
+        ReceiveFailed,
     }
 }

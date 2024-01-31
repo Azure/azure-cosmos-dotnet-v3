@@ -14,13 +14,15 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 .WithOperationType(FaultInjectionOperationType.CreateItem)
                 .WithConnectionType(FaultInjectionConnectionType.Direct)
                 .Build();
-            FaultInjectionRule faultInjectionRule = new FaultInjectionRuleBuilder(ruleId)
-                .WithCondition(faultInjectionCondition)
-                .WithDuration(TimeSpan.FromSeconds(10))
-                .WithResult(FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ConnectionDelay)
+            FaultInjectionRule faultInjectionRule = new FaultInjectionRuleBuilder(
+                id: ruleId,
+                condition: faultInjectionCondition,
+                result: FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ConnectionDelay)
                     .WithDelay(TimeSpan.FromSeconds(6))
                     .WithTimes(1)
-                    .Build())
+                    .Build()
+                )
+                .WithDuration(TimeSpan.FromSeconds(10))
                 .Build();
 
             Assert.AreEqual(ruleId, faultInjectionRule.GetId());

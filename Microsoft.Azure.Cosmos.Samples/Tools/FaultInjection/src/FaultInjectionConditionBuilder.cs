@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
         /// <summary>
         /// Optional. Specifies which endpoint the rule will target. Once set, the rule will only target requests targeting that endpoint. 
-        /// Only applicable to direct mode. 
+        /// Only applicable to direct mode since only direct mode specifies physical endpoints. 
         /// By default, the rule will target all endpoints
         /// </summary>
         /// <param name="endpoint"></param>

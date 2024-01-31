@@ -11,8 +11,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     public sealed class FaultInjectionRuleBuilder
     {
         private readonly string id;
-        private IFaultInjectionResult? result;
-        private FaultInjectionCondition? condition;
+        private readonly IFaultInjectionResult result;
+        private readonly FaultInjectionCondition condition;
         private TimeSpan duration;
         private TimeSpan startDelay;
         private int hitLimit;
@@ -23,35 +23,18 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// Sets the id of the rule.
         /// </summary>
         /// <param name="id">The id of the rule. Cannot be null or empty</param>
-        public FaultInjectionRuleBuilder(string id)
+        /// <param name="condition">the <see cref="FaultInjectionCondition"/></param>
+        /// <param name="result">the <see cref="IFaultInjectionResult"/> Cannot be null</param>
+        public FaultInjectionRuleBuilder(string id, FaultInjectionCondition condition, IFaultInjectionResult result)
         {
-            if (id == null || id == string.Empty)
+            if (string.IsNullOrEmpty(id))
             {
                 throw new ArgumentNullException(nameof(id), "Argument 'id' cannot be null or empty.");
             }
+
             this.id = id;
-        }
-
-        /// <summary>
-        /// Sets the result of the rule.
-        /// </summary>
-        /// <param name="result">the <see cref="IFaultInjectionResult"/></param>
-        /// <returns>the <see cref="FaultInjectionRuleBuilder"/>.</returns>
-        public FaultInjectionRuleBuilder WithResult(IFaultInjectionResult result)
-        {
-            this.result = result;
-            return this;
-        }
-
-        /// <summary>
-        /// Sets the condition of the rule. Rule will only be applied if the condition is met.
-        /// </summary>
-        /// <param name="condition">the <see cref="FaultInjectionCondition"/></param>
-        /// <returns>the <see cref="FaultInjectionRuleBuilder"/>.</returns>
-        public FaultInjectionRuleBuilder WithCondition(FaultInjectionCondition condition)
-        {          
-            this.condition = condition;
-            return this;
+            this.condition = condition ?? throw new ArgumentNullException(nameof(condition), "Argument 'condition' cannot be null.");
+            this.result = result ?? throw new ArgumentNullException(nameof(result), "Argument 'result' cannot be null.");
         }
 
         /// <summary>
@@ -112,16 +95,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <returns>the <see cref="FaultInjectionRule"/>.</returns>
         public FaultInjectionRule Build()
         {
-            if (this.result == null)
-            {
-                throw new ArgumentNullException(nameof(this.result), "Argument 'result' cannot be null.");
-            }
-
-            if (this.condition == null)
-            {
-                throw new ArgumentNullException(nameof(this.condition), "Argument 'condition' cannot be null.");
-            }
-
             return new FaultInjectionRule(
                 this.result,
                 this.condition,

@@ -135,7 +135,7 @@
         {
             return errorType switch
             {
-                FaultInjectionConnectionErrorType.RecievedStreamClosed => new TransportException(
+                FaultInjectionConnectionErrorType.ReceiveStreamClosed => new TransportException(
                                         errorCode: TransportErrorCode.ReceiveStreamClosed,
                                         innerException: null,
                                         activityId: Guid.Empty,
@@ -143,7 +143,7 @@
                                         sourceDescription: "FaultInjectionConnectionError",
                                         userPayload: false,
                                         payloadSent: true),
-                FaultInjectionConnectionErrorType.RecieveFailed => new TransportException(
+                FaultInjectionConnectionErrorType.ReceiveFailed => new TransportException(
                                         errorCode: TransportErrorCode.ReceiveFailed,
                                         innerException: null,
                                         activityId: Guid.Empty,

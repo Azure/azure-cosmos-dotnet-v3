@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         }
 
         /// <summary>
-        /// Get the FeedRange
+        /// Get the FeedRange.
         /// </summary>
         /// <returns>the <see cref="FeedRange"/></returns>
         public FeedRange GetFeedRange()
@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <summary>
         /// Get the flag indicating if primary replica address can be used.
         /// </summary>
-        /// <returns>the flag indicating if a primary replica address can be used.</returns>
+        /// <returns>The flag indicating if a primary replica address can be used.</returns>
         public bool IsIncludePrimary()
         {
             return this.includePrimary;
