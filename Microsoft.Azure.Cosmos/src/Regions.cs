@@ -364,5 +364,15 @@ namespace Microsoft.Azure.Cosmos
         /// Name of the Azure Israel Central region in the Azure Cosmos DB service.
         /// </summary>
         public const string IsraelCentral = "Israel Central";
+
+        /// <summary>
+        /// Name of the Azure Mexico Central region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string MexicoCentral = "Mexico Central";
+
+        /// <summary>
+        /// Name of the Azure Spain Central region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string SpainCentral = "Spain Central";
     }
 }
