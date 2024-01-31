@@ -40,17 +40,16 @@ For globally strong write:
     internal sealed class ConsistencyWriter
     {
         private const int maxNumberOfWriteBarrierReadRetries = 30;
-        private const int delayBetweenWriteBarrierCallsInMs = 30;
         private const int extensiveLsnGapThreshold = 10_000;
-        private const int extensiveLsnGapDelayBetweenWriteBarrierCallsInMs = 5000;
         private const int highLsnGapThreshold = 1_000;
-        private const int highLsnGapDelayBetweenWriteBarrierCallsInMs = 1000;
         private const int mediumLsnGapThreshold = 100;
-        private const int mediumLsnGapDelayBetweenWriteBarrierCallsInMs = 100;
-
         private const int maxShortBarrierRetriesForMultiRegion = 4;
-        private const int shortbarrierRetryIntervalInMsForMultiRegion = 10;
 
+        private static readonly TimeSpan defaultDelayBetweenWriteBarrierCalls = TimeSpan.FromMilliseconds(30);
+        private static readonly TimeSpan shortDelayBetweenWriteBarrierCallsForMultipleRegions = TimeSpan.FromMilliseconds(10);
+        private static readonly TimeSpan extensiveLsnGapDelayBetweenWriteBarrierCalls = TimeSpan.FromMilliseconds(5000);
+        private static readonly TimeSpan highLsnGapDelayBetweenWriteBarrierCalls = TimeSpan.FromMilliseconds(1000);
+        private static readonly TimeSpan mediumLsnGapDelayBetweenWriteBarrierCalls = TimeSpan.FromMilliseconds(100);
         private readonly StoreReader storeReader;
         private readonly TransportClient transportClient;
         private readonly AddressSelector addressSelector;
@@ -300,21 +299,24 @@ For globally strong write:
             return false;
         }
 
-        private async Task delayInitialHeadRequestAsync(long? currentGlobalCommitedLsn, long selectedTargetGlobalCommittedLsn)
+        internal static TimeSpan getInitialHeadRequestDelay(long? currentGlobalCommitedLsn, long selectedTargetGlobalCommittedLsn)
         {
             if (currentGlobalCommitedLsn != null &&
                 currentGlobalCommitedLsn < selectedTargetGlobalCommittedLsn - extensiveLsnGapThreshold)
             {
-                await Task.Delay(highLsnGapDelayBetweenWriteBarrierCallsInMs);
+                return highLsnGapDelayBetweenWriteBarrierCalls;
             }
-            else if (currentGlobalCommitedLsn != null &&
+
+            if (currentGlobalCommitedLsn != null &&
                 currentGlobalCommitedLsn < selectedTargetGlobalCommittedLsn - highLsnGapThreshold)
             {
-                await Task.Delay(mediumLsnGapDelayBetweenWriteBarrierCallsInMs);
+                return mediumLsnGapDelayBetweenWriteBarrierCalls;
             }
+
+            return TimeSpan.Zero;
         }
 
-        private async Task delayBetweenHeadRequestsAsync(int remainingWriteBarrierRetryCount, IList<ReferenceCountedDisposable<StoreResult>> responses)
+        internal static TimeSpan getDelayBetweenHeadRequests(int remainingWriteBarrierRetryCount, IList<ReferenceCountedDisposable<StoreResult>> responses)
         {
             int minLSNGap = extensiveLsnGapThreshold + 1;
             foreach (ReferenceCountedDisposable<StoreResult> response in responses)
@@ -341,27 +343,25 @@ For globally strong write:
 
             if (minLSNGap >= extensiveLsnGapThreshold)
             {
-                await Task.Delay(ConsistencyWriter.extensiveLsnGapThreshold);
+                return ConsistencyWriter.extensiveLsnGapDelayBetweenWriteBarrierCalls;
             }
-            else if (minLSNGap >= highLsnGapThreshold)
+
+            if (minLSNGap >= highLsnGapThreshold)
             {
-                await Task.Delay(ConsistencyWriter.highLsnGapThreshold);
+                return ConsistencyWriter.highLsnGapDelayBetweenWriteBarrierCalls;
             }
-            else if (minLSNGap >= mediumLsnGapThreshold)
+
+            if (minLSNGap >= mediumLsnGapThreshold)
             {
-                await Task.Delay(ConsistencyWriter.mediumLsnGapThreshold);
+                return ConsistencyWriter.mediumLsnGapDelayBetweenWriteBarrierCalls;
             }
-            else
+
+            if ((ConsistencyWriter.maxNumberOfWriteBarrierReadRetries - remainingWriteBarrierRetryCount) > ConsistencyWriter.maxShortBarrierRetriesForMultiRegion)
             {
-                if ((ConsistencyWriter.maxNumberOfWriteBarrierReadRetries - remainingWriteBarrierRetryCount) > ConsistencyWriter.maxShortBarrierRetriesForMultiRegion)
-                {
-                    await Task.Delay(ConsistencyWriter.delayBetweenWriteBarrierCallsInMs);
-                }
-                else
-                {
-                    await Task.Delay(ConsistencyWriter.shortbarrierRetryIntervalInMsForMultiRegion);
-                }
+                return ConsistencyWriter.defaultDelayBetweenWriteBarrierCalls;
             }
+               
+            return ConsistencyWriter.shortDelayBetweenWriteBarrierCallsForMultipleRegions;
         }
 
         private async Task<bool> WaitForWriteBarrierAsync(DocumentServiceRequest barrierRequest, long? currentGlobalCommitedLsn, long selectedTargetGlobalCommittedLsn)
@@ -372,7 +372,11 @@ For globally strong write:
             while (remainingWriteBarrierRetryCount-- > 0)
             {
                 barrierRequest.RequestContext.TimeoutHelper.ThrowTimeoutIfElapsed();
-                await this.delayInitialHeadRequestAsync(currentGlobalCommitedLsn, selectedTargetGlobalCommittedLsn);
+                TimeSpan initialDelay = getInitialHeadRequestDelay(currentGlobalCommitedLsn, selectedTargetGlobalCommittedLsn);
+                if (initialDelay != TimeSpan.Zero)
+                {
+                    await Task.Delay(initialDelay);
+                }
 
                 barrierRequest.RequestContext.TimeoutHelper.ThrowTimeoutIfElapsed();
                 IList<ReferenceCountedDisposable<StoreResult>> responses = await this.storeReader.ReadMultipleReplicaAsync(
@@ -405,7 +409,11 @@ For globally strong write:
                 }
                 else
                 {
-                    await this.delayBetweenHeadRequestsAsync(remainingWriteBarrierRetryCount, responses);
+                    TimeSpan delayBetweenHeadRequests = getDelayBetweenHeadRequests(remainingWriteBarrierRetryCount, responses);
+                    if (delayBetweenHeadRequests != TimeSpan.Zero)
+                    {
+                        await Task.Delay(delayBetweenHeadRequests);
+                    }
                 }
             }
 
