@@ -1615,8 +1615,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public async Task TestIndexMetrics()
         {
-            CosmosClient client = new CosmosClient(@"AccountEndpoint=https://adityasa-test3.documents.azure.com:443/;AccountKey=dUdhSz38OZpPZnUrmBzJNbHajUjjeYuFWmWFsnF9ykoL39jbzTP4x7rrmxmspmQL6vuENJMpUVrCPMKzC0TScg==");
-            var customerId = Guid.Parse("df165b31-7641-4664-9549-37862ed806ee");
+            CosmosClient client = new CosmosClient(@"");
             var label = "popular";
             // var database = client.GetDatabase("AggregationIssue");
             var nonSubpartitionedContainer = client.GetContainer("AggregationIssue", "NonSubpartitioned");
@@ -1632,7 +1631,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             var requestOptions = new QueryRequestOptions
             {
                 PopulateIndexMetrics = true,
-                PartitionKey = partitionKey
+                PartitionKey = partitionKey,
+                EnableOptimisticDirectExecution = true
             };
             var queryDefinition = new QueryDefinition("SELECT VALUE COUNT(1) FROM c WHERE c.customerId = @customerId AND c.label = @label")
                 .WithParameter("@customerId", customerId)
