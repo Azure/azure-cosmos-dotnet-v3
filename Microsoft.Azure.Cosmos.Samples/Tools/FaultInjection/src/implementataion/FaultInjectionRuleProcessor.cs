@@ -24,6 +24,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private readonly IRoutingMapProvider routingMapProvider;
         private readonly FaultInjectionApplicationContext applicationContext;
 
+        private readonly RegionNameMapper regionNameMapper = new RegionNameMapper();
+
         /// <summary>
         /// Initializes a new instance of the <see cref="FaultInjectionRuleProcessor"/> class.
         /// </summary>
@@ -221,7 +223,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
             if(!string.IsNullOrEmpty(condition.GetRegion()))
             {
-                return new List<Uri> { this.globalEndpointManager.ResolveFaultInjectionServiceEndpoint(condition.GetRegion(), isWriteOnlyEndpoints) };
+                return new List<Uri> { this.ResolveFaultInjectionServiceEndpoint(condition.GetRegion(), isWriteOnlyEndpoints) };
             }
             else
             {
@@ -229,6 +231,30 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     ? this.globalEndpointManager.GetAvailableWriteEndpointsByLocation().Values.ToList() 
                     : this.globalEndpointManager.GetAvailableReadEndpointsByLocation().Values.ToList();
             }
+        }
+
+        private Uri ResolveFaultInjectionServiceEndpoint(string region, bool isWriteOnlyEndpoints)
+        {
+            if (isWriteOnlyEndpoints)
+            {
+                if (this.globalEndpointManager.GetAvailableWriteEndpointsByLocation().TryGetValue(
+                    this.regionNameMapper.GetCosmosDBRegionName(region), 
+                    out Uri? endpoint))
+                {
+                    return endpoint;
+                }
+            }
+            else
+            {
+                if (this.globalEndpointManager.GetAvailableReadEndpointsByLocation().TryGetValue(
+                    this.regionNameMapper.GetCosmosDBRegionName(region),
+                    out Uri? endpoint))
+                {
+                    return endpoint;
+                }
+            }
+
+            throw new ArgumentException($"Cannot find service endpoint for region: {region}");
         }
 
         private bool IsWriteOnly(FaultInjectionCondition condition)

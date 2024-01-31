@@ -13,14 +13,11 @@
 		<AssemblyName>Microsoft.Azure.Cosmos.FaultInjection</AssemblyName>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
+		<SdkProjectRef>True</SdkProjectRef>
 	</PropertyGroup>
 
-	<ItemGroup Condition=" '$(SdkProjectRef)' != 'True' AND '$(IsPreview)' != 'True' ">
+	<ItemGroup Condition=" '$(SdkProjectRef)' != 'True' ">
 		<PackageReference Include="Microsoft.Azure.Cosmos" Version="$(ClientOfficialVersion)" />
-	</ItemGroup>
-	
-	<ItemGroup Condition=" '$(SdkProjectRef)' != 'True' AND '$(IsPreview)' == 'True' ">
-		<PackageReference Include="Microsoft.Azure.Cosmos" Version="$(ClientPreviewVersion)-$(ClientPreviewSuffixVersion)" />
 	</ItemGroup>
 
 	<ItemGroup Condition=" '$(SdkProjectRef)' == 'True' ">

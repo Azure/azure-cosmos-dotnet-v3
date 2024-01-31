@@ -299,7 +299,11 @@
             _ = this.container != null
                 ? await this.container.CreateItemAsync(item) : null;
 
-            globalEndpointManager = ((ChaosInterceptor)faultInjector.GetChaosInterceptor())
+            ChaosInterceptor? interceptor = faultInjector.GetChaosInterceptor() as ChaosInterceptor;
+
+            Assert.IsNotNull(interceptor);
+
+            globalEndpointManager = interceptor
                 .GetRuleStore()?
                 .GetRuleProcessor()?
                 .GetGlobalEndpointManager();
@@ -594,13 +598,13 @@
                 CosmosClient testClient = new CosmosClient(
                     accountEndpoint: TestCommon.EndpointMultiRegion,
                     authKeyOrResourceToken: TestCommon.AuthKeyMultiRegion,
-                    clientOptions: new CosmosClientOptions()
-                    {
-                        EnableContentResponseOnWrite = true,
-                        ConnectionMode = ConnectionMode.Direct,
-                        OpenTcpConnectionTimeout = TimeSpan.FromSeconds(1),
-                        ChaosInterceptor = faultInjector.GetChaosInterceptor()
-                    });
+                    clientOptions: faultInjector.GetFaultInjectionClientOptions(
+                        new CosmosClientOptions()
+                        {
+                            EnableContentResponseOnWrite = true,
+                            ConnectionMode = ConnectionMode.Direct,
+                            OpenTcpConnectionTimeout = TimeSpan.FromSeconds(1)
+                        }));
 
                 Container testContainer = testClient.GetContainer("testDb", "testContainer");
                 timeoutRule.Enable();
@@ -664,14 +668,13 @@
                 CosmosClient testClient = new CosmosClient(
                     accountEndpoint: TestCommon.EndpointMultiRegion,
                     authKeyOrResourceToken: TestCommon.AuthKeyMultiRegion,
-                    clientOptions: new CosmosClientOptions()
-                    {
-                        EnableContentResponseOnWrite = true,
-                        ConnectionMode = ConnectionMode.Direct,
-                        OpenTcpConnectionTimeout = TimeSpan.FromSeconds(1),
-                        RequestTimeout = TimeSpan.FromSeconds(1),
-                        ChaosInterceptor = faultInjector.GetChaosInterceptor()
-                    });
+                    clientOptions: faultInjector.GetFaultInjectionClientOptions(
+                        new CosmosClientOptions()
+                        {
+                            EnableContentResponseOnWrite = true,
+                            ConnectionMode = ConnectionMode.Direct,
+                            OpenTcpConnectionTimeout = TimeSpan.FromSeconds(1)
+                        }));
                 Container testContainer = testClient.GetContainer("testDb", "testContainer");
 
                 JObject createdItem = JObject.FromObject(new { id = Guid.NewGuid().ToString(), Pk = Guid.NewGuid().ToString() });
@@ -728,13 +731,13 @@
                 CosmosClient timeoutClient = new CosmosClient(
                     accountEndpoint: TestCommon.EndpointMultiRegion,
                     authKeyOrResourceToken: TestCommon.AuthKeyMultiRegion,
-                    clientOptions: new CosmosClientOptions()
-                    {
-                        EnableContentResponseOnWrite = true,
-                        ConnectionMode = ConnectionMode.Direct,
-                        OpenTcpConnectionTimeout = TimeSpan.FromSeconds(1),
-                        ChaosInterceptor = faultInjector.GetChaosInterceptor()
-                    });
+                    clientOptions: faultInjector.GetFaultInjectionClientOptions(
+                        new CosmosClientOptions()
+                        {
+                            EnableContentResponseOnWrite = true,
+                            ConnectionMode = ConnectionMode.Direct,
+                            OpenTcpConnectionTimeout = TimeSpan.FromSeconds(1)
+                        }));
                 Container timeoutContainer = timeoutClient.GetContainer("testDb", "testContainer");
 
                 ValueStopwatch stopwatch = ValueStopwatch.StartNew();
@@ -839,9 +842,12 @@
 
                 if (serverErrorType == FaultInjectionServerErrorType.Timeout)
                 {
+                    ChaosInterceptor? interceptor = faultInjector.GetChaosInterceptor() as ChaosInterceptor;
+
+                    Assert.IsNotNull(interceptor);
                     Assert.IsTrue(
                         elapsed.TotalSeconds 
-                        >= ((ChaosInterceptor)faultInjector.GetChaosInterceptor()).GetRequestTimeout().TotalSeconds);
+                        >= interceptor.GetRequestTimeout().TotalSeconds);
                 }
                 Assert.IsNotNull(diagnostics);
 
@@ -1036,7 +1042,10 @@
             FaultInjector faultInjector = new FaultInjector(new List<FaultInjectionRule> { connectionErrorRule });
             await this.Initialize(faultInjector, true);
             
-            FaultInjectionDynamicChannelStore channelStore = ((ChaosInterceptor)faultInjector.GetChaosInterceptor()).GetChannelStore();
+            ChaosInterceptor? interceptor = faultInjector.GetChaosInterceptor() as ChaosInterceptor;
+            Assert.IsNotNull(interceptor);
+
+            FaultInjectionDynamicChannelStore channelStore = interceptor.GetChannelStore();
             Assert.IsTrue(channelStore.GetAllChannels().Count > 0);
 
             connectionErrorRule.Enable();
