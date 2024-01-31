@@ -126,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null)
+            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null, requestedClientPriorityLevel: null)
             {
                 InnerHandler = testHandler
             };
@@ -176,7 +176,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         return TestHandler.ReturnSuccess();
                     });
 
-                    RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null)
+                    RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null, requestedClientPriorityLevel: null)
                     {
                         InnerHandler = testHandler
                     };
@@ -227,7 +227,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
-                RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null)
+                RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null, requestedClientPriorityLevel: null)
                 {
                     InnerHandler = testHandler
                 };
@@ -257,7 +257,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null)
+            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null, requestedClientPriorityLevel: null)
             {
                 InnerHandler = testHandler
             };
@@ -285,7 +285,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     return TestHandler.ReturnSuccess();
                 });
 
-                RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: client.ClientOptions.ConsistencyLevel)
+                RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: client.ClientOptions.ConsistencyLevel, requestedClientPriorityLevel: null)
                 {
                     InnerHandler = testHandler
                 };
@@ -302,6 +302,73 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public async Task PriorityLevelClient()
+        {
+            List<Cosmos.PriorityLevel> cosmosLevels = Enum.GetValues(typeof(Cosmos.PriorityLevel)).Cast<Cosmos.PriorityLevel>().ToList();
+            foreach (Cosmos.PriorityLevel clientLevel in cosmosLevels)
+            {
+                using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
+                   accountConsistencyLevel: null,
+                   customizeClientBuilder: builder => builder.WithPriorityLevel(clientLevel));
+
+                TestHandler testHandler = new TestHandler((request, cancellationToken) =>
+                {
+                    Assert.AreEqual(clientLevel.ToString(), request.Headers[HttpConstants.HttpHeaders.PriorityLevel]);
+                    return TestHandler.ReturnSuccess();
+                });
+
+                RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null, requestedClientPriorityLevel: client.ClientOptions.PriorityLevel)
+                {
+                    InnerHandler = testHandler
+                };
+
+                RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"))
+                {
+                    ResourceType = ResourceType.Document
+                };
+                requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
+                requestMessage.OperationType = OperationType.Read;
+
+                await invoker.SendAsync(requestMessage, new CancellationToken());
+            }
+        }
+
+        [TestMethod]
+        public async Task TestRequestPriorityLevelTakesPrecedence()
+        {
+            Cosmos.PriorityLevel clientLevel = Cosmos.PriorityLevel.Low;
+            Cosmos.PriorityLevel requestLevel = Cosmos.PriorityLevel.High;
+
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
+               accountConsistencyLevel: null,
+               customizeClientBuilder: builder => builder.WithPriorityLevel(clientLevel));
+
+            TestHandler testHandler = new TestHandler((request, cancellationToken) =>
+            {
+                Assert.AreEqual(requestLevel.ToString(), request.Headers[HttpConstants.HttpHeaders.PriorityLevel]);
+                return TestHandler.ReturnSuccess();
+            });
+
+            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null, requestedClientPriorityLevel: client.ClientOptions.PriorityLevel)
+            {
+                InnerHandler = testHandler
+            };
+
+            RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"))
+            {
+                ResourceType = ResourceType.Document
+            };
+            requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
+            requestMessage.OperationType = OperationType.Read;
+            requestMessage.RequestOptions = new RequestOptions
+            {
+                PriorityLevel = requestLevel
+            };
+
+            await invoker.SendAsync(requestMessage, new CancellationToken());
+        }
+
+        [TestMethod]
         public async Task ConsistencyLevelClientAndRequestOption()
         {
             Cosmos.ConsistencyLevel requestOptionLevel = Cosmos.ConsistencyLevel.BoundedStaleness;
@@ -315,7 +382,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return TestHandler.ReturnSuccess();
             });
 
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null)
+            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null, requestedClientPriorityLevel: null)
             {
                 InnerHandler = testHandler
             };
@@ -353,7 +420,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null)
+            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null, requestedClientPriorityLevel: null)
             {
                 InnerHandler = testHandler
             };
@@ -544,7 +611,8 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             RequestInvokerHandler invoker = new(
                 client: client,
-                requestedClientConsistencyLevel: default);
+                requestedClientConsistencyLevel: default,
+                requestedClientPriorityLevel: default);
 
             Cosmos.FeedRange feedRange = await RequestInvokerHandler.ResolveFeedRangeBasedOnPrefixContainerAsync(
                 feedRange: inputFeedRange,

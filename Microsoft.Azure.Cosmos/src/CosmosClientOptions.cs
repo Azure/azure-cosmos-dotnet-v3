@@ -281,6 +281,16 @@ namespace Microsoft.Azure.Cosmos
         public ConsistencyLevel? ConsistencyLevel { get; set; }
 
         /// <summary>
+        /// Sets the priority level for requests created using cosmos client.
+        /// </summary>
+        /// <remarks>
+        /// If priority level is also set at request level in <see cref="RequestOptions.PriorityLevel"/>, that priority is used.
+        /// If <see cref="AllowBulkExecution"/> is set to true in CosmosClientOptions, priority level set on the CosmosClient is used.
+        /// </remarks>
+        /// <seealso href="https://aka.ms/CosmosDB/PriorityBasedExecution"/>
+        public PriorityLevel? PriorityLevel { get; set; }
+
+        /// <summary>
         /// Gets or sets the maximum number of retries in the case where the request fails
         /// because the Azure Cosmos DB service has applied rate limiting on the client.
         /// </summary>
