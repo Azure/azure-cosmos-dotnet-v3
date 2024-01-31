@@ -395,6 +395,7 @@ namespace Microsoft.Azure.Cosmos
         public Nullable<int> MaxTcpConnectionsPerEndpoint { get; set; }
         public Nullable<TimeSpan> OpenTcpConnectionTimeout { get; set; }
         public Nullable<PortReuseMode> PortReuseMode { get; set; }
+        public Nullable<PriorityLevel> PriorityLevel { get; set; }
         public TimeSpan RequestTimeout { get; set; }
         public CosmosSerializer Serializer { get; set; }
         public CosmosSerializationOptions SerializerOptions { get; set; }
@@ -1248,6 +1249,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         public CosmosClientBuilder WithCustomSerializer(CosmosSerializer cosmosJsonSerializer);
         public CosmosClientBuilder WithHttpClientFactory(Func<HttpClient> httpClientFactory);
         public CosmosClientBuilder WithLimitToEndpoint(bool limitToEndpoint);
+        public CosmosClientBuilder WithPriorityLevel(PriorityLevel priorityLevel);
         public CosmosClientBuilder WithRequestTimeout(TimeSpan requestTimeout);
         public CosmosClientBuilder WithSerializerOptions(CosmosSerializationOptions cosmosSerializerOptions);
         public CosmosClientBuilder WithThrottlingRetryOptions(TimeSpan maxRetryWaitTimeOnThrottledRequests, int maxRetryAttemptsOnThrottledRequests);
