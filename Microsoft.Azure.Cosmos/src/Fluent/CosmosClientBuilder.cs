@@ -443,6 +443,22 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Sets the priority level for requests created using cosmos client.
+        /// </summary>
+        /// <remarks>
+        /// If priority level is also set at request level in <see cref="RequestOptions.PriorityLevel"/>, that priority is used.
+        /// If <see cref="WithBulkExecution(bool)"/> is set to true, priority level set on the CosmosClient is used.
+        /// </remarks>
+        /// <param name="priorityLevel">The desired priority level for the client.</param>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
+        /// <seealso href="https://aka.ms/CosmosDB/PriorityBasedExecution"/>
+        public CosmosClientBuilder WithPriorityLevel(Cosmos.PriorityLevel priorityLevel)
+        {
+            this.clientOptions.PriorityLevel = priorityLevel;
+            return this;
+        }
+
+        /// <summary>
         /// Sets the connection mode to Gateway. This is used by the client when connecting to the Azure Cosmos DB service.
         /// </summary>
         /// <param name="maxConnectionLimit">The number specifies the number of connections that may be opened simultaneously. Default is 50 connections</param>

@@ -120,6 +120,7 @@ namespace Microsoft.Azure.Cosmos
                 ClientPipelineBuilder clientPipelineBuilder = new ClientPipelineBuilder(
                     cosmosClient,
                     clientOptions.ConsistencyLevel,
+                    clientOptions.PriorityLevel,
                     clientOptions.CustomHandlers,
                     telemetryToServiceHelper: documentClient.telemetryToServiceHelper);
 
