@@ -486,33 +486,26 @@ namespace Microsoft.Azure.Cosmos
                 observerFactory, ChangeFeedMode.LatestVersion);
         }
 
-        /// <summary>
-        /// Initializes a <see cref="GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes"/> for change feed processing with all versions and deletes.
-        /// </summary>
-        /// <typeparam name="T">Document type</typeparam>
-        /// <param name="processorName">A name that identifies the Processor and the particular work it will do.</param>
-        /// <param name="onChangesDelegate">Delegate to receive all changes and deletes</param>
-        /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
-        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
-            string processorName,
-            ChangeFeedHandler<ChangeFeedItemChange<T>> onChangesDelegate)
-        {
-            if (processorName == null)
-            {
-                throw new ArgumentNullException(nameof(processorName));
-            }
+        //////public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
+        //////    string processorName,
+        //////    ChangeFeedHandler<ChangeFeedItemChange<T>> onChangesDelegate)
+        //////{
+        //////    if (processorName == null)
+        //////    {
+        //////        throw new ArgumentNullException(nameof(processorName));
+        //////    }
 
-            if (onChangesDelegate == null)
-            {
-                throw new ArgumentNullException(nameof(onChangesDelegate));
-            }
+        //////    if (onChangesDelegate == null)
+        //////    {
+        //////        throw new ArgumentNullException(nameof(onChangesDelegate));
+        //////    }
 
-            ChangeFeedObserverFactory observerFactory = new CheckpointerObserverFactory(
-                new ChangeFeedObserverFactoryCore<T>(onChangesDelegate, this.ClientContext.SerializerCore),
-                withManualCheckpointing: false);
-            return this.GetChangeFeedProcessorBuilderPrivate(processorName,
-                observerFactory, ChangeFeedMode.AllVersionsAndDeletes);
-        }
+        //////    ChangeFeedObserverFactory observerFactory = new CheckpointerObserverFactory(
+        //////        new ChangeFeedObserverFactoryCore<T>(onChangesDelegate, this.ClientContext.SerializerCore),
+        //////        withManualCheckpointing: false);
+        //////    return this.GetChangeFeedProcessorBuilderPrivate(processorName,
+        //////        observerFactory, ChangeFeedMode.AllVersionsAndDeletes);
+        //////}
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint<T>(
             string processorName,

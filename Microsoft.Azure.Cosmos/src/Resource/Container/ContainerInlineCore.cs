@@ -515,20 +515,6 @@ namespace Microsoft.Azure.Cosmos
             return base.GetChangeFeedProcessorBuilder<T>(processorName, onChangesDelegate);
         }
 
-        /// <summary>
-        /// Initializes a <see cref="GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes"/> for change feed processing with all versions and deletes.
-        /// </summary>
-        /// <typeparam name="T">Document type</typeparam>
-        /// <param name="processorName">A name that identifies the Processor and the particular work it will do.</param>
-        /// <param name="onChangesDelegate">Delegate to receive all changes and deletes</param>
-        /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
-        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
-            string processorName,
-            ChangeFeedHandler<ChangeFeedItemChange<T>> onChangesDelegate)
-        {
-            return base.GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(processorName, onChangesDelegate);
-        }
-
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
             string processorName,
             ChangeFeedHandler<T> onChangesDelegate)
@@ -674,6 +660,15 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions,
                 task: (trace) => base.DeleteAllItemsByPartitionKeyStreamAsync(partitionKey, trace, requestOptions, cancellationToken),
                 openTelemetry: (response) => new OpenTelemetryResponse(response));
+        }
+
+        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
+            string processorName,
+            ChangeFeedHandler<ChangeFeedItemChange<T>> onChangesDelegate)
+        {
+            return base.GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(
+                processorName,
+                onChangesDelegate);
         }
     }
 }
