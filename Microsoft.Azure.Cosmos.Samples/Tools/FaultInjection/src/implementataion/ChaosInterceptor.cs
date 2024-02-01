@@ -185,12 +185,17 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
         /// <summary>
         /// Gets the fault injection rule id for the given activity id
+        /// Will return the empty string if no rule is found
         /// </summary>
         /// <param name="activityId"></param>
         /// <returns>the fault injection rule id</returns>
         public string GetFaultInjectionRuleId(Guid activityId)
         {
-            return this.applicationContext.GetRuleExecutionsByActivityId(activityId)?.Item2.ToString() ?? string.Empty;
+            if (this.applicationContext.TryGetRuleExecutionByActivityId(activityId, out (DateTime, string) execution))
+            {
+                return execution.Item2;
+            }
+            return string.Empty;
         }
 
         public FaultInjectionApplicationContext GetApplicationContext()

@@ -28,9 +28,12 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             string? region = null,
             FaultInjectionEndpoint? endpoint = null)
         {
+
+            RegionNameMapper mapper = new RegionNameMapper();
+            this.region = string.IsNullOrEmpty(region) ? string.Empty : mapper.GetCosmosDBRegionName(region);
+
             this.operationType = operationType ?? FaultInjectionOperationType.All;
             this.connectionType = connectionType ?? FaultInjectionConnectionType.All;
-            this.region = region ?? string.Empty;
             this.endpoint = endpoint ?? FaultInjectionEndpoint.Empty;
         }
 
@@ -54,11 +57,12 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
         /// <summary>
         /// The region the rule will target.
+        /// Will return the empty string if the rule is not targeting a specific region.
         /// </summary>
         /// <returns>the region represented as a string.</returns>
         public string GetRegion()
         {
-            return this.region ?? string.Empty;
+            return this.region;
         }
 
         /// <summary>

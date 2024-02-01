@@ -162,9 +162,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             //Used for Connection Delay
             public bool IsApplicable(DocumentServiceRequest request)
             {
-                bool isApplicable = this.regionEndpoints.Contains(request.RequestContext.LocationEndpointToRoute);
-
-                return isApplicable;
+                return this.regionEndpoints.Contains(request.RequestContext.LocationEndpointToRoute);
             }
         }
 
@@ -179,17 +177,13 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
             public bool IsApplicable(string ruleId, ChannelCallArguments args)
             {
-                bool isApplicable = args.OperationType == this.operationType;
-
-                return isApplicable;
+                return args.OperationType == this.operationType;
             }
 
             //Used for Connection Delay
             public bool IsApplicable(DocumentServiceRequest request)
             {
-                bool isApplicable = request.OperationType == this.operationType;
-
-                return isApplicable;
+                return request.OperationType == this.operationType;
             }
         }
 
@@ -203,17 +197,13 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             }
             public bool IsApplicable(string ruleId, ChannelCallArguments args)
             {
-                bool isApplicable = String.Equals(this.containerResourceId, args.ResolvedCollectionRid);
-
-                return isApplicable;
+                return String.Equals(this.containerResourceId, args.ResolvedCollectionRid);
             }
 
             //Used for Connection Delay
             public bool IsApplicable(DocumentServiceRequest request)
             {
-                bool isApplicable = String.Equals(this.containerResourceId, request.RequestContext.ResolvedCollectionRid);
-
-                return isApplicable;
+                return String.Equals(this.containerResourceId, request.RequestContext.ResolvedCollectionRid);
             }
         }
 

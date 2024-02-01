@@ -2,7 +2,7 @@
 
   <PropertyGroup>
 	<Nullable>enable</Nullable>
-    <IsTestProject>true</IsTestProject>
+	<IsTestProject>true</IsTestProject>
 	<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 	<Platform>AnyCPU</Platform>
 	<TargetFramework>net6.0</TargetFramework>

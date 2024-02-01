@@ -17,13 +17,9 @@
             this.values = new BlockingCollection<(DateTime, string, Guid)>();
         }      
         
-        public void AddRuleExecution(string ruleId, Guid activityId)
+        internal void AddRuleExecution(string ruleId, Guid activityId)
         {
-            if (!this.executionsByRuleId.ContainsKey(ruleId))
-            {
-                this.executionsByRuleId.TryAdd(ruleId, new List<(DateTime, Guid)>() { (DateTime.UtcNow, activityId)});
-            }
-            else
+            if(!this.executionsByRuleId.TryAdd(ruleId, new List<(DateTime, Guid)>() { (DateTime.UtcNow, activityId) }))
             {
                 this.executionsByRuleId[ruleId].Add((DateTime.UtcNow, activityId));
             }
@@ -51,24 +47,28 @@
             return this.executionsByActivityId;
         }
 
-        public List<(DateTime, Guid)>? GetRuleExecutionsByRuleId(string ruleId)
+        public bool TryGetRuleExecutionsByRuleId(string ruleId, out List<(DateTime, Guid)> execution)
         {
-            if (this.executionsByRuleId.TryGetValue(ruleId, out List<(DateTime, Guid)>? execution))
+            if (this.executionsByRuleId.TryGetValue(ruleId, out List<(DateTime, Guid)>? ruleExecutions))
             {
-                return execution;
+                execution = ruleExecutions;
+                return true;
             }
 
-            return null;
+            execution = new List<(DateTime, Guid)>();
+            return false;
         }
 
-        public (DateTime, string)? GetRuleExecutionsByActivityId(Guid activityId)
+        public bool TryGetRuleExecutionByActivityId(Guid activityId, out (DateTime, string) execution)
         {
-            if (this.executionsByActivityId.TryGetValue(activityId, out (DateTime, string) execution))
+            if (this.executionsByActivityId.TryGetValue(activityId, out (DateTime, string) ruleExecution))
             {
-                return execution;
+                execution = ruleExecution;
+                return true;
             }
 
-            return null;
+            execution = (DateTime.MinValue, string.Empty);
+            return false;
         }
     }
 }

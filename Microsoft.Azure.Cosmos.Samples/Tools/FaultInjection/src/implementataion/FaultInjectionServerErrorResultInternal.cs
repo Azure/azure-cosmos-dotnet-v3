@@ -87,8 +87,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <returns>if the rule can be applied.</returns>
         public bool IsApplicable(string ruleId, Guid activityId)
         {
-            List<(DateTime, Guid)>? applicationByRuleId = this.applicationContext.GetRuleExecutionsByRuleId(ruleId);
-            if (this.times == 0 || applicationByRuleId == null)
+            bool hasRuleExecution = this.applicationContext.TryGetRuleExecutionsByRuleId(ruleId, out List<(DateTime, Guid)>? applicationByRuleId);
+
+            if (this.times == 0 || !hasRuleExecution)
             {
                 return true;
             }

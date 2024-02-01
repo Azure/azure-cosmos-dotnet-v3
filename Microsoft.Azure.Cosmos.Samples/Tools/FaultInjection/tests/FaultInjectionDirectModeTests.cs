@@ -69,6 +69,8 @@
         }
 
         [TestMethod]
+        [Owner("nalutripician")]
+        [Description("Tests filtering rules on operation type")]
 
         public void FaultInjectionServerErrorRule_OperationTypeTest()
         {
@@ -200,6 +202,8 @@
         }
 
         [TestMethod]
+        [Owner("nalutripician")]
+        [Description("Tests filtering rule applications on physical endpoint")]
         public void FaultInjectionServerErrorRule_OperationTypeAddressTest()
         {
             List<OperationType> testScenarios = new List<OperationType>
@@ -352,6 +356,8 @@
         }
 
         [TestMethod]
+        [Owner("nalutripician")]
+        [Description("Tests filtering on region")]
         public void FaultInjectionServerErrorRule_RegionTest()
         {
             if (!this.Timeout_FaultInjectionServerErrorRule_RegionTest().Wait(Timeout))
@@ -455,6 +461,8 @@
         }
 
         [TestMethod]
+        [Owner("nalutripician")]
+        [Description("Tests filtering on partition")]
         public void FaultInjectionServerErrorRule_PartitionTest()
         {
             if (!this.Timeout_FaultInjectionServerErrorRule_RegionTest().Wait(Timeout))
@@ -556,6 +564,8 @@
         }
 
         [TestMethod]
+        [Owner("nalutripician")]
+        [Description("Tests response delay")]
         public void FaultInjectionServerErrorRule_ServerResponseDelay()
         {
             if (!this.Timeout_FaultInjectionServerErrorRule_ServerResponseDelay().Wait(Timeout))
@@ -633,6 +643,8 @@
         }
 
         [TestMethod]
+        [Owner("nalutripician")]
+        [Description("Tests injection a connection timeout")]
         public void FaultInjectionServerErrorRule_ConnectionTimeout()
         {
             if (!this.Timeout_FaultInjectionServerErrorRule_ConnecitonTimeout().Wait(Timeout))
@@ -697,6 +709,8 @@
         }
 
         [TestMethod]
+        [Owner("nalutripician")]
+        [Description("Tests filtering connection delay")]
         public void FaultInjectionServerErrorRule_ConnectionDelay()
         {
             if (!this.Timeout_FaultInjectionServerErrorRule_ConnecitonDelay().Wait(Timeout))
@@ -761,6 +775,8 @@
         }
 
         [TestMethod]
+        [Owner("nalutripician")]
+        [Description("Tests injecting a server error response")]
         [DataRow(FaultInjectionOperationType.ReadItem, FaultInjectionServerErrorType.Gone, 410, 21005, DisplayName = "Gone")]
         [DataRow(FaultInjectionOperationType.ReadItem, FaultInjectionServerErrorType.InternalServerEror, 500, 0, DisplayName = "InternalServerError")]
         [DataRow(FaultInjectionOperationType.ReadItem, FaultInjectionServerErrorType.RetryWith, 449, 0, DisplayName = "RetryWith")]
@@ -865,13 +881,14 @@
         }
 
         [TestMethod]
+        [Owner("nalutripician")]
+        [Description("Tests hit count limit")]
         public void FaultInjectionServerErrorRule_HitCountTest()
         {
-            this.Timeout_FaultInjectionServerErrorRule_HitCountTest().Wait();
-            //if (!this.Timeout_FaultInjectionServerErrorRule_HitCountTest().Wait(Timeout))
-            //{
-            //    Assert.Fail("Test timed out");
-            //}
+            if (!this.Timeout_FaultInjectionServerErrorRule_HitCountTest().Wait(Timeout))
+            {
+                Assert.Fail("Test timed out");
+            }
         }
 
         private async Task Timeout_FaultInjectionServerErrorRule_HitCountTest()
@@ -936,6 +953,8 @@
         }
 
         [TestMethod]
+        [Owner("nalutripician")]
+        [Description("Tests endpoint filtering with including primary replica")]
         public void FaultInjectionServerErrorRule_IncludePrimaryTest()
         {
             if (!this.Timeout_FaultInjectionServerErrorRule_IncludePrimaryTest().Wait(Timeout))
@@ -1014,6 +1033,8 @@
         }
 
         [TestMethod]
+        [Owner("nalutripician")]
+        [Description("Tests fault injection connection error rules")]
         public void FaultInjectionConnectionErrorRule_Test()
         {
             if (!this.Timeout_FaultInjectionConnectionErrorRule_Test().Wait(Timeout))

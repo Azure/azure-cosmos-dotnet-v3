@@ -20,6 +20,8 @@
             this.ruleStore = ruleStore ?? throw new ArgumentNullException(nameof(ruleStore));
             this.channelStore = channelStore ?? throw new ArgumentNullException(nameof(channelStore));
             this.regionNameMapper = new RegionNameMapper();
+            // Some regions have different names in the RNTBD endpoint and in the location endpoint
+            // this dictionary maps the RNTBD endpoint region name to the location endpoint region name
             this.regionSpecialCases = new Dictionary<string, string>
             {
                 { "westus1", "westus" },
@@ -75,7 +77,7 @@
                             return Task.CompletedTask;
                         }
 
-                        //Case 2: Inject connection error for all endpoins of one region when there is no specific physical address
+                        //Case 2: Inject connection error for all endpoints of one region when there is no specific physical address
                         List<Uri> regionEndpoints = rule.GetRegionEndpoints();
                         if (regionEndpoints != null && regionEndpoints.Count > 0)
                         {
