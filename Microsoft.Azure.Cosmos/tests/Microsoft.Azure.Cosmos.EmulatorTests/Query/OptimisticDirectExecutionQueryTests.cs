@@ -560,47 +560,51 @@
         [TestMethod]
         public async Task TestOdeEnvironmentVariable()
         {
-            try
-            {
-                QueryRequestOptions options = new QueryRequestOptions();
-                Assert.IsTrue(options.EnableOptimisticDirectExecution);
+            QueryRequestOptions options = new QueryRequestOptions();
+            Assert.IsTrue(options.EnableOptimisticDirectExecution);
 
-                foreach ((string environmentVar, bool expectedVal) in new[]
-                    {
-                        ("true", true),
-                        ("True", true),
-                        ("TRUE", true),
-                        ("truE", true),
-                        ("false", false),
-                        ("False", false),
-                        ("FALSE", false),
-                        ("false", false),
-                        (null, true),
-                        (string.Empty, true),
-                        ("", true),
-                        ("'", true),
-                        ("-", true),
-                        ("asdf", true),
-                    })
+            foreach ((string name, string value, bool expectedValue) in new[]
                 {
-                    Environment.SetEnvironmentVariable("EnableOptimisticDirectExecution", environmentVar);
-                    QueryRequestOptions options2 = new QueryRequestOptions();
-                    Assert.AreEqual(expectedVal, options2.EnableOptimisticDirectExecution, $"EnvironmentVariable:'{environmentVar}', expected:'{expectedVal}', actual:'{options2.EnableOptimisticDirectExecution}'");
-                }
-
-                await this.TestQueryExecutionUsingODEEnvironmentVariable(
-                    environmentVariableValue: "false",
-                    expectODEPipeline: false);
-
-                await this.TestQueryExecutionUsingODEEnvironmentVariable(
-                    environmentVariableValue: "true",
-                    expectODEPipeline: true);
-            }
-            finally
+                    // Environment variables are case insensitive in windows
+                    ("enableoptimisticdirectexecution", "true", true),
+                    ("EnableOptimisticDirectExecution", "True", true),
+                    ("enableOptimisticDirectExecution", "TRUE", true),
+                    ("ENABLEOPTIMISTICDIRECTEXECUTION", "truE", true),
+                    ("enableoptimisticdirectexecution", "false", false),
+                    ("EnableOptimisticDirectExecution", "False", false),
+                    ("ENABLEOPTIMISTICDIRECTEXECUTION", "FALSE", false),
+                    ("Enableoptimisticdirectexecution", "false", false),
+                    (nameof(QueryRequestOptions.EnableOptimisticDirectExecution), "false", false),
+                    ("enableode", "false", true),
+                    (nameof(QueryRequestOptions.EnableOptimisticDirectExecution), null, true),
+                    ("EnableOptimisticDirectExecution", string.Empty, true),
+                    ("EnableOptimisticDirectExecution", "", true),
+                    ("EnableOptimisticDirectExecution", "'", true),
+                    ("EnableOptimisticDirectExecution", "-", true),
+                    ("EnableOptimisticDirectExecution", "asdf", true),
+                })
             {
-                // Attempt to protect other ODE tests from side-effects in case of test failure.
-                Environment.SetEnvironmentVariable("EnableOptimisticDirectExecution", null);
+                try
+                {
+                    // Test new value
+                    Environment.SetEnvironmentVariable(name, value);
+                    QueryRequestOptions options2 = new QueryRequestOptions();
+                    Assert.AreEqual(expectedValue, options2.EnableOptimisticDirectExecution, $"EnvironmentVariable:'{name}', expected:'{expectedValue}', actual:'{options2.EnableOptimisticDirectExecution}'");
+                }
+                finally
+                {
+                    // Remove side effects.
+                    Environment.SetEnvironmentVariable(name, null);
+                }
             }
+
+            await this.TestQueryExecutionUsingODEEnvironmentVariable(
+                environmentVariableValue: "false",
+                expectODEPipeline: false);
+
+            await this.TestQueryExecutionUsingODEEnvironmentVariable(
+                environmentVariableValue: "true",
+                expectODEPipeline: true);
         }
 
         private async Task TestQueryExecutionUsingODEEnvironmentVariable(string environmentVariableValue, bool expectODEPipeline)
@@ -610,42 +614,50 @@
             IReadOnlyList<int> first7Integers = Enumerable.Range(0, NumberOfDocuments).ToList();
             IReadOnlyList<int> first7IntegersReversed = Enumerable.Range(0, NumberOfDocuments).Reverse().ToList();
 
-            // Test query execution using environment variable
-            Environment.SetEnvironmentVariable("EnableOptimisticDirectExecution", environmentVariableValue);
-            PartitionKey partitionKeyValue = new PartitionKey("/value");
-            List<DirectExecutionTestCase> singlePartitionContainerTestCases = new List<DirectExecutionTestCase>()
-                {
-                    CreateInput(
-                        query: $"SELECT TOP 5 VALUE r.numberField FROM r ORDER BY r.{PartitionKeyField}",
-                        expectedResult: first5Integers,
-                        partitionKey: partitionKeyValue,
-                        enableOptimisticDirectExecution: null,  // Uses environment variable
-                        pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
-                        expectedPipelineType: expectODEPipeline ? TestInjections.PipelineType.OptimisticDirectExecution : TestInjections.PipelineType.Passthrough),
-                    CreateInput(
-                        query: $"SELECT TOP 5 VALUE r.numberField FROM r ORDER BY r.{PartitionKeyField}",
-                        expectedResult: first5Integers,
-                        partitionKey: partitionKeyValue,
-                        enableOptimisticDirectExecution: false,  // Overrides environment variable
-                        pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
-                        expectedPipelineType: TestInjections.PipelineType.Passthrough),
-                    CreateInput(
-                        query: $"SELECT TOP 5 VALUE r.numberField FROM r ORDER BY r.{PartitionKeyField}",
-                        expectedResult: first5Integers,
-                        partitionKey: partitionKeyValue,
-                        enableOptimisticDirectExecution: true,  // Overrides environment variable
-                        pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
-                        expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
-                };
+            try
+            {
+                // Test query execution using environment variable
+                Environment.SetEnvironmentVariable("EnableOptimisticDirectExecution", environmentVariableValue);
+                PartitionKey partitionKeyValue = new PartitionKey("/value");
+                List<DirectExecutionTestCase> singlePartitionContainerTestCases = new List<DirectExecutionTestCase>()
+                    {
+                        CreateInput(
+                            query: $"SELECT TOP 5 VALUE r.numberField FROM r ORDER BY r.{PartitionKeyField}",
+                            expectedResult: first5Integers,
+                            partitionKey: partitionKeyValue,
+                            enableOptimisticDirectExecution: null,  // Uses environment variable
+                            pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
+                            expectedPipelineType: expectODEPipeline ? TestInjections.PipelineType.OptimisticDirectExecution : TestInjections.PipelineType.Passthrough),
+                        CreateInput(
+                            query: $"SELECT TOP 5 VALUE r.numberField FROM r ORDER BY r.{PartitionKeyField}",
+                            expectedResult: first5Integers,
+                            partitionKey: partitionKeyValue,
+                            enableOptimisticDirectExecution: false,  // Overrides environment variable
+                            pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
+                            expectedPipelineType: TestInjections.PipelineType.Passthrough),
+                        CreateInput(
+                            query: $"SELECT TOP 5 VALUE r.numberField FROM r ORDER BY r.{PartitionKeyField}",
+                            expectedResult: first5Integers,
+                            partitionKey: partitionKeyValue,
+                            enableOptimisticDirectExecution: true,  // Overrides environment variable
+                            pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
+                            expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                    };
 
-            IReadOnlyList<string> documents = CreateDocuments(NumberOfDocuments, PartitionKeyField, NumberField, NullField);
+                IReadOnlyList<string> documents = CreateDocuments(NumberOfDocuments, PartitionKeyField, NumberField, NullField);
 
-            await this.CreateIngestQueryDeleteAsync(
-                ConnectionModes.Direct | ConnectionModes.Gateway,
-                CollectionTypes.SinglePartition,
-                documents,
-                (container, documents) => RunTests(singlePartitionContainerTestCases, container),
-                "/" + PartitionKeyField);
+                await this.CreateIngestQueryDeleteAsync(
+                    ConnectionModes.Direct | ConnectionModes.Gateway,
+                    CollectionTypes.SinglePartition,
+                    documents,
+                    (container, documents) => RunTests(singlePartitionContainerTestCases, container),
+                    "/" + PartitionKeyField);
+            }
+            finally
+            {
+                // Attempt to protect other ODE tests from side-effects in case of test failure.
+                Environment.SetEnvironmentVariable("EnableOptimisticDirectExecution", null);
+            }
         }
 
         private static async Task RunTests(IEnumerable<DirectExecutionTestCase> testCases, Container container)
