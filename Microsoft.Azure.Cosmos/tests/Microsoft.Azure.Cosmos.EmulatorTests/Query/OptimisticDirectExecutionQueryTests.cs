@@ -557,6 +557,97 @@
             Assert.IsFalse(clientDisablOde);
         }
 
+        [TestMethod]
+        public async Task TestOdeEnvironmentVariable()
+        {
+            try
+            {
+                QueryRequestOptions options = new QueryRequestOptions();
+                Assert.IsTrue(options.EnableOptimisticDirectExecution);
+
+                foreach ((string environmentVar, bool expectedVal) in new[]
+                    {
+                        ("true", true),
+                        ("True", true),
+                        ("TRUE", true),
+                        ("truE", true),
+                        ("false", false),
+                        ("False", false),
+                        ("FALSE", false),
+                        ("false", false),
+                        (null, true),
+                        (string.Empty, true),
+                        ("", true),
+                        ("'", true),
+                        ("-", true),
+                        ("asdf", true),
+                    })
+                {
+                    Environment.SetEnvironmentVariable("EnableOptimisticDirectExecution", environmentVar);
+                    QueryRequestOptions options2 = new QueryRequestOptions();
+                    Assert.AreEqual(expectedVal, options2.EnableOptimisticDirectExecution, $"EnvironmentVariable:'{environmentVar}', expected:'{expectedVal}', actual:'{options2.EnableOptimisticDirectExecution}'");
+                }
+
+                await this.TestQueryExecutionUsingODEEnvironmentVariable(
+                    environmentVariableValue: "false",
+                    expectODEPipeline: false);
+
+                await this.TestQueryExecutionUsingODEEnvironmentVariable(
+                    environmentVariableValue: "true",
+                    expectODEPipeline: true);
+            }
+            finally
+            {
+                // Attempt to protect other ODE tests from side-effects in case of test failure.
+                Environment.SetEnvironmentVariable("EnableOptimisticDirectExecution", null);
+            }
+        }
+
+        private async Task TestQueryExecutionUsingODEEnvironmentVariable(string environmentVariableValue, bool expectODEPipeline)
+        {
+            IReadOnlyList<int> empty = new List<int>(0);
+            IReadOnlyList<int> first5Integers = Enumerable.Range(0, 5).ToList();
+            IReadOnlyList<int> first7Integers = Enumerable.Range(0, NumberOfDocuments).ToList();
+            IReadOnlyList<int> first7IntegersReversed = Enumerable.Range(0, NumberOfDocuments).Reverse().ToList();
+
+            // Test query execution using environment variable
+            Environment.SetEnvironmentVariable("EnableOptimisticDirectExecution", environmentVariableValue);
+            PartitionKey partitionKeyValue = new PartitionKey("/value");
+            List<DirectExecutionTestCase> singlePartitionContainerTestCases = new List<DirectExecutionTestCase>()
+                {
+                    CreateInput(
+                        query: $"SELECT TOP 5 VALUE r.numberField FROM r ORDER BY r.{PartitionKeyField}",
+                        expectedResult: first5Integers,
+                        partitionKey: partitionKeyValue,
+                        enableOptimisticDirectExecution: null,  // Uses environment variable
+                        pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
+                        expectedPipelineType: expectODEPipeline ? TestInjections.PipelineType.OptimisticDirectExecution : TestInjections.PipelineType.Passthrough),
+                    CreateInput(
+                        query: $"SELECT TOP 5 VALUE r.numberField FROM r ORDER BY r.{PartitionKeyField}",
+                        expectedResult: first5Integers,
+                        partitionKey: partitionKeyValue,
+                        enableOptimisticDirectExecution: false,  // Overrides environment variable
+                        pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
+                        expectedPipelineType: TestInjections.PipelineType.Passthrough),
+                    CreateInput(
+                        query: $"SELECT TOP 5 VALUE r.numberField FROM r ORDER BY r.{PartitionKeyField}",
+                        expectedResult: first5Integers,
+                        partitionKey: partitionKeyValue,
+                        enableOptimisticDirectExecution: true,  // Overrides environment variable
+                        pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
+                        expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                };
+
+            IReadOnlyList<string> documents = CreateDocuments(NumberOfDocuments, PartitionKeyField, NumberField, NullField);
+
+            await this.CreateIngestQueryDeleteAsync(
+                ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition,
+                documents,
+                (container, documents) => RunTests(singlePartitionContainerTestCases, container),
+                "/" + PartitionKeyField);
+        }
+
         private static async Task RunTests(IEnumerable<DirectExecutionTestCase> testCases, Container container)
         {
             foreach (DirectExecutionTestCase testCase in testCases)
@@ -567,9 +658,13 @@
                     {
                         MaxItemCount = pageSize,
                         PartitionKey = testCase.PartitionKey,
-                        EnableOptimisticDirectExecution = testCase.EnableOptimisticDirectExecution,
                         TestSettings = new TestInjections(simulate429s: false, simulateEmptyPages: false, new TestInjections.ResponseStats())
                     };
+
+                    if(testCase.EnableOptimisticDirectExecution.HasValue)
+                    {
+                        feedOptions.EnableOptimisticDirectExecution = testCase.EnableOptimisticDirectExecution.Value;
+                    }
 
                     List<CosmosElement> items = await RunQueryAsync(
                             container,
@@ -631,7 +726,7 @@
             string query,
             IReadOnlyList<int> expectedResult,
             PartitionKey? partitionKey,
-            bool enableOptimisticDirectExecution,
+            bool? enableOptimisticDirectExecution,
             int[] pageSizeOptions,
             TestInjections.PipelineType expectedPipelineType)
         {
@@ -643,7 +738,7 @@
             public string Query { get; }
             public IReadOnlyList<int> ExpectedResult { get; }
             public PartitionKey? PartitionKey { get; }
-            public bool EnableOptimisticDirectExecution { get; }
+            public bool? EnableOptimisticDirectExecution { get; }
             public int[] PageSizeOptions { get; }
             public TestInjections.PipelineType ExpectedPipelineType { get; }
 
@@ -651,7 +746,7 @@
                 string query,
                 IReadOnlyList<int> expectedResult,
                 PartitionKey? partitionKey,
-                bool enableOptimisticDirectExecution,
+                bool? enableOptimisticDirectExecution,
                 int[] pageSizeOptions,
                 TestInjections.PipelineType expectedPipelineType)
             {
