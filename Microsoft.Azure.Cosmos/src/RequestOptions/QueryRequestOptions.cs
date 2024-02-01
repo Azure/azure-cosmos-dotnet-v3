@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// Direct (optimistic) execution offers improved performance for several kinds of queries such as a single partition streaming query.
         /// </value>
-        public bool EnableOptimisticDirectExecution { get; set; } = GetDefaultODEValue();
+        public bool EnableOptimisticDirectExecution { get; set; } = ConfigurationManager.IsOptimisticDirectExecutionEnabled(defaultValue: true);
 
         /// <summary>
         /// Gets or sets the maximum number of items that can be buffered client side during 
@@ -281,30 +281,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 request.Headers.ContinuationToken = continuationToken;
             }
-        }
-
-        /// <summary>
-        /// Returns the default value for ODE when QueryRequestOptions are initialized.
-        /// </summary>
-        /// <returns>If an environment variable named EnableOptimisticDirectExecution has as a boolean (true/false) value, it will be honored, otherwise default value of True</returns>
-        private static bool GetDefaultODEValue()
-        {
-            string enableODEEnvironmentValue;
-            try
-            {
-                enableODEEnvironmentValue = Environment.GetEnvironmentVariable(nameof(EnableOptimisticDirectExecution));
-            }
-            catch (SecurityException)
-            {
-                // Ignore permission failure in trying to retrieve the environment variable.
-                enableODEEnvironmentValue = null;
-            }
-
-            bool defaultODEValue = (enableODEEnvironmentValue != null &&
-                bool.TryParse(enableODEEnvironmentValue, out bool environmentValue))
-                ? environmentValue
-                : true;
-            return defaultODEValue;
         }
     }
 }

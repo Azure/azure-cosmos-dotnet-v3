@@ -566,22 +566,18 @@
             foreach ((string name, string value, bool expectedValue) in new[]
                 {
                     // Environment variables are case insensitive in windows
-                    ("enableoptimisticdirectexecution", "true", true),
-                    ("EnableOptimisticDirectExecution", "True", true),
-                    ("enableOptimisticDirectExecution", "TRUE", true),
-                    ("ENABLEOPTIMISTICDIRECTEXECUTION", "truE", true),
-                    ("enableoptimisticdirectexecution", "false", false),
-                    ("EnableOptimisticDirectExecution", "False", false),
-                    ("ENABLEOPTIMISTICDIRECTEXECUTION", "FALSE", false),
-                    ("Enableoptimisticdirectexecution", "false", false),
-                    (nameof(QueryRequestOptions.EnableOptimisticDirectExecution), "false", false),
-                    ("enableode", "false", true),
+                    ("AZURE_COSMOS_OPTIMISTIC_DIRECT_EXECUTION_ENABLED", "true", true),
+                    ("AZURE_COSMOS_optimistic_direct_execution_enabled", "True", true),
+                    ("azure_cosmos_optimistic_direct_execution_enabled", "TRUE", true),
+                    ("Azure_Cosmos_Optimistic_Direct_Execution_Enabled", "truE", true),
+                    ("AZURE_COSMOS_OPTIMISTIC_DIRECT_EXECUTION_ENABLED", "false", false),
+                    ("AZURE_COSMOS_optimistic_direct_execution_enabled", "False", false),
+                    ("azure_cosmos_optimistic_direct_execution_enabled", "FALSE", false),
+                    ("Azure_Cosmos_Optimistic_Direct_Execution_Enabled", "false", false),
+                    ("Azure_Cosmos_Optimistic_Direct_Execution_Enabled", string.Empty, true),
+                    (nameof(QueryRequestOptions.EnableOptimisticDirectExecution), "false", true),
                     (nameof(QueryRequestOptions.EnableOptimisticDirectExecution), null, true),
-                    ("EnableOptimisticDirectExecution", string.Empty, true),
-                    ("EnableOptimisticDirectExecution", "", true),
-                    ("EnableOptimisticDirectExecution", "'", true),
-                    ("EnableOptimisticDirectExecution", "-", true),
-                    ("EnableOptimisticDirectExecution", "asdf", true),
+                    ("enableode", "false", true)
                 })
             {
                 try
@@ -589,13 +585,44 @@
                     // Test new value
                     Environment.SetEnvironmentVariable(name, value);
                     QueryRequestOptions options2 = new QueryRequestOptions();
-                    Assert.AreEqual(expectedValue, options2.EnableOptimisticDirectExecution, $"EnvironmentVariable:'{name}', expected:'{expectedValue}', actual:'{options2.EnableOptimisticDirectExecution}'");
+                    bool areEqual = expectedValue == options2.EnableOptimisticDirectExecution;
+                    Assert.IsTrue(areEqual, $"EnvironmentVariable:'{name}', value:'{value}', expected:'{expectedValue}', actual:'{options2.EnableOptimisticDirectExecution}'");
                 }
                 finally
                 {
                     // Remove side effects.
                     Environment.SetEnvironmentVariable(name, null);
                 }
+            }
+
+            foreach (string value in new[]
+                {
+                    "'",
+                    "-",
+                    "asdf",
+                    "'true'",
+                    "'false'"
+                })
+            {
+                bool receivedException = false;
+                try
+                {
+                    // Test new value
+                    Environment.SetEnvironmentVariable("AZURE_COSMOS_OPTIMISTIC_DIRECT_EXECUTION_ENABLED", value);
+                    QueryRequestOptions options2 = new QueryRequestOptions();
+                }
+                catch(FormatException fe)
+                {
+                    Assert.IsTrue(fe.ToString().Contains($@"String '{value}' was not recognized as a valid Boolean."));
+                    receivedException = true;
+                }
+                finally
+                {
+                    // Remove side effects.
+                    Environment.SetEnvironmentVariable("AZURE_COSMOS_OPTIMISTIC_DIRECT_EXECUTION_ENABLED", null);
+                }
+
+                Assert.IsTrue(receivedException, $"Expected exception was not received for value '{value}'");
             }
 
             await this.TestQueryExecutionUsingODEEnvironmentVariable(
@@ -617,7 +644,7 @@
             try
             {
                 // Test query execution using environment variable
-                Environment.SetEnvironmentVariable("EnableOptimisticDirectExecution", environmentVariableValue);
+                Environment.SetEnvironmentVariable("AZURE_COSMOS_OPTIMISTIC_DIRECT_EXECUTION_ENABLED", environmentVariableValue);
                 PartitionKey partitionKeyValue = new PartitionKey("/value");
                 List<DirectExecutionTestCase> singlePartitionContainerTestCases = new List<DirectExecutionTestCase>()
                     {
@@ -656,7 +683,7 @@
             finally
             {
                 // Attempt to protect other ODE tests from side-effects in case of test failure.
-                Environment.SetEnvironmentVariable("EnableOptimisticDirectExecution", null);
+                Environment.SetEnvironmentVariable("AZURE_COSMOS_OPTIMISTIC_DIRECT_EXECUTION_ENABLED", null);
             }
         }
 
