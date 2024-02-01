@@ -521,19 +521,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
             string connectionStringWithSslDisable = $"AccountEndpoint={endpoint};AccountKey={authKey};DisableServerCertificateValidation=true";
 
-            CosmosClient cosmosClient = new CosmosClient(connectionStringWithSslDisable, options);
+            using CosmosClient cosmosClient = new CosmosClient(connectionStringWithSslDisable, options);
 
             string databaseName = Guid.NewGuid().ToString();
             string databaseId = Guid.NewGuid().ToString();
+            Cosmos.Database database = null;
 
-            //HTTP callback
-            Trace.TraceInformation("Creating test database and container");
-            Cosmos.Database database = await cosmosClient.CreateDatabaseAsync(databaseId);
-            Cosmos.Container container = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
+            try
+            {
+                //HTTP callback
+                Trace.TraceInformation("Creating test database and container");
+                database = await cosmosClient.CreateDatabaseAsync(databaseId);
+                Cosmos.Container container = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
 
-            // TCP callback
-            ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
-            ResponseMessage responseMessage = await container.CreateItemStreamAsync(TestCommon.SerializerCore.ToStream(item), new Cosmos.PartitionKey(item.id));
+                // TCP callback
+                ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
+                ResponseMessage responseMessage = await container.CreateItemStreamAsync(TestCommon.SerializerCore.ToStream(item), new Cosmos.PartitionKey(item.id));
+            }
+            finally
+            {
+                await database?.DeleteStreamAsync();
+            }
 
             Assert.IsTrue(counter >= 2);
         }
