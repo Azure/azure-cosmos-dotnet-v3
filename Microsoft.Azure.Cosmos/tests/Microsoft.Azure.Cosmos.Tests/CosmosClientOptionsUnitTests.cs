@@ -938,14 +938,28 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             if (expectedIgnoreCertificateFlag)
             {
-                Assert.IsNotNull(cosmosClient.ClientOptions.ServerCertificateCustomValidationCallback);
+                Assert.IsNull(cosmosClient.ClientOptions.ServerCertificateCustomValidationCallback);
+                Assert.IsTrue(cosmosClient.ClientOptions.DisableServerCertificateValidation);
                 Assert.IsTrue(cosmosClient
                     .ClientOptions
-                    .ServerCertificateCustomValidationCallback(x509Certificate2, x509Chain, sslPolicyErrors));
+                    .GetServerCertificateCustomValidationCallback()(x509Certificate2, x509Chain, sslPolicyErrors));
+
+                Assert.IsNotNull(cosmosClient.DocumentClient.ConnectionPolicy.ServerCertificateCustomValidationCallback);
+                
+                CosmosHttpClient httpClient = cosmosClient.DocumentClient.httpClient;
+                SocketsHttpHandler socketsHttpHandler = (SocketsHttpHandler)httpClient.HttpMessageHandler;
+
+                RemoteCertificateValidationCallback? httpClientRemoreCertValidationCallback = socketsHttpHandler.SslOptions.RemoteCertificateValidationCallback;
+                Assert.IsNotNull(httpClientRemoreCertValidationCallback);
+
+                Assert.IsTrue(httpClientRemoreCertValidationCallback(this, x509Certificate2, x509Chain, sslPolicyErrors));
             }
             else
             {
                 Assert.IsNull(cosmosClient.ClientOptions.ServerCertificateCustomValidationCallback);
+                Assert.IsFalse(cosmosClient.ClientOptions.DisableServerCertificateValidation);
+
+                Assert.IsNull(cosmosClient.DocumentClient.ConnectionPolicy.ServerCertificateCustomValidationCallback);
             }
         }
 
