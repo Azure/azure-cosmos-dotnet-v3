@@ -964,15 +964,38 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [DataRow(ConnectionString + "DisableServerCertificateValidation=true;")]
-        [ExpectedException(typeof(ArgumentException))]
-        public void TestServerCertificatesValidationWithDisableSSLFlagTrue(string connStr)
+        [DataRow(ConnectionString + "DisableServerCertificateValidation=true;", true)]
+        [DataRow(ConnectionString + "DisableServerCertificateValidation=true;", false)]
+        public void TestServerCertificatesValidationWithDisableSSLFlagTrue(string connStr, bool setCallback)
         {
             CosmosClientOptions options = new CosmosClientOptions
             {
-               ServerCertificateCustomValidationCallback = (certificate, chain, sslPolicyErrors) => true
+                ServerCertificateCustomValidationCallback = (certificate, chain, sslPolicyErrors) => true,
             };
+
+            if (setCallback)
+            {
+                options.DisableServerCertificateValidationInvocationCallback = () => { };
+            }
+
             CosmosClient cosmosClient = new CosmosClient(connStr, options);
+            Assert.IsTrue(cosmosClient.ClientOptions.DisableServerCertificateValidation);
+            Assert.AreEqual(cosmosClient.ClientOptions.ServerCertificateCustomValidationCallback, options.ServerCertificateCustomValidationCallback);
+
+            if (setCallback)
+            {
+                Assert.AreNotEqual(cosmosClient.DocumentClient.ConnectionPolicy.ServerCertificateCustomValidationCallback, options.ServerCertificateCustomValidationCallback);
+            }
+            else
+            {
+                Assert.AreEqual(cosmosClient.DocumentClient.ConnectionPolicy.ServerCertificateCustomValidationCallback, options.ServerCertificateCustomValidationCallback);
+            }
+
+            CosmosHttpClient httpClient = cosmosClient.DocumentClient.httpClient;
+            SocketsHttpHandler socketsHttpHandler = (SocketsHttpHandler)httpClient.HttpMessageHandler;
+
+            RemoteCertificateValidationCallback? httpClientRemoreCertValidationCallback = socketsHttpHandler.SslOptions.RemoteCertificateValidationCallback;
+            Assert.IsNotNull(httpClientRemoreCertValidationCallback);
         }
 
         private class TestWebProxy : IWebProxy

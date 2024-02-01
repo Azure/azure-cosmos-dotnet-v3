@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Antlr4.Runtime.Misc;
     using global::Azure;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests;
@@ -508,47 +509,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task Verify_DisableCertificateValidationCallBackGetsCalled_ForTCP_HTTP()
+        public async Task Verify_DisableCertificateValidationCallBackGetsCalled_For_HTTP()
         {
-            bool remoteCertInterceptorSet = false;
-            remoteCertInterceptorSet = false;
+            int counter = 0;
             CosmosClientOptions options = new CosmosClientOptions()
             {
-                SendingRequestEventArgs = (sender, args) => {
-                    if (!remoteCertInterceptorSet)
-                    {
-                        Trace.TraceInformation($"Failing({remoteCertInterceptorSet}) for request {args.HttpRequest.RequestUri} -> {new StackTrace()}");
-                        throw new Exception("Failing requests: Waiting for remote certificate interceptor set-up");
-                    }
-                },
+                DisableServerCertificateValidationInvocationCallback = () => counter++,
             };
 
             string authKey = ConfigurationManager.AppSettings["MasterKey"];
-            string endpoint = "https://localhost:8081/"; // ConfigurationManager.AppSettings["GatewayEndpoint"];
+            string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
             string connectionStringWithSslDisable = $"AccountEndpoint={endpoint};AccountKey={authKey};DisableServerCertificateValidation=true";
 
             CosmosClient cosmosClient = new CosmosClient(connectionStringWithSslDisable, options);
-
-            CosmosHttpClient httpClient = cosmosClient.DocumentClient.httpClient;
-            DelegatingHandler messageHandler = (DelegatingHandler)httpClient.HttpMessageHandler;
-            SocketsHttpHandler socketsHttpHandler = (SocketsHttpHandler)messageHandler.InnerHandler;
-
-            // Set-up connection cert validation interceptor 
-            int remoteCertificateValidationCallbackCount = 0;
-            {
-                RemoteCertificateValidationCallback httpClientRemoreCertValidationCallback = socketsHttpHandler.SslOptions.RemoteCertificateValidationCallback;
-                socketsHttpHandler.SslOptions.RemoteCertificateValidationCallback =
-                    new RemoteCertificateValidationCallback((object o, X509Certificate certificate, X509Chain x509Chain, SslPolicyErrors sslPolicyErrors) =>
-                    {
-                        Interlocked.Increment(ref remoteCertificateValidationCallbackCount);
-                        Trace.TraceInformation($"RemoteCertificateValidationCallback called -> {new StackTrace()}");
-                        return httpClientRemoreCertValidationCallback(o, certificate, x509Chain, sslPolicyErrors);
-                    });
-
-                // Interceptor set-up
-                remoteCertInterceptorSet = true;
-                Trace.TraceInformation($"SSL cert interceptor in-place {remoteCertInterceptorSet}");
-            }
 
             string databaseName = Guid.NewGuid().ToString();
             string databaseId = Guid.NewGuid().ToString();
@@ -558,12 +531,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Cosmos.Database database = await cosmosClient.CreateDatabaseAsync(databaseId);
             Cosmos.Container container = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
 
-            //TCP callback
+            // TCP callback
             ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
             ResponseMessage responseMessage = await container.CreateItemStreamAsync(TestCommon.SerializerCore.ToStream(item), new Cosmos.PartitionKey(item.id));
-            Trace.TraceInformation($"CreateItemStreamAsync diagnostics: {responseMessage.Diagnostics.ToString()}");
 
-            Assert.IsTrue(remoteCertificateValidationCallbackCount >= 2);
+            Assert.IsTrue(counter >= 2);
         }
 
         [TestMethod]

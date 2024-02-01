@@ -672,21 +672,38 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Real call back that will be hooked down-stream to the transport clients (both http and tcp).
         /// NOTE: All down stream real-usage shows by only through this API only and not through the public API.
+        /// 
+        /// Test hook DisableServerCertificateValidationInvocationCallback 
+        /// - When configured will invoke it when ever custom validation is done
         /// </summary>
         internal Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> GetServerCertificateCustomValidationCallback()
         {
-            if (this.DisableServerCertificateValidation && this.ServerCertificateCustomValidationCallback != null)
-            {
-                throw new ArgumentException($"Cannot specify {nameof(this.DisableServerCertificateValidation)} flag in Connection String and {nameof(this.ServerCertificateCustomValidationCallback)}. Only one can be set.");
-            }
-
             if (this.DisableServerCertificateValidation)
             {
-                return (_, _, _) => true;
+                if (this.DisableServerCertificateValidationInvocationCallback == null)
+                {
+                    return this.ServerCertificateCustomValidationCallback ?? ((_, _, _) => true);
+                }
+                else
+                {
+                    return (X509Certificate2 cert, X509Chain chain, SslPolicyErrors policyErrors) =>
+                    {
+                        bool bValidationResult = true;
+                        if (this.ServerCertificateCustomValidationCallback != null)
+                        {
+                            bValidationResult = this.ServerCertificateCustomValidationCallback(cert, chain, policyErrors);
+                        }
+
+                        this.DisableServerCertificateValidationInvocationCallback?.Invoke();
+                        return bValidationResult;
+                    };
+                }
             }
 
             return this.ServerCertificateCustomValidationCallback;
         }
+
+        internal Action DisableServerCertificateValidationInvocationCallback { get; set; }
 
         /// <summary>
         /// API type for the account
