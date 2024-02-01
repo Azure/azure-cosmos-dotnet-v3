@@ -1,21 +1,81 @@
-﻿namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
+    using Microsoft.Azure.Cosmos.EmulatorTests.Query;
+    using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
+    using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
+    using System;
+    using System.Text.RegularExpressions;
+    using System.Threading.Tasks;
+    using System.Xml;
+    using System.Collections.Generic;
+    using System.Linq;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Serialization.HybridRow.Schemas;
     using Newtonsoft.Json.Linq;
+    using System.Collections.Concurrent;
 
-    [TestClass]
-    [TestCategory("Query")]
-    public sealed class GroupByQueryTests : QueryTestsBase
+    [Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestClass]
+    public class QueryBaselineTest : BaselineTests<QueryTestInput, QueryTestOutput>
     {
+        private static CosmosClient cosmosClient;
+        private static Cosmos.Database testDb;
+        private static Container testContainer;
+
+        [ClassInitialize]
+        public async static Task Initialize(TestContext textContext)
+        {
+            string authKey = Utils.ConfigurationManager.AppSettings["MasterKey"];
+            Uri uri = new Uri(Utils.ConfigurationManager.AppSettings["GatewayEndpoint"]);
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy
+            {
+                ConnectionMode = ConnectionMode.Gateway,
+                EnableEndpointDiscovery = true,
+            };
+
+            cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) =>
+            {
+                cosmosClientBuilder.WithCustomSerializer(new CustomJsonSerializer(new JsonSerializerSettings()
+                {
+                    ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
+                    // We want to simulate the property not exist so ignoring the null value
+                    NullValueHandling = NullValueHandling.Ignore
+                })).WithConnectionModeGateway();
+            });
+
+            string dbName = $"{nameof(QueryBaselineTest)}-{Guid.NewGuid().ToString("N")}";
+            testDb = await cosmosClient.CreateDatabaseAsync(dbName);
+        }
+
+        [ClassCleanup]
+        public async static Task CleanUp()
+        {
+            if (testDb != null)
+            {
+                await testDb.DeleteStreamAsync();
+            }
+
+            cosmosClient?.Dispose();
+        }
+
+        [TestInitialize]
+        public async Task TestInitialize()
+        {
+            testContainer = await testDb.CreateContainerAsync(new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/id"));
+        }
+
+        [TestCleanup]
+        public async Task TestCleanUp()
+        {
+            await testContainer.DeleteContainerStreamAsync();
+        }
+
         [TestMethod]
-        public async Task TestGroupByQueryAsync()
+        public void TestGroupByQueries()
         {
             string[] documents = new string[]
             {
@@ -85,18 +145,37 @@
                 @" { ""id"": ""64"", ""name"": ""Gary"", ""age"": 14, ""gender"": ""M"", ""team"": ""C"", ""address"": { ""city"": ""Atlanta"", ""state"": ""GA"", ""zip"": 30301 }, ""scores"": [88, 47, 90, 76] } ",
             };
 
-            await this.CreateIngestQueryDeleteAsync(
-                ConnectionModes.Direct,
-                CollectionTypes.MultiPartition,
-                documents,
-                this.TestGroupByQueryHelper1);
-        }
+            //insert documents into container
+            foreach (string document in documents)
+            {
+                JObject documentObject = JsonConvert.DeserializeObject<JObject>(document);
+                string jObjectPartitionKey = "/id".Remove(0, 1);
+                JValue pkToken = (JValue)documentObject[jObjectPartitionKey];
+                Cosmos.PartitionKey pkValue;
 
-        private async Task TestGroupByQueryHelper1(
-            Container container,
-            IReadOnlyList<CosmosObject> documents)
-        {
-            List<(string, IReadOnlyList<CosmosElement>)> queryAndExpectedResultsList = new List<(string, IReadOnlyList<CosmosElement>)>()
+                switch (pkToken.Type)
+                {
+                    case JTokenType.Integer:
+                    case JTokenType.Float:
+                        pkValue = new Cosmos.PartitionKey(pkToken.Value<double>());
+                        break;
+                    case JTokenType.String:
+                        pkValue = new Cosmos.PartitionKey(pkToken.Value<string>());
+                        break;
+                    case JTokenType.Boolean:
+                        pkValue = new Cosmos.PartitionKey(pkToken.Value<bool>());
+                        break;
+                    case JTokenType.Null:
+                        pkValue = Cosmos.PartitionKey.Null;
+                        break;
+                    default:
+                        throw new ArgumentException("Unknown partition key type");
+                }
+
+                var _ = testContainer.CreateItemAsync(documentObject, pkValue).Result;
+            }
+
+            List<(string /*query text*/, string /*description*/)> queryTestCases = new List<(string, string)>()
             {
                 // ------------------------------------------
                 // Simple property reference
@@ -104,80 +183,32 @@
 
                 (
                     "SELECT c.age FROM c GROUP BY c.age",
-                    documents
-                        .GroupBy(document => document["age"])
-                        .Select(grouping => CosmosObject.Create(
-                            new Dictionary<string, CosmosElement>()
-                            {
-                                { "age", grouping.Key }
-                            }))
-                        .ToList()
+                    "Simple property reference 1" 
                 ),
 
                 (
                     "SELECT c.name FROM c GROUP BY c.name",
-                    documents
-                        .GroupBy(document => document["name"])
-                        .Select(grouping => CosmosObject.Create(
-                            new Dictionary<string, CosmosElement>()
-                            {
-                                { "name", grouping.Key }
-                            }))
-                        .ToList()
+                    "Simple property reference 2"
                 ),
 
                 (
                     "SELECT c.team FROM c GROUP BY c.team",
-                    documents
-                        .GroupBy(document => document["team"])
-                        .Select(grouping => CosmosObject.Create(
-                            new Dictionary<string, CosmosElement>()
-                            {
-                                { "team", grouping.Key }
-                            }))
-                        .ToList()
+                    "Simple property reference 3"
                 ),
 
                 (
                     "SELECT c.gender FROM c GROUP BY c.gender",
-                    documents
-                        .GroupBy(document => document["gender"])
-                        .Select(grouping => CosmosObject.Create(
-                            new Dictionary<string, CosmosElement>()
-                            {
-                                { "gender", grouping.Key }
-                            }))
-                        .ToList()
+                    "Simple property reference 4"
                 ),
 
                 (
                     "SELECT c.id FROM c GROUP BY c.id",
-                    documents
-                        .GroupBy(document => document["id"])
-                        .Select(grouping => CosmosObject.Create(
-                            new Dictionary<string, CosmosElement>()
-                            {
-                                { "id", grouping.Key }
-                            }))
-                        .ToList()
+                    "Simple property reference 5"
                 ),
 
                 (
                     "SELECT c.age, c.name FROM c GROUP BY c.age, c.name",
-                    documents
-                        .GroupBy(document => CosmosObject.Create(
-                            new Dictionary<string, CosmosElement>()
-                            {
-                                { "age", document["age"] },
-                                { "name", document["name"] },
-                            }))
-                        .Select(grouping => CosmosObject.Create(
-                            new Dictionary<string, CosmosElement>()
-                            {
-                                { "age", (grouping.Key as CosmosObject)["age"] },
-                                { "name", (grouping.Key as CosmosObject)["name"] }
-                            }))
-                        .ToList()
+                    "Simple property reference 6"
                 ),
 
                 // ------------------------------------------
@@ -186,82 +217,32 @@
 
                 (
                     "SELECT c.age, COUNT(1) as count FROM c GROUP BY c.age",
-                    documents
-                        .GroupBy(document => document["age"])
-                        .Select(grouping => CosmosObject.Create(
-                            new Dictionary<string, CosmosElement>()
-                            {
-                                { "age", grouping.Key },
-                                { "count", CosmosNumber64.Create(grouping.Count()) }
-                            }))
-                        .ToList()
+                    "With SELECT Aggregates 1"
                 ),
 
                 (
                     "SELECT c.name, MIN(c.age) AS min_age FROM c GROUP BY c.name",
-                    documents
-                        .GroupBy(document => document["name"])
-                        .Select(grouping => CosmosObject.Create(
-                            new Dictionary<string, CosmosElement>()
-                            {
-                                { "name", grouping.Key },
-                                { "min_age", CosmosNumber64.Create(grouping.Min(document => document["age"].ToDouble())) }
-                            }))
-                        .ToList()
+                    "With SELECT Aggregates 2"
                 ),
 
                 (
                     "SELECT c.name, MAX(c.age) AS max_age FROM c GROUP BY c.name",
-                    documents
-                        .GroupBy(document => document["name"])
-                        .Select(grouping => CosmosObject.Create(
-                            new Dictionary<string, CosmosElement>()
-                            {
-                                { "name", grouping.Key },
-                                { "max_age", CosmosNumber64.Create(grouping.Max(document => document["age"].ToDouble())) }
-                            }))
-                        .ToList()
+                    "With SELECT Aggregates 3"
                 ),
 
                 (
                     "SELECT c.name, SUM(c.age) AS sum_age FROM c GROUP BY c.name",
-                    documents
-                        .GroupBy(document => document["name"])
-                        .Select(grouping => CosmosObject.Create(
-                            new Dictionary<string, CosmosElement>()
-                            {
-                                { "name", grouping.Key },
-                                { "sum_age", CosmosNumber64.Create(grouping.Sum(document => document["age"].ToDouble())) }
-                            }))
-                        .ToList()
+                    "With SELECT Aggregates 4"
                 ),
 
                 (
                     "SELECT c.name, AVG(c.age) AS avg_age FROM c GROUP BY c.name",
-                    documents
-                        .GroupBy(document => document["name"])
-                        .Select(grouping => CosmosObject.Create(
-                            new Dictionary<string, CosmosElement>()
-                            {
-                                { "name", grouping.Key },
-                                { "avg_age", CosmosNumber64.Create(grouping.Average(document => document["age"].ToDouble())) }
-                            }))
-                        .ToList()
+                    "With SELECT Aggregates 5"
                 ),
 
                 (
                     "SELECT c.name, Count(1) AS count, Min(c.age) AS min_age, Max(c.age) AS max_age FROM c GROUP BY c.name",
-                    documents
-                        .GroupBy(document => document["name"])
-                        .Select(grouping => CosmosObject.Create(
-                            new Dictionary<string, CosmosElement>()
-                            {
-                                { "name", grouping.Key },
-                                { "count", CosmosNumber64.Create(grouping.Count()) },
-                                { "min_age", CosmosNumber64.Create(grouping.Min(document => document["age"].ToDouble())) },
-                                { "max_age", CosmosNumber64.Create(grouping.Max(document => document["age"].ToDouble())) },
-                            }))
-                        .ToList()
+                    "With SELECT Aggregates 6"
                 ),
 
                 // ------------------------------------------
@@ -270,147 +251,82 @@
 
                 (
                     "SELECT VALUE c.age FROM c GROUP BY c.age",
-                    documents
-                        .GroupBy(document => document["age"])
-                        .Select(grouping => grouping.Key)
-                        .ToList()
+                    "With SELECT VALUE"
                 ),
 
                 (
                     "SELECT VALUE COUNT(1) FROM c GROUP BY c.age",
-                    documents
-                        .GroupBy(document => document["age"])
-                        .Select(grouping => CosmosNumber64.Create(grouping.Count()))
-                        .ToList()
+                    "With SELECT VALUE Aggregates 1"
                 ),
 
                 (
                     "SELECT VALUE MIN(c.age) FROM c GROUP BY c.name",
-                    documents
-                        .GroupBy(document => document["name"])
-                        .Select(grouping => CosmosNumber64.Create(grouping.Min(document => document["age"].ToDouble())))
-                        .ToList()
+                    "With SELECT VALUE Aggregates 2"
                 ),
 
                 (
                     "SELECT VALUE MAX(c.age) FROM c GROUP BY c.name",
-                    documents
-                        .GroupBy(document => document["name"])
-                        .Select(grouping => CosmosNumber64.Create(grouping.Max(document => document["age"].ToDouble())))
-                        .ToList()
+                    "With SELECT VALUE Aggregates 3"
                 ),
 
                 (
                     "SELECT VALUE AVG(c.age) FROM c GROUP BY c.name",
-                    documents
-                        .GroupBy(document => document["name"])
-                        .Select(grouping => CosmosNumber64.Create(grouping.Average(document => document["age"].ToDouble())))
-                        .ToList()
+                    "With SELECT VALUE Aggregates 4"
                 ),
 
                 (
                     "SELECT VALUE SUM(c.age) FROM c GROUP BY c.name",
-                    documents
-                        .GroupBy(document => document["name"])
-                        .Select(grouping => CosmosNumber64.Create(grouping.Sum(document => document["age"].ToDouble())))
-                        .ToList()
+                    "With SELECT VALUE Aggregates 5"
                 ),
 
                 (
                     "SELECT VALUE { 'Name' : c.name , 'Age' : c.age} FROM c GROUP BY c.name, c.age",
-                    documents
-                        .GroupBy(document => new { key1 = document["name"], key2 = document["age"]})
-                        .Select(grouping => CosmosObject.Create(
-                            new Dictionary<string, CosmosElement>()
-                            {
-                                { "Name", grouping.Key.key1 },
-                                { "Age", grouping.Key.key2},
-                            }))
-                        .ToList()
+                    "With SELECT VALUE Object"
                 ),
 
                 (
                     "SELECT VALUE {'age' : c.age} FROM c GROUP BY {'age' : c.age}",
-                    documents
-                        .GroupBy(document => new { age = document["age"]})
-                        .Select(grouping => CosmosObject.Create(
-                            new Dictionary<string, CosmosElement>()
-                            {
-                                { "age", grouping.Key.age},
-                            }))
-                        .ToList()
+                    "With SELECT VALUE Object 2"
                 ),
 
                 // GROUP BY with SELECT VALUE on undefined aggregate fields
                 // sum and count default the counter at 0
                 (
                     "SELECT VALUE SUM(c.doesNotExist) FROM c GROUP BY c.name",
-                    documents
-                        .GroupBy(document => document["name"])
-                        .Select(grouping => CosmosNumber64.Create(0))
-                        .ToList()
+                    "With SELECT VALUE Aggregate on a term that does not exist 1"
                 ),
 
                 (
                     "SELECT VALUE COUNT(c.doesNotExist) FROM c GROUP BY c.name",
-                    documents
-                        .GroupBy(document => document["name"])
-                        .Select(grouping => CosmosNumber64.Create(0))
-                        .ToList()
+                    "With SELECT VALUE Aggregate on a term that does not exist 2"
                 ),
 
                 (
                     "SELECT VALUE AVG(c.unKnownField) FROM c GROUP BY c.age",
-                    documents
-                        .GroupBy(document => new { age = document["age"]})
-                        .Select(grouping => CosmosUndefined.Create())
-                        .ToList()
+                    "With SELECT VALUE Aggregate on a term that does not exist 3"
                 ),
 
 
                 (
                     "SELECT VALUE MIN(c.unKnownField) FROM c GROUP BY c.age",
-                    documents
-                        .GroupBy(document => new { age = document["age"]})
-                        .Select(grouping => CosmosUndefined.Create())
-                        .ToList()
+                    "With SELECT VALUE Aggregate on a term that does not exist 4"
                 ),
 
 
                 (
                     "SELECT VALUE MAX(c.unKnownField) FROM c GROUP BY c.age",
-                    documents
-                        .GroupBy(document => new { age = document["age"]})
-                        .Select(grouping => CosmosUndefined.Create())
-                        .ToList()
+                    "With SELECT VALUE Aggregate on a term that does not exist 5"
                 ),
 
                 /* Composition of Aggregates currently not supported
                 (
                     "SELECT VALUE {'count' : COUNT(1)} FROM c GROUP BY c.age",
-                    documents
-                        .GroupBy(document => new { age = document["age"]})
-                        .Select(grouping => CosmosObject.Create(
-                            new Dictionary<string, CosmosElement>()
-                            {
-                                { "count", CosmosNumber64.Create(grouping.Count()) }
-                            }))
-                        .ToList()
+                    "Compositetion of Aggregate 1"
                 ),
                
                 (
                     "SELECT VALUE { 'name' : c.name , 'count' : COUNT(1), 'min_age' : MIN(c.age), 'max_age' : c.age} FROM c GROUP BY c.name",
-                    documents
-                        .GroupBy(document => document["name"])
-                        .Select(grouping => CosmosObject.Create(
-                            new Dictionary<string, CosmosElement>()
-                            {
-                                { "name", grouping.Key },
-                                { "count", CosmosNumber64.Create(grouping.Count()) },
-                                { "min_age", CosmosNumber64.Create(grouping.Min(document => document["age"].ToDouble())) },
-                                { "max_age", CosmosNumber64.Create(grouping.Max(document => document["age"].ToDouble())) },
-                            }))
-                        .ToList()
+                    "Compositetion of Aggregate 2"
                 ),
                 */
 
@@ -420,10 +336,7 @@
 
                 (
                     "SELECT AVG(\"asdf\") as avg_asdf FROM c GROUP BY c.age",
-                    documents
-                        .GroupBy(document => document["age"])
-                        .Select(grouping => CosmosObject.Create(new Dictionary<string, CosmosElement>()))
-                        .ToList()
+                    "Corner Case 1"
                 ),
 
                 (
@@ -436,17 +349,7 @@
                         SUM(c.doesNotExist) as undefined_sum
                     FROM c 
                     GROUP BY c.age",
-                    documents
-                        .GroupBy(document => document["age"])
-                        .Select(grouping => CosmosObject.Create(
-                            new Dictionary<string, CosmosElement>()
-                            {
-                                { "age", grouping.Key },
-                                // sum and count default the counter at 0
-                                { "undefined_sum", CosmosNumber64.Create(0) },
-                                { "undefined_count", CosmosNumber64.Create(0) },
-                            }))
-                        .ToList()
+                    "Corner Case 2"
                 ),
 
                 (
@@ -455,14 +358,7 @@
                         c.doesNotExist
                     FROM c 
                     GROUP BY c.age, c.doesNotExist",
-                    documents
-                        .GroupBy(document => document["age"])
-                        .Select(grouping => CosmosObject.Create(
-                            new Dictionary<string, CosmosElement>()
-                            {
-                                { "age", grouping.Key }
-                            }))
-                        .ToList()
+                    "Corner Case 3"
                 ),
 
                 // ------------------------------------------
@@ -471,10 +367,7 @@
 
                 (
                     "SELECT VALUE c.id FROM c GROUP BY c.id",
-                    documents
-                        .GroupBy(document => document["id"])
-                        .Select(grouping => grouping.Key)
-                        .ToList()
+                    "With Partition Key"
                 ),
 
                 // ------------------------------------------
@@ -483,77 +376,82 @@
 
                 (
                     "SELECT COUNT(1) as count, c.DoesNotExist as DoesNotExist FROM c GROUP BY c.DoesNotExist",
-                    new[]
-                    {
-                        CosmosObject.Create(
-                            new Dictionary<string, CosmosElement>()
-                            {
-                                { "count", CosmosNumber64.Create(documents.Count) }
-                            })
-                    }
+                    "Group By Undefined"
                 ),
             };
 
-            // Test query correctness.
-            foreach ((string query, IReadOnlyList<CosmosElement> expectedResults) in queryAndExpectedResultsList)
+            List<QueryTestInput> inputs = new List<QueryTestInput>();
+            foreach ((string query, string description) in queryTestCases)
             {
-                foreach (int maxItemCount in new int[] { 1, 5, 10 })
+                QueryTestInput input = new QueryTestInput(description, query);
+                inputs.Add(input);
+            }
+
+            this.ExecuteTestSuite(inputs);
+        }
+
+        public override QueryTestOutput ExecuteTest(QueryTestInput input)
+        {
+            FeedIterator<dynamic> iterator = testContainer.GetItemQueryIterator<dynamic>(input.QueryText);
+
+            List<object> results = new List<object>();
+            while (iterator.HasMoreResults)
+            {
+                FeedResponse<dynamic> response = iterator.ReadNextAsync().Result;
+                foreach(var item in response)
                 {
-                    List<CosmosElement> actualWithoutContinuationTokens = await QueryTestsBase.QueryWithoutContinuationTokensAsync<CosmosElement>(
-                        container,
-                        query,
-                        new QueryRequestOptions()
-                        {
-                            MaxConcurrency = 2,
-                            MaxItemCount = maxItemCount,
-                            MaxBufferedItemCount = 100,
-                        });
-                    HashSet<CosmosElement> actualWithoutContinuationTokensSet = new HashSet<CosmosElement>(actualWithoutContinuationTokens);
-
-                    List<CosmosElement> actualWithTryGetContinuationTokens = await QueryTestsBase.QueryWithCosmosElementContinuationTokenAsync<CosmosElement>(
-                        container,
-                        query,
-                        new QueryRequestOptions()
-                        {
-                            MaxConcurrency = 2,
-                            MaxItemCount = maxItemCount,
-                            MaxBufferedItemCount = 100,
-                        });
-                    HashSet<CosmosElement> actualWithTryGetContinuationTokensSet = new HashSet<CosmosElement>(actualWithTryGetContinuationTokens);
-
-                    Assert.IsTrue(
-                       actualWithoutContinuationTokensSet.SetEquals(actualWithTryGetContinuationTokensSet),
-                       $"Results did not match for query: {query} with maxItemCount: {maxItemCount}" +
-                       $"ActualWithoutContinuationTokens: {JsonConvert.SerializeObject(actualWithoutContinuationTokensSet)}" +
-                       $"ActualWithTryGetContinuationTokens: {JsonConvert.SerializeObject(actualWithTryGetContinuationTokensSet)}");
-
-                    HashSet<CosmosElement> expectedSet = new HashSet<CosmosElement>(expectedResults);
-
-                    Assert.IsTrue(
-                       actualWithoutContinuationTokensSet.SetEquals(expectedSet),
-                       $"Results did not match for query: {query} with maxItemCount: {maxItemCount}" +
-                       $"Actual {JsonConvert.SerializeObject(actualWithoutContinuationTokensSet)}" +
-                       $"Expected: {JsonConvert.SerializeObject(expectedSet)}");
+                    results.Add(item);
                 }
             }
 
-            // Test that continuation token is blocked
+            return new QueryTestOutput(serializedResults: JsonConvert.SerializeObject(results));
+        }
+    }
+
+
+    public sealed class QueryTestInput : BaselineTestInput
+    {
+        internal string QueryText;
+
+        internal QueryTestInput(
+            string description,
+            string queryText)
+            : base(description)
+        {
+            this.QueryText = queryText;
+        }
+        public override void SerializeAsXml(XmlWriter xmlWriter)
+        {
+            if (xmlWriter == null)
             {
-                try
-                {
-                    List<JToken> actual = await QueryTestsBase.QueryWithContinuationTokensAsync<JToken>(
-                        container,
-                        "SELECT c.age FROM c GROUP BY c.age",
-                        new QueryRequestOptions()
-                        {
-                            MaxConcurrency = 2,
-                            MaxItemCount = 1
-                        });
-                    Assert.Fail("Expected an error when trying to drain a GROUP BY query with continuation tokens.");
-                }
-                catch (Exception)
-                {
-                }
+                throw new ArgumentNullException($"{nameof(xmlWriter)} cannot be null.");
+            }
+
+            xmlWriter.WriteStartElement("Description");
+            xmlWriter.WriteCData(this.Description);
+            xmlWriter.WriteEndElement();
+            xmlWriter.WriteStartElement("Expression");
+            xmlWriter.WriteCData(this.QueryText);
+            xmlWriter.WriteEndElement();
+        }
+    }
+
+    public class QueryTestOutput : BaselineTestOutput
+    {
+        internal string Results { get; }
+
+        internal QueryTestOutput(string serializedResults)
+        {
+            this.Results = serializedResults;
+        }
+
+        public override void SerializeAsXml(XmlWriter xmlWriter)
+        {
+            if (this.Results != null)
+            {
+                xmlWriter.WriteStartElement("Results");
+                xmlWriter.WriteCData(this.Results);
+                xmlWriter.WriteEndElement();
             }
         }
     }

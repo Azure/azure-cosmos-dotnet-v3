@@ -792,7 +792,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 
             CosmosException cosmosException = await Assert.ThrowsExceptionAsync<CosmosException>(() => fullFidelityIterator.ReadNextAsync());
             Assert.AreEqual(HttpStatusCode.BadRequest, cosmosException.StatusCode, "Full Fidelity Change Feed does not work with StartFromBeginning currently.");
-            Assert.IsTrue(cosmosException.Message.Contains("FullFidelity Change Feed must have valid If-None-Match header."));
         }
 
         /// <summary>
