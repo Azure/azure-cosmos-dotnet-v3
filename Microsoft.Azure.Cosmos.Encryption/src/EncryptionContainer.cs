@@ -1329,19 +1329,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return decryptedItems;
         }
 
-        private async Task<T> DecryptChangeFeedDocumentAsync<T>(
-            JObject document,
-            CancellationToken cancellationToken)
-        {
-            EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
-                obsoleteEncryptionSettings: null,
-                cancellationToken: cancellationToken);
-
-            (JObject decryptedDocument, _) = await EncryptionProcessor.DecryptAsync(
-                document, encryptionSettings, cancellationToken);
-            return decryptedDocument.ToObject<T>();
-        }
-
         private async Task<ResponseMessage> ReadManyItemsHelperAsync(
             IReadOnlyList<(string id, PartitionKey partitionKey)> items,
             ReadManyRequestOptions readManyRequestOptions = null,
