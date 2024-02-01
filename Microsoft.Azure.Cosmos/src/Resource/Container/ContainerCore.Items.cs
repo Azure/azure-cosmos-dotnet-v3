@@ -486,27 +486,6 @@ namespace Microsoft.Azure.Cosmos
                 observerFactory, ChangeFeedMode.LatestVersion);
         }
 
-        //////public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
-        //////    string processorName,
-        //////    ChangeFeedHandler<ChangeFeedItemChange<T>> onChangesDelegate)
-        //////{
-        //////    if (processorName == null)
-        //////    {
-        //////        throw new ArgumentNullException(nameof(processorName));
-        //////    }
-
-        //////    if (onChangesDelegate == null)
-        //////    {
-        //////        throw new ArgumentNullException(nameof(onChangesDelegate));
-        //////    }
-
-        //////    ChangeFeedObserverFactory observerFactory = new CheckpointerObserverFactory(
-        //////        new ChangeFeedObserverFactoryCore<T>(onChangesDelegate, this.ClientContext.SerializerCore),
-        //////        withManualCheckpointing: false);
-        //////    return this.GetChangeFeedProcessorBuilderPrivate(processorName,
-        //////        observerFactory, ChangeFeedMode.AllVersionsAndDeletes);
-        //////}
-
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint<T>(
             string processorName,
             ChangeFeedHandlerWithManualCheckpoint<T> onChangesDelegate)
