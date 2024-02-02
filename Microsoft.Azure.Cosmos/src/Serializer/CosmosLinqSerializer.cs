@@ -54,13 +54,6 @@ namespace Microsoft.Azure.Cosmos
     ///
     ///    public override string SerializeMemberName(MemberInfo memberInfo)
     ///    {
-    ///         System.Text.Json.Serialization.JsonExtensionDataAttribute jsonExtensionDataAttribute =
-    ///             memberInfo.GetCustomAttribute<System.Text.Json.Serialization.JsonExtensionDataAttribute>(true);
-    ///         if (jsonExtensionDataAttribute != null)
-    ///         {
-    ///             return null;
-    ///         }
-    ///             
     ///        JsonPropertyNameAttribute jsonPropertyNameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(true);
     ///
     ///        string memberName = !string.IsNullOrEmpty(jsonPropertyNameAttribute?.Name)
