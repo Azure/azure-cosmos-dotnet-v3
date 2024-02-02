@@ -508,6 +508,44 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task Verify_DisableCertificateValidationCallBackGetsCalled_ForTCP_HTTP()
+        {
+            int counter = 0;
+            CosmosClientOptions options = new CosmosClientOptions()
+            {
+                DisableServerCertificateValidationInvocationCallback = () => counter++,
+            };
+
+            string authKey = ConfigurationManager.AppSettings["MasterKey"];
+            string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
+            string connectionStringWithSslDisable = $"AccountEndpoint={endpoint};AccountKey={authKey};DisableServerCertificateValidation=true";
+
+            using CosmosClient cosmosClient = new CosmosClient(connectionStringWithSslDisable, options);
+
+            string databaseName = Guid.NewGuid().ToString();
+            string databaseId = Guid.NewGuid().ToString();
+            Cosmos.Database database = null;
+
+            try
+            {
+                //HTTP callback
+                Trace.TraceInformation("Creating test database and container");
+                database = await cosmosClient.CreateDatabaseAsync(databaseId);
+                Cosmos.Container container = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
+
+                // TCP callback
+                ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
+                ResponseMessage responseMessage = await container.CreateItemStreamAsync(TestCommon.SerializerCore.ToStream(item), new Cosmos.PartitionKey(item.id));
+            }
+            finally
+            {
+                await database?.DeleteStreamAsync();
+            }
+
+            Assert.IsTrue(counter >= 2);
+        }
+
+        [TestMethod]
         public void SqlQuerySpecSerializationTest()
         {
             Action<string, SqlQuerySpec> verifyJsonSerialization = (expectedText, query) =>
