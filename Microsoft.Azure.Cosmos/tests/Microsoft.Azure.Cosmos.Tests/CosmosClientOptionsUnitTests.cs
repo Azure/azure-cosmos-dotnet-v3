@@ -949,7 +949,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 CosmosHttpClient httpClient = cosmosClient.DocumentClient.httpClient;
                 SocketsHttpHandler socketsHttpHandler = (SocketsHttpHandler)httpClient.HttpMessageHandler;
 
-                RemoteCertificateValidationCallback? httpClientRemoreCertValidationCallback = socketsHttpHandler.SslOptions.RemoteCertificateValidationCallback;
+                RemoteCertificateValidationCallback httpClientRemoreCertValidationCallback = socketsHttpHandler.SslOptions.RemoteCertificateValidationCallback;
                 Assert.IsNotNull(httpClientRemoreCertValidationCallback);
 
                 Assert.IsTrue(httpClientRemoreCertValidationCallback(this, x509Certificate2, x509Chain, sslPolicyErrors));
