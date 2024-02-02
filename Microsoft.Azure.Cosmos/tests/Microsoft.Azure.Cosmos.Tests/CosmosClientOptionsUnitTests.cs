@@ -939,12 +939,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             if (expectedIgnoreCertificateFlag)
             {
                 Assert.IsNull(cosmosClient.ClientOptions.ServerCertificateCustomValidationCallback);
+                Assert.IsNull(cosmosClient.DocumentClient.ConnectionPolicy.ServerCertificateCustomValidationCallback);
                 Assert.IsTrue(cosmosClient.ClientOptions.DisableServerCertificateValidation);
                 Assert.IsTrue(cosmosClient
                     .ClientOptions
                     .GetServerCertificateCustomValidationCallback()(x509Certificate2, x509Chain, sslPolicyErrors));
 
-                Assert.IsNotNull(cosmosClient.DocumentClient.ConnectionPolicy.ServerCertificateCustomValidationCallback);
                 
                 CosmosHttpClient httpClient = cosmosClient.DocumentClient.httpClient;
                 SocketsHttpHandler socketsHttpHandler = (SocketsHttpHandler)httpClient.HttpMessageHandler;
@@ -981,15 +981,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosClient cosmosClient = new CosmosClient(connStr, options);
             Assert.IsTrue(cosmosClient.ClientOptions.DisableServerCertificateValidation);
             Assert.AreEqual(cosmosClient.ClientOptions.ServerCertificateCustomValidationCallback, options.ServerCertificateCustomValidationCallback);
-
-            if (setCallback)
-            {
-                Assert.AreNotEqual(cosmosClient.DocumentClient.ConnectionPolicy.ServerCertificateCustomValidationCallback, options.ServerCertificateCustomValidationCallback);
-            }
-            else
-            {
-                Assert.AreEqual(cosmosClient.DocumentClient.ConnectionPolicy.ServerCertificateCustomValidationCallback, options.ServerCertificateCustomValidationCallback);
-            }
+            Assert.AreEqual(cosmosClient.DocumentClient.ConnectionPolicy.ServerCertificateCustomValidationCallback, options.ServerCertificateCustomValidationCallback);
 
             CosmosHttpClient httpClient = cosmosClient.DocumentClient.httpClient;
             SocketsHttpHandler socketsHttpHandler = (SocketsHttpHandler)httpClient.HttpMessageHandler;
