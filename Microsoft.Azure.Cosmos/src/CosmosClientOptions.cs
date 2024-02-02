@@ -671,7 +671,8 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Real call back that will be hooked down-stream to the transport clients (both http and tcp).
-        /// NOTE: All down stream real-usage shows by only through this API only and not through the public API.
+        /// NOTE: All down stream real-usage should come through this API only and not through the public API.
+
         /// 
         /// Test hook DisableServerCertificateValidationInvocationCallback 
         /// - When configured will invoke it when ever custom validation is done
