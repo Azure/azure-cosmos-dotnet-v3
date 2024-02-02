@@ -664,7 +664,7 @@ namespace Microsoft.Azure.Cosmos
         /// <para>
         /// Emulator: To ignore SSL Certificate please suffix connectionstring with "DisableServerCertificateValidation=True;". 
         /// When CosmosClientOptions.HttpClientFactory is used, SSL certificate needs to be handled appropriately.
-        /// NOTE: DO NOT use this flag in production (only for emulator)
+        /// NOTE: DO NOT use the `DisableServerCertificateValidation` flag in production (only for emulator)
         /// </para>
         /// </remarks>
         public Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback { get; set; }
