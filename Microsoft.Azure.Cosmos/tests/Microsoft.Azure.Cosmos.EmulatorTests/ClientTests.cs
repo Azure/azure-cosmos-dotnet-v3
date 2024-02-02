@@ -508,7 +508,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task Verify_DisableCertificateValidationCallBackGetsCalled_For_HTTP()
+        public async Task Verify_DisableCertificateValidationCallBackGetsCalled_ForTCP_HTTP()
         {
             int counter = 0;
             CosmosClientOptions options = new CosmosClientOptions()
