@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             return this.addresses;
         }
 
-        public FaultInjectionConnectionType? GetConnectionType()
+        public FaultInjectionConnectionType GetConnectionType()
         {
             return this.connectionType;
         }

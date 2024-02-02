@@ -151,6 +151,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 case FaultInjectionServerErrorType.TooManyRequests:
                     INameValueCollection tooManyRequestsHeaders = args.RequestHeaders;
                     tooManyRequestsHeaders.Add(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, "500");
+                    tooManyRequestsHeaders.Add(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.RUBudgetExceeded).ToString(CultureInfo.InvariantCulture));
 
                     storeResponse = new StoreResponse()
                     {
@@ -183,8 +184,12 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     return storeResponse;
 
                 case FaultInjectionServerErrorType.ReadSessionNotAvailable:
+
+                    const string badSesstionToken = "1:1#1#1=1#1=1";
+
                     INameValueCollection readSessionHeaders = args.RequestHeaders;
                     readSessionHeaders.Add(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.ReadSessionNotAvailable).ToString(CultureInfo.InvariantCulture));
+                    readSessionHeaders.Add(HttpConstants.HttpHeaders.SessionToken, badSesstionToken);
 
                     storeResponse = new StoreResponse()
                     {
@@ -217,6 +222,15 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                         Status = 410,
                         Headers = partitionSplitting,
                         ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes($"Fault Injection Server Error: Partition Splitting, rule: {ruleId}"))
+                    };
+
+                    return storeResponse;
+                case FaultInjectionServerErrorType.ServiceUnavailable:
+                    storeResponse = new StoreResponse()
+                    {
+                        Status = 503,
+                        Headers = args.RequestHeaders,
+                        ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes($"Fault Injection Server Error: Service Unavailable, rule: {ruleId}"))
                     };
 
                     return storeResponse;

@@ -57,6 +57,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         ///  Used to simulate hight channel acquisiton. 
         ///  When over a connection timeouts can simulate connectionTimeoutException
         /// </summary>
-        ConnectionDelay
+        ConnectionDelay,
+
+        /// <summary>
+        /// 503: Service Unavailable from server
+        /// </summary>
+        ServiceUnavailable
     }
 }

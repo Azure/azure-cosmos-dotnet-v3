@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             string.Empty, 
             string.Empty, 
             new FeedRangePartitionKey(new PartitionKey()), false, 0);
+
         /// <summary>
         /// Creates a <see cref="FaultInjectionEndpoint"/>.
         /// </summary>
@@ -35,7 +36,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             FeedRange feedRange,
             bool includePrimary,
             int replicaCount)
-
         { 
             this.databaseName = databaseName;
             this.containerName = containerName;

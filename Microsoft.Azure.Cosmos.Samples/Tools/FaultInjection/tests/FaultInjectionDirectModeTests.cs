@@ -1,4 +1,7 @@
-﻿namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 {
     using System;
     using System.Collections.Generic;
@@ -174,9 +177,7 @@
 
                 Assert.AreEqual(0, tooManyRequestsRule.GetAddresses().Count);
 
-                tooManyRequestsRule.Enable();           
-                
-                
+                tooManyRequestsRule.Enable();
 
                 diagnostics = this.container != null
                     ? await this.PerformDocumentOperation(this.container, operationType, item)
@@ -1078,6 +1079,7 @@
                     : null;
             Assert.IsNotNull(cosmosDiagnostics);
             Assert.IsTrue(connectionErrorRule.GetHitCount() >= 1);
+            Assert.IsTrue(channelStore.GetAllChannels().Count == 0);
             int hitCount = (int)connectionErrorRule.GetHitCount();
 
             await Task.Delay(TimeSpan.FromSeconds(2));

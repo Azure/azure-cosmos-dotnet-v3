@@ -1,4 +1,7 @@
-﻿namespace Microsoft.Azure.Cosmos.FaultInjection
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+namespace Microsoft.Azure.Cosmos.FaultInjection
 {
     using System;
     using System.Collections.Generic;
@@ -52,7 +55,6 @@
                 {
                     //check to see if rule is valid
                     if (this.IsEffectiveRule(rule))
-
                     {
                         List<Channel> allChannels = this.channelStore.GetAllChannels();
                         Random random = new Random();

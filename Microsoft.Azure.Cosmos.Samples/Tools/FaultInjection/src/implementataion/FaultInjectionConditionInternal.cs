@@ -195,6 +195,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             {
                 this.containerResourceId = containerResourceId;
             }
+
             public bool IsApplicable(string ruleId, ChannelCallArguments args)
             {
                 return String.Equals(this.containerResourceId, args.ResolvedCollectionRid);

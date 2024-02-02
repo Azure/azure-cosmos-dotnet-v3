@@ -213,6 +213,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 FaultInjectionOperationType.ReplaceItem => OperationType.Replace,
                 FaultInjectionOperationType.DeleteItem => OperationType.Delete,
                 FaultInjectionOperationType.PatchItem => OperationType.Patch,
+                FaultInjectionOperationType.Batch => OperationType.Batch,
                 _ => throw new ArgumentException($"FaultInjectionOperationType: {faultInjectionOperationType} is not supported"),
             };
         }
@@ -313,10 +314,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                         return new List<Uri> { primary.Uri };
                     }
 
+                    // Make sure Primary URI is the first one in the list
                     IEnumerable<Uri> resolvedEndpoints = (await this.ResolveAllTransportAddressUriAsync(
                             fauntInjectionAddressRequest,
                             addressEndpoints.IsIncludePrimary(),
-                            true)).OrderBy(address => address.Uri.ToString())
+                            true))
                             .Take(addressEndpoints.GetReplicaCount())
                             .Select(address => address.Uri);
                     resolvedPhysicalAddresses.AddRange(resolvedEndpoints);
@@ -333,9 +335,23 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         {
             PerProtocolPartitionAddressInformation partitionPerProtocolAddress = await this.ResolveAddressesHelperAsync(request, forceAddressRefresh);
 
-            return includePrimary
-                ? partitionPerProtocolAddress.ReplicaTransportAddressUris
-                : partitionPerProtocolAddress.NonPrimaryReplicaTransportAddressUris;
+            if (includePrimary)
+            {
+                List<TransportAddressUri> allAddresses = new List<TransportAddressUri>();
+                TransportAddressUri primary = partitionPerProtocolAddress.PrimaryReplicaTransportAddressUri;
+                allAddresses.Add(primary);
+
+                foreach (TransportAddressUri transportAddressUri in partitionPerProtocolAddress.ReplicaTransportAddressUris)
+                {
+                    if (transportAddressUri != primary)
+                    {
+                        allAddresses.Add(transportAddressUri);
+                    }
+                }
+                return allAddresses;
+            }
+
+            return partitionPerProtocolAddress.NonPrimaryReplicaTransportAddressUris;
         }
 
         private async Task<TransportAddressUri> ResolvePrimaryTransportAddressUriAsync(
@@ -346,6 +362,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
             return partitionPerProtocolAddress.GetPrimaryAddressUri(request);
         }
+
         private async Task<PerProtocolPartitionAddressInformation> ResolveAddressesHelperAsync(
             DocumentServiceRequest request,
             bool forceAddressRefresh)
