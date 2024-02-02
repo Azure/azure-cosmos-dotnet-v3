@@ -22,6 +22,11 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal static readonly string PartitionLevelFailoverEnabled = "AZURE_COSMOS_PARTITION_LEVEL_FAILOVER_ENABLED";
 
+        /// <summary>
+        /// Environment variable name for overriding optimistic direct execution of queries.
+        /// </summary>
+        internal static readonly string OptimisticDirectExecutionEnabled = "AZURE_COSMOS_OPTIMISTIC_DIRECT_EXECUTION_ENABLED";
+
         public static T GetEnvironmentVariable<T>(string variable, T defaultValue)
         {
             string value = Environment.GetEnvironmentVariable(variable);
@@ -70,6 +75,18 @@ namespace Microsoft.Azure.Cosmos
             return ConfigurationManager
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.PartitionLevelFailoverEnabled,
+                        defaultValue: defaultValue);
+        }
+
+        /// <summary>
+        /// Gets the boolean value indicating whether optimistic direct execution is enabled based on the environment variable override.
+        /// </summary>
+        public static bool IsOptimisticDirectExecutionEnabled(
+            bool defaultValue)
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: OptimisticDirectExecutionEnabled,
                         defaultValue: defaultValue);
         }
     }
