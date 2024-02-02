@@ -88,6 +88,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
 
                 double requestCharge = 0;
                 long responseLengthBytes = 0;
+                IReadOnlyDictionary<string, string> cumulativeAdditionalHeaders = default;
+
                 while (await this.inputStage.MoveNextAsync(trace))
                 {
                     TryCatch<QueryPage> tryGetPageFromSource = this.inputStage.Current;
@@ -101,6 +103,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
 
                     requestCharge += sourcePage.RequestCharge;
                     responseLengthBytes += sourcePage.ResponseLengthInBytes;
+
+                    // Note-2024-02-02:
+                    // QueryExecMetrics header is accumulated pre this pipeline, so we can safely ignore it here.
+                    // Other than that, the other query related header is IndexMetrics and it's non-cumulative
+                    // So we copy the source page headers from the source page to the final result.
+                    cumulativeAdditionalHeaders = sourcePage.AdditionalHeaders;
 
                     foreach (CosmosElement element in sourcePage.Documents)
                     {
@@ -128,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                     cosmosQueryExecutionInfo: default,
                     distributionPlanSpec: default,
                     disallowContinuationTokenMessage: default,
-                    additionalHeaders: default,
+                    additionalHeaders: cumulativeAdditionalHeaders,
                     state: default);
 
                 this.Current = TryCatch<QueryPage>.FromResult(queryPage);

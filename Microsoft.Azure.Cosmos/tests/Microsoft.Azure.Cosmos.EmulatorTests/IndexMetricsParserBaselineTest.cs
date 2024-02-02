@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     using Microsoft.Azure.Documents;
     using Antlr4.Runtime.Sharpen;
     using System.Collections.Generic;
+    using OpenTelemetry.Trace;
 
     // End-to-end testing for IndexMetrics handling and parsing.
     [Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestClass]
@@ -169,9 +170,213 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             this.ExecuteTestSuite(inputs);
         }
 
+        [TestMethod]
+        public void IndexUtilizationClientSideExistenceTest()
+        {
+            List<IndexMetricsParserTestInput> inputs = new List<IndexMetricsParserTestInput>
+            {
+                new IndexMetricsParserTestInput
+                (
+                    description: "Simple 1",
+                    query: "SELECT * FROM c WHERE c.id = \"1\""
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "Simple 2",
+                    query: "SELECT * FROM c WHERE c.id = \"1\" and c.name = \"Abc\""
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "Simple 3",
+                    query: "SELECT * FROM c WHERE c.id = \"1\" and c.name > \"Abc\""
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "Simple 4",
+                    query: "SELECT * FROM c WHERE c.id > \"1\" and c.name > \"Abc\""
+                ),
+
+                // Aggregate
+                new IndexMetricsParserTestInput
+                (
+                    description: "Aggregate 1",
+                    query: "SELECT COUNT(1) FROM c WHERE c.id = \"1\""
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "Aggregate 2",
+                    query: "SELECT COUNT(1) FROM c WHERE c.id = \"1\" and c.name = \"Abc\""
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "Aggregate 3",
+                    query: "SELECT COUNT(1) FROM c WHERE c.id = \"1\" and c.name > \"Abc\""
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "Aggregate 4",
+                    query: "SELECT COUNT(1) FROM c WHERE c.id > \"1\" and c.name > \"Abc\""
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "Aggregate Value 1",
+                    query: "SELECT VALUE COUNT(1) FROM c WHERE c.id = \"1\""
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "Aggregate Value 2",
+                    query: "SELECT VALUE COUNT(1) FROM c WHERE c.id = \"1\" and c.name = \"Abc\""
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "Aggregate Value 3",
+                    query: "SELECT VALUE COUNT(1) FROM c WHERE c.id = \"1\" and c.name > \"Abc\""
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "Aggregate Value 4",
+                    query: "SELECT VALUE COUNT(1) FROM c WHERE c.id > \"1\" and c.name > \"Abc\""
+                ),
+
+                // Order By
+                new IndexMetricsParserTestInput
+                (
+                    description: "OrderBy 1",
+                    query: "SELECT * FROM c WHERE c.id = \"1\" ORDER BY c.id ASC"
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "OrderBy 2",
+                    query: "SELECT * FROM c WHERE c.id = \"1\" and c.name = \"Abc\" ORDER BY c.id ASC"
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "OrderBy 3",
+                    query: "SELECT * FROM c WHERE c.id = \"1\" and c.name > \"Abc\" ORDER BY c.id ASC"
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "OrderBy 4",
+                    query: "SELECT * FROM c WHERE c.id > \"1\" and c.name > \"Abc\" ORDER BY c.id ASC"
+                ),
+
+                // Group By
+                new IndexMetricsParserTestInput
+                (
+                    description: "GroupBy 1",
+                    query: "SELECT COUNT(1) FROM c WHERE c.id = \"1\" GROUP BY c.id"
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "GroupBy 2",
+                    query: "SELECT COUNT(1) FROM c WHERE c.id = \"1\" and c.name = \"Abc\" GROUP BY c.id"
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "GroupBy 3",
+                    query: "SELECT COUNT(1) FROM c WHERE c.id = \"1\" and c.name > \"Abc\" GROUP BY c.id"
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "GroupBy 4",
+                    query: "SELECT COUNT(1) FROM c WHERE c.id > \"1\" and c.name > \"Abc\" GROUP BY c.id"
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "GroupBy 5",
+                    query: "SELECT COUNT(1) FROM c WHERE c.id = \"1\" GROUP BY c.id, c.name"
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "GroupBy 6",
+                    query: "SELECT COUNT(1) FROM c WHERE c.id = \"1\" and c.name = \"Abc\" GROUP BY c.id, c.name"
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "GroupBy 7",
+                    query: "SELECT COUNT(1) FROM c WHERE c.id = \"1\" and c.name > \"Abc\" GROUP BY c.id, c.name"
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "GroupBy 8",
+                    query: "SELECT COUNT(1) FROM c WHERE c.id > \"1\" and c.name > \"Abc\" GROUP BY c.id, c.name"
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "GroupBy Value 1",
+                    query: "SELECT VALUE COUNT(1) FROM c WHERE c.id = \"1\""
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "GroupBy Value 2",
+                    query: "SELECT VALUE COUNT(1) FROM c WHERE c.id = \"1\" and c.name = \"Abc\""
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "GroupBy Value 3",
+                    query: "SELECT VALUE COUNT(1) FROM c WHERE c.id = \"1\" and c.name > \"Abc\""
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "GroupBy Value 4",
+                    query: "SELECT VALUE COUNT(1) FROM c WHERE c.id > \"1\" and c.name > \"Abc\""
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "GroupBy Value 5",
+                    query: "SELECT VALUE COUNT(1) FROM c WHERE c.id = \"1\" GROUP BY c.id, c.name"
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "GroupBy Value 6",
+                    query: "SELECT VALUE COUNT(1) FROM c WHERE c.id = \"1\" and c.name = \"Abc\" GROUP BY c.id, c.name"
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "GroupBy Value 7",
+                    query: "SELECT VALUE COUNT(1) FROM c WHERE c.id = \"1\" and c.name > \"Abc\" GROUP BY c.id, c.name"
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "GroupBy Value 8",
+                    query: "SELECT VALUE COUNT(1) FROM c WHERE c.id > \"1\" and c.name > \"Abc\" GROUP BY c.id, c.name"
+                )
+            };
+
+            this.ExecuteTestSuite(inputs);
+        }
+
         public override IndexMetricsParserTestOutput ExecuteTest(IndexMetricsParserTestInput input)
         { 
-            QueryRequestOptions requestOptions = new QueryRequestOptions() { PopulateIndexMetrics = true };
+            QueryRequestOptions requestOptions = new QueryRequestOptions() { PopulateIndexMetrics = true, EnableOptimisticDirectExecution = false };
 
             FeedIterator<CosmosElement> itemQuery = testContainer.GetItemQueryIterator<CosmosElement>(
                 input.Query,
