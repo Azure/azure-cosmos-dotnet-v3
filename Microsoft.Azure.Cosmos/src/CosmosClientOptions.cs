@@ -672,7 +672,6 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Real call back that will be hooked down-stream to the transport clients (both http and tcp).
         /// NOTE: All down stream real-usage should come through this API only and not through the public API.
-
         /// 
         /// Test hook DisableServerCertificateValidationInvocationCallback 
         /// - When configured will invoke it when ever custom validation is done
@@ -694,7 +693,6 @@ namespace Microsoft.Azure.Cosmos
                         {
                             bValidationResult = this.ServerCertificateCustomValidationCallback(cert, chain, policyErrors);
                         }
-
                         this.DisableServerCertificateValidationInvocationCallback?.Invoke();
                         return bValidationResult;
                     };
@@ -810,6 +808,7 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateDirectTCPSettings();
             this.ValidateLimitToEndpointSettings();
             this.ValidatePartitionLevelFailoverSettings();
+            this.ValidateAndSetServerCallbackSettings();
 
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
@@ -829,7 +828,7 @@ namespace Microsoft.Azure.Cosmos
                 EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
                 EnableAdvancedReplicaSelectionForTcp = this.EnableAdvancedReplicaSelectionForTcp,
                 HttpClientFactory = this.httpClientFactory,
-                ServerCertificateCustomValidationCallback = this.GetServerCertificateCustomValidationCallback(),
+                ServerCertificateCustomValidationCallback = this.ServerCertificateCustomValidationCallback,
                 CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions()
             };
 
@@ -980,6 +979,19 @@ namespace Microsoft.Azure.Cosmos
                 && (this.ApplicationPreferredRegions == null || this.ApplicationPreferredRegions.Count == 0))
             {
                 throw new ArgumentException($"{nameof(this.ApplicationPreferredRegions)} is required when {nameof(this.EnablePartitionLevelFailover)} is enabled.");
+            }
+        }
+
+        private void ValidateAndSetServerCallbackSettings()
+        {
+            if (this.DisableServerCertificateValidation && this.ServerCertificateCustomValidationCallback != null)
+            {
+                throw new ArgumentException($"Cannot specify {nameof(this.DisableServerCertificateValidation)} flag in Connection String and {nameof(this.ServerCertificateCustomValidationCallback)}. Only one can be set.");
+            }
+            
+            if (this.DisableServerCertificateValidation)
+            {
+                this.ServerCertificateCustomValidationCallback = (_, _, _) => true;
             }
         }
 
