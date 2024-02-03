@@ -26,8 +26,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <param name="result">the <see cref="IFaultInjectionResult"/> of the rule.</param>
         /// <param name="condition">the <see cref="FaultInjectionCondition"/> of the rule.</param>
         /// <param name="id">the id of the rule</param>
-        /// <param name="duration">the lifetime of the rule.</param>
-        /// <param name="startDelay">the start delay of the rule.</param>
+        /// <param name="duration">the lifetime of the rule. The duration starts at the time of the rule creation, not the time of when the rule is enabled (rule is enabled by default).</param>
+        /// <param name="startDelay">the start delay of the rule. </param>
         /// <param name="hitLimit">the maximum number of times the rule can be applied.</param>
         /// <param name="enabled">whether the rule is enabled.</param>
         public FaultInjectionRule(
