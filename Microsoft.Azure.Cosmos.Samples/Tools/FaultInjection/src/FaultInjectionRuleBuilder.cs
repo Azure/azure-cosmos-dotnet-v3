@@ -40,6 +40,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <summary>
         /// Set the effective duration of the rule. The rule will not be applied after the duration has elapsed.
         /// By default, the duration will be until the end of the application.
+        /// The duration starts at the time of the rule creation, not the time of when the rule is enabled (rule is enabled by default).
         /// </summary>
         /// <param name="duration">the effective duration.</param>
         /// <returns>the <see cref="FaultInjectionRuleBuilder"/>.</returns>
