@@ -17,17 +17,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Singleton to make sure we only have one instance of the DiagnosticScopeFactory and pattern matching of listener happens only once
         /// </summary>
-        private static readonly Lazy<DiagnosticScopeFactory> LazyOperationScopeFactory = new Lazy<DiagnosticScopeFactory>(
+        private static readonly Lazy<DiagnosticScopeFactory> LazyScopeFactory = new Lazy<DiagnosticScopeFactory>(
             valueFactory: () => new DiagnosticScopeFactory(
-                           clientNamespace: $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.{OpenTelemetryAttributeKeys.OperationPrefix}",
-                           resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
-                           isActivityEnabled: true,
-                           suppressNestedClientActivities: true),
-            isThreadSafe: true);
-
-        private static readonly Lazy<DiagnosticScopeFactory> LazyNetworkScopeFactory = new Lazy<DiagnosticScopeFactory>(
-            valueFactory: () => new DiagnosticScopeFactory(
-                           clientNamespace: $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.{OpenTelemetryAttributeKeys.NetworkLevelPrefix}",
+                           clientNamespace: $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}",
                            resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
                            isActivityEnabled: true,
                            suppressNestedClientActivities: true),
@@ -45,8 +37,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             if (clientContext is { ClientOptions.CosmosClientTelemetryOptions.DisableDistributedTracing: false })
             {
                 // If there is no source then it will return default otherwise a valid diagnostic scope
-                DiagnosticScope scope = LazyOperationScopeFactory.Value.CreateScope(name: operationName,
-                                 kind: clientContext.ClientOptions.ConnectionMode == ConnectionMode.Gateway ? DiagnosticScope.ActivityKind.Internal : DiagnosticScope.ActivityKind.Client);
+                DiagnosticScope scope = LazyScopeFactory.Value.CreateScope(name: $"{OpenTelemetryAttributeKeys.OperationPrefix}.{operationName}",
+                                 kind: clientContext.ClientOptions.ConnectionMode == ConnectionMode.Gateway ? ActivityKind.Internal : ActivityKind.Client);
 
                 // Need a parent activity id associated with the operation which is logged in diagnostics and used for tracing purpose.
                 // If there are listeners at operation level then scope is enabled and it tries to create activity.
@@ -70,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 // However, if available listeners are not subscribed to network event then it will lead to scope being enabled but no activity is created.
                 else
                 {
-                    DiagnosticScope requestScope = LazyNetworkScopeFactory.Value.CreateScope(name: operationName);
+                    DiagnosticScope requestScope = LazyScopeFactory.Value.CreateScope(name: $"{OpenTelemetryAttributeKeys.NetworkLevelPrefix}.{operationName}");
                     openTelemetryRecorder = requestScope.IsEnabled ? OpenTelemetryCoreRecorder.CreateNetworkLevelParentActivity(networkScope: requestScope) : openTelemetryRecorder;
                 }
 

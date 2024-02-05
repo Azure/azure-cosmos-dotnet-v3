@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
     {
         public static void IsValidOperationActivity(Activity activity)
         {
-            if (string.Equals(activity.Source.Name, $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation", StringComparison.OrdinalIgnoreCase))
+            if (activity.OperationName.StartsWith("Operation.", StringComparison.OrdinalIgnoreCase))
             {
                 Assert.IsFalse(string.IsNullOrEmpty(activity.GetTagItem("db.cosmosdb.connection_mode").ToString()), $"connection mode is empty for {activity.OperationName}");
 
@@ -60,10 +60,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
                      "exception.message",
                      "exception.stacktrace",
                      "db.cosmosdb.activity_id",
-                     "db.cosmosdb.correlated_activity_id"
+                     "db.cosmosdb.correlated_activity_id",
+                     "error.type"
                 };
 
-                foreach (KeyValuePair<string, string> actualTag in activity.Tags)
+                foreach (KeyValuePair<string, object> actualTag in activity.TagObjects)
                 {
                     Assert.IsTrue(expectedTags.Contains(actualTag.Key), $"{actualTag.Key} is not allowed for {activity.OperationName}");
 
@@ -84,19 +85,19 @@ namespace Microsoft.Azure.Cosmos.Tracing
             Assert.AreEqual(
                 JsonConvert.SerializeObject(CustomListener.CollectedOperationActivities.OrderBy(x => x.Id)),
                 JsonConvert.SerializeObject(CustomOtelExporter.CollectedActivities
-                    .Where(activity => activity.Source.Name == $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation")
+                    .Where(activity => activity.OperationName.StartsWith("Operation."))
                     .OrderBy(x => x.Id)));
         }
 
-        private static void AssertDatabaseAndContainerName(string name, KeyValuePair<string, string> tag)
+        private static void AssertDatabaseAndContainerName(string name, KeyValuePair<string, object> tag)
         {
             IList<string> exceptionsForContainerAttribute = new List<string>
             {
-                "CreateDatabaseAsync",
-                "CreateDatabaseIfNotExistsAsync",
-                "ReadAsync",
-                "DeleteAsync",
-                "DeleteStreamAsync"
+                "Operation.CreateDatabaseAsync",
+                "Operation.CreateDatabaseIfNotExistsAsync",
+                "Operation.ReadAsync",
+                "Operation.DeleteAsync",
+                "Operation.DeleteStreamAsync"
             };
             
             if ((tag.Key == OpenTelemetryAttributeKeys.ContainerName && !exceptionsForContainerAttribute.Contains(name)) ||
