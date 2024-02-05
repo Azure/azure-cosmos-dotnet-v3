@@ -10,12 +10,12 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     { 
 
         private readonly ConcurrentDictionary<string, List<(DateTime, Guid)>> executionsByRuleId;
-        private readonly ConcurrentDictionary<Guid, (DateTime, string)> executionsByActivityId;
+        private readonly ConcurrentDictionary<Guid, List<(DateTime, string)>> executionsByActivityId;
         private readonly BlockingCollection<(DateTime, string, Guid)> values;
         
         public FaultInjectionApplicationContext()
         {
-            this.executionsByActivityId = new ConcurrentDictionary<Guid, (DateTime, string)>();
+            this.executionsByActivityId = new ConcurrentDictionary<Guid, List<(DateTime, string)>>();
             this.executionsByRuleId = new ConcurrentDictionary<string, List<(DateTime, Guid)>>();
             this.values = new BlockingCollection<(DateTime, string, Guid)>();
         }      
@@ -27,7 +27,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 this.executionsByRuleId[ruleId].Add((DateTime.UtcNow, activityId));
             }
 
-            this.executionsByActivityId.TryAdd(activityId, (DateTime.UtcNow, ruleId));
+            if (!this.executionsByActivityId.TryAdd(activityId, new List<(DateTime, string)>() { (DateTime.UtcNow, ruleId) }))
+            {
+                this.executionsByActivityId[activityId].Add((DateTime.UtcNow, ruleId));
+            }
+
             this.values.Add((DateTime.UtcNow, ruleId, activityId));
         }
 
@@ -45,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             return this.executionsByRuleId;
         }
 
-        public ConcurrentDictionary<Guid, (DateTime, string)> GetAllRuleExecutionsByActivityId()
+        public ConcurrentDictionary<Guid, List<(DateTime, string)>> GetAllRuleExecutionsByActivityId()
         {
             return this.executionsByActivityId;
         }
@@ -62,11 +66,16 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             return false;
         }
 
+        /// <summary>
+        /// Gets the fault injection rule id for the given activity id
+        /// If multible FaultInjectionRules are applied to the same activity, the first rule applied will be returned
+        /// </summary>
+        /// <returns>the fault injection rule id</returns>
         public bool TryGetRuleExecutionByActivityId(Guid activityId, out (DateTime, string) execution)
         {
-            if (this.executionsByActivityId.TryGetValue(activityId, out (DateTime, string) ruleExecution))
+            if (this.executionsByActivityId.TryGetValue(activityId, out List<(DateTime, string)>? ruleExecutions))
             {
-                execution = ruleExecution;
+                execution = ruleExecutions[0];
                 return true;
             }
 

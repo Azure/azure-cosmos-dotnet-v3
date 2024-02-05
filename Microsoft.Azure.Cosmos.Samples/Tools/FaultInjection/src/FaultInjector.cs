@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
         /// <summary>
         /// Gets the fault injection rule id for the given activity id
+        /// If multible FaultInjectionRules are applied to the same activity, the first rule applied will be returned
         /// </summary>
         /// <param name="activityId"></param>
         /// <returns>the fault injection rule id</returns>
