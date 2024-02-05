@@ -21,6 +21,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Added
 - [4299](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4299) Query: Adds environment variable for overriding EnableOptimisticDirectExecution default (#4299)
+  > Note: This change provides another way to manage the upgrade to `3.38`. It provides an option to avoid potential disruption due to the breaking change (see the note below) if only config deployment is preferred, instead of any explicit code modification.
+  > With this change, users can set the environment variable AZURE_COSMOS_OPTIMISTIC_DIRECT_EXECUTION_ENABLED to false in their production environments while upgrading from previous minor version (`3.37` or below) to `3.38.1` (or above).
+  > This will signal the SDK to disable Optimistic Direct Execution by default.
+  > Once the environment is fully upgraded to the target version, the environment variable can be removed (or set to true) to enable ODE.
+  > It is recommended that the environment variable is used only to manage the upgrade and removed once the deployment is complete.
+  > Please note that environment variable acts as the override only for choosing the default value. If the code explicitly modifies the setting, that value will be honored during actual operations.
 
 ### <a name="3.39.0-preview.0"/> [3.39.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.39.0-preview.0) - 2024-01-31
 
