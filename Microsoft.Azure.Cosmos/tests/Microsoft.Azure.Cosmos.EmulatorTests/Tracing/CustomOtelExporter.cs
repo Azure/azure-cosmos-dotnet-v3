@@ -35,8 +35,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
             foreach (Activity activity in batch)
             {
-                if (string.Equals(activity.Source.Name, $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation", StringComparison.OrdinalIgnoreCase)
-                    || string.Equals(activity.Source.Name, $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Request", StringComparison.OrdinalIgnoreCase))
+                if (activity.OperationName.StartsWith("Operation.", StringComparison.OrdinalIgnoreCase)
+                    || activity.OperationName.StartsWith("Request.", StringComparison.OrdinalIgnoreCase))
                 {
                     AssertActivity.IsValidOperationActivity(activity);
 
