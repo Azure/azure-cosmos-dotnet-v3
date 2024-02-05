@@ -66,6 +66,8 @@ namespace Microsoft.Azure.Cosmos
     ///        string memberName = !string.IsNullOrEmpty(jsonPropertyNameAttribute?.Name)
     ///            ? jsonPropertyNameAttribute.Name
     ///            : memberInfo.Name;
+    ///            
+    ///        // Users must add handling for any additional attributes here
     ///
     ///        return memberName;
     ///    }
