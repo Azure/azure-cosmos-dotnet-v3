@@ -179,7 +179,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             Expression<Func<DocumentWithExtensionData, bool>> expr = a => ((object)a.NetExtensionData["foo"]) == "bar";
             string sql = SqlTranslator.TranslateExpression(expr.Body, dotNetOptions);
 
-            Assert.AreEqual("(a[\"NetExtensionData\"][\"foo\"] = \"bar\")", sql);
+            Assert.AreEqual("(a[\"foo\"] = \"bar\")", sql);
         }
 
         class DocumentWithExtensionData
@@ -241,6 +241,13 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             public override string SerializeMemberName(MemberInfo memberInfo)
             {
+                System.Text.Json.Serialization.JsonExtensionDataAttribute jsonExtensionDataAttribute =
+                    memberInfo.GetCustomAttribute<System.Text.Json.Serialization.JsonExtensionDataAttribute>(true);
+                if (jsonExtensionDataAttribute != null)
+                {
+                    return null;
+                }
+
                 JsonPropertyNameAttribute jsonPropertyNameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(true);
 
                 string memberName = jsonPropertyNameAttribute != null && !string.IsNullOrEmpty(jsonPropertyNameAttribute.Name)
