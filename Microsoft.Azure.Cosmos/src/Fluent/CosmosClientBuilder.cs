@@ -314,7 +314,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Should the global endpoint become inaccessible, the CosmosClient will attempt to obtain the account information issuing requests to the custom endpoints
         /// provided in the customAccountEndpoints list.
         /// </summary>
-        /// <param name="customAccountEndpoints">An instance of <see cref="IEnumerable{T}"/> of string containing the custom private endpoints for the cosmos db account.</param>
+        /// <param name="customAccountEndpoints">An instance of <see cref="IEnumerable{T}"/> of Uri containing the custom private endpoints for the cosmos db account.</param>
         /// <remarks>
         ///  This function is optional and is recommended for implementation when a customer has configured one or more endpoints with a custom DNS
         ///  hostname (instead of accountname-region.documents.azure.com) etc. for their Cosmos DB account.
@@ -326,14 +326,18 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
         ///     accountEndpoint: "https://testcosmos.documents.azure.com:443/",
         ///     authKeyOrResourceToken: "SuperSecretKey")
-        /// .WithCustomAccountEndpoints(new HashSet<string>() { "https://region-1.documents-test.windows-int.net:443/", "https://region-2.documents-test.windows-int.net:443/" });
+        /// .WithCustomAccountEndpoints(new HashSet<Uri>()
+        ///     { 
+        ///         new Uri("https://region-1.documents-test.windows-int.net:443/"),
+        ///         new Uri("https://region-2.documents-test.windows-int.net:443/") 
+        ///     });
         /// CosmosClient client = cosmosClientBuilder.Build();
         /// ]]>
         /// </code>
         /// </example>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientOptions.AccountInitializationCustomEndpoints"/>
-        public CosmosClientBuilder WithCustomAccountEndpoints(IEnumerable<string> customAccountEndpoints)
+        public CosmosClientBuilder WithCustomAccountEndpoints(IEnumerable<Uri> customAccountEndpoints)
         {
             this.clientOptions.AccountInitializationCustomEndpoints = customAccountEndpoints;
             return this;

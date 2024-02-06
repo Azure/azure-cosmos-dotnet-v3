@@ -142,11 +142,11 @@ namespace Microsoft.Azure.Cosmos
             if (customEndpointsProvided)
             {
                 connectionPolicy.SetAccountInitializationCustomEndpoints(
-                    new HashSet<string>()
+                    new HashSet<Uri>()
                     {
-                    "https://testfed2.documents-test.windows-int.net:443/",
-                    "https://testfed3.documents-test.windows-int.net:443/",
-                    "https://testfed4.documents-test.windows-int.net:443/",
+                        new Uri("https://testfed2.documents-test.windows-int.net:443/"),
+                        new Uri("https://testfed3.documents-test.windows-int.net:443/"),
+                        new Uri("https://testfed4.documents-test.windows-int.net:443/"),
                     });
             }
 
@@ -193,11 +193,11 @@ namespace Microsoft.Azure.Cosmos
             };
 
             connectionPolicy.SetAccountInitializationCustomEndpoints(
-                new HashSet<string>()
+                new HashSet<Uri>()
                 {
-                "https://testfed2.documents-test.windows-int.net:443/",
-                "https://testfed3.documents-test.windows-int.net:443/",
-                "https://testfed4.documents-test.windows-int.net:443/",
+                    new Uri("https://testfed2.documents-test.windows-int.net:443/"),
+                    new Uri("https://testfed3.documents-test.windows-int.net:443/"),
+                    new Uri("https://testfed4.documents-test.windows-int.net:443/"),
                 });
 
             GatewayAccountReader accountReader = new GatewayAccountReader(

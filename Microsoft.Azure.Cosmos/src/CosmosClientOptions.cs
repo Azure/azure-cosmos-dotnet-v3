@@ -214,7 +214,11 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// CosmosClientOptions clientOptions = new CosmosClientOptions()
         /// {
-        ///     AccountInitializationCustomEndpoints = new HashSet<string>(){ "custom.p-1.documents.azure.com", "custom.p-2.documents.azure.com" }
+        ///     AccountInitializationCustomEndpoints = new HashSet<Uri>()
+        ///     { 
+        ///         new Uri("custom.p-1.documents.azure.com"),
+        ///         new Uri("custom.p-2.documents.azure.com") 
+        ///     }
         /// };
         /// 
         /// CosmosClient client = new CosmosClient("endpoint", "key", clientOptions);
@@ -222,7 +226,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability#high-availability-with-cosmos-db-in-the-event-of-regional-outages">High availability on regional outages</seealso>
-        public IEnumerable<string> AccountInitializationCustomEndpoints { get; set; }
+        public IEnumerable<Uri> AccountInitializationCustomEndpoints { get; set; }
 
         /// <summary>
         /// Get or set the maximum number of concurrent connections allowed for the target

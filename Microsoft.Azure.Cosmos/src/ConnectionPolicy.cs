@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
 
         private Protocol connectionProtocol;
         private ObservableCollection<string> preferredLocations;
-        private ObservableCollection<string> accountInitializationCustomEndpoints;
+        private ObservableCollection<Uri> accountInitializationCustomEndpoints;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ConnectionPolicy"/> class to connect to the Azure Cosmos DB service.
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
             this.MediaReadMode = MediaReadMode.Buffered;
             this.UserAgentContainer = new UserAgentContainer(clientId: 0);
             this.preferredLocations = new ObservableCollection<string>();
-            this.accountInitializationCustomEndpoints = new ObservableCollection<string>();
+            this.accountInitializationCustomEndpoints = new ObservableCollection<Uri>();
             this.EnableEndpointDiscovery = true;
             this.MaxConnectionLimit = defaultMaxConcurrentConnectionLimit;
             this.RetryOptions = new RetryOptions();
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="customEndpoints">An instance of <see cref="IEnumerable{T}"/> containing the custom DNS endpoints
         /// provided by the customer.</param>
         public void SetAccountInitializationCustomEndpoints(
-            IEnumerable<string> customEndpoints)
+            IEnumerable<Uri> customEndpoints)
         {
             if (customEndpoints == null)
             {
@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.accountInitializationCustomEndpoints.Clear();
-            foreach (string endpoint in customEndpoints)
+            foreach (Uri endpoint in customEndpoints)
             {
                 this.accountInitializationCustomEndpoints.Add(endpoint);
             }
@@ -303,7 +303,7 @@ namespace Microsoft.Azure.Cosmos
         /// provided in the customAccountEndpoints list.
         /// </para>
         /// </remarks>
-        public Collection<string> AccountInitializationCustomEndpoints
+        public Collection<Uri> AccountInitializationCustomEndpoints
         {
             get
             {

@@ -159,7 +159,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(clientOptions.EnableAdvancedReplicaSelectionForTcp.Value);
 
             IReadOnlyList<string> preferredLocations = new List<string>() { Regions.AustraliaCentral, Regions.AustraliaCentral2 };
-            ISet<string> regionalEndpoints = new HashSet<string>() { "https://testfed2.documents-test.windows-int.net:443/", "https://testfed4.documents-test.windows-int.net:443/" };
+            ISet<Uri> regionalEndpoints = new HashSet<Uri>()
+            {
+                new Uri("https://testfed2.documents-test.windows-int.net:443/"),
+                new Uri("https://testfed4.documents-test.windows-int.net:443/")
+            };
 
             //Verify Direct Mode settings
             cosmosClientBuilder = new CosmosClientBuilder(
@@ -328,11 +332,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                         Regions.EastAsia,
                         })
                     .WithCustomAccountEndpoints(
-                        new HashSet<string>()
+                        new HashSet<Uri>()
                         {
-                        "https://testfed2.documents-test.windows-int.net:443/",
-                        "https://testfed3.documents-test.windows-int.net:443/",
-                        "https://testfed4.documents-test.windows-int.net:443/",
+                        new Uri("https://testfed2.documents-test.windows-int.net:443/"),
+                        new Uri("https://testfed3.documents-test.windows-int.net:443/"),
+                        new Uri("https://testfed4.documents-test.windows-int.net:443/"),
                         });
 
                 CosmosClientOptions clientOptions = cosmosClientBuilder.Build().ClientOptions;
