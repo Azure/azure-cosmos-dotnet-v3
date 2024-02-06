@@ -15,8 +15,8 @@ pr:
     - 'Microsoft.Azure.Cosmos/contracts/**/*'
 
 variables:
-  DebugArguments: ' --filter "TestCategory==MultiRegion" --verbosity normal '
-  ReleaseArguments: ' --filter "TestCategory!=MultiRegion" --verbosity normal '
+  DebugArguments: ' --filter "TestCategory==$(TestCategory)" --verbosity normal '
+  ReleaseArguments: ' --filter "TestCategory!=$(TestCategory)" --verbosity normal '
   VmImage: windows-latest # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
 
 
