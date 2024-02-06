@@ -84,5 +84,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Configuration
         public bool StartFromBeginning { get; set; }
 
         public ChangeFeedProcessorHealthMonitorCore HealthMonitor { get; set; } = new ChangeFeedProcessorHealthMonitorCore();
+
+        public ChangeFeedMode Mode { get; set; } = ChangeFeedMode.LatestVersion;
     }
 }
