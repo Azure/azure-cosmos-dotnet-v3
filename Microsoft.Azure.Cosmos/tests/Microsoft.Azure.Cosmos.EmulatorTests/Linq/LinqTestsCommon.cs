@@ -504,29 +504,17 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             return getQuery;
         }
 
-        public static Func<bool, IQueryable<Data>> GenerateSimpleCosmosData(Cosmos.Database cosmosDatabase)
+        public static Func<bool, IQueryable<Data>> GenerateSimpleCosmosData(Cosmos.Database cosmosDatabase, bool useRandomData = true)
         {
             const int DocumentCount = 10;
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/Pk" }), Kind = PartitionKind.Hash };
             Container container = cosmosDatabase.CreateContainerAsync(new ContainerProperties { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition }).Result;
 
-            int seed = DateTime.Now.Millisecond;
-            Random random = new Random(seed);
-            Debug.WriteLine("Random seed: {0}", seed);
-            List<Data> testData = new List<Data>();
-            for (int index = 0; index < DocumentCount; index++)
+            ILinqTestDataGenerator dataGenerator = useRandomData ? new LinqTestRandomDataGenerator(DocumentCount) : new LinqTestDataGenerator(DocumentCount);
+            List<Data> testData = new List<Data>(dataGenerator.GenerateData());
+            foreach (Data dataEntry in testData)
             {
-                Data dataEntry = new Data()
-                {
-                    Id = Guid.NewGuid().ToString(),
-                    Number = random.Next(-10000, 10000),
-                    Flag = index % 2 == 0,
-                    Multiples = new int[] { index, index * 2, index * 3, index * 4 },
-                    Pk = "Test"
-                };
-
                 Data response = container.CreateItemAsync<Data>(dataEntry, new Cosmos.PartitionKey(dataEntry.Pk)).Result;
-                testData.Add(dataEntry);
             }
 
             FeedOptions feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true };
@@ -886,6 +874,13 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 
         public override string SerializeMemberName(MemberInfo memberInfo)
         {
+            System.Text.Json.Serialization.JsonExtensionDataAttribute jsonExtensionDataAttribute =
+                memberInfo.GetCustomAttribute<System.Text.Json.Serialization.JsonExtensionDataAttribute>(true);
+            if (jsonExtensionDataAttribute != null)
+            {
+                return null;
+            }
+
             JsonPropertyNameAttribute jsonPropertyNameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(true);
 
             string memberName = !string.IsNullOrEmpty(jsonPropertyNameAttribute?.Name)

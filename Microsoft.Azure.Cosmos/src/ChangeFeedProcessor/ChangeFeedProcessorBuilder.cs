@@ -70,6 +70,17 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Sets the mode for the change freed processor.
+        /// </summary>
+        /// <param name="changeFeedMode"></param>
+        /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
+        internal ChangeFeedProcessorBuilder WithChangeFeedMode(ChangeFeedMode changeFeedMode)
+        {
+            this.changeFeedProcessorOptions.Mode = changeFeedMode;
+            return this;
+        }
+
+        /// <summary>
         /// Sets a custom configuration to be used by this instance of <see cref="ChangeFeedProcessor"/> to control how leases are maintained in a container when using <see cref="WithLeaseContainer"/>.
         /// </summary>
         /// <param name="acquireInterval">Interval to kick off a task to verify if leases are distributed evenly among known host instances.</param>
