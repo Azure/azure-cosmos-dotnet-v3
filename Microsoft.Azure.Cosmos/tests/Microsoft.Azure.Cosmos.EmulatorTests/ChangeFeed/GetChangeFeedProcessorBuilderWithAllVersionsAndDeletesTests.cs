@@ -6,10 +6,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Diagnostics.Metrics;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
 
     [TestClass]
     [TestCategory("ChangeFeedProcessor with AllVersionsAndDeletes")]
@@ -149,6 +152,150 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
 
             await processor.StopAsync();
+
+            if (exception != default)
+            {
+                Assert.Fail(exception.ToString());
+            }
+        }
+
+        /// <summary>
+        /// <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4308"/>
+        /// </summary>
+        [TestMethod]
+        [Owner("philipthomas-MSFT")]
+        [Description("")]
+        public async Task WhenAllVersionsAndDeletesDocumentsAreReadAndLeaseContainerIsTheSameThenSwitchedToLatestVersionExpectsAnExceptionTestMeAsync()
+        {
+            int documentCount = 10;
+            _ = await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
+                .IngestDocumentsAsync(
+                    monitoredContainer: this.Container,
+                    documentCount: documentCount);
+                        
+            ManualResetEvent allDocsProcessed = new(false);
+
+            await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests.ArrangeActAssetLastestVersionChangeFeedProcessorAsync(
+                monitoredContainer: this.Container,
+                documentCount: documentCount,
+                leaseContainer: this.LeaseContainer,
+                allDocsProcessed: allDocsProcessed);
+
+            await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests.ArrangeActAssertAllVersionsAndDeletesChangeFeedProcessorAsync(
+                monitoredContainer: this.Container,
+                leaseContainer: this.LeaseContainer,
+                allDocsProcessed: allDocsProcessed);
+        }
+
+        private static async Task<List<dynamic>> IngestDocumentsAsync(Container monitoredContainer, int documentCount)
+        {
+            List<dynamic> docs = new();
+
+            for (int i = 0; i < documentCount; i++)
+            {
+                ItemResponse<dynamic> response = await monitoredContainer.CreateItemAsync<dynamic>(new { id = i.ToString(), pk = i.ToString(), description = $"original test{i}" }, partitionKey: new PartitionKey(i.ToString()));
+                docs.Add(response.Resource);
+
+                await Task.Delay(1000);
+            }
+
+            return docs;
+        }
+
+        private static async Task ArrangeActAssetLastestVersionChangeFeedProcessorAsync(
+            ContainerInternal monitoredContainer,
+            Container leaseContainer,
+            long documentCount,
+            ManualResetEvent allDocsProcessed)
+        {
+            Exception exception = default;
+            long counter = 0;
+            ChangeFeedProcessor latestVersionProcessorAtomic = null;
+
+            ChangeFeedProcessorBuilder latestVersionProcessorBuilder = monitoredContainer
+                .GetChangeFeedProcessorBuilder(processorName: $"{nameof(ChangeFeedMode.LatestVersion)}", onChangesDelegate: (ChangeFeedProcessorContext context, IReadOnlyCollection<dynamic> documents, CancellationToken token) =>
+                {
+                    Console.WriteLine($"Reading {nameof(documents)} in {nameof(ChangeFeedMode.LatestVersion)} mode: {JsonConvert.SerializeObject(documents)}");
+                    Console.WriteLine($"{nameof(counter)}: {counter}");
+                    Console.WriteLine($"{nameof(context.LeaseToken)}: {context.LeaseToken}");
+
+                    if (counter == documentCount / 2)
+                    {
+                        Console.WriteLine($"stopping {nameof(latestVersionProcessorAtomic)}");
+
+                        latestVersionProcessorAtomic.StopAsync();
+
+                        return Task.CompletedTask;
+                    }
+
+                    counter++;
+
+                    return Task.CompletedTask;
+                })
+                .WithInstanceName(Guid.NewGuid().ToString())
+                .WithMaxItems(1)
+                .WithStartFromBeginning()
+                .WithLeaseContainer(leaseContainer)
+                .WithErrorNotification((leaseToken, error) =>
+                {
+                    exception = error.InnerException;
+                    Console.WriteLine(error.ToString());
+
+                    return Task.CompletedTask;
+                });
+
+            ChangeFeedProcessor latestVersionProcessor = latestVersionProcessorBuilder.Build();
+            Interlocked.Exchange(ref latestVersionProcessorAtomic, latestVersionProcessor);
+
+            await latestVersionProcessor.StartAsync();
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+            bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+
+            await latestVersionProcessor.StopAsync();
+
+            if (exception != default)
+            {
+                Assert.Fail(exception.ToString());
+            }
+        }
+
+        private static async Task ArrangeActAssertAllVersionsAndDeletesChangeFeedProcessorAsync(
+            ContainerInternal monitoredContainer,
+            Container leaseContainer,
+            ManualResetEvent allDocsProcessed)
+        {
+            Exception exception = default;
+            long counter = 0;
+            ChangeFeedProcessor allVersionsAndDeletesProcessor = monitoredContainer
+                .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: $"{nameof(ChangeFeedMode.AllVersionsAndDeletes)}", onChangesDelegate: (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItemChange<dynamic>> documents, CancellationToken token) =>
+                {
+                    Console.WriteLine($"Reading {nameof(documents)} in {nameof(ChangeFeedMode.AllVersionsAndDeletes)} mode: {JsonConvert.SerializeObject(documents)}");
+                    Console.WriteLine($"{nameof(counter)}: {counter}");
+                    Console.WriteLine($"{nameof(context.LeaseToken)}: {context.LeaseToken}");
+
+                    counter++;
+
+                    return Task.CompletedTask;
+                })
+                .WithInstanceName(Guid.NewGuid().ToString())
+                .WithMaxItems(1)
+                .WithLeaseContainer(leaseContainer)
+                .WithErrorNotification((leaseToken, error) =>
+                {
+                    // an exception should happen here, because it is trying to use the same LatestVersion leaseContainer on an AllVersionsAndDeletes processor.
+
+                    exception = error.InnerException;
+                    Console.WriteLine(error.ToString());
+
+                    return Task.CompletedTask;
+                })
+                .Build();
+
+            await allVersionsAndDeletesProcessor.StartAsync();
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+            bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+
+            await allVersionsAndDeletesProcessor.StopAsync();
 
             if (exception != default)
             {
