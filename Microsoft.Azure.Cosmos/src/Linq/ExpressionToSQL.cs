@@ -760,14 +760,6 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private static SqlScalarExpression VisitParameter(ParameterExpression inputExpression, TranslationContext context)
         {
-            if (context.CurrentQuery.GroupByParameter != null)
-            {
-                Expression groupBySubstitution = context.GroupByKeySubstitution.Lookup(inputExpression);
-                if (groupBySubstitution != null)
-                {
-                    return ExpressionToSql.VisitNonSubqueryScalarExpression(groupBySubstitution, context);
-                }
-            }
             Expression subst = context.LookupSubstitution(inputExpression);
             if (subst != null)
             {
@@ -1154,12 +1146,18 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             Type inputElementType = TypeSystem.GetElementType(inputCollection.Type);
             Collection collection = ExpressionToSql.Translate(inputCollection, context);
-            
-            if (context.CurrentQuery.GroupByParameter == null) context.PushCollection(collection);
+
+            context.PushCollection(collection);
 
             Collection result = new Collection(inputExpression.Method.Name);
             bool shouldBeOnNewQuery = context.CurrentQuery.ShouldBeOnNewQuery(inputExpression.Method.Name, inputExpression.Arguments.Count);
             context.PushSubqueryBinding(shouldBeOnNewQuery);
+
+            if (context.LastExpressionIsGroupBy)
+            {
+                throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, "Group By cannot be followed by other methods"));
+            }
+
             switch (inputExpression.Method.Name)
             {
                 case LinqMethods.Select:
@@ -1183,6 +1181,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 case LinqMethods.GroupBy:
                     {
                         result = ExpressionToSql.VisitGroupBy(returnElementType, inputExpression.Arguments, context);
+                        context.LastExpressionIsGroupBy = true;
                         break;
                     }
                 case LinqMethods.OrderBy:
@@ -1281,7 +1280,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             context.PopSubqueryBinding();
-            if (context.CurrentQuery.GroupByParameter == null) context.PopCollection();
+            context.PopCollection();
             context.PopMethod();
             return result;
         }
@@ -1723,7 +1722,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                             ExpressionToSql.VisitMethodCall(methodCallExpression, context);
                             break;
                         default:
-                            throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.MethodNotSupported, methodCallExpression.Method.Name));
+                            throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.MethodNotSupported, methodCallExpression.Method.Name ));
                     }
 
                     break;

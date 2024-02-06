@@ -737,7 +737,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                                                                               k2 => k2.Int,
                                                                               (key, values) => "string" /* Unsupported Nodetype*/ )));
 
-
             // Non-aggregate method calls
             inputs.Add(new LinqTestInput("GroupBy Single Value With Count", b => getQuery(b).GroupBy(k => k.Id /*keySelector*/,
                                                                                 (key, values) => values.Select(value => value.Int) /*Not an aggregate*/)));
@@ -747,6 +746,93 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             // Currently unsupported case 
             inputs.Add(new LinqTestInput("GroupBy Single Value With Min", b => getQuery(b).GroupBy(k => k.FamilyId /*keySelector*/,
                                                                               (key, values) => new { familyId = key, familyIdCount = values.Count() } /*multi-value select */)));
+
+            // Other methods followed by GroupBy
+
+            // curently causing infinite loops
+            //inputs.Add(new LinqTestInput("Select + GroupBy", b => getQuery(b)
+            //    .Select(x => x.Id)
+            //    .GroupBy(k => k /*keySelector*/, (key, values) => key /*return the group by key */)));
+
+            inputs.Add(new LinqTestInput("Skip + GroupBy", b => getQuery(b)
+                .Skip(10)
+                .GroupBy(k => k.Id /*keySelector*/, (key, values) => key /*return the group by key */)));
+
+            inputs.Add(new LinqTestInput("Take + GroupBy", b => getQuery(b)
+                .Take(10)
+                .GroupBy(k => k.Id /*keySelector*/, (key, values) => key /*return the group by key */)));
+
+            inputs.Add(new LinqTestInput("Skip + Take + GroupBy", b => getQuery(b)
+                .Skip(10).Take(10)
+                .GroupBy(k => k.Id /*keySelector*/, (key, values) => key /*return the group by key */)));
+
+            inputs.Add(new LinqTestInput("Filter + GroupBy", b => getQuery(b)
+                .Where(x => x.Id != "a")
+                .GroupBy(k => k.Id /*keySelector*/, (key, values) => key /*return the group by key */)));
+
+            inputs.Add(new LinqTestInput("OrderBy + GroupBy", b => getQuery(b)
+                .OrderBy(x => x.Id)
+                .GroupBy(k => k.Id /*keySelector*/, (key, values) => key /*return the group by key */)));
+
+            // should this become a subquery with order by then group by?
+            inputs.Add(new LinqTestInput("OrderBy + GroupBy", b => getQuery(b)
+                .OrderBy(x => x.Int)
+                .GroupBy(k => k.Id /*keySelector*/, (key, values) => key /*return the group by key */)));
+
+            inputs.Add(new LinqTestInput("OrderBy Descending + GroupBy", b => getQuery(b)
+                .OrderByDescending(x => x.Id)
+                .GroupBy(k => k.Id /*keySelector*/, (key, values) => key /*return the group by key */)));
+
+            // Select + Aggregates...? + GroupBy
+
+            inputs.Add(new LinqTestInput("Combination + GroupBy", b => getQuery(b)
+                .Where(x => x.Id != "a")
+                .OrderBy(x => x.Id)
+                .GroupBy(k => k.Id /*keySelector*/, (key, values) => key /*return the group by key */)));
+
+            // The result for this is not correct yet - the select clause is wrong
+            inputs.Add(new LinqTestInput("Combination 2 + GroupBy", b => getQuery(b)
+                .Where(x => x.Id != "a")
+                .Where(x => x.Children.Min(y => y.Grade) > 10)
+                .GroupBy(k => k.Id /*keySelector*/, (key, values) => key /*return the group by key */)));
+
+            // GroupBy followed by other methods
+            inputs.Add(new LinqTestInput("GroupBy + Select", b => getQuery(b)
+                .GroupBy(k => k.Id /*keySelector*/, (key, values) => key /*return the group by key */)
+                .Select(x => x)));
+
+            //We should support skip take
+            inputs.Add(new LinqTestInput("GroupBy + Skip", b => getQuery(b)
+                .GroupBy(k => k.Id /*keySelector*/, (key, values) => key /*return the group by key */)
+                .Skip(10)));
+
+            inputs.Add(new LinqTestInput("GroupBy + Take", b => getQuery(b)
+                .GroupBy(k => k.Id /*keySelector*/, (key, values) => key /*return the group by key */)
+                .Take(10)));
+
+            inputs.Add(new LinqTestInput("GroupBy + Skip + Take", b => getQuery(b)
+                .GroupBy(k => k.Id /*keySelector*/, (key, values) => key /*return the group by key */)
+                .Skip(10).Take(10)));
+
+            inputs.Add(new LinqTestInput("GroupBy + Filter", b => getQuery(b)
+                .GroupBy(k => k.Id /*keySelector*/, (key, values) => key /*return the group by key */)
+                .Where(x => x == "a")));
+
+            inputs.Add(new LinqTestInput("GroupBy + OrderBy", b => getQuery(b)
+                .GroupBy(k => k.Id /*keySelector*/, (key, values) => key /*return the group by key */)
+                .OrderBy(x => x)));
+
+            inputs.Add(new LinqTestInput("GroupBy + OrderBy Descending", b => getQuery(b)
+                .GroupBy(k => k.Id /*keySelector*/, (key, values) => key /*return the group by key */)
+                .OrderByDescending(x => x)));
+
+            inputs.Add(new LinqTestInput("GroupBy + Combination", b => getQuery(b)
+                .GroupBy(k => k.Id /*keySelector*/, (key, values) => key /*return the group by key */)
+                .Where(x => x == "a").Skip(10).Take(10)));
+
+            inputs.Add(new LinqTestInput("GroupBy + GroupBy", b => getQuery(b)
+                .GroupBy(k => k.Id /*keySelector*/, (key, values) => key /*return the group by key */)
+                .GroupBy(k => k /*keySelector*/, (key, values) => key /*return the group by key */)));
 
             this.ExecuteTestSuite(inputs);
         }

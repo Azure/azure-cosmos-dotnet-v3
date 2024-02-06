@@ -149,4 +149,222 @@ FROM root GROUP BY root["Int"] ]]></SqlQuery>
       <ErrorMessage><![CDATA[Expression with NodeType 'Multiple value selector' is not supported.]]></ErrorMessage>
     </Output>
   </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip + GroupBy]]></Description>
+      <Expression><![CDATA[query.Skip(10).GroupBy(k => k.Id, (key, values) => key)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0 
+FROM (
+    SELECT VALUE root 
+    FROM root 
+    OFFSET 10 LIMIT 2147483647) AS r0 GROUP BY r0["id"] 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":50,"end":76},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."},{"severity":"Error","location":{"start":13,"end":15},"code":"SC2102","message":"Property reference 'r0' is invalid in the select list because it is not contained in either an aggregate function or the GROUP BY clause."}]},0x800A0B00]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Take + GroupBy]]></Description>
+      <Expression><![CDATA[query.Take(10).GroupBy(k => k.Id, (key, values) => key)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0 
+FROM (
+    SELECT TOP 10 VALUE root 
+    FROM root) AS r0 GROUP BY r0["id"] 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":29,"end":35},"code":"SC2203","message":"'TOP' is not supported in subqueries."},{"severity":"Error","location":{"start":13,"end":15},"code":"SC2102","message":"Property reference 'r0' is invalid in the select list because it is not contained in either an aggregate function or the GROUP BY clause."}]},0x800A0B00]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip + Take + GroupBy]]></Description>
+      <Expression><![CDATA[query.Skip(10).Take(10).GroupBy(k => k.Id, (key, values) => key)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0 
+FROM (
+    SELECT VALUE root 
+    FROM root 
+    OFFSET 10 LIMIT 10) AS r0 GROUP BY r0["id"] 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":50,"end":68},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."},{"severity":"Error","location":{"start":13,"end":15},"code":"SC2102","message":"Property reference 'r0' is invalid in the select list because it is not contained in either an aggregate function or the GROUP BY clause."}]},0x800A0B00]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter + GroupBy]]></Description>
+      <Expression><![CDATA[query.Where(x => (x.Id != "a")).GroupBy(k => k.Id, (key, values) => key)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["id"] 
+FROM root 
+WHERE (root["id"] != "a") GROUP BY root["id"] ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy + GroupBy]]></Description>
+      <Expression><![CDATA[query.OrderBy(x => x.Id).GroupBy(k => k.Id, (key, values) => key)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["id"] 
+FROM root GROUP BY root["id"]  
+ORDER BY root["id"] ASC]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy + GroupBy]]></Description>
+      <Expression><![CDATA[query.OrderBy(x => x.Int).GroupBy(k => k.Id, (key, values) => key)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["id"] 
+FROM root GROUP BY root["id"]  
+ORDER BY root["Int"] ASC]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":64,"end":75},"code":"SC2103","message":"Property reference 'root[\"Int\"]' is invalid in the ORDER BY clause because it is not contained in either an aggregate function or the GROUP BY clause."}]},0x800A0B00]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy Descending + GroupBy]]></Description>
+      <Expression><![CDATA[query.OrderByDescending(x => x.Id).GroupBy(k => k.Id, (key, values) => key)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["id"] 
+FROM root GROUP BY root["id"]  
+ORDER BY root["id"] DESC]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Combination + GroupBy]]></Description>
+      <Expression><![CDATA[query.Where(x => (x.Id != "a")).OrderBy(x => x.Id).GroupBy(k => k.Id, (key, values) => key)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["id"] 
+FROM root 
+WHERE (root["id"] != "a") GROUP BY root["id"]  
+ORDER BY root["id"] ASC]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Combination 2 + GroupBy]]></Description>
+      <Expression><![CDATA[query.Where(x => (x.Id != "a")).Where(x => (x.Children.Min(y => y.Grade) > 10)).GroupBy(k => k.Id, (key, values) => key)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE MIN(y0["Grade"]) 
+        FROM root 
+        JOIN y0 IN root["Children"])) AS v0 
+        WHERE ((root["id"] != "a") AND (v0[0] > 10)) GROUP BY root["id"] 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":13,"end":17},"code":"SC2102","message":"Property reference 'root' is invalid in the select list because it is not contained in either an aggregate function or the GROUP BY clause."}]},0x800A0B00]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy + Select]]></Description>
+      <Expression><![CDATA[query.GroupBy(k => k.Id, (key, values) => key).Select(x => x)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Group By cannot be followed by other methods]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy + Skip]]></Description>
+      <Expression><![CDATA[query.GroupBy(k => k.Id, (key, values) => key).Skip(10)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Group By cannot be followed by other methods]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy + Take]]></Description>
+      <Expression><![CDATA[query.GroupBy(k => k.Id, (key, values) => key).Take(10)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Group By cannot be followed by other methods]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy + Skip + Take]]></Description>
+      <Expression><![CDATA[query.GroupBy(k => k.Id, (key, values) => key).Skip(10).Take(10)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Group By cannot be followed by other methods]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy + Filter]]></Description>
+      <Expression><![CDATA[query.GroupBy(k => k.Id, (key, values) => key).Where(x => (x == "a"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Group By cannot be followed by other methods]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy + OrderBy]]></Description>
+      <Expression><![CDATA[query.GroupBy(k => k.Id, (key, values) => key).OrderBy(x => x)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Group By cannot be followed by other methods]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy + OrderBy Descending]]></Description>
+      <Expression><![CDATA[query.GroupBy(k => k.Id, (key, values) => key).OrderByDescending(x => x)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Group By cannot be followed by other methods]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy + Combination]]></Description>
+      <Expression><![CDATA[query.GroupBy(k => k.Id, (key, values) => key).Where(x => (x == "a")).Skip(10).Take(10)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Group By cannot be followed by other methods]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy + GroupBy]]></Description>
+      <Expression><![CDATA[query.GroupBy(k => k.Id, (key, values) => key).GroupBy(k => k, (key, values) => key)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Group By cannot be followed by other methods]]></ErrorMessage>
+    </Output>
+  </Result>
 </Results>

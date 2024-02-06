@@ -43,9 +43,14 @@ namespace Microsoft.Azure.Cosmos.Linq
         public IDictionary<object, string> Parameters;
 
         /// <summary>
-        /// Ductuibart for group by key substitution
+        /// Dictionary for group by key substitution.
         /// </summary>
         public ParameterSubstitution GroupByKeySubstitution;
+
+        /// <summary>
+        /// Boolean to indicate a GroupBy expression is the last expression to finished processing.
+        /// </summary>
+        public bool LastExpressionIsGroupBy;
 
         /// <summary>
         /// If the FROM clause uses a parameter name, it will be substituted for the parameter used in 
@@ -87,6 +92,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             this.CurrentQuery = new QueryUnderConstruction(this.GetGenFreshParameterFunc());
             this.subqueryBindingStack = new Stack<SubqueryBinding>();
             this.Parameters = parameters;
+            this.LastExpressionIsGroupBy = false;
 
             if (linqSerializerOptionsInternal?.CustomCosmosLinqSerializer != null)
             {
@@ -111,6 +117,14 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public Expression LookupSubstitution(ParameterExpression parameter)
         {
+            if (this.CurrentQuery.GroupByParameter != null)
+            {
+                Expression groupBySubstitutionExpression = this.GroupByKeySubstitution.Lookup(parameter);
+                if (groupBySubstitutionExpression != null)
+                {
+                    return groupBySubstitutionExpression;
+                }
+            }
             return this.substitutions.Lookup(parameter);
         }
 
@@ -202,12 +216,12 @@ namespace Microsoft.Azure.Cosmos.Linq
                 throw new ArgumentNullException("collection");
             }
 
-            this.collectionStack.Add(collection);
+            if (this.CurrentQuery.GroupByParameter == null) this.collectionStack.Add(collection);
         }
 
         public void PopCollection()
         {
-            this.collectionStack.RemoveAt(this.collectionStack.Count - 1);
+            if (this.CurrentQuery.GroupByParameter == null) this.collectionStack.RemoveAt(this.collectionStack.Count - 1);
         }
 
         /// <summary>
