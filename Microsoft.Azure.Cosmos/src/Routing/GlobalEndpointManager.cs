@@ -139,7 +139,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             private readonly CancellationTokenSource CancellationTokenSource;
             private readonly Uri DefaultEndpoint;
-            private readonly bool ShouldVisitGlobalEndpointOnly;
+            private readonly bool LimitToGlobalEndpointOnly;
             private readonly IEnumerator<Uri> ServiceEndpointEnumerator;
             private readonly Func<Uri, Task<AccountProperties>> GetDatabaseAccountFn;
             private readonly List<Exception> TransientExceptions = new List<Exception>();
@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 CancellationToken cancellationToken)
             {
                 this.DefaultEndpoint = defaultEndpoint;
-                this.ShouldVisitGlobalEndpointOnly = (locations == null || locations.Count == 0) && (accountInitializationCustomEndpoints == null || accountInitializationCustomEndpoints.Count == 0);
+                this.LimitToGlobalEndpointOnly = (locations == null || locations.Count == 0) && (accountInitializationCustomEndpoints == null || accountInitializationCustomEndpoints.Count == 0);
                 this.GetDatabaseAccountFn = getDatabaseAccountFn;
                 this.CancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 this.ServiceEndpointEnumerator = GetAccountPropertiesHelper
@@ -169,7 +169,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             public async Task<AccountProperties> GetAccountPropertiesAsync()
             {
                 // If there are no preferred regions or private endpoints, then just wait for the global endpoint results
-                if (this.ShouldVisitGlobalEndpointOnly)
+                if (this.LimitToGlobalEndpointOnly)
                 {
                     return await this.GetOnlyGlobalEndpointAsync();
                 }
@@ -229,7 +229,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             private async Task<AccountProperties> GetOnlyGlobalEndpointAsync()
             {
-                if (!this.ShouldVisitGlobalEndpointOnly)
+                if (!this.LimitToGlobalEndpointOnly)
                 {
                     throw new ArgumentException("GetOnlyGlobalEndpointAsync should only be called if there are no other private endpoints or regions");
                 }
