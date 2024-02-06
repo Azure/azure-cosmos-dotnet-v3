@@ -110,10 +110,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                     // Other headers might need similar traeatment, and it's up to the area owner to implement that here.
                     if (sourcePage.AdditionalHeaders.ContainsKey(HttpConstants.HttpHeaders.IndexUtilization))
                     {
-                        cumulativeAdditionalHeaders = new Dictionary<string, string>()
-                                                {
-                                                    { HttpConstants.HttpHeaders.IndexUtilization, sourcePage.AdditionalHeaders[HttpConstants.HttpHeaders.IndexUtilization] }
-                                                };
+                        cumulativeAdditionalHeaders = new Dictionary<string, string>() {{ HttpConstants.HttpHeaders.IndexUtilization, sourcePage.AdditionalHeaders[HttpConstants.HttpHeaders.IndexUtilization] }};
                     }
 
                     foreach (CosmosElement element in sourcePage.Documents)
