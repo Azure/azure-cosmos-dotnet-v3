@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         }
 
         /// <summary>
-        /// Returns the percentage of the established connections that will be impacted. By default, the threshold is 1.
+        /// Returns the percentage of the established connections that will be impacted. By default, the threshold is 100% or 1.0.
         /// </summary>
         /// <returns>the threshold represented as a double.</returns>
         public double GetThresholdPercentage()
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 "FaultInjectionConnection{{ ConnectionErrorType: {0}, Interval: {1}, Threshold: {2}%}}",
                 this.connectionErrorType,
                 this.interval,
-                this.thresholdPercentage);
+                this.thresholdPercentage * 100);
         }
     }
 }

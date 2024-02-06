@@ -26,16 +26,33 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
             return this.ChaosInterceptor;
         }
+
+        public IChaosInterceptor CreateInterceptor(DocumentClient documentClient)
+        {
+            this.ChaosInterceptor = new ChaosInterceptor(this.rules, documentClient);
+
+            return this.ChaosInterceptor;
+        }
+
+        public async Task ConfigureChaosInterceptorAsync()
+        {
+            if (this.ChaosInterceptor != null)
+            {
+                await this.ChaosInterceptor.ConfigureFaultInjectionRules();
+            }
+        }
     }
 
     internal class ChaosInterceptor : IChaosInterceptor
     {
+        private FaultInjectionRuleStore? ruleStore;
+        private RntbdConnectionErrorInjector? connectionErrorInjector;
+        private TimeSpan requestTimeout;
+
+        private readonly DocumentClient documentClient;
         private readonly List<FaultInjectionRule> rules;
-        private readonly FaultInjectionRuleStore? ruleStore;
-        private readonly RntbdConnectionErrorInjector? connectionErrorInjector;
         private readonly FaultInjectionDynamicChannelStore channelStore;
         private readonly FaultInjectionApplicationContext applicationContext;
-        private readonly TimeSpan requestTimeout;
 
         public static async Task<ChaosInterceptor> CreateAsync(List<FaultInjectionRule> rules, DocumentClient documentClient)
         {
@@ -44,25 +61,27 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             return chaosInterceptor;
         }
 
-        private ChaosInterceptor(List<FaultInjectionRule> rules, DocumentClient documentClient)
+        public ChaosInterceptor(List<FaultInjectionRule> rules, DocumentClient documentClient)
         {
+            this.documentClient = documentClient;
             this.rules = rules;
             this.channelStore = new FaultInjectionDynamicChannelStore();
             this.applicationContext = new FaultInjectionApplicationContext();
-            this.ruleStore = new FaultInjectionRuleStore(documentClient, this.applicationContext);
-            this.connectionErrorInjector = new RntbdConnectionErrorInjector(this.ruleStore, this.channelStore);
-            this.requestTimeout = documentClient.ConnectionPolicy.RequestTimeout;
         }
 
-        private async Task ConfigureFaultInjectionRules()
+        public async Task ConfigureFaultInjectionRules()
         {
+            this.ruleStore = await FaultInjectionRuleStore.CreateAsync(this.documentClient, this.applicationContext);
+            this.connectionErrorInjector = new RntbdConnectionErrorInjector(this.ruleStore, this.channelStore);
+            this.requestTimeout = this.documentClient.ConnectionPolicy.RequestTimeout;
+
             foreach (FaultInjectionRule rule in this.rules)
             {
                 if (this.ruleStore != null)
                 {
                     IFaultInjectionRuleInternal? effectiveRule = await this.ruleStore.ConfigureFaultInjectionRuleAsync(rule);
                     if (effectiveRule != null) { this.connectionErrorInjector?.Accept(effectiveRule); }
-                }               
+                }
             }
         }
 

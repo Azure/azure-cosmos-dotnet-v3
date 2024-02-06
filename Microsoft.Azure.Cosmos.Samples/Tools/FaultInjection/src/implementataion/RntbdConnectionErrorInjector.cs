@@ -37,7 +37,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
         public bool Accept(IFaultInjectionRuleInternal rule)
         {
-            if (rule.GetConnectionType() == FaultInjectionConnectionType.Direct
+            if ((rule.GetConnectionType() == FaultInjectionConnectionType.Direct 
+                || rule.GetConnectionType() == FaultInjectionConnectionType.All)
                 && (rule.GetType() == typeof(FaultInjectionConnectionErrorRule)))
             {
                 this.InjectConnectionErrorTask((FaultInjectionConnectionErrorRule)rule);
@@ -63,18 +64,37 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                         List<Uri> addresses = rule.GetAddresses();
                         if (addresses != null && addresses.Count > 0)
                         {
-                            addresses.ForEach(addressUri => allChannels.Where(channel => channel.GetServerUri().Equals(addressUri)).ToList().ForEach(channel =>
+                            foreach (Uri addressUri in addresses)
                             {
-                                if (random.NextDouble() < rule.GetResult().GetThresholdPercentage())
+                                foreach (Channel channel in allChannels)
                                 {
-                                    rule.ApplyRule();
-                                    DefaultTrace.TraceInformation("FaultInjection: Injecting {0} connection error rule: {1}, for address {2}", 
-                                        connectionErrorType, 
-                                        rule.GetId(), 
-                                        addressUri);
-                                    channel.InjectFaultInjectionConnectionError(this.GetTransportException(connectionErrorType, channel));
+                                    Uri serverUri;
+                                    try
+                                    {
+                                        serverUri = channel.GetServerUri();
+                                    }
+                                    catch (Exception)
+                                    {
+                                        //Channel is alread disposed, there can sometimes be lag from when the rule is applied and when the channel is disposed
+                                        //and marked unhealthy
+                                        continue;
+                                    }
+
+                                    if (serverUri.Equals(addressUri))
+                                    {
+                                        rule.ApplyRule();
+                                        if (random.NextDouble() < rule.GetResult().GetThresholdPercentage())
+                                        {
+                                            rule.ApplyRule();
+                                            DefaultTrace.TraceInformation("FaultInjection: Injecting {0} connection error rule: {1}, for address {2}",
+                                                connectionErrorType,
+                                                rule.GetId(),
+                                                addressUri);
+                                            channel.InjectFaultInjectionConnectionError(this.GetTransportException(connectionErrorType, serverUri));
+                                        }
+                                    }
                                 }
-                            }));
+                            }
 
                             return Task.CompletedTask;
                         }
@@ -83,37 +103,65 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                         List<Uri> regionEndpoints = rule.GetRegionEndpoints();
                         if (regionEndpoints != null && regionEndpoints.Count > 0)
                         {
-                            regionEndpoints.ForEach(regionEndpoint => allChannels.Where(channel =>
-                                this.ParseRntbdEndpointForNormalizedRegion(channel.GetServerUri())
-                                    .Equals(this.ParseRntbdEndpointForNormalizedRegion(regionEndpoint))).ToList()
-                                .ForEach(channel =>
+
+                            foreach (Uri regionEndpoint in regionEndpoints)
+                            {
+                                foreach (Channel channel in allChannels)
                                 {
-                                    if (random.NextDouble() < rule.GetResult().GetThresholdPercentage())
+                                    Uri serverUri;
+                                    try
                                     {
-                                        rule.ApplyRule();
-                                        DefaultTrace.TraceInformation("FaultInjection: Injecting {0} connection error rule: {1} for region {2}", 
-                                            connectionErrorType, 
-                                            rule.GetId(),
-                                            regionEndpoint);
-                                        channel.InjectFaultInjectionConnectionError(this.GetTransportException(connectionErrorType, channel));
+                                        serverUri = channel.GetServerUri();
                                     }
-                                }));
+                                    catch (Exception)
+                                    {
+                                        //Channel is alread disposed, there can sometimes be lag from when the rule is applied and when the channel is disposed
+                                        //and marked unhealthy
+                                        continue;
+                                    }
+
+                                    if(this.ParseRntbdEndpointForNormalizedRegion(serverUri).Equals(this.ParseRntbdEndpointForNormalizedRegion(regionEndpoint)))
+                                    {
+                                        if (random.NextDouble() < rule.GetResult().GetThresholdPercentage())
+                                        {
+                                            rule.ApplyRule();
+                                            DefaultTrace.TraceInformation("FaultInjection: Injecting {0} connection error rule: {1} for region {2}",
+                                                connectionErrorType,
+                                                rule.GetId(),
+                                                regionEndpoint);
+                                            channel.InjectFaultInjectionConnectionError(this.GetTransportException(connectionErrorType, serverUri));
+                                        }
+                                    }
+                                }
+                            }
 
                             return Task.CompletedTask;
                         }
 
                         //Case 3: Inject connection error for all endpoints of all regions when there is no specific physical address and region
-                        allChannels.ForEach(channel =>
+                        foreach (Channel channel in allChannels)
                         {
+                            Uri serverUri;
+                            try
+                            {
+                                serverUri = channel.GetServerUri();
+                            }
+                            catch (Exception)
+                            {
+                                //Channel is alread disposed, there can sometimes be lag from when the rule is applied and when the channel is disposed
+                                //and marked unhealthy
+                                continue;
+                            }
+                            
                             if (random.NextDouble() < rule.GetResult().GetThresholdPercentage())
                             {
                                 rule.ApplyRule();
                                 DefaultTrace.TraceInformation("FaultInjection: Injecting {0} connection error rule: {1}",
-                                    connectionErrorType, 
+                                    connectionErrorType,
                                     rule.GetId());
-                                channel.InjectFaultInjectionConnectionError(this.GetTransportException(connectionErrorType, channel));
+                                channel.InjectFaultInjectionConnectionError(this.GetTransportException(connectionErrorType, serverUri));
                             }
-                        });
+                        }
 
                         return Task.CompletedTask;
                     }
@@ -135,7 +183,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 });
         }
 
-        private TransportException GetTransportException(FaultInjectionConnectionErrorType errorType, Channel channel)
+        private TransportException GetTransportException(FaultInjectionConnectionErrorType errorType, Uri serverUri)
         {
             return errorType switch
             {
@@ -143,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                                         errorCode: TransportErrorCode.ReceiveStreamClosed,
                                         innerException: null,
                                         activityId: Guid.Empty,
-                                        requestUri: channel.GetServerUri(),
+                                        requestUri: serverUri,
                                         sourceDescription: "FaultInjectionConnectionError",
                                         userPayload: false,
                                         payloadSent: true),
@@ -151,7 +199,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                                         errorCode: TransportErrorCode.ReceiveFailed,
                                         innerException: null,
                                         activityId: Guid.Empty,
-                                        requestUri: channel.GetServerUri(),
+                                        requestUri: serverUri,
                                         sourceDescription: "FaultInjectionConnectionError",
                                         userPayload: false,
                                         payloadSent: true),

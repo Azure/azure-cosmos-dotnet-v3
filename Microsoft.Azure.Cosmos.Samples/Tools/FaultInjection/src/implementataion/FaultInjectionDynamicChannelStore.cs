@@ -27,5 +27,10 @@
         {
             return this.channelDictonary.Values.ToList();
         }
+
+        public List<Guid> GetAllChannelIds()
+        {
+            return this.channelDictonary.Keys.ToList();
+        }
     }
 }

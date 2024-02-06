@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     using System.Collections.Generic;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Rntbd;
@@ -21,17 +23,39 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
         private readonly FaultInjectionRuleProcessor ruleProcessor;
 
-        public FaultInjectionRuleStore(DocumentClient client, FaultInjectionApplicationContext applicationContext)
+        public static async Task<FaultInjectionRuleStore> CreateAsync(
+            DocumentClient client,
+            FaultInjectionApplicationContext applicationContext)
         {
-            _= client ?? throw new ArgumentNullException(nameof(client));
+            CollectionCache collectionCache = await client.GetCollectionCacheAsync(NoOpTrace.Singleton);
+            IRoutingMapProvider routingMapProvider = await client.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
 
-            this.ruleProcessor = new FaultInjectionRuleProcessor(
+            return new FaultInjectionRuleStore(
                 connectionMode: client.ConnectionPolicy.ConnectionMode,
-                collectionCache: client.GetCollectionCacheAsync(NoOpTrace.Singleton).Result,
+                collectionCache: collectionCache,
                 globalEndpointManager: client.GlobalEndpointManager,
                 addressResolver: client.AddressResolver,
                 retryPolicy: client.ResetSessionTokenRetryPolicy.GetRequestPolicy,
-                routingMapProvider: client.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton).Result,
+                routingMapProvider: routingMapProvider,
+                applicationContext: applicationContext);
+        }
+
+        private FaultInjectionRuleStore(
+            ConnectionMode connectionMode,
+            CollectionCache collectionCache,
+            GlobalEndpointManager globalEndpointManager,
+            GlobalAddressResolver addressResolver,
+            Func<IRetryPolicy> retryPolicy,
+            IRoutingMapProvider routingMapProvider,
+            FaultInjectionApplicationContext applicationContext)
+        {
+            this.ruleProcessor = new FaultInjectionRuleProcessor(
+                connectionMode: connectionMode,
+                collectionCache: collectionCache,
+                globalEndpointManager: globalEndpointManager,
+                addressResolver: addressResolver,
+                retryPolicy: retryPolicy,
+                routingMapProvider: routingMapProvider,
                 applicationContext: applicationContext);
         }
 

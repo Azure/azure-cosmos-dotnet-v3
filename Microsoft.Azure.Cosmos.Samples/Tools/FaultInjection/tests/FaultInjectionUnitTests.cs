@@ -59,7 +59,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             Assert.AreEqual("East US", faultInjectionRule.GetCondition().GetRegion());
 
             //Test FaultInjectionEndpoint
-            Assert.AreEqual(FeedRange.FromPartitionKey(new PartitionKey("test")), faultInjectionRule.GetCondition().GetEndpoint().GetFeedRange());
+            PartitionKey test = new PartitionKey("test");
+            Assert.AreEqual(FeedRange.FromPartitionKey(test).ToString(), faultInjectionRule.GetCondition().GetEndpoint().GetFeedRange().ToString());
             Assert.AreEqual("dbs/db/colls/col", faultInjectionRule.GetCondition().GetEndpoint().GetResoureName());
             Assert.AreEqual(3, faultInjectionRule.GetCondition().GetEndpoint().GetReplicaCount());
             Assert.IsTrue(faultInjectionRule.GetCondition().GetEndpoint().IsIncludePrimary());

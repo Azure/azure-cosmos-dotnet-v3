@@ -9,6 +9,7 @@
 		<CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</CurrentDate>
 		<OutputType>Exe</OutputType>
 		<TargetFramework>net6</TargetFramework>
+		<TargetType>library</TargetType>
 		<RootNamespace>Microsoft.Azure.Cosmos.FaultInjection</RootNamespace>
 		<AssemblyName>Microsoft.Azure.Cosmos.FaultInjection</AssemblyName>
 		<ImplicitUsings>enable</ImplicitUsings>
