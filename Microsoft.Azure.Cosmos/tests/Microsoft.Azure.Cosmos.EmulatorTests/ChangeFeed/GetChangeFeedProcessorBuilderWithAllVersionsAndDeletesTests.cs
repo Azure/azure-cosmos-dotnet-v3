@@ -221,7 +221,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
                     if (counter == documentCount / 2)
                     {
-                        Console.WriteLine($"stopping {nameof(latestVersionProcessorAtomic)}");
+                        Console.WriteLine($"Stopping {nameof(latestVersionProcessorAtomic)}");
 
                         latestVersionProcessorAtomic.StopAsync();
 
@@ -251,7 +251,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
             bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
 
-            await latestVersionProcessor.StopAsync();
+            //////await latestVersionProcessor.StopAsync();
 
             if (exception != default)
             {
