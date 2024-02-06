@@ -108,10 +108,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                     // Note-2024-02-02:
                     // Here the IndexMetrics headers are non-accumulative, so we are copying that header from the source page.
                     // Other headers might need similar traeatment, and it's up to the area owner to implement that here.
-                    cumulativeAdditionalHeaders = new Dictionary<string, string>()
-                                                { 
-                                                    { HttpConstants.HttpHeaders.IndexUtilization, sourcePage.AdditionalHeaders[HttpConstants.HttpHeaders.IndexUtilization] } 
+                    if (sourcePage.AdditionalHeaders.ContainsKey(HttpConstants.HttpHeaders.IndexUtilization))
+                    {
+                        cumulativeAdditionalHeaders = new Dictionary<string, string>()
+                                                {
+                                                    { HttpConstants.HttpHeaders.IndexUtilization, sourcePage.AdditionalHeaders[HttpConstants.HttpHeaders.IndexUtilization] }
                                                 };
+                    }
 
                     foreach (CosmosElement element in sourcePage.Documents)
                     {
