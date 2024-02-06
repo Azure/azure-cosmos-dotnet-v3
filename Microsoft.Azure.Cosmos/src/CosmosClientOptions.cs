@@ -317,6 +317,16 @@ namespace Microsoft.Azure.Cosmos
         public ConsistencyLevel? ConsistencyLevel { get; set; }
 
         /// <summary>
+        /// Sets the priority level for requests created using cosmos client.
+        /// </summary>
+        /// <remarks>
+        /// If priority level is also set at request level in <see cref="RequestOptions.PriorityLevel"/>, that priority is used.
+        /// If <see cref="AllowBulkExecution"/> is set to true in CosmosClientOptions, priority level set on the CosmosClient is used.
+        /// </remarks>
+        /// <seealso href="https://aka.ms/CosmosDB/PriorityBasedExecution"/>
+        public PriorityLevel? PriorityLevel { get; set; }
+
+        /// <summary>
         /// Gets or sets the maximum number of retries in the case where the request fails
         /// because the Azure Cosmos DB service has applied rate limiting on the client.
         /// </summary>
@@ -690,11 +700,46 @@ namespace Microsoft.Azure.Cosmos
         /// <para>
         /// Emulator: To ignore SSL Certificate please suffix connectionstring with "DisableServerCertificateValidation=True;". 
         /// When CosmosClientOptions.HttpClientFactory is used, SSL certificate needs to be handled appropriately.
-        /// NOTE: DO NOT use this flag in production (only for emulator)
+        /// NOTE: DO NOT use the `DisableServerCertificateValidation` flag in production (only for emulator)
         /// </para>
         /// </remarks>
         public Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback { get; set; }
-       
+
+        /// <summary>
+        /// Real call back that will be hooked down-stream to the transport clients (both http and tcp).
+        /// NOTE: All down stream real-usage should come through this API only and not through the public API.
+        /// 
+        /// Test hook DisableServerCertificateValidationInvocationCallback 
+        /// - When configured will invoke it when ever custom validation is done
+        /// </summary>
+        internal Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> GetServerCertificateCustomValidationCallback()
+        {
+            if (this.DisableServerCertificateValidation)
+            {
+                if (this.DisableServerCertificateValidationInvocationCallback == null)
+                {
+                    return this.ServerCertificateCustomValidationCallback ?? ((_, _, _) => true);
+                }
+                else
+                {
+                    return (X509Certificate2 cert, X509Chain chain, SslPolicyErrors policyErrors) =>
+                    {
+                        bool bValidationResult = true;
+                        if (this.ServerCertificateCustomValidationCallback != null)
+                        {
+                            bValidationResult = this.ServerCertificateCustomValidationCallback(cert, chain, policyErrors);
+                        }
+                        this.DisableServerCertificateValidationInvocationCallback?.Invoke();
+                        return bValidationResult;
+                    };
+                }
+            }
+
+            return this.ServerCertificateCustomValidationCallback;
+        }
+
+        internal Action DisableServerCertificateValidationInvocationCallback { get; set; }
+
         /// <summary>
         /// API type for the account
         /// </summary>
@@ -799,7 +844,6 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateDirectTCPSettings();
             this.ValidateLimitToEndpointSettings();
             this.ValidatePartitionLevelFailoverSettings();
-            this.ValidateAndSetServerCallbackSettings();
 
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
@@ -975,19 +1019,6 @@ namespace Microsoft.Azure.Cosmos
                 && (this.ApplicationPreferredRegions == null || this.ApplicationPreferredRegions.Count == 0))
             {
                 throw new ArgumentException($"{nameof(this.ApplicationPreferredRegions)} is required when {nameof(this.EnablePartitionLevelFailover)} is enabled.");
-            }
-        }
-
-        private void ValidateAndSetServerCallbackSettings()
-        {
-            if (this.DisableServerCertificateValidation && this.ServerCertificateCustomValidationCallback != null)
-            {
-                throw new ArgumentException($"Cannot specify {nameof(this.DisableServerCertificateValidation)} flag in Connection String and {nameof(this.ServerCertificateCustomValidationCallback)}. Only one can be set.");
-            }
-            
-            if (this.DisableServerCertificateValidation)
-            {
-                this.ServerCertificateCustomValidationCallback = (_, _, _) => true;
             }
         }
 

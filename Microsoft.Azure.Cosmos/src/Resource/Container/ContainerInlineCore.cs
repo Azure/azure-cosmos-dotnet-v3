@@ -661,5 +661,14 @@ namespace Microsoft.Azure.Cosmos
                 task: (trace) => base.DeleteAllItemsByPartitionKeyStreamAsync(partitionKey, trace, requestOptions, cancellationToken),
                 openTelemetry: (response) => new OpenTelemetryResponse(response));
         }
+
+        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
+            string processorName,
+            ChangeFeedHandler<ChangeFeedItemChange<T>> onChangesDelegate)
+        {
+            return base.GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(
+                processorName,
+                onChangesDelegate);
+        }
     }
 }

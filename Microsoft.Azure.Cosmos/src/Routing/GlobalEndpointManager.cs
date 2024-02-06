@@ -634,7 +634,12 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 this.LastBackgroundRefreshUtc = DateTime.UtcNow;
                 this.locationCache.OnDatabaseAccountRead(await this.GetDatabaseAccountAsync(true));
-
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceWarning("Failed to refresh database account with exception: {0}. Activity Id: '{1}'",
+                    ex,
+                    System.Diagnostics.Trace.CorrelationManager.ActivityId);
             }
             finally
             {

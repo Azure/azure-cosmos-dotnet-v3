@@ -46,6 +46,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             PartitionCheckpointerCore checkpointer = new PartitionCheckpointerCore(this.leaseCheckpointer, lease);
             ChangeFeedPartitionKeyResultSetIteratorCore iterator = ChangeFeedPartitionKeyResultSetIteratorCore.Create(
                 lease: lease,
+                mode: this.changeFeedProcessorOptions.Mode,
                 continuationToken: options.StartContinuation,
                 maxItemCount: options.MaxItemCount,
                 container: this.container,

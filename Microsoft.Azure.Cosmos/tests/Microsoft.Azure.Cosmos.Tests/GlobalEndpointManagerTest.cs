@@ -417,6 +417,45 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        /// <summary>
+        /// Test to validate that when an exception is thrown during a RefreshLocationAsync call
+        /// the exception should not be bubbled up and remain unobserved. The exception should be
+        /// handled gracefully and logged as a warning trace event.
+        /// </summary>
+        [TestMethod]
+        public async Task RefreshLocationAsync_WhenGetDatabaseThrowsException_ShouldNotBubbleUpAsUnobservedException()
+        {
+            // Arrange.
+            Mock<IDocumentClientInternal> mockOwner = new Mock<IDocumentClientInternal>();
+            mockOwner.Setup(owner => owner.ServiceEndpoint).Returns(new Uri("https://defaultendpoint.net/"));
+            mockOwner.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>())).ThrowsAsync(new TaskCanceledException());
+
+            //Create connection policy and populate preferred locations
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy();
+            connectionPolicy.PreferredLocations.Add("ReadLocation1");
+            connectionPolicy.PreferredLocations.Add("ReadLocation2");
+
+            bool isExceptionLogged = false;
+            void TraceHandler(string message)
+            {
+                if (message.Contains("Failed to refresh database account with exception:"))
+                {
+                    isExceptionLogged = true;
+                }
+            }
+
+            DefaultTrace.TraceSource.Listeners.Add(new TestTraceListener { Callback = TraceHandler });
+            DefaultTrace.InitEventListener();
+
+            using GlobalEndpointManager globalEndpointManager = new (mockOwner.Object, connectionPolicy);
+
+            // Act.
+            await globalEndpointManager.RefreshLocationAsync(forceRefresh: false);
+
+            // Assert.
+            Assert.IsTrue(isExceptionLogged, "The exception was logged as a warning trace event.");
+        }
+
         private sealed class GetAccountRequestInjector
         {
             public Func<Uri, bool> ShouldFailRequest { get; set; }
