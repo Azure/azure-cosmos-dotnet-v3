@@ -16,12 +16,6 @@ namespace Microsoft.Azure.Cosmos
         /// Creates the IChaosInterceptor interceptor that will be used to inject fault injection rules. 
         /// </summary>
         /// <param name="documentClient"></param>
-        public Task<IChaosInterceptor> CreateInterceptorAsync(DocumentClient documentClient);
-
-        /// <summary>
-        /// Creates the IChaosInterceptor interceptor that will be used to inject fault injection rules. 
-        /// </summary>
-        /// <param name="documentClient"></param>
         public IChaosInterceptor CreateInterceptor(DocumentClient documentClient);
 
         /// <summary>

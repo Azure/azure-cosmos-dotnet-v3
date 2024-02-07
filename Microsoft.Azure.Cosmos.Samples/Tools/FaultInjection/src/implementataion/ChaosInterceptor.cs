@@ -20,13 +20,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             this.rules = rules;
         }
 
-        public async Task<IChaosInterceptor> CreateInterceptorAsync(DocumentClient documentClient)
-        {
-            this.ChaosInterceptor ??= await ChaosInterceptor.CreateAsync(this.rules, documentClient);
-
-            return this.ChaosInterceptor;
-        }
-
         public IChaosInterceptor CreateInterceptor(DocumentClient documentClient)
         {
             this.ChaosInterceptor = new ChaosInterceptor(this.rules, documentClient);
@@ -53,13 +46,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private readonly List<FaultInjectionRule> rules;
         private readonly FaultInjectionDynamicChannelStore channelStore;
         private readonly FaultInjectionApplicationContext applicationContext;
-
-        public static async Task<ChaosInterceptor> CreateAsync(List<FaultInjectionRule> rules, DocumentClient documentClient)
-        {
-            ChaosInterceptor chaosInterceptor = new ChaosInterceptor(rules, documentClient);
-            await chaosInterceptor.ConfigureFaultInjectionRules();
-            return chaosInterceptor;
-        }
 
         public ChaosInterceptor(List<FaultInjectionRule> rules, DocumentClient documentClient)
         {
