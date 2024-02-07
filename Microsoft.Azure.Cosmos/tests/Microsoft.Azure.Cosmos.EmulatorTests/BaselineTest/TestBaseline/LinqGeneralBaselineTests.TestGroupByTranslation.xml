@@ -7,7 +7,8 @@
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE root["id"] 
-FROM root GROUP BY root["id"] ]]></SqlQuery>
+FROM root 
+GROUP BY root["id"] ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -18,7 +19,8 @@ FROM root GROUP BY root["id"] ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE root["id"] 
-FROM root GROUP BY root["id"] ]]></SqlQuery>
+FROM root 
+GROUP BY root["id"] ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -29,7 +31,8 @@ FROM root GROUP BY root["id"] ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE MIN(root["Int"]) 
-FROM root GROUP BY root["id"] ]]></SqlQuery>
+FROM root 
+GROUP BY root["id"] ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -40,7 +43,8 @@ FROM root GROUP BY root["id"] ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE MAX(root["Int"]) 
-FROM root GROUP BY root["id"] ]]></SqlQuery>
+FROM root 
+GROUP BY root["id"] ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -51,7 +55,8 @@ FROM root GROUP BY root["id"] ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE COUNT(1) 
-FROM root GROUP BY root["id"] ]]></SqlQuery>
+FROM root 
+GROUP BY root["id"] ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -62,7 +67,8 @@ FROM root GROUP BY root["id"] ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE AVG(root["Int"]) 
-FROM root GROUP BY root["id"] ]]></SqlQuery>
+FROM root 
+GROUP BY root["id"] ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -73,7 +79,8 @@ FROM root GROUP BY root["id"] ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE MIN(root) 
-FROM root GROUP BY root["Int"] ]]></SqlQuery>
+FROM root 
+GROUP BY root["Int"] ]]></SqlQuery>
       <ErrorMessage><![CDATA[At least one object must implement IComparable.]]></ErrorMessage>
     </Output>
   </Result>
@@ -85,7 +92,8 @@ FROM root GROUP BY root["Int"] ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE MAX(root) 
-FROM root GROUP BY root["Int"] ]]></SqlQuery>
+FROM root 
+GROUP BY root["Int"] ]]></SqlQuery>
       <ErrorMessage><![CDATA[At least one object must implement IComparable.]]></ErrorMessage>
     </Output>
   </Result>
@@ -151,18 +159,80 @@ FROM root GROUP BY root["Int"] ]]></SqlQuery>
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[Skip + GroupBy]]></Description>
-      <Expression><![CDATA[query.Skip(10).GroupBy(k => k.Id, (key, values) => key)]]></Expression>
+      <Description><![CDATA[Select + GroupBy]]></Description>
+      <Expression><![CDATA[query.Select(x => x.Id).GroupBy(k => k, (key, values) => key)]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE r0 
 FROM (
+    SELECT VALUE root["id"] 
+    FROM root) AS r0 
+    GROUP BY r0 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select + GroupBy 2]]></Description>
+      <Expression><![CDATA[query.Select(x => new AnonymousType(Id1 = x.Id, family1 = x.FamilyId, childrenN1 = x.Children)).GroupBy(k => k.family1, (key, values) => key)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0["family1"] 
+FROM (
+    SELECT VALUE {"Id1": root["id"], "family1": root["FamilyId"], "childrenN1": root["Children"]} 
+    FROM root) AS r0 
+    GROUP BY r0["family1"] 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany + GroupBy]]></Description>
+      <Expression><![CDATA[query.SelectMany(x => x.Children).GroupBy(k => k.Grade, (key, values) => key)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE x0["Grade"] 
+FROM root 
+JOIN x0 IN root["Children"] 
+GROUP BY x0["Grade"] ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany + GroupBy 2]]></Description>
+      <Expression><![CDATA[query.SelectMany(f => f.Children).Where(c => (c.Pets.Count() > 0)).SelectMany(c => c.Pets.Select(p => p.GivenName)).GroupBy(k => k, (key, values) => key)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0 
+FROM (
+    SELECT VALUE p0["GivenName"] 
+    FROM root 
+    JOIN f0 IN root["Children"] 
+    JOIN p0 IN f0["Pets"] 
+    WHERE (ARRAY_LENGTH(f0["Pets"]) > 0)) AS r0 
+    GROUP BY r0 
+]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip + GroupBy]]></Description>
+      <Expression><![CDATA[query.Skip(10).GroupBy(k => k.Id, (key, values) => key)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0["id"] 
+FROM (
     SELECT VALUE root 
     FROM root 
-    OFFSET 10 LIMIT 2147483647) AS r0 GROUP BY r0["id"] 
+    OFFSET 10 LIMIT 2147483647) AS r0 
+    GROUP BY r0["id"] 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":50,"end":76},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."},{"severity":"Error","location":{"start":13,"end":15},"code":"SC2102","message":"Property reference 'r0' is invalid in the select list because it is not contained in either an aggregate function or the GROUP BY clause."}]},0x800A0B00]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":56,"end":82},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -172,12 +242,13 @@ FROM (
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE r0 
+SELECT VALUE r0["id"] 
 FROM (
     SELECT TOP 10 VALUE root 
-    FROM root) AS r0 GROUP BY r0["id"] 
+    FROM root) AS r0 
+    GROUP BY r0["id"] 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":29,"end":35},"code":"SC2203","message":"'TOP' is not supported in subqueries."},{"severity":"Error","location":{"start":13,"end":15},"code":"SC2102","message":"Property reference 'r0' is invalid in the select list because it is not contained in either an aggregate function or the GROUP BY clause."}]},0x800A0B00]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":35,"end":41},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -187,13 +258,14 @@ FROM (
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE r0 
+SELECT VALUE r0["id"] 
 FROM (
     SELECT VALUE root 
     FROM root 
-    OFFSET 10 LIMIT 10) AS r0 GROUP BY r0["id"] 
+    OFFSET 10 LIMIT 10) AS r0 
+    GROUP BY r0["id"] 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":50,"end":68},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."},{"severity":"Error","location":{"start":13,"end":15},"code":"SC2102","message":"Property reference 'r0' is invalid in the select list because it is not contained in either an aggregate function or the GROUP BY clause."}]},0x800A0B00]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":56,"end":74},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -205,19 +277,8 @@ FROM (
       <SqlQuery><![CDATA[
 SELECT VALUE root["id"] 
 FROM root 
-WHERE (root["id"] != "a") GROUP BY root["id"] ]]></SqlQuery>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description><![CDATA[OrderBy + GroupBy]]></Description>
-      <Expression><![CDATA[query.OrderBy(x => x.Id).GroupBy(k => k.Id, (key, values) => key)]]></Expression>
-    </Input>
-    <Output>
-      <SqlQuery><![CDATA[
-SELECT VALUE root["id"] 
-FROM root GROUP BY root["id"]  
-ORDER BY root["id"] ASC]]></SqlQuery>
+WHERE (root["id"] != "a") 
+GROUP BY root["id"] ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -228,7 +289,8 @@ ORDER BY root["id"] ASC]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE root["id"] 
-FROM root GROUP BY root["id"]  
+FROM root 
+GROUP BY root["id"]  
 ORDER BY root["Int"] ASC]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":64,"end":75},"code":"SC2103","message":"Property reference 'root[\"Int\"]' is invalid in the ORDER BY clause because it is not contained in either an aggregate function or the GROUP BY clause."}]},0x800A0B00]]></ErrorMessage>
     </Output>
@@ -241,7 +303,8 @@ ORDER BY root["Int"] ASC]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE root["id"] 
-FROM root GROUP BY root["id"]  
+FROM root 
+GROUP BY root["id"]  
 ORDER BY root["id"] DESC]]></SqlQuery>
     </Output>
   </Result>
@@ -254,7 +317,8 @@ ORDER BY root["id"] DESC]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root["id"] 
 FROM root 
-WHERE (root["id"] != "a") GROUP BY root["id"]  
+WHERE (root["id"] != "a") 
+GROUP BY root["id"]  
 ORDER BY root["id"] ASC]]></SqlQuery>
     </Output>
   </Result>
@@ -265,16 +329,17 @@ ORDER BY root["id"] ASC]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE root 
+SELECT VALUE root["id"] 
 FROM root 
 JOIN (
     SELECT VALUE ARRAY(
         SELECT VALUE MIN(y0["Grade"]) 
         FROM root 
         JOIN y0 IN root["Children"])) AS v0 
-        WHERE ((root["id"] != "a") AND (v0[0] > 10)) GROUP BY root["id"] 
+        WHERE ((root["id"] != "a") AND (v0[0] > 10)) 
+        GROUP BY root["id"] 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":13,"end":17},"code":"SC2102","message":"Property reference 'root' is invalid in the select list because it is not contained in either an aggregate function or the GROUP BY clause."}]},0x800A0B00]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Sequence contains no elements]]></ErrorMessage>
     </Output>
   </Result>
   <Result>

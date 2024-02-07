@@ -224,6 +224,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             //     1. Select clause appears after Distinct
             //     2. There are any operations after Take that is not a pure Select.
             //     3. There are nested Select, Where or OrderBy
+            //     4. Group by clause appears after Select
             QueryUnderConstruction parentQuery = null;
             QueryUnderConstruction flattenQuery = null;
             bool seenSelect = false;
@@ -249,10 +250,17 @@ namespace Microsoft.Azure.Cosmos.Linq
                     break;
                 }
 
+                // In case of Select -> Group by cases, the Select query should not be flattened and kept as a subquery
+                if (query.inputQuery != null && query.inputQuery.selectClause != null && query.groupByClause != null)
+                {
+                    flattenQuery = this;
+                    break;
+                }
+
                 if (flattenQuery != null) break;
 
                 if (((query.topSpec != null || query.offsetSpec != null || query.limitSpec != null) && seenAnyNonSelectOp) ||
-                    (query.selectClause != null && query.selectClause.HasDistinct && seenSelect) )
+                    (query.selectClause != null && query.selectClause.HasDistinct && seenSelect))
                 {
                     parentQuery.inputQuery = query.FlattenAsPossible();
                     flattenQuery = this;
@@ -547,12 +555,18 @@ namespace Microsoft.Azure.Cosmos.Linq
                 case LinqMethods.OrderByDescending:
                 case LinqMethods.ThenBy:
                 case LinqMethods.ThenByDescending:
-                case LinqMethods.GroupBy: 
                 case LinqMethods.Distinct:
                     // New query is needed when there is already a Take or a non-distinct Select
                     shouldPackage = (this.topSpec != null) ||
                         (this.offsetSpec != null) ||
                         (this.selectClause != null && !this.selectClause.HasDistinct) || this.groupByClause != null;
+                    break;
+
+                case LinqMethods.GroupBy:
+                    // New query is needed when there is already a Take or a Select or a Group by clause
+                    shouldPackage = (this.topSpec != null) ||
+                        (this.offsetSpec != null) ||
+                        (this.selectClause != null) || this.groupByClause != null;
                     break;
 
                 case LinqMethods.Skip:

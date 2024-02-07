@@ -717,7 +717,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                                                                                 (key, values) => values.Average(value => value.Int) /*return the Count of each group */)));
 
             // Negative cases
-            
+
             // The translation is correct (SELECT VALUE MIN(root) FROM root GROUP BY root["Number"]
             // but the behavior between LINQ and SQL is different
             // In Linq, it requires the object to have comparer traits, where as in CosmosDB, we will return null
@@ -725,7 +725,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                                                                               (key, values) => values.Min() /*return the Min of each group */)));
             inputs.Add(new LinqTestInput("GroupBy Single Value With Max", b => getQuery(b).GroupBy(k => k.Int /*keySelector*/,
                                                                                 (key, values) => values.Max() /*return the Max of each group */)));
-            
+
             // Unsupported node type
             inputs.Add(new LinqTestInput("GroupBy Single Value With Min", b => getQuery(b).GroupBy(k => k.Int /*keySelector*/,
                                                                               (key, values) => "string" /* Unsupported Nodetype*/ )));
@@ -733,7 +733,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             // Incorrect number of arguments
             inputs.Add(new LinqTestInput("GroupBy Single Value With Count", b => getQuery(b).GroupBy(k => k.Id)));
             inputs.Add(new LinqTestInput("GroupBy Single Value With Min", b => getQuery(b).GroupBy(
-                                                                              k => k.Int, 
+                                                                              k => k.Int,
                                                                               k2 => k2.Int,
                                                                               (key, values) => "string" /* Unsupported Nodetype*/ )));
 
@@ -749,10 +749,23 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             // Other methods followed by GroupBy
 
-            // curently causing infinite loops
-            //inputs.Add(new LinqTestInput("Select + GroupBy", b => getQuery(b)
-            //    .Select(x => x.Id)
-            //    .GroupBy(k => k /*keySelector*/, (key, values) => key /*return the group by key */)));
+            inputs.Add(new LinqTestInput("Select + GroupBy", b => getQuery(b)
+                .Select(x => x.Id)
+                .GroupBy(k => k /*keySelector*/, (key, values) => key /*return the group by key */)));
+
+            inputs.Add(new LinqTestInput("Select + GroupBy 2", b => getQuery(b)
+                .Select(x => new { Id1 = x.Id, family1 = x.FamilyId, childrenN1 = x.Children })
+                .GroupBy(k => k.family1 /*keySelector*/, (key, values) => key /*return the group by key */)));
+
+            inputs.Add(new LinqTestInput("SelectMany + GroupBy", b => getQuery(b)
+                .SelectMany(x => x.Children)
+                .GroupBy(k => k.Grade /*keySelector*/, (key, values) => key /*return the group by key */)));
+
+            inputs.Add(new LinqTestInput("SelectMany + GroupBy 2", b => getQuery(b)
+                .SelectMany(f => f.Children)
+                .Where(c => c.Pets.Count() > 0)
+                .SelectMany(c => c.Pets.Select(p => p.GivenName))
+                .GroupBy(k => k /*keySelector*/, (key, values) => key /*return the group by key */)));
 
             inputs.Add(new LinqTestInput("Skip + GroupBy", b => getQuery(b)
                 .Skip(10)
@@ -770,10 +783,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 .Where(x => x.Id != "a")
                 .GroupBy(k => k.Id /*keySelector*/, (key, values) => key /*return the group by key */)));
 
-            inputs.Add(new LinqTestInput("OrderBy + GroupBy", b => getQuery(b)
-                .OrderBy(x => x.Id)
-                .GroupBy(k => k.Id /*keySelector*/, (key, values) => key /*return the group by key */)));
-
             // should this become a subquery with order by then group by?
             inputs.Add(new LinqTestInput("OrderBy + GroupBy", b => getQuery(b)
                 .OrderBy(x => x.Int)
@@ -782,8 +791,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqTestInput("OrderBy Descending + GroupBy", b => getQuery(b)
                 .OrderByDescending(x => x.Id)
                 .GroupBy(k => k.Id /*keySelector*/, (key, values) => key /*return the group by key */)));
-
-            // Select + Aggregates...? + GroupBy
 
             inputs.Add(new LinqTestInput("Combination + GroupBy", b => getQuery(b)
                 .Where(x => x.Id != "a")

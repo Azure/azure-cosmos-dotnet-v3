@@ -1232,6 +1232,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     }
                 case LinqMethods.GroupBy:
                     {
+                        context.CurrentQuery = context.PackageCurrentQueryIfNeccessary();
                         result = ExpressionToSql.VisitGroupBy(returnElementType, inputExpression.Arguments, context);
                         context.LastExpressionIsGroupBy = true;
                         break;
@@ -1723,9 +1724,9 @@ namespace Microsoft.Azure.Cosmos.Linq
             context.CurrentQuery.GroupByParameter = new FromParameterBindings();
             context.CurrentQuery.GroupByParameter.Add(binding);
 
-            // The alias for the key in the value selector lambda is the first parameter
+            // The alias for the key in the value selector lambda is the first arguemt lambda - we bound it to the parameter expression, which already has substitution
             ParameterExpression valueSelectorKeyExpressionAlias = Utilities.GetLambda(arguments[2]).Parameters[0];
-            context.GroupByKeySubstitution.AddSubstitution(valueSelectorKeyExpressionAlias, Utilities.GetLambda(arguments[1]).Body);
+            context.GroupByKeySubstitution.AddSubstitution(valueSelectorKeyExpressionAlias, parameterExpression/*Utilities.GetLambda(arguments[1]).Body*/);
 
             // Translate the body of the value selector lambda
             Expression valueSelectorExpression = Utilities.GetLambda(arguments[2]).Body;
@@ -1735,7 +1736,11 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 case ExpressionType.Parameter:
                     ParameterExpression parameterValueExpression = (ParameterExpression)valueSelectorExpression;
-                    ExpressionToSql.VisitParameter(parameterValueExpression, context);
+                    SqlScalarExpression selectExpression = ExpressionToSql.VisitParameter(parameterValueExpression, context);
+
+                    SqlSelectSpec sqlSpec = SqlSelectValueSpec.Create(selectExpression);
+                    SqlSelectClause select = SqlSelectClause.Create(sqlSpec, null);
+                    context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
                     break;
                     
                 case ExpressionType.Call:

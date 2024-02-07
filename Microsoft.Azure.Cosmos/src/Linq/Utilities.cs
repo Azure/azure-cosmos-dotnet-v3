@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 string name = prefix + (includeSuffix ? suffix.ToString(CultureInfo.InvariantCulture) : string.Empty);
                 ParameterExpression param = Expression.Parameter(type, name);
-                if (!inScope.Any(p => p.Name.Equals(name)))
+                if (!inScope.Any(p => p.Name.Equals(name)) || !includeSuffix)
                 {
                     inScope.Add(param);
                     return param;
