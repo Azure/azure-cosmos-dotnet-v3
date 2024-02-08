@@ -24,13 +24,6 @@ namespace Microsoft.Azure.Cosmos
     [VisualStudio.TestTools.UnitTesting.TestClass]
     public sealed class DistributedTracingOTelTests : BaseCosmosClientHelper
     {
-        [TestInitialize]
-        public void TestInitialize()
-        {
-            AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
-            AzureCore.ActivityExtensions.ResetFeatureSwitch();
-        }
-
         [DataTestMethod]
         [DataRow($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation", $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Request", DisplayName = "DirectMode and DistributedFlag On: Asserts activity creation at operation and network level with Diagnostic TraceId being added to logs")]
         [DataRow($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation", null, DisplayName = "DirectMode and DistributedFlag On: Asserts activity creation at operation level with Diagnostic TraceId being added to logs")]
@@ -264,15 +257,6 @@ namespace Microsoft.Azure.Cosmos
 
             // Cleanup
             customListener.Dispose();
-        }
-
-        [TestCleanup]
-        public async Task CleanUp()
-        {
-            await base.TestCleanup();
-
-            AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", false);
-            AzureCore.ActivityExtensions.ResetFeatureSwitch();
         }
     }
 }
