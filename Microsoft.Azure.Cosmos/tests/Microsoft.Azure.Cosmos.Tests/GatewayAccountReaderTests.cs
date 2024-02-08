@@ -113,7 +113,13 @@ namespace Microsoft.Azure.Cosmos
                 "\"defaultConsistencyLevel\": \"Session\"\r\n    },\r\n    \"systemReplicationPolicy\": {\r\n        \"minReplicaSetSize\": 1,\r\n        \"maxReplicasetSize\": 4\r\n    },\r\n    \"readPolicy\": {\r\n        \"primaryReadCoefficient\": 1,\r\n        \"secondaryReadCoefficient\": 1\r\n    },\r\n    \"queryEngineConfiguration\": \"{\\\"maxSqlQueryInputLength\\\":262144,\\\"maxJoinsPerSqlQuery\\\":5," +
                 "\\\"maxLogicalAndPerSqlQuery\\\":500,\\\"maxLogicalOrPerSqlQuery\\\":500,\\\"maxUdfRefPerSqlQuery\\\":10,\\\"maxInExpressionItemsCount\\\":16000,\\\"queryMaxInMemorySortDocumentCount\\\":500,\\\"maxQueryRequestTimeoutFraction\\\":0.9,\\\"sqlAllowNonFiniteNumbers\\\":false,\\\"sqlAllowAggregateFunctions\\\":true,\\\"sqlAllowSubQuery\\\":true,\\\"sqlAllowScalarSubQuery\\\":true,\\\"allowNewKeywords\\\":true,\\\"" +
                 "sqlAllowLike\\\":true,\\\"sqlAllowGroupByClause\\\":true,\\\"maxSpatialQueryCells\\\":12,\\\"spatialMaxGeometryPointCount\\\":256,\\\"sqlDisableOptimizationFlags\\\":0,\\\"sqlAllowTop\\\":true,\\\"enableSpatialIndexing\\\":true}\"\r\n}";
-            
+
+            Uri globalEndpoint = new("https://testfed1.documents-test.windows-int.net:443/");
+            Uri privateEndpoint1 = new ("https://testfed2.documents-test.windows-int.net:443/");
+            Uri privateEndpoint2 = new ("https://testfed3.documents-test.windows-int.net:443/");
+            Uri privateEndpoint3 = new ("https://testfed4.documents-test.windows-int.net:443/");
+            Uri endpointSucceeded = default;
+
             StringContent content = new(accountPropertiesResponse);
             HttpResponseMessage responseMessage = new()
             {
@@ -122,16 +128,31 @@ namespace Microsoft.Azure.Cosmos
             };
 
             Mock<CosmosHttpClient> mockHttpClient = new();
+
+            GatewayAccountReaderTests.SetupMockToThrowException(
+                mockHttpClient: mockHttpClient, 
+                endpoints: new List<Uri>() 
+                    {
+                        globalEndpoint,
+                        privateEndpoint1,
+                        privateEndpoint2,
+                    });
+
             mockHttpClient
-                .SetupSequence(x => x.GetAsync(
-                    It.IsAny<Uri>(),
+                .Setup(x => x.GetAsync(
+                    privateEndpoint3,
                     It.IsAny<INameValueCollection>(),
                     It.IsAny<ResourceType>(),
                     It.IsAny<HttpTimeoutPolicy>(),
                     It.IsAny<IClientSideRequestStatistics>(),
                     It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new Exception("Service is Unavailable at the Moment."))
-                .ThrowsAsync(new Exception("Service is Unavailable at the Moment."))
+                .Callback((
+                    Uri serviceEndpoint,
+                    INameValueCollection _,
+                    ResourceType _,
+                    HttpTimeoutPolicy _,
+                    IClientSideRequestStatistics _,
+                    CancellationToken _) => endpointSucceeded = serviceEndpoint)
                 .ReturnsAsync(responseMessage);
 
             ConnectionPolicy connectionPolicy = new()
@@ -144,14 +165,14 @@ namespace Microsoft.Azure.Cosmos
                 connectionPolicy.SetAccountInitializationCustomEndpoints(
                     new HashSet<Uri>()
                     {
-                        new Uri("https://testfed2.documents-test.windows-int.net:443/"),
-                        new Uri("https://testfed3.documents-test.windows-int.net:443/"),
-                        new Uri("https://testfed4.documents-test.windows-int.net:443/"),
+                        privateEndpoint1,
+                        privateEndpoint2,
+                        privateEndpoint3,
                     });
             }
 
             GatewayAccountReader accountReader = new GatewayAccountReader(
-                serviceEndpoint: new Uri("https://testfed1.documents-test.windows-int.net:443/"),
+                serviceEndpoint: globalEndpoint,
                 cosmosAuthorization: Mock.Of<AuthorizationTokenProvider>(),
                 connectionPolicy: connectionPolicy,
                 httpClient: mockHttpClient.Object);
@@ -163,10 +184,12 @@ namespace Microsoft.Azure.Cosmos
                 Assert.IsNotNull(accountProperties);
                 Assert.AreEqual("localhost", accountProperties.Id);
                 Assert.AreEqual("127.0.0.1", accountProperties.ResourceId);
+                Assert.AreEqual(endpointSucceeded, privateEndpoint3);
             }
             else
             {
                 Exception exception = await Assert.ThrowsExceptionAsync<Exception>(() => accountReader.InitializeReaderAsync());
+                Assert.IsNull(endpointSucceeded);
                 Assert.IsNotNull(exception);
                 Assert.AreEqual("Service is Unavailable at the Moment.", exception.Message);
             }
@@ -195,9 +218,9 @@ namespace Microsoft.Azure.Cosmos
             connectionPolicy.SetAccountInitializationCustomEndpoints(
                 new HashSet<Uri>()
                 {
-                    new Uri("https://testfed2.documents-test.windows-int.net:443/"),
-                    new Uri("https://testfed3.documents-test.windows-int.net:443/"),
-                    new Uri("https://testfed4.documents-test.windows-int.net:443/"),
+                    new ("https://testfed2.documents-test.windows-int.net:443/"),
+                    new ("https://testfed3.documents-test.windows-int.net:443/"),
+                    new ("https://testfed4.documents-test.windows-int.net:443/"),
                 });
 
             GatewayAccountReader accountReader = new GatewayAccountReader(
@@ -209,6 +232,24 @@ namespace Microsoft.Azure.Cosmos
             AggregateException exception = await Assert.ThrowsExceptionAsync<AggregateException>(() => accountReader.InitializeReaderAsync());
             Assert.IsNotNull(exception);
             Assert.AreEqual("Service is Unavailable at the Moment.", exception.InnerException.Message);
+        }
+
+        private static void SetupMockToThrowException(
+            Mock<CosmosHttpClient> mockHttpClient,
+            IList<Uri> endpoints)
+        {
+            foreach(Uri endpoint in endpoints)
+            {
+                mockHttpClient
+                    .Setup(x => x.GetAsync(
+                        endpoint,
+                        It.IsAny<INameValueCollection>(),
+                        It.IsAny<ResourceType>(),
+                        It.IsAny<HttpTimeoutPolicy>(),
+                        It.IsAny<IClientSideRequestStatistics>(),
+                        It.IsAny<CancellationToken>()))
+                    .ThrowsAsync(new Exception("Service is Unavailable at the Moment."));
+            }
         }
 
         public class CustomMessageHandler : HttpMessageHandler

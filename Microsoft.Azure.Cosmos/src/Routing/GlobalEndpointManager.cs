@@ -264,11 +264,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             /// </summary>
             private async Task TryGetAccountPropertiesFromAllLocationsAsync()
             {
-                if (this.CancellationTokenSource.IsCancellationRequested)
-                {
-                    return;
-                }
-
                 while (this.TryMoveNextServiceEndpointhreadSafe(
                         out Uri? serviceEndpoint))
                 {

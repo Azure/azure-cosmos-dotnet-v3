@@ -216,6 +216,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(portReuseMode, policy.PortReuseMode);
             Assert.IsTrue(policy.EnableTcpConnectionEndpointRediscovery);
             CollectionAssert.AreEqual(preferredLocations.ToArray(), policy.PreferredLocations.ToArray());
+            CollectionAssert.AreEqual(regionalEndpoints.ToArray(), policy.AccountInitializationCustomEndpoints.ToArray());
         }
 
         /// <summary>
