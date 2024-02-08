@@ -124,6 +124,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <example>"AccountEndpoint=https://mytestcosmosaccount.documents.azure.com:443/;AccountKey={SecretAccountKey};"</example>
         /// <param name="connectionString">The connection string must contain AccountEndpoint and AccountKey or ResourceToken.</param>
+        /// <remarks>
+        /// Emulator: To ignore SSL Certificate please suffix connectionstring with "DisableServerCertificateValidation=True;". 
+        /// When CosmosClientOptions.HttpClientFactory is used, SSL certificate needs to be handled appropriately.
+        /// NOTE: DO NOT use this flag in production (only for emulator)
+        /// </remarks>
         public CosmosClientBuilder(string connectionString)
         {
             if (connectionString == null)
@@ -133,6 +138,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
             this.accountEndpoint = CosmosClientOptions.GetAccountEndpoint(connectionString);
             this.accountKey = CosmosClientOptions.GetAccountKey(connectionString);
+            
+            this.clientOptions = CosmosClientOptions.GetCosmosClientOptionsWithCertificateFlag(connectionString, this.clientOptions);
         }
 
         /// <summary>
@@ -433,6 +440,22 @@ namespace Microsoft.Azure.Cosmos.Fluent
             this.clientOptions.ConsistencyLevel = consistencyLevel;
             return this;
 
+        }
+
+        /// <summary>
+        /// Sets the priority level for requests created using cosmos client.
+        /// </summary>
+        /// <remarks>
+        /// If priority level is also set at request level in <see cref="RequestOptions.PriorityLevel"/>, that priority is used.
+        /// If <see cref="WithBulkExecution(bool)"/> is set to true, priority level set on the CosmosClient is used.
+        /// </remarks>
+        /// <param name="priorityLevel">The desired priority level for the client.</param>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
+        /// <seealso href="https://aka.ms/CosmosDB/PriorityBasedExecution"/>
+        public CosmosClientBuilder WithPriorityLevel(Cosmos.PriorityLevel priorityLevel)
+        {
+            this.clientOptions.PriorityLevel = priorityLevel;
+            return this;
         }
 
         /// <summary>

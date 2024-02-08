@@ -28,16 +28,20 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         private readonly CosmosClient client;
         private readonly Cosmos.ConsistencyLevel? RequestedClientConsistencyLevel;
+        private readonly Cosmos.PriorityLevel? RequestedClientPriorityLevel;
 
         private bool? IsLocalQuorumConsistency;
         private Cosmos.ConsistencyLevel? AccountConsistencyLevel = null;
 
         public RequestInvokerHandler(
             CosmosClient client,
-            Cosmos.ConsistencyLevel? requestedClientConsistencyLevel)
+            Cosmos.ConsistencyLevel? requestedClientConsistencyLevel,
+            Cosmos.PriorityLevel? requestedClientPriorityLevel)
         {
             this.client = client;
-            this.RequestedClientConsistencyLevel = requestedClientConsistencyLevel;
+
+            this.RequestedClientConsistencyLevel = requestedClientConsistencyLevel;       
+            this.RequestedClientPriorityLevel = requestedClientPriorityLevel;
         }
 
         public override async Task<ResponseMessage> SendAsync(
@@ -64,6 +68,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             await this.ValidateAndSetConsistencyLevelAsync(request);
+            this.SetPriorityLevel(request);
+
             (bool isError, ResponseMessage errorResponse) = await this.EnsureValidClientAsync(request, request.Trace);
             if (isError)
             {
@@ -477,6 +483,25 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             consistencyLevel.Value.ToString(),
                             this.AccountConsistencyLevel));
                 }
+            }
+        }
+
+        /// <summary>
+        /// Set the PriorityLevel in the request headers
+        /// </summary>
+        /// <param name="requestMessage"></param>
+        private void SetPriorityLevel(RequestMessage requestMessage)
+        {
+            Cosmos.PriorityLevel? priorityLevel = this.RequestedClientPriorityLevel;
+            RequestOptions promotedRequestOptions = requestMessage.RequestOptions;
+            if (promotedRequestOptions?.PriorityLevel.HasValue == true)
+            {
+                priorityLevel = promotedRequestOptions.PriorityLevel.Value;
+            }
+
+            if (priorityLevel.HasValue)
+            {
+                requestMessage.Headers.Set(HttpConstants.HttpHeaders.PriorityLevel, priorityLevel.ToString());
             }
         }
 

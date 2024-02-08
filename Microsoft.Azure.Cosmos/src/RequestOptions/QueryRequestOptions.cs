@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// Direct (optimistic) execution offers improved performance for several kinds of queries such as a single partition streaming query.
         /// </value>
-        public bool EnableOptimisticDirectExecution { get; set; } = true;
+        public bool EnableOptimisticDirectExecution { get; set; } = ConfigurationManager.IsOptimisticDirectExecutionEnabled(defaultValue: true);
 
         /// <summary>
         /// Gets or sets the maximum number of items that can be buffered client side during 
@@ -260,8 +260,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.PopulateIndexMetrics.HasValue)
             {
-                // TODO: Switch to V2
-                request.Headers.CosmosMessageHeaders.Add(HttpConstants.HttpHeaders.PopulateIndexMetrics, this.PopulateIndexMetrics.ToString());
+                request.Headers.CosmosMessageHeaders.Add(HttpConstants.HttpHeaders.PopulateIndexMetricsV2, this.PopulateIndexMetrics.ToString());
             }
 
             DedicatedGatewayRequestOptions.PopulateMaxIntegratedCacheStalenessOption(this.DedicatedGatewayRequestOptions, request);

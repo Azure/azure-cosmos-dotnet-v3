@@ -3,6 +3,7 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
 {
+    using System.Threading.Tasks;
     using Microsoft.Azure.Documents.FaultInjection;
 
     /// <summary>
@@ -16,5 +17,10 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="documentClient"></param>
         public IChaosInterceptor CreateInterceptor(DocumentClient documentClient);
+
+        /// <summary>
+        /// Configures Intercetor
+        /// </summary>
+        public Task ConfigureChaosInterceptorAsync();
     }
 }

@@ -40,6 +40,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                 CosmosElement requestContinuation,
                 CancellationToken cancellationToken,
                 MonadicCreatePipelineStage monadicCreatePipelineStage,
+                IReadOnlyList<AggregateOperator> aggregates,
                 IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
                 IReadOnlyList<string> orderedAliases,
                 bool hasSelectValue,
@@ -79,6 +80,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                 }
 
                 TryCatch<GroupingTable> tryCreateGroupingTable = GroupingTable.TryCreateFromContinuationToken(
+                    aggregates,
                     groupByAliasToAggregateType,
                     orderedAliases,
                     hasSelectValue,

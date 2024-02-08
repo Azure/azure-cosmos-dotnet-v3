@@ -820,6 +820,8 @@ namespace Microsoft.Azure.Cosmos
         /// </returns>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#stream-api</exception>
         /// <remarks>
+        /// For delete operations, the <see cref="ResponseMessage.Content"/> will be null. Item content is not expected in the response.
+        /// 
         /// The Stream operation only throws on client side exceptions. This is to increase performance and prevent the overhead of throwing exceptions. Check the HTTP status code on the response to check if the operation failed.
         /// </remarks>
         /// <example>
@@ -854,6 +856,8 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// <see cref="ItemResponse{T}.Resource"/> is <see href="https://docs.microsoft.com/rest/api/cosmos-db/delete-a-document#body">always null</see>
         /// </remarks>
+        /// For delete operations, the <see cref="ItemResponse{T}.Resource"/> will be null. Item content is not expected in the response.
+        /// 
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
         /// <example>
         /// <code language="c#">

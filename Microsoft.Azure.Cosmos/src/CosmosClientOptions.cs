@@ -51,6 +51,7 @@ namespace Microsoft.Azure.Cosmos
 
         private const string ConnectionStringAccountEndpoint = "AccountEndpoint";
         private const string ConnectionStringAccountKey = "AccountKey";
+        private const string ConnectionStringDisableServerCertificateValidation = "DisableServerCertificateValidation";
 
         private const ApiType DefaultApiType = ApiType.None;
 
@@ -278,6 +279,16 @@ namespace Microsoft.Azure.Cosmos
         /// If this is not set the database account consistency level will be used for all requests.
         /// </summary>
         public ConsistencyLevel? ConsistencyLevel { get; set; }
+
+        /// <summary>
+        /// Sets the priority level for requests created using cosmos client.
+        /// </summary>
+        /// <remarks>
+        /// If priority level is also set at request level in <see cref="RequestOptions.PriorityLevel"/>, that priority is used.
+        /// If <see cref="AllowBulkExecution"/> is set to true in CosmosClientOptions, priority level set on the CosmosClient is used.
+        /// </remarks>
+        /// <seealso href="https://aka.ms/CosmosDB/PriorityBasedExecution"/>
+        public PriorityLevel? PriorityLevel { get; set; }
 
         /// <summary>
         /// Gets or sets the maximum number of retries in the case where the request fails
@@ -660,11 +671,48 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <remarks>
         /// <para>
-        /// Customizing SSL verification is not recommended in production environments.
+        /// Emulator: To ignore SSL Certificate please suffix connectionstring with "DisableServerCertificateValidation=True;". 
+        /// When CosmosClientOptions.HttpClientFactory is used, SSL certificate needs to be handled appropriately.
+        /// NOTE: DO NOT use the `DisableServerCertificateValidation` flag in production (only for emulator)
         /// </para>
         /// </remarks>
         public Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback { get; set; }
-       
+
+        /// <summary>
+        /// Real call back that will be hooked down-stream to the transport clients (both http and tcp).
+        /// NOTE: All down stream real-usage should come through this API only and not through the public API.
+        /// 
+        /// Test hook DisableServerCertificateValidationInvocationCallback 
+        /// - When configured will invoke it when ever custom validation is done
+        /// </summary>
+        internal Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> GetServerCertificateCustomValidationCallback()
+        {
+            if (this.DisableServerCertificateValidation)
+            {
+                if (this.DisableServerCertificateValidationInvocationCallback == null)
+                {
+                    return this.ServerCertificateCustomValidationCallback ?? ((_, _, _) => true);
+                }
+                else
+                {
+                    return (X509Certificate2 cert, X509Chain chain, SslPolicyErrors policyErrors) =>
+                    {
+                        bool bValidationResult = true;
+                        if (this.ServerCertificateCustomValidationCallback != null)
+                        {
+                            bValidationResult = this.ServerCertificateCustomValidationCallback(cert, chain, policyErrors);
+                        }
+                        this.DisableServerCertificateValidationInvocationCallback?.Invoke();
+                        return bValidationResult;
+                    };
+                }
+            }
+
+            return this.ServerCertificateCustomValidationCallback;
+        }
+
+        internal Action DisableServerCertificateValidationInvocationCallback { get; set; }
+
         /// <summary>
         /// API type for the account
         /// </summary>
@@ -737,6 +785,11 @@ namespace Microsoft.Azure.Cosmos
         /// Flag that controls whether CPU monitoring thread is created to enrich timeout exceptions with additional diagnostic. Default value is true.
         /// </summary>
         internal bool? EnableCpuMonitor { get; set; }
+
+        /// <summary>
+        /// Flag indicates the value of DisableServerCertificateValidation flag set at connection string level.Default it is false.
+        /// </summary>
+        internal bool DisableServerCertificateValidation { get; set; }
 
         /// <summary>
         /// Gets or sets Client Telemetry Options like feature flags and corresponding options
@@ -854,15 +907,31 @@ namespace Microsoft.Azure.Cosmos
 
         internal static string GetAccountEndpoint(string connectionString)
         {
-            return CosmosClientOptions.GetValueFromConnectionString(connectionString, CosmosClientOptions.ConnectionStringAccountEndpoint);
+            return CosmosClientOptions.GetValueFromConnectionString<string>(connectionString, CosmosClientOptions.ConnectionStringAccountEndpoint, null);
         }
 
         internal static string GetAccountKey(string connectionString)
         {
-            return CosmosClientOptions.GetValueFromConnectionString(connectionString, CosmosClientOptions.ConnectionStringAccountKey);
+            return CosmosClientOptions.GetValueFromConnectionString<string>(connectionString, CosmosClientOptions.ConnectionStringAccountKey, null);
         }
 
-        private static string GetValueFromConnectionString(string connectionString, string keyName)
+        internal static bool IsConnectionStringDisableServerCertificateValidationFlag(string connectionString)
+        {
+            return Convert.ToBoolean(CosmosClientOptions.GetValueFromConnectionString<bool>(connectionString, CosmosClientOptions.ConnectionStringDisableServerCertificateValidation, false));
+        }
+
+        internal static CosmosClientOptions GetCosmosClientOptionsWithCertificateFlag(string connectionString, CosmosClientOptions clientOptions)
+        {
+            clientOptions ??= new CosmosClientOptions();
+            if (CosmosClientOptions.IsConnectionStringDisableServerCertificateValidationFlag(connectionString))
+            {
+                clientOptions.DisableServerCertificateValidation = true;
+            }
+
+            return clientOptions;
+        }
+
+        private static T GetValueFromConnectionString<T>(string connectionString, string keyName, T defaultValue)
         {
             if (connectionString == null)
             {
@@ -875,8 +944,20 @@ namespace Microsoft.Azure.Cosmos
                 string keyNameValue = value as string;
                 if (!string.IsNullOrEmpty(keyNameValue))
                 {
-                    return keyNameValue;
+                    try
+                    {
+                        return (T)Convert.ChangeType(value, typeof(T));
+                    }
+                    catch (InvalidCastException)
+                    {
+                        throw new ArgumentException("The connection string contains invalid property: " + keyName);
+                    }
                 }
+            }
+
+            if (defaultValue != null)
+            {
+                return defaultValue;
             }
 
             throw new ArgumentException("The connection string is missing a required property: " + keyName);
