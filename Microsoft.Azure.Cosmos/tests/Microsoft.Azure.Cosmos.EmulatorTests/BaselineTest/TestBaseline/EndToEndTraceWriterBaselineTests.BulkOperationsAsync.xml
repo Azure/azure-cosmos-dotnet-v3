@@ -171,7 +171,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -189,7 +189,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -207,7 +207,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -225,7 +225,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -243,7 +243,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -261,7 +261,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -279,7 +279,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -297,7 +297,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -315,7 +315,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -333,351 +333,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Request" operationName="Request.RequestAsync" displayName="Batch Document">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="rntbd.url">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="rntbd.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="rntbd.status_code">200</ATTRIBUTE>
-  </ACTIVITY>
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-</OTelActivities></Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description>Bulk Operation</Description>
-      <Setup><![CDATA[
-    string pkValue = "DiagnosticBulkTestPk";
-
-    Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
-    List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
-
-    for (int i = 0; i < 10; i++)
-    {
-        ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
-        createItemsTasks.Add(bulkContainer.CreateItemAsync<ToDoActivity>(item, new PartitionKey(item.id)));
-    }
-
-    await Task.WhenAll(createItemsTasks);
-
-    List<ITrace> traces = new List<ITrace>();
- 
-    foreach (Task<ItemResponse<ToDoActivity>> createTask in createItemsTasks)
-    {
-        ItemResponse<ToDoActivity> itemResponse = await createTask;
-        Assert.IsNotNull(itemResponse);
-
-        ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
-        traces.Add(trace);
-    }
-
-]]></Setup>
-    </Input>
-    <Output>
-      <Text><![CDATA[.
-└── CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │   (
-    │       [Client Configuration]
-    │       Redacted To Not Change The Baselines From Run To Run
-    │       [DistributedTraceId]
-    │       Redacted To Not Change The Baselines From Run To Run
-    │   )
-    ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    ├── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  00:00:00:000  0.00 milliseconds  
-    │   ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  00:00:00:000  0.00 milliseconds  
-    │   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │   │       │   (
-    │   │       │       [System Info]
-    │   │       │       Redacted To Not Change The Baselines From Run To Run
-    │   │       │   )
-    │   │       └── Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │   │           └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │   │               └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │   │                   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │   │                               (
-    │   │                                   [Client Side Request Stats]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
-    │   │                               )
-    │   └── Create Trace(00000000-0000-0000-0000-000000000000)  Batch-Component  00:00:00:000  0.00 milliseconds  
-    └── Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-]]></Text>
-      <Json><![CDATA[{
-  "Summary": {},
-  "name": "CreateItemAsync",
-  "start datetime": "0001-01-01T00:00:00Z",
-  "duration in milliseconds": 0,
-  "data": {
-    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
-    "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
-  },
-  "children": [
-    {
-      "name": "ItemSerialize",
-      "duration in milliseconds": 0
-    },
-    {
-      "name": "Get Collection Cache",
-      "duration in milliseconds": 0
-    },
-    {
-      "name": "Batch Dispatch Async",
-      "duration in milliseconds": 0,
-      "children": [
-        {
-          "name": "Using Wait",
-          "duration in milliseconds": 0
-        },
-        {
-          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-          "duration in milliseconds": 0,
-          "children": [
-            {
-              "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
-              "duration in milliseconds": 0,
-              "data": {
-                "System Info": "Redacted To Not Change The Baselines From Run To Run"
-              },
-              "children": [
-                {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.TelemetryHandler",
-                  "duration in milliseconds": 0,
-                  "children": [
-                    {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-                      "duration in milliseconds": 0,
-                      "children": [
-                        {
-                          "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                          "duration in milliseconds": 0,
-                          "children": [
-                            {
-                              "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                              "duration in milliseconds": 0,
-                              "children": [
-                                {
-                                  "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                                  "duration in milliseconds": 0,
-                                  "data": {
-                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                  }
-                                }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "name": "Create Trace",
-          "duration in milliseconds": 0
-        }
-      ]
-    },
-    {
-      "name": "Response Serialization",
-      "duration in milliseconds": 0
-    }
-  ]
-}]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -859,7 +515,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -877,7 +533,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -895,7 +551,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -913,7 +569,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -931,7 +587,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -949,7 +605,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -967,7 +623,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -985,7 +641,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -1003,7 +659,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -1021,351 +677,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Request" operationName="Request.RequestAsync" displayName="Batch Document">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="rntbd.url">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="rntbd.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="rntbd.status_code">200</ATTRIBUTE>
-  </ACTIVITY>
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-</OTelActivities></Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description>Bulk Operation</Description>
-      <Setup><![CDATA[
-    string pkValue = "DiagnosticBulkTestPk";
-
-    Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
-    List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
-
-    for (int i = 0; i < 10; i++)
-    {
-        ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
-        createItemsTasks.Add(bulkContainer.CreateItemAsync<ToDoActivity>(item, new PartitionKey(item.id)));
-    }
-
-    await Task.WhenAll(createItemsTasks);
-
-    List<ITrace> traces = new List<ITrace>();
- 
-    foreach (Task<ItemResponse<ToDoActivity>> createTask in createItemsTasks)
-    {
-        ItemResponse<ToDoActivity> itemResponse = await createTask;
-        Assert.IsNotNull(itemResponse);
-
-        ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
-        traces.Add(trace);
-    }
-
-]]></Setup>
-    </Input>
-    <Output>
-      <Text><![CDATA[.
-└── CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │   (
-    │       [Client Configuration]
-    │       Redacted To Not Change The Baselines From Run To Run
-    │       [DistributedTraceId]
-    │       Redacted To Not Change The Baselines From Run To Run
-    │   )
-    ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    ├── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  00:00:00:000  0.00 milliseconds  
-    │   ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  00:00:00:000  0.00 milliseconds  
-    │   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │   │       │   (
-    │   │       │       [System Info]
-    │   │       │       Redacted To Not Change The Baselines From Run To Run
-    │   │       │   )
-    │   │       └── Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │   │           └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │   │               └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │   │                   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │   │                               (
-    │   │                                   [Client Side Request Stats]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
-    │   │                               )
-    │   └── Create Trace(00000000-0000-0000-0000-000000000000)  Batch-Component  00:00:00:000  0.00 milliseconds  
-    └── Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-]]></Text>
-      <Json><![CDATA[{
-  "Summary": {},
-  "name": "CreateItemAsync",
-  "start datetime": "0001-01-01T00:00:00Z",
-  "duration in milliseconds": 0,
-  "data": {
-    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
-    "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
-  },
-  "children": [
-    {
-      "name": "ItemSerialize",
-      "duration in milliseconds": 0
-    },
-    {
-      "name": "Get Collection Cache",
-      "duration in milliseconds": 0
-    },
-    {
-      "name": "Batch Dispatch Async",
-      "duration in milliseconds": 0,
-      "children": [
-        {
-          "name": "Using Wait",
-          "duration in milliseconds": 0
-        },
-        {
-          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-          "duration in milliseconds": 0,
-          "children": [
-            {
-              "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
-              "duration in milliseconds": 0,
-              "data": {
-                "System Info": "Redacted To Not Change The Baselines From Run To Run"
-              },
-              "children": [
-                {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.TelemetryHandler",
-                  "duration in milliseconds": 0,
-                  "children": [
-                    {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-                      "duration in milliseconds": 0,
-                      "children": [
-                        {
-                          "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                          "duration in milliseconds": 0,
-                          "children": [
-                            {
-                              "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                              "duration in milliseconds": 0,
-                              "children": [
-                                {
-                                  "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                                  "duration in milliseconds": 0,
-                                  "data": {
-                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                  }
-                                }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "name": "Create Trace",
-          "duration in milliseconds": 0
-        }
-      ]
-    },
-    {
-      "name": "Response Serialization",
-      "duration in milliseconds": 0
-    }
-  ]
-}]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -1547,7 +859,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -1565,7 +877,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -1583,7 +895,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -1601,7 +913,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -1619,7 +931,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -1637,7 +949,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -1655,7 +967,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -1673,7 +985,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -1691,7 +1003,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -1709,351 +1021,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Request" operationName="Request.RequestAsync" displayName="Batch Document">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="rntbd.url">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="rntbd.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="rntbd.status_code">200</ATTRIBUTE>
-  </ACTIVITY>
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-</OTelActivities></Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description>Bulk Operation</Description>
-      <Setup><![CDATA[
-    string pkValue = "DiagnosticBulkTestPk";
-
-    Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
-    List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
-
-    for (int i = 0; i < 10; i++)
-    {
-        ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
-        createItemsTasks.Add(bulkContainer.CreateItemAsync<ToDoActivity>(item, new PartitionKey(item.id)));
-    }
-
-    await Task.WhenAll(createItemsTasks);
-
-    List<ITrace> traces = new List<ITrace>();
- 
-    foreach (Task<ItemResponse<ToDoActivity>> createTask in createItemsTasks)
-    {
-        ItemResponse<ToDoActivity> itemResponse = await createTask;
-        Assert.IsNotNull(itemResponse);
-
-        ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
-        traces.Add(trace);
-    }
-
-]]></Setup>
-    </Input>
-    <Output>
-      <Text><![CDATA[.
-└── CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │   (
-    │       [Client Configuration]
-    │       Redacted To Not Change The Baselines From Run To Run
-    │       [DistributedTraceId]
-    │       Redacted To Not Change The Baselines From Run To Run
-    │   )
-    ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    ├── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  00:00:00:000  0.00 milliseconds  
-    │   ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  00:00:00:000  0.00 milliseconds  
-    │   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │   │       │   (
-    │   │       │       [System Info]
-    │   │       │       Redacted To Not Change The Baselines From Run To Run
-    │   │       │   )
-    │   │       └── Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │   │           └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │   │               └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │   │                   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │   │                               (
-    │   │                                   [Client Side Request Stats]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
-    │   │                               )
-    │   └── Create Trace(00000000-0000-0000-0000-000000000000)  Batch-Component  00:00:00:000  0.00 milliseconds  
-    └── Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-]]></Text>
-      <Json><![CDATA[{
-  "Summary": {},
-  "name": "CreateItemAsync",
-  "start datetime": "0001-01-01T00:00:00Z",
-  "duration in milliseconds": 0,
-  "data": {
-    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
-    "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
-  },
-  "children": [
-    {
-      "name": "ItemSerialize",
-      "duration in milliseconds": 0
-    },
-    {
-      "name": "Get Collection Cache",
-      "duration in milliseconds": 0
-    },
-    {
-      "name": "Batch Dispatch Async",
-      "duration in milliseconds": 0,
-      "children": [
-        {
-          "name": "Using Wait",
-          "duration in milliseconds": 0
-        },
-        {
-          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-          "duration in milliseconds": 0,
-          "children": [
-            {
-              "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
-              "duration in milliseconds": 0,
-              "data": {
-                "System Info": "Redacted To Not Change The Baselines From Run To Run"
-              },
-              "children": [
-                {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.TelemetryHandler",
-                  "duration in milliseconds": 0,
-                  "children": [
-                    {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-                      "duration in milliseconds": 0,
-                      "children": [
-                        {
-                          "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                          "duration in milliseconds": 0,
-                          "children": [
-                            {
-                              "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                              "duration in milliseconds": 0,
-                              "children": [
-                                {
-                                  "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                                  "duration in milliseconds": 0,
-                                  "data": {
-                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                  }
-                                }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "name": "Create Trace",
-          "duration in milliseconds": 0
-        }
-      ]
-    },
-    {
-      "name": "Response Serialization",
-      "duration in milliseconds": 0
-    }
-  ]
-}]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -2235,7 +1203,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -2253,7 +1221,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -2271,7 +1239,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -2289,7 +1257,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -2307,7 +1275,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -2325,7 +1293,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -2343,7 +1311,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -2361,7 +1329,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -2379,7 +1347,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -2397,351 +1365,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Request" operationName="Request.RequestAsync" displayName="Batch Document">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="rntbd.url">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="rntbd.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="rntbd.status_code">200</ATTRIBUTE>
-  </ACTIVITY>
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-</OTelActivities></Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description>Bulk Operation</Description>
-      <Setup><![CDATA[
-    string pkValue = "DiagnosticBulkTestPk";
-
-    Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
-    List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
-
-    for (int i = 0; i < 10; i++)
-    {
-        ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
-        createItemsTasks.Add(bulkContainer.CreateItemAsync<ToDoActivity>(item, new PartitionKey(item.id)));
-    }
-
-    await Task.WhenAll(createItemsTasks);
-
-    List<ITrace> traces = new List<ITrace>();
- 
-    foreach (Task<ItemResponse<ToDoActivity>> createTask in createItemsTasks)
-    {
-        ItemResponse<ToDoActivity> itemResponse = await createTask;
-        Assert.IsNotNull(itemResponse);
-
-        ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
-        traces.Add(trace);
-    }
-
-]]></Setup>
-    </Input>
-    <Output>
-      <Text><![CDATA[.
-└── CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │   (
-    │       [Client Configuration]
-    │       Redacted To Not Change The Baselines From Run To Run
-    │       [DistributedTraceId]
-    │       Redacted To Not Change The Baselines From Run To Run
-    │   )
-    ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    ├── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  00:00:00:000  0.00 milliseconds  
-    │   ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  00:00:00:000  0.00 milliseconds  
-    │   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │   │       │   (
-    │   │       │       [System Info]
-    │   │       │       Redacted To Not Change The Baselines From Run To Run
-    │   │       │   )
-    │   │       └── Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │   │           └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │   │               └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │   │                   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │   │                               (
-    │   │                                   [Client Side Request Stats]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
-    │   │                               )
-    │   └── Create Trace(00000000-0000-0000-0000-000000000000)  Batch-Component  00:00:00:000  0.00 milliseconds  
-    └── Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-]]></Text>
-      <Json><![CDATA[{
-  "Summary": {},
-  "name": "CreateItemAsync",
-  "start datetime": "0001-01-01T00:00:00Z",
-  "duration in milliseconds": 0,
-  "data": {
-    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
-    "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
-  },
-  "children": [
-    {
-      "name": "ItemSerialize",
-      "duration in milliseconds": 0
-    },
-    {
-      "name": "Get Collection Cache",
-      "duration in milliseconds": 0
-    },
-    {
-      "name": "Batch Dispatch Async",
-      "duration in milliseconds": 0,
-      "children": [
-        {
-          "name": "Using Wait",
-          "duration in milliseconds": 0
-        },
-        {
-          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-          "duration in milliseconds": 0,
-          "children": [
-            {
-              "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
-              "duration in milliseconds": 0,
-              "data": {
-                "System Info": "Redacted To Not Change The Baselines From Run To Run"
-              },
-              "children": [
-                {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.TelemetryHandler",
-                  "duration in milliseconds": 0,
-                  "children": [
-                    {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-                      "duration in milliseconds": 0,
-                      "children": [
-                        {
-                          "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                          "duration in milliseconds": 0,
-                          "children": [
-                            {
-                              "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                              "duration in milliseconds": 0,
-                              "children": [
-                                {
-                                  "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                                  "duration in milliseconds": 0,
-                                  "data": {
-                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                  }
-                                }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "name": "Create Trace",
-          "duration in milliseconds": 0
-        }
-      ]
-    },
-    {
-      "name": "Response Serialization",
-      "duration in milliseconds": 0
-    }
-  ]
-}]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
-    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -2923,7 +1547,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -2941,7 +1565,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -2959,7 +1583,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -2977,7 +1601,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -2995,7 +1619,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -3013,7 +1637,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -3031,7 +1655,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -3049,7 +1673,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -3067,7 +1691,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -3085,7 +1709,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -3267,7 +1891,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -3285,7 +1909,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -3303,7 +1927,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -3321,7 +1945,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -3339,7 +1963,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -3357,7 +1981,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -3375,7 +1999,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -3393,7 +2017,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -3411,7 +2035,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -3429,7 +2053,1383 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Request" operationName="Request.RequestAsync" displayName="Batch Document">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.url">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.status_code">200</ATTRIBUTE>
+  </ACTIVITY>
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+</OTelActivities></Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Bulk Operation</Description>
+      <Setup><![CDATA[
+    string pkValue = "DiagnosticBulkTestPk";
+
+    Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
+    List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
+
+    for (int i = 0; i < 10; i++)
+    {
+        ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
+        createItemsTasks.Add(bulkContainer.CreateItemAsync<ToDoActivity>(item, new PartitionKey(item.id)));
+    }
+
+    await Task.WhenAll(createItemsTasks);
+
+    List<ITrace> traces = new List<ITrace>();
+ 
+    foreach (Task<ItemResponse<ToDoActivity>> createTask in createItemsTasks)
+    {
+        ItemResponse<ToDoActivity> itemResponse = await createTask;
+        Assert.IsNotNull(itemResponse);
+
+        ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
+        traces.Add(trace);
+    }
+
+]]></Setup>
+    </Input>
+    <Output>
+      <Text><![CDATA[.
+└── CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │   (
+    │       [Client Configuration]
+    │       Redacted To Not Change The Baselines From Run To Run
+    │       [DistributedTraceId]
+    │       Redacted To Not Change The Baselines From Run To Run
+    │   )
+    ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ├── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  00:00:00:000  0.00 milliseconds  
+    │   ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  00:00:00:000  0.00 milliseconds  
+    │   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │   │       │   (
+    │   │       │       [System Info]
+    │   │       │       Redacted To Not Change The Baselines From Run To Run
+    │   │       │   )
+    │   │       └── Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │   │           └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │   │               └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │   │                   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │   │                               (
+    │   │                                   [Client Side Request Stats]
+    │   │                                   Redacted To Not Change The Baselines From Run To Run
+    │   │                               )
+    │   └── Create Trace(00000000-0000-0000-0000-000000000000)  Batch-Component  00:00:00:000  0.00 milliseconds  
+    └── Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+]]></Text>
+      <Json><![CDATA[{
+  "Summary": {},
+  "name": "CreateItemAsync",
+  "start datetime": "0001-01-01T00:00:00Z",
+  "duration in milliseconds": 0,
+  "data": {
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
+    "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
+  },
+  "children": [
+    {
+      "name": "ItemSerialize",
+      "duration in milliseconds": 0
+    },
+    {
+      "name": "Get Collection Cache",
+      "duration in milliseconds": 0
+    },
+    {
+      "name": "Batch Dispatch Async",
+      "duration in milliseconds": 0,
+      "children": [
+        {
+          "name": "Using Wait",
+          "duration in milliseconds": 0
+        },
+        {
+          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+          "duration in milliseconds": 0,
+          "children": [
+            {
+              "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
+              "duration in milliseconds": 0,
+              "data": {
+                "System Info": "Redacted To Not Change The Baselines From Run To Run"
+              },
+              "children": [
+                {
+                  "name": "Microsoft.Azure.Cosmos.Handlers.TelemetryHandler",
+                  "duration in milliseconds": 0,
+                  "children": [
+                    {
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
+                      "duration in milliseconds": 0,
+                      "children": [
+                        {
+                          "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
+                          "duration in milliseconds": 0,
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                              "duration in milliseconds": 0,
+                              "children": [
+                                {
+                                  "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                  "duration in milliseconds": 0,
+                                  "data": {
+                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Create Trace",
+          "duration in milliseconds": 0
+        }
+      ]
+    },
+    {
+      "name": "Response Serialization",
+      "duration in milliseconds": 0
+    }
+  ]
+}]]></Json><OTelActivities>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Request" operationName="Request.RequestAsync" displayName="Batch Document">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.url">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.status_code">200</ATTRIBUTE>
+  </ACTIVITY>
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+</OTelActivities></Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Bulk Operation</Description>
+      <Setup><![CDATA[
+    string pkValue = "DiagnosticBulkTestPk";
+
+    Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
+    List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
+
+    for (int i = 0; i < 10; i++)
+    {
+        ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
+        createItemsTasks.Add(bulkContainer.CreateItemAsync<ToDoActivity>(item, new PartitionKey(item.id)));
+    }
+
+    await Task.WhenAll(createItemsTasks);
+
+    List<ITrace> traces = new List<ITrace>();
+ 
+    foreach (Task<ItemResponse<ToDoActivity>> createTask in createItemsTasks)
+    {
+        ItemResponse<ToDoActivity> itemResponse = await createTask;
+        Assert.IsNotNull(itemResponse);
+
+        ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
+        traces.Add(trace);
+    }
+
+]]></Setup>
+    </Input>
+    <Output>
+      <Text><![CDATA[.
+└── CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │   (
+    │       [Client Configuration]
+    │       Redacted To Not Change The Baselines From Run To Run
+    │       [DistributedTraceId]
+    │       Redacted To Not Change The Baselines From Run To Run
+    │   )
+    ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ├── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  00:00:00:000  0.00 milliseconds  
+    │   ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  00:00:00:000  0.00 milliseconds  
+    │   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │   │       │   (
+    │   │       │       [System Info]
+    │   │       │       Redacted To Not Change The Baselines From Run To Run
+    │   │       │   )
+    │   │       └── Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │   │           └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │   │               └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │   │                   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │   │                               (
+    │   │                                   [Client Side Request Stats]
+    │   │                                   Redacted To Not Change The Baselines From Run To Run
+    │   │                               )
+    │   └── Create Trace(00000000-0000-0000-0000-000000000000)  Batch-Component  00:00:00:000  0.00 milliseconds  
+    └── Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+]]></Text>
+      <Json><![CDATA[{
+  "Summary": {},
+  "name": "CreateItemAsync",
+  "start datetime": "0001-01-01T00:00:00Z",
+  "duration in milliseconds": 0,
+  "data": {
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
+    "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
+  },
+  "children": [
+    {
+      "name": "ItemSerialize",
+      "duration in milliseconds": 0
+    },
+    {
+      "name": "Get Collection Cache",
+      "duration in milliseconds": 0
+    },
+    {
+      "name": "Batch Dispatch Async",
+      "duration in milliseconds": 0,
+      "children": [
+        {
+          "name": "Using Wait",
+          "duration in milliseconds": 0
+        },
+        {
+          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+          "duration in milliseconds": 0,
+          "children": [
+            {
+              "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
+              "duration in milliseconds": 0,
+              "data": {
+                "System Info": "Redacted To Not Change The Baselines From Run To Run"
+              },
+              "children": [
+                {
+                  "name": "Microsoft.Azure.Cosmos.Handlers.TelemetryHandler",
+                  "duration in milliseconds": 0,
+                  "children": [
+                    {
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
+                      "duration in milliseconds": 0,
+                      "children": [
+                        {
+                          "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
+                          "duration in milliseconds": 0,
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                              "duration in milliseconds": 0,
+                              "children": [
+                                {
+                                  "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                  "duration in milliseconds": 0,
+                                  "data": {
+                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Create Trace",
+          "duration in milliseconds": 0
+        }
+      ]
+    },
+    {
+      "name": "Response Serialization",
+      "duration in milliseconds": 0
+    }
+  ]
+}]]></Json><OTelActivities>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Request" operationName="Request.RequestAsync" displayName="Batch Document">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.url">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.status_code">200</ATTRIBUTE>
+  </ACTIVITY>
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+</OTelActivities></Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Bulk Operation</Description>
+      <Setup><![CDATA[
+    string pkValue = "DiagnosticBulkTestPk";
+
+    Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
+    List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
+
+    for (int i = 0; i < 10; i++)
+    {
+        ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
+        createItemsTasks.Add(bulkContainer.CreateItemAsync<ToDoActivity>(item, new PartitionKey(item.id)));
+    }
+
+    await Task.WhenAll(createItemsTasks);
+
+    List<ITrace> traces = new List<ITrace>();
+ 
+    foreach (Task<ItemResponse<ToDoActivity>> createTask in createItemsTasks)
+    {
+        ItemResponse<ToDoActivity> itemResponse = await createTask;
+        Assert.IsNotNull(itemResponse);
+
+        ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
+        traces.Add(trace);
+    }
+
+]]></Setup>
+    </Input>
+    <Output>
+      <Text><![CDATA[.
+└── CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │   (
+    │       [Client Configuration]
+    │       Redacted To Not Change The Baselines From Run To Run
+    │       [DistributedTraceId]
+    │       Redacted To Not Change The Baselines From Run To Run
+    │   )
+    ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ├── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  00:00:00:000  0.00 milliseconds  
+    │   ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  00:00:00:000  0.00 milliseconds  
+    │   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │   │       │   (
+    │   │       │       [System Info]
+    │   │       │       Redacted To Not Change The Baselines From Run To Run
+    │   │       │   )
+    │   │       └── Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │   │           └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │   │               └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │   │                   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │   │                               (
+    │   │                                   [Client Side Request Stats]
+    │   │                                   Redacted To Not Change The Baselines From Run To Run
+    │   │                               )
+    │   └── Create Trace(00000000-0000-0000-0000-000000000000)  Batch-Component  00:00:00:000  0.00 milliseconds  
+    └── Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+]]></Text>
+      <Json><![CDATA[{
+  "Summary": {},
+  "name": "CreateItemAsync",
+  "start datetime": "0001-01-01T00:00:00Z",
+  "duration in milliseconds": 0,
+  "data": {
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
+    "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
+  },
+  "children": [
+    {
+      "name": "ItemSerialize",
+      "duration in milliseconds": 0
+    },
+    {
+      "name": "Get Collection Cache",
+      "duration in milliseconds": 0
+    },
+    {
+      "name": "Batch Dispatch Async",
+      "duration in milliseconds": 0,
+      "children": [
+        {
+          "name": "Using Wait",
+          "duration in milliseconds": 0
+        },
+        {
+          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+          "duration in milliseconds": 0,
+          "children": [
+            {
+              "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
+              "duration in milliseconds": 0,
+              "data": {
+                "System Info": "Redacted To Not Change The Baselines From Run To Run"
+              },
+              "children": [
+                {
+                  "name": "Microsoft.Azure.Cosmos.Handlers.TelemetryHandler",
+                  "duration in milliseconds": 0,
+                  "children": [
+                    {
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
+                      "duration in milliseconds": 0,
+                      "children": [
+                        {
+                          "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
+                          "duration in milliseconds": 0,
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                              "duration in milliseconds": 0,
+                              "children": [
+                                {
+                                  "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                  "duration in milliseconds": 0,
+                                  "data": {
+                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Create Trace",
+          "duration in milliseconds": 0
+        }
+      ]
+    },
+    {
+      "name": "Response Serialization",
+      "duration in milliseconds": 0
+    }
+  ]
+}]]></Json><OTelActivities>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Request" operationName="Request.RequestAsync" displayName="Batch Document">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.url">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.status_code">200</ATTRIBUTE>
+  </ACTIVITY>
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+</OTelActivities></Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Bulk Operation</Description>
+      <Setup><![CDATA[
+    string pkValue = "DiagnosticBulkTestPk";
+
+    Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
+    List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
+
+    for (int i = 0; i < 10; i++)
+    {
+        ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
+        createItemsTasks.Add(bulkContainer.CreateItemAsync<ToDoActivity>(item, new PartitionKey(item.id)));
+    }
+
+    await Task.WhenAll(createItemsTasks);
+
+    List<ITrace> traces = new List<ITrace>();
+ 
+    foreach (Task<ItemResponse<ToDoActivity>> createTask in createItemsTasks)
+    {
+        ItemResponse<ToDoActivity> itemResponse = await createTask;
+        Assert.IsNotNull(itemResponse);
+
+        ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
+        traces.Add(trace);
+    }
+
+]]></Setup>
+    </Input>
+    <Output>
+      <Text><![CDATA[.
+└── CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │   (
+    │       [Client Configuration]
+    │       Redacted To Not Change The Baselines From Run To Run
+    │       [DistributedTraceId]
+    │       Redacted To Not Change The Baselines From Run To Run
+    │   )
+    ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ├── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  00:00:00:000  0.00 milliseconds  
+    │   ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  00:00:00:000  0.00 milliseconds  
+    │   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │   │       │   (
+    │   │       │       [System Info]
+    │   │       │       Redacted To Not Change The Baselines From Run To Run
+    │   │       │   )
+    │   │       └── Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │   │           └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │   │               └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │   │                   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │   │                               (
+    │   │                                   [Client Side Request Stats]
+    │   │                                   Redacted To Not Change The Baselines From Run To Run
+    │   │                               )
+    │   └── Create Trace(00000000-0000-0000-0000-000000000000)  Batch-Component  00:00:00:000  0.00 milliseconds  
+    └── Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+]]></Text>
+      <Json><![CDATA[{
+  "Summary": {},
+  "name": "CreateItemAsync",
+  "start datetime": "0001-01-01T00:00:00Z",
+  "duration in milliseconds": 0,
+  "data": {
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
+    "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
+  },
+  "children": [
+    {
+      "name": "ItemSerialize",
+      "duration in milliseconds": 0
+    },
+    {
+      "name": "Get Collection Cache",
+      "duration in milliseconds": 0
+    },
+    {
+      "name": "Batch Dispatch Async",
+      "duration in milliseconds": 0,
+      "children": [
+        {
+          "name": "Using Wait",
+          "duration in milliseconds": 0
+        },
+        {
+          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+          "duration in milliseconds": 0,
+          "children": [
+            {
+              "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
+              "duration in milliseconds": 0,
+              "data": {
+                "System Info": "Redacted To Not Change The Baselines From Run To Run"
+              },
+              "children": [
+                {
+                  "name": "Microsoft.Azure.Cosmos.Handlers.TelemetryHandler",
+                  "duration in milliseconds": 0,
+                  "children": [
+                    {
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
+                      "duration in milliseconds": 0,
+                      "children": [
+                        {
+                          "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
+                          "duration in milliseconds": 0,
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                              "duration in milliseconds": 0,
+                              "children": [
+                                {
+                                  "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                  "duration in milliseconds": 0,
+                                  "data": {
+                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Create Trace",
+          "duration in milliseconds": 0
+        }
+      ]
+    },
+    {
+      "name": "Response Serialization",
+      "duration in milliseconds": 0
+    }
+  ]
+}]]></Json><OTelActivities>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">201</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -4228,7 +4228,7 @@
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>

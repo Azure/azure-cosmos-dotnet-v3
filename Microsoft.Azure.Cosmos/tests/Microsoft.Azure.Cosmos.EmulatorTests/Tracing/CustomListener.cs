@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             "az.namespace",
             "db.operation",
             "db.system",
-            "net.peer.name",
+            "server.address",
             "db.name",
             "db.cosmosdb.container",
             "db.cosmosdb.connection_mode",
