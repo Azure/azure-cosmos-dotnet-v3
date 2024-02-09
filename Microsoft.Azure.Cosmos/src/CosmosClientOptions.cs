@@ -193,6 +193,42 @@ namespace Microsoft.Azure.Cosmos
         public IReadOnlyList<string> ApplicationPreferredRegions { get; set; }
 
         /// <summary>
+        /// Gets and sets the custom endpoints to use for account initialization for geo-replicated database accounts in the Azure Cosmos DB service. 
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// During the CosmosClient initialization the account information, including the available regions, is obtained from the <see cref="CosmosClient.Endpoint"/>.
+        /// Should the global endpoint become inaccessible, the CosmosClient will attempt to obtain the account information issuing requests to the custom endpoints provided in <see cref="AccountInitializationCustomEndpoints"/>.
+        /// </para>
+        /// <para>
+        /// Nevertheless, this parameter remains optional and is recommended for implementation when a customer has configured an endpoint with a custom DNS hostname
+        /// (instead of accountname-region.documents.azure.com) etc. for their Cosmos DB account.
+        /// </para>
+        /// <para>
+        /// See also <seealso href="https://docs.microsoft.com/azure/cosmos-db/sql/troubleshoot-sdk-availability">Diagnose
+        /// and troubleshoot the availability of Cosmos SDKs</seealso> for more details.
+        /// </para>
+        /// </remarks>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosClientOptions clientOptions = new CosmosClientOptions()
+        /// {
+        ///     AccountInitializationCustomEndpoints = new HashSet<Uri>()
+        ///     { 
+        ///         new Uri("custom.p-1.documents.azure.com"),
+        ///         new Uri("custom.p-2.documents.azure.com") 
+        ///     }
+        /// };
+        /// 
+        /// CosmosClient client = new CosmosClient("endpoint", "key", clientOptions);
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability#high-availability-with-cosmos-db-in-the-event-of-regional-outages">High availability on regional outages</seealso>
+        public IEnumerable<Uri> AccountInitializationCustomEndpoints { get; set; }
+
+        /// <summary>
         /// Get or set the maximum number of concurrent connections allowed for the target
         /// service endpoint in the Azure Cosmos DB service.
         /// </summary>
@@ -847,6 +883,11 @@ namespace Microsoft.Azure.Cosmos
                 List<string> mappedRegions = this.ApplicationPreferredRegions.Select(s => mapper.GetCosmosDBRegionName(s)).ToList();
 
                 connectionPolicy.SetPreferredLocations(mappedRegions);
+            }
+
+            if (this.AccountInitializationCustomEndpoints != null)
+            {
+                connectionPolicy.SetAccountInitializationCustomEndpoints(this.AccountInitializationCustomEndpoints);
             }
 
             if (this.MaxRetryAttemptsOnRateLimitedRequests != null)
