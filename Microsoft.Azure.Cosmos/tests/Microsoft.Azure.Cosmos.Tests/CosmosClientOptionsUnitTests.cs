@@ -163,6 +163,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(clientOptions.EnableAdvancedReplicaSelectionForTcp.Value);
 
             IReadOnlyList<string> preferredLocations = new List<string>() { Regions.AustraliaCentral, Regions.AustraliaCentral2 };
+            ISet<Uri> regionalEndpoints = new HashSet<Uri>()
+            {
+                new Uri("https://testfed2.documents-test.windows-int.net:443/"),
+                new Uri("https://testfed4.documents-test.windows-int.net:443/")
+            };
+
             //Verify Direct Mode settings
             cosmosClientBuilder = new CosmosClientBuilder(
                 accountEndpoint: endpoint,
@@ -175,6 +181,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 portReuseMode,
                 enableTcpConnectionEndpointRediscovery)
                 .WithApplicationPreferredRegions(preferredLocations)
+                .WithCustomAccountEndpoints(regionalEndpoints)
                 .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
                 {
                     DisableDistributedTracing = false,
@@ -195,6 +202,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(portReuseMode, clientOptions.PortReuseMode);
             Assert.IsTrue(clientOptions.EnableTcpConnectionEndpointRediscovery);
             CollectionAssert.AreEqual(preferredLocations.ToArray(), clientOptions.ApplicationPreferredRegions.ToArray());
+            CollectionAssert.AreEqual(regionalEndpoints.ToArray(), clientOptions.AccountInitializationCustomEndpoints.ToArray());
             Assert.AreEqual(TimeSpan.FromMilliseconds(100), clientOptions.CosmosClientTelemetryOptions.CosmosThresholdOptions.PointOperationLatencyThreshold);
             Assert.AreEqual(TimeSpan.FromMilliseconds(100), clientOptions.CosmosClientTelemetryOptions.CosmosThresholdOptions.NonPointOperationLatencyThreshold);
             Assert.IsFalse(clientOptions.CosmosClientTelemetryOptions.DisableDistributedTracing);
@@ -208,6 +216,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(portReuseMode, policy.PortReuseMode);
             Assert.IsTrue(policy.EnableTcpConnectionEndpointRediscovery);
             CollectionAssert.AreEqual(preferredLocations.ToArray(), policy.PreferredLocations.ToArray());
+            CollectionAssert.AreEqual(regionalEndpoints.ToArray(), policy.AccountInitializationCustomEndpoints.ToArray());
         }
 
         /// <summary>
@@ -331,6 +340,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                         Regions.NorthCentralUS,
                         Regions.WestUS,
                         Regions.EastAsia,
+                        })
+                    .WithCustomAccountEndpoints(
+                        new HashSet<Uri>()
+                        {
+                        new Uri("https://testfed2.documents-test.windows-int.net:443/"),
+                        new Uri("https://testfed3.documents-test.windows-int.net:443/"),
+                        new Uri("https://testfed4.documents-test.windows-int.net:443/"),
                         });
 
                 CosmosClientOptions clientOptions = cosmosClientBuilder.Build().ClientOptions;
@@ -349,6 +365,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.AreEqual(consistencyLevel, clientOptions.ConsistencyLevel);
                 Assert.IsTrue(clientOptions.EnablePartitionLevelFailover);
                 Assert.IsNotNull(clientOptions.ApplicationPreferredRegions);
+                Assert.IsNotNull(clientOptions.AccountInitializationCustomEndpoints);
             }
             finally
             {
