@@ -246,6 +246,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
             Assert.AreEqual(expectedRequestInfoSize, actualRequestInfoSize, "Request Info is not correct");
         }
 
+        [Ignore("Keeping this to test the timeout scenario manually in future and " +
+            "Marking it ignore to make sure it is not running in pipeline because we are no more throwing exception if processor timeout happens, as " +
+            "generating exception comes with a perf cost and finally we are just logging this exception.")]
         [TestMethod]
         public async Task ClientTelmetryProcessor_should_timeout()
         {
@@ -339,10 +342,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                                                     cts.Token);
             });
 
-            await Assert.ThrowsExceptionAsync<OperationCanceledException>(() => ClientTelemetry.RunProcessorTaskAsync(
-                                                                                                    telemetryDate: DateTime.Now.ToString(), 
-                                                                                                    processingTask: processorTask, 
-                                                                                                    timeout: TimeSpan.FromTicks(1)));
+            await ClientTelemetry.RunProcessorTaskAsync(
+                telemetryDate: DateTime.Now.ToString(), 
+                processingTask: processorTask, 
+                timeout: TimeSpan.FromTicks(1));
         }
     }
 }

@@ -52,7 +52,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             catch (Exception ex)
             {
                 DefaultTrace.TraceError($"Exception while serializing telemetry payload: {ex}");
-                throw;
             }
            
         }
@@ -119,18 +118,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 if (!response.IsSuccessStatusCode)
                 {
                     DefaultTrace.TraceError("Telemetry Service API response not successful. Status Code : {0},  Message : {1}", response.StatusCode, response.ReasonPhrase);
-                    throw new Exception(string.Format("Telemetry Service API response not successful. Status Code : {0},  Message : {1}", response.StatusCode, response.ReasonPhrase));
                 }
                 else
                 {
                     DefaultTrace.TraceInformation("Telemetry data sent successfully.");
                 }
-
             }
             catch (Exception ex)
             {
                 DefaultTrace.TraceError("Exception while sending telemetry data : {0}", ex.Message);
-                throw;
             }
         }
 
