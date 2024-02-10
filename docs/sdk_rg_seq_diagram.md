@@ -98,6 +98,12 @@ sequenceDiagram
 
 ### Sample Response from Gateway for `Read Collection` Information.
 
+To serve the `Read Collection` calls, the routing gateway will read from all the server partitions, if [some specific set of headers (for e.g. quota information)](https://msdata.visualstudio.com/CosmosDB/_git/CosmosDB?path=/Product/Microsoft.Azure.Documents/Common/FabricServiceManagement/CollectionReadHandler.cs&version=GBmaster&line=171&lineEnd=281&lineStartColumn=1&lineEndColumn=1&lineStyle=plain&_a=contents) are present/ populated in the request headers. If those headers are missing, the routing gateway will read from the tail partition.
+
+For reference, a tail partition is the last partition in the pk ranges. There are multiple server partition in a cosmos db account, under a cosmos db collection, and the last pk range ID in the range, uniquely identifies the tail partition. Tail partitions is scoped to a collection level.
+
+The routing gateway will also read from the master partition for `Read Collection` calls.
+
 ```json
 {
     "indexingPolicy": {
