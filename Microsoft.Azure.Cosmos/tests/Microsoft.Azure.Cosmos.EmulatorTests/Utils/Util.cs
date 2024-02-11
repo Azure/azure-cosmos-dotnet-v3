@@ -527,6 +527,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         
         internal static CustomListener ConfigureOpenTelemetryAndCustomListeners()
         {
+            AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
+
+            AzureCore.ActivityExtensions.ResetFeatureSwitch();
+            
             // Open Telemetry Listener
             Util.OTelTracerProvider = Sdk.CreateTracerProviderBuilder()
                 .AddCustomOtelExporter() // use any exporter here
@@ -550,6 +554,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Util.OTelTracerProvider = null;
             Util.TestListener = null;
+
+            AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", false);
+
+            AzureCore.ActivityExtensions.ResetFeatureSwitch();
         }
 
         /// <summary>
