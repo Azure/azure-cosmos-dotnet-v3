@@ -126,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError("Exception while sending telemetry data : {0}", ex.Message);
+                DefaultTrace.TraceError("Exception while sending telemetry data : {0}", ex);
             }
         }
 
