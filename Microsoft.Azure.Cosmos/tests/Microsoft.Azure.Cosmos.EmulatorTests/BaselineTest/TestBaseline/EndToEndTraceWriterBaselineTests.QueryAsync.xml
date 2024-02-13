@@ -734,12 +734,6 @@
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
 </OTelActivities></Output>
   </Result>
   <Result>
