@@ -458,6 +458,60 @@
     <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="Exception" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
+  <EVENT name="EventCounters" />
 </OTelActivities></Output>
   </Result>
   <Result>
@@ -713,15 +767,6 @@
     <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="Exception" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
 </OTelActivities></Output>
   </Result>
   <Result>
@@ -1009,20 +1054,6 @@
     <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="Exception" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
   <EVENT name="EventCounters" />
   <EVENT name="EventCounters" />
   <EVENT name="EventCounters" />

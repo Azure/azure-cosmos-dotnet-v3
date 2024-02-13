@@ -168,37 +168,6 @@
     <ATTRIBUTE key="rntbd.status_code">207</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="FailedRequest" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
-  <EVENT name="EventCounters" />
 </OTelActivities></Output>
   </Result>
 </Results>
