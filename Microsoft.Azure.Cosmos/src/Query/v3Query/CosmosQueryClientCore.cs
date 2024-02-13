@@ -339,18 +339,19 @@ namespace Microsoft.Azure.Cosmos
 
                     DistributionPlanSpec distributionPlanSpec = null;
 
-                    if (distributionPlan != null)
-                    {
-                        bool backendPlan = distributionPlan.TryGetValue("backendDistributionPlan", out CosmosElement backendDistributionPlan);
-                        bool clientPlan = distributionPlan.TryGetValue("clientDistributionPlan", out CosmosElement clientDistributionPlan);
+                    // ISSUE-TODO-adityasa-2024/1/31 - Uncomment this when distributionPlanSpec is hooked with rest of the code so that it can be tested.
+                    // if (distributionPlan != null)
+                    // {
+                    //     bool backendPlan = distributionPlan.TryGetValue("backendDistributionPlan", out CosmosElement backendDistributionPlan);
+                    //     bool clientPlan = distributionPlan.TryGetValue("clientDistributionPlan", out CosmosElement clientDistributionPlan);
 
-                        Debug.Assert(clientPlan == backendPlan, "Response Body Contract was violated. Out of the backend and client plans, only one is present in the distribution plan.");
+                    //     Debug.Assert(clientPlan == backendPlan, "Response Body Contract was violated. Out of the backend and client plans, only one  is present in the distribution plan.");
 
-                        if (backendPlan && clientPlan)
-                        {
-                            distributionPlanSpec = new DistributionPlanSpec(backendDistributionPlan.ToString(), clientDistributionPlan.ToString());
-                        }
-                    }
+                    //     if (backendPlan && clientPlan)
+                    //     {
+                    //         distributionPlanSpec = new DistributionPlanSpec(backendDistributionPlan.ToString(), clientDistributionPlan.ToString());
+                    //     }
+                    // }
 
                     QueryState queryState;
                     if (cosmosResponseMessage.Headers.ContinuationToken != null)

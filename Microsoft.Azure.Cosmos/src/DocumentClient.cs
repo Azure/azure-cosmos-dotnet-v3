@@ -115,7 +115,11 @@ namespace Microsoft.Azure.Cosmos
         private readonly bool IsLocalQuorumConsistency = false;
         private readonly bool isReplicaAddressValidationEnabled;
 
+        //Fault Injection
+        private readonly IChaosInterceptorFactory chaosInterceptorFactory;
         private readonly IChaosInterceptor chaosInterceptor;
+
+        private bool isChaosInterceptorInititalized = false;
 
         //Auth
         internal readonly AuthorizationTokenProvider cosmosAuthorization;
@@ -487,6 +491,7 @@ namespace Microsoft.Azure.Cosmos
             this.transportClientHandlerFactory = transportClientHandlerFactory;
             this.IsLocalQuorumConsistency = isLocalQuorumConsistency;
             this.initTaskCache = new AsyncCacheNonBlocking<string, bool>(cancellationToken: this.cancellationTokenSource.Token);
+            this.chaosInterceptorFactory = chaosInterceptorFactory;
             this.chaosInterceptor = chaosInterceptorFactory?.CreateInterceptor(this);
 
             this.Initialize(
@@ -1582,6 +1587,12 @@ namespace Microsoft.Azure.Cosmos
                     DefaultTrace.TraceWarning("EnsureValidClientAsync initializeTask failed {0}", e);
                     childTrace.AddDatum("initializeTask failed", e);
                     throw;
+                }
+
+                if (this.chaosInterceptorFactory != null && !this.isChaosInterceptorInititalized)
+                {
+                    this.isChaosInterceptorInititalized = true;
+                    await this.chaosInterceptorFactory.ConfigureChaosInterceptorAsync();
                 }
             }
         }

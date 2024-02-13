@@ -309,6 +309,41 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Sets the custom endpoints to use for account initialization for geo-replicated database accounts in the Azure Cosmos DB service. 
+        /// During the CosmosClient initialization the account information, including the available regions, is obtained from the <see cref="CosmosClient.Endpoint"/>.
+        /// Should the global endpoint become inaccessible, the CosmosClient will attempt to obtain the account information issuing requests to the custom endpoints
+        /// provided in the customAccountEndpoints list.
+        /// </summary>
+        /// <param name="customAccountEndpoints">An instance of <see cref="IEnumerable{T}"/> of Uri containing the custom private endpoints for the cosmos db account.</param>
+        /// <remarks>
+        ///  This function is optional and is recommended for implementation when a customer has configured one or more endpoints with a custom DNS
+        ///  hostname (instead of accountname-region.documents.azure.com) etc. for their Cosmos DB account.
+        /// </remarks>
+        /// <example>
+        /// The example below creates a new instance of <see cref="CosmosClientBuilder"/> with the regional endpoints.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+        ///     accountEndpoint: "https://testcosmos.documents.azure.com:443/",
+        ///     authKeyOrResourceToken: "SuperSecretKey")
+        /// .WithCustomAccountEndpoints(new HashSet<Uri>()
+        ///     { 
+        ///         new Uri("https://region-1.documents-test.windows-int.net:443/"),
+        ///         new Uri("https://region-2.documents-test.windows-int.net:443/") 
+        ///     });
+        /// CosmosClient client = cosmosClientBuilder.Build();
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
+        /// <seealso cref="CosmosClientOptions.AccountInitializationCustomEndpoints"/>
+        public CosmosClientBuilder WithCustomAccountEndpoints(IEnumerable<Uri> customAccountEndpoints)
+        {
+            this.clientOptions.AccountInitializationCustomEndpoints = customAccountEndpoints;
+            return this;
+        }
+
+        /// <summary>
         /// Limits the operations to the provided endpoint on the CosmosClientBuilder constructor.
         /// </summary>
         /// <param name="limitToEndpoint">Whether operations are limited to the endpoint or not.</param>
@@ -440,6 +475,22 @@ namespace Microsoft.Azure.Cosmos.Fluent
             this.clientOptions.ConsistencyLevel = consistencyLevel;
             return this;
 
+        }
+
+        /// <summary>
+        /// Sets the priority level for requests created using cosmos client.
+        /// </summary>
+        /// <remarks>
+        /// If priority level is also set at request level in <see cref="RequestOptions.PriorityLevel"/>, that priority is used.
+        /// If <see cref="WithBulkExecution(bool)"/> is set to true, priority level set on the CosmosClient is used.
+        /// </remarks>
+        /// <param name="priorityLevel">The desired priority level for the client.</param>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
+        /// <seealso href="https://aka.ms/CosmosDB/PriorityBasedExecution"/>
+        public CosmosClientBuilder WithPriorityLevel(Cosmos.PriorityLevel priorityLevel)
+        {
+            this.clientOptions.PriorityLevel = priorityLevel;
+            return this;
         }
 
         /// <summary>

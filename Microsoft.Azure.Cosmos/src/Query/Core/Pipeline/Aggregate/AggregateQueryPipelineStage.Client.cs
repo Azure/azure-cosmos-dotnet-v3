@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Documents;
 
     internal abstract partial class AggregateQueryPipelineStage : QueryPipelineStageBase
     {
@@ -88,6 +89,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
 
                 double requestCharge = 0;
                 long responseLengthBytes = 0;
+                IReadOnlyDictionary<string, string> cumulativeAdditionalHeaders = default;
+
                 while (await this.inputStage.MoveNextAsync(trace))
                 {
                     TryCatch<QueryPage> tryGetPageFromSource = this.inputStage.Current;
@@ -101,6 +104,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
 
                     requestCharge += sourcePage.RequestCharge;
                     responseLengthBytes += sourcePage.ResponseLengthInBytes;
+
+                    // Note-2024-02-02:
+                    // Here the IndexMetrics headers are non-accumulative, so we are copying that header from the source page.
+                    // Other headers might need similar traeatment, and it's up to the area owner to implement that here.
+                    if (sourcePage.AdditionalHeaders.ContainsKey(HttpConstants.HttpHeaders.IndexUtilization))
+                    {
+                        cumulativeAdditionalHeaders = new Dictionary<string, string>() {{ HttpConstants.HttpHeaders.IndexUtilization, sourcePage.AdditionalHeaders[HttpConstants.HttpHeaders.IndexUtilization] }};
+                    }
 
                     foreach (CosmosElement element in sourcePage.Documents)
                     {
@@ -128,7 +139,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                     cosmosQueryExecutionInfo: default,
                     distributionPlanSpec: default,
                     disallowContinuationTokenMessage: default,
-                    additionalHeaders: default,
+                    additionalHeaders: cumulativeAdditionalHeaders,
                     state: default);
 
                 this.Current = TryCatch<QueryPage>.FromResult(queryPage);
