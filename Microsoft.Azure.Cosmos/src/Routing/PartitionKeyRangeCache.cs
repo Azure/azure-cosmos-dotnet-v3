@@ -185,14 +185,8 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             List<PartitionKeyRange> ranges = new List<PartitionKeyRange>();
             string changeFeedNextIfNoneMatch = previousRoutingMap?.ChangeFeedNextIfNoneMatch;
-
             HttpStatusCode lastStatusCode = HttpStatusCode.OK;
 
-            RetryOptions retryOptions = new RetryOptions();
-            MetadataRequestThrottleRetryPolicy metadataRetryPolicy = new (
-                    endpointManager: this.endpointManager,
-                    maxRetryAttemptsOnThrottledRequests: retryOptions.MaxRetryAttemptsOnThrottledRequests,
-                    maxRetryWaitTimeInSeconds: retryOptions.MaxRetryWaitTimeInSeconds);
             do
             {
                 INameValueCollection headers = new RequestNameValueCollection();
@@ -203,6 +197,12 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                     headers.Set(HttpConstants.HttpHeaders.IfNoneMatch, changeFeedNextIfNoneMatch);
                 }
+
+                RetryOptions retryOptions = new RetryOptions();
+                MetadataRequestThrottleRetryPolicy metadataRetryPolicy = new (
+                        endpointManager: this.endpointManager,
+                        maxRetryAttemptsOnThrottledRequests: retryOptions.MaxRetryAttemptsOnThrottledRequests,
+                        maxRetryWaitTimeInSeconds: retryOptions.MaxRetryWaitTimeInSeconds);
 
                 using (DocumentServiceResponse response = await BackoffRetryUtility<DocumentServiceResponse>.ExecuteAsync(
                     () => this.ExecutePartitionKeyRangeReadChangeFeedAsync(collectionRid, headers, trace, clientSideRequestStatistics, metadataRetryPolicy),
