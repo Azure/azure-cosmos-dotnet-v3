@@ -74,59 +74,52 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 return;
             }
             
-            try
-            {
-                DefaultTrace.TraceInformation("Sending Telemetry Data to {0}", endpointUrl);
+            DefaultTrace.TraceInformation("Sending Telemetry Data to {0}", endpointUrl);
                 
-                using HttpRequestMessage request = new HttpRequestMessage
-                {
-                    Method = HttpMethod.Post,
-                    RequestUri = new Uri(endpointUrl),
-                    Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json")
-                };
-
-                async ValueTask<HttpRequestMessage> CreateRequestMessage()
-                {
-                    INameValueCollection headersCollection = new StoreResponseNameValueCollection();
-                    await this.tokenProvider.AddAuthorizationHeaderAsync(
-                            headersCollection,
-                            new Uri(endpointUrl),
-                            "POST",
-                            AuthorizationTokenType.PrimaryMasterKey);
-
-                    foreach (string key in headersCollection.AllKeys())
-                    {
-                        request.Headers.Add(key, headersCollection[key]);
-                    }
-
-                    request.Headers.Add(HttpConstants.HttpHeaders.DatabaseAccountName, globalDatabaseAccountName);
-                    String envName = ClientTelemetryOptions.GetEnvironmentName();
-                    if (!String.IsNullOrEmpty(envName))
-                    {
-                        request.Headers.Add(HttpConstants.HttpHeaders.EnvironmentName, envName);
-                    }
-
-                    return request;
-                }
-
-                using HttpResponseMessage response = await this.httpClient.SendHttpAsync(CreateRequestMessage,
-                                                    ResourceType.Telemetry,
-                                                    HttpTimeoutPolicyNoRetry.Instance,
-                                                    null,
-                                                    cancellationToken);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    DefaultTrace.TraceError("Telemetry Service API response not successful. Status Code : {0},  Message : {1}", response.StatusCode, response.ReasonPhrase);
-                }
-                else
-                {
-                    DefaultTrace.TraceInformation("Telemetry data sent successfully.");
-                }
-            }
-            catch (Exception ex)
+            using HttpRequestMessage request = new HttpRequestMessage
             {
-                DefaultTrace.TraceError("Exception while sending telemetry data : {0}", ex);
+                Method = HttpMethod.Post,
+                RequestUri = new Uri(endpointUrl),
+                Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json")
+            };
+
+            async ValueTask<HttpRequestMessage> CreateRequestMessage()
+            {
+                INameValueCollection headersCollection = new StoreResponseNameValueCollection();
+                await this.tokenProvider.AddAuthorizationHeaderAsync(
+                        headersCollection,
+                        new Uri(endpointUrl),
+                        "POST",
+                        AuthorizationTokenType.PrimaryMasterKey);
+
+                foreach (string key in headersCollection.AllKeys())
+                {
+                    request.Headers.Add(key, headersCollection[key]);
+                }
+
+                request.Headers.Add(HttpConstants.HttpHeaders.DatabaseAccountName, globalDatabaseAccountName);
+                String envName = ClientTelemetryOptions.GetEnvironmentName();
+                if (!String.IsNullOrEmpty(envName))
+                {
+                    request.Headers.Add(HttpConstants.HttpHeaders.EnvironmentName, envName);
+                }
+
+                return request;
+            }
+
+            using HttpResponseMessage response = await this.httpClient.SendHttpAsync(CreateRequestMessage,
+                                                ResourceType.Telemetry,
+                                                HttpTimeoutPolicyNoRetry.Instance,
+                                                null,
+                                                cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                DefaultTrace.TraceError("Telemetry Service API response not successful. Status Code : {0},  Message : {1}", response.StatusCode, response.ReasonPhrase);
+            }
+            else
+            {
+                DefaultTrace.TraceInformation("Telemetry data sent successfully.");
             }
         }
 
