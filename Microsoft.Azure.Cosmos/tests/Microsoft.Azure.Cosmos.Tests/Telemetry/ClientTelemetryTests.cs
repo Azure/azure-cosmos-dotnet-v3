@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
     using System.Threading;
     using System.Net;
     using System.Collections.Concurrent;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Tests for <see cref="ClientTelemetry"/>.
@@ -167,8 +168,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                                                         "containerName",
                                                         Documents.OperationType.Read,
                                                         Documents.ResourceType.Document,
-                                                        200,
-                                                        0);
+                                                        (int)HttpStatusCode.OK,
+                                                        (int)SubStatusCodes.Unknown);
 
                 LongConcurrentHistogram latency = new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
                                                             ClientTelemetryOptions.RequestLatencyMax,
@@ -194,8 +195,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                                                         "containerName",
                                                         Documents.OperationType.Read,
                                                         Documents.ResourceType.Document,
-                                                        200,
-                                                        1002,
+                                                        (int)HttpStatusCode.OK,
+                                                        (int)SubStatusCodes.PartitionKeyRangeGone,
                                                         "dummycache") ;
 
                 LongConcurrentHistogram latency = new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
@@ -290,8 +291,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                                                             "containerName",
                                                             Documents.OperationType.Read,
                                                             Documents.ResourceType.Document,
-                                                            200,
-                                                            0);
+                                                            (int)HttpStatusCode.OK,
+                                                            (int)SubStatusCodes.Unknown);
 
                     LongConcurrentHistogram latency = new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
                                                                 ClientTelemetryOptions.RequestLatencyMax,
@@ -317,8 +318,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                                                             "containerName",
                                                             Documents.OperationType.Read,
                                                             Documents.ResourceType.Document,
-                                                            200,
-                                                            1002,
+                                                            (int)HttpStatusCode.OK,
+                                                            (int)SubStatusCodes.PartitionKeyRangeGone,
                                                             "dummycache");
 
                     LongConcurrentHistogram latency = new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,

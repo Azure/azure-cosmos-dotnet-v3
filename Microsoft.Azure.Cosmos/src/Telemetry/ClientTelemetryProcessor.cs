@@ -80,17 +80,17 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 Method = HttpMethod.Post,
                 RequestUri = new Uri(endpointUrl),
-                Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json")
+                Content = new StringContent(jsonPayload, Encoding.UTF8, RuntimeConstants.MediaTypes.Json)
             };
 
             async ValueTask<HttpRequestMessage> CreateRequestMessage()
             {
                 INameValueCollection headersCollection = new StoreResponseNameValueCollection();
                 await this.tokenProvider.AddAuthorizationHeaderAsync(
-                        headersCollection,
-                        new Uri(endpointUrl),
-                        "POST",
-                        AuthorizationTokenType.PrimaryMasterKey);
+                        headersCollection: headersCollection,
+                        requestAddress: new Uri(endpointUrl),
+                        verb: HttpMethod.Post.Method,
+                        tokenType: AuthorizationTokenType.PrimaryMasterKey);
 
                 foreach (string key in headersCollection.AllKeys())
                 {
@@ -98,8 +98,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 }
 
                 request.Headers.Add(HttpConstants.HttpHeaders.DatabaseAccountName, globalDatabaseAccountName);
-                String envName = ClientTelemetryOptions.GetEnvironmentName();
-                if (!String.IsNullOrEmpty(envName))
+                string envName = ClientTelemetryOptions.GetEnvironmentName();
+                if (!string.IsNullOrEmpty(envName))
                 {
                     request.Headers.Add(HttpConstants.HttpHeaders.EnvironmentName, envName);
                 }
