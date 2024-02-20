@@ -370,7 +370,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Assert.AreEqual(expected: instanceName, actual: remainingLeaseWork.InstanceName);
             Assert.AreEqual(expected: leaseToken, actual: remainingLeaseWork.LeaseToken);
-            Assert.AreEqual(expected: leaseToken, actual: remainingLeaseWork.EstimatedLag);
+            Assert.AreEqual(expected: 1, actual: remainingLeaseWork.EstimatedLag);
         }
 
         [TestMethod]

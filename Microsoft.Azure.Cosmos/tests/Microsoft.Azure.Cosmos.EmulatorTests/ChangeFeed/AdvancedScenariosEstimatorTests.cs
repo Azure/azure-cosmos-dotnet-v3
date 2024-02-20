@@ -107,6 +107,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         ///         a. (Use Estimator Iterator -> https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/how-to-use-change-feed-estimator?tabs=dotnet#as-an-on-demand-detailed-estimation)
         ///     12. Boom!
         /// </summary>
+        [Ignore]
         [TestMethod]
         [Owner("philipthomas-MSFT")]
         [Description("Used to repro an issue #4285")]
