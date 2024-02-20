@@ -328,7 +328,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
         [TestMethod]
         [Owner("philipthomas-MSFT")]
-        [Description("")]
+        [Description("Testing that estimated lag returns a value of 1 when a 410/1002 status/subStatus occurs.")]
         public async Task ShouldReturnEstimatedLagIsOneWhenGoneCosmosException()
         {
             // Arrange
