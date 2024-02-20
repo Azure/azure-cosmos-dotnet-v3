@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -141,6 +142,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
             DocumentContainer documentContainer,
             CosmosQueryExecutionContextFactory.InputParameters inputParameters,
+            ContainerQueryProperties containerQueryOptions,
             FeedRangeEpk targetRange,
             FallbackQueryPipelineStageFactory fallbackQueryPipelineStageFactory,
             CancellationToken cancellationToken)
@@ -152,6 +154,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                 targetRange: targetRange,
                 queryPaginationOptions: paginationOptions,
                 partitionKey: inputParameters.PartitionKey,
+                containerQueryOptions: containerQueryOptions,
                 continuationToken: inputParameters.InitialUserContinuationToken,
                 cancellationToken: cancellationToken);
 
@@ -247,6 +250,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                 FeedRangeEpk targetRange,
                 Cosmos.PartitionKey? partitionKey,
                 QueryPaginationOptions queryPaginationOptions,
+                ContainerQueryProperties containerQueryOptions,
                 CosmosElement continuationToken,
                 CancellationToken cancellationToken)
             {
@@ -283,6 +287,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                     feedRangeState,
                     partitionKey,
                     queryPaginationOptions,
+                    containerQueryOptions,
                     cancellationToken);
 
                 OptimisticDirectExecutionQueryPipelineImpl stage = new OptimisticDirectExecutionQueryPipelineImpl(partitionPageEnumerator);
