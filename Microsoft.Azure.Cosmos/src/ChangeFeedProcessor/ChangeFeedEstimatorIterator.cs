@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json.Linq;
 
     internal sealed class ChangeFeedEstimatorIterator : FeedIterator<ChangeFeedProcessorState>
@@ -113,15 +114,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         public override Task<FeedResponse<ChangeFeedProcessorState>> ReadNextAsync(CancellationToken cancellationToken = default)
         {
             return this.monitoredContainer.ClientContext.OperationHelperAsync(
-                                operationName: "Change Feed Estimator Read Next Async",
-                                containerName: this.monitoredContainer?.Id,
-                                databaseName: this.monitoredContainer?.Database?.Id,
-                                operationType: Documents.OperationType.ReadFeed,
-                                requestOptions: null,
-                                task: (trace) => this.ReadNextAsync(trace, cancellationToken),
-                                openTelemetry: (response) => new OpenTelemetryResponse<ChangeFeedProcessorState>(responseMessage: response),
-                                traceComponent: TraceComponent.ChangeFeed,
-                                traceLevel: TraceLevel.Info);
+                operationName: "Change Feed Estimator Read Next Async",
+                containerName: this.monitoredContainer?.Id,
+                databaseName: this.monitoredContainer?.Database?.Id,
+                operationType: Documents.OperationType.ReadFeed,
+                requestOptions: null,
+                task: (trace) => this.ReadNextAsync(trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse<ChangeFeedProcessorState>(responseMessage: response),
+                traceComponent: TraceComponent.ChangeFeed,
+                traceLevel: TraceLevel.Info);
         }
 
         public async Task<FeedResponse<ChangeFeedProcessorState>> ReadNextAsync(ITrace trace, CancellationToken cancellationToken)
@@ -279,6 +280,22 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             try
             {
                 ResponseMessage response = await iterator.ReadNextAsync(trace, cancellationToken).ConfigureAwait(false);
+
+                // NOTE(philipthomas-MSFT):
+                // https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4285
+                // Given a change feed processor has started, then stopped.
+                //     And the change feed processor is now dormant.
+                // When a split occurs on the monitored container.
+                //     And the change feed estimator has started.
+                //     And it is using the same lease container before the split occured.
+                //     And a ReadNextAsync returns a 410/1002 due to the partition no longer existing.
+                // Then the state of the change feed processor will have an estimatedLag equal to '1'.
+                if (response.CosmosException.StatusCode == HttpStatusCode.Gone 
+                    && response.CosmosException.SubStatusCode == (int)SubStatusCodes.PartitionKeyRangeGone)
+                {
+                    return (new ChangeFeedProcessorState(existingLease.CurrentLeaseToken, 1, existingLease.Owner), response);
+                }
+
                 if (response.StatusCode != HttpStatusCode.NotModified)
                 {
                     response.EnsureSuccessStatusCode();

@@ -92,92 +92,88 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         /// <summary>
         /// <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4285"/>
+        /// Steps
+        ///     1. Create a database with 400 RU.
+        ///     2. Create a lease container.
+        ///     3. Create a monitored container.
+        ///     4. Load 100 documents.
+        ///     5. Create a CFP instance.
+        ///     6. Start the CFP instance.
+        ///     7. Stop the CFP instance.
+        ///     8. Update the RU to 12K on the database.
+        ///     9. Wait until the split happens on the monitored container.
+        ///     10. Load 100 more documents.
+        ///     11. Create a CFE instance.
+        ///         a. (Use Estimator Iterator -> https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/how-to-use-change-feed-estimator?tabs=dotnet#as-an-on-demand-detailed-estimation)
+        ///     12. Boom!
         /// </summary>
         [TestMethod]
         [Owner("philipthomas-MSFT")]
         [Description("Used to repro an issue #4285")]
         public async Task GivenADormantCFPWhenASplitOccursThenFeedEstimatorThrowsAnExceptionAsync()
         {
-            try
-            {
-                string partitionKeyValue = Guid.NewGuid().ToString();
-                await AdvancedScenariosEstimatorTests.LoadDocuments(
-                    monitoredContainer: this.MonitoredContainer,
-                    partitionKeyValue: partitionKeyValue,
-                    cancellationToken: this.CancellationToken);
+            string partitionKeyValue = Guid.NewGuid().ToString();
 
-                ChangeFeedProcessor changeFeedProcessor = this.MonitoredContainer
-                    .GetChangeFeedProcessorBuilder<dynamic>(
-                        processorName: "changeFeedEstimator",
-                        onChangesDelegate: (IReadOnlyCollection<dynamic> changes, CancellationToken cancellationToken) =>
-                        {
-                            return Task.CompletedTask;
-                        })
-                        .WithInstanceName("consoleHost")
-                        .WithLeaseContainer(this.LeaseContainer)
-                        .WithErrorNotification(errorDelegate: (string leaseToken, Exception exception) =>
-                        {
-                            Console.WriteLine($"{nameof(exception)}: {exception}");
-                            Console.WriteLine($"{nameof(leaseToken)}: {leaseToken}");
+            await AdvancedScenariosEstimatorTests.LoadDocuments(
+                monitoredContainer: this.MonitoredContainer,
+                partitionKeyValue: partitionKeyValue,
+                cancellationToken: this.CancellationToken);
 
-                            return Task.CompletedTask;
-                        })
-                        .Build();
-
-                // Step 2. Start CFP.
-                await changeFeedProcessor.StartAsync();
-                await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
-                // Step 3. Stop CFP.
-                await changeFeedProcessor.StopAsync();
-
-                // Step 4. Update RU to 12K on container (database).
-                await AdvancedScenariosEstimatorTests.UpdateThroughput(
-                    database: this.Database,
-                    cosmosClient: this.CosmosClient,
-                    monitoredContainerResponse: this.MonitoredContainerResponse,
-                    throughtput: 12000);
-
-                // Add even more documents??? Missing step from issue description? 
-                await AdvancedScenariosEstimatorTests.LoadDocuments(
-                    monitoredContainer: this.MonitoredContainer,
-                    partitionKeyValue: partitionKeyValue,
-                    startAt: 100,
-                    endAt: 200,
-                    cancellationToken: this.CancellationToken);
-
-                // Print out lease documents just to analyze.
-                FeedIterator<dynamic> leaseIterator = this.LeaseContainer.GetItemQueryIterator<dynamic>("SELECT * FROM c");
-                while (leaseIterator.HasMoreResults)
-                {
-                    foreach (dynamic item in await leaseIterator.ReadNextAsync(this.CancellationToken))
+            ChangeFeedProcessor changeFeedProcessor = this.MonitoredContainer
+                .GetChangeFeedProcessorBuilder<dynamic>(
+                    processorName: "changeFeedEstimator",
+                    onChangesDelegate: (IReadOnlyCollection<dynamic> changes, CancellationToken cancellationToken) => Task.CompletedTask)
+                    .WithInstanceName("consoleHost")
+                    .WithLeaseContainer(this.LeaseContainer)
+                    .WithErrorNotification(errorDelegate: (string leaseToken, Exception exception) =>
                     {
-                        Debug.WriteLine($"lease document: {item}");
-                    }
-                }
+                        Console.WriteLine($"{nameof(exception)}: {exception}");
+                        Console.WriteLine($"{nameof(leaseToken)}: {leaseToken}");
 
-                // Step 5. Use Estimator iterator on demand detailed estimation.
-                // https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/how-to-use-change-feed-estimator?tabs=dotnet#as-an-on-demand-detailed-estimation
-                ChangeFeedEstimator changeFeedEstimator = this.MonitoredContainer
-                    .GetChangeFeedEstimator(
-                        processorName: "changeFeedEstimator",
-                        leaseContainer: this.LeaseContainer);
+                        return Task.CompletedTask;
+                    })
+                    .Build();
 
-                Debug.WriteLine("Checking estimation...");
+            await changeFeedProcessor.StartAsync();
 
-                using FeedIterator<ChangeFeedProcessorState> estimatorIterator = changeFeedEstimator.GetCurrentStateIterator();
-                while (estimatorIterator.HasMoreResults)
-                {
-                    FeedResponse<ChangeFeedProcessorState> states = await estimatorIterator.ReadNextAsync(this.CancellationToken);
-                    foreach (ChangeFeedProcessorState leaseState in states)
-                    {
-                        string host = leaseState.InstanceName == null ? $"not owned by any host currently" : $"owned by host {leaseState.InstanceName}";
-                        Debug.WriteLine($"Lease [{leaseState.LeaseToken}] {host} reports {leaseState.EstimatedLag} as estimated lag.");
-                    }
-                }
-            }
-            catch (Exception exception)
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+
+            await changeFeedProcessor.StopAsync();
+
+            await AdvancedScenariosEstimatorTests.UpdateThroughput(
+                database: this.Database,
+                cosmosClient: this.CosmosClient,
+                monitoredContainerResponse: this.MonitoredContainerResponse,
+                throughtput: 12000);
+
+            await AdvancedScenariosEstimatorTests.LoadDocuments(
+                monitoredContainer: this.MonitoredContainer,
+                partitionKeyValue: partitionKeyValue,
+                startAt: 100,
+                endAt: 200,
+                cancellationToken: this.CancellationToken);
+
+            ChangeFeedEstimator changeFeedEstimator = this.MonitoredContainer
+                .GetChangeFeedEstimator(
+                    processorName: "changeFeedEstimator",
+                    leaseContainer: this.LeaseContainer);
+
+            Debug.WriteLine("Checking estimation...");
+
+            using FeedIterator<ChangeFeedProcessorState> estimatorIterator = changeFeedEstimator.GetCurrentStateIterator();
+
+            while (estimatorIterator.HasMoreResults)
             {
-                Debug.WriteLine($"{nameof(exception)}: {exception}");
+                FeedResponse<ChangeFeedProcessorState> states = await estimatorIterator.ReadNextAsync(this.CancellationToken);
+
+                foreach (ChangeFeedProcessorState leaseState in states)
+                {
+                    Debug.WriteLine(JsonConvert.SerializeObject(leaseState));
+
+                    string host = leaseState.InstanceName == null ? $"not owned by any host currently" : $"owned by host {leaseState.InstanceName}";
+
+                    Debug.WriteLine($"Lease [{leaseState.LeaseToken}] {host} reports {leaseState.EstimatedLag} as estimated lag.");
+                }
             }
         }
 
@@ -201,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     trace: NoOpTrace.Singleton,
                     forceRefresh: true);
 
-                if (stopWatch.Elapsed.TotalMinutes > 25) // failsafe to break loop if it takes longer than 20 minutes to split.
+                if (stopWatch.Elapsed.TotalMinutes > 25) // failsafe to break loop if it takes longer than 25 minutes to split.
                 {
                     break;
                 }
