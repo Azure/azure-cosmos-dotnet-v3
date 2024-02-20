@@ -14,6 +14,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json.Linq;
@@ -325,6 +327,53 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         [TestMethod]
+        [Owner("philipthomas-MSFT")]
+        [Description("")]
+        public async Task ShouldReturnEstimatedLagIsOneWhenGoneCosmosException()
+        {
+            // Arrange
+            string instanceName = Guid.NewGuid().ToString();
+            string leaseToken = Guid.NewGuid().ToString();
+            List<string> ranges = new List<string>() { leaseToken };
+
+            List<DocumentServiceLeaseCore> leases = new List<DocumentServiceLeaseCore>() {
+                new DocumentServiceLeaseCore()
+                {
+                    LeaseToken = leaseToken,
+                    Owner = instanceName
+                }
+            };
+            Mock<FeedIteratorInternal> mockIterator = new Mock<FeedIteratorInternal>();
+            mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<ITrace>(), It.IsAny<CancellationToken>())).ReturnsAsync(GetResponseWithGoneStatusCosmosException);
+            Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
+            mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
+
+            FeedIteratorInternal feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
+            {
+                return mockIterator.Object;
+            }
+
+            // Act
+
+            ChangeFeedEstimatorIterator remainingWorkEstimator = new ChangeFeedEstimatorIterator(
+                ChangeFeedEstimatorIteratorTests.GetMockedContainer(),
+                Mock.Of<ContainerInternal>(),
+                mockContainer.Object,
+                feedCreator,
+                null);
+
+            // Assert
+
+            FeedResponse<ChangeFeedProcessorState> firstResponse = await remainingWorkEstimator.ReadNextAsync(default);
+
+            ChangeFeedProcessorState remainingLeaseWork = firstResponse.First();
+
+            Assert.AreEqual(expected: instanceName, actual: remainingLeaseWork.InstanceName);
+            Assert.AreEqual(expected: leaseToken, actual: remainingLeaseWork.LeaseToken);
+            Assert.AreEqual(expected: leaseToken, actual: remainingLeaseWork.EstimatedLag);
+        }
+
+        [TestMethod]
         public async Task ShouldInitializeDocumentLeaseContainer()
         {
             static FeedIteratorInternal feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
@@ -419,6 +468,24 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             }
 
             return message;
+        }
+
+        private static ResponseMessage GetResponseWithGoneStatusCosmosException()
+        {
+            return new ResponseMessage(
+                statusCode: HttpStatusCode.Gone,
+                requestMessage: new RequestMessage(
+                    method: System.Net.Http.HttpMethod.Get,
+                    requestUriString: default,
+                    trace: NoOpTrace.Singleton),
+                headers: new Headers(new RequestNameValueCollection()),
+                cosmosException: new CosmosException(
+                    message: "Fake message",
+                    statusCode: HttpStatusCode.Gone,
+                    subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
+                    activityId: Guid.NewGuid().ToString(),
+                    requestCharge: 1.0),
+                trace: NoOpTrace.Singleton);
         }
 
         private static ContainerInternal GetMockedContainer()
