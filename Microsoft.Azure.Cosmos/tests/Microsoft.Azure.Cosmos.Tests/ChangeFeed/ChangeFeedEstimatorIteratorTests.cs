@@ -478,13 +478,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                     method: System.Net.Http.HttpMethod.Get,
                     requestUriString: default,
                     trace: NoOpTrace.Singleton),
-                headers: new Headers(new RequestNameValueCollection()),
-                cosmosException: new CosmosException(
-                    message: "Fake message",
-                    statusCode: HttpStatusCode.Gone,
-                    subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
-                    activityId: Guid.NewGuid().ToString(),
-                    requestCharge: 1.0),
+                headers: new Headers() { SubStatusCode = SubStatusCodes.PartitionKeyRangeGone},
+                cosmosException: default,
                 trace: NoOpTrace.Singleton);
         }
 

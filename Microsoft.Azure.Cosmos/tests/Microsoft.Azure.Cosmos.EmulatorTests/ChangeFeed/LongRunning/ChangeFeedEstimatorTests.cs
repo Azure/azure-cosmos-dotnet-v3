@@ -2,21 +2,23 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeed
+namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed.LongRunning
 {
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
     [TestClass]
+    [TestCategory("LongRunning")]
     [TestCategory("ChangeFeed")]
-    public class AdvancedScenariosEstimatorTests
+    public class ChangeFeedEstimatorTests
     {
         private readonly CancellationTokenSource CancellationTokenSource = new();
 
@@ -43,8 +45,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             }
 
             this.CosmosClient = new CosmosClient(connectionString: Environment.GetEnvironmentVariable("TEST_LIVE_BACKEND_ENDPOINT"));
-
-            // Step 1: Create a container (database) with 400 RU.
 
             this.Database = await this.CosmosClient.CreateDatabaseIfNotExistsAsync(
                 id: Guid.NewGuid().ToString(),
@@ -107,7 +107,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         ///         a. (Use Estimator Iterator -> https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/how-to-use-change-feed-estimator?tabs=dotnet#as-an-on-demand-detailed-estimation)
         ///     12. Boom!
         /// </summary>
-        [Ignore]
         [TestMethod]
         [Owner("philipthomas-MSFT")]
         [Description("Used to repro an issue #4285")]
@@ -115,18 +114,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         {
             string partitionKeyValue = Guid.NewGuid().ToString();
 
-            await AdvancedScenariosEstimatorTests.LoadDocuments(
+            await LoadDocuments(
                 monitoredContainer: this.MonitoredContainer,
                 partitionKeyValue: partitionKeyValue,
                 cancellationToken: this.CancellationToken);
 
             ChangeFeedProcessor changeFeedProcessor = this.MonitoredContainer
-                .GetChangeFeedProcessorBuilder<dynamic>(
+                .GetChangeFeedProcessorBuilder(
                     processorName: "changeFeedEstimator",
                     onChangesDelegate: (IReadOnlyCollection<dynamic> changes, CancellationToken cancellationToken) => Task.CompletedTask)
                     .WithInstanceName("consoleHost")
                     .WithLeaseContainer(this.LeaseContainer)
-                    .WithErrorNotification(errorDelegate: (string leaseToken, Exception exception) =>
+                    .WithErrorNotification(errorDelegate: (leaseToken, exception) =>
                     {
                         Console.WriteLine($"{nameof(exception)}: {exception}");
                         Console.WriteLine($"{nameof(leaseToken)}: {leaseToken}");
@@ -141,13 +140,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             await changeFeedProcessor.StopAsync();
 
-            await AdvancedScenariosEstimatorTests.UpdateThroughput(
+            await UpdateThroughput(
                 database: this.Database,
                 cosmosClient: this.CosmosClient,
                 monitoredContainerResponse: this.MonitoredContainerResponse,
                 throughtput: 12000);
 
-            await AdvancedScenariosEstimatorTests.LoadDocuments(
+            await LoadDocuments(
                 monitoredContainer: this.MonitoredContainer,
                 partitionKeyValue: partitionKeyValue,
                 startAt: 100,
@@ -163,6 +162,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             using FeedIterator<ChangeFeedProcessorState> estimatorIterator = changeFeedEstimator.GetCurrentStateIterator();
 
+            long actualEstimatedLog = 0;
+
             while (estimatorIterator.HasMoreResults)
             {
                 FeedResponse<ChangeFeedProcessorState> states = await estimatorIterator.ReadNextAsync(this.CancellationToken);
@@ -174,16 +175,31 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     string host = leaseState.InstanceName == null ? $"not owned by any host currently" : $"owned by host {leaseState.InstanceName}";
 
                     Debug.WriteLine($"Lease [{leaseState.LeaseToken}] {host} reports {leaseState.EstimatedLag} as estimated lag.");
+
+                    actualEstimatedLog = leaseState.EstimatedLag;
                 }
             }
+
+            Assert.AreEqual(expected: 1, actual: actualEstimatedLog);
         }
 
+        /// <summary>
+        /// Update the throughput and wait for a split.
+        /// </summary>
+        /// <param name="database">The database.</param>
+        /// <param name="cosmosClient">The CosmosClient.</param>
+        /// <param name="monitoredContainerResponse">The monitored container's response.</param>
+        /// <param name="throughtput">The throughput.</param>
+        /// <param name="partitionCount">The number of partitions detected before the split. Loop breaks when the overlapping ranges count is no longer the same as the partition count.</param>
+        /// <param name="timeoutInMinutes">The number of minutes to timeout.</param>
+        /// <returns></returns>
         private static async Task UpdateThroughput(
             Database database,
             CosmosClient cosmosClient,
             ContainerResponse monitoredContainerResponse,
             int throughtput,
-            int splitCount = 1)
+            int partitionCount = 1,
+            double timeoutInMinutes = 25)
         {
             _ = await database.ReplaceThroughputAsync(throughput: throughtput);
             Routing.PartitionKeyRangeCache partitionKeyRangeCache = await cosmosClient.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
@@ -198,12 +214,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     trace: NoOpTrace.Singleton,
                     forceRefresh: true);
 
-                if (stopWatch.Elapsed.TotalMinutes > 25) // failsafe to break loop if it takes longer than 25 minutes to split.
+                if (stopWatch.Elapsed.TotalMinutes > timeoutInMinutes) // failsafe to break loop if it takes longer than 'timeoutInMinutes' to split.
                 {
                     break;
                 }
 
-            } while (overlappingRanges.Count == splitCount);
+            } while (overlappingRanges.Count == partitionCount); // when overlapping ranges count no longer equals the partitionCount, break loop.
 
             Debug.WriteLine($"{nameof(overlappingRanges)}: {JsonConvert.SerializeObject(overlappingRanges)}");
 
@@ -219,11 +235,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private static async Task LoadDocuments(
             Container monitoredContainer,
             string partitionKeyValue,
-            int endAt = 100, 
+            int endAt = 100,
             int startAt = 0,
             CancellationToken cancellationToken = default)
         {
-            // Add some documents??? Missing step from issue description? 
             for (int counter = startAt; counter < endAt; counter++)
             {
                 _ = await monitoredContainer.CreateItemAsync<dynamic>(
