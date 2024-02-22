@@ -17,7 +17,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed.LongRunning
 
     [TestClass]
     [TestCategory("LongRunning")]
-    [TestCategory("ChangeFeed")]
     public class ChangeFeedEstimatorTests
     {
         private readonly CancellationTokenSource CancellationTokenSource = new();

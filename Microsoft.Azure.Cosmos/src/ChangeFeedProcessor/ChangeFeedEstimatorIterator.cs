@@ -19,7 +19,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.Azure.Documents;
     using Newtonsoft.Json.Linq;
 
     internal sealed class ChangeFeedEstimatorIterator : FeedIterator<ChangeFeedProcessorState>
@@ -291,7 +290,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 //     And a ReadNextAsync returns a 410/1002 due to the partition no longer existing.
                 // Then the state of the change feed processor will have an estimatedLag equal to '1'.
 
-                if (response.StatusCode == HttpStatusCode.Gone && response.Headers.SubStatusCode == SubStatusCodes.PartitionKeyRangeGone)
+                if (response.StatusCode == HttpStatusCode.Gone && response.Headers.SubStatusCode == Documents.SubStatusCodes.PartitionKeyRangeGone)
                 {
                     return (new ChangeFeedProcessorState(existingLease.CurrentLeaseToken, 1, existingLease.Owner), response);
                 }
