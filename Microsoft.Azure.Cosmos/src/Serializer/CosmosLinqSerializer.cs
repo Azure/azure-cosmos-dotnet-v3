@@ -75,12 +75,7 @@ namespace Microsoft.Azure.Cosmos
     /// ]]>
     /// </code>
     /// </example>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    abstract class CosmosLinqSerializer : CosmosSerializer
+    public abstract class CosmosLinqSerializer : CosmosSerializer
     {
         /// <summary>
         /// Convert a MemberInfo to a string for use in LINQ query translation.
