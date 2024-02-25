@@ -40,16 +40,15 @@
             public bool IsAutoScale { get; set; }
             public bool ShouldContainerIndexAllProperties { get; set; }
 
-            public int ItemsToCreate { get; set; }
+            public int TotalRequestCount { get; set; }
             public int ItemSize { get; set; }
             public int ItemPropertyCount { get; set; }
             public int PartitionKeyCount { get; set; }
 
             public int RequestsPerSecond { get; set; }
-            public int WarmUpRequestCount { get; set; }
             public int MaxInFlightRequestCount { get; set; }
 
-            public int PreSerializedItemCount { get; set; }
+            public int WarmupSeconds { get; set; }
             public int MaxRuntimeInSeconds { get; set; }
             public int NumWorkers { get; set; }
             public bool IsGatewayMode { get; set; }
@@ -89,11 +88,9 @@
 
         private static async Task CreateItemsConcurrentlyAsync(Container container)
         {
-            Console.WriteLine($"Starting creation of {configuration.ItemsToCreate} items of about {configuration.ItemSize} bytes each"
-            + $" within {configuration.MaxRuntimeInSeconds} seconds using {configuration.NumWorkers} workers.");
+            Console.WriteLine($"Starting to make {configuration.TotalRequestCount} requests to create items of about {configuration.ItemSize} bytes each with partition key prefix {partitionKeyValuePrefix}");
 
-            DataSource dataSource = new DataSource(configuration.ItemsToCreate, configuration.PreSerializedItemCount, 
-                configuration.ItemPropertyCount, configuration.ItemSize, configuration.PartitionKeyCount);
+            DataSource dataSource = new DataSource(configuration.TotalRequestCount, configuration.ItemPropertyCount, configuration.ItemSize, configuration.PartitionKeyCount);
             Console.WriteLine("Datasource initialized; starting ingestion");
 
             ConcurrentDictionary<HttpStatusCode, int> countsByStatus = new ConcurrentDictionary<HttpStatusCode, int>();
@@ -104,12 +101,12 @@
             int taskCompleteCounter = 0;
             int actualWarmupRequestCount = 0;
 
-            int itemsToCreatePerWorker = (int)Math.Ceiling((double)(configuration.ItemsToCreate / configuration.NumWorkers));
+            int requestsPerWorker = (int)Math.Ceiling((double)(configuration.TotalRequestCount / configuration.NumWorkers));
             List<Task> workerTasks = new List<Task>();
 
             const int ticksPerMillisecond = 10000;
             const int ticksPerSecond = 1000 * ticksPerMillisecond;
-            int eachTicks = configuration.RequestsPerSecond <= 0 ? 0 : (int)(ticksPerSecond / configuration.RequestsPerSecond);
+            int ticksPerRequest = configuration.RequestsPerSecond <= 0 ? 0 : (int)(ticksPerSecond / configuration.RequestsPerSecond);
             long usageTicks = 0;
 
             if(configuration.MaxInFlightRequestCount == -1)
@@ -118,7 +115,11 @@
             }
 
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-            cancellationTokenSource.CancelAfter(configuration.MaxRuntimeInSeconds * 1000);
+            if(configuration.MaxRuntimeInSeconds > 0)
+            {
+                cancellationTokenSource.CancelAfter(configuration.MaxRuntimeInSeconds * 1000);
+            }
+
             CancellationToken cancellationToken = cancellationTokenSource.Token;
             Stopwatch stopwatch = Stopwatch.StartNew();
             Stopwatch latencyStopwatch = new Stopwatch();
@@ -140,7 +141,7 @@
                     int docCounter = 0;
                     bool isErrorPrinted = false;
 
-                    while (!cancellationToken.IsCancellationRequested && docCounter < itemsToCreatePerWorker)
+                    while (!cancellationToken.IsCancellationRequested && docCounter < requestsPerWorker)
                     {
                         docCounter++;
 
@@ -152,7 +153,7 @@
                             usageTicks = elapsedTicks;
                         }
 
-                        usageTicks += eachTicks;
+                        usageTicks += ticksPerRequest;
                         if (usageTicks - elapsedTicks > ticksPerSecond)
                         {
                             await Task.Delay((int)((usageTicks - elapsedTicks - ticksPerSecond) / ticksPerMillisecond));
@@ -160,7 +161,7 @@
 
                         if(taskTriggeredCounter - taskCompleteCounter > configuration.MaxInFlightRequestCount)
                         {
-                            await Task.Delay((int)((taskTriggeredCounter - taskCompleteCounter - configuration.MaxInFlightRequestCount) / configuration.MaxInFlightRequestCount));
+                            await Task.Delay((int)((taskTriggeredCounter - taskCompleteCounter - configuration.MaxInFlightRequestCount) * ticksPerRequest / ticksPerMillisecond));
                         }
 
                         _ = container.UpsertItemStreamAsync(stream, partitionKeyValue, itemRequestOptions, cancellationToken)
@@ -168,7 +169,7 @@
                             {
                                 if (task.IsCompletedSuccessfully)
                                 {
-                                    if (stream != null) { stream.Dispose(); }
+                                    stream?.Dispose();
 
                                     using (ResponseMessage responseMessage = task.Result)
                                     {
@@ -198,7 +199,7 @@
                                 }
 
                                 task.Dispose();
-                                if (Interlocked.Increment(ref taskCompleteCounter) >= configuration.ItemsToCreate)
+                                if (Interlocked.Increment(ref taskCompleteCounter) >= configuration.TotalRequestCount)
                                 {
                                     stopwatch.Stop();
                                     latencyStopwatch.Stop();
@@ -210,9 +211,9 @@
                 }));
             }
 
-            while (taskCompleteCounter < configuration.ItemsToCreate)
+            while (taskCompleteCounter < configuration.TotalRequestCount)
             {
-                Console.Write($"In progress for {stopwatch.Elapsed}. Triggered: {taskTriggeredCounter} Processed: {taskCompleteCounter}, Pending: {configuration.ItemsToCreate - taskCompleteCounter}");
+                Console.Write($"In progress for {stopwatch.Elapsed}. Triggered: {taskTriggeredCounter} Processed: {taskCompleteCounter}, Pending: {configuration.TotalRequestCount - taskCompleteCounter}");
                 int nonFailedCount = 0;
                 foreach (KeyValuePair<HttpStatusCode, int> countForStatus in countsByStatus)
                 {
@@ -223,7 +224,7 @@
                     }
                 }
 
-                if(actualWarmupRequestCount == 0 && nonFailedCount >= configuration.WarmUpRequestCount)
+                if(actualWarmupRequestCount == 0 && stopwatch.ElapsedMilliseconds > configuration.WarmupSeconds * 1000)
                 {
                     actualWarmupRequestCount = nonFailedCount;
                     latencyStopwatch.Start();
@@ -235,7 +236,7 @@
 
                 if (cancellationToken.IsCancellationRequested)
                 {
-                    Console.WriteLine($"Could not handle {configuration.ItemsToCreate} items in {configuration.MaxRuntimeInSeconds} seconds.");
+                    Console.WriteLine($"Could not make {configuration.TotalRequestCount} requests in {configuration.MaxRuntimeInSeconds} seconds.");
                     break;
                 }
 
@@ -245,10 +246,10 @@
             long elapsedFinal = latencyStopwatch.ElapsedMilliseconds / 1000;
             int nonFailedCountFinal = countsByStatus.Where(x => x.Key < HttpStatusCode.BadRequest).Sum(p => p.Value);
             int nonFailedCountFinalForLatency = nonFailedCountFinal - actualWarmupRequestCount;
-            Console.WriteLine($"Successfully handled {nonFailedCountFinal} items; handled {nonFailedCountFinalForLatency} in {elapsedFinal} seconds at {(elapsedFinal == 0 ? -1 : nonFailedCountFinalForLatency / elapsedFinal)} items/sec.");
+            Console.WriteLine($"Successfully made {nonFailedCountFinal} requests; {nonFailedCountFinalForLatency} requests in {elapsedFinal} seconds at {(elapsedFinal == 0 ? -1 : nonFailedCountFinalForLatency / elapsedFinal)} items/sec.");
 
             Console.WriteLine("Counts by StatusCode:");
-            Console.WriteLine(string.Join(',', countsByStatus.Select(countForStatus => countForStatus.Key + ": " + countForStatus.Value)));
+            Console.WriteLine(string.Join(", ", countsByStatus.Select(countForStatus => countForStatus.Key + ": " + countForStatus.Value)));
 
             List<TimeSpan> latenciesList = latencies.ToList();
             latenciesList.Sort();
@@ -257,6 +258,7 @@
             {
                 Console.WriteLine("Latencies (non-failed):"
                 + $"   P90: {latenciesList[(int)(nonWarmupRequestCount * 0.90)].TotalMilliseconds}"
+                + $"   P95: {latenciesList[(int)(nonWarmupRequestCount * 0.95)].TotalMilliseconds}"
                 + $"   P99: {latenciesList[(int)(nonWarmupRequestCount * 0.99)].TotalMilliseconds}"
                 + $"   P99.9: {latenciesList[(int)(nonWarmupRequestCount * 0.999)].TotalMilliseconds}"
                 + $"   Max: {latenciesList[nonWarmupRequestCount - 1].TotalMilliseconds}");
@@ -432,15 +434,17 @@
             private static readonly JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings() { NullValueHandling = NullValueHandling.Ignore };
             private readonly string padding = string.Empty;
             private readonly PartitionKey[] partitionKeys;
-            private readonly ConcurrentDictionary<PartitionKey, ConcurrentBag<MemoryStream>> itemsByPK;
+            private readonly string[] partitionKeyStrings;
+
+            private readonly string partitionKeySuffixFormatSpecifier; 
             private int itemIndex = 0;
 
-            public DataSource(int itemCount, int preSerializedItemCount, int itemPropertyCount, int itemSize, int partitionKeyCount)
+            public DataSource(int itemCount, int itemPropertyCount, int itemSize, int partitionKeyCount)
             {
                 this.partitionKeyCount = Math.Min(partitionKeyCount, itemCount);
                 this.itemSize = itemSize;
-                this.itemsByPK = new ConcurrentDictionary<PartitionKey, ConcurrentBag<MemoryStream>>();
                 this.partitionKeys = new PartitionKey[this.partitionKeyCount];
+                this.partitionKeyStrings = new string[this.partitionKeyCount];
 
                 // Determine padding length - setup initial values so we can create a sample doc
                 this.padding = string.Empty;
@@ -452,40 +456,22 @@
                 }
 
                 // Find length and keep some bytes for the system generated properties
-                int currentLen = (int)this.CreateNextDocItem(partitionKeyValuePrefix + "0").Length + 250;
+                int partitionKeySuffixLength = this.partitionKeyCount.ToString().Length;
+                int currentLen = (int)this.CreateNextDocItem(partitionKeyValuePrefix).Length + partitionKeySuffixLength + 160;
                 this.padding = this.itemSize > currentLen ? new string('x', this.itemSize - currentLen) : string.Empty;
 
-                int pkIndex = this.partitionKeyCount;
-                preSerializedItemCount = Math.Min(preSerializedItemCount, itemCount);
-                for (int i = 0; i < Math.Max(preSerializedItemCount, this.partitionKeyCount); i++)
+                this.partitionKeySuffixFormatSpecifier = "D" + partitionKeySuffixLength;
+                for (int pkIndex = 0; pkIndex < this.partitionKeyCount; pkIndex++)
                 {
-                    if(pkIndex == this.partitionKeyCount)
-                    {
-                        pkIndex = 0;
-                    }
-
-                    string partitionKeyValue = partitionKeyValuePrefix + pkIndex;
-                    if(i == pkIndex)
-                    {
-                        this.partitionKeys[pkIndex] = new PartitionKey(partitionKeyValue);
-                        if(i < preSerializedItemCount)
-                        {
-                            this.itemsByPK.TryAdd(this.partitionKeys[pkIndex], new ConcurrentBag<MemoryStream>());
-                        }
-                    }
-
-                    if(i < preSerializedItemCount)
-                    {
-                        this.itemsByPK[this.partitionKeys[pkIndex]].Add(this.CreateNextDocItem(partitionKeyValue));
-                    }
-
-                    pkIndex++;
+                    string partitionKeyValue = partitionKeyValuePrefix + pkIndex.ToString(this.partitionKeySuffixFormatSpecifier);
+                    this.partitionKeyStrings[pkIndex] = partitionKeyValue;
+                    this.partitionKeys[pkIndex] = new PartitionKey(partitionKeyValue);
                 }
             }
 
             public MemoryStream CreateNextDocItem(string partitionKey, string id = null)
             {
-                if(id == null) { id = Guid.NewGuid().ToString(); }
+                id ??= Guid.NewGuid().ToString();
 
                 MyDocument myDocument = new MyDocument()
                 {
@@ -504,15 +490,7 @@
                 int currentPKIndex = incremented % this.partitionKeyCount;
                 partitionKey = this.partitionKeys[currentPKIndex];
 
-                if(this.itemsByPK.TryGetValue(partitionKey, out ConcurrentBag<MemoryStream> itemsForPK)
-                && itemsForPK.TryTake(out MemoryStream result))
-                {
-                    return result;
-                }
-                else
-                {
-                    return this.CreateNextDocItem(partitionKeyValuePrefix + currentPKIndex, incremented.ToString());
-                }
+                return this.CreateNextDocItem(this.partitionKeyStrings[currentPKIndex], incremented.ToString());
             }
         }
     }
