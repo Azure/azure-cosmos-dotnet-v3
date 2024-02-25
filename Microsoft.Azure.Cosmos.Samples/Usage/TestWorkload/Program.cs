@@ -457,7 +457,7 @@
 
                 // Find length and keep some bytes for the system generated properties
                 int partitionKeySuffixLength = this.partitionKeyCount.ToString().Length;
-                int currentLen = (int)this.CreateNextDocItem(partitionKeyValuePrefix).Length + partitionKeySuffixLength + 160;
+                int currentLen = (int)this.CreateNextDocItem(partitionKeyValuePrefix).Length + partitionKeySuffixLength + 180;
                 this.padding = this.itemSize > currentLen ? new string('x', this.itemSize - currentLen) : string.Empty;
 
                 this.partitionKeySuffixFormatSpecifier = "D" + partitionKeySuffixLength;
