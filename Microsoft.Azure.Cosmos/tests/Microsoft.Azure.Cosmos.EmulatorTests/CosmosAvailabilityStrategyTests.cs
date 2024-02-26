@@ -62,6 +62,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Database database = await this.client.CreateDatabaseIfNotExistsAsync(dbName);
             Container container = await database.CreateContainerIfNotExistsAsync(containerName, "/pk");
 
+            ItemResponse<dynamic> itemCheck = await container.ReadItemAsync<dynamic>("testId", new PartitionKey("pk"));
+
+            if ((int)itemCheck.StatusCode == (int)StatusCodes.NotFound)
+            {
+                await container.CreateItemAsync<dynamic>(new { id = "testId", pk = "pk" });
+            }
+
             responseDelay.Enable();
             ItemResponse<dynamic> ir = await container.ReadItemAsync<dynamic>("testId", new PartitionKey("pk"));
 
@@ -114,6 +121,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Database database = await this.client.CreateDatabaseIfNotExistsAsync(dbName);
             Container container = await database.CreateContainerIfNotExistsAsync(containerName, "/pk");
+
+            ItemResponse<dynamic> itemCheck = await container.ReadItemAsync<dynamic>("testId", new PartitionKey("pk"));
+
+            if ((int)itemCheck.StatusCode == (int)StatusCodes.NotFound)
+            {
+                await container.CreateItemAsync<dynamic>(new { id = "testId", pk = "pk" });
+            }
 
             responseDelay.Enable();
             ItemResponse<dynamic> ir = await container.ReadItemAsync<dynamic>("testId", new PartitionKey("pk"));
@@ -185,6 +199,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Database database = await this.client.CreateDatabaseIfNotExistsAsync(dbName);
             Container container = await database.CreateContainerIfNotExistsAsync(containerName, "/pk");
 
+            ItemResponse<dynamic> itemCheck = await container.ReadItemAsync<dynamic>("testId", new PartitionKey("pk"));
+
+            if ((int)itemCheck.StatusCode == (int)StatusCodes.NotFound)
+            {
+                await container.CreateItemAsync<dynamic>(new { id = "testId", pk = "pk" });
+            }
+
             responseDelay.Enable();
             responseDelay2.Enable();
             ItemResponse<dynamic> ir = await container.ReadItemAsync<dynamic>("testId", new PartitionKey("pk"));
@@ -243,6 +264,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Database database = await this.client.CreateDatabaseIfNotExistsAsync(dbName);
             Container container = await database.CreateContainerIfNotExistsAsync(containerName, "/pk");
 
+            ItemResponse<dynamic> itemCheck = await container.ReadItemAsync<dynamic>("testId", new PartitionKey("pk"));
+
+            if ((int)itemCheck.StatusCode == (int)StatusCodes.NotFound)
+            {
+                await container.CreateItemAsync<dynamic>(new { id = "testId", pk = "pk" });
+            }
+
             responseDelay.Enable();
             ItemRequestOptions requestOptions = new ItemRequestOptions
             {
@@ -262,7 +290,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [TestCategory("MultiRegion")]
         public void RequestMessageCloneTests()
         {
             RequestMessage httpRequest = new RequestMessage(
