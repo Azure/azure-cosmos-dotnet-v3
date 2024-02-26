@@ -81,8 +81,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             if (this.CanUseAvailabilityStrategy(request))
             {
-                AvailabilityStrategy strategy = request.RequestOptions.AvailabilityStrategy 
-                    ?? this.client.ClientOptions.AvailabilityStrategy;
+                AvailabilityStrategy strategy = request.RequestOptions?.AvailabilityStrategy ?? this.client.ClientOptions.AvailabilityStrategy;
                 
                 return await strategy.ExecuteAvailablityStrategyAsync(
                             this.BaseSendAsync,

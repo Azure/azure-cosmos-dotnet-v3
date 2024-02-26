@@ -6,9 +6,11 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Diagnostics;
     using System.Globalization;
     using System.IO;
+    using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Threading;
@@ -314,18 +316,20 @@ namespace Microsoft.Azure.Cosmos
         /// Clone the request message
         /// </summary>
         /// <returns>a cloned copy of the RequestMessage</returns>
-        public RequestMessage Clone()
+        internal RequestMessage Clone(ITrace newTrace)
         {
             RequestMessage clone = new RequestMessage(
                 this.Method,
                 this.RequestUriString,
-                this.Trace,
+                newTrace,
                 this.Headers.Clone(),
-                this.Properties);
-            
+                this.Properties.ToDictionary(entry => entry.Key, entry => entry.Value));
+
             if (this.Content != null)
             {
-                clone.Content = this.Content;
+                Stream cloneContent = new MemoryStream();
+                this.Content.CopyTo(cloneContent);
+                clone.Content = cloneContent;
             }
 
             if (this.RequestOptions != null)
@@ -345,16 +349,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             clone.UseGatewayMode = this.UseGatewayMode;
-
-            if (this.DocumentServiceRequest != null)
-            {
-                clone.DocumentServiceRequest = this.DocumentServiceRequest.Clone();
-            }
-
-            if (this.OnBeforeSendRequestActions != null)
-            {
-                clone.OnBeforeSendRequestActions = this.OnBeforeSendRequestActions;
-            }
 
             clone.ContainerId = this.ContainerId;
 

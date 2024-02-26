@@ -3,406 +3,266 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.Net;
     using System.Net.Http;
-    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Handlers;
+    using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.FaultInjection;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
+    using Database = Database;
+    using PartitionKey = PartitionKey;
 
     [TestClass]
     public class CosmosAvailabilityStrategyTests
     {
 
-        private CosmosClient client = null;
+        public CosmosClient client;
 
-        [TestInitialize]
-        public void TestInitialize()
+        [TestMethod]
+        [TestCategory("MultiRegion")]
+        public async Task AvailabilityStrategyNoTriggerTest()
         {
-           
-            (string endpoint, string authKey) = TestCommon.GetAccountInfo();
+            FaultInjectionRule responseDelay = new FaultInjectionRuleBuilder(
+                id: "responseDely",
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithRegion("West US")
+                        .WithOperationType(FaultInjectionOperationType.ReadItem)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
+                        .WithDelay(TimeSpan.FromMilliseconds(400))
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(90))
+                .Build();
+
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule>() { responseDelay };
+            FaultInjector faultInjector = new FaultInjector(rules);
+
+            responseDelay.Disable();
+
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ConnectionMode = ConnectionMode.Direct,
-                ApplicationPreferredRegions = new List<string>() { "East US", "West US" },
+                ApplicationPreferredRegions = new List<string>() { "West US", "East US" },
                 AvailabilityStrategy = new CrossRegionParallelHedgingAvailabilityStrategy(
-                        threshold: TimeSpan.FromMilliseconds(100), 
+                        threshold: TimeSpan.FromMilliseconds(1000),
                         thresholdStep: TimeSpan.FromMilliseconds(50))
             };
 
             this.client = new CosmosClient(
-                accountEndpoint: endpoint,
-                authKeyOrResourceToken: authKey,
-                clientOptions: clientOptions);
-        }
+                accountEndpoint: "",
+                authKeyOrResourceToken: "",
+                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions));
 
-        [TestCleanup]
-        public void Cleanup()
-        {
+            string dbName = "db";
+            string containerName = "container";
+
+            Database database = await this.client.CreateDatabaseIfNotExistsAsync(dbName);
+            Container container = await database.CreateContainerIfNotExistsAsync(containerName, "/pk");
+
+            responseDelay.Enable();
+            ItemResponse<dynamic> ir = await container.ReadItemAsync<dynamic>("testId", new PartitionKey("pk"));
+
+            CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
+            Assert.IsNotNull(traceDiagnostic);
+            Assert.IsFalse(traceDiagnostic.Value.Data.TryGetValue("ExcludedRegions", out _));
+
             this.client.Dispose();
         }
 
         [TestMethod]
-        public async Task AvailabilityStrategyNoTriggerTest()
-        {
-            AccountProperties accountProperties = new AccountProperties()
-            {
-                ReadLocationsInternal = new Collection<AccountRegion>()
-                    {
-                        new AccountRegion()
-                        {
-                            Name = "East US",
-                            Endpoint = "https://eastus.documents.azure.com:443/"
-                        },
-                        new AccountRegion()
-                        {
-                            Name = "West US",
-                            Endpoint = "https://westus.documents.azure.com:443/"
-                        }
-                    },
-                WriteLocationsInternal = new Collection<AccountRegion>()
-                    {
-                        new AccountRegion()
-                        {
-                            Name = "South Central US",
-                            Endpoint = "https://127.0.0.1:8081/"
-                        },
-                    },
-                EnableMultipleWriteLocations = false
-            };
-
-            Mock<IDocumentClientInternal> mockedClient = new Mock<IDocumentClientInternal>();
-            mockedClient.Setup(owner => owner.ServiceEndpoint).Returns(new Uri("https://default.documents.azure.com:443/"));
-            mockedClient.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>())).ReturnsAsync(accountProperties);
-
-            ConnectionPolicy connectionPolicy = new ConnectionPolicy()
-            {
-                EnableEndpointDiscovery = false,
-                UseMultipleWriteLocations = false,
-            };
-            connectionPolicy.PreferredLocations.Add("East US");
-            connectionPolicy.PreferredLocations.Add("West US");
-            
-            ResponseMessage responseMessageOK = new ResponseMessage(HttpStatusCode.OK);
-            ResponseMessage responseMessageServiceUnavailable = new ResponseMessage(HttpStatusCode.ServiceUnavailable);
-
-            this.client.DocumentClient.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
-
-            Mock<RequestInvokerHandler> mockRequestInvokerHandler = new Mock<RequestInvokerHandler>(
-                this.client,
-                null);
-            mockRequestInvokerHandler.SetupSequence(x =>
-                x.BaseSendAsync(
-                    It.IsAny<RequestMessage>(),
-                    It.IsAny<CancellationToken>()))
-                .Returns(Task.Delay(TimeSpan.FromMilliseconds(50)).ContinueWith(_ => responseMessageOK))
-                .Returns(Task.FromResult(responseMessageServiceUnavailable));
-
-            RequestMessage requestMessage = new RequestMessage(
-                HttpMethod.Get,
-                new Uri("https://eastus.documents.azure.com:443/testDb/test/1"))
-            {
-                ResourceType = ResourceType.Document,
-                OperationType = OperationType.Read,
-                DatabaseId = "testDb",
-                ContainerId = "test"
-            };
-
-            requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "\"1\"");
-
-            CancellationToken cancellationToken = new CancellationToken();
-            ResponseMessage rm = await this.client.ClientOptions.AvailabilityStrategy.ExecuteAvailablityStrategyAsync(
-                mockRequestInvokerHandler.Object.BaseSendAsync,
-                this.client,
-                requestMessage,
-                cancellationToken);
-            
-            Assert.AreEqual(HttpStatusCode.OK, rm.StatusCode);
-        }
-
-        [TestMethod]
+        [TestCategory("MultiRegion")]
         public async Task AvailabilityStrategyTriggerTest()
         {
-            AccountProperties accountProperties = new AccountProperties()
+            FaultInjectionRule responseDelay = new FaultInjectionRuleBuilder(
+                id: "responseDely",
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithRegion("West US")
+                        .WithOperationType(FaultInjectionOperationType.ReadItem)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
+                        .WithDelay(TimeSpan.FromMilliseconds(4000))
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(90))
+                .Build();
+
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule>() { responseDelay };
+            FaultInjector faultInjector = new FaultInjector(rules);
+
+            responseDelay.Disable();
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
-                ReadLocationsInternal = new Collection<AccountRegion>()
-                    {
-                        new AccountRegion()
-                        {
-                            Name = "East US",
-                            Endpoint = "https://eastus.documents.azure.com:443/"
-                        },
-                        new AccountRegion()
-                        {
-                            Name = "West US",
-                            Endpoint = "https://westus.documents.azure.com:443/"
-                        }
-                    },
-                WriteLocationsInternal = new Collection<AccountRegion>()
-                    {
-                        new AccountRegion()
-                        {
-                            Name = "South Central US",
-                            Endpoint = "https://127.0.0.1:8081/"
-                        },
-                    },
-                EnableMultipleWriteLocations = false
+                ConnectionMode = ConnectionMode.Direct,
+                ApplicationPreferredRegions = new List<string>() { "West US", "East US" },
+                AvailabilityStrategy = new CrossRegionParallelHedgingAvailabilityStrategy(
+                        threshold: TimeSpan.FromMilliseconds(100),
+                        thresholdStep: TimeSpan.FromMilliseconds(50))
             };
 
-            Mock<IDocumentClientInternal> mockedClient = new Mock<IDocumentClientInternal>();
-            mockedClient.Setup(owner => owner.ServiceEndpoint).Returns(new Uri("https://default.documents.azure.com:443/"));
-            mockedClient.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>())).ReturnsAsync(accountProperties);
+            this.client = new CosmosClient(
+                accountEndpoint: "",
+                authKeyOrResourceToken: "",
+                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions));
 
-            ConnectionPolicy connectionPolicy = new ConnectionPolicy()
-            {
-                EnableEndpointDiscovery = false,
-                UseMultipleWriteLocations = false,
-            };
-            connectionPolicy.PreferredLocations.Add("East US");
-            connectionPolicy.PreferredLocations.Add("West US");
+            string dbName = "db";
+            string containerName = "container";
 
-            ResponseMessage responseMessageOK = new ResponseMessage(HttpStatusCode.OK);
-            ResponseMessage responseMessageServiceUnavailable = new ResponseMessage(HttpStatusCode.ServiceUnavailable);
+            Database database = await this.client.CreateDatabaseIfNotExistsAsync(dbName);
+            Container container = await database.CreateContainerIfNotExistsAsync(containerName, "/pk");
 
-            this.client.DocumentClient.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
+            responseDelay.Enable();
+            ItemResponse<dynamic> ir = await container.ReadItemAsync<dynamic>("testId", new PartitionKey("pk"));
 
-            Mock<RequestInvokerHandler> mockRequestInvokerHandler = new Mock<RequestInvokerHandler>(
-                this.client,
-                null);
-            mockRequestInvokerHandler.SetupSequence(x =>
-                x.BaseSendAsync(
-                    It.IsAny<RequestMessage>(),
-                    It.IsAny<CancellationToken>()))
-                .Returns(Task.Delay(TimeSpan.FromMilliseconds(150)).ContinueWith(_ => responseMessageServiceUnavailable))
-                .Returns(Task.FromResult(responseMessageOK));
+            CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
+            Assert.IsNotNull(traceDiagnostic);
+            traceDiagnostic.Value.Data.TryGetValue("ExcludedRegions", out object excludeRegionsObject);
+            List<string> excludeRegionsList = excludeRegionsObject as List<string>;
+            Assert.IsTrue(excludeRegionsList.Contains("West US"));
 
-            RequestMessage requestMessage = new RequestMessage(
-                HttpMethod.Get,
-                new Uri("https://eastus.documents.azure.com:443/testDb/test/1"))
-            {
-                ResourceType = ResourceType.Document,
-                OperationType = OperationType.Read,
-                DatabaseId = "testDb",
-                ContainerId = "test"
-            };
-
-            requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "\"1\"");
-
-            CancellationToken cancellationToken = new CancellationToken();
-            
-            this.client.DocumentClient.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
-            ResponseMessage rm = await this.client.ClientOptions.AvailabilityStrategy.ExecuteAvailablityStrategyAsync(
-                mockRequestInvokerHandler.Object.BaseSendAsync,
-                this.client,
-                requestMessage,
-                cancellationToken);
-
-            Assert.AreEqual(HttpStatusCode.OK, rm.StatusCode);
+            this.client.Dispose();
         }
 
         [TestMethod]
-        public async Task AvailabilityStrategyTriggerPrimaryReturnTest()
-        {
-            AccountProperties accountProperties = new AccountProperties()
-            {
-                ReadLocationsInternal = new Collection<AccountRegion>()
-                    {
-                        new AccountRegion()
-                        {
-                            Name = "East US",
-                            Endpoint = "https://eastus.documents.azure.com:443/"
-                        },
-                        new AccountRegion()
-                        {
-                            Name = "West US",
-                            Endpoint = "https://westus.documents.azure.com:443/"
-                        }
-                    },
-                WriteLocationsInternal = new Collection<AccountRegion>()
-                    {
-                        new AccountRegion()
-                        {
-                            Name = "South Central US",
-                            Endpoint = "https://127.0.0.1:8081/"
-                        },
-                    },
-                EnableMultipleWriteLocations = false
-            };
-
-            Mock<IDocumentClientInternal> mockedClient = new Mock<IDocumentClientInternal>();
-            mockedClient.Setup(owner => owner.ServiceEndpoint).Returns(new Uri("https://default.documents.azure.com:443/"));
-            mockedClient.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>())).ReturnsAsync(accountProperties);
-
-            ConnectionPolicy connectionPolicy = new ConnectionPolicy()
-            {
-                EnableEndpointDiscovery = false,
-                UseMultipleWriteLocations = false,
-            };
-            connectionPolicy.PreferredLocations.Add("East US");
-            connectionPolicy.PreferredLocations.Add("West US");
-
-            ResponseMessage responseMessageOK = new ResponseMessage(HttpStatusCode.OK);
-            ResponseMessage responseMessageServiceUnavailable = new ResponseMessage(HttpStatusCode.ServiceUnavailable);
-
-            this.client.DocumentClient.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
-
-            Mock<RequestInvokerHandler> mockRequestInvokerHandler = new Mock<RequestInvokerHandler>(
-                this.client,
-                null);
-            mockRequestInvokerHandler.SetupSequence(x =>
-                x.BaseSendAsync(
-                    It.IsAny<RequestMessage>(),
-                    It.IsAny<CancellationToken>()))
-                .Returns(Task.Delay(TimeSpan.FromMilliseconds(115))
-                    .ContinueWith(_ => responseMessageOK))
-                .Returns(Task.Delay(TimeSpan.FromMilliseconds(125))
-                .ContinueWith( _ => responseMessageServiceUnavailable));
-
-            RequestMessage requestMessage = new RequestMessage(
-                HttpMethod.Get,
-                new Uri("https://eastus.documents.azure.com:443/testDb/test/1"))
-            {
-                ResourceType = ResourceType.Document,
-                OperationType = OperationType.Read,
-                DatabaseId = "testDb",
-                ContainerId = "test"
-            };
-
-            requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "\"1\"");
-
-            CancellationToken cancellationToken = new CancellationToken();
-            ResponseMessage rm = await this.client.ClientOptions.AvailabilityStrategy.ExecuteAvailablityStrategyAsync(
-                mockRequestInvokerHandler.Object.BaseSendAsync,
-                this.client,
-                requestMessage,
-                cancellationToken);
-
-            Assert.AreEqual(HttpStatusCode.OK, rm.StatusCode);
-        }
-
-        [TestMethod]
+        [TestCategory("MultiRegion")]
         public async Task AvailabilityStrategyStepTest()
         {
-            AccountProperties accountProperties = new AccountProperties()
+            FaultInjectionRule responseDelay = new FaultInjectionRuleBuilder(
+                id: "responseDely",
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithRegion("West US")
+                        .WithOperationType(FaultInjectionOperationType.ReadItem)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
+                        .WithDelay(TimeSpan.FromMilliseconds(4000))
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(90))
+                .Build();
+
+            FaultInjectionRule responseDelay2 = new FaultInjectionRuleBuilder(
+                id: "responseDely",
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithRegion("East US")
+                        .WithOperationType(FaultInjectionOperationType.ReadItem)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
+                        .WithDelay(TimeSpan.FromMilliseconds(4000))
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(90))
+                .Build();
+
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule>() { responseDelay, responseDelay2 };
+            FaultInjector faultInjector = new FaultInjector(rules);
+
+            responseDelay.Disable();
+            responseDelay2.Disable();
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
-                ReadLocationsInternal = new Collection<AccountRegion>()
-                    {
-                        new AccountRegion()
-                        {
-                            Name = "East US",
-                            Endpoint = "https://eastus.documents.azure.com:443/"
-                        },
-                        new AccountRegion()
-                        {
-                            Name = "West US",
-                            Endpoint = "https://westus.documents.azure.com:443/"
-                        },
-                        new AccountRegion()
-                        {
-                            Name = "South Central US",
-                            Endpoint = "https://southcentralus.documents.azure.com:443/"
-                        }
-                    },
-                WriteLocationsInternal = new Collection<AccountRegion>()
-                    {
-                        new AccountRegion()
-                        {
-                            Name = "South Central US",
-                            Endpoint = "https://127.0.0.1:8081/"
-                        },
-                    },
-                EnableMultipleWriteLocations = false
+                ConnectionMode = ConnectionMode.Direct,
+                ApplicationPreferredRegions = new List<string>() { "West US", "East US", "Central US" },
+                AvailabilityStrategy = new CrossRegionParallelHedgingAvailabilityStrategy(
+                        threshold: TimeSpan.FromMilliseconds(100),
+                        thresholdStep: TimeSpan.FromMilliseconds(50))
             };
 
-            Mock<IDocumentClientInternal> mockedClient = new Mock<IDocumentClientInternal>();
-            mockedClient.Setup(owner => owner.ServiceEndpoint).Returns(new Uri("https://default.documents.azure.com:443/"));
-            mockedClient.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>())).ReturnsAsync(accountProperties);
+            this.client = new CosmosClient(
+                accountEndpoint: "",
+                authKeyOrResourceToken: "",
+                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions));
 
-            ConnectionPolicy connectionPolicy = new ConnectionPolicy()
-            {
-                EnableEndpointDiscovery = false,
-                UseMultipleWriteLocations = false,
-            };
-            connectionPolicy.PreferredLocations.Add("East US");
-            connectionPolicy.PreferredLocations.Add("West US");
-            connectionPolicy.PreferredLocations.Add("South Central US");
+            string dbName = "db";
+            string containerName = "container";
 
-            ResponseMessage responseMessageOK = new ResponseMessage(HttpStatusCode.OK);
-            ResponseMessage responseMessageServiceUnavailable = new ResponseMessage(HttpStatusCode.ServiceUnavailable);
-            ResponseMessage responseMessageBadRequest = new ResponseMessage(HttpStatusCode.BadRequest);
+            Database database = await this.client.CreateDatabaseIfNotExistsAsync(dbName);
+            Container container = await database.CreateContainerIfNotExistsAsync(containerName, "/pk");
 
-            this.client.DocumentClient.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
+            responseDelay.Enable();
+            responseDelay2.Enable();
+            ItemResponse<dynamic> ir = await container.ReadItemAsync<dynamic>("testId", new PartitionKey("pk"));
 
-            Mock<RequestInvokerHandler> mockRequestInvokerHandler = new Mock<RequestInvokerHandler>(
-                this.client,
-                null);
-            mockRequestInvokerHandler.SetupSequence(x =>
-                x.BaseSendAsync(
-                    It.IsAny<RequestMessage>(),
-                    It.IsAny<CancellationToken>()))
-                .Returns(Task.Delay(TimeSpan.FromMilliseconds(200))
-                    .ContinueWith(_ => responseMessageServiceUnavailable))
-                .Returns(Task.Delay(TimeSpan.FromMilliseconds(200))
-                    .ContinueWith(_ => responseMessageBadRequest))
-                .Returns(Task.FromResult(responseMessageOK));
+            CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
+            Assert.IsNotNull(traceDiagnostic);
+            traceDiagnostic.Value.Data.TryGetValue("ExcludedRegions", out object excludeRegionsObject);
+            List<string> excludeRegionsList = excludeRegionsObject as List<string>;
+            Assert.IsTrue(excludeRegionsList.Contains("West US"));
+            Assert.IsTrue(excludeRegionsList.Contains("East US"));
 
-            RequestMessage requestMessage = new RequestMessage(
-                HttpMethod.Get,
-                new Uri("https://eastus.documents.azure.com:443/testDb/test/1"))
-            {
-                ResourceType = ResourceType.Document,
-                OperationType = OperationType.Read,
-                DatabaseId = "testDb",
-                ContainerId = "test"
-            };
-
-            requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "\"1\"");
-
-            CancellationToken cancellationToken = new CancellationToken();
-            ResponseMessage rm = await this.client.ClientOptions.AvailabilityStrategy.ExecuteAvailablityStrategyAsync(
-                mockRequestInvokerHandler.Object.BaseSendAsync,
-                this.client,
-                requestMessage,
-                cancellationToken);
-
-            Assert.AreEqual(HttpStatusCode.OK, rm.StatusCode);
+            this.client.Dispose();
         }
 
         [TestMethod]
-        public void AvailabilityStrategyDisableOverideTest()
+        [TestCategory("MultiRegion")]
+        public async Task AvailabilityStrategyDisableOverideTest()
         {
-            RequestInvokerHandler requestInvokerHandler = new RequestInvokerHandler(
-                this.client,
-                null);
+            FaultInjectionRule responseDelay = new FaultInjectionRuleBuilder(
+                id: "responseDely",
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithRegion("West US")
+                        .WithOperationType(FaultInjectionOperationType.ReadItem)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
+                        .WithDelay(TimeSpan.FromMilliseconds(6000))
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(90))
+                .WithHitLimit(2)
+                .Build();
 
-            RequestOptions requestOptions = new RequestOptions()
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule>() { responseDelay };
+            FaultInjector faultInjector = new FaultInjector(rules);
+
+            responseDelay.Disable();
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                ApplicationPreferredRegions = new List<string>() { "West US", "East US" },
+                AvailabilityStrategy = new CrossRegionParallelHedgingAvailabilityStrategy(
+                        threshold: TimeSpan.FromMilliseconds(100),
+                        thresholdStep: TimeSpan.FromMilliseconds(50))
+            };
+
+            this.client = new CosmosClient(
+                accountEndpoint: "",
+                authKeyOrResourceToken: "",
+                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions));
+
+            string dbName = "db";
+            string containerName = "container";
+
+            Database database = await this.client.CreateDatabaseIfNotExistsAsync(dbName);
+            Container container = await database.CreateContainerIfNotExistsAsync(containerName, "/pk");
+
+            responseDelay.Enable();
+            ItemRequestOptions requestOptions = new ItemRequestOptions
             {
                 AvailabilityStrategy = new DisabledAvailabilityStrategy()
             };
+            
+            ItemResponse<dynamic> ir = await container.ReadItemAsync<dynamic>(
+                "testId", 
+                new PartitionKey("pk"),
+                requestOptions);
 
-            RequestMessage requestMessage = new RequestMessage(
-                HttpMethod.Get,
-                new Uri("https://eastus.documents.azure.com:443/testDb/test/1"))
-            {
-                ResourceType = ResourceType.Document,
-                OperationType = OperationType.Read,
-                DatabaseId = "testDb",
-                ContainerId = "test",
-                RequestOptions = requestOptions
-            };
+            CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
+            Assert.IsNotNull(traceDiagnostic);
+            Assert.IsFalse(traceDiagnostic.Value.Data.TryGetValue("ExcludedRegions", out _));
 
-            requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "\"1\"");
-
-            bool shouldHedge = requestInvokerHandler.CanUseAvailabilityStrategy(requestMessage);
-
-            Assert.IsFalse(shouldHedge);
+            this.client.Dispose();
         }
 
         [TestMethod]
+        [TestCategory("MultiRegion")]
         public void RequestMessageCloneTests()
         {
             RequestMessage httpRequest = new RequestMessage(
@@ -426,11 +286,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             httpRequest.Headers.CorrelatedActivityId = Guid.NewGuid().ToString();
             httpRequest.PartitionKeyRangeId = new PartitionKeyRangeIdentity("0", "1");
             httpRequest.UseGatewayMode = true;
-            httpRequest.OnBeforeSendRequestActions = (request) => { };
             httpRequest.ContainerId = "testcontainer";
             httpRequest.DatabaseId = "testdb";
 
-            RequestMessage clone = httpRequest.Clone();
+            RequestMessage clone = httpRequest.Clone(httpRequest.Trace);
 
             Assert.AreEqual(httpRequest.RequestOptions.Properties, clone.RequestOptions.Properties);
             Assert.AreEqual(httpRequest.ResourceType, clone.ResourceType);
@@ -438,7 +297,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(httpRequest.Headers.CorrelatedActivityId, clone.Headers.CorrelatedActivityId);
             Assert.AreEqual(httpRequest.PartitionKeyRangeId, clone.PartitionKeyRangeId);
             Assert.AreEqual(httpRequest.UseGatewayMode, clone.UseGatewayMode);
-            Assert.AreEqual(httpRequest.OnBeforeSendRequestActions, clone.OnBeforeSendRequestActions);
             Assert.AreEqual(httpRequest.ContainerId, clone.ContainerId);
             Assert.AreEqual(httpRequest.DatabaseId, clone.DatabaseId);
         }

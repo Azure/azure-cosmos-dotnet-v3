@@ -9,9 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using global::Azure.Core;
-    using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.Serialization.HybridRow;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -109,81 +107,76 @@ namespace Microsoft.Azure.Cosmos
             {
                 return await sender(request, cancellationToken);
             }
-
-            using (CancellationTokenSource cancellationTokenSource = new ())
+            
+            using (CancellationTokenSource cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
             {
-                CancellationToken parallelRequestCancellationToken = cancellationTokenSource.Token;
-                
-                List<Task<Tuple<bool, ResponseMessage>>> inFlightRequests = new List<Task<Tuple<bool, ResponseMessage>>>();
-                _ = this.LazyRequestSchedulerAsync(client, request, inFlightRequests, sender, cancellationToken, parallelRequestCancellationToken);
-                int resultLocation = -1;
-                Tuple<bool, ResponseMessage> result;
+                IReadOnlyCollection<string> availableRegions = client.DocumentClient.GlobalEndpointManager.GetAvailableReadEndpointsByLocation().Keys;
 
-                while (inFlightRequests.Count > 0)
-                {
-                    Task<Tuple<bool, ResponseMessage>> firstTask = await Task.WhenAny(inFlightRequests);
-                    result = await firstTask;
-                    resultLocation = inFlightRequests.IndexOf(firstTask);
-
-                    if (result.Item1 == true)
-                    {
-                        cancellationTokenSource.Cancel();
-                        break;
-                    }
-                }
-
-                result = inFlightRequests[resultLocation].Result;
                 List<CosmosDiagnostics> allDiagnostics = new List<CosmosDiagnostics>();
-                int i = 0;
-                foreach (Task<Tuple<bool, ResponseMessage>> task in inFlightRequests)
-                {
-                    if (i == 0)
-                    {
-                        ((CosmosTraceDiagnostics)task.Result.Item2.Diagnostics).Value.AddDatum("Additional Request Context", "Non Hedged Request");
-                    }
-                    else
-                    {
-                        ((CosmosTraceDiagnostics)task.Result.Item2.Diagnostics).Value.AddDatum("Additional Request Context", "Hedged Request");
-                    }
+                Task<(bool, ResponseMessage)> primaryRequest = this.RequestSenderAndResultCheckAsync(
+                    sender, 
+                    request, 
+                    cancellationToken, 
+                    cancellationTokenSource);
+                Task<List<ResponseMessage>> hedgedRequests = this.SendWithHedgeAsync(
+                    client, 
+                    availableRegions, 
+                    1, 
+                    request, 
+                    sender, 
+                    cancellationToken, 
+                    cancellationTokenSource);
 
-                    if (task.IsCompleted && resultLocation != i)
+                Task result = await Task.WhenAny(primaryRequest, hedgedRequests);
+                if (result == primaryRequest)
+                {
+                    (bool nonTransient, ResponseMessage response) = await primaryRequest;
+                    if (nonTransient)
                     {
-                        allDiagnostics.Add(task.Result.Item2.Diagnostics);
-                        ((CosmosTraceDiagnostics)result.Item2.Diagnostics).Value.AddChild(((CosmosTraceDiagnostics)task.Result.Item2.Diagnostics).Value);
+                        return response;
                     }
                 }
 
-                return result.Item2;
+                List<ResponseMessage> responses = await hedgedRequests;
+                if (responses.Any())
+                {
+                    return responses[0];
+                }
+                else
+                {
+                    return (await primaryRequest).Item2;
+                }
             }
         }
 
-        private async Task LazyRequestSchedulerAsync(
+        private async Task<List<ResponseMessage>> SendWithHedgeAsync(
             CosmosClient client,
-            RequestMessage originalMessage, 
-            List<Task<Tuple<bool, ResponseMessage>>> inFlightRequests,
+            IReadOnlyCollection<string> availableRegions,
+            int requestNumber,
+            RequestMessage originalMessage,
             Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender,
             CancellationToken cancellationToken,
-            CancellationToken parallelRequestCancellationToken)
+            CancellationTokenSource cancellationTokenSource)
         {
-            inFlightRequests.Add(this.RequestSenderAndResultCheckAsync(sender, originalMessage, cancellationToken));
+            await Task.Delay(requestNumber == 1 ? this.Threshold : this.ThresholdStep, cancellationToken);
+            List<ResponseMessage> parallelResponses = new List<ResponseMessage>();
+            bool disableDiagnostics = originalMessage.RequestOptions != null && originalMessage.RequestOptions.DisablePointOperationDiagnostics;
+            ITrace clonedTrace;
 
-            IReadOnlyCollection<string> availableRegions = client.DocumentClient.GlobalEndpointManager.GetAvailableReadEndpointsByLocation().Keys;
-            int i = 1;
-            RequestMessage clonedRequest;
-
-            while (parallelRequestCancellationToken.IsCancellationRequested == false && i < availableRegions.Count)
+            using (clonedTrace = disableDiagnostics
+                ? NoOpTrace.Singleton
+                : Trace.GetRootTrace(originalMessage.Trace.Name, TraceComponent.Transport, TraceLevel.Info))
             {
-                TimeSpan delay = this.ThresholdStep + TimeSpan.FromMilliseconds((inFlightRequests.Count - 1) * this.ThresholdStep.Milliseconds);
-                await Task.Delay(delay, parallelRequestCancellationToken);
+                clonedTrace.AddDatum("Client Configuration", client.ClientConfigurationTraceDatum);
 
-                clonedRequest = originalMessage.Clone();
-                 
+                RequestMessage clonedRequest = originalMessage.Clone(clonedTrace);
+
                 if (clonedRequest.RequestOptions == null)
                 {
                     clonedRequest.RequestOptions = new RequestOptions()
                     {
                         ExcludeRegions = availableRegions
-                        .Where(s => s != availableRegions.ElementAt(i)).ToList()
+                        .Where(s => s != availableRegions.ElementAt(requestNumber)).ToList()
                     };
                 }
                 else
@@ -191,33 +184,104 @@ namespace Microsoft.Azure.Cosmos
                     if (clonedRequest.RequestOptions.ExcludeRegions == null)
                     {
                         clonedRequest.RequestOptions.ExcludeRegions = availableRegions
-                            .Where(s => s != availableRegions.ElementAt(i)).ToList();
+                            .Where(s => s != availableRegions.ElementAt(requestNumber)).ToList();
                     }
                     else
                     {
                         clonedRequest.RequestOptions.ExcludeRegions
-                            .AddRange(availableRegions.Where(s => s != availableRegions.ElementAt(i)));
+                            .AddRange(availableRegions.Where(s => s != availableRegions.ElementAt(requestNumber)));
                     }
                 }
 
-                inFlightRequests.Add(this.RequestSenderAndResultCheckAsync(sender, clonedRequest, cancellationToken));
+                if (cancellationTokenSource.IsCancellationRequested)
+                {
+                    return parallelResponses;
+                }
+                else
+                {
+                    if (requestNumber == availableRegions.Count - 1)
+                    {
+                        (bool, ResponseMessage) finalResult = await this.RequestSenderAndResultCheckAsync(sender, clonedRequest, cancellationToken, cancellationTokenSource);
+                        parallelResponses.Add(finalResult.Item2);
+                    }
+                    else
+                    {
+                        Task<(bool, ResponseMessage)> currentHedge = this.RequestSenderAndResultCheckAsync(sender, clonedRequest, cancellationToken, cancellationTokenSource);
+                        Task<List<ResponseMessage>> nextHedge = this.SendWithHedgeAsync(client, availableRegions, requestNumber + 1, originalMessage, sender, cancellationToken, cancellationTokenSource);
 
-                i++;
+                        Task result = await Task.WhenAny(currentHedge, nextHedge);
+                        if (result == currentHedge)
+                        {
+                            (bool, ResponseMessage) response = await currentHedge;
+                            if (response.Item1)
+                            {
+                                parallelResponses.Insert(0, response.Item2);
+                                return parallelResponses;
+                            }
+                            else
+                            {
+                                List<ResponseMessage> nextResponses = await nextHedge;
+                                if (nextResponses.Any())
+                                {
+                                    nextResponses.AddRange(parallelResponses);
+                                    parallelResponses = nextResponses;
+                                    parallelResponses.Add(response.Item2);
+                                    return parallelResponses;
+                                }
+
+                                parallelResponses.Add(response.Item2);
+                                return parallelResponses;
+                            }
+                        }
+                        else
+                        {
+                            List<ResponseMessage> nextResponses = await nextHedge;
+
+                            if (nextResponses.Any())
+                            {
+                                nextResponses.AddRange(parallelResponses);
+                                parallelResponses = nextResponses; 
+
+                                return parallelResponses;
+                            }
+
+                            return parallelResponses;
+                        }
+                    }
+                }
+                return parallelResponses;
             }
         }
 
-        private async Task<Tuple<bool, ResponseMessage>> RequestSenderAndResultCheckAsync(
+        private async Task<(bool, ResponseMessage)> RequestSenderAndResultCheckAsync(
             Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender,
             RequestMessage request,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            CancellationTokenSource cancellationTokenSource)
         {
-            ResponseMessage response = await sender(request, cancellationToken);
-            if (IsNonTransientResult((int)response.StatusCode, (int)response.Headers.SubStatusCode))
+            try
             {
-                return new Tuple<bool, ResponseMessage>(true, response);
-            }
+                ResponseMessage response = await sender.Invoke(request, cancellationToken);
+                if (IsNonTransientResult((int)response.StatusCode, (int)response.Headers.SubStatusCode))
+                {
+                    if (!cancellationToken.IsCancellationRequested)
+                    {
+                        cancellationTokenSource.Cancel();
+                    }
+                    return (true, response);
+                }
 
-            return new Tuple<bool, ResponseMessage>(false, response);
+                return (false, response);
+            }
+            catch (OperationCanceledException ex)
+            {
+                CosmosOperationCanceledException cosmosOperationCanceledException = ex as CosmosOperationCanceledException;
+                return (false, null);
+            }
+            catch (Exception)
+            {
+                return (false, null);
+            }
         }
 
         private static bool IsNonTransientResult(int statusCode, int subStatusCode)
@@ -241,13 +305,8 @@ namespace Microsoft.Azure.Cosmos
 
             //404 - Not found is a final result as the document was not yet available
             // after enforcing the consistency model
-            if (statusCode == (int)HttpStatusCode.NotFound && subStatusCode == (int)SubStatusCodes.Unknown)
-            {
-                return true;
-            }
-
             //All other errors should be treated as possibly transient errors
-            return false;
+            return statusCode == (int)HttpStatusCode.NotFound && subStatusCode == (int)SubStatusCodes.Unknown;
         }
     }
 }
