@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 id: "responseDely",
                 condition:
                     new FaultInjectionConditionBuilder()
-                        .WithRegion("West US")
+                        .WithRegion("Central US")
                         .WithOperationType(FaultInjectionOperationType.ReadItem)
                         .Build(),
                 result:
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ConnectionMode = ConnectionMode.Direct,
-                ApplicationPreferredRegions = new List<string>() { "West US", "East US" },
+                ApplicationPreferredRegions = new List<string>() { "Central US", "North Central US" },
                 AvailabilityStrategy = new CrossRegionParallelHedgingAvailabilityStrategy(
                         threshold: TimeSpan.FromMilliseconds(1000),
                         thresholdStep: TimeSpan.FromMilliseconds(50))
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 id: "responseDely",
                 condition:
                     new FaultInjectionConditionBuilder()
-                        .WithRegion("West US")
+                        .WithRegion("Central US")
                         .WithOperationType(FaultInjectionOperationType.ReadItem)
                         .Build(),
                 result:
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ConnectionMode = ConnectionMode.Direct,
-                ApplicationPreferredRegions = new List<string>() { "West US", "East US" },
+                ApplicationPreferredRegions = new List<string>() { "Central US", "North Central US" },
                 AvailabilityStrategy = new CrossRegionParallelHedgingAvailabilityStrategy(
                         threshold: TimeSpan.FromMilliseconds(100),
                         thresholdStep: TimeSpan.FromMilliseconds(50))
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(traceDiagnostic);
             traceDiagnostic.Value.Data.TryGetValue("ExcludedRegions", out object excludeRegionsObject);
             List<string> excludeRegionsList = excludeRegionsObject as List<string>;
-            Assert.IsTrue(excludeRegionsList.Contains("West US"));
+            Assert.IsTrue(excludeRegionsList.Contains("Central US"));
 
             this.client.Dispose();
         }
@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 id: "responseDely",
                 condition:
                     new FaultInjectionConditionBuilder()
-                        .WithRegion("West US")
+                        .WithRegion("Central US")
                         .WithOperationType(FaultInjectionOperationType.ReadItem)
                         .Build(),
                 result:
@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 id: "responseDely",
                 condition:
                     new FaultInjectionConditionBuilder()
-                        .WithRegion("East US")
+                        .WithRegion("North Central US")
                         .WithOperationType(FaultInjectionOperationType.ReadItem)
                         .Build(),
                 result:
@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ConnectionMode = ConnectionMode.Direct,
-                ApplicationPreferredRegions = new List<string>() { "West US", "East US", "Central US" },
+                ApplicationPreferredRegions = new List<string>() { "Central US", "North Central US", "East US" },
                 AvailabilityStrategy = new CrossRegionParallelHedgingAvailabilityStrategy(
                         threshold: TimeSpan.FromMilliseconds(100),
                         thresholdStep: TimeSpan.FromMilliseconds(50))
@@ -214,8 +214,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(traceDiagnostic);
             traceDiagnostic.Value.Data.TryGetValue("ExcludedRegions", out object excludeRegionsObject);
             List<string> excludeRegionsList = excludeRegionsObject as List<string>;
-            Assert.IsTrue(excludeRegionsList.Contains("West US"));
-            Assert.IsTrue(excludeRegionsList.Contains("East US"));
+            Assert.IsTrue(excludeRegionsList.Contains("Central US"));
+            Assert.IsTrue(excludeRegionsList.Contains("North Central US"));
 
             this.client.Dispose();
         }
@@ -228,7 +228,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 id: "responseDely",
                 condition:
                     new FaultInjectionConditionBuilder()
-                        .WithRegion("West US")
+                        .WithRegion("Central US")
                         .WithOperationType(FaultInjectionOperationType.ReadItem)
                         .Build(),
                 result:
@@ -247,7 +247,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ConnectionMode = ConnectionMode.Direct,
-                ApplicationPreferredRegions = new List<string>() { "West US", "East US" },
+                ApplicationPreferredRegions = new List<string>() { "Central US", "North Central US" },
                 AvailabilityStrategy = new CrossRegionParallelHedgingAvailabilityStrategy(
                         threshold: TimeSpan.FromMilliseconds(100),
                         thresholdStep: TimeSpan.FromMilliseconds(50))
