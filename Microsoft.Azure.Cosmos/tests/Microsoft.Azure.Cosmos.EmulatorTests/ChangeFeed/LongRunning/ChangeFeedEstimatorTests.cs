@@ -15,6 +15,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed.LongRunning
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
+    /// <summary>
+    /// For future long running tests.
+    /// TODO: Setup a PR to include in a CI pipeline.
+    /// TODO: Need to determine what database account, connectionString, that these test
+    /// can be safely ran against. Make sure the connectionString is added to Environment
+    /// variables securely.
+    /// </summary>
     [TestClass]
     [TestCategory("LongRunning")]
     public class ChangeFeedEstimatorTests
@@ -33,17 +40,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed.LongRunning
 
         private Container MonitoredContainer { get; set; }
 
+        private static readonly string ConnectionString = "TestCategory_LongRunning_Connectionstring";
+
         [TestInitialize]
         public async Task TestInitialize()
         {
             this.CancellationToken = this.CancellationTokenSource.Token;
 
-            if (Environment.GetEnvironmentVariable("TEST_LIVE_BACKEND_ENDPOINT") == null)
+            if (Environment.GetEnvironmentVariable(ChangeFeedEstimatorTests.ConnectionString) == null)
             {
                 throw new ArgumentNullException(paramName: nameof(Environment.GetEnvironmentVariable));
             }
 
-            this.CosmosClient = new CosmosClient(connectionString: Environment.GetEnvironmentVariable("TEST_LIVE_BACKEND_ENDPOINT"));
+            this.CosmosClient = new CosmosClient(connectionString: Environment.GetEnvironmentVariable(ChangeFeedEstimatorTests.ConnectionString));
 
             this.Database = await this.CosmosClient.CreateDatabaseIfNotExistsAsync(
                 id: Guid.NewGuid().ToString(),
