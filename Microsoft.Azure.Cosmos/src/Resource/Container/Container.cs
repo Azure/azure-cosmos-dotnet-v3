@@ -972,9 +972,6 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to go through the items.</returns>
-        /// <remarks>
-        /// Query as a stream only supports single partition queries 
-        /// </remarks>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#stream-api</exception>
         /// <example>
         /// 1. Create a query to get all the ToDoActivity that have a cost greater than 9000 for the specified partition
@@ -1115,9 +1112,6 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to go through the items.</returns>
-        /// <remarks>
-        /// Query as a stream only supports single partition queries 
-        /// </remarks>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#stream-api</exception>
         /// <example>
         /// Create a query to get all the ToDoActivity that have a cost greater than 9000 for the specified partition
@@ -1168,9 +1162,6 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to go through the items.</returns>
-        /// <remarks>
-        /// Query as a stream only supports single partition queries 
-        /// </remarks>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
         /// <example>
         /// Create a query to get all the ToDoActivity that have a cost greater than 9000 for the specified partition

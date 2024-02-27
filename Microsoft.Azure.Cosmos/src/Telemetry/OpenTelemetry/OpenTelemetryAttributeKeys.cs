@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         public const string DbSystemName = "db.system";
         public const string DbName = "db.name";
         public const string DbOperation = "db.operation";
-        public const string NetPeerName = "net.peer.name";
+        public const string ServerAddress = "server.address";
 
         // Cosmos Db Specific
         public const string ClientId = "db.cosmosdb.client_id";
