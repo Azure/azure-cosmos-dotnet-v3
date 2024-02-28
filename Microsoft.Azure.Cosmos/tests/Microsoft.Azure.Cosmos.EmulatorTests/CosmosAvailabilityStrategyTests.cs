@@ -290,6 +290,75 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [TestCategory("MultiRegion")]
+        public async Task AvailabilityStrategyQueryTriggerTest()
+        {
+            FaultInjectionRule responseDelay = new FaultInjectionRuleBuilder(
+                id: "responseDely",
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithRegion("Central US")
+                        .WithOperationType(FaultInjectionOperationType.QueryItem)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
+                        .WithDelay(TimeSpan.FromMilliseconds(4000))
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(90))
+                .Build();
+
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule>() { responseDelay };
+            FaultInjector faultInjector = new FaultInjector(rules);
+
+            responseDelay.Disable();
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                ApplicationPreferredRegions = new List<string>() { "Central US", "North Central US" },
+                AvailabilityStrategy = new CrossRegionParallelHedgingAvailabilityStrategy(
+                        threshold: TimeSpan.FromMilliseconds(100),
+                        thresholdStep: TimeSpan.FromMilliseconds(50))
+            };
+
+            this.client = new CosmosClient(
+                accountEndpoint: "",
+                authKeyOrResourceToken: "",
+                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions));
+
+            string dbName = "db";
+            string containerName = "container";
+
+            Database database = await this.client.CreateDatabaseIfNotExistsAsync(dbName);
+            Container container = await database.CreateContainerIfNotExistsAsync(containerName, "/pk");
+
+            ItemResponse<dynamic> itemCheck = await container.ReadItemAsync<dynamic>("testId", new PartitionKey("pk"));
+
+            if ((int)itemCheck.StatusCode == (int)StatusCodes.NotFound)
+            {
+                await container.CreateItemAsync<dynamic>(new { id = "testId", pk = "pk" });
+            }
+
+            responseDelay.Enable();
+            string queryString = "SELECT * FROM c where c.pk = 'pk'";
+            FeedIterator<dynamic> queryIterator = container.GetItemQueryIterator<dynamic>(
+                new QueryDefinition(queryString));
+
+            while (queryIterator.HasMoreResults)
+            {
+                FeedResponse<dynamic> ir = await queryIterator.ReadNextAsync();
+                CosmosTraceDiagnostics traceDiagnostics = ir.Diagnostics as CosmosTraceDiagnostics;
+                Assert.IsNotNull(traceDiagnostics);
+                traceDiagnostics.Value.Data.TryGetValue("ExcludedRegions", out object excludeRegionsObject);
+                List<string> excludeRegionsList = excludeRegionsObject as List<string>;
+                Assert.IsTrue(excludeRegionsList.Contains("Central US"));
+                break;
+            }
+
+            this.client.Dispose();
+        }
+
+        [TestMethod]
         public void RequestMessageCloneTests()
         {
             RequestMessage httpRequest = new RequestMessage(
