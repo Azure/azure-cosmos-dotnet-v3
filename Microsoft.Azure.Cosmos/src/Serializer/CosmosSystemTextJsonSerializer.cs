@@ -62,8 +62,8 @@ namespace Microsoft.Azure.Cosmos
         /// <inheritdoc/>
         public override string SerializeMemberName(MemberInfo memberInfo)
         {
-            System.Text.Json.Serialization.JsonExtensionDataAttribute jsonExtensionDataAttribute =
-                 memberInfo.GetCustomAttribute<System.Text.Json.Serialization.JsonExtensionDataAttribute>(true);
+            JsonExtensionDataAttribute jsonExtensionDataAttribute =
+                 memberInfo.GetCustomAttribute<JsonExtensionDataAttribute>(true);
             if (jsonExtensionDataAttribute != null)
             {
                 return null;
