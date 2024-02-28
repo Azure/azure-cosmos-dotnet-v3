@@ -47,6 +47,21 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             };
         }
 
+        private static IReadOnlyList<(string serializedToken, SqlQueryResumeValue resumeValue)> ResumeValueTestData()
+        {
+            return new List<(string, SqlQueryResumeValue)>
+            {
+                ("[]", SqlQueryResumeValue.FromCosmosElement(CosmosUndefined.Create())),
+                ("null", SqlQueryResumeValue.FromCosmosElement(CosmosNull.Create())),
+                ("false", SqlQueryResumeValue.FromCosmosElement(CosmosBoolean.Create(false))),
+                ("true", SqlQueryResumeValue.FromCosmosElement(CosmosBoolean.Create(true))),
+                ("1337", SqlQueryResumeValue.FromCosmosElement(CosmosNumber64.Create(1337))),
+                ("asdf", SqlQueryResumeValue.FromCosmosElement(CosmosString.Create("asdf"))),
+                ("{\"type\":\"array\",\"low\":-6706074647855398782,\"high\":9031114912533472255}", SqlQueryResumeValue.FromOrderByValue(CosmosArray.Parse("[]"))),
+                ("{\"type\":\"object\",\"low\":1457042291250783704,\"high\":1493060239874959160}", SqlQueryResumeValue.FromOrderByValue(CosmosObject.Parse("{}")))
+            };
+        }
+
         [TestMethod]
         public void MonadicCreate_NullContinuationToken()
         {
@@ -149,6 +164,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
                     parallelContinuationToken,
                     new List<OrderByItem>() { new OrderByItem(CosmosObject.Create(new Dictionary<string, CosmosElement>() { { "item", element} })) },
+                    resumeValues: null,
                     rid: "rid",
                     skipCount: 42,
                     filter: "filter");
@@ -188,6 +204,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                             new OrderByItem(CosmosObject.Create(new Dictionary<string, CosmosElement>(){ { "item1", element1 } })),
                             new OrderByItem(CosmosObject.Create(new Dictionary<string, CosmosElement>(){ { "item2", element2 } }))
                         },
+                        resumeValues: null,
                         rid: "rid",
                         skipCount: 42,
                         filter: "filter");
@@ -236,6 +253,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     OrderByContinuationToken orderByContinuationToken1 = new OrderByContinuationToken(
                         parallelContinuationToken1,
                         new List<OrderByItem>() { new OrderByItem(CosmosObject.Create(new Dictionary<string, CosmosElement>() { { "item", element1 } })) },
+                        resumeValues: null,
                         rid: "rid",
                         skipCount: 42,
                         filter: "filter");
@@ -247,6 +265,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     OrderByContinuationToken orderByContinuationToken2 = new OrderByContinuationToken(
                         parallelContinuationToken2,
                         new List<OrderByItem>() { new OrderByItem(CosmosObject.Create(new Dictionary<string, CosmosElement>() { { "item", element2 } })) },
+                        resumeValues: null,
                         rid: "rid",
                         skipCount: 42,
                         filter: "filter");
@@ -279,6 +298,90 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         }
 
         [TestMethod]
+        public void MonadicCreate_OrderByWithResumeValues()
+        {
+            Mock<IDocumentContainer> mockDocumentContainer = new Mock<IDocumentContainer>();
+            IReadOnlyList<(string serializedToken, SqlQueryResumeValue resumeValue)> tokens = ResumeValueTestData();
+
+            foreach ((string serializedToken, SqlQueryResumeValue resumeValue) in tokens)
+            {
+                ParallelContinuationToken parallelContinuationToken = new ParallelContinuationToken(
+                    token: serializedToken,
+                    range: new Documents.Routing.Range<string>("A", "B", true, false));
+
+                OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
+                    parallelContinuationToken,
+                    orderByItems: null,
+                    resumeValues: new List<SqlQueryResumeValue>() { resumeValue},
+                    rid: "rid",
+                    skipCount: 42,
+                    filter: null);
+
+                TryCatch<IQueryPipelineStage> monadicCreate = OrderByCrossPartitionQueryPipelineStage.MonadicCreate(
+                    documentContainer: mockDocumentContainer.Object,
+                    sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c ORDER BY c.item"),
+                    targetRanges: new List<FeedRangeEpk>() { new FeedRangeEpk(new Range<string>(min: "A", max: "B", isMinInclusive: true, isMaxInclusive: false)) },
+                    partitionKey: null,
+                    orderByColumns: new List<OrderByColumn>()
+                    {
+                        new OrderByColumn("item", SortOrder.Ascending)
+                    },
+                    queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+                    maxConcurrency: 10,
+                    cancellationToken: default,
+                    continuationToken: CosmosArray.Create(
+                        new List<CosmosElement>()
+                        {
+                            OrderByContinuationToken.ToCosmosElement(orderByContinuationToken)
+                        }));
+                Assert.IsTrue(monadicCreate.Succeeded);
+            }
+
+            // Multiple resume values
+            foreach ((string token1, SqlQueryResumeValue resumeValue1) in tokens)
+            {
+                foreach ((string token2, SqlQueryResumeValue resumeValue2) in tokens)
+                {
+                    ParallelContinuationToken parallelContinuationToken1 = new ParallelContinuationToken(
+                        token: $"[{token1}, {token2}]",
+                        range: new Documents.Routing.Range<string>("A", "B", true, false));
+
+                    OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
+                        parallelContinuationToken1,
+                        orderByItems: null,
+                        new List<SqlQueryResumeValue>() { resumeValue1, resumeValue2 },
+                        rid: "rid",
+                        skipCount: 42,
+                        filter: null);
+
+                    TryCatch<IQueryPipelineStage> monadicCreate = OrderByCrossPartitionQueryPipelineStage.MonadicCreate(
+                        documentContainer: mockDocumentContainer.Object,
+                        sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c ORDER BY c.item1, c.item2"),
+                        targetRanges: new List<FeedRangeEpk>()
+                        {
+                            new FeedRangeEpk(new Range<string>(min: "A", max: "B", isMinInclusive: true, isMaxInclusive: false)),
+                            new FeedRangeEpk(new Range<string>(min: "B", max: "C", isMinInclusive: true, isMaxInclusive: false)),
+                        },
+                        partitionKey: null,
+                        orderByColumns: new List<OrderByColumn>()
+                        {
+                            new OrderByColumn("item1", SortOrder.Ascending),
+                            new OrderByColumn("item2", SortOrder.Ascending)
+                        },
+                        queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+                        maxConcurrency: 10,
+                        cancellationToken: default,
+                        continuationToken: CosmosArray.Create(
+                            new List<CosmosElement>()
+                            {
+                                OrderByContinuationToken.ToCosmosElement(orderByContinuationToken)
+                            }));
+                    Assert.IsTrue(monadicCreate.Succeeded);
+                }
+            }
+        }
+
+        [TestMethod]
         public async Task TestFormattedFiltersForTargetPartitionWithContinuationTokenAsync()
         {
             QueryPage emptyPage = new QueryPage(
@@ -292,12 +395,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 additionalHeaders: default,
                 state: default);
 
-            string expectedQuerySpec = "SELECT * FROM c WHERE ( c._ts >= 1665482200 OR IS_STRING(c._ts) OR IS_ARRAY(c._ts) OR IS_OBJECT(c._ts) ) ORDER BY c._ts";
+            string expectedQuerySpec = "SELECT * FROM c WHERE true ORDER BY c._ts";
             Mock<IDocumentContainer> mockContainer = new Mock<IDocumentContainer>(MockBehavior.Strict);
             mockContainer
                 .Setup(
                 c => c.MonadicQueryAsync(
-                    It.Is<SqlQuerySpec>(sqlQuerySpec => expectedQuerySpec.Equals(sqlQuerySpec.QueryText)),
+                    It.Is<SqlQuerySpec>(sqlQuerySpec => expectedQuerySpec.Equals(sqlQuerySpec.QueryText) && sqlQuerySpec.ResumeFilter.ResumeValues.Count == 1),
                     It.IsAny<FeedRangeState<QueryState>>(),
                     It.IsAny<QueryPaginationOptions>(),
                     NoOpTrace.Singleton,

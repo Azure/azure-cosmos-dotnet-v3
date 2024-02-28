@@ -15,15 +15,19 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     [TestCategory("Query")]
     public sealed class CosmosUndefinedQueryTests : QueryTestsBase
     {
-        private const int DocumentCount = 400;
+        private const int DocumentCount = 350;
 
-        private const int MixedTypeCount = 5;
+        private const int MixedTypeCount = 7;
 
         private const int DocumentsPerTypeCount = DocumentCount / MixedTypeCount;
 
         private const int IntegerValue = 42;
 
         private const string StringValue = "string";
+
+        private const string ArrayValue = "[10, 20]";
+
+        private const string ObjectValue = "{\"type\":\"object\"}";
 
         private static readonly int[] PageSizes = new[] { 5, 10, -1 };
 
@@ -231,6 +235,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         MakeGrouping(
                             key: CosmosString.Create(StringValue),
                             value: DocumentsPerTypeCount),
+                        MakeGrouping(
+                            key: CosmosArray.Parse(ArrayValue),
+                            value: DocumentsPerTypeCount),
+                        MakeGrouping(
+                            key: CosmosObject.Parse(ObjectValue),
+                            value: DocumentsPerTypeCount),
                     }),
                 MakeGroupByTest(
                     query:  $"SELECT SUM(c.{nameof(MixedTypeDocument.MixedTypeField)}) as {nameof(GroupByProjection.MixedTypeField)}, " +
@@ -250,6 +260,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                             value: DocumentsPerTypeCount),
                         MakeGrouping(
                             key: CosmosNumber64.Create(IntegerValue * DocumentsPerTypeCount),
+                            value: DocumentsPerTypeCount),
+                        MakeGrouping(
+                            key: null,
+                            value: DocumentsPerTypeCount),
+                        MakeGrouping(
+                            key: null,
                             value: DocumentsPerTypeCount),
                         MakeGrouping(
                             key: null,
@@ -277,6 +293,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         MakeGrouping(
                             key: null,
                             value: DocumentsPerTypeCount),
+                        MakeGrouping(
+                            key: null,
+                            value: DocumentsPerTypeCount),
+                        MakeGrouping(
+                            key: null,
+                            value: DocumentsPerTypeCount),
                     }),
                 MakeGroupByTest(
                     query:  $"SELECT MIN(c.{nameof(MixedTypeDocument.MixedTypeField)}) as {nameof(GroupByProjection.MixedTypeField)}, " +
@@ -300,6 +322,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         MakeGrouping(
                             key: CosmosString.Create(StringValue),
                             value: DocumentsPerTypeCount),
+                        MakeGrouping(
+                            key: null,
+                            value: DocumentsPerTypeCount),
+                        MakeGrouping(
+                            key: null,
+                            value: DocumentsPerTypeCount),
                     }),
                 MakeGroupByTest(
                     query:  $"SELECT MAX(c.{nameof(MixedTypeDocument.MixedTypeField)}) as {nameof(GroupByProjection.MixedTypeField)}, " +
@@ -322,6 +350,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                             value: DocumentsPerTypeCount),
                         MakeGrouping(
                             key: CosmosString.Create(StringValue),
+                            value: DocumentsPerTypeCount),
+                        MakeGrouping(
+                            key: null,
+                            value: DocumentsPerTypeCount),
+                        MakeGrouping(
+                            key: null,
                             value: DocumentsPerTypeCount),
                     }),
             };
@@ -422,6 +456,14 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
                     case 4:
                         mixedTypeElement = CosmosString.Create(StringValue);
+                        break;
+
+                    case 5:
+                        mixedTypeElement = CosmosArray.Parse(ArrayValue);
+                        break;
+
+                    case 6:
+                        mixedTypeElement = CosmosObject.Parse(ObjectValue);
                         break;
 
                     default:
