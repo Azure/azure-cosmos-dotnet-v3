@@ -22,7 +22,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                            clientNamespace: $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}",
                            resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
                            isActivityEnabled: true,
-                           suppressNestedClientActivities: true),
+                           suppressNestedClientActivities: true, 
+                           isStable: false),
             isThreadSafe: true);
 
         public static OpenTelemetryCoreRecorder CreateRecorder(string operationName,
