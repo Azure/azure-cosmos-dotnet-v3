@@ -662,6 +662,7 @@ namespace Microsoft.Azure.Cosmos
                 openTelemetry: (response) => new OpenTelemetryResponse(response));
         }
 
+#if PREVIEW
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
             string processorName,
             ChangeFeedHandler<ChangeFeedItemChange<T>> onChangesDelegate)
@@ -670,5 +671,6 @@ namespace Microsoft.Azure.Cosmos
                 processorName,
                 onChangesDelegate);
         }
+#endif
     }
 }

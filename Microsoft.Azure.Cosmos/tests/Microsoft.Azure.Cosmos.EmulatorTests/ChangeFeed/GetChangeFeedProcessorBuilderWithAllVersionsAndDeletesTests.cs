@@ -6,9 +6,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Diagnostics.Metrics;
     using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -159,13 +158,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             }
         }
 
+#if PREVIEW
         /// <summary>
-        /// <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4308"/>
+        /// This is based on an issue located at <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4308"/>.
         /// </summary>
         [TestMethod]
         [Owner("philipthomas-MSFT")]
-        [Description("")]
-        public async Task WhenAllVersionsAndDeletesDocumentsAreReadAndLeaseContainerIsTheSameThenSwitchedToLatestVersionExpectsAnExceptionTestMeAsync()
+        [Description("ChangeFeedMode switch from LatestVersion to AllVersionsAndDeletes")]
+        public async Task WhenLatestVersionSwitchToAllVersionsAndDeletesExpectsACosmosExceptionTestAsync()
         {
             int documentCount = 10;
             _ = await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
@@ -175,16 +175,91 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                         
             ManualResetEvent allDocsProcessed = new(false);
 
-            await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests.ArrangeActAssetLastestVersionChangeFeedProcessorAsync(
-                monitoredContainer: this.Container,
-                documentCount: documentCount,
-                leaseContainer: this.LeaseContainer,
-                allDocsProcessed: allDocsProcessed);
+            await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
+                .ArrangeActAssetLastestVersionChangeFeedProcessorAsync(
+                    monitoredContainer: this.Container,
+                    documentCount: documentCount,
+                    leaseContainer: this.LeaseContainer,
+                    allDocsProcessed: allDocsProcessed);
 
-            await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests.ArrangeActAssertAllVersionsAndDeletesChangeFeedProcessorAsync(
-                monitoredContainer: this.Container,
-                leaseContainer: this.LeaseContainer,
-                allDocsProcessed: allDocsProcessed);
+            CosmosException exception = await Assert.ThrowsExceptionAsync<CosmosException>(
+                () => GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
+                    .ArrangeActAssertAllVersionsAndDeletesChangeFeedProcessorAsync(
+                        monitoredContainer: this.Container,
+                        documentCount: documentCount,
+                        leaseContainer: this.LeaseContainer,
+                        allDocsProcessed: allDocsProcessed));
+
+            Assert.AreEqual(expected: HttpStatusCode.BadRequest, actual: exception.StatusCode);
+            Assert.AreEqual(expected: default, actual: exception.SubStatusCode);
+            Assert.AreEqual(expected: "Switching ChangeFeedMode Incremental Feed to Full-Fidelity Feed is not allowed.", actual: exception.ResponseBody);
+        }
+
+        /// <summary>
+        /// This is based on an issue located at <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4308"/>.
+        /// </summary>
+        [TestMethod]
+        [Owner("philipthomas-MSFT")]
+        [Description("ChangeFeedMode switch from AllVersionsAndDeletes to LatestVersion, a CosmosException is expected.")]
+        public async Task WhenAllVersionsAndDeletesSwitchToLatestVersionExpectsACosmosExceptionTestAsync()
+        {
+            int documentCount = 10;
+            _ = await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
+                .IngestDocumentsAsync(
+                    monitoredContainer: this.Container,
+                    documentCount: documentCount);
+
+            ManualResetEvent allDocsProcessed = new(false);
+
+            await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
+                .ArrangeActAssertAllVersionsAndDeletesChangeFeedProcessorAsync(
+                    monitoredContainer: this.Container,
+                    documentCount: documentCount,
+                    leaseContainer: this.LeaseContainer,
+                    allDocsProcessed: allDocsProcessed);
+
+            CosmosException exception = await Assert.ThrowsExceptionAsync<CosmosException>(
+                () => GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
+                    .ArrangeActAssetLastestVersionChangeFeedProcessorAsync(
+                        monitoredContainer: this.Container,
+                        documentCount: documentCount,
+                        leaseContainer: this.LeaseContainer,
+                        allDocsProcessed: allDocsProcessed));
+
+            Assert.AreEqual(expected: HttpStatusCode.BadRequest, actual: exception.StatusCode);
+            Assert.AreEqual(expected: default, actual: exception.SubStatusCode);
+            Assert.AreEqual(expected: "Switching ChangeFeedMode Full-Fidelity Feed to Incremental Feed is not allowed.", actual: exception.ResponseBody);
+        }
+
+        /// <summary>
+        /// This is based on an issue located at <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4308"/>.
+        /// </summary>
+        [TestMethod]
+        [Owner("philipthomas-MSFT")]
+        [Description("No ChangeFeedMode switch, no CosmosException is expected.")]
+        public async Task WhenNoSwitchDoesNotExpectACosmosExceptionTestAsync()
+        {
+            int documentCount = 10;
+            _ = await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
+                .IngestDocumentsAsync(
+                    monitoredContainer: this.Container,
+                    documentCount: documentCount);
+
+            ManualResetEvent allDocsProcessed = new(false);
+
+            await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
+                .ArrangeActAssertAllVersionsAndDeletesChangeFeedProcessorAsync(
+                    monitoredContainer: this.Container,
+                    documentCount: documentCount,
+                    leaseContainer: this.LeaseContainer,
+                    allDocsProcessed: allDocsProcessed);
+
+            await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
+                .ArrangeActAssertAllVersionsAndDeletesChangeFeedProcessorAsync(
+                    monitoredContainer: this.Container,
+                    documentCount: documentCount,
+                    leaseContainer: this.LeaseContainer,
+                    allDocsProcessed: allDocsProcessed);
         }
 
         private static async Task<List<dynamic>> IngestDocumentsAsync(Container monitoredContainer, int documentCount)
@@ -236,6 +311,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 .WithMaxItems(1)
                 .WithStartFromBeginning()
                 .WithLeaseContainer(leaseContainer)
+                .WithChangeFeedMode(ChangeFeedMode.LatestVersion)
                 .WithErrorNotification((leaseToken, error) =>
                 {
                     exception = error.InnerException;
@@ -251,8 +327,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
             bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
 
-            //////await latestVersionProcessor.StopAsync();
-
             if (exception != default)
             {
                 Assert.Fail(exception.ToString());
@@ -262,16 +336,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         private static async Task ArrangeActAssertAllVersionsAndDeletesChangeFeedProcessorAsync(
             ContainerInternal monitoredContainer,
             Container leaseContainer,
+            long documentCount,
             ManualResetEvent allDocsProcessed)
         {
             Exception exception = default;
             long counter = 0;
-            ChangeFeedProcessor allVersionsAndDeletesProcessor = monitoredContainer
+            ChangeFeedProcessor allVersionsAndDeletesProcessorAtomic = null;
+
+            ChangeFeedProcessorBuilder allVersionsAndDeletesProcessorBuilder = monitoredContainer
                 .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: $"{nameof(ChangeFeedMode.AllVersionsAndDeletes)}", onChangesDelegate: (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItemChange<dynamic>> documents, CancellationToken token) =>
                 {
                     Console.WriteLine($"Reading {nameof(documents)} in {nameof(ChangeFeedMode.AllVersionsAndDeletes)} mode: {JsonConvert.SerializeObject(documents)}");
                     Console.WriteLine($"{nameof(counter)}: {counter}");
                     Console.WriteLine($"{nameof(context.LeaseToken)}: {context.LeaseToken}");
+
+                    if (counter == documentCount / 2)
+                    {
+                        Console.WriteLine($"Stopping {nameof(allVersionsAndDeletesProcessorAtomic)}");
+
+                        allVersionsAndDeletesProcessorAtomic.StopAsync();
+
+                        return Task.CompletedTask;
+                    }
 
                     counter++;
 
@@ -279,7 +365,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 })
                 .WithInstanceName(Guid.NewGuid().ToString())
                 .WithMaxItems(1)
+                .WithStartFromBeginning()
                 .WithLeaseContainer(leaseContainer)
+                .WithChangeFeedMode(ChangeFeedMode.AllVersionsAndDeletes)
                 .WithErrorNotification((leaseToken, error) =>
                 {
                     // an exception should happen here, because it is trying to use the same LatestVersion leaseContainer on an AllVersionsAndDeletes processor.
@@ -288,19 +376,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     Console.WriteLine(error.ToString());
 
                     return Task.CompletedTask;
-                })
-                .Build();
+                });
+
+            ChangeFeedProcessor allVersionsAndDeletesProcessor = allVersionsAndDeletesProcessorBuilder.Build();
+            Interlocked.Exchange(ref allVersionsAndDeletesProcessorAtomic, allVersionsAndDeletesProcessor);
 
             await allVersionsAndDeletesProcessor.StartAsync();
             await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
             bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
-
-            await allVersionsAndDeletesProcessor.StopAsync();
 
             if (exception != default)
             {
                 Assert.Fail(exception.ToString());
             }
         }
+#endif
     }
 }

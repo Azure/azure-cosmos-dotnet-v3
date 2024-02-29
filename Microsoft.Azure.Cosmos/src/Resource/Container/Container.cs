@@ -1682,6 +1682,80 @@ namespace Microsoft.Azure.Cosmos
             FeedRange feedRange,
             CancellationToken cancellationToken = default);
 
+        /// <summary>
+        /// Initializes a <see cref="GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes"/> for change feed processing with all versions and deletes.
+        /// </summary>
+        /// <typeparam name="T">Document type</typeparam>
+        /// <param name="processorName">A name that identifies the Processor and the particular work it will do.</param>
+        /// <param name="onChangesDelegate">Delegate to receive all changes and deletes</param>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// Container leaseContainer = await this.database.CreateContainerAsync(
+        ///     new ContainerProperties(id: "leases", partitionKeyPath: "/id"),
+        ///     cancellationToken: this.cancellationToken);
+        ///     
+        /// ManualResetEvent allProcessedDocumentsEvent = new ManualResetEvent(false);
+        /// 
+        /// ChangeFeedProcessor changeFeedProcessor = this.Container
+        ///     .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: "processor", onChangesDelegate: (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItemChange<dynamic>> documents, CancellationToken token) =>
+        /// {
+        ///     Console.WriteLine($"number of documents processed: {documents.Count}");
+        ///     
+        ///     string id = default;
+        ///     string pk = default;
+        ///     string description = default;
+        ///     
+        ///     foreach (ChangeFeedItemChange<dynamic> changeFeedItem in documents)
+        ///     {
+        ///         if (changeFeedItem.Metadata.OperationType != ChangeFeedOperationType.Delete)
+        ///         {
+        ///             id = changeFeedItem.Current.id.ToString();
+        ///             pk = changeFeedItem.Current.pk.ToString();
+        ///             description = changeFeedItem.Current.description.ToString();
+        ///         }
+        ///         else
+        ///         {
+        ///             id = changeFeedItem.Previous.id.ToString();
+        ///             pk = changeFeedItem.Previous.pk.ToString();
+        ///             description = changeFeedItem.Previous.description.ToString();
+        ///         }
+        ///         
+        ///         ChangeFeedOperationType operationType = changeFeedItem.Metadata.OperationType;
+        ///         long previousLsn = changeFeedItem.Metadata.PreviousLsn;
+        ///         DateTime conflictResolutionTimestamp = changeFeedItem.Metadata.ConflictResolutionTimestamp;
+        ///         long lsn = changeFeedItem.Metadata.Lsn;
+        ///         bool isTimeToLiveExpired = changeFeedItem.Metadata.IsTimeToLiveExpired;
+        ///     }
+        ///     
+        ///     return Task.CompletedTask;
+        /// })
+        /// .WithInstanceName(Guid.NewGuid().ToString())
+        /// .WithLeaseContainer(leaseContainer)
+        /// .WithErrorNotification((leaseToken, error) =>
+        /// {
+        ///     Console.WriteLine(error.ToString());
+        ///     
+        ///     return Task.CompletedTask;
+        /// })
+        /// .Build();
+        /// 
+        /// await changeFeedProcessor.StartAsync();
+        /// await Task.Delay(1000);
+        /// await this.Container.CreateItemAsync<dynamic>(new { id = "1", pk = "1", description = "original test" }, partitionKey: new PartitionKey("1"));
+        /// await this.Container.UpsertItemAsync<dynamic>(new { id = "1", pk = "1", description = "test after replace" }, partitionKey: new PartitionKey("1"));
+        /// await this.Container.DeleteItemAsync<dynamic>(id: "1", partitionKey: new PartitionKey("1"));
+        /// 
+        /// allProcessedDocumentsEvent.WaitOne(10 * 1000);
+        /// 
+        /// await changeFeedProcessor.StopAsync();
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
+            string processorName,
+            ChangeFeedHandler<ChangeFeedItemChange<T>> onChangesDelegate);
 #endif
     }
 }
