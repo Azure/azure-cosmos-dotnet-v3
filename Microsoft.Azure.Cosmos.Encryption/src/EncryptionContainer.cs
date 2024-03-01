@@ -639,14 +639,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 });
         }
 
-#if ENCRYPTIONPREVIEW
-        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
-            string processorName,
-            ChangeFeedHandler<ChangeFeedItemChange<T>> onChangesDelegate)
-        {
-            throw new NotImplementedException();
-        }
-#endif
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint(
             string processorName,
             ChangeFeedStreamHandlerWithManualCheckpoint onChangesDelegate)

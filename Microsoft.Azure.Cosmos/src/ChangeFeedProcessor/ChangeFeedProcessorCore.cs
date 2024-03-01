@@ -86,12 +86,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             string monitoredDatabaseAndContainerRid = await this.monitoredContainer.GetMonitoredDatabaseAndContainerRidAsync();
 
-#if PREVIEW
             await this
                 .ChangeFeedModeSwitchingCheckAsync(
                     key: monitoredDatabaseAndContainerRid)
                 .ConfigureAwait(false);
-#endif
 
             string leaseContainerPrefix = this.monitoredContainer.GetLeasePrefix(this.changeFeedLeaseOptions.LeasePrefix, monitoredDatabaseAndContainerRid);
             Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.monitoredContainer.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);

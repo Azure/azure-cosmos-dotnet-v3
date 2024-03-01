@@ -158,7 +158,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             }
         }
 
-#if PREVIEW
         /// <summary>
         /// This is based on an issue located at <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4308"/>.
         /// </summary>
@@ -390,6 +389,5 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 Assert.Fail(exception.ToString());
             }
         }
-#endif
     }
 }
