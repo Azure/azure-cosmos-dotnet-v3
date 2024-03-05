@@ -723,6 +723,13 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Request" operationName="Request.RequestAsync" displayName="Query Document">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.url">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.status_code">200</ATTRIBUTE>
+  </ACTIVITY>
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
@@ -1473,6 +1480,13 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Request" operationName="Request.RequestAsync" displayName="Query Document">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.url">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.status_code">200</ATTRIBUTE>
+  </ACTIVITY>
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
@@ -2203,6 +2217,13 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Request" operationName="Request.RequestAsync" displayName="Query Document">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.url">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.status_code">200</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
@@ -2954,6 +2975,13 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Request" operationName="Request.RequestAsync" displayName="Query Document">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.url">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.status_code">200</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
@@ -3780,6 +3808,13 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Request" operationName="Request.RequestAsync" displayName="Query Document">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.url">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.status_code">200</ATTRIBUTE>
+  </ACTIVITY>
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
@@ -4533,6 +4568,13 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Request" operationName="Request.RequestAsync" displayName="Query Document">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.url">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.status_code">200</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
@@ -5307,6 +5349,13 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Request" operationName="Request.RequestAsync" displayName="Query Document">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.url">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.status_code">200</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
