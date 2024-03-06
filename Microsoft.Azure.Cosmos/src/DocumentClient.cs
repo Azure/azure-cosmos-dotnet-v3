@@ -6654,7 +6654,7 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
-                // It is decided to switch this feature off completely for external users but keep it uchanged for internal users,
+                // It is decided to switch this feature off completely for external users but keep it unchanged for internal users,
                 // due to the nature of information, we are collecting here. RNTBD is internal protocol and we do not expose it to the customers.
                 Documents.Telemetry.DistributedTracingOptions distributedTracingOptions = new ()
                 {
