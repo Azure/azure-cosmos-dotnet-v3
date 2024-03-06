@@ -251,7 +251,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 }
 
                 // In case of Select -> Group by cases, the Select query should not be flattened and kept as a subquery
-                if (query.inputQuery != null && query.inputQuery.selectClause != null && query.groupByClause != null)
+                if ((query.inputQuery?.selectClause != null) && (query.groupByClause != null))
                 {
                     flattenQuery = this;
                     break;
@@ -302,7 +302,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 {
                     // If selectClause doesn't exists, use SELECT v0 where v0 is the input parameter, instead of SELECT *.
                     // If there is a groupby clause, the input parameter comes from the groupBy binding instead of the from clause binding
-                    string parameterName = this.GroupByParameter != null ? this.GroupByParameter.GetInputParameter().Name : this.FromParameters.GetInputParameter().Name;
+                    string parameterName = (this.GroupByParameter ?? this.FromParameters).GetInputParameter().Name;
                     SqlScalarExpression parameterExpression = SqlPropertyRefScalarExpression.Create(null, SqlIdentifier.Create(parameterName));
                     this.selectClause = SqlSelectClause.Create(SqlSelectValueSpec.Create(parameterExpression));
                 }
@@ -559,14 +559,16 @@ namespace Microsoft.Azure.Cosmos.Linq
                     // New query is needed when there is already a Take or a non-distinct Select
                     shouldPackage = (this.topSpec != null) ||
                         (this.offsetSpec != null) ||
-                        (this.selectClause != null && !this.selectClause.HasDistinct) || this.groupByClause != null;
+                        (this.selectClause != null && !this.selectClause.HasDistinct) || 
+                        (this.groupByClause != null);
                     break;
 
                 case LinqMethods.GroupBy:
                     // New query is needed when there is already a Take or a Select or a Group by clause
                     shouldPackage = (this.topSpec != null) ||
                         (this.offsetSpec != null) ||
-                        (this.selectClause != null) || this.groupByClause != null;
+                        (this.selectClause != null) || 
+                        (this.groupByClause != null);
                     break;
 
                 case LinqMethods.Skip:

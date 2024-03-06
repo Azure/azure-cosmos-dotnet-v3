@@ -1763,7 +1763,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                 case ExpressionType.New:
                     // TODO: Multi Value Selector
-                    throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.ExpressionTypeIsNotSupported, "Multiple value selector"));
+                    throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.ExpressionTypeIsNotSupported, ExpressionType.New));
 
                 default:
                     throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.ExpressionTypeIsNotSupported, valueSelectorExpression.NodeType));
@@ -1964,16 +1964,11 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
             else if (arguments.Count == 2)
             {
-                if (context.CurrentQuery.GroupByParameter != null)
-                {
-                    LambdaExpression lambda = Utilities.GetLambda(arguments[1]);
-                    aggregateExpression = ExpressionToSql.VisitNonSubqueryScalarLambda(lambda, context);
-                }
-                else
-                {
-                    LambdaExpression lambda = Utilities.GetLambda(arguments[1]);
-                    aggregateExpression = ExpressionToSql.VisitScalarExpression(lambda, context);
-                }
+                LambdaExpression lambda = Utilities.GetLambda(arguments[1]);
+                    
+                aggregateExpression = context.CurrentQuery.GroupByParameter != null
+                    ? ExpressionToSql.VisitNonSubqueryScalarLambda(lambda, context)
+                    : ExpressionToSql.VisitScalarExpression(lambda, context);
             }
             else
             {

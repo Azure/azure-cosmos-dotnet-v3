@@ -701,6 +701,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         public void TestGroupByTranslation()
         {
             List<LinqTestInput> inputs = new List<LinqTestInput>();
+            inputs.Add(new LinqTestInput("GroupBy Single Value Select Key", b => getQuery(b).GroupBy(k => k /*keySelector*/,
+                                                                                (key, values) => key /*return the group by key */)));
             inputs.Add(new LinqTestInput("GroupBy Single Value Select Key", b => getQuery(b).GroupBy(k => k.Id /*keySelector*/,
                                                                                 (key, values) => key /*return the group by key */)));
             inputs.Add(new LinqTestInput("GroupBy Single Value Select Key Alias", b => getQuery(b).GroupBy(k => k.Id /*keySelector*/,
@@ -713,7 +715,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                                                                                 (key, values) => values.Max(value => value.Int) /*return the Max of each group */)));
             inputs.Add(new LinqTestInput("GroupBy Single Value With Count", b => getQuery(b).GroupBy(k => k.Id /*keySelector*/,
                                                                                 (key, values) => values.Count() /*return the Count of each group */)));
-            inputs.Add(new LinqTestInput("GroupBy Single Value With Count", b => getQuery(b).GroupBy(k => k.Id /*keySelector*/,
+            inputs.Add(new LinqTestInput("GroupBy Single Value With Average", b => getQuery(b).GroupBy(k => k.Id /*keySelector*/,
                                                                                 (key, values) => values.Average(value => value.Int) /*return the Count of each group */)));
 
             // Negative cases
