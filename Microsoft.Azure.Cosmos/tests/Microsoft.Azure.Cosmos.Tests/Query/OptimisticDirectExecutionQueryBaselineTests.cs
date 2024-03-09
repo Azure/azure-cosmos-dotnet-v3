@@ -597,7 +597,8 @@
                     memoryStream,
                     Documents.ResourceType.Document,
                     out CosmosArray documents,
-                    out CosmosObject distributionPlan);
+                    out CosmosObject distributionPlan,
+                    out bool? ignored);
 
                 if (distributionPlan.TryGetValue("backendDistributionPlan", out CosmosElement backendDistributionPlan) &&
                     distributionPlan.TryGetValue("clientDistributionPlan", out CosmosElement clientDistributionPlan))
@@ -627,7 +628,8 @@
                 memoryStream,
                 Documents.ResourceType.Document,
                 out CosmosArray documents,
-                out CosmosObject distributionPlan);
+                out CosmosObject distributionPlan,
+                out bool? streaming);
 
             if (distributionPlan.TryGetValue("backendDistributionPlan", out CosmosElement backendDistributionPlan) &&
                 distributionPlan.TryGetValue("clientDistributionPlan", out CosmosElement clientDistributionPlan))
@@ -1082,7 +1084,8 @@
                             distributionPlanSpec: default,
                             disallowContinuationTokenMessage: default,
                             additionalHeaders: additionalHeaders.ToImmutable(),
-                            state: queryPage.Result.Result.State)));
+                            state: queryPage.Result.Result.State,
+                            streaming: default)));
             }
         }
 

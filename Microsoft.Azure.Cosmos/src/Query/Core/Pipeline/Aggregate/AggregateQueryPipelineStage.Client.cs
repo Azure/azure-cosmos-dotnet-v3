@@ -140,7 +140,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                     distributionPlanSpec: default,
                     disallowContinuationTokenMessage: default,
                     additionalHeaders: cumulativeAdditionalHeaders,
-                    state: default);
+                    state: default,
+                    streaming: default);
 
                 this.Current = TryCatch<QueryPage>.FromResult(queryPage);
                 this.returnedFinalPage = true;

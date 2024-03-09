@@ -173,7 +173,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                             distributionPlanSpec: default,
                             disallowContinuationTokenMessage: default,
                             additionalHeaders: default,
-                            state: feedRangeState.State ?? StateForStartedButNoDocumentsReturned));
+                            state: feedRangeState.State ?? StateForStartedButNoDocumentsReturned,
+                            streaming: default));
             }
 
             Exception failure = await this.ShouldReturnFailure();

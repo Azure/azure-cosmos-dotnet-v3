@@ -59,7 +59,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                             distributionPlanSpec: default,
                             disallowContinuationTokenMessage: default,
                             additionalHeaders: this.cumulativeAdditionalHeaders,
-                            state: default);
+                            state: default,
+                            streaming: null);
                         this.cumulativeRequestCharge = 0;
                         this.cumulativeResponseLengthInBytes = 0;
                         this.cumulativeAdditionalHeaders = null;
@@ -96,7 +97,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                             distributionPlanSpec: default,
                             disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
                             additionalHeaders: sourcePage.AdditionalHeaders,
-                            state: default);
+                            state: default,
+                            streaming: sourcePage.Streaming);
                         this.cumulativeRequestCharge = 0;
                         this.cumulativeResponseLengthInBytes = 0;
                         this.cumulativeAdditionalHeaders = null;
@@ -122,7 +124,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                             distributionPlanSpec: default,
                             disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
                             additionalHeaders: sourcePage.AdditionalHeaders,
-                            state: sourcePage.State);
+                            state: sourcePage.State,
+                            streaming: sourcePage.Streaming);
                         this.cumulativeRequestCharge = 0;
                         this.cumulativeResponseLengthInBytes = 0;
                         this.cumulativeAdditionalHeaders = null;

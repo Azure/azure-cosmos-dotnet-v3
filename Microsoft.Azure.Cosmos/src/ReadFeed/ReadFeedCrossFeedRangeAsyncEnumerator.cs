@@ -47,7 +47,8 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                 innerReadFeedPage.Page.Content,
                 Documents.ResourceType.Document,
                 out CosmosArray documents,
-                out CosmosObject distributionPlan);
+                out CosmosObject distributionPlan,
+                out bool? ignored);
             ReadFeedPage page = new ReadFeedPage(
                 documents,
                 innerReadFeedPage.Page.RequestCharge,

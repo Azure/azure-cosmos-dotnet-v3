@@ -125,7 +125,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
                 distributionPlanSpec: default,
                 backendQueryPage.DisallowContinuationTokenMessage,
                 backendQueryPage.AdditionalHeaders,
-                queryState);
+                queryState,
+                backendQueryPage.Streaming);
 
             this.Current = TryCatch<QueryPage>.FromResult(crossPartitionQueryPage);
             return true;
