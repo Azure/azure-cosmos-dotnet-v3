@@ -176,7 +176,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                         distributionPlanSpec: default,
                         disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
                         additionalHeaders: sourcePage.AdditionalHeaders,
-                        state: state);
+                        state: state,
+                        streaming: sourcePage.Streaming);
                 }
                 else
                 {
@@ -189,7 +190,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                         distributionPlanSpec: default,
                         disallowContinuationTokenMessage: ClientDistinctQueryPipelineStage.DisallowContinuationTokenMessage,
                         additionalHeaders: sourcePage.AdditionalHeaders,
-                        state: null);
+                        state: null,
+                        streaming: sourcePage.Streaming);
                 }
 
                 this.Current = TryCatch<QueryPage>.FromResult(queryPage);

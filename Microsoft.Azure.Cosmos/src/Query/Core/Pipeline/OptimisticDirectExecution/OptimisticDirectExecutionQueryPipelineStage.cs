@@ -235,7 +235,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                     backendQueryPage.DistributionPlanSpec,
                     disallowContinuationTokenMessage: null,
                     backendQueryPage.AdditionalHeaders,
-                    queryState);
+                    queryState,
+                    backendQueryPage.Streaming);
 
                 this.Current = TryCatch<QueryPage>.FromResult(queryPage);
                 return true;

@@ -234,7 +234,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                     distributionPlanSpec: default,
                     disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
                     additionalHeaders: sourcePage.AdditionalHeaders,
-                    state: state);
+                    state: state,
+                    streaming: sourcePage.Streaming);
 
                 this.Current = TryCatch<QueryPage>.FromResult(queryPage);
                 return true;

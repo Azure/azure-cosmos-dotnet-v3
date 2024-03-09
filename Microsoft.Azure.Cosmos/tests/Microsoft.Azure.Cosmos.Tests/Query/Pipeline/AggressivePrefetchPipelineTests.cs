@@ -247,7 +247,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     distributionPlanSpec: default,
                     disallowContinuationTokenMessage: null,
                     additionalHeaders: null,
-                    state: continuationToken);
+                    state: continuationToken,
+                    streaming: default);
 
                 return TryCatch<QueryPage>.FromResult(page);
             }

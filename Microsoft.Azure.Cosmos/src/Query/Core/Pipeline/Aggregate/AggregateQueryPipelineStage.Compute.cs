@@ -149,7 +149,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                         distributionPlanSpec: default,
                         disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
                         additionalHeaders: sourcePage.AdditionalHeaders,
-                        state: queryState);
+                        state: queryState,
+                        streaming: sourcePage.Streaming);
 
                     queryPage = emptyPage;
                 }
@@ -173,7 +174,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                         distributionPlanSpec: default,
                         disallowContinuationTokenMessage: default,
                         additionalHeaders: default,
-                        state: default);
+                        state: default,
+                        streaming: default);
 
                     queryPage = finalPage;
                     this.returnedFinalPage = true;

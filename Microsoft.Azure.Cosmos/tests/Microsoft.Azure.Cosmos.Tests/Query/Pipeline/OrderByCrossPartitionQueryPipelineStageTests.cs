@@ -393,7 +393,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 distributionPlanSpec: default,
                 disallowContinuationTokenMessage: default,
                 additionalHeaders: default,
-                state: default);
+                state: default,
+                streaming: default);
 
             string expectedQuerySpec = "SELECT * FROM c WHERE true ORDER BY c._ts";
             Mock<IDocumentContainer> mockContainer = new Mock<IDocumentContainer>(MockBehavior.Strict);
@@ -479,7 +480,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 QueryPage queryPage = tryGetQueryPage.Result;
                 documents.AddRange(queryPage.Documents);
 
-                Assert.AreEqual(42, queryPage.RequestCharge);
+                if (queryPage.RequestCharge > 0)
+                {
+                    // some empty pages may be emitted
+                    Assert.AreEqual(42, queryPage.RequestCharge);
+                }
             }
 
             Assert.AreEqual(numItems, documents.Count);

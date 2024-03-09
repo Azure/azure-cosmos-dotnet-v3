@@ -125,7 +125,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                     distributionPlanSpec: default,
                     disallowContinuationTokenMessage: ClientGroupByQueryPipelineStage.ContinuationTokenNotSupportedWithGroupBy,
                     additionalHeaders: addtionalHeaders,
-                    state: default);
+                    state: default,
+                    streaming: null);
 
                 this.Current = TryCatch<QueryPage>.FromResult(queryPage);
                 return true;

@@ -110,7 +110,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
                     distributionPlanSpec: default,
                     disallowContinuationTokenMessage: default,
                     additionalHeaders: additionalHeaders,
-                    state: default);
+                    state: default,
+                    streaming: default);
 
                 this.Current = TryCatch<QueryPage>.FromResult(queryPage);
                 this.returnedFinalPage = true;

@@ -698,7 +698,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                             distributionPlanSpec: default,
                             disallowContinuationTokenMessage: default,
                             additionalHeaders: additionalHeaders.ToImmutable(),
-                            state: queryState)));
+                            state: queryState,
+                            streaming: default)));
             }
         }
 

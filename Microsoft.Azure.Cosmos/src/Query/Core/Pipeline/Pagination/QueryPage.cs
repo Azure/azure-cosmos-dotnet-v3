@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
-    using Newtonsoft.Json;
 
     internal sealed class QueryPage : Page<QueryState>
     {
@@ -30,7 +29,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination
             DistributionPlanSpec distributionPlanSpec,
             string disallowContinuationTokenMessage,
             IReadOnlyDictionary<string, string> additionalHeaders,
-            QueryState state)
+            QueryState state,
+            bool? streaming)
             : base(requestCharge, activityId, additionalHeaders, state)
         {
             this.Documents = documents ?? throw new ArgumentNullException(nameof(documents));
@@ -38,6 +38,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination
             this.CosmosQueryExecutionInfo = cosmosQueryExecutionInfo;
             this.DistributionPlanSpec = distributionPlanSpec;
             this.DisallowContinuationTokenMessage = disallowContinuationTokenMessage;
+            this.Streaming = streaming;
+
         }
 
         public IReadOnlyList<CosmosElement> Documents { get; }
@@ -49,6 +51,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination
         public DistributionPlanSpec DistributionPlanSpec { get; }
 
         public string DisallowContinuationTokenMessage { get; }
+
+        public bool? Streaming { get; }
 
         protected override ImmutableHashSet<string> DerivedClassBannedHeaders => QueryPage.BannedHeaders;
     }

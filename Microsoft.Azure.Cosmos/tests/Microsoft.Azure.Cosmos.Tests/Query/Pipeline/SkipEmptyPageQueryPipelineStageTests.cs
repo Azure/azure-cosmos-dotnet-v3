@@ -132,7 +132,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                             distributionPlanSpec: default,
                             disallowContinuationTokenMessage: default,
                             additionalHeaders: default,
-                            state: new QueryState(CosmosString.Create("Empty"))));
+                            state: new QueryState(CosmosString.Create("Empty")),
+                            streaming: default));
 
             private static readonly TryCatch<QueryPage> NonEmpty = TryCatch<QueryPage>.FromResult(new QueryPage(
                             documents: new List<CosmosElement> { CosmosElement.Parse("42") },
@@ -143,7 +144,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                             distributionPlanSpec: default,
                             disallowContinuationTokenMessage: default,
                             additionalHeaders: default,
-                            state: new QueryState(CosmosString.Create("NonEmpty"))));
+                            state: new QueryState(CosmosString.Create("NonEmpty")),
+                            streaming: default));
 
             private readonly IReadOnlyList<PageType> pages;
 

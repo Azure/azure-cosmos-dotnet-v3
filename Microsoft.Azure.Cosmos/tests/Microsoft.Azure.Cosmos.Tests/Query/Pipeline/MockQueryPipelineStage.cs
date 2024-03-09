@@ -62,7 +62,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 distributionPlanSpec: default,
                 disallowContinuationTokenMessage: default,
                 additionalHeaders: default,
-                state: state);
+                state: state,
+                streaming: default);
             this.Current = TryCatch<QueryPage>.FromResult(page);
             return new ValueTask<bool>(true);
         }
