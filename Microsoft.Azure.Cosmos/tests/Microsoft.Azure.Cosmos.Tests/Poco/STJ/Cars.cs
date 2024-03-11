@@ -33,7 +33,6 @@
             "steering mounted control",
         };
 
-        [JsonConstructor]
         public Cars(
             string name,
             int colorCode,

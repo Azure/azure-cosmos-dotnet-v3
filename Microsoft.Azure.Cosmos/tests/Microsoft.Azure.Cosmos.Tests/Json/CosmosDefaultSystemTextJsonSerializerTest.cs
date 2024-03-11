@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Reflection;
     using Microsoft.Azure.Cosmos.Tests.Poco.STJ;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -157,6 +158,23 @@
 
             // Assert.
             Assert.AreEqual(expected: value, actual: guidValue);
+        }
+
+        [TestMethod]
+        public void TestSerializeMemberName()
+        {
+            // Arrange.
+            Cars car = Cars.GetRandomCar();
+
+            MemberInfo[] memberInfoArray = car
+                .GetType()
+                .GetMembers(bindingAttr: BindingFlags.Instance | BindingFlags.NonPublic);
+
+            // Act and Assert.
+            foreach (MemberInfo member in memberInfoArray)
+            {
+                Assert.AreEqual(member.Name, this.stjSerializer.SerializeMemberName(member));
+            }
         }
     }
 }
