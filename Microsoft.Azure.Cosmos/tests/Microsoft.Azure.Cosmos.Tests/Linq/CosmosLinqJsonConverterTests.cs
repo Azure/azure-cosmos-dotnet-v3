@@ -192,7 +192,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <remarks>
-        // See: https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos.Samples/Usage/SystemTextJson/CosmosDefaultSystemTextJsonSerializer.cs
+        // See: https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos.Samples/Usage/SystemTextJson/CosmosSystemTextJsonSerializer.cs
         /// </remarks>
         class TestCustomJsonLinqSerializer : CosmosLinqSerializer
         {
@@ -259,7 +259,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <remarks>
-        // See: https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos.Samples/Usage/SystemTextJson/CosmosDefaultSystemTextJsonSerializer.cs
+        // See: https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos.Samples/Usage/SystemTextJson/CosmosSystemTextJsonSerializer.cs
         /// </remarks>
         class TestCustomJsonSerializer : CosmosSerializer
         {
