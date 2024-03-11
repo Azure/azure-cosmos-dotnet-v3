@@ -12,8 +12,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
         where TPage : Page<TState>
         where TState : State
     {
-        protected BufferedPartitionRangePageAsyncEnumeratorBase(FeedRangeState<TState> feedRangeState, CancellationToken cancellationToken)
-            : base(feedRangeState, cancellationToken)
+        protected BufferedPartitionRangePageAsyncEnumeratorBase(FeedRangeState<TState> feedRangeState)
+            : base(feedRangeState)
         {
         }
 

@@ -63,9 +63,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                         feedRangeState: new FeedRangeState<QueryState>(ranges[0], state),
                         partitionKey: null,
                         queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
-                        filter: "filter",
-                        cancellationToken: cancellationToken),
-                    NoOpTrace.Singleton);
+                        filter: "filter"),
+                    NoOpTrace.Singleton,
+                    cancellationToken);
 
                 return Task.FromResult(enumerator);
             }

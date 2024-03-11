@@ -23,9 +23,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             FeedRangeState<QueryState> feedRangeState,
             PartitionKey? partitionKey,
             QueryPaginationOptions queryPaginationOptions,
-            string filter,
-            CancellationToken cancellationToken)
-            : base(feedRangeState, cancellationToken)
+            string filter)
+            : base(feedRangeState)
         {
             this.StartOfPageState = feedRangeState.State;
             this.innerEnumerator = new InnerEnumerator(
@@ -34,11 +33,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 feedRangeState,
                 partitionKey,
                 queryPaginationOptions,
-                filter,
-                cancellationToken);
+                filter);
             this.bufferedEnumerator = new BufferedPartitionRangePageAsyncEnumerator<OrderByQueryPage, QueryState>(
-                this.innerEnumerator,
-                cancellationToken);
+                this.innerEnumerator);
         }
 
         public SqlQuerySpec SqlQuerySpec => this.innerEnumerator.SqlQuerySpec;
@@ -54,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         protected override async Task<TryCatch<OrderByQueryPage>> GetNextPageAsync(ITrace trace, CancellationToken cancellationToken)
         {
             this.StartOfPageState = this.FeedRangeState.State;
-            await this.bufferedEnumerator.MoveNextAsync(trace);
+            await this.bufferedEnumerator.MoveNextAsync(trace, cancellationToken);
             return this.bufferedEnumerator.Current;
         }
 
@@ -70,9 +67,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 FeedRangeState<QueryState> feedRangeState,
                 PartitionKey? partitionKey,
                 QueryPaginationOptions queryPaginationOptions,
-                string filter,
-                CancellationToken cancellationToken)
-                : base(feedRangeState, cancellationToken)
+                string filter)
+                : base(feedRangeState)
             {
                 this.queryDataSource = queryDataSource ?? throw new ArgumentNullException(nameof(queryDataSource));
                 this.SqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));

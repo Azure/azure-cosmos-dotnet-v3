@@ -8,5 +8,5 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
-    internal delegate TryCatch<IQueryPipelineStage> MonadicCreatePipelineStage(CosmosElement continuationToken, CancellationToken cancellationToken);
+    internal delegate TryCatch<IQueryPipelineStage> MonadicCreatePipelineStage(CosmosElement continuationToken);
 }
