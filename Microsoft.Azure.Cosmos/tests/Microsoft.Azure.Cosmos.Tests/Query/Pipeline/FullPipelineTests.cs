@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             List<CosmosElement> elements = new List<CosmosElement>();
             int iteration = 0;
-            while (await pipelineStage.MoveNextAsync(NoOpTrace.Singleton))
+            while (await pipelineStage.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default))
             {
                 TryCatch<QueryPage> tryGetQueryPage = pipelineStage.Current;
                 tryGetQueryPage.ThrowIfFailed();
@@ -245,7 +245,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             int numTraces = (await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, default)).Count;
             using (rootTrace = Trace.GetRootTrace("Cross Partition Query"))
             {
-                while (await pipelineStage.MoveNextAsync(rootTrace))
+                while (await pipelineStage.MoveNextAsync(rootTrace, cancellationToken: default))
                 {
                     TryCatch<QueryPage> tryGetQueryPage = pipelineStage.Current;
                     tryGetQueryPage.ThrowIfFailed();
@@ -308,7 +308,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 NoOpTrace.Singleton);
 
             List<CosmosElement> elements = new List<CosmosElement>();
-            while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton))
+            while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default))
             {
                 TryCatch<QueryPage> tryGetQueryPage = queryPipelineStage.Current;
                 tryGetQueryPage.ThrowIfFailed();
@@ -480,7 +480,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             IQueryPipelineStage pipelineStage = await CreatePipelineAsync(documentContainer, query, pageSize);
 
             List<CosmosElement> elements = new List<CosmosElement>();
-            while (await pipelineStage.MoveNextAsync(NoOpTrace.Singleton))
+            while (await pipelineStage.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default))
             {
                 TryCatch<QueryPage> tryGetQueryPage = pipelineStage.Current;
                 tryGetQueryPage.ThrowIfFailed();
@@ -501,7 +501,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             {
                 pipelineStage = await CreatePipelineAsync(documentContainer, query, pageSize, state);
 
-                if (!await pipelineStage.MoveNextAsync(NoOpTrace.Singleton))
+                if (!await pipelineStage.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default))
                 {
                     break;
                 }
@@ -591,7 +591,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 GetQueryPlan(query),
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: pageSize),
                 maxConcurrency: 10,
-                requestCancellationToken: default,
                 requestContinuationToken: state);
 
             tryCreatePipeline.ThrowIfFailed();

@@ -78,7 +78,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 },
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 maxConcurrency: 10,
-                cancellationToken: default,
                 continuationToken: null);
             Assert.IsTrue(monadicCreate.Succeeded);
         }
@@ -99,7 +98,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 },
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 maxConcurrency: 10,
-                cancellationToken: default,
                 continuationToken: CosmosObject.Create(new Dictionary<string, CosmosElement>()));
             Assert.IsTrue(monadicCreate.Failed);
             Assert.IsTrue(monadicCreate.InnerMostException is MalformedContinuationTokenException);
@@ -121,7 +119,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 },
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 maxConcurrency: 10,
-                cancellationToken: default,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>()));
             Assert.IsTrue(monadicCreate.Failed);
             Assert.IsTrue(monadicCreate.InnerMostException is MalformedContinuationTokenException);
@@ -143,7 +140,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 },
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 maxConcurrency: 10,
-                cancellationToken: default,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>() { CosmosString.Create("asdf") }));
             Assert.IsTrue(monadicCreate.Failed);
             Assert.IsTrue(monadicCreate.InnerMostException is MalformedContinuationTokenException);
@@ -180,7 +176,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     },
                     queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                     maxConcurrency: 10,
-                    cancellationToken: default,
                     continuationToken: CosmosArray.Create(
                         new List<CosmosElement>()
                         {
@@ -225,7 +220,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                         },
                         queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                         maxConcurrency: 10,
-                        cancellationToken: default,
                         continuationToken: CosmosArray.Create(
                             new List<CosmosElement>()
                             {
@@ -285,7 +279,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                         },
                         queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                         maxConcurrency: 10,
-                        cancellationToken: default,
                         continuationToken: CosmosArray.Create(
                             new List<CosmosElement>()
                             {
@@ -328,7 +321,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     },
                     queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                     maxConcurrency: 10,
-                    cancellationToken: default,
                     continuationToken: CosmosArray.Create(
                         new List<CosmosElement>()
                         {
@@ -370,7 +362,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                         },
                         queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                         maxConcurrency: 10,
-                        cancellationToken: default,
                         continuationToken: CosmosArray.Create(
                             new List<CosmosElement>()
                             {
@@ -427,17 +418,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 },
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 1),
                 maxConcurrency: 0,
-                cancellationToken: default,
                 continuationToken: CosmosElement.Parse(continuationToken));
             Assert.IsTrue(monadicCreate.Succeeded);
 
             IQueryPipelineStage queryPipelineStage = monadicCreate.Result;
             for (int i = 0; i < targetRanges.Count; ++i)
             {
-                Assert.IsTrue(await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton));
+                Assert.IsTrue(await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default));
             }
 
-            Assert.IsFalse(await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton));
+            Assert.IsFalse(await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default));
         }
 
         [TestMethod]
@@ -463,13 +453,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 },
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 maxConcurrency: 10,
-                cancellationToken: default,
                 continuationToken: null);
             Assert.IsTrue(monadicCreate.Succeeded);
             IQueryPipelineStage queryPipelineStage = monadicCreate.Result;
 
             List<CosmosElement> documents = new List<CosmosElement>();
-            while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton))
+            while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default))
             {
                 TryCatch<QueryPage> tryGetQueryPage = queryPipelineStage.Current;
                 if (tryGetQueryPage.Failed)
@@ -513,12 +502,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 },
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 maxConcurrency: 10,
-                cancellationToken: default,
                 continuationToken: null);
             Assert.IsTrue(monadicCreate.Succeeded);
             IQueryPipelineStage queryPipelineStage = monadicCreate.Result;
 
-            while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton))
+            while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default))
             {
                 TryCatch<QueryPage> tryGetQueryPage = queryPipelineStage.Current;
                 if (tryGetQueryPage.Failed)
@@ -561,7 +549,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     },
                     queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                     maxConcurrency: 10,
-                    cancellationToken: default,
                     continuationToken: continuationToken);
                 monadicQueryPipelineStage.ThrowIfFailed();
                 IQueryPipelineStage queryPipelineStage = monadicQueryPipelineStage.Result;
@@ -574,7 +561,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             IQueryPipelineStage queryPipelineStage = await CreatePipelineStateAsync(inMemoryCollection, continuationToken: null);
             List<CosmosElement> documents = new List<CosmosElement>();
             Random random = new Random();
-            while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton))
+            while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default))
             {
                 TryCatch<QueryPage> tryGetPage = queryPipelineStage.Current;
                 tryGetPage.ThrowIfFailed();
@@ -589,7 +576,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     {
                         // We need to drain out all the initial empty pages,
                         // since they are non resumable state.
-                        Assert.IsTrue(await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton));
+                        Assert.IsTrue(await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default));
                         TryCatch<QueryPage> tryGetQueryPage = queryPipelineStage.Current;
                         if (tryGetQueryPage.Failed)
                         {

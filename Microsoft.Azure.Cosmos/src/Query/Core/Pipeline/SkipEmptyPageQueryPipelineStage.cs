@@ -22,22 +22,20 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
         private double cumulativeRequestCharge;
         private long cumulativeResponseLengthInBytes;
         private IReadOnlyDictionary<string, string> cumulativeAdditionalHeaders;
-        private CancellationToken cancellationToken;
         private bool returnedFinalStats;
 
-        public SkipEmptyPageQueryPipelineStage(IQueryPipelineStage inputStage, CancellationToken cancellationToken)
+        public SkipEmptyPageQueryPipelineStage(IQueryPipelineStage inputStage)
         {
             this.inputStage = inputStage ?? throw new ArgumentNullException(nameof(inputStage));
-            this.cancellationToken = cancellationToken;
         }
 
         public TryCatch<QueryPage> Current { get; private set; }
 
         public ValueTask DisposeAsync() => this.inputStage.DisposeAsync();
 
-        public async ValueTask<bool> MoveNextAsync(ITrace trace)
+        public async ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
         {
-            this.cancellationToken.ThrowIfCancellationRequested();
+            cancellationToken.ThrowIfCancellationRequested();
 
             if (trace == null)
             {
@@ -46,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
             for (int documentCount = 0; documentCount == 0;)
             {
-                if (!await this.inputStage.MoveNextAsync(trace))
+                if (!await this.inputStage.MoveNextAsync(trace, cancellationToken))
                 {
                     if (!this.returnedFinalStats)
                     {
@@ -140,11 +138,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             }
 
             return true;
-        }
-
-        public void SetCancellationToken(CancellationToken cancellationToken)
-        {
-            this.cancellationToken = cancellationToken;
         }
     }
 }

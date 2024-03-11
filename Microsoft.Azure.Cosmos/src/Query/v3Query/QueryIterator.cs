@@ -192,8 +192,7 @@ namespace Microsoft.Azure.Cosmos.Query
             try
             {
                 // This catches exception thrown by the pipeline and converts it to QueryResponse
-                this.queryPipelineStage.SetCancellationToken(cancellationToken);
-                if (!await this.queryPipelineStage.MoveNextAsync(trace))
+                if (!await this.queryPipelineStage.MoveNextAsync(trace, cancellationToken))
                 {
                     this.hasMoreResults = false;
                     return QueryResponse.CreateSuccess(

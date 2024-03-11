@@ -22,16 +22,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
             public const string ContinuationTokenNotSupportedWithGroupBy = "Continuation token is not supported for queries with GROUP BY. Do not use FeedResponse.ResponseContinuation or remove the GROUP BY from the query.";
             private ClientGroupByQueryPipelineStage(
                 IQueryPipelineStage source,
-                CancellationToken cancellationToken,
                 GroupingTable groupingTable,
                 int pageSize)
-                : base(source, cancellationToken, groupingTable, pageSize)
+                : base(source, groupingTable, pageSize)
             {
             }
 
             public static TryCatch<IQueryPipelineStage> MonadicCreate(
                 CosmosElement requestContinuation,
-                CancellationToken cancellationToken,
                 MonadicCreatePipelineStage monadicCreatePipelineStage,
                 IReadOnlyList<AggregateOperator> aggregates,
                 IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
@@ -51,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                     return TryCatch<IQueryPipelineStage>.FromException(tryCreateGroupingTable.Exception);
                 }
 
-                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(requestContinuation, cancellationToken);
+                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(requestContinuation);
                 if (tryCreateSource.Failed)
                 {
                     return tryCreateSource;
@@ -59,16 +57,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
 
                 IQueryPipelineStage stage = new ClientGroupByQueryPipelineStage(
                     tryCreateSource.Result,
-                    cancellationToken,
                     tryCreateGroupingTable.Result,
                     pageSize);
 
                 return TryCatch<IQueryPipelineStage>.FromResult(stage);
             }
 
-            public override async ValueTask<bool> MoveNextAsync(ITrace trace)
+            public override async ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
             {
-                this.cancellationToken.ThrowIfCancellationRequested();
+                cancellationToken.ThrowIfCancellationRequested();
 
                 if (trace == null)
                 {
@@ -87,9 +84,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                 long responseLengthInBytes = 0;
                 IReadOnlyDictionary<string, string> addtionalHeaders = null;
 
-                while (await this.inputStage.MoveNextAsync(trace))
+                while (await this.inputStage.MoveNextAsync(trace, cancellationToken))
                 {
-                    this.cancellationToken.ThrowIfCancellationRequested();
+                    cancellationToken.ThrowIfCancellationRequested();
 
                     // Stage 1: 
                     // Drain the groupings fully from all continuation and all partitions

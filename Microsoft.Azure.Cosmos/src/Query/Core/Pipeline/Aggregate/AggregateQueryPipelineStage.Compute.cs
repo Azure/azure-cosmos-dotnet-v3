@@ -26,9 +26,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
             private ComputeAggregateQueryPipelineStage(
                 IQueryPipelineStage source,
                 SingleGroupAggregator singleGroupAggregator,
-                bool isValueAggregateQuery,
-                CancellationToken cancellationToken)
-                : base(source, singleGroupAggregator, isValueAggregateQuery, cancellationToken)
+                bool isValueAggregateQuery)
+                : base(source, singleGroupAggregator, isValueAggregateQuery)
             {
                 // all the work is done in the base constructor.
             }
@@ -39,11 +38,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                 IReadOnlyList<string> orderedAliases,
                 bool hasSelectValue,
                 CosmosElement continuationToken,
-                CancellationToken cancellationToken,
                 MonadicCreatePipelineStage monadicCreatePipelineStage)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-
                 AggregateContinuationToken aggregateContinuationToken;
                 if (continuationToken != null)
                 {
@@ -79,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                 }
                 else
                 {
-                    tryCreateSource = monadicCreatePipelineStage(aggregateContinuationToken.SourceContinuationToken, cancellationToken);
+                    tryCreateSource = monadicCreatePipelineStage(aggregateContinuationToken.SourceContinuationToken);
                 }
 
                 if (tryCreateSource.Failed)
@@ -90,15 +86,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                 ComputeAggregateQueryPipelineStage stage = new ComputeAggregateQueryPipelineStage(
                     tryCreateSource.Result,
                     tryCreateSingleGroupAggregator.Result,
-                    hasSelectValue,
-                    cancellationToken);
+                    hasSelectValue);
 
                 return TryCatch<IQueryPipelineStage>.FromResult(stage);
             }
 
-            public override async ValueTask<bool> MoveNextAsync(ITrace trace)
+            public override async ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
             {
-                this.cancellationToken.ThrowIfCancellationRequested();
+                cancellationToken.ThrowIfCancellationRequested();
 
                 if (trace == null)
                 {
@@ -113,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
 
                 // Draining aggregates is broken down into two stages
                 QueryPage queryPage;
-                if (await this.inputStage.MoveNextAsync(trace))
+                if (await this.inputStage.MoveNextAsync(trace, cancellationToken))
                 {
                     // Stage 1:
                     // Drain the aggregates fully from all continuations and all partitions
@@ -128,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                     QueryPage sourcePage = tryGetSourcePage.Result;
                     foreach (CosmosElement element in sourcePage.Documents)
                     {
-                        this.cancellationToken.ThrowIfCancellationRequested();
+                        cancellationToken.ThrowIfCancellationRequested();
 
                         RewrittenAggregateProjections rewrittenAggregateProjections = new RewrittenAggregateProjections(
                             this.isValueQuery,
