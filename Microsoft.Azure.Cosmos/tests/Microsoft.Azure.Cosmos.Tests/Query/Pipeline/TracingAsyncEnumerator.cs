@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 {
     using System;
     using System.Collections.Generic;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -14,11 +15,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     {
         private readonly ITracingAsyncEnumerator<T> enumerator;
         private readonly ITrace trace;
+        private readonly CancellationToken cancellationToken;
 
-        public TracingAsyncEnumerator(ITracingAsyncEnumerator<T> enumerator, ITrace trace)
+        public TracingAsyncEnumerator(ITracingAsyncEnumerator<T> enumerator, ITrace trace, CancellationToken cancellationToken)
         {
             this.enumerator = enumerator ?? throw new ArgumentNullException(nameof(enumerator));
             this.trace = trace ?? throw new ArgumentNullException(nameof(trace));
+            this.cancellationToken = cancellationToken;
         }
 
         public T Current => this.enumerator.Current;
@@ -30,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         public ValueTask<bool> MoveNextAsync()
         {
-            return this.enumerator.MoveNextAsync(this.trace);
+            return this.enumerator.MoveNextAsync(this.trace, this.cancellationToken);
         }
     }
 }
