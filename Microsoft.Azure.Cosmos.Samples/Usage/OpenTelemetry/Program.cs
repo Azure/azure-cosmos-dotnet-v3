@@ -71,7 +71,6 @@
                 AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
                 _traceProvider = Sdk.CreateTracerProviderBuilder()
                     .AddSource("Azure.Cosmos.Operation", // Cosmos DB source for operation level telemetry
-                               "Azure.Cosmos.Request", // Cosmos DB source for DIRECT Mode network request level telemetry
                                "Sample.Application") 
                     .AddAzureMonitorTraceExporter(o => o.ConnectionString = aiConnectionString) // Set up exporter of your choice
                     .AddHttpClientInstrumentation() // Added to capture HTTP telemetry
