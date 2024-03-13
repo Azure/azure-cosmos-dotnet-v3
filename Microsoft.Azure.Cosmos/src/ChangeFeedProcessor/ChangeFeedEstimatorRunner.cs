@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                         leaseContainer: this.leaseContainer,
                         leaseContainerPrefix: leasePrefix,
                         instanceName: ChangeFeedEstimatorRunner.EstimatorDefaultHostName,
-                        changeFeedMode: this.changeFeedLeaseOptions.Mode)
+                        changeFeedMode: ChangeFeedMode.LatestVersion)
                     .ConfigureAwait(false);
 
                 this.documentServiceLeaseContainer = documentServiceLeaseStoreManager.LeaseContainer;
