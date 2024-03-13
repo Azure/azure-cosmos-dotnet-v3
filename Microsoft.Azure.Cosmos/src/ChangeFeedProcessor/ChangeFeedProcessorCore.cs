@@ -5,8 +5,6 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
-    using System.Diagnostics;
-    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping;
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
@@ -14,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
-    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Tracing;
