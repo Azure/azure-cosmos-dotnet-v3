@@ -70,12 +70,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Sets the <see cref="ChangeFeedMode"/> on <see cref="ChangeFeedProcessorOptions"/> for a monitored
-        /// container. Setting the <see cref="ChangeFeedMode"/> on <see cref="ChangeFeedLeaseOptions"/> for a lease
-        /// container will be used to track which <see cref="ChangeFeedMode"/> on <see cref="ChangeFeedProcessorOptions"/>
-        /// for a monitored container and should be used to prevent <see cref="ChangeFeedMode"/> switching on the
-        /// <see cref="ChangeFeedProcessor"/> when using the same lease container.
-        /// This is based on an issue located at <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4308"/>.
+        /// Sets the mode for the change feed processor.
         /// </summary>
         /// <param name="changeFeedMode"></param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
