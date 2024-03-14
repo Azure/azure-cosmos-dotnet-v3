@@ -1924,7 +1924,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                         }
 
                         IEnumerator<CosmosElement> itemEnumerator = enumerator.Current.Result.Enumerator;
-                        while (itemEnumerator.MoveNext())
+                        foreach (CosmosElement document in enumerator.Current.Result.Page.Documents)
                         {
                             priorityQueue.Enqueue(new OrderByQueryResult(itemEnumerator.Current));
                         }
