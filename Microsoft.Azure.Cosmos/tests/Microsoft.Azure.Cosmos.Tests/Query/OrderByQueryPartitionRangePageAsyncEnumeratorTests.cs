@@ -57,13 +57,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 Assert.AreEqual(1, ranges.Count);
                 
                 IAsyncEnumerator<TryCatch<OrderByQueryPage>> enumerator = new TracingAsyncEnumerator<TryCatch<OrderByQueryPage>>(
-                    new OrderByQueryPartitionRangePageAsyncEnumerator(
+                    OrderByQueryPartitionRangePageAsyncEnumerator.Create(
                         queryDataSource: documentContainer,
                         sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
                         feedRangeState: new FeedRangeState<QueryState>(ranges[0], state),
                         partitionKey: null,
                         queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
-                        filter: "filter"),
+                        filter: "filter",
+                        PrefetchPolicy.PrefetchSinglePage),
                     NoOpTrace.Singleton,
                     cancellationToken);
 

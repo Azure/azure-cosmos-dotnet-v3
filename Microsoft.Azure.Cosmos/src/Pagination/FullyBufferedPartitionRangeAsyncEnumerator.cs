@@ -19,13 +19,25 @@ namespace Microsoft.Azure.Cosmos.Pagination
         private int currentIndex;
         private Exception exception;
 
-        private bool HasPrefetched => (this.exception != null) || (this.bufferedPages.Count > 0);
+        private bool hasPrefetched;
+
+        public override Exception BufferedException => this.exception;
 
         public FullyBufferedPartitionRangeAsyncEnumerator(PartitionRangePageAsyncEnumerator<TPage, TState> enumerator)
+            : this(enumerator, null)
+        {
+        }
+
+        public FullyBufferedPartitionRangeAsyncEnumerator(PartitionRangePageAsyncEnumerator<TPage, TState> enumerator, IReadOnlyList<TPage> bufferedPages)
             : base(enumerator.FeedRangeState)
         {
             this.enumerator = enumerator ?? throw new ArgumentNullException(nameof(enumerator));
             this.bufferedPages = new List<TPage>();
+
+            if (bufferedPages != null)
+            {
+                this.bufferedPages.AddRange(bufferedPages);
+            }
         }
 
         public override ValueTask DisposeAsync()
@@ -40,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 throw new ArgumentNullException(nameof(trace));
             }
 
-            if (this.HasPrefetched)
+            if (this.hasPrefetched)
             {
                 return;
             }
@@ -64,6 +76,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     }
                 }
             }
+
+            this.hasPrefetched = true;
         }
 
         protected override async Task<TryCatch<TPage>> GetNextPageAsync(ITrace trace, CancellationToken cancellationToken)
