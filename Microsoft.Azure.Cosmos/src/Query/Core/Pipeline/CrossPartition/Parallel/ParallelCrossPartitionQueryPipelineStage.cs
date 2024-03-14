@@ -253,7 +253,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
                 queryDataSource,
                 sqlQuerySpec,
                 feedRangeState,
-                partitionKey,
                 queryPaginationOptions,
                 cancellationToken);
 
