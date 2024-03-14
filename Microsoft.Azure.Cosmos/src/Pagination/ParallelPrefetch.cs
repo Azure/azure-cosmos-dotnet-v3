@@ -5,73 +5,678 @@
 namespace Microsoft.Azure.Cosmos.Pagination
 {
     using System;
+    using System.Buffers;
     using System.Collections.Generic;
+    using System.Runtime.ExceptionServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Tracing;
 
     internal static class ParallelPrefetch
     {
-        public static async Task PrefetchInParallelAsync(
+        /// <summary>
+        /// Common state that is needed for all tasks started via <see cref="PrefetchInParallelAsync(IEnumerable{IPrefetcher}, int, ITrace, CancellationToken)"/>, unless
+        /// certain special cases hold.
+        /// 
+        /// Also used as a synchronization primitive.
+        /// </summary>
+        private sealed class CommonPrefetchState
+        {
+            private bool finishedEnumerating;
+
+            /// <summary>
+            /// If this is true, it's a signal that new work should not be queued up.
+            /// </summary>
+            internal bool FinishedEnumerating
+            => Volatile.Read(ref this.finishedEnumerating);
+
+            /// <summary>
+            /// Common <see cref="ITrace"/> to be used by all tasks.
+            /// </summary>
+            internal ITrace PrefetchTrace { get; private set; }
+
+            /// <summary>
+            /// The <see cref="IEnumerator{T}"/> which will produce the next <see cref="IPrefetcher"/>
+            /// to use.
+            /// 
+            /// Once at least once Task been started, should only be accessed under a lock.
+            /// </summary>
+            internal IEnumerator<IPrefetcher> Enumerator { get; private set; }
+
+            /// <summary>
+            /// <see cref="CancellationToken"/> provided via <see cref="PrefetchInParallelAsync(IEnumerable{IPrefetcher}, int, ITrace, CancellationToken)"/>.
+            /// </summary>
+            internal CancellationToken CancellationToken { get; private set; }
+
+            internal CommonPrefetchState(ITrace prefetchTrace, IEnumerator<IPrefetcher> enumerator, CancellationToken cancellationToken)
+            {
+                this.PrefetchTrace = prefetchTrace;
+                this.Enumerator = enumerator;
+                this.CancellationToken = cancellationToken;
+            }
+
+            /// <summary>
+            /// Cause <see cref="FinishedEnumerating"/> to return true.
+            /// </summary>
+            internal void SetFinishedEnumerating()
+            {
+                Volatile.Write(ref this.finishedEnumerating, true);
+            }
+        }
+
+        /// <summary>
+        /// State passed when we start a Task with an initial <see cref="IPrefetcher"/>.
+        /// 
+        /// That started Task will obtain it's next IPrefetchers using the <see cref="CommonPrefetchState"/>
+        /// that is also provided.
+        /// </summary>
+        private sealed class SinglePrefetchState
+        {
+            /// <summary>
+            /// State common to the whole <see cref="PrefetchInParallelAsync"/> call.
+            /// </summary>
+            internal CommonPrefetchState CommonState { get; private set; }
+
+            /// <summary>
+            /// <see cref="IPrefetcher"/> which must be invoked next.
+            /// </summary>
+            internal IPrefetcher CurrentPrefetcher { get; set; }
+
+            internal SinglePrefetchState(CommonPrefetchState commonState, IPrefetcher initialPrefetcher)
+            {
+                this.CommonState = commonState;
+                this.CurrentPrefetcher = initialPrefetcher;
+            }
+        }
+
+        /// <summary>
+        /// Number of tasks started at one time, maximum, when working through prefetchers.
+        /// 
+        /// Also used as a the limit between Low and High concurrency implementations.
+        /// 
+        /// This number should be reasonable large, but less than the point where a 
+        /// Task[BatchLimit] ends up on the LOH (which will be around 8,192).
+        /// </summary>
+        private const int BatchLimit = 512;
+
+        public static Task PrefetchInParallelAsync(
             IEnumerable<IPrefetcher> prefetchers,
             int maxConcurrency,
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            if (prefetchers == null)
+            prefetchers = prefetchers ?? throw new ArgumentNullException(nameof(prefetchers));
+            trace = trace ?? throw new ArgumentNullException(nameof(trace));
+
+            if (maxConcurrency <= 0)
             {
-                throw new ArgumentNullException(nameof(prefetchers));
+                // old code would just... allocate and then do nothing
+                //
+                // so we do nothing here, for compatability purposes
+                return Task.CompletedTask;
+            }
+            else if (maxConcurrency == 1)
+            {
+                return SingleConcurrencyPrefetchInParallelAsync(prefetchers, trace, cancellationToken);
+            }
+            else if (maxConcurrency <= BatchLimit)
+            {
+                return LowConcurrencyPrefetchInParallelAsync(prefetchers, maxConcurrency, trace, cancellationToken);
+            }
+            else
+            {
+                return HighConcurrencyPrefetchInParallelAsync(prefetchers, maxConcurrency, trace, cancellationToken);
+            }
+        }
+
+        /// <summary>
+        /// Shared code for starting traces while prefetching.
+        /// </summary>
+        private static ITrace CommonStartTrace(ITrace trace)
+        {
+            return trace.StartChild(name: "Prefetching", TraceComponent.Pagination, TraceLevel.Info);
+        }
+
+        /// <summary>
+        /// Helper for grabbing a reusable array.
+        /// </summary>
+        private static T[] RentArray<T>(int minSize, bool clear)
+        {
+            T[] ret = ArrayPool<T>.Shared.Rent(minSize);
+            if (clear)
+            {
+                Array.Clear(ret, 0, ret.Length);
             }
 
-            if (trace == null)
+            return ret;
+        }
+
+        /// <summary>
+        /// Helper for returning arrays what were rented via <see cref="RentArray"/>.
+        /// </summary>
+        private static void ReturnRentedArray<T>(T[] array, int clearThrough)
+        {
+            if (array == null)
             {
-                throw new ArgumentNullException(nameof(trace));
+                return;
             }
 
-            using (ITrace prefetchTrace = trace.StartChild(name: "Prefetching", TraceComponent.Pagination, TraceLevel.Info))
-            {
-                HashSet<Task> tasks = new HashSet<Task>();
-                IEnumerator<IPrefetcher> prefetchersEnumerator = prefetchers.GetEnumerator();
-                for (int i = 0; i < maxConcurrency; i++)
-                {
-                    if (!prefetchersEnumerator.MoveNext())
-                    {
-                        break;
-                    }
+            // this is important, otherwise we might leave Tasks and IPrefetchers
+            // rooted long enough to cause problems
+            Array.Clear(array, 0, clearThrough);
 
-                    IPrefetcher prefetcher = prefetchersEnumerator.Current;
-                    tasks.Add(Task.Run(async () => await prefetcher.PrefetchAsync(prefetchTrace, cancellationToken)));
-                }
+            ArrayPool<T>.Shared.Return(array);
+        }
 
-                while (tasks.Count != 0)
-                {
-                    Task completedTask = await Task.WhenAny(tasks);
-                    tasks.Remove(completedTask);
-                    try
+        /// <summary>
+        /// Starts a new Task that first calls <see cref="IPrefetcher.PrefetchAsync(ITrace, CancellationToken)"/> on the passed
+        /// <see cref="IPrefetcher"/>, and then grabs new ones from <see cref="CommonPrefetchState.Enumerator"/> and repeats the process
+        /// until either the enumerator finishes or something sets <see cref="CommonPrefetchState.FinishedEnumerating"/>.
+        /// </summary>
+        private static Task CommonStartTaskAsync(CommonPrefetchState commonState, IPrefetcher firstPrefetcher)
+        {
+            SinglePrefetchState state = new SinglePrefetchState(commonState, firstPrefetcher);
+
+            // this is mimicing the behavior of Task.Run(...) (that is, default CancellationToken, default Scheduler, DenyAttachChild, etc.)
+            // but in a way that let's us pass a context object
+            //
+            // this lets us declare a static delegate, and thus let's compiler reuse the delegate allocation
+            Task<Task> taskLoop =
+                Task<Task>.Factory.StartNew(
+                    static async (context) =>
                     {
-                        await completedTask;
-                    }
-                    catch
-                    {
-                        // Observe the remaining tasks
+                        // this method is structured a bit oddly to prevent the compiler from putting more data into the 
+                        // state of the Task
+                        //
+                        // we could go harder here and just not use async/await but that's awful for maintainability
                         try
                         {
-                            await Task.WhenAll(tasks);
+                            while (true)
+                            {
+                                // step up to the initial await
+                                {
+                                    SinglePrefetchState innerState = (SinglePrefetchState)context;
+
+                                    CommonPrefetchState innerCommonState = innerState.CommonState;
+                                    (ITrace prefetchTrace, CancellationToken cancellationToken) = (innerCommonState.PrefetchTrace, innerCommonState.CancellationToken);
+                                    await innerState.CurrentPrefetcher.PrefetchAsync(prefetchTrace, cancellationToken);
+                                }
+
+                                // step for preparing the next prefetch
+                                {
+                                    SinglePrefetchState innerState = (SinglePrefetchState)context;
+
+                                    CommonPrefetchState innerCommonState = innerState.CommonState;
+                                    IEnumerator<IPrefetcher> e = innerCommonState.Enumerator;
+
+                                    if (innerCommonState.FinishedEnumerating)
+                                    {
+                                        // we're done, bail
+                                        return;
+                                    }
+
+                                    // proceed to the next item
+                                    //
+                                    // we need this lock because at this point there
+                                    // are other Tasks potentially also looking to call
+                                    // e.MoveNext()
+                                    lock (innerCommonState)
+                                    {
+                                        // ... but check again, the answer might have changed while we go the lock
+                                        if (innerCommonState.FinishedEnumerating)
+                                        {
+                                            return;
+                                        }
+
+                                        if (!e.MoveNext())
+                                        {
+                                            // we're done, signal to every other task to also bail
+                                            innerCommonState.SetFinishedEnumerating();
+
+                                            return;
+                                        }
+
+                                        // move on to the new IPrefetcher just obtained
+                                        innerState.CurrentPrefetcher = e.Current;
+                                    }
+                                }
+                            }
                         }
                         catch
                         {
+                            SinglePrefetchState innerState = (SinglePrefetchState)context;
+
+                            // some error was encountered, we should tell other tasks to stop starting new prefetch tasks
+                            // because we're about to cancel
+                            innerState.CommonState.SetFinishedEnumerating();
+
+                            // percolate the error up
+                            throw;
                         }
+                    },
+                    state,
+                    default,
+                    TaskCreationOptions.DenyChildAttach,
+                    TaskScheduler.Default);
 
-                        throw;
-                    }
+            // we _could_ maybe optimize this more... perhaps using a SemaphoreSlim or something
+            // but that complicates error reporting
+            Task unwrapped = taskLoop.Unwrap();
 
-                    if (prefetchersEnumerator.MoveNext())
-                    {
-                        IPrefetcher bufferable = prefetchersEnumerator.Current;
-                        tasks.Add(Task.Run(async () => await bufferable.PrefetchAsync(prefetchTrace, cancellationToken)));
-                    }
+            return unwrapped;
+        }
+
+        /// <summary>
+        /// Fills a portion of an IPrefetcher[] using the passed enumerator.
+        /// 
+        /// Returns the index that would next be filled.
+        /// 
+        /// Updates the passed <see cref="CommonPrefetchState"/> if the end of the enumerator is reached.
+        /// 
+        /// Synchronization is the concern of the caller, not this method.
+        /// </summary>
+        private static int FillPrefetcherBuffer(CommonPrefetchState commonState, IPrefetcher[] prefetchers, int startIndex, int endIndex, IEnumerator<IPrefetcher> e)
+        {
+            int curIndex;
+            for (curIndex = startIndex; curIndex < endIndex; curIndex++)
+            {
+                if (!e.MoveNext())
+                {
+                    commonState.SetFinishedEnumerating();
+                    break;
+                }
+
+                prefetchers[curIndex] = e.Current;
+            }
+
+            return curIndex;
+        }
+
+        /// <summary>
+        /// Special case for when maxConcurrency == 1.
+        /// 
+        /// This devolves into a foreach loop and dodges all the extra work.
+        /// </summary>
+        private static async Task SingleConcurrencyPrefetchInParallelAsync(IEnumerable<IPrefetcher> prefetchers, ITrace trace, CancellationToken cancellationToken)
+        {
+            using (ITrace prefetchTrace = CommonStartTrace(trace))
+            {
+                foreach (IPrefetcher prefetcher in prefetchers)
+                {
+                    await prefetcher.PrefetchAsync(prefetchTrace, cancellationToken);
                 }
             }
         }
+
+        /// <summary>
+        /// The case where maxConcurrency less than or equal to BatchLimit.
+        /// 
+        /// This starts up to maxConcurrency simultanous requests, doing so in a way that
+        /// requires some single use arrays of maxConcurrency size.
+        /// </summary>
+        private static async Task LowConcurrencyPrefetchInParallelAsync(IEnumerable<IPrefetcher> prefetchers, int maxConcurrency, ITrace trace, CancellationToken cancellationToken)
+        {
+            IPrefetcher[] initialPrefetchers = null;
+            Task[] runningTasks = null;
+
+            int nextPrefetcherIndex = 0;
+            int nextRunningTaskIndex = 0;
+
+            try
+            {
+                using (ITrace prefetchTrace = CommonStartTrace(trace))
+                {
+                    using (IEnumerator<IPrefetcher> e = prefetchers.GetEnumerator())
+                    {
+                        if (!e.MoveNext())
+                        {
+                            // literally nothing to prefetch
+                            return;
+                        }
+
+                        IPrefetcher first = e.Current;
+
+                        if (!e.MoveNext())
+                        {
+                            // special case: a single prefetcher... just await it, and skip all the heavy work
+                            await first.PrefetchAsync(prefetchTrace, cancellationToken);
+                            return;
+                        }
+
+                        // need to actually do things to start prefetching in parallel
+                        // so grab some state and stash the first two prefetchers off
+
+                        initialPrefetchers = RentArray<IPrefetcher>(maxConcurrency, clear: false);
+                        initialPrefetchers[0] = first;
+                        initialPrefetchers[1] = e.Current;
+
+                        CommonPrefetchState commonState = new CommonPrefetchState(prefetchTrace, e, cancellationToken);
+
+                        // batch up a bunch of IPrefetchers to kick off
+                        // 
+                        // we do this separately from starting the Tasks so we can avoid a lock
+                        // and quicky get to maxConcurrency degrees of parallelism
+                        nextPrefetcherIndex = FillPrefetcherBuffer(commonState, initialPrefetchers, 2, maxConcurrency, e);
+
+                        // actually start all the tasks
+                        runningTasks = RentArray<Task>(maxConcurrency, clear: false);
+
+                        for (nextRunningTaskIndex = 0; nextRunningTaskIndex < nextPrefetcherIndex; nextRunningTaskIndex++)
+                        {
+                            IPrefetcher toStart = initialPrefetchers[nextRunningTaskIndex];
+                            Task startedTask = CommonStartTaskAsync(commonState, toStart);
+
+                            runningTasks[nextRunningTaskIndex] = startedTask;
+                        }
+
+                        // hand the prefetcher array back early, so other callers can use it
+                        ReturnRentedArray(initialPrefetchers, nextPrefetcherIndex);
+                        initialPrefetchers = null;
+
+                        // now await them in turn
+                        for (int toAwaitTaskIndex = 0; toAwaitTaskIndex < nextRunningTaskIndex; toAwaitTaskIndex++)
+                        {
+                            Task toAwait = runningTasks[toAwaitTaskIndex];
+
+                            try
+                            {
+                                await toAwait;
+                            }
+                            catch
+                            {
+                                // if we encountered some exception, tell the remaining tasks to bail
+                                // the next time they check commonState
+                                commonState.SetFinishedEnumerating();
+
+                                // we still need to observe all the tasks we haven't yet to avoid an UnobservedTaskException
+                                for (int awaitAndIgnoreTaskIndex = toAwaitTaskIndex + 1; awaitAndIgnoreTaskIndex < nextRunningTaskIndex; awaitAndIgnoreTaskIndex++)
+                                {
+                                    try
+                                    {
+                                        await runningTasks[awaitAndIgnoreTaskIndex];
+                                    }
+                                    catch
+                                    {
+                                        // intentionally left empty, we swallow all errors after the first
+                                    }
+                                }
+
+                                throw;
+                            }
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                ReturnRentedArray(initialPrefetchers, nextPrefetcherIndex);
+                ReturnRentedArray(runningTasks, nextRunningTaskIndex);
+            }
+        }
+
+        private static async Task HighConcurrencyPrefetchInParallelAsync(IEnumerable<IPrefetcher> prefetchers, int maxConcurrency, ITrace trace, CancellationToken cancellationToken)
+        {
+            IPrefetcher[] currentBatch = null;
+
+            // this ends up holding a sort of linked list
+            // each entry is actually a Task until the very last one
+            // with is an object[]
+            //
+            // as soon as a null is encountered, either where a Task or
+            // an object[] is expected, the linked list is done
+            object[] runningTasks = null;
+
+            try
+            {
+                using (ITrace prefetchTrace = CommonStartTrace(trace))
+                {
+                    using (IEnumerator<IPrefetcher> e = prefetchers.GetEnumerator())
+                    {
+                        if (!e.MoveNext())
+                        {
+                            // no prefetchers at all
+                            return;
+                        }
+
+                        IPrefetcher first = e.Current;
+
+                        if (!e.MoveNext())
+                        {
+                            // special case: a single prefetcher... just await it, and skip all the heavy work
+                            await first.PrefetchAsync(prefetchTrace, cancellationToken);
+                            return;
+                        }
+
+                        // need to actually do things to start prefetching in parallel
+                        // so grab some state and stash the first two prefetchers off
+
+                        currentBatch = RentArray<IPrefetcher>(BatchLimit, clear: false);
+                        currentBatch[0] = first;
+                        currentBatch[1] = e.Current;
+
+                        // we need this all null because we use null as a stopping condition later
+                        runningTasks = RentArray<object>(BatchLimit, clear: true);
+
+                        CommonPrefetchState commonState = new CommonPrefetchState(prefetchTrace, e, cancellationToken);
+
+                        // what we do here is buffer up to BatchLimit IPrefetchers to start
+                        // and then... start them all
+                        //
+                        // we stagger this so we quickly get a bunch of tasks started without spending too
+                        // much time pre-loading everything
+
+                        // first we grab a bunch of prefetchers outside of the lock
+                        //
+                        // we know that maxConcurrency > BatchLimit, so can just pass it as our cutoff here
+                        int bufferedPrefetchers = FillPrefetcherBuffer(commonState, currentBatch, 2, BatchLimit, e);
+
+                        int nextChunkIndex = 0;
+                        object[] currentChunk = runningTasks;
+
+                        int remainingConcurrency = maxConcurrency;
+                        while (true)
+                        {
+                            // start and store the last set of Tasks we got from FillPrefetcherBuffer
+                            for (int toStartIx = 0; toStartIx < bufferedPrefetchers; toStartIx++)
+                            {
+                                IPrefetcher prefetcher = currentBatch[toStartIx];
+                                Task startedTask = CommonStartTaskAsync(commonState, prefetcher);
+
+                                currentChunk[nextChunkIndex] = startedTask;
+                                nextChunkIndex++;
+
+                                // do we need a new slab to store tasks in?
+                                if (nextChunkIndex == currentChunk.Length - 1)
+                                {
+                                    // we need this all null because we use null as a stopping condition later
+                                    object[] newChunk = RentArray<object>(BatchLimit, clear: true);
+
+                                    currentChunk[currentChunk.Length - 1] = newChunk;
+
+                                    currentChunk = newChunk;
+                                    nextChunkIndex = 0;
+                                }
+                            }
+
+                            remainingConcurrency -= bufferedPrefetchers;
+
+                            // check to see if we've started all the concurrent Tasks we can
+                            if (remainingConcurrency == 0)
+                            {
+                                break;
+                            }
+
+                            int nextBatchSizeLimit = remainingConcurrency < BatchLimit ? remainingConcurrency : BatchLimit;
+
+                            // if one of the previously started Tasks exhausted the enumerator
+                            // we're done, even if we still have space
+                            if (commonState.FinishedEnumerating)
+                            {
+                                break;
+                            }
+
+                            // now that Tasks have started, we NEED to synchronize access to 
+                            // the enumerator
+                            lock (commonState)
+                            {
+                                if (commonState.FinishedEnumerating)
+                                {
+                                    break;
+                                }
+
+                                // grab the next set of prefetchers to start
+                                bufferedPrefetchers = FillPrefetcherBuffer(commonState, currentBatch, 0, nextBatchSizeLimit, e);
+                            }
+
+                            // if we got nothing back, we can break right here
+                            if (bufferedPrefetchers == 0)
+                            {
+                                break;
+                            }
+                        }
+
+                        // hand the prefetch array back, we're done with it
+                        ReturnRentedArray(currentBatch, BatchLimit);
+                        currentBatch = null;
+
+                        // now wait for all the tasks to complete
+                        //
+                        // we walk throw all of them, even if we encounter an error
+                        // because we need to walk the whole linked-list and this is
+                        // simpler
+                        ExceptionDispatchInfo capturedException = null;
+
+                        int toAwaitIndex = 0;
+                        while (runningTasks != null)
+                        {
+                            Task toAwait = (Task)runningTasks[toAwaitIndex];
+
+                            // are we done?
+                            if (toAwait == null)
+                            {
+                                // hand the last of the arrays back
+                                ReturnRentedArray(runningTasks, runningTasks.Length);
+                                runningTasks = null;
+
+                                break;
+                            }
+
+                            try
+                            {
+                                await toAwait;
+                            }
+                            catch (Exception ex)
+                            {
+                                if (capturedException != null)
+                                {
+                                    // if we encountered some exception, tell the remaining tasks to bail
+                                    // the next time they check commonState
+                                    commonState.SetFinishedEnumerating();
+
+                                    // save the exception so we can rethrow it later
+                                    capturedException = ExceptionDispatchInfo.Capture(ex);
+                                }
+                            }
+
+                            // advance, moving to the next chunk if we've hit that limit
+                            toAwaitIndex++;
+
+                            if (toAwaitIndex == runningTasks.Length - 1)
+                            {
+                                object[] oldChunk = runningTasks;
+
+                                runningTasks = (object[])runningTasks[runningTasks.Length - 1];
+                                toAwaitIndex = 0;
+
+                                // we're done with this, let some other caller use it immediately
+                                ReturnRentedArray(oldChunk, oldChunk.Length);
+                            }
+                        }
+
+                        // fault, if any task failed, after we've finished cleaning up
+                        capturedException?.Throw();
+                    }
+                }
+            }
+            finally
+            {
+                // cleanup if something went wrong while these were still rented
+
+                ReturnRentedArray(currentBatch, BatchLimit);
+
+                while (runningTasks != null)
+                {
+                    object[] oldChunk = runningTasks;
+
+                    runningTasks = (object[])runningTasks[runningTasks.Length - 1];
+
+                    ReturnRentedArray(oldChunk, oldChunk.Length);
+                }
+            }
+        }
+
+        // old code preserved for a bit for behavior comparison
+
+        //public static async Task PrefetchInParallelAsync(
+        //    IEnumerable<IPrefetcher> prefetchers,
+        //    int maxConcurrency,
+        //    ITrace trace,
+        //    CancellationToken cancellationToken)
+        //{
+        //    if (prefetchers == null)
+        //    {
+        //        throw new ArgumentNullException(nameof(prefetchers));
+        //    }
+
+        //    if (trace == null)
+        //    {
+        //        throw new ArgumentNullException(nameof(trace));
+        //    }
+
+        //    using (ITrace prefetchTrace = trace.StartChild(name: "Prefetching", TraceComponent.Pagination, TraceLevel.Info))
+        //    {
+        //        HashSet<Task> tasks = new HashSet<Task>();
+        //        IEnumerator<IPrefetcher> prefetchersEnumerator = prefetchers.GetEnumerator();
+        //        for (int i = 0; i < maxConcurrency; i++)
+        //        {
+        //            if (!prefetchersEnumerator.MoveNext())
+        //            {
+        //                break;
+        //            }
+
+        //            IPrefetcher prefetcher = prefetchersEnumerator.Current;
+        //            tasks.Add(Task.Run(async () => await prefetcher.PrefetchAsync(prefetchTrace, cancellationToken)));
+        //        }
+
+        //        while (tasks.Count != 0)
+        //        {
+        //            Task completedTask = await Task.WhenAny(tasks);
+        //            tasks.Remove(completedTask);
+        //            try
+        //            {
+        //                await completedTask;
+        //            }
+        //            catch
+        //            {
+        //                // Observe the remaining tasks
+        //                try
+        //                {
+        //                    await Task.WhenAll(tasks);
+        //                }
+        //                catch
+        //                {
+        //                }
+
+        //                throw;
+        //            }
+
+        //            if (prefetchersEnumerator.MoveNext())
+        //            {
+        //                IPrefetcher bufferable = prefetchersEnumerator.Current;
+        //                tasks.Add(Task.Run(async () => await bufferable.PrefetchAsync(prefetchTrace, cancellationToken)));
+        //            }
+        //        }
+        //    }
+        //}
     }
 }
