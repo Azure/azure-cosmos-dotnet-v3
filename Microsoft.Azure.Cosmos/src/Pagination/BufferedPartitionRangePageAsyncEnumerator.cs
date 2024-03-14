@@ -17,6 +17,19 @@ namespace Microsoft.Azure.Cosmos.Pagination
         private readonly PartitionRangePageAsyncEnumerator<TPage, TState> enumerator;
         private TryCatch<TPage>? bufferedPage;
 
+        public override Exception BufferedException
+        {
+            get
+            {
+                if (this.bufferedPage.HasValue && this.bufferedPage.Value.Failed)
+                {
+                    return this.bufferedPage.Value.Exception;
+                }
+
+                return null;
+            }
+        }
+
         public BufferedPartitionRangePageAsyncEnumerator(PartitionRangePageAsyncEnumerator<TPage, TState> enumerator)
             : base(enumerator.FeedRangeState)
         {
