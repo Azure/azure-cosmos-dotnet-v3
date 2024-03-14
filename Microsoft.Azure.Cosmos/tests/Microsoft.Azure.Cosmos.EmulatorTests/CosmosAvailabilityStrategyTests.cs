@@ -17,7 +17,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public class CosmosAvailabilityStrategyTests
     {
 
-        public CosmosClient client;
+        private CosmosClient client;
+        private Database database;
+        private Container container;
+        private string connectionString;
+
+        [TestInitialize]
+        public async Task TestInitAsync()
+        {
+            this.connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", null);
+            this.client = new CosmosClient(this.connectionString);
+            this.database = this.client.CreateDatabaseIfNotExistsAsync("db").Result;
+            this.container = this.database.CreateContainerIfNotExistsAsync("container", "/pk").Result;
+
+            await this.container.CreateItemAsync<dynamic>(new { id = "testId", pk = "pk" });
+        }
+
+        [TestCleanup]
+        public async Task TestCleanup()
+        {
+            await this.database.DeleteAsync();
+            this.client.Dispose();
+        }
 
         [TestMethod]
         [TestCategory("MultiRegion")]
@@ -51,16 +72,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         thresholdStep: TimeSpan.FromMilliseconds(50))
             };
 
-            this.client = new CosmosClient(
-                accountEndpoint: "",
-                authKeyOrResourceToken: "",
+            CosmosClient faultInjectionClient = new CosmosClient(
+                connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions));
 
             string dbName = "db";
             string containerName = "container";
 
-            Database database = await this.client.CreateDatabaseIfNotExistsAsync(dbName);
-            Container container = await database.CreateContainerIfNotExistsAsync(containerName, "/pk");
+            Database database = faultInjectionClient.GetDatabase(dbName);
+            Container container = database.GetContainer(containerName);
 
             ItemResponse<dynamic> itemCheck = await container.ReadItemAsync<dynamic>("testId", new PartitionKey("pk"));
 
@@ -76,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(traceDiagnostic);
             Assert.IsFalse(traceDiagnostic.Value.Data.TryGetValue("ExcludedRegions", out _));
 
-            this.client.Dispose();
+            faultInjectionClient.Dispose();
         }
 
         [TestMethod]
@@ -111,16 +131,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         thresholdStep: TimeSpan.FromMilliseconds(50))
             };
 
-            this.client = new CosmosClient(
-                accountEndpoint: "",
-                authKeyOrResourceToken: "",
+            CosmosClient faultInjectionClient = new CosmosClient(
+                connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions));
 
             string dbName = "db";
             string containerName = "container";
 
-            Database database = await this.client.CreateDatabaseIfNotExistsAsync(dbName);
-            Container container = await database.CreateContainerIfNotExistsAsync(containerName, "/pk");
+            Database database = faultInjectionClient.GetDatabase(dbName);
+            Container container = database.GetContainer(containerName);
 
             ItemResponse<dynamic> itemCheck = await container.ReadItemAsync<dynamic>("testId", new PartitionKey("pk"));
 
@@ -138,7 +157,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<string> excludeRegionsList = excludeRegionsObject as List<string>;
             Assert.IsTrue(excludeRegionsList.Contains("Central US"));
 
-            this.client.Dispose();
+            faultInjectionClient.Dispose();
         }
 
         [TestMethod]
@@ -188,16 +207,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         thresholdStep: TimeSpan.FromMilliseconds(50))
             };
 
-            this.client = new CosmosClient(
-                accountEndpoint: "",
-                authKeyOrResourceToken: "",
+            CosmosClient faultInjectionClient = new CosmosClient(
+                connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions));
 
             string dbName = "db";
             string containerName = "container";
 
-            Database database = await this.client.CreateDatabaseIfNotExistsAsync(dbName);
-            Container container = await database.CreateContainerIfNotExistsAsync(containerName, "/pk");
+            Database database = faultInjectionClient.GetDatabase(dbName);
+            Container container = database.GetContainer(containerName);
 
             ItemResponse<dynamic> itemCheck = await container.ReadItemAsync<dynamic>("testId", new PartitionKey("pk"));
 
@@ -217,7 +235,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(excludeRegionsList.Contains("Central US"));
             Assert.IsTrue(excludeRegionsList.Contains("North Central US"));
 
-            this.client.Dispose();
+            faultInjectionClient.Dispose();
         }
 
         [TestMethod]
@@ -253,16 +271,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         thresholdStep: TimeSpan.FromMilliseconds(50))
             };
 
-            this.client = new CosmosClient(
-                accountEndpoint: "",
-                authKeyOrResourceToken: "",
+            CosmosClient faultInjectionClient = new CosmosClient(
+                connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions));
 
             string dbName = "db";
             string containerName = "container";
 
-            Database database = await this.client.CreateDatabaseIfNotExistsAsync(dbName);
-            Container container = await database.CreateContainerIfNotExistsAsync(containerName, "/pk");
+            Database database = faultInjectionClient.GetDatabase(dbName);
+            Container container = database.GetContainer(containerName);
 
             ItemResponse<dynamic> itemCheck = await container.ReadItemAsync<dynamic>("testId", new PartitionKey("pk"));
 
@@ -286,7 +303,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(traceDiagnostic);
             Assert.IsFalse(traceDiagnostic.Value.Data.TryGetValue("ExcludedRegions", out _));
 
-            this.client.Dispose();
+            faultInjectionClient.Dispose();
         }
 
         [TestMethod]
@@ -321,16 +338,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         thresholdStep: TimeSpan.FromMilliseconds(50))
             };
 
-            this.client = new CosmosClient(
-                accountEndpoint: "",
-                authKeyOrResourceToken: "",
+            CosmosClient faultInjectionClient = new CosmosClient(
+                connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions));
 
             string dbName = "db";
             string containerName = "container";
 
-            Database database = await this.client.CreateDatabaseIfNotExistsAsync(dbName);
-            Container container = await database.CreateContainerIfNotExistsAsync(containerName, "/pk");
+            Database database = faultInjectionClient.GetDatabase(dbName);
+            Container container = database.GetContainer(containerName);
 
             ItemResponse<dynamic> itemCheck = await container.ReadItemAsync<dynamic>("testId", new PartitionKey("pk"));
 
@@ -355,7 +371,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 break;
             }
 
-            this.client.Dispose();
+            faultInjectionClient.Dispose();
         }
 
         [TestMethod]
