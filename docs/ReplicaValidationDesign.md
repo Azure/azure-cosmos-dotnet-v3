@@ -19,7 +19,7 @@
 
 The scope of the replica validation workstream is targed for the `CosmosClient` configured for `Direct` mode.
 
-## Backgraund
+## Background
 
 During an upgrade scenario in the backend replica nodes, there has been an observation of increased request latency. One of the primary reason for the latency is that, during an upgrade, a replica which is still undergoing upgrade may still be returned back to SDK, when an address refresh occurres. As of today, the incoming request will have `25%` chance to hit the replica that not ready yet, therefore causing the `ConnectionTimeoutException`, which contributes to the increased latency. 
 
