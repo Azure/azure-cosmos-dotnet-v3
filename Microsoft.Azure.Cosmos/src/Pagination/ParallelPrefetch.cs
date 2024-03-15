@@ -22,13 +22,14 @@ namespace Microsoft.Azure.Cosmos.Pagination
         /// </summary>
         private sealed class CommonPrefetchState
         {
-            private bool finishedEnumerating;
+            // we also use this to signal if we're finished enumerating, to save space
+            private IEnumerator<IPrefetcher> enumerator;
 
             /// <summary>
             /// If this is true, it's a signal that new work should not be queued up.
             /// </summary>
             internal bool FinishedEnumerating
-            => Volatile.Read(ref this.finishedEnumerating);
+            => Volatile.Read(ref this.enumerator) == null;
 
             /// <summary>
             /// Common <see cref="ITrace"/> to be used by all tasks.
@@ -40,8 +41,11 @@ namespace Microsoft.Azure.Cosmos.Pagination
             /// to use.
             /// 
             /// Once at least once Task been started, should only be accessed under a lock.
+            /// 
+            /// If <see cref="FinishedEnumerating"/> == true, this returns null.
             /// </summary>
-            internal IEnumerator<IPrefetcher> Enumerator { get; private set; }
+            internal IEnumerator<IPrefetcher> Enumerator
+            => Volatile.Read(ref this.enumerator);
 
             /// <summary>
             /// <see cref="CancellationToken"/> provided via <see cref="PrefetchInParallelAsync(IEnumerable{IPrefetcher}, int, ITrace, CancellationToken)"/>.
@@ -51,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             internal CommonPrefetchState(ITrace prefetchTrace, IEnumerator<IPrefetcher> enumerator, CancellationToken cancellationToken)
             {
                 this.PrefetchTrace = prefetchTrace;
-                this.Enumerator = enumerator;
+                this.enumerator = enumerator;
                 this.CancellationToken = cancellationToken;
             }
 
@@ -60,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             /// </summary>
             internal void SetFinishedEnumerating()
             {
-                Volatile.Write(ref this.finishedEnumerating, true);
+                Volatile.Write(ref this.enumerator, null);
             }
         }
 
@@ -207,7 +211,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
                                     SinglePrefetchState innerState = (SinglePrefetchState)context;
 
                                     CommonPrefetchState innerCommonState = innerState.CommonState;
-                                    IEnumerator<IPrefetcher> e = innerCommonState.Enumerator;
 
                                     if (innerCommonState.FinishedEnumerating)
                                     {
@@ -222,8 +225,10 @@ namespace Microsoft.Azure.Cosmos.Pagination
                                     // e.MoveNext()
                                     lock (innerCommonState)
                                     {
-                                        // ... but check again, the answer might have changed while we go the lock
-                                        if (innerCommonState.FinishedEnumerating)
+                                        // this can have transitioned to null since we last checked
+                                        // so this is basically double-check locking
+                                        IEnumerator<IPrefetcher> e = innerCommonState.Enumerator;
+                                        if (e == null)
                                         {
                                             return;
                                         }
@@ -555,7 +560,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                             if (toAwait == null)
                             {
                                 // hand the last of the arrays back
-                                ReturnRentedArray(runningTasks, runningTasks.Length);
+                                ReturnRentedArray(runningTasks, toAwaitIndex);
                                 runningTasks = null;
 
                                 break;
