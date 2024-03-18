@@ -1,4 +1,8 @@
-﻿namespace Microsoft.Azure.Cosmos.Tests.Pagination
+﻿using Microsoft.Azure.Cosmos.Pagination;
+using System.Collections.Generic;
+using System;
+
+namespace Microsoft.Azure.Cosmos.Tests.Pagination
 {
     using System;
     using System.Buffers;
@@ -196,7 +200,7 @@
         /// <summary>
         /// Different task counts which explore different code paths.
         /// </summary>
-        private static readonly int[] TaskCounts = new[] { 1, 2, 511, 512, 513, 1024, 1025 };
+        private static readonly int[] TaskCounts = new[] { 0, 1, 2, 511, 512, 513, 1024, 1025 };
 
         /// <summary>
         /// Different max concurrencies which explore different code paths.
@@ -312,6 +316,9 @@
         [TestMethod]
         public async Task RentedBuffersAllReturnedAsync()
         {
+            // test that all rented buffers are correctly returned
+            // (and in the expected state)
+
             Task faultedTask = Task.FromException(new NotSupportedException());
 
             try
@@ -324,7 +331,7 @@
 
                         ValidatingRandomizedArrayPool<IPrefetcher> prefetcherPool = new ValidatingRandomizedArrayPool<IPrefetcher>(new ThrowsPrefetcher());
                         ValidatingRandomizedArrayPool<Task> taskPool = new ValidatingRandomizedArrayPool<Task>(faultedTask);
-                        ValidatingRandomizedArrayPool<object> objectPool = new ValidatingRandomizedArrayPool<object>(new object());
+                        ValidatingRandomizedArrayPool<object> objectPool = new ValidatingRandomizedArrayPool<object>("unexpected value");
 
                         ParallelPrefetch.ParallelPrefetchTestConfig config =
                             new ParallelPrefetch.ParallelPrefetchTestConfig(
@@ -364,6 +371,100 @@
                 for (int i = 0; i < count; i++)
                 {
                     yield return new TestOncePrefetcher(beforeAwait, afterAwait);
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task ExceptionsHandledAsync()
+        {
+            // test that raising exceptions during processing 
+            // doesn't leak or otherwise fail
+
+            Task faultedTask = Task.FromException(new NotSupportedException());
+
+            try
+            {
+                foreach (int maxConcurrency in Concurrencies)
+                {
+                    if (maxConcurrency <= 1)
+                    {
+                        // we won't do anything fancy, so skip
+                        continue;
+                    }
+
+                    foreach (int taskCount in TaskCounts)
+                    {
+                        if (taskCount <= 1)
+                        {
+                            // we won't do anything fancy, so skip
+                            continue;
+                        }
+
+                        for (int faultOnTask = 0; faultOnTask < taskCount; faultOnTask++)
+                        {
+                            IEnumerable<IPrefetcher> prefetchers = CreatePrefetchers(taskCount, faultOnTask, static () => { }, static () => { });
+
+                            ValidatingRandomizedArrayPool<IPrefetcher> prefetcherPool = new ValidatingRandomizedArrayPool<IPrefetcher>(new ThrowsPrefetcher());
+                            ValidatingRandomizedArrayPool<Task> taskPool = new ValidatingRandomizedArrayPool<Task>(faultedTask);
+                            ValidatingRandomizedArrayPool<object> objectPool = new ValidatingRandomizedArrayPool<object>("unexpected value");
+
+                            ParallelPrefetch.ParallelPrefetchTestConfig config =
+                                new ParallelPrefetch.ParallelPrefetchTestConfig(
+                                    prefetcherPool,
+                                    taskPool,
+                                    objectPool
+                                );
+
+                            Exception caught = null;
+                            try
+                            {
+                                await ParallelPrefetch.PrefetchInParallelImplAsync(
+                                    prefetchers,
+                                    maxConcurrency,
+                                    EmptyTrace,
+                                    config,
+                                    default);
+                            }
+                            catch (Exception e)
+                            {
+                                caught = e;
+                            }
+
+                            Assert.IsNotNull(caught, $"concurrency={maxConcurrency}, tasks={taskCount}, faultOn={faultOnTask} - didn't produce exception as expected");
+
+                            prefetcherPool.AssertAllReturned();
+                            taskPool.AssertAllReturned();
+                            objectPool.AssertAllReturned();
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                // observe this intentionally faulted task, no matter what
+                try
+                {
+                    await faultedTask;
+                }
+                catch
+                {
+                    // intentionally empty
+                }
+            }
+
+            static IEnumerable<IPrefetcher> CreatePrefetchers(int count, int faultOnTask, Action beforeAwait, Action afterAwait)
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    if (faultOnTask == i)
+                    {
+                        yield return new ThrowsPrefetcher();
+                    }
+                    else
+                    {
+                        yield return new TestOncePrefetcher(beforeAwait, afterAwait);
+                    }
                 }
             }
         }

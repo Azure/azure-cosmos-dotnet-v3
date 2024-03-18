@@ -658,7 +658,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                             }
                             catch (Exception ex)
                             {
-                                if (capturedException != null)
+                                if (capturedException == null)
                                 {
                                     // if we encountered some exception, tell the remaining tasks to bail
                                     // the next time they check commonState
