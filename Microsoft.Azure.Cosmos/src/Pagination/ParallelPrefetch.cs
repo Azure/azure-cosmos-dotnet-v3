@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             /// The <see cref="IEnumerator{T}"/> which will produce the next <see cref="IPrefetcher"/>
             /// to use.
             /// 
-            /// Once at least once Task been started, should only be accessed under a lock.
+            /// Once at least one Task been started, should only be accessed under a lock.
             /// 
             /// If <see cref="FinishedEnumerating"/> == true, this returns null.
             /// </summary>
@@ -266,7 +266,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     static async (context) =>
                     {
                         // this method is structured a bit oddly to prevent the compiler from putting more data into the 
-                        // state of the Task
+                        // state of the Task - basically, don't have any locals (except context) that survive across an await
                         //
                         // we could go harder here and just not use async/await but that's awful for maintainability
                         try
@@ -376,7 +376,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
         /// <summary>
         /// Special case for when maxConcurrency == 1.
         /// 
-        /// This devolves into a foreach loop and dodges all the extra work.
+        /// This devolves into a foreach loop.
         /// </summary>
         private static async Task SingleConcurrencyPrefetchInParallelAsync(IEnumerable<IPrefetcher> prefetchers, ITrace trace, CancellationToken cancellationToken)
         {
@@ -390,10 +390,10 @@ namespace Microsoft.Azure.Cosmos.Pagination
         }
 
         /// <summary>
-        /// The case where maxConcurrency less than or equal to BatchLimit.
+        /// The case where maxConcurrency is less than or equal to BatchLimit.
         /// 
-        /// This starts up to maxConcurrency simultanous requests, doing so in a way that
-        /// requires some single use arrays of maxConcurrency size.
+        /// This starts up to maxConcurrency simultanous Tasks, doing so in a way that
+        /// requires rented arrays of maxConcurrency size.
         /// </summary>
         private static async Task LowConcurrencyPrefetchInParallelAsync(
             IEnumerable<IPrefetcher> prefetchers,
@@ -444,8 +444,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         // and quicky get to maxConcurrency degrees of parallelism
                         nextPrefetcherIndex = FillPrefetcherBuffer(commonState, initialPrefetchers, 2, maxConcurrency, e);
 
-                        // actually start all the tasks
-                        runningTasks = RentArray<Task>(config, maxConcurrency, clear: false);
+                        // actually start all the tasks, stashing them in a rented Task[]
+                        runningTasks = RentArray<Task>(config, nextPrefetcherIndex, clear: false);
 
                         for (nextRunningTaskIndex = 0; nextRunningTaskIndex < nextPrefetcherIndex; nextRunningTaskIndex++)
                         {
@@ -459,7 +459,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         ReturnRentedArray(config, initialPrefetchers, nextPrefetcherIndex);
                         initialPrefetchers = null;
 
-                        // now await them in turn
+                        // now await all Tasks in turn
                         for (int toAwaitTaskIndex = 0; toAwaitTaskIndex < nextRunningTaskIndex; toAwaitTaskIndex++)
                         {
                             Task toAwait = runningTasks[toAwaitTaskIndex];
@@ -500,6 +500,19 @@ namespace Microsoft.Azure.Cosmos.Pagination
             }
         }
 
+        /// <summary>
+        /// The case where maxConcurrency is greater than BatchLimit.
+        /// 
+        /// This starts up to maxConcurrency simultanous Tasks, doing so in batches
+        /// of BatchLimit (or less) size.  Active Tasks are tracked in a psuedo-linked-list
+        /// over rented object[].
+        /// 
+        /// This is more complicated, less likely to hit maxConcurrency degrees of
+        /// parallelism, and less allocation efficient when compared to LowConcurrencyPrefetchInParallelAsync.
+        /// 
+        /// However, it doesn't allocate gigantic arrays and doesn't wait for full enumeration
+        /// before starting to prefetch.
+        /// </summary>
         private static async Task HighConcurrencyPrefetchInParallelAsync(
             IEnumerable<IPrefetcher> prefetchers,
             int maxConcurrency,
@@ -509,9 +522,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
         {
             IPrefetcher[] currentBatch = null;
 
-            // this ends up holding a sort of linked list
+            // this ends up holding a sort of linked list where
             // each entry is actually a Task until the very last one
-            // with is an object[]
+            // which is an object[]
             //
             // as soon as a null is encountered, either where a Task or
             // an object[] is expected, the linked list is done
@@ -616,6 +629,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
                             // the enumerator
                             lock (commonState)
                             {
+                                // the answer might have changed, so we double-check
+                                // this once we've got the lock
                                 if (commonState.FinishedEnumerating)
                                 {
                                     break;
@@ -655,7 +670,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         //
                         // we walk through all of them, even if we encounter an error
                         // because we need to walk the whole linked-list and this is
-                        // simpler
+                        // simpler than an explicit error code path
 
                         int toAwaitIndex = 0;
                         while (runningTasks != null)
@@ -699,7 +714,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                                 runningTasks = (object[])runningTasks[runningTasks.Length - 1];
                                 toAwaitIndex = 0;
 
-                                // we're done with this, let some other caller use it immediately
+                                // we're done with this, let some other caller reuse it immediately
                                 ReturnRentedArray(config, oldChunk, oldChunk.Length);
                             }
                         }
@@ -712,6 +727,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
             finally
             {
                 // cleanup if something went wrong while these were still rented
+                //
+                // this can basically only happen if the enumerator itself faults
+                // which is unlikely, but far from impossible
 
                 ReturnRentedArray(config, currentBatch, BatchLimit);
 
