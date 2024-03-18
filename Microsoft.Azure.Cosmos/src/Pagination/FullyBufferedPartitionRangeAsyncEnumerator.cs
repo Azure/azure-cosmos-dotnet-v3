@@ -17,11 +17,14 @@ namespace Microsoft.Azure.Cosmos.Pagination
         private readonly PartitionRangePageAsyncEnumerator<TPage, TState> enumerator;
         private readonly List<TPage> bufferedPages;
         private int currentIndex;
+        private int bufferedItemCount;
         private Exception exception;
 
         private bool hasPrefetched;
 
         public override Exception BufferedException => this.exception;
+
+        public override int BufferedItemCount => this.bufferedItemCount;
 
         public FullyBufferedPartitionRangeAsyncEnumerator(PartitionRangePageAsyncEnumerator<TPage, TState> enumerator)
             : this(enumerator, null)
@@ -68,6 +71,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     if (current.Succeeded)
                     {
                         this.bufferedPages.Add(current.Result);
+                        this.bufferedItemCount += current.Result.ItemCount;
                     }
                     else
                     {

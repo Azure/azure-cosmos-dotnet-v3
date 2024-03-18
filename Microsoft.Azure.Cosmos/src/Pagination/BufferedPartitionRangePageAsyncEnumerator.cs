@@ -30,6 +30,10 @@ namespace Microsoft.Azure.Cosmos.Pagination
             }
         }
 
+        public override int BufferedItemCount => this.bufferedPage.HasValue && this.bufferedPage.Value.Succeeded ?
+            this.bufferedPage.Value.Result.ItemCount :
+            0;
+
         public BufferedPartitionRangePageAsyncEnumerator(PartitionRangePageAsyncEnumerator<TPage, TState> enumerator)
             : base(enumerator.FeedRangeState)
         {

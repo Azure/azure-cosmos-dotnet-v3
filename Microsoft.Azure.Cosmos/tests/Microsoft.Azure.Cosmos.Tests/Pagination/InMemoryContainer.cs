@@ -442,6 +442,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 ReadFeedPage readFeedPage = new ReadFeedPage(
                     responseStream,
                     requestCharge: 42,
+                    itemCount: cosmosDocuments.Count,
                     activityId: Guid.NewGuid().ToString(),
                     additionalHeaders: new Dictionary<string, string>()
                     {
@@ -794,6 +795,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         new ChangeFeedSuccessPage(
                             responseStream,
                             requestCharge: 42,
+                            itemCount: cosmosDocuments.Count,
                             activityId: Guid.NewGuid().ToString(),
                             additionalHeaders: default,
                             responseState)));

@@ -100,6 +100,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                                 backendPage = new ChangeFeedSuccessPage(
                                     changeFeedSuccessPage.Content,
                                     totalRequestCharge,
+                                    changeFeedSuccessPage.ItemCount,
                                     changeFeedSuccessPage.ActivityId,
                                     changeFeedSuccessPage.AdditionalHeaders,
                                     changeFeedSuccessPage.State);

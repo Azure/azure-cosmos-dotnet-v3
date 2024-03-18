@@ -317,7 +317,13 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>())).ReturnsAsync(
                 (FeedRangeState<ChangeFeedState> state, ChangeFeedPaginationOptions options, ITrace trace, CancellationToken token)
-                    => TryCatch<ChangeFeedPage>.FromResult(new ChangeFeedSuccessPage(content: new MemoryStream(Encoding.UTF8.GetBytes("{\"Documents\": [], \"_count\": 0, \"_rid\": \"asdf\"}")), requestCharge: 5, activityId: string.Empty, additionalHeaders: default, state.State)));
+                    => TryCatch<ChangeFeedPage>.FromResult(new ChangeFeedSuccessPage(
+                        content: new MemoryStream(Encoding.UTF8.GetBytes("{\"Documents\": [], \"_count\": 0, \"_rid\": \"asdf\"}")),
+                        requestCharge: 5,
+                        itemCount: 0,
+                        activityId: string.Empty,
+                        additionalHeaders: default,
+                        state.State)));
 
             // Returns a 304 with 1RU charge on CC-FF
             documentContainer.Setup(c => c.MonadicChangeFeedAsync(

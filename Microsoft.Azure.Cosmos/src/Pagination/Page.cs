@@ -49,6 +49,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public double RequestCharge { get; }
 
+        public abstract int ItemCount { get; }
+
         public string ActivityId { get; }
 
         public IReadOnlyDictionary<string, string> AdditionalHeaders { get; }

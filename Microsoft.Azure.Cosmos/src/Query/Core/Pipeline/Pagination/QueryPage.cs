@@ -50,6 +50,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination
 
         public bool? Streaming { get; }
 
+        public override int ItemCount => this.Documents.Count;
+
         protected override ImmutableHashSet<string> DerivedClassBannedHeaders => QueryPage.BannedHeaders;
     }
 }
