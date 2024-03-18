@@ -608,12 +608,6 @@
 
             foreach (int maxConcurrency in Concurrencies)
             {
-                if (maxConcurrency <= 0)
-                {
-                    // nothing to do here, we won't do any allocations
-                    continue;
-                }
-
                 foreach (int taskCount in TaskCounts)
                 {
                     using ITrace simpleTrace = new SimpleTrace(null, "Root", TraceComponent.Batch, Cosmos.Tracing.TraceLevel.Off);
