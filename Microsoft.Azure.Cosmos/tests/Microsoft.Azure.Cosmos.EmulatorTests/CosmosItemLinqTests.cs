@@ -142,6 +142,31 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task LinqQueryToAsyncEnumerable()
+        {
+            ToDoActivity toDoActivity = ToDoActivity.CreateRandomToDoActivity();
+            toDoActivity.taskNum = 20;
+            toDoActivity.id = "minTaskNum";
+            await this.Container.CreateItemAsync(toDoActivity, new PartitionKey(toDoActivity.pk));
+            toDoActivity.taskNum = 100;
+            toDoActivity.id = "maxTaskNum";
+            await this.Container.CreateItemAsync(toDoActivity, new PartitionKey(toDoActivity.pk));
+
+            IAsyncEnumerable<ToDoActivity> query = this.Container.GetItemLinqQueryable<ToDoActivity>()
+                .OrderBy(p => p.cost)
+                .AsAsyncEnumerable();
+
+            int found = 0;
+            await foreach (ToDoActivity item in query)
+            {
+                Assert.IsNotNull(item);
+                ++found;
+            }
+
+            Assert.IsTrue(found > 0);
+        }
+
+        [TestMethod]
         [DataRow(false)]
         [DataRow(true)]
         [ExpectedException(typeof(NotSupportedException))]

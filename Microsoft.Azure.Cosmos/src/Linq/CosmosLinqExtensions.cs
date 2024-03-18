@@ -285,6 +285,32 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
+        /// This extension method returns the query as an asynchronous enumerable.
+        /// </summary>
+        /// <typeparam name="T">the type of object to query.</typeparam>
+        /// <param name="query">the IQueryable{T} to be converted.</param>
+        /// <returns>An asynchronous enumerable to go through the items.</returns>
+        /// <example>
+        /// This example shows how to get the query as an asynchronous enumerable.
+        /// 
+        /// <code language="c#">
+        /// <![CDATA[
+        /// IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>();
+        /// IAsyncEnumerable<ToDoActivity> asyncEnumerable = linqQueryable.Where(item => (item.taskNum < 100)).AsAsyncEnumerable();
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static IAsyncEnumerable<T> AsAsyncEnumerable<T>(this IQueryable<T> query)
+        {
+            if (query is IAsyncEnumerable<T> asyncEnumerable)
+            {
+                return asyncEnumerable;
+            }
+
+            throw new ArgumentException("AsAsyncEnumerable is only supported on Cosmos LINQ query operations", nameof(query));
+        }
+
+        /// <summary>
         /// This extension method gets the FeedIterator from LINQ IQueryable to execute query asynchronously.
         /// This will create the fresh new FeedIterator when called.
         /// </summary>
