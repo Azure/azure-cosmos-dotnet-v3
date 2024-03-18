@@ -121,7 +121,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
                     documents: documentsAfterSkip,
                     requestCharge: sourcePage.RequestCharge,
                     activityId: sourcePage.ActivityId,
-                    responseLengthInBytes: sourcePage.ResponseLengthInBytes,
                     cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
                     distributionPlanSpec: default,
                     disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,

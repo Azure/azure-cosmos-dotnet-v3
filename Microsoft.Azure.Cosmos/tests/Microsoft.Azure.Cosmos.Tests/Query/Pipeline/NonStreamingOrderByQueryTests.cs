@@ -175,7 +175,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     page.Documents,
                     page.RequestCharge,
                     page.ActivityId,
-                    page.ResponseLengthInBytes,
                     page.CosmosQueryExecutionInfo,
                     page.DistributionPlanSpec,
                     page.DisallowContinuationTokenMessage,

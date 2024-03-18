@@ -70,7 +70,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
                 }
 
                 double requestCharge = 0;
-                long responseLengthBytes = 0;
                 IReadOnlyDictionary<string, string> additionalHeaders = null;
                 while (await this.inputStage.MoveNextAsync(trace, cancellationToken))
                 {
@@ -84,7 +83,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
                     QueryPage sourcePage = tryGetPageFromSource.Result;
 
                     requestCharge += sourcePage.RequestCharge;
-                    responseLengthBytes += sourcePage.ResponseLengthInBytes;
                     additionalHeaders = sourcePage.AdditionalHeaders;
 
                     cancellationToken.ThrowIfCancellationRequested();
@@ -102,7 +100,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
                     documents: finalResult,
                     requestCharge: requestCharge,
                     activityId: default,
-                    responseLengthInBytes: responseLengthBytes,
                     cosmosQueryExecutionInfo: default,
                     distributionPlanSpec: default,
                     disallowContinuationTokenMessage: default,

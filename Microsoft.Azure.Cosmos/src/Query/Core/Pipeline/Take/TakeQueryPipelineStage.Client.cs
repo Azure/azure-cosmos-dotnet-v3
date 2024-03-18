@@ -224,7 +224,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                     documents: takedDocuments,
                     requestCharge: sourcePage.RequestCharge,
                     activityId: sourcePage.ActivityId,
-                    responseLengthInBytes: sourcePage.ResponseLengthInBytes,
                     cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
                     distributionPlanSpec: default,
                     disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,

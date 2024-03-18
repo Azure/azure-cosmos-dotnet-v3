@@ -56,7 +56,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 documents: documents,
                 requestCharge: default,
                 activityId: Guid.NewGuid().ToString(),
-                responseLengthInBytes: default,
                 cosmosQueryExecutionInfo: default,
                 distributionPlanSpec: default,
                 disallowContinuationTokenMessage: default,

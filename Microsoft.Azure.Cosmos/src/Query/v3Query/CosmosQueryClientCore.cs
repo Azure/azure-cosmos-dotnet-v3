@@ -330,7 +330,6 @@ namespace Microsoft.Azure.Cosmos
                         cosmosResponseMessage.Content.CopyTo(memoryStream);
                     }
 
-                    long responseLengthBytes = memoryStream.Length;
                     CosmosQueryClientCore.ParseRestStream(
                         memoryStream,
                         resourceType,
@@ -385,7 +384,6 @@ namespace Microsoft.Azure.Cosmos
                         documents,
                         cosmosResponseMessage.Headers.RequestCharge,
                         cosmosResponseMessage.Headers.ActivityId,
-                        responseLengthBytes,
                         cosmosQueryExecutionInfo,
                         distributionPlanSpec,
                         disallowContinuationTokenMessage: null,

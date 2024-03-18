@@ -20,7 +20,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
         private readonly IQueryPipelineStage inputStage;
         private double cumulativeRequestCharge;
-        private long cumulativeResponseLengthInBytes;
         private IReadOnlyDictionary<string, string> cumulativeAdditionalHeaders;
         private bool returnedFinalStats;
 
@@ -52,7 +51,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                             documents: EmptyPage,
                             requestCharge: this.cumulativeRequestCharge,
                             activityId: Guid.Empty.ToString(),
-                            responseLengthInBytes: this.cumulativeResponseLengthInBytes,
                             cosmosQueryExecutionInfo: default,
                             distributionPlanSpec: default,
                             disallowContinuationTokenMessage: default,
@@ -60,7 +58,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                             state: default,
                             streaming: null);
                         this.cumulativeRequestCharge = 0;
-                        this.cumulativeResponseLengthInBytes = 0;
                         this.cumulativeAdditionalHeaders = null;
                         this.returnedFinalStats = true;
                         this.Current = TryCatch<QueryPage>.FromResult(queryPage);
@@ -90,7 +87,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                             documents: EmptyPage,
                             requestCharge: sourcePage.RequestCharge + this.cumulativeRequestCharge,
                             activityId: sourcePage.ActivityId,
-                            responseLengthInBytes: sourcePage.ResponseLengthInBytes + this.cumulativeResponseLengthInBytes,
                             cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
                             distributionPlanSpec: default,
                             disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
@@ -98,14 +94,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                             state: default,
                             streaming: sourcePage.Streaming);
                         this.cumulativeRequestCharge = 0;
-                        this.cumulativeResponseLengthInBytes = 0;
                         this.cumulativeAdditionalHeaders = null;
                         this.Current = TryCatch<QueryPage>.FromResult(queryPage);
                         return true;
                     }
 
                     this.cumulativeRequestCharge += sourcePage.RequestCharge;
-                    this.cumulativeResponseLengthInBytes += sourcePage.ResponseLengthInBytes;
                     this.cumulativeAdditionalHeaders = sourcePage.AdditionalHeaders;
                 }
                 else
@@ -117,7 +111,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                             documents: sourcePage.Documents,
                             requestCharge: sourcePage.RequestCharge + this.cumulativeRequestCharge,
                             activityId: sourcePage.ActivityId,
-                            responseLengthInBytes: sourcePage.ResponseLengthInBytes + this.cumulativeResponseLengthInBytes,
                             cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
                             distributionPlanSpec: default,
                             disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
@@ -125,7 +118,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                             state: sourcePage.State,
                             streaming: sourcePage.Streaming);
                         this.cumulativeRequestCharge = 0;
-                        this.cumulativeResponseLengthInBytes = 0;
                         this.cumulativeAdditionalHeaders = null;
                     }
                     else

@@ -382,7 +382,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 documents: new List<CosmosElement>(),
                 requestCharge: 0,
                 activityId: string.Empty,
-                responseLengthInBytes: 0,
                 cosmosQueryExecutionInfo: default,
                 distributionPlanSpec: default,
                 disallowContinuationTokenMessage: default,

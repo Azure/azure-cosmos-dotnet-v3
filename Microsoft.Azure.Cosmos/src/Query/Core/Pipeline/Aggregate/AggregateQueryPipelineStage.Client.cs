@@ -85,7 +85,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                 // but then we will have to design a continuation token.
 
                 double requestCharge = 0;
-                long responseLengthBytes = 0;
                 IReadOnlyDictionary<string, string> cumulativeAdditionalHeaders = default;
 
                 while (await this.inputStage.MoveNextAsync(trace, cancellationToken))
@@ -100,7 +99,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                     QueryPage sourcePage = tryGetPageFromSource.Result;
 
                     requestCharge += sourcePage.RequestCharge;
-                    responseLengthBytes += sourcePage.ResponseLengthInBytes;
 
                     // Note-2024-02-02:
                     // Here the IndexMetrics headers are non-accumulative, so we are copying that header from the source page.
@@ -132,7 +130,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                     documents: finalResult,
                     requestCharge: requestCharge,
                     activityId: default,
-                    responseLengthInBytes: responseLengthBytes,
                     cosmosQueryExecutionInfo: default,
                     distributionPlanSpec: default,
                     disallowContinuationTokenMessage: default,

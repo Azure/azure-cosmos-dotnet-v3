@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.Immutable;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -81,7 +80,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                 // Draining GROUP BY is broken down into two stages:
 
                 double requestCharge = 0.0;
-                long responseLengthInBytes = 0;
                 IReadOnlyDictionary<string, string> addtionalHeaders = null;
 
                 while (await this.inputStage.MoveNextAsync(trace, cancellationToken))
@@ -100,7 +98,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                     QueryPage sourcePage = tryGetSourcePage.Result;
 
                     requestCharge += sourcePage.RequestCharge;
-                    responseLengthInBytes += sourcePage.ResponseLengthInBytes;
                     addtionalHeaders = sourcePage.AdditionalHeaders;
                     this.AggregateGroupings(sourcePage.Documents);
                 }
@@ -117,7 +114,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                     documents: results,
                     requestCharge: requestCharge,
                     activityId: default,
-                    responseLengthInBytes: responseLengthInBytes,
                     cosmosQueryExecutionInfo: default,
                     distributionPlanSpec: default,
                     disallowContinuationTokenMessage: ClientGroupByQueryPipelineStage.ContinuationTokenNotSupportedWithGroupBy,
