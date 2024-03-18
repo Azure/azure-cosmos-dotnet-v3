@@ -1,14 +1,11 @@
-﻿using Microsoft.Azure.Cosmos.Pagination;
-using System.Collections.Generic;
-using System;
-
-namespace Microsoft.Azure.Cosmos.Tests.Pagination
+﻿namespace Microsoft.Azure.Cosmos.Tests.Pagination
 {
     using System;
     using System.Buffers;
     using System.Collections;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Pagination;
@@ -41,15 +38,19 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 int oldRun = Interlocked.Exchange(ref this.hasRun, 1);
                 Assert.AreEqual(0, oldRun);
 
+                cancellationToken.ThrowIfCancellationRequested();
+
                 // we use two callbacks to test that ParallelPrefetch is correctly monitoring
                 // continuations - without this, we might incorrectly consider a Task completed
                 // despite it awaiting an inner Task
 
                 this.beforeAwait();
+                cancellationToken.ThrowIfCancellationRequested();
 
                 await Task.Yield();
 
                 this.afterAwait();
+                cancellationToken.ThrowIfCancellationRequested();
             }
         }
 
@@ -208,6 +209,33 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         private static readonly int[] Concurrencies = new[] { 1, 2, 511, 512, 513, int.MaxValue };
 
         private static readonly ITrace EmptyTrace = new NullTrace();
+
+        [TestMethod]
+        public async Task ParameterValidationAsync()
+        {
+            // test contract for parameters
+
+            ArgumentNullException prefetchersArg = Assert.ThrowsException<ArgumentNullException>(
+                () =>
+                    ParallelPrefetch.PrefetchInParallelAsync(
+                    null,
+                    123,
+                    EmptyTrace,
+                    default));
+            Assert.AreEqual("prefetchers", prefetchersArg.ParamName);
+
+            ArgumentNullException traceArg = Assert.ThrowsException<ArgumentNullException>(
+                () =>
+                    ParallelPrefetch.PrefetchInParallelAsync(
+                    Array.Empty<IPrefetcher>(),
+                    123,
+                    null,
+                    default));
+            Assert.AreEqual("trace", traceArg.ParamName);
+
+            // maxConcurrency can be < 0 ; check that that doesn't throw
+            await ParallelPrefetch.PrefetchInParallelAsync(Array.Empty<IPrefetcher>(), -123, EmptyTrace, default);
+        }
 
         [TestMethod]
         public async Task ZeroConcurrencyOptimizationAsync()
@@ -465,6 +493,125 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     {
                         yield return new TestOncePrefetcher(beforeAwait, afterAwait);
                     }
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task CancellationHandledAsync()
+        {
+            // cancellation is expensive, so rather than check every 
+            // cancellation point - we just probe some proportional
+            // to this constant
+            const int StepRatio = 10;
+
+            // test that cancellation during processing 
+            // doesn't leak or otherwise fail
+
+            Task faultedTask = Task.FromException(new NotSupportedException());
+
+            try
+            {
+                foreach (int maxConcurrency in Concurrencies)
+                {
+                    if (maxConcurrency <= 1)
+                    {
+                        // we won't do anything fancy, so skip
+                        continue;
+                    }
+
+                    foreach (int taskCount in TaskCounts)
+                    {
+                        if (taskCount <= 1)
+                        {
+                            // we won't do anything fancy, so skip
+                            continue;
+                        }
+
+                        int step = Math.Max(1, taskCount / StepRatio);
+
+                        for (int cancelBeforeTask = 0; cancelBeforeTask < taskCount; cancelBeforeTask += step)
+                        {
+                            using CancellationTokenSource cts = new();
+
+                            int startedBeforeCancellation = 0;
+                            object sync = new object();
+
+                            IEnumerable<IPrefetcher> prefetchers =
+                                CreatePrefetchers(
+                                    taskCount,
+                                    () =>
+                                    {
+                                        if (!cts.IsCancellationRequested)
+                                        {
+                                            int newValue = Interlocked.Increment(ref startedBeforeCancellation);
+
+                                            if (newValue >= cancelBeforeTask)
+                                            {
+                                                cts.Cancel();
+                                            }
+                                        }
+                                    },
+                                    () => { });
+
+                            ValidatingRandomizedArrayPool<IPrefetcher> prefetcherPool = new ValidatingRandomizedArrayPool<IPrefetcher>(new ThrowsPrefetcher());
+                            ValidatingRandomizedArrayPool<Task> taskPool = new ValidatingRandomizedArrayPool<Task>(faultedTask);
+                            ValidatingRandomizedArrayPool<object> objectPool = new ValidatingRandomizedArrayPool<object>("unexpected value");
+
+                            ParallelPrefetch.ParallelPrefetchTestConfig config =
+                                new ParallelPrefetch.ParallelPrefetchTestConfig(
+                                    prefetcherPool,
+                                    taskPool,
+                                    objectPool
+                                );
+
+                            Exception caught = null;
+                            try
+                            {
+                                await ParallelPrefetch.PrefetchInParallelImplAsync(
+                                    prefetchers,
+                                    maxConcurrency,
+                                    EmptyTrace,
+                                    config,
+                                    cts.Token);
+                            }
+                            catch (Exception e)
+                            {
+                                caught = e;
+                            }
+
+                            Assert.IsNotNull(caught, $"concurrency={maxConcurrency}, tasks={taskCount}, cancelBeforeTask={cancelBeforeTask} - didn't produce exception as expected");
+
+                            // we might burst above this, but we should always at least _reach_ it
+                            Assert.IsTrue(cancelBeforeTask <= startedBeforeCancellation, $"{cancelBeforeTask} > {startedBeforeCancellation} ; we should have reach our cancellation point");
+
+                            Assert.IsTrue(caught is OperationCanceledException);
+
+                            prefetcherPool.AssertAllReturned();
+                            taskPool.AssertAllReturned();
+                            objectPool.AssertAllReturned();
+                        }
+                    }
+
+                    static IEnumerable<IPrefetcher> CreatePrefetchers(int count, Action beforeAwait, Action afterAwait)
+                    {
+                        for (int i = 0; i < count; i++)
+                        {
+                            yield return new TestOncePrefetcher(beforeAwait, afterAwait);
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                // observe this intentionally faulted task, no matter what
+                try
+                {
+                    await faultedTask;
+                }
+                catch
+                {
+                    // intentionally empty
                 }
             }
         }
