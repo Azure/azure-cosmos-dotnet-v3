@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
@@ -313,7 +314,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
                 await ParallelPrefetch.PrefetchInParallelAsync(orderbyEnumerators, init.MaxConcurrency, trace, cancellationToken);
 
-                pipelineStage = await NonStreamingOrderByCrossPartitionQueryPipelineStage.CreateAsync(
+                pipelineStage = await NonStreamingOrderByPipelineStageFlat.CreateAsync(
                     init.QueryPaginationOptions,
                     sortOrders,
                     orderbyEnumerators,
@@ -1849,29 +1850,52 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             }
         }
 
-        private sealed class NonStreamingOrderByCrossPartitionQueryPipelineStage : IQueryPipelineStage
+        private abstract class NonStreamingOrderByPipelineStageBase : IQueryPipelineStage
         {
-            private const string DisallowContinuationTokenMessage = "Continuation tokens are not supported for the non streaming order by pipeline.";
+            protected const string DisallowContinuationTokenMessage = "Continuation tokens are not supported for the non streaming order by pipeline.";
 
-            private static readonly QueryState NonStreamingOrderByInProgress = new QueryState(CosmosString.Create("NonStreamingOrderByInProgress"));
+            protected static readonly QueryState NonStreamingOrderByInProgress = new QueryState(CosmosString.Create("NonStreamingOrderByInProgress"));
 
+            protected readonly QueryPaginationOptions queryPaginationOptions;
+
+            protected readonly double totalRequestCharge;
+
+            protected readonly string activityId;
+
+            protected readonly Lazy<CosmosQueryExecutionInfo> cosmosQueryExecutionInfo;
+
+            protected readonly DistributionPlanSpec distributionPlanSpec;
+
+            protected readonly IReadOnlyDictionary<string, string> additionalHeaders;
+
+            protected bool firstPage;
+
+            public TryCatch<QueryPage> Current { get; protected set; }
+
+            protected NonStreamingOrderByPipelineStageBase(
+                QueryPaginationOptions queryPaginationOptions,
+                double totalRequestCharge,
+                string activityId,
+                Lazy<CosmosQueryExecutionInfo> cosmosQueryExecutionInfo,
+                DistributionPlanSpec distributionPlanSpec,
+                IReadOnlyDictionary<string, string> additionalHeaders)
+            {
+                this.queryPaginationOptions = queryPaginationOptions ?? throw new ArgumentNullException(nameof(queryPaginationOptions));
+                this.totalRequestCharge = totalRequestCharge;
+                this.activityId = activityId ?? throw new ArgumentNullException(nameof(activityId));
+                this.cosmosQueryExecutionInfo = cosmosQueryExecutionInfo;
+                this.distributionPlanSpec = distributionPlanSpec;
+                this.additionalHeaders = additionalHeaders;
+            }
+
+            public abstract ValueTask DisposeAsync();
+
+            public abstract ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken);
+        }
+
+        private sealed class NonStreamingOrderByPipelineStageFlat : NonStreamingOrderByPipelineStageBase
+        {
             private readonly PriorityQueue<OrderByQueryResult> orderByQueryResults;
-
-            private readonly QueryPaginationOptions queryPaginationOptions;
-
-            private readonly double totalRequestCharge;
-
-            private readonly string activityId;
-
-            private readonly Lazy<CosmosQueryExecutionInfo> cosmosQueryExecutionInfo;
-
-            private readonly DistributionPlanSpec distributionPlanSpec;
-
-            private readonly IReadOnlyDictionary<string, string> additionalHeaders;
-
-            private bool firstPage;
-
-            public TryCatch<QueryPage> Current { get; private set; }
 
             public static async Task<IQueryPipelineStage> CreateAsync(
                 QueryPaginationOptions queryPaginationOptions,
@@ -1899,7 +1923,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                             {
                                 // TODO: [ndeshpan] Handle splits
                                 throw new NotImplementedException(
-                                    $"Split is not handled in {nameof(NonStreamingOrderByCrossPartitionQueryPipelineStage)}",
+                                    $"Split is not handled in {nameof(NonStreamingOrderByPipelineStageFlat)}",
                                     enumerator.Current.Exception);
                             }
 
@@ -1923,15 +1947,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                             initializedGlobalProperties = true;
                         }
 
-                        IEnumerator<CosmosElement> itemEnumerator = enumerator.Current.Result.Enumerator;
                         foreach (CosmosElement document in enumerator.Current.Result.Page.Documents)
                         {
-                            priorityQueue.Enqueue(new OrderByQueryResult(itemEnumerator.Current));
+                            priorityQueue.Enqueue(new OrderByQueryResult(document));
                         }
                     }
                 }
 
-                return new NonStreamingOrderByCrossPartitionQueryPipelineStage(
+                return new NonStreamingOrderByPipelineStageFlat(
                     priorityQueue,
                     queryPaginationOptions,
                     requestCharge,
@@ -1941,7 +1964,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     additionalHeaders);
             }
 
-            private NonStreamingOrderByCrossPartitionQueryPipelineStage(
+            private NonStreamingOrderByPipelineStageFlat(
                 PriorityQueue<OrderByQueryResult> orderByQueryResults,
                 QueryPaginationOptions queryPaginationOptions,
                 double requestCharge,
@@ -1949,22 +1972,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 Lazy<CosmosQueryExecutionInfo> cosmosQueryExecutionInfo,
                 DistributionPlanSpec distributionPlanSpec,
                 IReadOnlyDictionary<string, string> additionalHeaders)
+                : base(
+                      queryPaginationOptions,
+                      requestCharge,
+                      activityId,
+                      cosmosQueryExecutionInfo,
+                      distributionPlanSpec,
+                      additionalHeaders)
             {
                 this.orderByQueryResults = orderByQueryResults ?? throw new ArgumentNullException(nameof(orderByQueryResults));
-                this.queryPaginationOptions = queryPaginationOptions ?? throw new ArgumentNullException(nameof(queryPaginationOptions));
-                this.totalRequestCharge = requestCharge;
-                this.activityId = activityId ?? throw new ArgumentNullException(nameof(activityId));
-                this.cosmosQueryExecutionInfo = cosmosQueryExecutionInfo;
-                this.distributionPlanSpec = distributionPlanSpec;
-                this.additionalHeaders = additionalHeaders;
             }
 
-            public ValueTask DisposeAsync()
+            public override ValueTask DisposeAsync()
             {
                 return default;
             }
 
-            public ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
+            public override ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
             {
                 int pageSize = this.queryPaginationOptions.PageSizeLimit ?? int.MaxValue;
 
@@ -1999,6 +2023,46 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 {
                     return new ValueTask<bool>(false);
                 }
+            }
+        }
+
+        private sealed class NonStreamingOrderByPipelineStageParallel : NonStreamingOrderByPipelineStageBase
+        {
+            public static Task<IQueryPipelineStage> CreateAsync(
+                QueryPaginationOptions queryPaginationOptions,
+                IReadOnlyList<SortOrder> sortOrders,
+                IEnumerable<OrderByQueryPartitionRangePageAsyncEnumerator> enumerators,
+                ITrace trace,
+                CancellationToken cancellationToken)
+            {
+                throw new NotImplementedException();
+            }
+
+            private NonStreamingOrderByPipelineStageParallel(
+                QueryPaginationOptions queryPaginationOptions,
+                double totalRequestCharge,
+                string activityId,
+                Lazy<CosmosQueryExecutionInfo> cosmosQueryExecutionInfo,
+                DistributionPlanSpec distributionPlanSpec,
+                IReadOnlyDictionary<string, string> additionalHeaders)
+                : base(
+                      queryPaginationOptions,
+                      totalRequestCharge,
+                      activityId,
+                      cosmosQueryExecutionInfo,
+                      distributionPlanSpec,
+                      additionalHeaders)
+            {
+            }
+
+            public override ValueTask DisposeAsync()
+            {
+                throw new NotImplementedException();
+            }
+
+            public override ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
+            {
+                throw new NotImplementedException();
             }
         }
     }
