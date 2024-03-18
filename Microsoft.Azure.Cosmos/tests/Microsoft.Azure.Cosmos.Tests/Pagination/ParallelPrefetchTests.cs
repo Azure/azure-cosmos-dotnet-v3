@@ -5,7 +5,7 @@
     using System.Collections;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Linq;
+    using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Pagination;
@@ -51,6 +51,92 @@
 
                 this.afterAwait();
                 cancellationToken.ThrowIfCancellationRequested();
+            }
+        }
+
+        /// <summary>
+        /// IPrefetcher that does complicated things.
+        /// </summary>
+        private sealed class ComplicatedPrefetcher : IPrefetcher
+        {
+            public long StartTimestamp { get; private set; }
+            public long AfterYieldTimestamp { get; private set; }
+            public long AfterDelay1Timestamp { get; private set; }
+            public long AfterSemaphoreTimestamp { get; private set; }
+            public long AfterDelay2Timestamp { get; private set; }
+            public long AfterDelay3Timestamp { get; private set; }
+            public long AfterDelay4Timestamp { get; private set; }
+            public long WhenAllTimestamp { get; private set; }
+            public long EndTimestamp { get; private set; }
+
+            public async ValueTask PrefetchAsync(ITrace trace, CancellationToken cancellationToken)
+            {
+                this.StartTimestamp = Stopwatch.GetTimestamp();
+
+                await Task.Yield();
+
+                this.AfterYieldTimestamp = Stopwatch.GetTimestamp();
+
+                using (SemaphoreSlim semaphore = new SemaphoreSlim(0, 1))
+                {
+                    Task delay = Task.Delay(5).ContinueWith(_ => { this.AfterDelay1Timestamp = Stopwatch.GetTimestamp(); semaphore.Release(); });
+
+                    await semaphore.WaitAsync();
+                    this.AfterSemaphoreTimestamp = Stopwatch.GetTimestamp();
+
+                    await delay;
+                }
+
+                await Task.WhenAll(
+                    Task.Delay(2).ContinueWith(_ => this.AfterDelay2Timestamp = Stopwatch.GetTimestamp()),
+                    Task.Delay(3).ContinueWith(_ => this.AfterDelay3Timestamp = Stopwatch.GetTimestamp()),
+                    Task.Delay(4).ContinueWith(_ => this.AfterDelay4Timestamp = Stopwatch.GetTimestamp()));
+                this.WhenAllTimestamp = Stopwatch.GetTimestamp();
+
+                await Task.Yield();
+
+                this.EndTimestamp = Stopwatch.GetTimestamp();
+            }
+
+            internal void AssertCorrect()
+            {
+                Assert.IsTrue(this.StartTimestamp > 0);
+
+                Assert.IsTrue(this.AfterYieldTimestamp > this.StartTimestamp);
+                Assert.IsTrue(this.AfterDelay1Timestamp > this.AfterYieldTimestamp);
+                Assert.IsTrue(this.AfterSemaphoreTimestamp > this.AfterDelay1Timestamp);
+
+                // these can all fire in any order (delay doesn't guarantee any particular order)
+                Assert.IsTrue(this.AfterDelay2Timestamp > this.AfterSemaphoreTimestamp);
+                Assert.IsTrue(this.AfterDelay3Timestamp > this.AfterSemaphoreTimestamp);
+                Assert.IsTrue(this.AfterDelay4Timestamp > this.AfterSemaphoreTimestamp);
+
+                // but by WhenAll()'ing them, we can assert WhenAll completes after all the other delays
+                Assert.IsTrue(this.WhenAllTimestamp > this.AfterDelay2Timestamp);
+                Assert.IsTrue(this.WhenAllTimestamp > this.AfterDelay3Timestamp);
+                Assert.IsTrue(this.WhenAllTimestamp > this.AfterDelay4Timestamp);
+
+                Assert.IsTrue(this.EndTimestamp > this.WhenAllTimestamp);
+            }
+        }
+
+        /// <summary>
+        /// IPrefetcher that asserts it got a trace with an expected parent.
+        /// </summary>
+        private sealed class ExpectedParentTracePrefetcher : IPrefetcher
+        {
+            private readonly ITrace expectedParentTrace;
+
+            internal ExpectedParentTracePrefetcher(ITrace expectedParentTrace)
+            {
+                this.expectedParentTrace = expectedParentTrace;
+            }
+
+            public ValueTask PrefetchAsync(ITrace trace, CancellationToken cancellationToken)
+            {
+                Assert.AreSame(this.expectedParentTrace, trace.Parent);
+
+                return default;
             }
         }
 
@@ -155,7 +241,7 @@
 
             public TimeSpan Duration => TimeSpan.MaxValue;
 
-            public TraceLevel Level => TraceLevel.Off;
+            public Cosmos.Tracing.TraceLevel Level => Cosmos.Tracing.TraceLevel.Off;
 
             public TraceComponent Component => TraceComponent.Unknown;
 
@@ -192,9 +278,86 @@
                 return this;
             }
 
-            public ITrace StartChild(string name, TraceComponent component, TraceLevel level)
+            public ITrace StartChild(string name, TraceComponent component, Cosmos.Tracing.TraceLevel level)
             {
                 return this;
+            }
+        }
+
+        /// <summary>
+        /// ITrace which only traces children and parents.
+        /// </summary>
+        private sealed class SimpleTrace : ITrace
+        {
+            public string Name { get; private set; }
+
+            public Guid Id { get; } = Guid.NewGuid();
+
+            public DateTime StartTime { get; } = DateTime.UtcNow;
+
+            public TimeSpan Duration => DateTime.UtcNow - this.StartTime;
+
+            public Cosmos.Tracing.TraceLevel Level { get; private set; }
+
+            public TraceComponent Component { get; private set; }
+
+            public TraceSummary Summary => new TraceSummary();
+
+            public ITrace Parent { get; private set; }
+
+            public IReadOnlyList<ITrace> Children { get; } = new List<ITrace>();
+
+            public IReadOnlyDictionary<string, object> Data { get; } = new Dictionary<string, object>();
+
+            internal SimpleTrace(ITrace parent, string name, TraceComponent component, Cosmos.Tracing.TraceLevel level)
+            {
+                this.Parent = parent;
+                this.Name = name;
+                this.Component = component;
+                this.Level = level;
+            }
+
+            public void AddChild(ITrace trace)
+            {
+                List<ITrace> children = (List<ITrace>)this.Children;
+                lock (children)
+                {
+                    children.Add(trace);
+                }
+            }
+
+            public void AddDatum(string key, TraceDatum traceDatum)
+            {
+            }
+
+            public void AddDatum(string key, object value)
+            {
+            }
+
+            public void AddOrUpdateDatum(string key, object value)
+            {
+            }
+
+            public void Dispose()
+            {
+            }
+
+            public ITrace StartChild(string name)
+            {
+                return this.StartChild(name, TraceComponent.Unknown, Cosmos.Tracing.TraceLevel.Off);
+            }
+
+            public ITrace StartChild(string name, TraceComponent component, Cosmos.Tracing.TraceLevel level)
+            {
+                ITrace child = new SimpleTrace(this, name, component, level);
+
+                List<ITrace> children = (List<ITrace>)this.Children;
+                lock (children)
+                {
+                    children.Add(child);
+                }
+
+                return child;
             }
         }
 
@@ -285,6 +448,28 @@
         }
 
         [TestMethod]
+        public async Task ComplicatedPrefetcherAsync()
+        {
+            // test that a complicated prefetcher is full started and completed
+            //
+            // the rest of the tests don't use a completely trivial
+            // IPrefetcher, but they are substantially simpler
+
+            foreach (int maxConcurrency in Concurrencies)
+            {
+                ComplicatedPrefetcher prefetcher = new ComplicatedPrefetcher();
+
+                await ParallelPrefetch.PrefetchInParallelAsync(
+                    new IPrefetcher[] { prefetcher },
+                    maxConcurrency,
+                    EmptyTrace,
+                    default);
+
+                prefetcher.AssertCorrect();
+            }
+        }
+
+        [TestMethod]
         public async Task MaxConcurrencyRespectedAsync()
         {
             // test that we never get above maxConcurrency
@@ -337,6 +522,54 @@
                 for (int i = 0; i < count; i++)
                 {
                     yield return new TestOncePrefetcher(beforeAwait, afterAwait);
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task TraceCorrectlyPassedAsync()
+        {
+            // test that we make ONE ITrace per invocation
+            // and that it the returned child trace is correctly
+            // passed to all IPrefetchers
+
+            foreach (int maxConcurrency in Concurrencies)
+            {
+                if (maxConcurrency <= 0)
+                {
+                    // nothing to do here, we won't do any allocations
+                    continue;
+                }
+
+                foreach (int taskCount in TaskCounts)
+                {
+                    using ITrace simpleTrace = new SimpleTrace(null, "Root", TraceComponent.Batch, Cosmos.Tracing.TraceLevel.Off);
+
+                    IEnumerable<IPrefetcher> prefetchers = CreatePrefetchers(taskCount, simpleTrace);
+
+                    await ParallelPrefetch.PrefetchInParallelAsync(
+                        prefetchers,
+                        maxConcurrency,
+                        simpleTrace,
+                        default);
+
+                    // our prefetchers don't create any children, but we expect one
+                    // to be created by ParallelPrefetch
+                    Assert.AreEqual(1, simpleTrace.Children.Count);
+                    Assert.AreEqual(0, simpleTrace.Children[0].Children.Count);
+
+                    // the one trace we start has a well known set of attributes, so check them
+                    Assert.AreEqual("Prefetching", simpleTrace.Children[0].Name);
+                    Assert.AreEqual(TraceComponent.Pagination, simpleTrace.Children[0].Component);
+                    Assert.AreEqual(Cosmos.Tracing.TraceLevel.Info, simpleTrace.Children[0].Level);
+                }
+            }
+
+            static IEnumerable<IPrefetcher> CreatePrefetchers(int count, ITrace expectedParentTrace)
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    yield return new ExpectedParentTracePrefetcher(expectedParentTrace);
                 }
             }
         }
@@ -461,6 +694,7 @@
 
                             Assert.IsNotNull(caught, $"concurrency={maxConcurrency}, tasks={taskCount}, faultOn={faultOnTask} - didn't produce exception as expected");
 
+                            // buffer management can't break in the face of errors, so check here too
                             prefetcherPool.AssertAllReturned();
                             taskPool.AssertAllReturned();
                             objectPool.AssertAllReturned();
@@ -586,7 +820,8 @@
                             Assert.IsTrue(cancelBeforeTask <= startedBeforeCancellation, $"{cancelBeforeTask} > {startedBeforeCancellation} ; we should have reach our cancellation point");
 
                             Assert.IsTrue(caught is OperationCanceledException);
-
+                            
+                            // buffer management can't break in the face of cancellation, so check here too
                             prefetcherPool.AssertAllReturned();
                             taskPool.AssertAllReturned();
                             objectPool.AssertAllReturned();

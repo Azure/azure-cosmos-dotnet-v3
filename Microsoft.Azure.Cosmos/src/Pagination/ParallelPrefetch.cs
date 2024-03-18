@@ -109,9 +109,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 ArrayPool<Task> taskPool,
                 ArrayPool<object> objectPool)
             {
-                this.PrefetcherPool = prefetcherPool ?? throw new ArgumentNullException(nameof(prefetcherPool));
-                this.TaskPool = taskPool ?? throw new ArgumentNullException(nameof(taskPool));
-                this.ObjectPool = objectPool ?? throw new ArgumentNullException(nameof(objectPool));
+                this.PrefetcherPool = prefetcherPool;
+                this.TaskPool = taskPool;
+                this.ObjectPool = objectPool;
             }
         }
 
@@ -396,9 +396,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
         /// requires some single use arrays of maxConcurrency size.
         /// </summary>
         private static async Task LowConcurrencyPrefetchInParallelAsync(
-            IEnumerable<IPrefetcher> prefetchers, 
-            int maxConcurrency, 
-            ITrace trace, 
+            IEnumerable<IPrefetcher> prefetchers,
+            int maxConcurrency,
+            ITrace trace,
             ParallelPrefetchTestConfig config,
             CancellationToken cancellationToken)
         {
@@ -502,7 +502,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         private static async Task HighConcurrencyPrefetchInParallelAsync(
             IEnumerable<IPrefetcher> prefetchers,
-            int maxConcurrency, 
+            int maxConcurrency,
             ITrace trace,
             ParallelPrefetchTestConfig config,
             CancellationToken cancellationToken)
@@ -606,7 +606,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                                 break;
                             }
 
-                            // now that Tasks have started, we NEED to synchronize access to 
+                            // now that Tasks have started, we MUST synchronize access to 
                             // the enumerator
                             lock (commonState)
                             {
