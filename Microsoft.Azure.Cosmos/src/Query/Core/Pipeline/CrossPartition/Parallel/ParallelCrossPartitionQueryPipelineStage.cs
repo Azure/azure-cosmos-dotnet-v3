@@ -117,7 +117,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
                 backendQueryPage.Documents,
                 backendQueryPage.RequestCharge,
                 backendQueryPage.ActivityId,
-                backendQueryPage.ResponseLengthInBytes,
                 backendQueryPage.CosmosQueryExecutionInfo,
                 distributionPlanSpec: default,
                 backendQueryPage.DisallowContinuationTokenMessage,

@@ -220,7 +220,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                     backendQueryPage.Documents,
                     backendQueryPage.RequestCharge,
                     backendQueryPage.ActivityId,
-                    backendQueryPage.ResponseLengthInBytes,
                     backendQueryPage.CosmosQueryExecutionInfo,
                     backendQueryPage.DistributionPlanSpec,
                     disallowContinuationTokenMessage: null,

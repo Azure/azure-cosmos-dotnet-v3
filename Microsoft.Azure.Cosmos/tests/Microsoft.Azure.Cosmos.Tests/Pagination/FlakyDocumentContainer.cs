@@ -168,7 +168,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                             documents: new List<CosmosElement>(),
                             requestCharge: 42,
                             activityId: Guid.NewGuid().ToString(),
-                            responseLengthInBytes: "[]".Length,
                             cosmosQueryExecutionInfo: default,
                             distributionPlanSpec: default,
                             disallowContinuationTokenMessage: default,

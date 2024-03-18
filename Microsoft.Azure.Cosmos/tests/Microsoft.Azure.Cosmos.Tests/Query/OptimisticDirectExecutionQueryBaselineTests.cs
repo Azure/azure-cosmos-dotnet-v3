@@ -1079,7 +1079,6 @@
                             queryPage.Result.Result.Documents,
                             requestCharge: 42,
                             activityId: Guid.NewGuid().ToString(),
-                            responseLengthInBytes: 1337,
                             cosmosQueryExecutionInfo: default,
                             distributionPlanSpec: default,
                             disallowContinuationTokenMessage: default,
