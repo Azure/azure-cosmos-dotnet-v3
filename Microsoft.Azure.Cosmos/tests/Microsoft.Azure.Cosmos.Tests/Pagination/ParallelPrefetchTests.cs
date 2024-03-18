@@ -1,7 +1,9 @@
 ﻿namespace Microsoft.Azure.Cosmos.Tests.Pagination
 {
     using System;
+    using System.Buffers;
     using System.Collections;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
@@ -60,6 +62,78 @@
             IEnumerator IEnumerable.GetEnumerator()
             {
                 return this.GetEnumerator();
+            }
+        }
+
+        /// <summary>
+        /// IPrefetcher which throws if touched.
+        /// </summary>
+        private sealed class ThrowsPrefetcher : IPrefetcher
+        {
+            public ValueTask PrefetchAsync(ITrace trace, CancellationToken cancellationToken)
+            {
+                throw new NotSupportedException();
+            }
+        }
+
+        /// <summary>
+        /// ArrayPool that tracks leaks, double returns, and includes non-null values in
+        /// returned arrays.
+        /// </summary>
+        private sealed class ValidatingRandomizedArrayPool<T> : ArrayPool<T>
+            where T : class
+        {
+            private readonly T existingValue;
+
+            private readonly ConcurrentBag<T[]> created;
+            private readonly ConcurrentDictionary<T[], object> rented;
+
+            internal ValidatingRandomizedArrayPool(T existingValue)
+            {
+                this.existingValue = existingValue;
+                this.created = new();
+                this.rented = new();
+            }
+
+            public override T[] Rent(int minimumLength)
+            {
+                int extra = Random.Shared.Next(6);
+
+                T[] ret = new T[minimumLength + extra];
+                for (int i = 0; i < ret.Length; i++)
+                {
+                    ret[i] = Random.Shared.Next(2) == 0 ? this.existingValue : null;
+                }
+
+                this.created.Add(ret);
+
+                Assert.IsTrue(this.rented.TryAdd(ret, null));
+
+                return ret;
+            }
+
+            public override void Return(T[] array, bool clearArray = false)
+            {
+                Assert.IsFalse(clearArray, "Caller should clean up array itself");
+
+                Assert.IsTrue(this.rented.TryRemove(array, out _), "Tried to return array that isn't rented");
+
+                for (int i = 0; i < array.Length; i++)
+                {
+                    object value = array[i];
+
+                    if (object.ReferenceEquals(value, this.existingValue))
+                    {
+                        continue;
+                    }
+
+                    Assert.IsNull(value, "Returned array shouldn't have any non-null values, except those included by the original Rent call");
+                }
+            }
+
+            internal void AssertAllReturned()
+            {
+                Assert.IsTrue(this.rented.IsEmpty);
             }
         }
 
@@ -223,6 +297,65 @@
 
                     Assert.IsTrue(Volatile.Read(ref observedMax) <= maxConcurrency);
                     Assert.AreEqual(0, Volatile.Read(ref current));
+                }
+            }
+
+            static IEnumerable<IPrefetcher> CreatePrefetchers(int count, Action beforeAwait, Action afterAwait)
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    yield return new TestOncePrefetcher(beforeAwait, afterAwait);
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task RentedBuffersAllReturnedAsync()
+        {
+            Task faultedTask = Task.FromException(new NotSupportedException());
+
+            try
+            {
+                foreach (int maxConcurrency in Concurrencies)
+                {
+                    foreach (int taskCount in TaskCounts)
+                    {
+                        IEnumerable<IPrefetcher> prefetchers = CreatePrefetchers(taskCount, static () => { }, static () => { });
+
+                        ValidatingRandomizedArrayPool<IPrefetcher> prefetcherPool = new ValidatingRandomizedArrayPool<IPrefetcher>(new ThrowsPrefetcher());
+                        ValidatingRandomizedArrayPool<Task> taskPool = new ValidatingRandomizedArrayPool<Task>(faultedTask);
+                        ValidatingRandomizedArrayPool<object> objectPool = new ValidatingRandomizedArrayPool<object>(new object());
+
+                        ParallelPrefetch.ParallelPrefetchTestConfig config =
+                            new ParallelPrefetch.ParallelPrefetchTestConfig(
+                                prefetcherPool,
+                                taskPool,
+                                objectPool
+                            );
+
+                        await ParallelPrefetch.PrefetchInParallelImplAsync(
+                            prefetchers,
+                            maxConcurrency,
+                            EmptyTrace,
+                            config,
+                            default);
+
+                        prefetcherPool.AssertAllReturned();
+                        taskPool.AssertAllReturned();
+                        objectPool.AssertAllReturned();
+                    }
+                }
+            }
+            finally
+            {
+                // observe this intentionally faulted task, no matter what
+                try
+                {
+                    await faultedTask;
+                }
+                catch
+                {
+                    // intentionally empty
                 }
             }
 

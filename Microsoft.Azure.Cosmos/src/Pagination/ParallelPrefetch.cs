@@ -94,6 +94,28 @@ namespace Microsoft.Azure.Cosmos.Pagination
         }
 
         /// <summary>
+        /// For testing purposes, provides ways to instrument <see cref="PrefetchInParallelAsync(IEnumerable{IPrefetcher}, int, ITrace, CancellationToken)"/>.
+        /// 
+        /// You shouldn't be using this outside of test projects.
+        /// </summary>
+        internal sealed class ParallelPrefetchTestConfig
+        {
+            internal ArrayPool<IPrefetcher> PrefetcherPool { get; private set; }
+            internal ArrayPool<Task> TaskPool { get; private set; }
+            internal ArrayPool<object> ObjectPool { get; private set; }
+
+            internal ParallelPrefetchTestConfig(
+                ArrayPool<IPrefetcher> prefetcherPool,
+                ArrayPool<Task> taskPool,
+                ArrayPool<object> objectPool)
+            {
+                this.PrefetcherPool = prefetcherPool ?? throw new ArgumentNullException(nameof(prefetcherPool));
+                this.TaskPool = taskPool ?? throw new ArgumentNullException(nameof(taskPool));
+                this.ObjectPool = objectPool ?? throw new ArgumentNullException(nameof(objectPool));
+            }
+        }
+
+        /// <summary>
         /// Number of tasks started at one time, maximum, when working through prefetchers.
         /// 
         /// Also used as a the limit between Low and High concurrency implementations.
@@ -112,6 +134,19 @@ namespace Microsoft.Azure.Cosmos.Pagination
             prefetchers = prefetchers ?? throw new ArgumentNullException(nameof(prefetchers));
             trace = trace ?? throw new ArgumentNullException(nameof(trace));
 
+            return PrefetchInParallelImplAsync(prefetchers, maxConcurrency, trace, null, cancellationToken);
+        }
+
+        /// <summary>
+        /// Exposed for testing purposes, do not call directly.
+        /// </summary>
+        internal static Task PrefetchInParallelImplAsync(
+            IEnumerable<IPrefetcher> prefetchers,
+            int maxConcurrency,
+            ITrace trace,
+            ParallelPrefetchTestConfig config,
+            CancellationToken cancellationToken)
+        {
             if (maxConcurrency <= 0)
             {
                 // old code would just... allocate and then do nothing
@@ -121,15 +156,16 @@ namespace Microsoft.Azure.Cosmos.Pagination
             }
             else if (maxConcurrency == 1)
             {
+                // we don't pass config here because this special case has no renting
                 return SingleConcurrencyPrefetchInParallelAsync(prefetchers, trace, cancellationToken);
             }
             else if (maxConcurrency <= BatchLimit)
             {
-                return LowConcurrencyPrefetchInParallelAsync(prefetchers, maxConcurrency, trace, cancellationToken);
+                return LowConcurrencyPrefetchInParallelAsync(prefetchers, maxConcurrency, trace, config, cancellationToken);
             }
             else
             {
-                return HighConcurrencyPrefetchInParallelAsync(prefetchers, maxConcurrency, trace, cancellationToken);
+                return HighConcurrencyPrefetchInParallelAsync(prefetchers, maxConcurrency, trace, config, cancellationToken);
             }
         }
 
@@ -144,9 +180,31 @@ namespace Microsoft.Azure.Cosmos.Pagination
         /// <summary>
         /// Helper for grabbing a reusable array.
         /// </summary>
-        private static T[] RentArray<T>(int minSize, bool clear)
+        private static T[] RentArray<T>(ParallelPrefetchTestConfig config, int minSize, bool clear)
         {
-            T[] ret = ArrayPool<T>.Shared.Rent(minSize);
+            T[] ret;
+            if (config != null)
+            {
+#pragma warning disable IDE0045 // Convert to conditional expression - chained else if is clearer
+                if (typeof(T) == typeof(IPrefetcher))
+                {
+                    ret = (T[])(object)config.PrefetcherPool.Rent(minSize);
+                }
+                else if (typeof(T) == typeof(Task))
+                {
+                    ret = (T[])(object)config.TaskPool.Rent(minSize);
+                }
+                else
+                {
+                    ret = (T[])(object)config.ObjectPool.Rent(minSize);
+                }
+#pragma warning restore IDE0045
+            }
+            else
+            {
+                ret = ArrayPool<T>.Shared.Rent(minSize);
+            }
+
             if (clear)
             {
                 Array.Clear(ret, 0, ret.Length);
@@ -158,7 +216,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
         /// <summary>
         /// Helper for returning arrays what were rented via <see cref="RentArray"/>.
         /// </summary>
-        private static void ReturnRentedArray<T>(T[] array, int clearThrough)
+        private static void ReturnRentedArray<T>(ParallelPrefetchTestConfig config, T[] array, int clearThrough)
         {
             if (array == null)
             {
@@ -169,7 +227,25 @@ namespace Microsoft.Azure.Cosmos.Pagination
             // rooted long enough to cause problems
             Array.Clear(array, 0, clearThrough);
 
-            ArrayPool<T>.Shared.Return(array);
+            if (config != null)
+            {
+                if (typeof(T) == typeof(IPrefetcher))
+                {
+                    config.PrefetcherPool.Return((IPrefetcher[])(object)array);
+                }
+                else if (typeof(T) == typeof(Task))
+                {
+                    config.TaskPool.Return((Task[])(object)array);
+                }
+                else
+                {
+                    config.ObjectPool.Return((object[])(object)array);
+                }
+            }
+            else
+            {
+                ArrayPool<T>.Shared.Return(array);
+            }
         }
 
         /// <summary>
@@ -319,7 +395,12 @@ namespace Microsoft.Azure.Cosmos.Pagination
         /// This starts up to maxConcurrency simultanous requests, doing so in a way that
         /// requires some single use arrays of maxConcurrency size.
         /// </summary>
-        private static async Task LowConcurrencyPrefetchInParallelAsync(IEnumerable<IPrefetcher> prefetchers, int maxConcurrency, ITrace trace, CancellationToken cancellationToken)
+        private static async Task LowConcurrencyPrefetchInParallelAsync(
+            IEnumerable<IPrefetcher> prefetchers, 
+            int maxConcurrency, 
+            ITrace trace, 
+            ParallelPrefetchTestConfig config,
+            CancellationToken cancellationToken)
         {
             IPrefetcher[] initialPrefetchers = null;
             Task[] runningTasks = null;
@@ -351,7 +432,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         // need to actually do things to start prefetching in parallel
                         // so grab some state and stash the first two prefetchers off
 
-                        initialPrefetchers = RentArray<IPrefetcher>(maxConcurrency, clear: false);
+                        initialPrefetchers = RentArray<IPrefetcher>(config, maxConcurrency, clear: false);
                         initialPrefetchers[0] = first;
                         initialPrefetchers[1] = e.Current;
 
@@ -364,7 +445,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         nextPrefetcherIndex = FillPrefetcherBuffer(commonState, initialPrefetchers, 2, maxConcurrency, e);
 
                         // actually start all the tasks
-                        runningTasks = RentArray<Task>(maxConcurrency, clear: false);
+                        runningTasks = RentArray<Task>(config, maxConcurrency, clear: false);
 
                         for (nextRunningTaskIndex = 0; nextRunningTaskIndex < nextPrefetcherIndex; nextRunningTaskIndex++)
                         {
@@ -375,7 +456,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         }
 
                         // hand the prefetcher array back early, so other callers can use it
-                        ReturnRentedArray(initialPrefetchers, nextPrefetcherIndex);
+                        ReturnRentedArray(config, initialPrefetchers, nextPrefetcherIndex);
                         initialPrefetchers = null;
 
                         // now await them in turn
@@ -414,12 +495,17 @@ namespace Microsoft.Azure.Cosmos.Pagination
             }
             finally
             {
-                ReturnRentedArray(initialPrefetchers, nextPrefetcherIndex);
-                ReturnRentedArray(runningTasks, nextRunningTaskIndex);
+                ReturnRentedArray(config, initialPrefetchers, nextPrefetcherIndex);
+                ReturnRentedArray(config, runningTasks, nextRunningTaskIndex);
             }
         }
 
-        private static async Task HighConcurrencyPrefetchInParallelAsync(IEnumerable<IPrefetcher> prefetchers, int maxConcurrency, ITrace trace, CancellationToken cancellationToken)
+        private static async Task HighConcurrencyPrefetchInParallelAsync(
+            IEnumerable<IPrefetcher> prefetchers,
+            int maxConcurrency, 
+            ITrace trace,
+            ParallelPrefetchTestConfig config,
+            CancellationToken cancellationToken)
         {
             IPrefetcher[] currentBatch = null;
 
@@ -455,12 +541,12 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         // need to actually do things to start prefetching in parallel
                         // so grab some state and stash the first two prefetchers off
 
-                        currentBatch = RentArray<IPrefetcher>(BatchLimit, clear: false);
+                        currentBatch = RentArray<IPrefetcher>(config, BatchLimit, clear: false);
                         currentBatch[0] = first;
                         currentBatch[1] = e.Current;
 
                         // we need this all null because we use null as a stopping condition later
-                        runningTasks = RentArray<object>(BatchLimit, clear: true);
+                        runningTasks = RentArray<object>(config, BatchLimit, clear: true);
 
                         CommonPrefetchState commonState = new CommonPrefetchState(prefetchTrace, e, cancellationToken);
 
@@ -494,7 +580,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                                 if (nextChunkIndex == currentChunk.Length - 1)
                                 {
                                     // we need this all null because we use null as a stopping condition later
-                                    object[] newChunk = RentArray<object>(BatchLimit, clear: true);
+                                    object[] newChunk = RentArray<object>(config, BatchLimit, clear: true);
 
                                     currentChunk[currentChunk.Length - 1] = newChunk;
 
@@ -541,7 +627,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         }
 
                         // hand the prefetch array back, we're done with it
-                        ReturnRentedArray(currentBatch, BatchLimit);
+                        ReturnRentedArray(config, currentBatch, BatchLimit);
                         currentBatch = null;
 
                         // now wait for all the tasks to complete
@@ -560,7 +646,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                             if (toAwait == null)
                             {
                                 // hand the last of the arrays back
-                                ReturnRentedArray(runningTasks, toAwaitIndex);
+                                ReturnRentedArray(config, runningTasks, toAwaitIndex);
                                 runningTasks = null;
 
                                 break;
@@ -594,7 +680,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                                 toAwaitIndex = 0;
 
                                 // we're done with this, let some other caller use it immediately
-                                ReturnRentedArray(oldChunk, oldChunk.Length);
+                                ReturnRentedArray(config, oldChunk, oldChunk.Length);
                             }
                         }
 
@@ -607,7 +693,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             {
                 // cleanup if something went wrong while these were still rented
 
-                ReturnRentedArray(currentBatch, BatchLimit);
+                ReturnRentedArray(config, currentBatch, BatchLimit);
 
                 while (runningTasks != null)
                 {
@@ -615,7 +701,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
                     runningTasks = (object[])runningTasks[runningTasks.Length - 1];
 
-                    ReturnRentedArray(oldChunk, oldChunk.Length);
+                    ReturnRentedArray(config, oldChunk, oldChunk.Length);
                 }
             }
         }
