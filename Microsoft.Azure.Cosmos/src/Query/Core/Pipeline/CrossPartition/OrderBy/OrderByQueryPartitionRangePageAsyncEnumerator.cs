@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 {
     using System;
     using System.Collections.Generic;
-    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Pagination;
@@ -64,6 +63,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         public string Filter => this.innerEnumerator.Filter;
 
         public QueryState StartOfPageState { get; private set; }
+
+        public int BufferedResultCount => this.bufferedEnumerator.BufferedItemCount;
 
         public override ValueTask DisposeAsync()
         {

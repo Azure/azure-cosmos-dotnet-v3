@@ -20,6 +20,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public abstract Exception BufferedException { get; }
 
+        public abstract int BufferedItemCount { get; }
+
         public abstract ValueTask PrefetchAsync(ITrace trace, CancellationToken cancellationToken);
     }
 }

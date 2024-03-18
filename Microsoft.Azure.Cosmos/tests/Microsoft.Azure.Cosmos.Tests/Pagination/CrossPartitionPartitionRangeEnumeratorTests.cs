@@ -197,6 +197,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         new ReadFeedPage(
                             new MemoryStream(Encoding.UTF8.GetBytes("{\"Documents\": [], \"_count\": 0, \"_rid\": \"asdf\"}")),
                             requestCharge: 1,
+                            itemCount: 0,
                             activityId: Guid.NewGuid().ToString(),
                             additionalHeaders: null,
                             state: ReadFeedState.Beginning())));
