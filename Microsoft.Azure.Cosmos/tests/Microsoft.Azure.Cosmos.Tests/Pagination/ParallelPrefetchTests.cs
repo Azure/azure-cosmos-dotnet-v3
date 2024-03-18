@@ -6,6 +6,7 @@
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Pagination;
@@ -148,6 +149,78 @@
             public IEnumerator<T> GetEnumerator()
             {
                 throw new NotSupportedException();
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return this.GetEnumerator();
+            }
+        }
+
+        /// <summary>
+        /// IEnumerable whose IEnumerator throws after a certain number of
+        /// calls to MoveNext().
+        /// </summary>
+        private sealed class ThrowsAfterEnumerable<T> : IEnumerable<T>
+        {
+            private sealed class Enumerator : IEnumerator<T>
+            {
+                private readonly IEnumerator<T> inner;
+                private readonly int throwAfter;
+                private int callNumber;
+
+                public T Current { get; set; }
+
+                object IEnumerator.Current => this.Current;
+
+
+                internal Enumerator(IEnumerator<T> inner, int throwAfter)
+                {
+                    this.inner = inner;
+                    this.throwAfter = throwAfter;
+                }
+                public void Dispose()
+                {
+                    this.inner.Dispose();
+                }
+
+                public bool MoveNext()
+                {
+                    if (this.callNumber >= this.throwAfter)
+                    {
+                        throw new InvalidOperationException();
+                    }
+
+                    this.callNumber++;
+
+                    if (this.inner.MoveNext())
+                    {
+                        this.Current = this.inner.Current;
+                        return true;
+                    }
+
+                    this.Current = default;
+                    return false;
+                }
+
+                public void Reset()
+                {
+                    this.inner.Reset();
+                }
+            }
+
+            private readonly IEnumerable<T> inner;
+            private readonly int throwAfter;
+
+            public ThrowsAfterEnumerable(IEnumerable<T> inner, int throwAfter)
+            {
+                this.inner = inner;
+                this.throwAfter = throwAfter;
+            }
+
+            public IEnumerator<T> GetEnumerator()
+            {
+                return new Enumerator(this.inner.GetEnumerator(), this.throwAfter);
             }
 
             IEnumerator IEnumerable.GetEnumerator()
@@ -637,9 +710,9 @@
         }
 
         [TestMethod]
-        public async Task ExceptionsHandledAsync()
+        public async Task TaskExceptionsHandledAsync()
         {
-            // test that raising exceptions during processing 
+            // test that raising exceptions during processing tasks
             // doesn't leak or otherwise fail
 
             Task faultedTask = Task.FromException(new NotSupportedException());
@@ -727,6 +800,89 @@
                     {
                         yield return new TestOncePrefetcher(beforeAwait, afterAwait);
                     }
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task EnumerableExceptionsHandledAsync()
+        {
+            // test that raising exceptions during enumeration
+            // doesn't leak or otherwise fail
+
+            Task faultedTask = Task.FromException(new NotSupportedException());
+
+            try
+            {
+                foreach (int maxConcurrency in Concurrencies.Reverse())
+                {
+                    if (maxConcurrency <= 1)
+                    {
+                        // we won't do anything fancy, so skip
+                        continue;
+                    }
+
+                    foreach (int taskCount in TaskCounts)
+                    {
+                        for (int faultAfter = 0; faultAfter < taskCount; faultAfter++)
+                        {
+                            IEnumerable<IPrefetcher> prefetchersRaw = CreatePrefetchers(taskCount, faultAfter, static () => { }, static () => { });
+                            IEnumerable<IPrefetcher> prefetchers = new ThrowsAfterEnumerable<IPrefetcher>(prefetchersRaw, faultAfter);
+
+                            ValidatingRandomizedArrayPool<IPrefetcher> prefetcherPool = new ValidatingRandomizedArrayPool<IPrefetcher>(new ThrowsPrefetcher());
+                            ValidatingRandomizedArrayPool<Task> taskPool = new ValidatingRandomizedArrayPool<Task>(faultedTask);
+                            ValidatingRandomizedArrayPool<object> objectPool = new ValidatingRandomizedArrayPool<object>("unexpected value");
+
+                            ParallelPrefetch.ParallelPrefetchTestConfig config =
+                                new ParallelPrefetch.ParallelPrefetchTestConfig(
+                                    prefetcherPool,
+                                    taskPool,
+                                    objectPool
+                                );
+
+                            Exception caught = null;
+                            try
+                            {
+                                await ParallelPrefetch.PrefetchInParallelImplAsync(
+                                    prefetchers,
+                                    maxConcurrency,
+                                    EmptyTrace,
+                                    config,
+                                    default);
+                            }
+                            catch (Exception e)
+                            {
+                                caught = e;
+                            }
+
+                            Assert.IsNotNull(caught, $"concurrency={maxConcurrency}, tasks={taskCount}, faultAfter={faultAfter} - didn't produce exception as expected");
+
+                            // buffer management can't break in the face of errors, so check here too
+                            prefetcherPool.AssertAllReturned();
+                            taskPool.AssertAllReturned();
+                            objectPool.AssertAllReturned();
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                // observe this intentionally faulted task, no matter what
+                try
+                {
+                    await faultedTask;
+                }
+                catch
+                {
+                    // intentionally empty
+                }
+            }
+
+            static IEnumerable<IPrefetcher> CreatePrefetchers(int count, int faultOnTask, Action beforeAwait, Action afterAwait)
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    yield return new TestOncePrefetcher(beforeAwait, afterAwait);
                 }
             }
         }
@@ -820,7 +976,7 @@
                             Assert.IsTrue(cancelBeforeTask <= startedBeforeCancellation, $"{cancelBeforeTask} > {startedBeforeCancellation} ; we should have reach our cancellation point");
 
                             Assert.IsTrue(caught is OperationCanceledException);
-                            
+
                             // buffer management can't break in the face of cancellation, so check here too
                             prefetcherPool.AssertAllReturned();
                             taskPool.AssertAllReturned();

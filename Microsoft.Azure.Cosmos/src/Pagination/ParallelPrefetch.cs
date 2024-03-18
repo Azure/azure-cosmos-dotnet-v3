@@ -565,6 +565,12 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         object[] currentChunk = runningTasks;
 
                         int remainingConcurrency = maxConcurrency;
+
+                        // if we encounter any error, we remember it
+                        // but as soon as we start a single task we've got
+                        // to see most of this code through so we observe all of them
+                        ExceptionDispatchInfo capturedException = null;
+
                         while (true)
                         {
                             // start and store the last set of Tasks we got from FillPrefetcherBuffer
@@ -616,7 +622,22 @@ namespace Microsoft.Azure.Cosmos.Pagination
                                 }
 
                                 // grab the next set of prefetchers to start
-                                bufferedPrefetchers = FillPrefetcherBuffer(commonState, currentBatch, 0, nextBatchSizeLimit, e);
+                                try
+                                {
+                                    bufferedPrefetchers = FillPrefetcherBuffer(commonState, currentBatch, 0, nextBatchSizeLimit, e);
+                                }
+                                catch (Exception exc)
+                                {
+                                    // this can get raised if the enumerator faults
+                                    //
+                                    // in this case we might have some tasks started, and so we need to _stop_ starting new tasks but
+                                    // still move on to observing everything we've already started
+
+                                    commonState.SetFinishedEnumerating();
+                                    capturedException = ExceptionDispatchInfo.Capture(exc);
+
+                                    break;
+                                }
                             }
 
                             // if we got nothing back, we can break right here
@@ -632,10 +653,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
                         // now wait for all the tasks to complete
                         //
-                        // we walk throw all of them, even if we encounter an error
+                        // we walk through all of them, even if we encounter an error
                         // because we need to walk the whole linked-list and this is
                         // simpler
-                        ExceptionDispatchInfo capturedException = null;
 
                         int toAwaitIndex = 0;
                         while (runningTasks != null)
