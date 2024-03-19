@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Latency Threshold for non point operations i.e. Query
         /// </summary>
-        /// <value>3 sec</value>
+        /// <value>3 seconds</value>
         public TimeSpan NonPointOperationLatencyThreshold { get; set; } = TimeSpan.FromSeconds(3);
 
         /// <summary>
