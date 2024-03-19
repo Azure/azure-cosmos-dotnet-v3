@@ -255,7 +255,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
         /// </summary>
         private static Task CommonStartTaskAsync(CommonPrefetchState commonState, IPrefetcher firstPrefetcher)
         {
-            SinglePrefetchState state = new SinglePrefetchState(commonState, firstPrefetcher);
+            SinglePrefetchState state = new (commonState, firstPrefetcher);
 
             // this is mimicing the behavior of Task.Run(...) (that is, default CancellationToken, default Scheduler, DenyAttachChild, etc.)
             // but in a way that let's us pass a context object
@@ -436,7 +436,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         initialPrefetchers[0] = first;
                         initialPrefetchers[1] = e.Current;
 
-                        CommonPrefetchState commonState = new CommonPrefetchState(prefetchTrace, e, cancellationToken);
+                        CommonPrefetchState commonState = new (prefetchTrace, e, cancellationToken);
 
                         // batch up a bunch of IPrefetchers to kick off
                         // 
@@ -561,7 +561,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         // we need this all null because we use null as a stopping condition later
                         runningTasks = RentArray<object>(config, BatchLimit, clear: true);
 
-                        CommonPrefetchState commonState = new CommonPrefetchState(prefetchTrace, e, cancellationToken);
+                        CommonPrefetchState commonState = new (prefetchTrace, e, cancellationToken);
 
                         // what we do here is buffer up to BatchLimit IPrefetchers to start
                         // and then... start them all

@@ -78,20 +78,20 @@
 
                 this.AfterYieldTimestamp = Stopwatch.GetTimestamp();
 
-                using (SemaphoreSlim semaphore = new SemaphoreSlim(0, 1))
+                using (SemaphoreSlim semaphore = new(0, 1))
                 {
-                    Task delay = Task.Delay(5).ContinueWith(_ => { this.AfterDelay1Timestamp = Stopwatch.GetTimestamp(); semaphore.Release(); });
+                    Task delay = Task.Delay(5, cancellationToken).ContinueWith(_ => { this.AfterDelay1Timestamp = Stopwatch.GetTimestamp(); semaphore.Release(); }, cancellationToken);
 
-                    await semaphore.WaitAsync();
+                    await semaphore.WaitAsync(cancellationToken);
                     this.AfterSemaphoreTimestamp = Stopwatch.GetTimestamp();
 
                     await delay;
                 }
 
                 await Task.WhenAll(
-                    Task.Delay(2).ContinueWith(_ => this.AfterDelay2Timestamp = Stopwatch.GetTimestamp()),
-                    Task.Delay(3).ContinueWith(_ => this.AfterDelay3Timestamp = Stopwatch.GetTimestamp()),
-                    Task.Delay(4).ContinueWith(_ => this.AfterDelay4Timestamp = Stopwatch.GetTimestamp()));
+                    Task.Delay(2, cancellationToken).ContinueWith(_ => this.AfterDelay2Timestamp = Stopwatch.GetTimestamp(), cancellationToken),
+                    Task.Delay(3, cancellationToken).ContinueWith(_ => this.AfterDelay3Timestamp = Stopwatch.GetTimestamp(), cancellationToken),
+                    Task.Delay(4, cancellationToken).ContinueWith(_ => this.AfterDelay4Timestamp = Stopwatch.GetTimestamp(), cancellationToken));
                 this.WhenAllTimestamp = Stopwatch.GetTimestamp();
 
                 await Task.Yield();
@@ -318,7 +318,7 @@
 
             public TraceComponent Component => TraceComponent.Unknown;
 
-            public TraceSummary Summary => new TraceSummary();
+            public TraceSummary Summary => new();
 
             public ITrace Parent => null;
 
@@ -374,7 +374,7 @@
 
             public TraceComponent Component { get; private set; }
 
-            public TraceSummary Summary => new TraceSummary();
+            public TraceSummary Summary => new();
 
             public ITrace Parent { get; private set; }
 
@@ -530,7 +530,7 @@
 
             foreach (int maxConcurrency in Concurrencies)
             {
-                ComplicatedPrefetcher prefetcher = new ComplicatedPrefetcher();
+                ComplicatedPrefetcher prefetcher = new();
 
                 await ParallelPrefetch.PrefetchInParallelAsync(
                     new IPrefetcher[] { prefetcher },
@@ -657,12 +657,12 @@
                     {
                         IEnumerable<IPrefetcher> prefetchers = CreatePrefetchers(taskCount, static () => { }, static () => { });
 
-                        ValidatingRandomizedArrayPool<IPrefetcher> prefetcherPool = new ValidatingRandomizedArrayPool<IPrefetcher>(new ThrowsPrefetcher());
-                        ValidatingRandomizedArrayPool<Task> taskPool = new ValidatingRandomizedArrayPool<Task>(faultedTask);
-                        ValidatingRandomizedArrayPool<object> objectPool = new ValidatingRandomizedArrayPool<object>("unexpected value");
+                        ValidatingRandomizedArrayPool<IPrefetcher> prefetcherPool = new(new ThrowsPrefetcher());
+                        ValidatingRandomizedArrayPool<Task> taskPool = new(faultedTask);
+                        ValidatingRandomizedArrayPool<object> objectPool = new("unexpected value");
 
                         ParallelPrefetch.ParallelPrefetchTestConfig config =
-                            new ParallelPrefetch.ParallelPrefetchTestConfig(
+                            new(
                                 prefetcherPool,
                                 taskPool,
                                 objectPool
@@ -704,82 +704,95 @@
         }
 
         [TestMethod]
-        public async Task TaskExceptionsHandledAsync()
+        public async Task TaskSingleExceptionHandledAsync()
         {
             // test that raising exceptions during processing tasks
             // doesn't leak or otherwise fail
 
-            Task faultedTask = Task.FromException(new NotSupportedException());
-
+            bool taskLeaked = false;
+            EventHandler<UnobservedTaskExceptionEventArgs> taskLeakedMonitor = (_, _) => taskLeaked = true;
+            TaskScheduler.UnobservedTaskException += taskLeakedMonitor;
             try
             {
-                foreach (int maxConcurrency in Concurrencies)
-                {
-                    if (maxConcurrency <= 1)
-                    {
-                        // we won't do anything fancy, so skip
-                        continue;
-                    }
+                Task faultedTask = Task.FromException(new NotSupportedException());
 
-                    foreach (int taskCount in TaskCounts)
+                try
+                {
+                    foreach (int maxConcurrency in Concurrencies)
                     {
-                        if (taskCount <= 1)
+                        if (maxConcurrency <= 1)
                         {
                             // we won't do anything fancy, so skip
                             continue;
                         }
 
-                        for (int faultOnTask = 0; faultOnTask < taskCount; faultOnTask++)
+                        foreach (int taskCount in TaskCounts)
                         {
-                            IEnumerable<IPrefetcher> prefetchers = CreatePrefetchers(taskCount, faultOnTask, static () => { }, static () => { });
-
-                            ValidatingRandomizedArrayPool<IPrefetcher> prefetcherPool = new ValidatingRandomizedArrayPool<IPrefetcher>(new ThrowsPrefetcher());
-                            ValidatingRandomizedArrayPool<Task> taskPool = new ValidatingRandomizedArrayPool<Task>(faultedTask);
-                            ValidatingRandomizedArrayPool<object> objectPool = new ValidatingRandomizedArrayPool<object>("unexpected value");
-
-                            ParallelPrefetch.ParallelPrefetchTestConfig config =
-                                new ParallelPrefetch.ParallelPrefetchTestConfig(
-                                    prefetcherPool,
-                                    taskPool,
-                                    objectPool
-                                );
-
-                            Exception caught = null;
-                            try
+                            if (taskCount <= 1)
                             {
-                                await ParallelPrefetch.PrefetchInParallelImplAsync(
-                                    prefetchers,
-                                    maxConcurrency,
-                                    EmptyTrace,
-                                    config,
-                                    default);
-                            }
-                            catch (Exception e)
-                            {
-                                caught = e;
+                                // we won't do anything fancy, so skip
+                                continue;
                             }
 
-                            Assert.IsNotNull(caught, $"concurrency={maxConcurrency}, tasks={taskCount}, faultOn={faultOnTask} - didn't produce exception as expected");
+                            for (int faultOnTask = 0; faultOnTask < taskCount; faultOnTask++)
+                            {
+                                IEnumerable<IPrefetcher> prefetchers = CreatePrefetchers(taskCount, faultOnTask, static () => { }, static () => { });
 
-                            // buffer management can't break in the face of errors, so check here too
-                            prefetcherPool.AssertAllReturned();
-                            taskPool.AssertAllReturned();
-                            objectPool.AssertAllReturned();
+                                ValidatingRandomizedArrayPool<IPrefetcher> prefetcherPool = new(new ThrowsPrefetcher());
+                                ValidatingRandomizedArrayPool<Task> taskPool = new(faultedTask);
+                                ValidatingRandomizedArrayPool<object> objectPool = new("unexpected value");
+
+                                ParallelPrefetch.ParallelPrefetchTestConfig config =
+                                    new(
+                                        prefetcherPool,
+                                        taskPool,
+                                        objectPool
+                                    );
+
+                                Exception caught = null;
+                                try
+                                {
+                                    await ParallelPrefetch.PrefetchInParallelImplAsync(
+                                        prefetchers,
+                                        maxConcurrency,
+                                        EmptyTrace,
+                                        config,
+                                        default);
+                                }
+                                catch (Exception e)
+                                {
+                                    caught = e;
+                                }
+
+                                Assert.IsNotNull(caught, $"concurrency={maxConcurrency}, tasks={taskCount}, faultOn={faultOnTask} - didn't produce exception as expected");
+
+                                // buffer management can't break in the face of errors, so check here too
+                                prefetcherPool.AssertAllReturned();
+                                taskPool.AssertAllReturned();
+                                objectPool.AssertAllReturned();
+                            }
                         }
                     }
                 }
+                finally
+                {
+                    // observe this intentionally faulted task, no matter what
+                    try
+                    {
+                        await faultedTask;
+                    }
+                    catch
+                    {
+                        // intentionally empty
+                    }
+                }
+
+                ForceFinalizers();
             }
             finally
             {
-                // observe this intentionally faulted task, no matter what
-                try
-                {
-                    await faultedTask;
-                }
-                catch
-                {
-                    // intentionally empty
-                }
+                TaskScheduler.UnobservedTaskException -= taskLeakedMonitor;
+                Assert.IsFalse(taskLeaked);
             }
 
             static IEnumerable<IPrefetcher> CreatePrefetchers(int count, int faultOnTask, Action beforeAwait, Action afterAwait)
@@ -799,77 +812,208 @@
         }
 
         [TestMethod]
+        public async Task TaskMultipleExceptionsHandledAsync()
+        {
+            // we throw a lot of exceptions in this test, which is expensive
+            // so we only probe proportionally to this constant for expediency's
+            // sake
+            const int StepRatio = 10;
+
+            // test that raising exceptions during processing tasks
+            // doesn't leak or otherwise fail
+
+            bool taskLeaked = false;
+            EventHandler<UnobservedTaskExceptionEventArgs> taskLeakedMonitor = (_, _) => taskLeaked = true;
+            TaskScheduler.UnobservedTaskException += taskLeakedMonitor;
+            try
+            {
+                Task faultedTask = Task.FromException(new NotSupportedException());
+
+                try
+                {
+                    foreach (int maxConcurrency in Concurrencies)
+                    {
+                        if (maxConcurrency <= 1)
+                        {
+                            // we won't do anything fancy, so skip
+                            continue;
+                        }
+
+                        foreach (int taskCount in TaskCounts)
+                        {
+                            if (taskCount <= 1)
+                            {
+                                // we won't do anything fancy, so skip
+                                continue;
+                            }
+
+                            int step = Math.Max(1, taskCount / StepRatio);
+
+                            for (int faultOnAndAfterTask = 0; faultOnAndAfterTask < taskCount; faultOnAndAfterTask += step)
+                            {
+                                IEnumerable<IPrefetcher> prefetchers = CreatePrefetchers(taskCount, faultOnAndAfterTask, static () => { }, static () => { });
+
+                                ValidatingRandomizedArrayPool<IPrefetcher> prefetcherPool = new(new ThrowsPrefetcher());
+                                ValidatingRandomizedArrayPool<Task> taskPool = new(faultedTask);
+                                ValidatingRandomizedArrayPool<object> objectPool = new("unexpected value");
+
+                                ParallelPrefetch.ParallelPrefetchTestConfig config =
+                                    new(
+                                        prefetcherPool,
+                                        taskPool,
+                                        objectPool
+                                    );
+
+                                Exception caught = null;
+                                try
+                                {
+                                    await ParallelPrefetch.PrefetchInParallelImplAsync(
+                                        prefetchers,
+                                        maxConcurrency,
+                                        EmptyTrace,
+                                        config,
+                                        default);
+                                }
+                                catch (Exception e)
+                                {
+                                    caught = e;
+                                }
+
+                                Assert.IsNotNull(caught, $"concurrency={maxConcurrency}, tasks={taskCount}, faultOnAndAfterTask={faultOnAndAfterTask} - didn't produce exception as expected");
+
+                                // buffer management can't break in the face of errors, so check here too
+                                prefetcherPool.AssertAllReturned();
+                                taskPool.AssertAllReturned();
+                                objectPool.AssertAllReturned();
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    // observe this intentionally faulted task, no matter what
+                    try
+                    {
+                        await faultedTask;
+                    }
+                    catch
+                    {
+                        // intentionally empty
+                    }
+                }
+
+                ForceFinalizers();
+            }
+            finally
+            {
+                TaskScheduler.UnobservedTaskException -= taskLeakedMonitor;
+
+                Assert.IsFalse(taskLeaked);
+            }
+
+            static IEnumerable<IPrefetcher> CreatePrefetchers(int count, int faultOnTask, Action beforeAwait, Action afterAwait)
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    if (faultOnTask >= i)
+                    {
+                        yield return new ThrowsPrefetcher();
+                    }
+                    else
+                    {
+                        yield return new TestOncePrefetcher(beforeAwait, afterAwait);
+                    }
+                }
+            }
+        }
+
+        [TestMethod]
         public async Task EnumerableExceptionsHandledAsync()
         {
             // test that raising exceptions during enumeration
             // doesn't leak or otherwise fail
 
-            Task faultedTask = Task.FromException(new NotSupportedException());
-
+            bool taskLeaked = false;
+            EventHandler<UnobservedTaskExceptionEventArgs> taskLeakedMonitor = (_, _) => taskLeaked = true;
+            TaskScheduler.UnobservedTaskException += taskLeakedMonitor;
             try
             {
-                foreach (int maxConcurrency in Concurrencies.Reverse())
+
+                Task faultedTask = Task.FromException(new NotSupportedException());
+
+                try
                 {
-                    if (maxConcurrency <= 1)
+                    foreach (int maxConcurrency in Concurrencies.Reverse())
                     {
-                        // we won't do anything fancy, so skip
-                        continue;
-                    }
-
-                    foreach (int taskCount in TaskCounts)
-                    {
-                        for (int faultAfter = 0; faultAfter < taskCount; faultAfter++)
+                        if (maxConcurrency <= 1)
                         {
-                            IEnumerable<IPrefetcher> prefetchersRaw = CreatePrefetchers(taskCount, faultAfter, static () => { }, static () => { });
-                            IEnumerable<IPrefetcher> prefetchers = new ThrowsAfterEnumerable<IPrefetcher>(prefetchersRaw, faultAfter);
+                            // we won't do anything fancy, so skip
+                            continue;
+                        }
 
-                            ValidatingRandomizedArrayPool<IPrefetcher> prefetcherPool = new ValidatingRandomizedArrayPool<IPrefetcher>(new ThrowsPrefetcher());
-                            ValidatingRandomizedArrayPool<Task> taskPool = new ValidatingRandomizedArrayPool<Task>(faultedTask);
-                            ValidatingRandomizedArrayPool<object> objectPool = new ValidatingRandomizedArrayPool<object>("unexpected value");
-
-                            ParallelPrefetch.ParallelPrefetchTestConfig config =
-                                new ParallelPrefetch.ParallelPrefetchTestConfig(
-                                    prefetcherPool,
-                                    taskPool,
-                                    objectPool
-                                );
-
-                            Exception caught = null;
-                            try
+                        foreach (int taskCount in TaskCounts)
+                        {
+                            for (int faultAfter = 0; faultAfter < taskCount; faultAfter++)
                             {
-                                await ParallelPrefetch.PrefetchInParallelImplAsync(
-                                    prefetchers,
-                                    maxConcurrency,
-                                    EmptyTrace,
-                                    config,
-                                    default);
-                            }
-                            catch (Exception e)
-                            {
-                                caught = e;
-                            }
+                                IEnumerable<IPrefetcher> prefetchersRaw = CreatePrefetchers(taskCount, faultAfter, static () => { }, static () => { });
+                                IEnumerable<IPrefetcher> prefetchers = new ThrowsAfterEnumerable<IPrefetcher>(prefetchersRaw, faultAfter);
 
-                            Assert.IsNotNull(caught, $"concurrency={maxConcurrency}, tasks={taskCount}, faultAfter={faultAfter} - didn't produce exception as expected");
+                                ValidatingRandomizedArrayPool<IPrefetcher> prefetcherPool = new(new ThrowsPrefetcher());
+                                ValidatingRandomizedArrayPool<Task> taskPool = new(faultedTask);
+                                ValidatingRandomizedArrayPool<object> objectPool = new("unexpected value");
 
-                            // buffer management can't break in the face of errors, so check here too
-                            prefetcherPool.AssertAllReturned();
-                            taskPool.AssertAllReturned();
-                            objectPool.AssertAllReturned();
+                                ParallelPrefetch.ParallelPrefetchTestConfig config =
+                                    new(
+                                        prefetcherPool,
+                                        taskPool,
+                                        objectPool
+                                    );
+
+                                Exception caught = null;
+                                try
+                                {
+                                    await ParallelPrefetch.PrefetchInParallelImplAsync(
+                                        prefetchers,
+                                        maxConcurrency,
+                                        EmptyTrace,
+                                        config,
+                                        default);
+                                }
+                                catch (Exception e)
+                                {
+                                    caught = e;
+                                }
+
+                                Assert.IsNotNull(caught, $"concurrency={maxConcurrency}, tasks={taskCount}, faultAfter={faultAfter} - didn't produce exception as expected");
+
+                                // buffer management can't break in the face of errors, so check here too
+                                prefetcherPool.AssertAllReturned();
+                                taskPool.AssertAllReturned();
+                                objectPool.AssertAllReturned();
+                            }
                         }
                     }
                 }
+                finally
+                {
+                    // observe this intentionally faulted task, no matter what
+                    try
+                    {
+                        await faultedTask;
+                    }
+                    catch
+                    {
+                        // intentionally empty
+                    }
+                }
+
+                ForceFinalizers();
             }
             finally
             {
-                // observe this intentionally faulted task, no matter what
-                try
-                {
-                    await faultedTask;
-                }
-                catch
-                {
-                    // intentionally empty
-                }
+                TaskScheduler.UnobservedTaskException -= taskLeakedMonitor;
+
+                Assert.IsFalse(taskLeaked);
             }
 
             static IEnumerable<IPrefetcher> CreatePrefetchers(int count, int faultOnTask, Action beforeAwait, Action afterAwait)
@@ -892,113 +1036,145 @@
             // test that cancellation during processing 
             // doesn't leak or otherwise fail
 
-            Task faultedTask = Task.FromException(new NotSupportedException());
-
+            bool taskLeaked = false;
+            EventHandler<UnobservedTaskExceptionEventArgs> taskLeakedMonitor = (_, _) => taskLeaked = true;
+            TaskScheduler.UnobservedTaskException += taskLeakedMonitor;
             try
             {
-                foreach (int maxConcurrency in Concurrencies)
-                {
-                    if (maxConcurrency <= 1)
-                    {
-                        // we won't do anything fancy, so skip
-                        continue;
-                    }
 
-                    foreach (int taskCount in TaskCounts)
+                Task faultedTask = Task.FromException(new NotSupportedException());
+
+                try
+                {
+                    foreach (int maxConcurrency in Concurrencies)
                     {
-                        if (taskCount <= 1)
+                        if (maxConcurrency <= 1)
                         {
                             // we won't do anything fancy, so skip
                             continue;
                         }
 
-                        int step = Math.Max(1, taskCount / StepRatio);
-
-                        for (int cancelBeforeTask = 0; cancelBeforeTask < taskCount; cancelBeforeTask += step)
+                        foreach (int taskCount in TaskCounts)
                         {
-                            using CancellationTokenSource cts = new();
+                            if (taskCount <= 1)
+                            {
+                                // we won't do anything fancy, so skip
+                                continue;
+                            }
 
-                            int startedBeforeCancellation = 0;
-                            object sync = new object();
+                            int step = Math.Max(1, taskCount / StepRatio);
 
-                            IEnumerable<IPrefetcher> prefetchers =
-                                CreatePrefetchers(
-                                    taskCount,
-                                    () =>
-                                    {
-                                        if (!cts.IsCancellationRequested)
+                            for (int cancelBeforeTask = 0; cancelBeforeTask < taskCount; cancelBeforeTask += step)
+                            {
+                                using CancellationTokenSource cts = new();
+
+                                int startedBeforeCancellation = 0;
+                                object sync = new();
+
+                                IEnumerable<IPrefetcher> prefetchers =
+                                    CreatePrefetchers(
+                                        taskCount,
+                                        () =>
                                         {
-                                            int newValue = Interlocked.Increment(ref startedBeforeCancellation);
-
-                                            if (newValue >= cancelBeforeTask)
+                                            if (!cts.IsCancellationRequested)
                                             {
-                                                cts.Cancel();
+                                                int newValue = Interlocked.Increment(ref startedBeforeCancellation);
+
+                                                if (newValue >= cancelBeforeTask)
+                                                {
+                                                    cts.Cancel();
+                                                }
                                             }
-                                        }
-                                    },
-                                    () => { });
+                                        },
+                                        () => { });
 
-                            ValidatingRandomizedArrayPool<IPrefetcher> prefetcherPool = new ValidatingRandomizedArrayPool<IPrefetcher>(new ThrowsPrefetcher());
-                            ValidatingRandomizedArrayPool<Task> taskPool = new ValidatingRandomizedArrayPool<Task>(faultedTask);
-                            ValidatingRandomizedArrayPool<object> objectPool = new ValidatingRandomizedArrayPool<object>("unexpected value");
+                                ValidatingRandomizedArrayPool<IPrefetcher> prefetcherPool = new(new ThrowsPrefetcher());
+                                ValidatingRandomizedArrayPool<Task> taskPool = new(faultedTask);
+                                ValidatingRandomizedArrayPool<object> objectPool = new("unexpected value");
 
-                            ParallelPrefetch.ParallelPrefetchTestConfig config =
-                                new ParallelPrefetch.ParallelPrefetchTestConfig(
-                                    prefetcherPool,
-                                    taskPool,
-                                    objectPool
-                                );
+                                ParallelPrefetch.ParallelPrefetchTestConfig config =
+                                    new (
+                                        prefetcherPool,
+                                        taskPool,
+                                        objectPool
+                                    );
 
-                            Exception caught = null;
-                            try
-                            {
-                                await ParallelPrefetch.PrefetchInParallelImplAsync(
-                                    prefetchers,
-                                    maxConcurrency,
-                                    EmptyTrace,
-                                    config,
-                                    cts.Token);
+                                Exception caught = null;
+                                try
+                                {
+                                    await ParallelPrefetch.PrefetchInParallelImplAsync(
+                                        prefetchers,
+                                        maxConcurrency,
+                                        EmptyTrace,
+                                        config,
+                                        cts.Token);
+                                }
+                                catch (Exception e)
+                                {
+                                    caught = e;
+                                }
+
+                                Assert.IsNotNull(caught, $"concurrency={maxConcurrency}, tasks={taskCount}, cancelBeforeTask={cancelBeforeTask} - didn't produce exception as expected");
+
+                                // we might burst above this, but we should always at least _reach_ it
+                                Assert.IsTrue(cancelBeforeTask <= startedBeforeCancellation, $"{cancelBeforeTask} > {startedBeforeCancellation} ; we should have reach our cancellation point");
+
+                                Assert.IsTrue(caught is OperationCanceledException);
+
+                                // buffer management can't break in the face of cancellation, so check here too
+                                prefetcherPool.AssertAllReturned();
+                                taskPool.AssertAllReturned();
+                                objectPool.AssertAllReturned();
                             }
-                            catch (Exception e)
-                            {
-                                caught = e;
-                            }
-
-                            Assert.IsNotNull(caught, $"concurrency={maxConcurrency}, tasks={taskCount}, cancelBeforeTask={cancelBeforeTask} - didn't produce exception as expected");
-
-                            // we might burst above this, but we should always at least _reach_ it
-                            Assert.IsTrue(cancelBeforeTask <= startedBeforeCancellation, $"{cancelBeforeTask} > {startedBeforeCancellation} ; we should have reach our cancellation point");
-
-                            Assert.IsTrue(caught is OperationCanceledException);
-
-                            // buffer management can't break in the face of cancellation, so check here too
-                            prefetcherPool.AssertAllReturned();
-                            taskPool.AssertAllReturned();
-                            objectPool.AssertAllReturned();
                         }
-                    }
 
-                    static IEnumerable<IPrefetcher> CreatePrefetchers(int count, Action beforeAwait, Action afterAwait)
-                    {
-                        for (int i = 0; i < count; i++)
+                        static IEnumerable<IPrefetcher> CreatePrefetchers(int count, Action beforeAwait, Action afterAwait)
                         {
-                            yield return new TestOncePrefetcher(beforeAwait, afterAwait);
+                            for (int i = 0; i < count; i++)
+                            {
+                                yield return new TestOncePrefetcher(beforeAwait, afterAwait);
+                            }
                         }
                     }
                 }
+                finally
+                {
+                    // observe this intentionally faulted task, no matter what
+                    try
+                    {
+                        await faultedTask;
+                    }
+                    catch
+                    {
+                        // intentionally empty
+                    }
+                }
+
+                ForceFinalizers();
             }
             finally
             {
-                // observe this intentionally faulted task, no matter what
-                try
-                {
-                    await faultedTask;
-                }
-                catch
-                {
-                    // intentionally empty
-                }
+                TaskScheduler.UnobservedTaskException -= taskLeakedMonitor;
+
+                Assert.IsFalse(taskLeaked);
             }
+        }
+
+        /// <summary>
+        /// To detect the case where we've leaked tasks, this force a GC and
+        /// then waits for all finalizers.
+        /// 
+        /// If a faulted task is leaked, this should cause an UnobservedTaskException to fire.
+        /// 
+        /// Note that this check is inherently a little inaccurate, since leaks in OTHER CODE
+        /// could get caught here.  Accordingly, if you see a failure around this
+        /// you need to investigate the actual Task leaked.
+        /// </summary>
+        private static void ForceFinalizers()
+        {
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true);
+
+            GC.WaitForPendingFinalizers();
         }
     }
 }
