@@ -139,26 +139,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             // Mode attribute exists on lease document, but it is not set. legacy is always LatestVersion because
             // AllVersionsAndDeletes does not exist. There should not be any legacy lease documents that are
             // AllVersionsAndDeletes. If the ChangeFeedProcessor's mode is not legacy, a CosmosException should thrown.
+            // If the ChangeFeedProcessor mode is not the mode in the lease document, a CosmosException should be thrown.
 
-            bool shouldThrowException = default;
-            string normalizedProcessorChangeFeedMode = default;
-
-            if (string.IsNullOrEmpty(documentServiceLease.Mode))
-            {
-                if (this.changeFeedLeaseOptions.Mode != ChangeFeedMode.LatestVersion)
-                {
-                    shouldThrowException = true;
-                }
-            }
-            else
-            {
-                // If the ChangeFeedProcessor mode is not the mode in the lease document, a CosmosException should be thrown.
-
-                shouldThrowException = this.VerifyChangeFeedProcessorMode(
+            bool shouldThrowException = string.IsNullOrEmpty(documentServiceLease.Mode)
+                ? this.VerifyChangeFeedProcessorMode(
+                    changeFeedMode: ChangeFeedMode.LatestVersion,
+                    leaseChangeFeedMode: documentServiceLease.Mode,
+                    normalizedProcessorChangeFeedMode: out string normalizedProcessorChangeFeedMode)
+                : this.VerifyChangeFeedProcessorMode(
                     changeFeedMode: this.changeFeedLeaseOptions.Mode,
                     leaseChangeFeedMode: documentServiceLease.Mode,
                     normalizedProcessorChangeFeedMode: out normalizedProcessorChangeFeedMode);
-            }
 
             // If shouldThrowException is true, throw the CosmosException.
 
