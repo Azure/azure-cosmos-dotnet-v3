@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
-    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -170,7 +169,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     allDocsProcessed: allDocsProcessed,
                     withStartFromBeginning: withStartFromBeginning);
 
-            CosmosException exception = await Assert.ThrowsExceptionAsync<CosmosException>(
+            ArgumentException exception = await Assert.ThrowsExceptionAsync<ArgumentException>(
                 () => GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
                     .BuildChangeFeedProcessorWithAllVersionsAndDeletesAsync(
                         monitoredContainer: monitoredContainer,
@@ -179,9 +178,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
             Debug.WriteLine(exception.ToString());
 
-            Assert.AreEqual(expected: HttpStatusCode.BadRequest, actual: exception.StatusCode);
-            Assert.AreEqual(expected: default, actual: exception.SubStatusCode);
-            Assert.AreEqual(expected: "Switching ChangeFeedMode Incremental Feed to Full-Fidelity Feed is not allowed.", actual: exception.ResponseBody);
+            Assert.AreEqual(expected: "Switching ChangeFeedMode Incremental Feed to Full-Fidelity Feed is not allowed.", actual: exception.Message);
 
             Debug.WriteLine("Assertions completed.");
         }
@@ -206,7 +203,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     leaseContainer: this.LeaseContainer,
                     allDocsProcessed: allDocsProcessed);
 
-            CosmosException exception = await Assert.ThrowsExceptionAsync<CosmosException>(
+            ArgumentException exception = await Assert.ThrowsExceptionAsync<ArgumentException>(
                 () => GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
                     .BuildChangeFeedProcessorWithLatestVersionAsync(
                         monitoredContainer: monitoredContainer,
@@ -216,9 +213,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
             Debug.WriteLine(exception.ToString());
 
-            Assert.AreEqual(expected: HttpStatusCode.BadRequest, actual: exception.StatusCode);
-            Assert.AreEqual(expected: default, actual: exception.SubStatusCode);
-            Assert.AreEqual(expected: "Switching ChangeFeedMode Full-Fidelity Feed to Incremental Feed is not allowed.", actual: exception.ResponseBody);
+            Assert.AreEqual(expected: "Switching ChangeFeedMode Full-Fidelity Feed to Incremental Feed is not allowed.", actual: exception.Message);
 
             Debug.WriteLine("Assertions completed.");
         }
