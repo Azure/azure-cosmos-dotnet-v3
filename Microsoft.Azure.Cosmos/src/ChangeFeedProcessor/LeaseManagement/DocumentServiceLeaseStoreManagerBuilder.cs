@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             ContainerInternal leaseContainer,
             string leaseContainerPrefix,
             string instanceName,
-            ChangeFeedMode changeFeedMode = default)
+            ChangeFeedMode changeFeedMode)
         {
             ContainerProperties containerProperties = await leaseContainer.GetCachedContainerPropertiesAsync(forceRefresh: false, NoOpTrace.Singleton, cancellationToken: default);
 

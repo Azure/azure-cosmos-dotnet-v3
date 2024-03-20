@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         public abstract Dictionary<string, string> Properties { get; set; }
 
         /// <summary>
-        /// Gets or sets the <see cref="ChangeFeedMode"/>.
+        /// Gets or sets the ChangeFeedMode.
         /// </summary>
         public abstract string Mode { get; set; }
     }

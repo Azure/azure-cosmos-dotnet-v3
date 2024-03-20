@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     .ConfigureAwait(false);
             }
 
-            await this.ChangeFeedModeSwitchingCheckAsync(monitoredDatabaseAndContainerRid).ConfigureAwait(false);
+            await this.ChangeFeedModeSwitchingCheckAsync().ConfigureAwait(false);
 
             this.partitionManager = this.BuildPartitionManager(
                 containerRid,
@@ -113,25 +113,24 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         /// from the current ChangeFeedMode, a CosmosException is thrown.
         /// This is based on an issue located at <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4308"/>.
         /// </summary>
-        /// <param name="monitoredDatabaseAndContainerRid"></param>
-        private async Task ChangeFeedModeSwitchingCheckAsync(string monitoredDatabaseAndContainerRid)
+        private async Task ChangeFeedModeSwitchingCheckAsync()
         {
             IReadOnlyList<DocumentServiceLease> documentServiceLeases = await this.documentServiceLeaseStoreManager
                 .LeaseContainer
                 .GetAllLeasesAsync()
                 .ConfigureAwait(false);
 
-            bool shouldThrowException = false;
-
             // No lease documents. Return.
+
             if (documentServiceLeases.Count == 0)
             {
                 return;
             }
 
-            DocumentServiceLease documentServiceLease = documentServiceLeases.FirstOrDefault(lease => lease.Id.Contains(monitoredDatabaseAndContainerRid));
+            DocumentServiceLease documentServiceLease = documentServiceLeases.FirstOrDefault();
 
             // No lease documents that match the Id.
+
             if (documentServiceLease == default)
             {
                 return;
@@ -140,6 +139,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             // Mode attribute exists on lease document, but it is not set. legacy is always LatestVersion because
             // AllVersionsAndDeletes does not exist. There should not be any legacy lease documents that are
             // AllVersionsAndDeletes. If the ChangeFeedProcessor's mode is not legacy, a CosmosException should thrown.
+
+            bool shouldThrowException = default;
+            string normalizedProcessorChangeFeedMode = default;
+
             if (string.IsNullOrEmpty(documentServiceLease.Mode))
             {
                 if (this.changeFeedLeaseOptions.Mode != ChangeFeedMode.LatestVersion)
@@ -147,29 +150,36 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     shouldThrowException = true;
                 }
             }
-
-            string changeFeedProcessorMode = this.NormalizeChangeFeedProcessorMode(this.changeFeedLeaseOptions.Mode);
-
-            // If the ChangeFeedProcessor mode is not the mode in the lease document, a CosmosException should be thrown.
-            if (string.Compare(documentServiceLease.Mode, changeFeedProcessorMode, StringComparison.OrdinalIgnoreCase) != 0)
+            else
             {
-                shouldThrowException = true;
+                // If the ChangeFeedProcessor mode is not the mode in the lease document, a CosmosException should be thrown.
+
+                shouldThrowException = this.VerifyChangeFeedProcessorMode(
+                    changeFeedMode: this.changeFeedLeaseOptions.Mode,
+                    leaseChangeFeedMode: documentServiceLease.Mode,
+                    normalizedProcessorChangeFeedMode: out normalizedProcessorChangeFeedMode);
             }
 
             // If shouldThrowException is true, throw the CosmosException.
+
             if (shouldThrowException)
             {
                 throw CosmosExceptionFactory.CreateBadRequestException(
-                    message: $"Switching {nameof(ChangeFeedMode)} {documentServiceLease.Mode} to {changeFeedProcessorMode} is not allowed.",
+                    message: $"Switching {nameof(ChangeFeedMode)} {documentServiceLease.Mode} to {normalizedProcessorChangeFeedMode} is not allowed.",
                     headers: default);
             }
         }
 
-        private string NormalizeChangeFeedProcessorMode(ChangeFeedMode changeFeedMode)
+        private bool VerifyChangeFeedProcessorMode(
+            ChangeFeedMode changeFeedMode, 
+            string leaseChangeFeedMode,
+            out string normalizedProcessorChangeFeedMode)
         {
-            return changeFeedMode == ChangeFeedMode.AllVersionsAndDeletes
+            normalizedProcessorChangeFeedMode = changeFeedMode == ChangeFeedMode.AllVersionsAndDeletes
                 ? HttpConstants.A_IMHeaderValues.FullFidelityFeed
                 : HttpConstants.A_IMHeaderValues.IncrementalFeed;
+
+            return string.Compare(leaseChangeFeedMode, normalizedProcessorChangeFeedMode, StringComparison.OrdinalIgnoreCase) != 0;
         }
 
         private PartitionManager BuildPartitionManager(
