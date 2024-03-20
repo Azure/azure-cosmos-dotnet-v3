@@ -5,9 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Linq;
     using System.Text;
     using System.Threading;
@@ -67,6 +65,29 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 this.OrderByColumns = orderByColumns ?? throw new ArgumentNullException(nameof(orderByColumns));
                 this.QueryPaginationOptions = queryPaginationOptions ?? throw new ArgumentNullException(nameof(queryPaginationOptions));
                 this.MaxConcurrency = maxConcurrency;
+            }
+        }
+
+        private sealed class StaticQueryPageParameters
+        {
+            public string ActivityId { get; }
+
+            public Lazy<CosmosQueryExecutionInfo> CosmosQueryExecutionInfo { get; }
+
+            public DistributionPlanSpec DistributionPlanSpec { get; }
+
+            public IReadOnlyDictionary<string, string> AdditionalHeaders { get; }
+
+            public StaticQueryPageParameters(
+                string activityId,
+                Lazy<CosmosQueryExecutionInfo> cosmosQueryExecutionInfo,
+                DistributionPlanSpec distributionPlanSpec,
+                IReadOnlyDictionary<string, string> additionalHeaders)
+            {
+                this.ActivityId = activityId ?? throw new ArgumentNullException(nameof(activityId));
+                this.CosmosQueryExecutionInfo = cosmosQueryExecutionInfo;
+                this.DistributionPlanSpec = distributionPlanSpec;
+                this.AdditionalHeaders = additionalHeaders;
             }
         }
 
@@ -240,6 +261,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             bool nonStreaming = false;
             Queue<QueryPage> bufferedPages = new Queue<QueryPage>();
+            StaticQueryPageParameters staticQueryPageParameters = null;
             while (uninitializedEnumeratorsAndTokens.Count != 0)
             {
                 (OrderByQueryPartitionRangePageAsyncEnumerator enumerator, OrderByContinuationToken token) = uninitializedEnumeratorsAndTokens.Dequeue();
@@ -267,6 +289,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     }
 
                     QueryPage page = enumerator.Current.Result.Page;
+                    if (staticQueryPageParameters == null)
+                    {
+                        // It is difficult to merge the headers because the type is not strong enough to support merging.
+                        // Moreover, the existing code also does not merge the headers.
+                        // Instead they grab the headers at random from some pages and send them onwards.
+                        staticQueryPageParameters = new StaticQueryPageParameters(
+                            activityId: page.ActivityId,
+                            cosmosQueryExecutionInfo: page.CosmosQueryExecutionInfo,
+                            distributionPlanSpec: page.DistributionPlanSpec,
+                            additionalHeaders: page.AdditionalHeaders);
+                    }
 
                     // For backwards compatibility the default value of streaming for ORDER BY is _true_
                     nonStreaming = nonStreaming || (!page.Streaming.GetValueOrDefault(true));
@@ -313,10 +346,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
                 await ParallelPrefetch.PrefetchInParallelAsync(orderbyEnumerators, init.MaxConcurrency, trace, cancellationToken);
 
-                pipelineStage = await NonStreamingOrderByPipelineStageFlat.CreateAsync(
+                pipelineStage = await NonStreamingOrderByPipelineStage.CreateAsync(
                     init.QueryPaginationOptions,
                     sortOrders,
                     orderbyEnumerators,
+                    staticQueryPageParameters,
                     trace,
                     cancellationToken);
             }
@@ -1841,37 +1875,41 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             }
         }
 
-        private abstract class NonStreamingOrderByPipelineStageBase : IQueryPipelineStage
+        private abstract class NonStreamingOrderByPipelineStage : IQueryPipelineStage
         {
-            protected const string DisallowContinuationTokenMessage = "Continuation tokens are not supported for the non streaming order by pipeline.";
+            private const int MaximumPageSize = 2048;
 
-            protected static readonly QueryState NonStreamingOrderByInProgress = new QueryState(CosmosString.Create("NonStreamingOrderByInProgress"));
+            private const int FlatHeapSizeLimit = 4096;
 
-            protected readonly QueryPaginationOptions queryPaginationOptions;
+            private const string DisallowContinuationTokenMessage = "Continuation tokens are not supported for the non streaming order by pipeline.";
 
-            protected readonly double totalRequestCharge;
+            private static readonly QueryState NonStreamingOrderByInProgress = new QueryState(CosmosString.Create("NonStreamingOrderByInProgress"));
 
-            protected readonly string activityId;
+            private readonly int pageSize;
 
-            protected readonly Lazy<CosmosQueryExecutionInfo> cosmosQueryExecutionInfo;
+            private readonly double totalRequestCharge;
 
-            protected readonly DistributionPlanSpec distributionPlanSpec;
+            private readonly string activityId;
 
-            protected readonly IReadOnlyDictionary<string, string> additionalHeaders;
+            private readonly Lazy<CosmosQueryExecutionInfo> cosmosQueryExecutionInfo;
 
-            protected bool firstPage;
+            private readonly DistributionPlanSpec distributionPlanSpec;
+
+            private readonly IReadOnlyDictionary<string, string> additionalHeaders;
+
+            private bool firstPage;
 
             public TryCatch<QueryPage> Current { get; protected set; }
 
-            protected NonStreamingOrderByPipelineStageBase(
-                QueryPaginationOptions queryPaginationOptions,
+            protected NonStreamingOrderByPipelineStage(
+                int pageSize,
                 double totalRequestCharge,
                 string activityId,
                 Lazy<CosmosQueryExecutionInfo> cosmosQueryExecutionInfo,
                 DistributionPlanSpec distributionPlanSpec,
                 IReadOnlyDictionary<string, string> additionalHeaders)
             {
-                this.queryPaginationOptions = queryPaginationOptions ?? throw new ArgumentNullException(nameof(queryPaginationOptions));
+                this.pageSize = pageSize;
                 this.totalRequestCharge = totalRequestCharge;
                 this.activityId = activityId ?? throw new ArgumentNullException(nameof(activityId));
                 this.cosmosQueryExecutionInfo = cosmosQueryExecutionInfo;
@@ -1882,177 +1920,223 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             public abstract ValueTask DisposeAsync();
 
             public abstract ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken);
-        }
-
-        private sealed class NonStreamingOrderByPipelineStageFlat : NonStreamingOrderByPipelineStageBase
-        {
-            private readonly PriorityQueue<OrderByQueryResult> orderByQueryResults;
 
             public static async Task<IQueryPipelineStage> CreateAsync(
                 QueryPaginationOptions queryPaginationOptions,
                 IReadOnlyList<SortOrder> sortOrders,
                 IEnumerable<OrderByQueryPartitionRangePageAsyncEnumerator> enumerators,
+                StaticQueryPageParameters staticQueryPageParameters,
                 ITrace trace,
                 CancellationToken cancellationToken)
             {
-                OrderByQueryResultComparer comparer = new OrderByQueryResultComparer(sortOrders);
-                PriorityQueue<OrderByQueryResult> priorityQueue = new PriorityQueue<OrderByQueryResult>(comparer);
-
-                bool initializedGlobalProperties = false;
-                string activityId = null;
-                Lazy<CosmosQueryExecutionInfo> cosmosQueryExecutionInfo = null;
-                DistributionPlanSpec distributionPlanSpec = null;
-                IReadOnlyDictionary<string, string> additionalHeaders = null;
-                double requestCharge = 0;
+                int totalItemCount = 0;
                 foreach (OrderByQueryPartitionRangePageAsyncEnumerator enumerator in enumerators)
                 {
-                    while (await enumerator.MoveNextAsync(trace, cancellationToken))
+                    totalItemCount += enumerator.BufferedResultCount;
+                }
+
+                int pageSize = queryPaginationOptions.PageSizeLimit.GetValueOrDefault(MaximumPageSize) > 0 ?
+                    Math.Min(MaximumPageSize, queryPaginationOptions.PageSizeLimit.Value) :
+                    MaximumPageSize;
+
+                if (totalItemCount < FlatHeapSizeLimit)
+                {
+                    return await FlatHeapPipelineStage.CreateAsync(
+                        pageSize,
+                        sortOrders,
+                        enumerators,
+                        staticQueryPageParameters,
+                        trace,
+                        cancellationToken);
+                }
+
+                OrderByQueryResultComparer comparer = new OrderByQueryResultComparer(sortOrders);
+                (IEnumerator<OrderByQueryResult> orderbyQueryResultEnumerator, double totalRequestCharge) = await OrderByCrossPartitionEnumerator.CreateAsync(
+                    enumerators,
+                    comparer,
+                    FlatHeapSizeLimit,
+                    trace,
+                    cancellationToken);
+
+                return new MultiLevelHeapPipelineStage(
+                    pageSize,
+                    totalRequestCharge,
+                    staticQueryPageParameters.ActivityId,
+                    staticQueryPageParameters.CosmosQueryExecutionInfo,
+                    staticQueryPageParameters.DistributionPlanSpec,
+                    staticQueryPageParameters.AdditionalHeaders,
+                    orderbyQueryResultEnumerator);
+            }
+
+            private sealed class MultiLevelHeapPipelineStage : NonStreamingOrderByPipelineStage
+            {
+                private readonly IEnumerator<OrderByQueryResult> enumerator;
+
+                public MultiLevelHeapPipelineStage(
+                    int pageSize,
+                    double totalRequestCharge,
+                    string activityId,
+                    Lazy<CosmosQueryExecutionInfo> cosmosQueryExecutionInfo,
+                    DistributionPlanSpec distributionPlanSpec,
+                    IReadOnlyDictionary<string, string> additionalHeaders,
+                    IEnumerator<OrderByQueryResult> enumerator)
+                    : base(pageSize, totalRequestCharge, activityId, cosmosQueryExecutionInfo, distributionPlanSpec, additionalHeaders)
+                {
+                    this.enumerator = enumerator ?? throw new ArgumentNullException(nameof(enumerator));
+                }
+
+                public override ValueTask DisposeAsync()
+                {
+                    this.enumerator.Dispose();
+                    return default;
+                }
+
+                public override ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    List<CosmosElement> documents = new List<CosmosElement>();
+                    for (int count = 0; count < this.pageSize && this.enumerator.MoveNext(); ++count)
                     {
-                        if (enumerator.Current.Failed)
-                        {
-                            if (IsSplitException(enumerator.Current.Exception))
-                            {
-                                // TODO: [ndeshpan] Handle splits
-                                throw new NotImplementedException(
-                                    $"Split is not handled in {nameof(NonStreamingOrderByPipelineStageFlat)}",
-                                    enumerator.Current.Exception);
-                            }
+                        documents.Add(this.enumerator.Current.Payload);
+                    }
 
-                            throw enumerator.Current.Exception;
-                        }
+                    if (this.firstPage || documents.Count > 0)
+                    {
+                        double requestCharge = this.firstPage ? this.totalRequestCharge : 0;
+                        QueryPage queryPage = new QueryPage(
+                            documents: documents,
+                            requestCharge: requestCharge,
+                            activityId: this.activityId,
+                            cosmosQueryExecutionInfo: this.cosmosQueryExecutionInfo,
+                            distributionPlanSpec: this.distributionPlanSpec,
+                            disallowContinuationTokenMessage: DisallowContinuationTokenMessage,
+                            additionalHeaders: this.additionalHeaders,
+                            state: documents.Count > 0 ? NonStreamingOrderByInProgress : null,
+                            streaming: false);
 
-                        requestCharge += enumerator.Current.Result.RequestCharge;
-
-                        if (!initializedGlobalProperties)
-                        {
-                            activityId = enumerator.Current.Result.ActivityId;
-                            cosmosQueryExecutionInfo = enumerator.Current.Result.Page.CosmosQueryExecutionInfo;
-                            distributionPlanSpec = enumerator.Current.Result.Page.DistributionPlanSpec;
-
-                            // TODO: [ndeshpan] This is not correct, we should merge the headers.
-                            // This is difficult to do because the type is not strong enough to support merging.
-                            // Moreover, the existing code also does not merge the headers.
-                            // Instead they grab the headers at random from some pages and send them onwards.
-                            additionalHeaders = enumerator.Current.Result.AdditionalHeaders;
-
-                            initializedGlobalProperties = true;
-                        }
-
-                        foreach (CosmosElement document in enumerator.Current.Result.Page.Documents)
-                        {
-                            priorityQueue.Enqueue(new OrderByQueryResult(document));
-                        }
+                        this.firstPage = false;
+                        this.Current = TryCatch<QueryPage>.FromResult(queryPage);
+                        return new ValueTask<bool>(true);
+                    }
+                    else
+                    {
+                        return new ValueTask<bool>(false);
                     }
                 }
-
-                return new NonStreamingOrderByPipelineStageFlat(
-                    priorityQueue,
-                    queryPaginationOptions,
-                    requestCharge,
-                    activityId,
-                    cosmosQueryExecutionInfo,
-                    distributionPlanSpec,
-                    additionalHeaders);
             }
 
-            private NonStreamingOrderByPipelineStageFlat(
-                PriorityQueue<OrderByQueryResult> orderByQueryResults,
-                QueryPaginationOptions queryPaginationOptions,
-                double requestCharge,
-                string activityId,
-                Lazy<CosmosQueryExecutionInfo> cosmosQueryExecutionInfo,
-                DistributionPlanSpec distributionPlanSpec,
-                IReadOnlyDictionary<string, string> additionalHeaders)
-                : base(
-                      queryPaginationOptions,
-                      requestCharge,
-                      activityId,
-                      cosmosQueryExecutionInfo,
-                      distributionPlanSpec,
-                      additionalHeaders)
+            private sealed class FlatHeapPipelineStage : NonStreamingOrderByPipelineStage
             {
-                this.orderByQueryResults = orderByQueryResults ?? throw new ArgumentNullException(nameof(orderByQueryResults));
-            }
+                private readonly PriorityQueue<OrderByQueryResult> orderByQueryResults;
 
-            public override ValueTask DisposeAsync()
-            {
-                return default;
-            }
-
-            public override ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
-            {
-                int pageSize = this.queryPaginationOptions.PageSizeLimit ?? int.MaxValue;
-
-                List<CosmosElement> documents = new List<CosmosElement>();
-                while (pageSize > 0 && this.orderByQueryResults.Count > 0)
+                public static async Task<IQueryPipelineStage> CreateAsync(
+                    int pageSize,
+                    IReadOnlyList<SortOrder> sortOrders,
+                    IEnumerable<OrderByQueryPartitionRangePageAsyncEnumerator> enumerators,
+                    StaticQueryPageParameters staticQueryPageParameters,
+                    ITrace trace,
+                    CancellationToken cancellationToken)
                 {
-                    OrderByQueryResult resultItem = this.orderByQueryResults.Dequeue();
-                    documents.Add(resultItem.Payload);
-                    pageSize--;
+                    OrderByQueryResultComparer comparer = new OrderByQueryResultComparer(sortOrders);
+                    PriorityQueue<OrderByQueryResult> priorityQueue = new PriorityQueue<OrderByQueryResult>(comparer);
+
+                    double requestCharge = 0;
+                    foreach (OrderByQueryPartitionRangePageAsyncEnumerator enumerator in enumerators)
+                    {
+                        while (await enumerator.MoveNextAsync(trace, cancellationToken))
+                        {
+                            if (enumerator.Current.Failed)
+                            {
+                                if (IsSplitException(enumerator.Current.Exception))
+                                {
+                                    // TODO: [ndeshpan] Handle splits
+                                    throw new NotImplementedException(
+                                        $"Split is not handled in {nameof(FlatHeapPipelineStage)}",
+                                        enumerator.Current.Exception);
+                                }
+
+                                throw enumerator.Current.Exception;
+                            }
+
+                            requestCharge += enumerator.Current.Result.RequestCharge;
+
+                            foreach (CosmosElement document in enumerator.Current.Result.Page.Documents)
+                            {
+                                OrderByQueryResult orderByQueryResult = new OrderByQueryResult(document);
+                                priorityQueue.Enqueue(orderByQueryResult);
+                            }
+                        }
+                    }
+
+                    return new FlatHeapPipelineStage(
+                       priorityQueue,
+                       pageSize,
+                       requestCharge,
+                       staticQueryPageParameters.ActivityId,
+                       staticQueryPageParameters.CosmosQueryExecutionInfo,
+                       staticQueryPageParameters.DistributionPlanSpec,
+                       staticQueryPageParameters.AdditionalHeaders);
                 }
 
-                if (this.firstPage || documents.Count > 0)
+                public FlatHeapPipelineStage(
+                    PriorityQueue<OrderByQueryResult> orderByQueryResults,
+                    int pageSize,
+                    double requestCharge,
+                    string activityId,
+                    Lazy<CosmosQueryExecutionInfo> cosmosQueryExecutionInfo,
+                    DistributionPlanSpec distributionPlanSpec,
+                    IReadOnlyDictionary<string, string> additionalHeaders)
+                    : base(
+                          pageSize,
+                          requestCharge,
+                          activityId,
+                          cosmosQueryExecutionInfo,
+                          distributionPlanSpec,
+                          additionalHeaders)
                 {
-                    double requestCharge = this.firstPage ? this.totalRequestCharge : 0;
-                    QueryPage queryPage = new QueryPage(
-                        documents: documents,
-                        requestCharge: requestCharge,
-                        activityId: this.activityId,
-                        cosmosQueryExecutionInfo: this.cosmosQueryExecutionInfo,
-                        distributionPlanSpec: this.distributionPlanSpec,
-                        disallowContinuationTokenMessage: DisallowContinuationTokenMessage,
-                        additionalHeaders: this.additionalHeaders,
-                        state: this.orderByQueryResults.Count > 0 ? NonStreamingOrderByInProgress : null,
-                        streaming: false);
-
-                    this.firstPage = false;
-                    this.Current = TryCatch<QueryPage>.FromResult(queryPage);
-                    return new ValueTask<bool>(true);
+                    this.orderByQueryResults = orderByQueryResults ?? throw new ArgumentNullException(nameof(orderByQueryResults));
                 }
-                else
+
+                public override ValueTask DisposeAsync()
                 {
-                    return new ValueTask<bool>(false);
+                    return default;
                 }
-            }
-        }
 
-        private sealed class NonStreamingOrderByPipelineStageParallel : NonStreamingOrderByPipelineStageBase
-        {
-            public static Task<IQueryPipelineStage> CreateAsync(
-                QueryPaginationOptions queryPaginationOptions,
-                IReadOnlyList<SortOrder> sortOrders,
-                IEnumerable<OrderByQueryPartitionRangePageAsyncEnumerator> enumerators,
-                ITrace trace,
-                CancellationToken cancellationToken)
-            {
-                throw new NotImplementedException();
-            }
+                public override ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
+                {
+                    List<CosmosElement> documents = new List<CosmosElement>();
+                    int pageSize = this.pageSize;
+                    while (pageSize > 0 && this.orderByQueryResults.Count > 0)
+                    {
+                        OrderByQueryResult resultItem = this.orderByQueryResults.Dequeue();
+                        documents.Add(resultItem.Payload);
+                        pageSize--;
+                    }
 
-            private NonStreamingOrderByPipelineStageParallel(
-                QueryPaginationOptions queryPaginationOptions,
-                double totalRequestCharge,
-                string activityId,
-                Lazy<CosmosQueryExecutionInfo> cosmosQueryExecutionInfo,
-                DistributionPlanSpec distributionPlanSpec,
-                IReadOnlyDictionary<string, string> additionalHeaders)
-                : base(
-                      queryPaginationOptions,
-                      totalRequestCharge,
-                      activityId,
-                      cosmosQueryExecutionInfo,
-                      distributionPlanSpec,
-                      additionalHeaders)
-            {
-            }
+                    if (this.firstPage || documents.Count > 0)
+                    {
+                        double requestCharge = this.firstPage ? this.totalRequestCharge : 0;
+                        QueryPage queryPage = new QueryPage(
+                            documents: documents,
+                            requestCharge: requestCharge,
+                            activityId: this.activityId,
+                            cosmosQueryExecutionInfo: this.cosmosQueryExecutionInfo,
+                            distributionPlanSpec: this.distributionPlanSpec,
+                            disallowContinuationTokenMessage: DisallowContinuationTokenMessage,
+                            additionalHeaders: this.additionalHeaders,
+                            state: this.orderByQueryResults.Count > 0 ? NonStreamingOrderByInProgress : null,
+                            streaming: false);
 
-            public override ValueTask DisposeAsync()
-            {
-                throw new NotImplementedException();
-            }
-
-            public override ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
-            {
-                throw new NotImplementedException();
+                        this.firstPage = false;
+                        this.Current = TryCatch<QueryPage>.FromResult(queryPage);
+                        return new ValueTask<bool>(true);
+                    }
+                    else
+                    {
+                        return new ValueTask<bool>(false);
+                    }
+                }
             }
         }
     }
