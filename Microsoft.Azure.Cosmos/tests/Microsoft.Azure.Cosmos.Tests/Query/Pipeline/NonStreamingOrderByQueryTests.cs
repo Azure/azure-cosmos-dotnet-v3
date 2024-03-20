@@ -22,50 +22,151 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using System.Threading.Tasks;
     using System.Threading;
     using System;
+    using System.Linq;
 
     [TestClass]
     public class NonStreamingOrderByQueryTests
     {
-        [TestMethod]
-        public async Task TestNonStreamingOrderByPipeline()
+        private const int MaxConcurrency = 10;
+
+        private const int DocumentCount = 420;
+
+        private static readonly int[] PageSizes = new [] { 1, 10, 100, DocumentCount };
+
+        private static readonly IReadOnlyList<OrderByColumn> OrderByColumnPkAsc = new List<OrderByColumn>
         {
-            int documentCount = 10;
-            IDocumentContainer innerDocumentContainer = await CreateDocumentContainerAsync(documentCount);
-            IDocumentContainer documentContainer = new NonStreamingDocumentContainer(innerDocumentContainer);
+            new OrderByColumn("c.pk", SortOrder.Ascending)
+        };
 
-            int pageSize = 10;
+        private static readonly IReadOnlyList<OrderByColumn> OrderByColumnPkDesc = new List<OrderByColumn>
+        {
+            new OrderByColumn("c.pk", SortOrder.Descending)
+        };
 
-            TryCatch<IQueryPipelineStage> monadicQueryPipelineStage = OrderByCrossPartitionQueryPipelineStage.MonadicCreate(
-                    documentContainer: documentContainer,
-                    sqlQuerySpec: new SqlQuerySpec(@"
+        [TestMethod]
+        public async Task ParityTests()
+        {
+            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(DocumentCount);
+
+            IReadOnlyList<TestCase> testCases = new List<TestCase>
+            {
+                MakeTest(
+                    queryText: @"
                         SELECT c._rid AS _rid, [{""item"": c.pk}] AS orderByItems, c AS payload
                         FROM c
                         WHERE {documentdb-formattableorderbyquery-filter}
-                        ORDER BY c.pk"),
-                    targetRanges: await documentContainer.GetFeedRangesAsync(
-                        trace: NoOpTrace.Singleton,
-                        cancellationToken: default),
-                    partitionKey: null,
-                    orderByColumns: new List<OrderByColumn>()
+                        ORDER BY c.pk",
+                    orderByColumns: OrderByColumnPkAsc),
+                MakeTest(
+                    queryText: @"
+                        SELECT c._rid AS _rid, [{""item"": c.pk}] AS orderByItems, c AS payload
+                        FROM c
+                        WHERE {documentdb-formattableorderbyquery-filter}
+                        ORDER BY c.pk DESC",
+                    orderByColumns: OrderByColumnPkDesc),
+            };
+
+            await RunParityTests(
+                documentContainer,
+                await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, default),
+                testCases);
+        }
+
+        private static async Task RunParityTests(
+            IDocumentContainer documentContainer,
+            IReadOnlyList<FeedRangeEpk> ranges,
+            IReadOnlyList<TestCase> testCases)
+        {
+            IDocumentContainer nonStreamingContainer = new NonStreamingDocumentContainer(documentContainer);
+
+            foreach (TestCase testCase in testCases)
+            {
+                foreach (int pageSize in testCase.PageSizes)
+                {
+                    IReadOnlyList<CosmosElement> nonStreamingResult = await CreateAndRunPipelineStage(
+                        documentContainer: nonStreamingContainer,
+                        ranges: ranges,
+                        queryText: testCase.QueryText,
+                        orderByColumns: testCase.OrderByColumns,
+                        pageSize: pageSize);
+
+                    IReadOnlyList<CosmosElement> streamingResult = await CreateAndRunPipelineStage(
+                        documentContainer: documentContainer,
+                        ranges: ranges,
+                        queryText: testCase.QueryText,
+                        orderByColumns: testCase.OrderByColumns,
+                        pageSize: pageSize);
+
+                    if (!streamingResult.SequenceEqual(nonStreamingResult))
                     {
-                        new OrderByColumn("c.pk", SortOrder.Ascending)
-                    },
+                        Assert.Fail($"Results mismatch for query:\n{testCase.QueryText}\npageSize: {pageSize}");
+                    }
+                }
+            }
+        }
+
+        private static async Task<IReadOnlyList<CosmosElement>> CreateAndRunPipelineStage(
+            IDocumentContainer documentContainer,
+            IReadOnlyList<FeedRangeEpk> ranges,
+            string queryText,
+            IReadOnlyList<OrderByColumn> orderByColumns,
+            int pageSize)
+        {
+            TryCatch<IQueryPipelineStage> pipelineStage = OrderByCrossPartitionQueryPipelineStage.MonadicCreate(
+                    documentContainer: documentContainer,
+                    sqlQuerySpec: new SqlQuerySpec(queryText),
+                    targetRanges: ranges,
+                    partitionKey: null,
+                    orderByColumns: orderByColumns,
                     queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: pageSize),
-                    maxConcurrency: 10,
+                    maxConcurrency: MaxConcurrency,
                     continuationToken: null);
 
-            Assert.IsTrue(monadicQueryPipelineStage.Succeeded);
+            Assert.IsTrue(pipelineStage.Succeeded);
 
-            IQueryPipelineStage stage = monadicQueryPipelineStage.Result;
+            IQueryPipelineStage stage = pipelineStage.Result;
             List<CosmosElement> documents = new List<CosmosElement>();
             while (await stage.MoveNextAsync(NoOpTrace.Singleton, default))
             {
                 Assert.IsTrue(stage.Current.Succeeded);
+                Assert.IsTrue(stage.Current.Result.Documents.Count <= pageSize);
                 DebugTraceHelpers.TracePage(stage.Current.Result);
                 documents.AddRange(stage.Current.Result.Documents);
             }
 
-            Assert.AreEqual(documentCount, documents.Count);
+            return documents;
+        }
+
+        private static TestCase MakeTest(string queryText, IReadOnlyList<OrderByColumn> orderByColumns)
+        {
+            return MakeTest(queryText, orderByColumns, PageSizes);
+        }
+
+        private static TestCase MakeTest(
+            string queryText,
+            IReadOnlyList<OrderByColumn> orderByColumns,
+            int[] pageSizes)
+        {
+            return new TestCase(queryText, orderByColumns, pageSizes);
+        }
+
+        private sealed class TestCase
+        {
+            public string QueryText { get; }
+
+            public IReadOnlyList<OrderByColumn> OrderByColumns { get; }
+
+            public int[] PageSizes { get; }
+
+            public TestCase(
+                string queryText,
+                IReadOnlyList<OrderByColumn> orderByColumns,
+                int[] pageSizes)
+            {
+                this.QueryText = queryText;
+                this.OrderByColumns = orderByColumns;
+                this.PageSizes = pageSizes;
+            }
         }
 
         private sealed class NonStreamingDocumentContainer : IDocumentContainer
