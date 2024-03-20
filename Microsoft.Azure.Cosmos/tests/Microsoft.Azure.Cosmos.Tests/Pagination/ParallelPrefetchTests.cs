@@ -666,7 +666,7 @@
                                 objectPool
                             );
 
-                        await ParallelPrefetch.PrefetchInParallelImplAsync(
+                        await ParallelPrefetch.PrefetchInParallelCoreAsync(
                             prefetchers,
                             maxConcurrency,
                             EmptyTrace,
@@ -747,7 +747,7 @@
                             Exception caught = null;
                             try
                             {
-                                await ParallelPrefetch.PrefetchInParallelImplAsync(
+                                await ParallelPrefetch.PrefetchInParallelCoreAsync(
                                     prefetchers,
                                     maxConcurrency,
                                     EmptyTrace,
@@ -851,7 +851,7 @@
                             Exception caught = null;
                             try
                             {
-                                await ParallelPrefetch.PrefetchInParallelImplAsync(
+                                await ParallelPrefetch.PrefetchInParallelCoreAsync(
                                     prefetchers,
                                     maxConcurrency,
                                     EmptyTrace,
@@ -943,7 +943,7 @@
                             Exception caught = null;
                             try
                             {
-                                await ParallelPrefetch.PrefetchInParallelImplAsync(
+                                await ParallelPrefetch.PrefetchInParallelCoreAsync(
                                     prefetchers,
                                     maxConcurrency,
                                     EmptyTrace,
@@ -1060,7 +1060,7 @@
                             Exception caught = null;
                             try
                             {
-                                await ParallelPrefetch.PrefetchInParallelImplAsync(
+                                await ParallelPrefetch.PrefetchInParallelCoreAsync(
                                     prefetchers,
                                     maxConcurrency,
                                     EmptyTrace,

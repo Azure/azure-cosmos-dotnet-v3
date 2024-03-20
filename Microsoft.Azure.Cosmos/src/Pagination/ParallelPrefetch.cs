@@ -218,13 +218,13 @@ namespace Microsoft.Azure.Cosmos.Pagination
             prefetchers = prefetchers ?? throw new ArgumentNullException(nameof(prefetchers));
             trace = trace ?? throw new ArgumentNullException(nameof(trace));
 
-            return PrefetchInParallelImplAsync(prefetchers, maxConcurrency, trace, null, cancellationToken);
+            return PrefetchInParallelCoreAsync(prefetchers, maxConcurrency, trace, null, cancellationToken);
         }
 
         /// <summary>
         /// Exposed for testing purposes, do not call directly.
         /// </summary>
-        internal static Task PrefetchInParallelImplAsync(
+        internal static Task PrefetchInParallelCoreAsync(
             IEnumerable<IPrefetcher> prefetchers,
             int maxConcurrency,
             ITrace trace,
@@ -365,6 +365,10 @@ namespace Microsoft.Azure.Cosmos.Pagination
                                     CommonPrefetchState innerCommonState = innerState.CommonState;
                                     (ITrace prefetchTrace, CancellationToken cancellationToken) = (innerCommonState.PrefetchTrace, innerCommonState.CancellationToken);
 
+                                    // we smuggle a test config in as the common ITrace
+                                    //
+                                    // in most code, this will be null - but this pattern
+                                    // let's use keep CommonPrefetchState small
                                     ParallelPrefetchTestConfig config = prefetchTrace as ParallelPrefetchTestConfig;
 
                                     config?.TaskStarted();
