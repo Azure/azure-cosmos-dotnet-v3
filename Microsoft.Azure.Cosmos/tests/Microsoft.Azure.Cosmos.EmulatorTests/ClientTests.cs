@@ -931,7 +931,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             string connectionString = TestCommon.GetMultiRegionConnectionString();
             Assert.IsNotNull("Connection String Null");
-            Assert.Fail(connectionString[..10]);//remove
             using CosmosClient cosmosClient = new CosmosClient(connectionString);
             Assert.IsNotNull(cosmosClient);
             AccountProperties properties = await cosmosClient.ReadAccountAsync();
