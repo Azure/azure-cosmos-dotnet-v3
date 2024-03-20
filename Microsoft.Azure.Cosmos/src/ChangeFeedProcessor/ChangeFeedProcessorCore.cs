@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         /// <summary>
         /// If the lease container's lease document is found, this method checks for lease 
         /// document's ChangeFeedMode and if the new ChangeFeedMode is different
-        /// from the current ChangeFeedMode, a CosmosException is thrown.
+        /// from the current ChangeFeedMode, an exception is thrown.
         /// This is based on an issue located at <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4308"/>.
         /// </summary>
         private async Task ChangeFeedModeSwitchingCheckAsync()
@@ -128,8 +128,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             // Mode attribute exists on lease document, but it is not set. legacy is always LatestVersion because
             // AllVersionsAndDeletes does not exist. There should not be any legacy lease documents that are
-            // AllVersionsAndDeletes. If the ChangeFeedProcessor's mode is not legacy, a CosmosException should thrown.
-            // If the ChangeFeedProcessor mode is not the mode in the lease document, a CosmosException should be thrown.
+            // AllVersionsAndDeletes. If the ChangeFeedProcessor's mode is not legacy, an exception should thrown.
+            // If the ChangeFeedProcessor mode is not the mode in the lease document, an exception should be thrown.
 
             bool shouldThrowException = this.VerifyChangeFeedProcessorMode(
                 changeFeedMode: 
@@ -139,7 +139,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 leaseChangeFeedMode: documentServiceLease.Mode,
                 normalizedProcessorChangeFeedMode: out string normalizedProcessorChangeFeedMode);
 
-            // If shouldThrowException is true, throw the CosmosException.
+            // If shouldThrowException is true, throw the exception.
 
             if (shouldThrowException)
             {

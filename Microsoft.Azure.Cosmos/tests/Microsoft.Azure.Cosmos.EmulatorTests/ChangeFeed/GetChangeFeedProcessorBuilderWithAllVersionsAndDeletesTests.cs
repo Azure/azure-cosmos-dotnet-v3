@@ -154,10 +154,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         [TestMethod]
         [Owner("philipthomas-MSFT")]
         [Description("Scenario: When ChangeFeedMode on ChangeFeedProcessor, switches from LatestVersion to AllVersionsAndDeletes," +
-            "a CosmosException is expected. LatestVersion's WithStartFromBeginning can be set, or not set.")]
+            "an exception is expected. LatestVersion's WithStartFromBeginning can be set, or not set.")]
         [DataRow(false)]
         [DataRow(true)]
-        public async Task WhenLatestVersionSwitchToAllVersionsAndDeletesExpectsACosmosExceptionTestAsync(bool withStartFromBeginning)
+        public async Task WhenLatestVersionSwitchToAllVersionsAndDeletesExpectsAexceptionTestAsync(bool withStartFromBeginning)
         {
             ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.LatestVersion);
             ManualResetEvent allDocsProcessed = new(false);
@@ -189,10 +189,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         [TestMethod]
         [Owner("philipthomas-MSFT")]
         [Description("Scenario: When ChangeFeedMode on ChangeFeedProcessor, switches from AllVersionsAndDeletes to LatestVersion," +
-            "a CosmosException is expected. LatestVersion's WithStartFromBeginning can be set, or not set.")]
+            "an exception is expected. LatestVersion's WithStartFromBeginning can be set, or not set.")]
         [DataRow(false)]
         [DataRow(true)]
-        public async Task WhenAllVersionsAndDeletesSwitchToLatestVersionExpectsACosmosExceptionTestAsync(bool withStartFromBeginning)
+        public async Task WhenAllVersionsAndDeletesSwitchToLatestVersionExpectsAexceptionTestAsync(bool withStartFromBeginning)
         {
             ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes);
             ManualResetEvent allDocsProcessed = new(false);
@@ -224,8 +224,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         [TestMethod]
         [Owner("philipthomas-MSFT")]
         [Description("Scenario: When ChangeFeedMode on ChangeFeedProcessor does not switch, AllVersionsAndDeletes," +
-            "no CosmosException is expected.")]
-        public async Task WhenNoSwitchAllVersionsAndDeletesFDoesNotExpectACosmosExceptionTestAsync()
+            "no exception is expected.")]
+        public async Task WhenNoSwitchAllVersionsAndDeletesFDoesNotExpectAexceptionTestAsync()
         {
             ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes);
             ManualResetEvent allDocsProcessed = new(false);
@@ -258,10 +258,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         [TestMethod]
         [Owner("philipthomas-MSFT")]
         [Description("Scenario: When ChangeFeedMode on ChangeFeedProcessor does not switch, LatestVersion," +
-            "no CosmosException is expected. LatestVersion's WithStartFromBeginning can be set, or not set.")]
+            "no exception is expected. LatestVersion's WithStartFromBeginning can be set, or not set.")]
         [DataRow(false)]
         [DataRow(true)]
-        public async Task WhenNoSwitchLatestVersionDoesNotExpectACosmosExceptionTestAsync(bool withStartFromBeginning)
+        public async Task WhenNoSwitchLatestVersionDoesNotExpectAexceptionTestAsync(bool withStartFromBeginning)
         {
             ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.LatestVersion);
             ManualResetEvent allDocsProcessed = new(false);
