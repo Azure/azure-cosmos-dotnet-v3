@@ -66,16 +66,17 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     if (page.Count > 0)
                     {
                         PageEnumerator pageEnumerator = new PageEnumerator(page);
-                        if (queue.Count < levelSize)
-                        {
-                            queue.Enqueue(pageEnumerator);
-                        }
-                        else
+                        pageEnumerator.MoveNext();
+
+                        queue.Enqueue(pageEnumerator);
+
+                        if (queue.Count >= levelSize)
                         {
                             OrderByCrossPartitionEnumerator newEnumerator = new OrderByCrossPartitionEnumerator(queue);
+                            newEnumerator.MoveNext();
+
                             queue = new PriorityQueue<IEnumerator<OrderByQueryResult>>(enumeratorComparer);
                             queue.Enqueue(newEnumerator);
-                            newEnumerator.Start();
                         }
                     }
                 }
@@ -99,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             if (!this.started)
             {
                 // We never start empty
-                this.Start();
+                this.started = true;
                 return true;
             }
 
@@ -124,11 +125,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 IEnumerator<OrderByQueryResult> enumerator = this.queue.Dequeue();
                 enumerator.Dispose();
             }
-        }
-
-        private void Start()
-        {
-            this.started = true;
         }
 
         private sealed class EmptyEnumerator : IEnumerator<OrderByQueryResult>

@@ -1,4 +1,4 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
@@ -1915,6 +1915,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 this.cosmosQueryExecutionInfo = cosmosQueryExecutionInfo;
                 this.distributionPlanSpec = distributionPlanSpec;
                 this.additionalHeaders = additionalHeaders;
+                this.firstPage = true;
             }
 
             public abstract ValueTask DisposeAsync();
