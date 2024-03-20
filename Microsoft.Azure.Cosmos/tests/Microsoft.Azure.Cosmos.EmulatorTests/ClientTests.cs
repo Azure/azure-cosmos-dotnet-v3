@@ -936,7 +936,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(cosmosClient);
             AccountProperties properties = await cosmosClient.ReadAccountAsync();
             Assert.IsNotNull(properties);
-            cosmosClient.Dispose();
         }
        
         public static IReadOnlyList<string> GetActiveConnections()
