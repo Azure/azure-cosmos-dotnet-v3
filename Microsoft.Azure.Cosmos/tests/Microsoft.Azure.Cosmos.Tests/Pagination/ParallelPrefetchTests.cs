@@ -9,6 +9,7 @@
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Antlr4.Runtime.Tree;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -76,7 +77,7 @@
 
                 this.AfterYieldTimestamp = Stopwatch.GetTimestamp();
 
-                using (SemaphoreSlim semaphore = new (0, 1))
+                using (SemaphoreSlim semaphore = new(0, 1))
                 {
                     Task delay = Task.Delay(5, cancellationToken).ContinueWith(_ => { this.AfterDelay1Timestamp = Stopwatch.GetTimestamp(); semaphore.Release(); }, cancellationToken);
 
@@ -147,6 +148,78 @@
             public IEnumerator<T> GetEnumerator()
             {
                 throw new NotSupportedException();
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return this.GetEnumerator();
+            }
+        }
+
+        /// <summary>
+        /// IEnumerable whose IEnumerator throws if access concurrently.
+        /// </summary>
+        private sealed class NonConcurrentAssertingEnumerable<T> : IEnumerable<T>
+        {
+            private sealed class Enumerator : IEnumerator<T>
+            {
+                private readonly T[] inner;
+                private int index;
+
+                private int active;
+
+                internal Enumerator(T[] inner)
+                {
+                    this.inner = inner;
+                }
+
+                public T Current { get; private set; }
+
+                object IEnumerator.Current => this.Current;
+
+                public void Dispose()
+                {
+                }
+
+                public bool MoveNext()
+                {
+                    int isActive = Interlocked.Exchange(ref this.active, 1);
+                    Assert.AreEqual(0, isActive, "Modified concurrently");
+
+                    try
+                    {
+                        if (this.index < this.inner.Length)
+                        {
+                            this.Current = this.inner[this.index];
+                            this.index++;
+                            return true;
+                        }
+
+                        return false;
+                    }
+                    finally
+                    {
+                        int wasActive = Interlocked.Exchange(ref this.active, 0);
+                        Assert.AreEqual(1, wasActive, "Modified concurrently");
+                    }
+                }
+
+                public void Reset()
+                {
+                    throw new NotImplementedException();
+                }
+            }
+
+            private readonly T[] inner;
+
+            internal NonConcurrentAssertingEnumerable(T[] inner)
+            {
+                this.inner = inner;
+            }
+
+            public IEnumerator<T> GetEnumerator()
+            {
+                return new Enumerator(this.inner);
             }
 
             IEnumerator IEnumerable.GetEnumerator()
@@ -253,8 +326,8 @@
             internal ValidatingRandomizedArrayPool(T existingValue)
             {
                 this.existingValue = existingValue;
-                this.created = new ();
-                this.rented = new ();
+                this.created = new();
+                this.rented = new();
             }
 
             public override T[] Rent(int minimumLength)
@@ -316,7 +389,7 @@
 
             public TraceComponent Component => TraceComponent.Unknown;
 
-            public TraceSummary Summary => new ();
+            public TraceSummary Summary => new();
 
             public ITrace Parent => null;
 
@@ -372,7 +445,7 @@
 
             public TraceComponent Component { get; private set; }
 
-            public TraceSummary Summary => new ();
+            public TraceSummary Summary => new();
 
             public ITrace Parent { get; private set; }
 
@@ -519,6 +592,36 @@
         }
 
         [TestMethod]
+        public async Task EnumeratorNotConcurrentlyAccessedAsync()
+        {
+            // test that the IEnumerator<IPrefetcher> is only accessed by one thread at a time
+            foreach (int maxConcurrency in Concurrencies)
+            {
+                foreach (int taskCount in TaskCounts)
+                {
+                    IEnumerable<IPrefetcher> prefetchers = CreatePrefetchers(taskCount, static () => { }, static () => { });
+
+                    await ParallelPrefetch.PrefetchInParallelAsync(
+                        prefetchers,
+                        maxConcurrency,
+                        EmptyTrace,
+                        default);
+                }
+            }
+
+            static IEnumerable<IPrefetcher> CreatePrefetchers(int count, Action beforeAwait, Action afterAwait)
+            {
+                IPrefetcher[] inner = new IPrefetcher[count];
+                for (int i = 0; i < count; i++)
+                {
+                    inner[i] = new TestOncePrefetcher(beforeAwait, afterAwait);
+                }
+
+                return new NonConcurrentAssertingEnumerable<IPrefetcher>(inner);
+            }
+        }
+
+        [TestMethod]
         public async Task ComplicatedPrefetcherAsync()
         {
             // test that a complicated prefetcher is full started and completed
@@ -528,7 +631,7 @@
 
             foreach (int maxConcurrency in Concurrencies)
             {
-                ComplicatedPrefetcher prefetcher = new ();
+                ComplicatedPrefetcher prefetcher = new();
 
                 await ParallelPrefetch.PrefetchInParallelAsync(
                     new IPrefetcher[] { prefetcher },
@@ -655,12 +758,12 @@
                     {
                         IEnumerable<IPrefetcher> prefetchers = CreatePrefetchers(taskCount, static () => { }, static () => { });
 
-                        ValidatingRandomizedArrayPool<IPrefetcher> prefetcherPool = new (new ThrowsPrefetcher());
-                        ValidatingRandomizedArrayPool<Task> taskPool = new (faultedTask);
-                        ValidatingRandomizedArrayPool<object> objectPool = new ("unexpected value");
+                        ValidatingRandomizedArrayPool<IPrefetcher> prefetcherPool = new(new ThrowsPrefetcher());
+                        ValidatingRandomizedArrayPool<Task> taskPool = new(faultedTask);
+                        ValidatingRandomizedArrayPool<object> objectPool = new("unexpected value");
 
                         ParallelPrefetch.ParallelPrefetchTestConfig config =
-                            new (
+                            new(
                                 prefetcherPool,
                                 taskPool,
                                 objectPool
@@ -733,12 +836,12 @@
                         {
                             IEnumerable<IPrefetcher> prefetchers = CreatePrefetchers(taskCount, faultOnTask, static () => { }, static () => { });
 
-                            ValidatingRandomizedArrayPool<IPrefetcher> prefetcherPool = new (new ThrowsPrefetcher());
-                            ValidatingRandomizedArrayPool<Task> taskPool = new (faultedTask);
-                            ValidatingRandomizedArrayPool<object> objectPool = new ("unexpected value");
+                            ValidatingRandomizedArrayPool<IPrefetcher> prefetcherPool = new(new ThrowsPrefetcher());
+                            ValidatingRandomizedArrayPool<Task> taskPool = new(faultedTask);
+                            ValidatingRandomizedArrayPool<object> objectPool = new("unexpected value");
 
                             ParallelPrefetch.ParallelPrefetchTestConfig config =
-                                new (
+                                new(
                                     prefetcherPool,
                                     taskPool,
                                     objectPool
@@ -837,12 +940,12 @@
                         {
                             IEnumerable<IPrefetcher> prefetchers = CreatePrefetchers(taskCount, faultOnAndAfterTask, static () => { }, static () => { });
 
-                            ValidatingRandomizedArrayPool<IPrefetcher> prefetcherPool = new (new ThrowsPrefetcher());
-                            ValidatingRandomizedArrayPool<Task> taskPool = new (faultedTask);
-                            ValidatingRandomizedArrayPool<object> objectPool = new ("unexpected value");
+                            ValidatingRandomizedArrayPool<IPrefetcher> prefetcherPool = new(new ThrowsPrefetcher());
+                            ValidatingRandomizedArrayPool<Task> taskPool = new(faultedTask);
+                            ValidatingRandomizedArrayPool<object> objectPool = new("unexpected value");
 
                             ParallelPrefetch.ParallelPrefetchTestConfig config =
-                                new (
+                                new(
                                     prefetcherPool,
                                     taskPool,
                                     objectPool
@@ -929,12 +1032,12 @@
                             IEnumerable<IPrefetcher> prefetchersRaw = CreatePrefetchers(taskCount, faultAfter, static () => { }, static () => { });
                             IEnumerable<IPrefetcher> prefetchers = new ThrowsAfterEnumerable<IPrefetcher>(prefetchersRaw, faultAfter);
 
-                            ValidatingRandomizedArrayPool<IPrefetcher> prefetcherPool = new (new ThrowsPrefetcher());
-                            ValidatingRandomizedArrayPool<Task> taskPool = new (faultedTask);
-                            ValidatingRandomizedArrayPool<object> objectPool = new ("unexpected value");
+                            ValidatingRandomizedArrayPool<IPrefetcher> prefetcherPool = new(new ThrowsPrefetcher());
+                            ValidatingRandomizedArrayPool<Task> taskPool = new(faultedTask);
+                            ValidatingRandomizedArrayPool<object> objectPool = new("unexpected value");
 
                             ParallelPrefetch.ParallelPrefetchTestConfig config =
-                                new (
+                                new(
                                     prefetcherPool,
                                     taskPool,
                                     objectPool
@@ -1024,10 +1127,10 @@
 
                         for (int cancelBeforeTask = 0; cancelBeforeTask < taskCount; cancelBeforeTask += step)
                         {
-                            using CancellationTokenSource cts = new ();
+                            using CancellationTokenSource cts = new();
 
                             int startedBeforeCancellation = 0;
-                            object sync = new ();
+                            object sync = new();
 
                             IEnumerable<IPrefetcher> prefetchers =
                                 CreatePrefetchers(
@@ -1046,12 +1149,12 @@
                                     },
                                     () => { });
 
-                            ValidatingRandomizedArrayPool<IPrefetcher> prefetcherPool = new (new ThrowsPrefetcher());
-                            ValidatingRandomizedArrayPool<Task> taskPool = new (faultedTask);
-                            ValidatingRandomizedArrayPool<object> objectPool = new ("unexpected value");
+                            ValidatingRandomizedArrayPool<IPrefetcher> prefetcherPool = new(new ThrowsPrefetcher());
+                            ValidatingRandomizedArrayPool<Task> taskPool = new(faultedTask);
+                            ValidatingRandomizedArrayPool<object> objectPool = new("unexpected value");
 
                             ParallelPrefetch.ParallelPrefetchTestConfig config =
-                                new (
+                                new(
                                     prefetcherPool,
                                     taskPool,
                                     objectPool
