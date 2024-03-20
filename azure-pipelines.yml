@@ -51,7 +51,7 @@ jobs:
     Arguments: $(ReleaseArguments)
     VmImage: $(VmImage)
   env: 
-      COSMOSDB_MULTI_REGION: $(COSMOS_DB_MULTI_REGION) # Real Account Connection String used for multi-region tests while running as part of ci pipline
+    COSMOSDB_MULTI_REGION: $(COSMOS_DB_MULTI_REGION) # Real Account Connection String used for multi-region tests while running as part of ci pipline
 
 - template:  templates/build-internal.yml
   parameters:
