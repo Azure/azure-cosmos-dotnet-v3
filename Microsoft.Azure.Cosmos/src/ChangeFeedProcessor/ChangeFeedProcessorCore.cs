@@ -6,9 +6,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Threading.Tasks;
-    using global::Azure;
     using Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping;
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
@@ -127,14 +125,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 return;
             }
 
-            DocumentServiceLease documentServiceLease = documentServiceLeases.FirstOrDefault();
-
-            // No lease documents that match the Id.
-
-            if (documentServiceLease == default)
-            {
-                return;
-            }
+            DocumentServiceLease documentServiceLease = documentServiceLeases[0];
 
             // Mode attribute exists on lease document, but it is not set. legacy is always LatestVersion because
             // AllVersionsAndDeletes does not exist. There should not be any legacy lease documents that are
