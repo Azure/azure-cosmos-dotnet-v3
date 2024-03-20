@@ -569,7 +569,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         // we stagger this so we quickly get a bunch of tasks started without spending too
                         // much time pre-loading everything
 
-                        // first we grab a bunch of prefetchers outside of the lock
+                        // grab our first bunch of prefetchers outside of the lock
                         //
                         // we know that maxConcurrency > BatchLimit, so can just pass it as our cutoff here
                         int bufferedPrefetchers = FillPrefetcherBuffer(commonState, currentBatch, 2, BatchLimit, e);
@@ -581,7 +581,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
                         // if we encounter any error, we remember it
                         // but as soon as we start a single task we've got
-                        // to see most of this code through so we observe all of them
+                        // to see most of this code through so we observe them
                         ExceptionDispatchInfo capturedException = null;
 
                         while (true)
@@ -595,7 +595,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                                 currentChunk[nextChunkIndex] = startedTask;
                                 nextChunkIndex++;
 
-                                // do we need a new slab to store tasks in?
+                                // check if we need a new slab to store tasks
                                 if (nextChunkIndex == currentChunk.Length - 1)
                                 {
                                     // we need this all null because we use null as a stopping condition later
@@ -677,7 +677,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         {
                             Task toAwait = (Task)runningTasks[toAwaitIndex];
 
-                            // are we done?
+                            // if we see a null, we're done
                             if (toAwait == null)
                             {
                                 // hand the last of the arrays back
