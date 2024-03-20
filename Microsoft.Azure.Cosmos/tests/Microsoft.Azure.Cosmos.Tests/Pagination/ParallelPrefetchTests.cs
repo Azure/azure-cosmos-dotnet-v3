@@ -229,6 +229,69 @@
         }
 
         /// <summary>
+        /// IEnumerable whose IEnumerator throws if access concurrently.
+        /// </summary>
+        private sealed class DisposeTrackingEnumerable<T> : IEnumerable<T>
+        {
+            private sealed class Enumerator : IEnumerator<T>
+            {
+                private readonly DisposeTrackingEnumerable<T> outer;
+
+                private int index;
+
+                internal Enumerator(DisposeTrackingEnumerable<T> outer)
+                {
+                    this.outer = outer;
+                }
+
+                public T Current { get; private set; }
+
+                object IEnumerator.Current => this.Current;
+
+                public void Dispose()
+                {
+                    this.outer.DisposeCalls++;
+                }
+
+                public bool MoveNext()
+                {
+                    if (this.index < this.outer.inner.Length)
+                    {
+                        this.Current = this.outer.inner[this.index];
+                        this.index++;
+                        return true;
+                    }
+
+                    return false;
+                }
+
+                public void Reset()
+                {
+                    throw new NotImplementedException();
+                }
+            }
+
+            private readonly T[] inner;
+
+            internal DisposeTrackingEnumerable(T[] inner)
+            {
+                this.inner = inner;
+            }
+
+            internal int DisposeCalls { get; private set; }
+
+            public IEnumerator<T> GetEnumerator()
+            {
+                return new Enumerator(this);
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return this.GetEnumerator();
+            }
+        }
+
+        /// <summary>
         /// IEnumerable whose IEnumerator throws after a certain number of
         /// calls to MoveNext().
         /// </summary>
@@ -618,6 +681,38 @@
                 }
 
                 return new NonConcurrentAssertingEnumerable<IPrefetcher>(inner);
+            }
+        }
+
+        [TestMethod]
+        public async Task EnumeratorDisposedAsync()
+        {
+            // test that the IEnumerator<IPrefetcher> is only accessed by one thread at a time
+            foreach (int maxConcurrency in Concurrencies)
+            {
+                foreach (int taskCount in TaskCounts)
+                {
+                    DisposeTrackingEnumerable<IPrefetcher> prefetchers = CreatePrefetchers(taskCount, static () => { }, static () => { });
+
+                    await ParallelPrefetch.PrefetchInParallelAsync(
+                        prefetchers,
+                        maxConcurrency,
+                        EmptyTrace,
+                        default);
+
+                    Assert.AreEqual(1, prefetchers.DisposeCalls);
+                }
+            }
+
+            static DisposeTrackingEnumerable<IPrefetcher> CreatePrefetchers(int count, Action beforeAwait, Action afterAwait)
+            {
+                IPrefetcher[] inner = new IPrefetcher[count];
+                for (int i = 0; i < count; i++)
+                {
+                    inner[i] = new TestOncePrefetcher(beforeAwait, afterAwait);
+                }
+
+                return new DisposeTrackingEnumerable<IPrefetcher>(inner);
             }
         }
 
