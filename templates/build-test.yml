@@ -225,7 +225,7 @@ jobs:
     inputs:
       packageType: 'sdk'
       version: '6.x'
-    
+
   - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos.EmulatorTests
     condition: succeeded()
