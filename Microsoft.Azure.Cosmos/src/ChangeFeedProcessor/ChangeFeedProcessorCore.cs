@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
     using System.Collections.Generic;
+    using System.ComponentModel;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping;
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
@@ -132,15 +133,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             // AllVersionsAndDeletes. If the ChangeFeedProcessor's mode is not legacy, a CosmosException should thrown.
             // If the ChangeFeedProcessor mode is not the mode in the lease document, a CosmosException should be thrown.
 
-            bool shouldThrowException = string.IsNullOrEmpty(documentServiceLease.Mode)
-                ? this.VerifyChangeFeedProcessorMode(
-                    changeFeedMode: ChangeFeedMode.LatestVersion,
-                    leaseChangeFeedMode: documentServiceLease.Mode,
-                    normalizedProcessorChangeFeedMode: out string normalizedProcessorChangeFeedMode)
-                : this.VerifyChangeFeedProcessorMode(
-                    changeFeedMode: this.changeFeedLeaseOptions.Mode,
-                    leaseChangeFeedMode: documentServiceLease.Mode,
-                    normalizedProcessorChangeFeedMode: out normalizedProcessorChangeFeedMode);
+            bool shouldThrowException = this.VerifyChangeFeedProcessorMode(
+                changeFeedMode: 
+                    string.IsNullOrEmpty(documentServiceLease.Mode) 
+                        ? ChangeFeedMode.LatestVersion 
+                        : this.changeFeedLeaseOptions.Mode,
+                leaseChangeFeedMode: documentServiceLease.Mode,
+                normalizedProcessorChangeFeedMode: out string normalizedProcessorChangeFeedMode);
 
             // If shouldThrowException is true, throw the CosmosException.
 
