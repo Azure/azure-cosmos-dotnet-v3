@@ -33,6 +33,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
             /// <summary>
             /// Common <see cref="ITrace"/> to be used by all tasks.
+            /// 
+            /// When testing, this can also include be a <see cref="ParallelPrefetchTestConfig"/>.
+            /// We reuse this to keep allocations down in non-test cases.
             /// </summary>
             internal ITrace PrefetchTrace { get; private set; }
 
@@ -98,11 +101,42 @@ namespace Microsoft.Azure.Cosmos.Pagination
         /// 
         /// You shouldn't be using this outside of test projects.
         /// </summary>
-        internal sealed class ParallelPrefetchTestConfig
+        internal sealed class ParallelPrefetchTestConfig : ITrace
         {
+            private ITrace innerTrace;
+
+            private int startedTasks;
+            private int awaitedTasks;
+
             internal ArrayPool<IPrefetcher> PrefetcherPool { get; private set; }
             internal ArrayPool<Task> TaskPool { get; private set; }
             internal ArrayPool<object> ObjectPool { get; private set; }
+
+            internal int StartedTasks
+            => this.startedTasks;
+
+            internal int AwaitedTasks
+            => this.awaitedTasks;
+
+            string ITrace.Name => this.innerTrace.Name;
+
+            Guid ITrace.Id => this.innerTrace.Id;
+
+            DateTime ITrace.StartTime => this.innerTrace.StartTime;
+
+            TimeSpan ITrace.Duration => this.innerTrace.Duration;
+
+            TraceLevel ITrace.Level => this.innerTrace.Level;
+
+            TraceComponent ITrace.Component => this.innerTrace.Component;
+
+            TraceSummary ITrace.Summary => this.innerTrace.Summary;
+
+            ITrace ITrace.Parent => this.innerTrace.Parent;
+
+            IReadOnlyList<ITrace> ITrace.Children => this.innerTrace.Children;
+
+            IReadOnlyDictionary<string, object> ITrace.Data => this.innerTrace.Data;
 
             internal ParallelPrefetchTestConfig(
                 ArrayPool<IPrefetcher> prefetcherPool,
@@ -112,6 +146,56 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 this.PrefetcherPool = prefetcherPool;
                 this.TaskPool = taskPool;
                 this.ObjectPool = objectPool;
+            }
+
+            internal void SetInnerTrace(ITrace trace)
+            {
+                this.innerTrace = trace;
+            }
+
+            internal void TaskStarted()
+            {
+                Interlocked.Increment(ref this.startedTasks);
+            }
+
+            internal void TaskAwaited()
+            {
+                Interlocked.Increment(ref this.awaitedTasks);
+            }
+
+            public ITrace StartChild(string name)
+            {
+                throw new NotImplementedException();
+            }
+
+            public ITrace StartChild(string name, TraceComponent component, TraceLevel level)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void AddDatum(string key, TraceDatum traceDatum)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void AddDatum(string key, object value)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void AddOrUpdateDatum(string key, object value)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void AddChild(ITrace trace)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void Dispose()
+            {
+                throw new NotImplementedException();
             }
         }
 
@@ -156,8 +240,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             }
             else if (maxConcurrency == 1)
             {
-                // we don't pass config here because this special case has no renting
-                return SingleConcurrencyPrefetchInParallelAsync(prefetchers, trace, cancellationToken);
+                return SingleConcurrencyPrefetchInParallelAsync(prefetchers, trace, config, cancellationToken);
             }
             else if (maxConcurrency <= BatchLimit)
             {
@@ -253,8 +336,10 @@ namespace Microsoft.Azure.Cosmos.Pagination
         /// <see cref="IPrefetcher"/>, and then grabs new ones from <see cref="CommonPrefetchState.Enumerator"/> and repeats the process
         /// until either the enumerator finishes or something sets <see cref="CommonPrefetchState.FinishedEnumerating"/>.
         /// </summary>
-        private static Task CommonStartTaskAsync(CommonPrefetchState commonState, IPrefetcher firstPrefetcher)
+        private static Task CommonStartTaskAsync(ParallelPrefetchTestConfig config, CommonPrefetchState commonState, IPrefetcher firstPrefetcher)
         {
+            config?.TaskStarted();
+
             SinglePrefetchState state = new (commonState, firstPrefetcher);
 
             // this is mimicing the behavior of Task.Run(...) (that is, default CancellationToken, default Scheduler, DenyAttachChild, etc.)
@@ -279,6 +364,11 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
                                     CommonPrefetchState innerCommonState = innerState.CommonState;
                                     (ITrace prefetchTrace, CancellationToken cancellationToken) = (innerCommonState.PrefetchTrace, innerCommonState.CancellationToken);
+
+                                    ParallelPrefetchTestConfig config = prefetchTrace as ParallelPrefetchTestConfig;
+
+                                    config?.TaskStarted();
+                                    config?.TaskAwaited();
                                     await innerState.CurrentPrefetcher.PrefetchAsync(prefetchTrace, cancellationToken);
                                 }
 
@@ -378,12 +468,14 @@ namespace Microsoft.Azure.Cosmos.Pagination
         /// 
         /// This devolves into a foreach loop.
         /// </summary>
-        private static async Task SingleConcurrencyPrefetchInParallelAsync(IEnumerable<IPrefetcher> prefetchers, ITrace trace, CancellationToken cancellationToken)
+        private static async Task SingleConcurrencyPrefetchInParallelAsync(IEnumerable<IPrefetcher> prefetchers, ITrace trace, ParallelPrefetchTestConfig config, CancellationToken cancellationToken)
         {
             using (ITrace prefetchTrace = CommonStartTrace(trace))
             {
                 foreach (IPrefetcher prefetcher in prefetchers)
                 {
+                    config?.TaskStarted();
+                    config?.TaskAwaited();
                     await prefetcher.PrefetchAsync(prefetchTrace, cancellationToken);
                 }
             }
@@ -412,6 +504,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
             {
                 using (ITrace prefetchTrace = CommonStartTrace(trace))
                 {
+                    config?.SetInnerTrace(prefetchTrace);
+
                     using (IEnumerator<IPrefetcher> e = prefetchers.GetEnumerator())
                     {
                         if (!e.MoveNext())
@@ -425,6 +519,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         if (!e.MoveNext())
                         {
                             // special case: a single prefetcher... just await it, and skip all the heavy work
+                            config?.TaskStarted();
+                            config?.TaskAwaited();
                             await first.PrefetchAsync(prefetchTrace, cancellationToken);
                             return;
                         }
@@ -436,7 +532,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         initialPrefetchers[0] = first;
                         initialPrefetchers[1] = e.Current;
 
-                        CommonPrefetchState commonState = new (prefetchTrace, e, cancellationToken);
+                        CommonPrefetchState commonState = new (config ?? prefetchTrace, e, cancellationToken);
 
                         // batch up a bunch of IPrefetchers to kick off
                         // 
@@ -450,7 +546,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         for (nextRunningTaskIndex = 0; nextRunningTaskIndex < nextPrefetcherIndex; nextRunningTaskIndex++)
                         {
                             IPrefetcher toStart = initialPrefetchers[nextRunningTaskIndex];
-                            Task startedTask = CommonStartTaskAsync(commonState, toStart);
+                            Task startedTask = CommonStartTaskAsync(config, commonState, toStart);
 
                             runningTasks[nextRunningTaskIndex] = startedTask;
                         }
@@ -466,6 +562,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
                             try
                             {
+                                config?.TaskAwaited();
                                 await toAwait;
                             }
                             catch
@@ -479,6 +576,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                                 {
                                     try
                                     {
+                                        config?.TaskAwaited();
                                         await runningTasks[awaitAndIgnoreTaskIndex];
                                     }
                                     catch
@@ -534,6 +632,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
             {
                 using (ITrace prefetchTrace = CommonStartTrace(trace))
                 {
+                    config?.SetInnerTrace(prefetchTrace);
+
                     using (IEnumerator<IPrefetcher> e = prefetchers.GetEnumerator())
                     {
                         if (!e.MoveNext())
@@ -547,6 +647,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         if (!e.MoveNext())
                         {
                             // special case: a single prefetcher... just await it, and skip all the heavy work
+                            config?.TaskStarted();
+                            config?.TaskAwaited();
                             await first.PrefetchAsync(prefetchTrace, cancellationToken);
                             return;
                         }
@@ -561,7 +663,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         // we need this all null because we use null as a stopping condition later
                         runningTasks = RentArray<object>(config, BatchLimit, clear: true);
 
-                        CommonPrefetchState commonState = new (prefetchTrace, e, cancellationToken);
+                        CommonPrefetchState commonState = new (config ?? prefetchTrace, e, cancellationToken);
 
                         // what we do here is buffer up to BatchLimit IPrefetchers to start
                         // and then... start them all
@@ -590,7 +692,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                             for (int toStartIx = 0; toStartIx < bufferedPrefetchers; toStartIx++)
                             {
                                 IPrefetcher prefetcher = currentBatch[toStartIx];
-                                Task startedTask = CommonStartTaskAsync(commonState, prefetcher);
+                                Task startedTask = CommonStartTaskAsync(config, commonState, prefetcher);
 
                                 currentChunk[nextChunkIndex] = startedTask;
                                 nextChunkIndex++;
@@ -689,6 +791,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
                             try
                             {
+                                config?.TaskAwaited();
                                 await toAwait;
                             }
                             catch (Exception ex)
