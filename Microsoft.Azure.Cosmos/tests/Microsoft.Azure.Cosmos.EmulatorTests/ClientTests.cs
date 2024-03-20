@@ -932,7 +932,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string connectionString = TestCommon.GetMultiRegionConnectionString();
             Assert.IsNotNull(connectionString);
             Assert.Fail(connectionString[..10]);
-            CosmosClient cosmosClient = new CosmosClient(connectionString);
+            using CosmosClient cosmosClient = new CosmosClient(connectionString);
             Assert.IsNotNull(cosmosClient);
             AccountProperties properties = await cosmosClient.ReadAccountAsync();
             Assert.IsNotNull(properties);
