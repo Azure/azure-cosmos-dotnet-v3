@@ -163,37 +163,37 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 Interlocked.Increment(ref this.awaitedTasks);
             }
 
-            public ITrace StartChild(string name)
+            ITrace ITrace.StartChild(string name)
             {
                 return this.innerTrace.StartChild(name);
             }
 
-            public ITrace StartChild(string name, TraceComponent component, TraceLevel level)
+            ITrace ITrace.StartChild(string name, TraceComponent component, TraceLevel level)
             {
                 return this.innerTrace.StartChild(name, component, level);
             }
 
-            public void AddDatum(string key, TraceDatum traceDatum)
+            void ITrace.AddDatum(string key, TraceDatum traceDatum)
             {
                 this.innerTrace.AddDatum(key, traceDatum);
             }
 
-            public void AddDatum(string key, object value)
+            void ITrace.AddDatum(string key, object value)
             {
                 this.innerTrace.AddDatum(key, value);
             }
 
-            public void AddOrUpdateDatum(string key, object value)
+            void ITrace.AddOrUpdateDatum(string key, object value)
             {
                 this.innerTrace.AddOrUpdateDatum(key, value);
             }
 
-            public void AddChild(ITrace trace)
+            void ITrace.AddChild(ITrace trace)
             {
                 this.innerTrace.AddChild(trace);
             }
 
-            public void Dispose()
+            void IDisposable.Dispose()
             {
                 this.innerTrace.Dispose();
             }
