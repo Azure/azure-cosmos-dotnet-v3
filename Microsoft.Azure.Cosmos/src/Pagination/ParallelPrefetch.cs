@@ -165,37 +165,37 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
             public ITrace StartChild(string name)
             {
-                throw new NotImplementedException();
+                return this.innerTrace.StartChild(name);
             }
 
             public ITrace StartChild(string name, TraceComponent component, TraceLevel level)
             {
-                throw new NotImplementedException();
+                return this.innerTrace.StartChild(name, component, level);
             }
 
             public void AddDatum(string key, TraceDatum traceDatum)
             {
-                throw new NotImplementedException();
+                this.innerTrace.AddDatum(key, traceDatum);
             }
 
             public void AddDatum(string key, object value)
             {
-                throw new NotImplementedException();
+                this.innerTrace.AddDatum(key, value);
             }
 
             public void AddOrUpdateDatum(string key, object value)
             {
-                throw new NotImplementedException();
+                this.innerTrace.AddOrUpdateDatum(key, value);
             }
 
             public void AddChild(ITrace trace)
             {
-                throw new NotImplementedException();
+                this.innerTrace.AddChild(trace);
             }
 
             public void Dispose()
             {
-                throw new NotImplementedException();
+                this.innerTrace.Dispose();
             }
         }
 
