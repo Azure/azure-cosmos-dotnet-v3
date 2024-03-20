@@ -26,6 +26,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task TestInitAsync()
         {
             this.connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", null);
+            if (string.IsNullOrEmpty(this.connectionString))
+            {
+                Assert.Fail("Set environment variable COSMOSDB_MULTI_REGION to run the tests");
+            }
             this.client = new CosmosClient(this.connectionString);
             this.database = this.client.CreateDatabaseIfNotExistsAsync("db").Result;
             this.container = this.database.CreateContainerIfNotExistsAsync("container", "/pk").Result;
