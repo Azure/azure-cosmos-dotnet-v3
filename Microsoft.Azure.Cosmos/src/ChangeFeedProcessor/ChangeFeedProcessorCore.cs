@@ -5,7 +5,10 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using System.Threading.Tasks;
+    using global::Azure;
     using Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping;
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
@@ -82,12 +85,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 default);
 
             string monitoredDatabaseAndContainerRid = await this.monitoredContainer.GetMonitoredDatabaseAndContainerRidAsync();
-
-            await this
-                .ChangeFeedModeSwitchingCheckAsync(
-                    key: monitoredDatabaseAndContainerRid)
-                .ConfigureAwait(false);
-
             string leaseContainerPrefix = this.monitoredContainer.GetLeasePrefix(this.changeFeedLeaseOptions.LeasePrefix, monitoredDatabaseAndContainerRid);
             Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.monitoredContainer.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
             if (this.documentServiceLeaseStoreManager == null)
@@ -102,6 +99,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     .ConfigureAwait(false);
             }
 
+            await this.ChangeFeedModeSwitchingCheckAsync(monitoredDatabaseAndContainerRid).ConfigureAwait(false);
+
             this.partitionManager = this.BuildPartitionManager(
                 containerRid,
                 partitionKeyRangeCache);
@@ -109,72 +108,66 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         }
 
         /// <summary>
-        /// If the lease<see cref="Container"/>'s lease document is found, this method checks for lease 
-        /// document's <see cref="ChangeFeedMode"/> and if the new <see cref="ChangeFeedMode"/> is different
-        /// from the current <see cref="ChangeFeedMode"/>, a <see cref="CosmosException"/> is thrown.
+        /// If the lease container's lease document is found, this method checks for lease 
+        /// document's ChangeFeedMode and if the new ChangeFeedMode is different
+        /// from the current ChangeFeedMode, a CosmosException is thrown.
         /// This is based on an issue located at <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4308"/>.
         /// </summary>
-        /// <param name="key"></param>
-        private async Task ChangeFeedModeSwitchingCheckAsync(string key)
+        /// <param name="monitoredDatabaseAndContainerRid"></param>
+        private async Task ChangeFeedModeSwitchingCheckAsync(string monitoredDatabaseAndContainerRid)
         {
-            FeedIterator<dynamic> feedIterator = this.leaseContainer.GetItemQueryIterator<dynamic>(queryText: "SELECT * FROM c");
+            IReadOnlyList<DocumentServiceLease> documentServiceLeases = await this.documentServiceLeaseStoreManager
+                .LeaseContainer
+                .GetAllLeasesAsync()
+                .ConfigureAwait(false);
 
-            while (feedIterator.HasMoreResults)
+            bool shouldThrowException = false;
+
+            // No lease documents. Return.
+            if (documentServiceLeases.Count == 0)
             {
-                FeedResponse<dynamic> feedResponses = await feedIterator
-                    .ReadNextAsync()
-                    .ConfigureAwait(false);
+                return;
+            }
 
-                bool shouldThrowException = false;
-                string currentMode = default;
-                string newMode = this.GetChangeFeedMode();
+            DocumentServiceLease documentServiceLease = documentServiceLeases.FirstOrDefault(lease => lease.Id.Contains(monitoredDatabaseAndContainerRid));
 
-                foreach (dynamic response in feedResponses)
+            // No lease documents that match the Id.
+            if (documentServiceLease == default)
+            {
+                return;
+            }
+
+            // Mode attribute exists on lease document, but it is not set. legacy is always LatestVersion because
+            // AllVersionsAndDeletes does not exist. There should not be any legacy lease documents that are
+            // AllVersionsAndDeletes. If the ChangeFeedProcessor's mode is not legacy, a CosmosException should thrown.
+            if (string.IsNullOrEmpty(documentServiceLease.Mode))
+            {
+                if (this.changeFeedLeaseOptions.Mode != ChangeFeedMode.LatestVersion)
                 {
-                    // NOTE(philipthomas-MSFT): ChangeFeedMode is not set for older leases.
-                    // Since Full-Fidelity Feed is not public at the time we are implementing
-                    // this, all lease documents are Incremental Feeds by default. So if the
-                    // new incoming request is for a Full-Fidelity Feed, then we know a switch
-                    // is happening, and we want to throw the BadRequest CosmosException.
-                    // This is based on an issue located at https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4308.
-
-                    if (response.Mode != null)
-                    {
-                        currentMode = response.Mode?.ToString();
-                    }
-
-                    if (currentMode == string.Empty)
-                    {
-                        if (this.changeFeedLeaseOptions.Mode != ChangeFeedMode.Incremental)
-                        {
-                            shouldThrowException = true;
-
-                            break;
-                        }
-                    }
-
-                    if (response.id.ToString().Contains(key) && currentMode != newMode)
-                    {
-                        shouldThrowException = true;
-
-                        break;
-                    }
+                    shouldThrowException = true;
                 }
+            }
 
-                if (shouldThrowException)
-                {
-                    CosmosException cosmosException = CosmosExceptionFactory.CreateBadRequestException(
-                        message: $"Switching {nameof(ChangeFeedMode)} {currentMode} to {newMode} is not allowed.",
-                        headers: default);
+            string changeFeedProcessorMode = this.NormalizeChangeFeedProcessorMode(this.changeFeedLeaseOptions.Mode);
 
-                    throw cosmosException;
-                }
+            // If the ChangeFeedProcessor mode is not the mode in the lease document, a CosmosException should be thrown.
+            if (string.Compare(documentServiceLease.Mode, changeFeedProcessorMode, StringComparison.OrdinalIgnoreCase) != 0)
+            {
+                shouldThrowException = true;
+            }
+
+            // If shouldThrowException is true, throw the CosmosException.
+            if (shouldThrowException)
+            {
+                throw CosmosExceptionFactory.CreateBadRequestException(
+                    message: $"Switching {nameof(ChangeFeedMode)} {documentServiceLease.Mode} to {changeFeedProcessorMode} is not allowed.",
+                    headers: default);
             }
         }
 
-        private string GetChangeFeedMode()
+        private string NormalizeChangeFeedProcessorMode(ChangeFeedMode changeFeedMode)
         {
-            return this.changeFeedLeaseOptions.Mode == ChangeFeedMode.AllVersionsAndDeletes
+            return changeFeedMode == ChangeFeedMode.AllVersionsAndDeletes
                 ? HttpConstants.A_IMHeaderValues.FullFidelityFeed
                 : HttpConstants.A_IMHeaderValues.IncrementalFeed;
         }

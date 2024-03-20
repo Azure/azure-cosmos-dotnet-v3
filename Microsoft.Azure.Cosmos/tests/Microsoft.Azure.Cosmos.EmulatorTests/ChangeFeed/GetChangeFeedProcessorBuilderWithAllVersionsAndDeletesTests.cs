@@ -6,33 +6,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
 
     [TestClass]
-    [TestCategory("ChangeFeedProcessor with AllVersionsAndDeletes")]
+    [TestCategory("ChangeFeedProcessor")]
     public class GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests : BaseChangeFeedClientHelper
     {
-        private ContainerInternal Container;
-
         [TestInitialize]
         public async Task TestInitialize()
         {
             await base.ChangeFeedTestInit();
-
-            string PartitionKey = "/pk";
-            ContainerProperties properties = new ContainerProperties(id: Guid.NewGuid().ToString(), 
-                partitionKeyPath: PartitionKey);
-            properties.ChangeFeedPolicy.FullFidelityRetention = TimeSpan.FromMinutes(5);
-
-            ContainerResponse response = await this.database.CreateContainerAsync(properties,
-                throughput: 10000,
-                cancellationToken: this.cancellationToken);
-            this.Container = (ContainerInternal)response;
         }
 
         [TestCleanup]
@@ -44,13 +32,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         [TestMethod]
         [Owner("philipthomas-MSFT")]
         [Description("Scenario: When a document is created, then updated, and finally deleted, there should be 3 changes that will appear for that " +
-            "document when using ChangeFeedProcessor with AllVersionsAndDeletes.")]
+            "document when using ChangeFeedProcessor with AllVersionsAndDeletes set as the ChangeFeedMode.")]
         public async Task WhenADocumentIsCreatedThenUpdatedThenDeletedTestsAsync()
         {
+            ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes);
             ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
             Exception exception = default;
 
-            ChangeFeedProcessor processor = this.Container
+            ChangeFeedProcessor processor = monitoredContainer
                 .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: "processor", onChangesDelegate: (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItemChange<dynamic>> docs, CancellationToken token) =>
                 {
                     string id = default;
@@ -119,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     Assert.IsTrue(condition: createChange.Metadata.Lsn < replaceChange.Metadata.Lsn, message: "The create operation must happen before the replace operation.");
                     Assert.IsTrue(condition: createChange.Metadata.Lsn < replaceChange.Metadata.Lsn, message: "The replace operation must happen before the delete operation.");
 
-                    Console.WriteLine("Assertions completed.");
+                    Debug.WriteLine("Assertions completed.");
 
                     return Task.CompletedTask;
                 })
@@ -128,7 +117,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 .WithErrorNotification((leaseToken, error) =>
                 {
                     exception = error.InnerException;
-                    Console.WriteLine(error.ToString());
+
+                    Debug.WriteLine("WithErrorNotification");
+                    Debug.WriteLine(error.ToString());
 
                     return Task.CompletedTask;
                 })
@@ -140,13 +131,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             await processor.StartAsync();
             await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
 
-            await this.Container.CreateItemAsync<dynamic>(new { id = "1", pk = "1", description = "original test" }, partitionKey: new PartitionKey("1"));
-            await Task.Delay(1000);
-            
-            await this.Container.UpsertItemAsync<dynamic>(new { id = "1", pk = "1", description = "test after replace" }, partitionKey: new PartitionKey("1"));
+            await monitoredContainer.CreateItemAsync<dynamic>(new { id = "1", pk = "1", description = "original test" }, partitionKey: new PartitionKey("1"));
             await Task.Delay(1000);
 
-            await this.Container.DeleteItemAsync<dynamic>(id: "1", partitionKey: new PartitionKey("1"));
+            await monitoredContainer.UpsertItemAsync<dynamic>(new { id = "1", pk = "1", description = "test after replace" }, partitionKey: new PartitionKey("1"));
+            await Task.Delay(1000);
+
+            await monitoredContainer.DeleteItemAsync<dynamic>(id: "1", partitionKey: new PartitionKey("1"));
 
             bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
 
@@ -163,35 +154,36 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         /// </summary>
         [TestMethod]
         [Owner("philipthomas-MSFT")]
-        [Description("ChangeFeedMode switch from LatestVersion to AllVersionsAndDeletes")]
-        public async Task WhenLatestVersionSwitchToAllVersionsAndDeletesExpectsACosmosExceptionTestAsync()
+        [Description("Scenario: When ChangeFeedMode on ChangeFeedProcessor, switches from LatestVersion to AllVersionsAndDeletes," +
+            "a CosmosException is expected. LatestVersion's WithStartFromBeginning can be set, or not set.")]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task WhenLatestVersionSwitchToAllVersionsAndDeletesExpectsACosmosExceptionTestAsync(bool withStartFromBeginning)
         {
-            int documentCount = 10;
-            _ = await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
-                .IngestDocumentsAsync(
-                    monitoredContainer: this.Container,
-                    documentCount: documentCount);
-                        
+            ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.LatestVersion);
             ManualResetEvent allDocsProcessed = new(false);
 
             await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
-                .ArrangeActAssetLastestVersionChangeFeedProcessorAsync(
-                    monitoredContainer: this.Container,
-                    documentCount: documentCount,
+                .BuildChangeFeedProcessorWithLatestVersionAsync(
+                    monitoredContainer: monitoredContainer,
                     leaseContainer: this.LeaseContainer,
-                    allDocsProcessed: allDocsProcessed);
+                    allDocsProcessed: allDocsProcessed,
+                    withStartFromBeginning: withStartFromBeginning);
 
             CosmosException exception = await Assert.ThrowsExceptionAsync<CosmosException>(
                 () => GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
-                    .ArrangeActAssertAllVersionsAndDeletesChangeFeedProcessorAsync(
-                        monitoredContainer: this.Container,
-                        documentCount: documentCount,
+                    .BuildChangeFeedProcessorWithAllVersionsAndDeletesAsync(
+                        monitoredContainer: monitoredContainer,
                         leaseContainer: this.LeaseContainer,
                         allDocsProcessed: allDocsProcessed));
+
+            Debug.WriteLine(exception.ToString());
 
             Assert.AreEqual(expected: HttpStatusCode.BadRequest, actual: exception.StatusCode);
             Assert.AreEqual(expected: default, actual: exception.SubStatusCode);
             Assert.AreEqual(expected: "Switching ChangeFeedMode Incremental Feed to Full-Fidelity Feed is not allowed.", actual: exception.ResponseBody);
+
+            Debug.WriteLine("Assertions completed.");
         }
 
         /// <summary>
@@ -199,35 +191,36 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         /// </summary>
         [TestMethod]
         [Owner("philipthomas-MSFT")]
-        [Description("ChangeFeedMode switch from AllVersionsAndDeletes to LatestVersion, a CosmosException is expected.")]
-        public async Task WhenAllVersionsAndDeletesSwitchToLatestVersionExpectsACosmosExceptionTestAsync()
+        [Description("Scenario: When ChangeFeedMode on ChangeFeedProcessor, switches from AllVersionsAndDeletes to LatestVersion," +
+            "a CosmosException is expected. LatestVersion's WithStartFromBeginning can be set, or not set.")]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task WhenAllVersionsAndDeletesSwitchToLatestVersionExpectsACosmosExceptionTestAsync(bool withStartFromBeginning)
         {
-            int documentCount = 10;
-            _ = await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
-                .IngestDocumentsAsync(
-                    monitoredContainer: this.Container,
-                    documentCount: documentCount);
-
+            ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes);
             ManualResetEvent allDocsProcessed = new(false);
 
             await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
-                .ArrangeActAssertAllVersionsAndDeletesChangeFeedProcessorAsync(
-                    monitoredContainer: this.Container,
-                    documentCount: documentCount,
+                .BuildChangeFeedProcessorWithAllVersionsAndDeletesAsync(
+                    monitoredContainer: monitoredContainer,
                     leaseContainer: this.LeaseContainer,
                     allDocsProcessed: allDocsProcessed);
 
             CosmosException exception = await Assert.ThrowsExceptionAsync<CosmosException>(
                 () => GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
-                    .ArrangeActAssetLastestVersionChangeFeedProcessorAsync(
-                        monitoredContainer: this.Container,
-                        documentCount: documentCount,
+                    .BuildChangeFeedProcessorWithLatestVersionAsync(
+                        monitoredContainer: monitoredContainer,
                         leaseContainer: this.LeaseContainer,
-                        allDocsProcessed: allDocsProcessed));
+                        allDocsProcessed: allDocsProcessed,
+                        withStartFromBeginning: withStartFromBeginning));
+
+            Debug.WriteLine(exception.ToString());
 
             Assert.AreEqual(expected: HttpStatusCode.BadRequest, actual: exception.StatusCode);
             Assert.AreEqual(expected: default, actual: exception.SubStatusCode);
             Assert.AreEqual(expected: "Switching ChangeFeedMode Full-Fidelity Feed to Incremental Feed is not allowed.", actual: exception.ResponseBody);
+
+            Debug.WriteLine("Assertions completed.");
         }
 
         /// <summary>
@@ -235,94 +228,106 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         /// </summary>
         [TestMethod]
         [Owner("philipthomas-MSFT")]
-        [Description("No ChangeFeedMode switch, no CosmosException is expected.")]
-        public async Task WhenNoSwitchDoesNotExpectACosmosExceptionTestAsync()
+        [Description("Scenario: When ChangeFeedMode on ChangeFeedProcessor does not switch, AllVersionsAndDeletes," +
+            "no CosmosException is expected.")]
+        public async Task WhenNoSwitchAllVersionsAndDeletesFDoesNotExpectACosmosExceptionTestAsync()
         {
-            int documentCount = 10;
-            _ = await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
-                .IngestDocumentsAsync(
-                    monitoredContainer: this.Container,
-                    documentCount: documentCount);
-
+            ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes);
             ManualResetEvent allDocsProcessed = new(false);
 
-            await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
-                .ArrangeActAssertAllVersionsAndDeletesChangeFeedProcessorAsync(
-                    monitoredContainer: this.Container,
-                    documentCount: documentCount,
-                    leaseContainer: this.LeaseContainer,
-                    allDocsProcessed: allDocsProcessed);
-
-            await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
-                .ArrangeActAssertAllVersionsAndDeletesChangeFeedProcessorAsync(
-                    monitoredContainer: this.Container,
-                    documentCount: documentCount,
-                    leaseContainer: this.LeaseContainer,
-                    allDocsProcessed: allDocsProcessed);
-        }
-
-        private static async Task<List<dynamic>> IngestDocumentsAsync(Container monitoredContainer, int documentCount)
-        {
-            List<dynamic> docs = new();
-
-            for (int i = 0; i < documentCount; i++)
+            try
             {
-                ItemResponse<dynamic> response = await monitoredContainer.CreateItemAsync<dynamic>(new { id = i.ToString(), pk = i.ToString(), description = $"original test{i}" }, partitionKey: new PartitionKey(i.ToString()));
-                docs.Add(response.Resource);
+                await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
+                    .BuildChangeFeedProcessorWithAllVersionsAndDeletesAsync(
+                        monitoredContainer: monitoredContainer,
+                        leaseContainer: this.LeaseContainer,
+                        allDocsProcessed: allDocsProcessed);
 
-                await Task.Delay(1000);
+                await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
+                    .BuildChangeFeedProcessorWithAllVersionsAndDeletesAsync(
+                        monitoredContainer: monitoredContainer,
+                        leaseContainer: this.LeaseContainer,
+                        allDocsProcessed: allDocsProcessed);
+
+                Debug.WriteLine("No exceptions occurred.");
             }
-
-            return docs;
+            catch
+            {
+                Assert.Fail("An exception occurred when one was not expceted."); ;
+            }
         }
 
-        private static async Task ArrangeActAssetLastestVersionChangeFeedProcessorAsync(
+        /// <summary>
+        /// This is based on an issue located at <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4308"/>.
+        /// </summary>
+        [TestMethod]
+        [Owner("philipthomas-MSFT")]
+        [Description("Scenario: When ChangeFeedMode on ChangeFeedProcessor does not switch, LatestVersion," +
+            "no CosmosException is expected. LatestVersion's WithStartFromBeginning can be set, or not set.")]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task WhenNoSwitchLatestVersionDoesNotExpectACosmosExceptionTestAsync(bool withStartFromBeginning)
+        {
+            ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.LatestVersion);
+            ManualResetEvent allDocsProcessed = new(false);
+
+            try
+            {
+                await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
+                    .BuildChangeFeedProcessorWithLatestVersionAsync(
+                        monitoredContainer: monitoredContainer,
+                        leaseContainer: this.LeaseContainer,
+                        allDocsProcessed: allDocsProcessed,
+                        withStartFromBeginning: withStartFromBeginning);
+
+                await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
+                    .BuildChangeFeedProcessorWithLatestVersionAsync(
+                        monitoredContainer: monitoredContainer,
+                        leaseContainer: this.LeaseContainer,
+                        allDocsProcessed: allDocsProcessed,
+                        withStartFromBeginning: withStartFromBeginning);
+
+                Debug.WriteLine("No exceptions occurred.");
+            }
+            catch
+            {
+                Assert.Fail("An exception occurred when one was not expceted."); ;
+            }
+        }
+
+        private static async Task BuildChangeFeedProcessorWithLatestVersionAsync(
             ContainerInternal monitoredContainer,
             Container leaseContainer,
-            long documentCount,
-            ManualResetEvent allDocsProcessed)
+            ManualResetEvent allDocsProcessed,
+            bool withStartFromBeginning)
         {
             Exception exception = default;
-            long counter = 0;
             ChangeFeedProcessor latestVersionProcessorAtomic = null;
 
-            ChangeFeedProcessorBuilder latestVersionProcessorBuilder = monitoredContainer
-                .GetChangeFeedProcessorBuilder(processorName: $"{nameof(ChangeFeedMode.LatestVersion)}", onChangesDelegate: (ChangeFeedProcessorContext context, IReadOnlyCollection<dynamic> documents, CancellationToken token) =>
-                {
-                    Console.WriteLine($"Reading {nameof(documents)} in {nameof(ChangeFeedMode.LatestVersion)} mode: {JsonConvert.SerializeObject(documents)}");
-                    Console.WriteLine($"{nameof(counter)}: {counter}");
-                    Console.WriteLine($"{nameof(context.LeaseToken)}: {context.LeaseToken}");
-
-                    if (counter == documentCount / 2)
-                    {
-                        Console.WriteLine($"Stopping {nameof(latestVersionProcessorAtomic)}");
-
-                        latestVersionProcessorAtomic.StopAsync();
-
-                        return Task.CompletedTask;
-                    }
-
-                    counter++;
-
-                    return Task.CompletedTask;
-                })
+            ChangeFeedProcessorBuilder processorBuilder = monitoredContainer
+                .GetChangeFeedProcessorBuilder(processorName: $"processorName", onChangesDelegate: (ChangeFeedProcessorContext context, IReadOnlyCollection<dynamic> documents, CancellationToken token) => Task.CompletedTask)
                 .WithInstanceName(Guid.NewGuid().ToString())
-                .WithMaxItems(1)
-                .WithStartFromBeginning()
                 .WithLeaseContainer(leaseContainer)
-                .WithChangeFeedMode(ChangeFeedMode.LatestVersion)
                 .WithErrorNotification((leaseToken, error) =>
                 {
                     exception = error.InnerException;
-                    Console.WriteLine(error.ToString());
+
+                    Debug.WriteLine("WithErrorNotification");
+                    Debug.WriteLine(error.ToString());
 
                     return Task.CompletedTask;
                 });
 
-            ChangeFeedProcessor latestVersionProcessor = latestVersionProcessorBuilder.Build();
-            Interlocked.Exchange(ref latestVersionProcessorAtomic, latestVersionProcessor);
+            if (withStartFromBeginning)
+            {
+                processorBuilder.WithStartFromBeginning();
+            }
 
-            await latestVersionProcessor.StartAsync();
+
+            ChangeFeedProcessor processor = processorBuilder.Build();
+            Interlocked.Exchange(ref latestVersionProcessorAtomic, processor);
+
+            await processor.StartAsync();
             await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
             bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
 
@@ -332,55 +337,33 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             }
         }
 
-        private static async Task ArrangeActAssertAllVersionsAndDeletesChangeFeedProcessorAsync(
+        private static async Task BuildChangeFeedProcessorWithAllVersionsAndDeletesAsync(
             ContainerInternal monitoredContainer,
             Container leaseContainer,
-            long documentCount,
             ManualResetEvent allDocsProcessed)
         {
             Exception exception = default;
-            long counter = 0;
             ChangeFeedProcessor allVersionsAndDeletesProcessorAtomic = null;
 
             ChangeFeedProcessorBuilder allVersionsAndDeletesProcessorBuilder = monitoredContainer
-                .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: $"{nameof(ChangeFeedMode.AllVersionsAndDeletes)}", onChangesDelegate: (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItemChange<dynamic>> documents, CancellationToken token) =>
-                {
-                    Console.WriteLine($"Reading {nameof(documents)} in {nameof(ChangeFeedMode.AllVersionsAndDeletes)} mode: {JsonConvert.SerializeObject(documents)}");
-                    Console.WriteLine($"{nameof(counter)}: {counter}");
-                    Console.WriteLine($"{nameof(context.LeaseToken)}: {context.LeaseToken}");
-
-                    if (counter == documentCount / 2)
-                    {
-                        Console.WriteLine($"Stopping {nameof(allVersionsAndDeletesProcessorAtomic)}");
-
-                        allVersionsAndDeletesProcessorAtomic.StopAsync();
-
-                        return Task.CompletedTask;
-                    }
-
-                    counter++;
-
-                    return Task.CompletedTask;
-                })
+                .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: $"processorName", onChangesDelegate: (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItemChange<dynamic>> documents, CancellationToken token) => Task.CompletedTask)
                 .WithInstanceName(Guid.NewGuid().ToString())
                 .WithMaxItems(1)
-                .WithStartFromBeginning()
                 .WithLeaseContainer(leaseContainer)
-                .WithChangeFeedMode(ChangeFeedMode.AllVersionsAndDeletes)
                 .WithErrorNotification((leaseToken, error) =>
                 {
-                    // an exception should happen here, because it is trying to use the same LatestVersion leaseContainer on an AllVersionsAndDeletes processor.
-
                     exception = error.InnerException;
-                    Console.WriteLine(error.ToString());
 
-                    return Task.CompletedTask;
+                    Debug.WriteLine("WithErrorNotification");
+                    Debug.WriteLine(error.ToString());
+
+                    return Task.FromResult(exception);
                 });
 
-            ChangeFeedProcessor allVersionsAndDeletesProcessor = allVersionsAndDeletesProcessorBuilder.Build();
-            Interlocked.Exchange(ref allVersionsAndDeletesProcessorAtomic, allVersionsAndDeletesProcessor);
+            ChangeFeedProcessor processor = allVersionsAndDeletesProcessorBuilder.Build();
+            Interlocked.Exchange(ref allVersionsAndDeletesProcessorAtomic, processor);
 
-            await allVersionsAndDeletesProcessor.StartAsync();
+            await processor.StartAsync();
             await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
             bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
 
@@ -388,6 +371,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             {
                 Assert.Fail(exception.ToString());
             }
+        }
+
+        private async Task<ContainerInternal> CreateMonitoredContainer(ChangeFeedMode changeFeedMode)
+        {
+            string PartitionKey = "/pk";
+            ContainerProperties properties = new ContainerProperties(id: Guid.NewGuid().ToString(),
+                partitionKeyPath: PartitionKey);
+
+            if (changeFeedMode == ChangeFeedMode.AllVersionsAndDeletes)
+            {
+                Debug.WriteLine($"{nameof(properties.ChangeFeedPolicy.FullFidelityRetention)} initialized.");
+
+                properties.ChangeFeedPolicy.FullFidelityRetention = TimeSpan.FromMinutes(5);
+            }
+
+            ContainerResponse response = await this.database.CreateContainerAsync(properties,
+                throughput: 10000,
+                cancellationToken: this.cancellationToken);
+
+            return (ContainerInternal)response;
         }
     }
 }
