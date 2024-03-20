@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 throw new InvalidOperationException($"{nameof(CloneAsFullyBufferedEnumerator)} is valid only if the enumerator has not failed");
             }
 
-            InnerEnumerator innerEnumerator = this.innerEnumerator.Clone() as InnerEnumerator;
+            InnerEnumerator innerEnumerator = this.innerEnumerator.CloneWithMaxPageSize();
 
             FullyBufferedPartitionRangeAsyncEnumerator<OrderByQueryPage, QueryState> bufferedEnumerator = new FullyBufferedPartitionRangeAsyncEnumerator<OrderByQueryPage, QueryState>(
                 innerEnumerator,
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 this.FeedRangeState);
         }
 
-        private sealed class InnerEnumerator : PartitionRangePageAsyncEnumerator<OrderByQueryPage, QueryState>, ICloneable
+        private sealed class InnerEnumerator : PartitionRangePageAsyncEnumerator<OrderByQueryPage, QueryState>
         {
             private readonly IQueryDataSource queryDataSource;
 
@@ -131,14 +131,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             public string Filter { get; }
 
-            public object Clone()
+            public InnerEnumerator CloneWithMaxPageSize()
             {
+                QueryPaginationOptions options = new QueryPaginationOptions(
+                    pageSizeHint: int.MaxValue,
+                    optimisticDirectExecute: this.QueryPaginationOptions.OptimisticDirectExecute,
+                    additionalHeaders: this.QueryPaginationOptions.AdditionalHeaders);
+
                 return new InnerEnumerator(
                     this.queryDataSource,
                     this.SqlQuerySpec,
                     this.FeedRangeState,
                     this.PartitionKey,
-                    this.QueryPaginationOptions,
+                    options,
                     this.Filter);
             }
 

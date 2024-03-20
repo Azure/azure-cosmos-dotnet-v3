@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination
         public QueryPaginationOptions(
             int? pageSizeHint = null,
             bool optimisticDirectExecute = false,
-            Dictionary<string, string> additionalHeaders = null)
+            IReadOnlyDictionary<string, string> additionalHeaders = null)
             : base(pageSizeHint, additionalHeaders)
         {
             this.OptimisticDirectExecute = optimisticDirectExecute;
