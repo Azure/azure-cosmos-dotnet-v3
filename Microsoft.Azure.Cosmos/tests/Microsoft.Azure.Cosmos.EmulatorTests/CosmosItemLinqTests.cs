@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ++found;
             }
 
-            Assert.IsTrue(found > 0);
+            Assert.AreEqual(2, found);
         }
 
         [TestMethod]
