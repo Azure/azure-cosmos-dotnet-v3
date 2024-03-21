@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
 
     internal static class PipelineFactory
@@ -32,6 +33,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             PartitionKey? partitionKey,
             QueryInfo queryInfo,
             QueryPaginationOptions queryPaginationOptions,
+            ContainerQueryProperties containerQueryProperties,
             int maxConcurrency,
             CosmosElement requestContinuationToken,
             CancellationToken requestCancellationToken)
@@ -90,6 +92,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     queryPaginationOptions: queryPaginationOptions,
                     partitionKey: partitionKey,
                     prefetchPolicy: prefetchPolicy,
+                    containerQueryOptions: containerQueryProperties,
                     maxConcurrency: maxConcurrency,
                     continuationToken: continuationToken,
                     cancellationToken: cancellationToken);
