@@ -96,67 +96,19 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     .ConfigureAwait(false);
             }
 
-            await this.ChangeFeedModeSwitchingCheckAsync().ConfigureAwait(false);
+            this.documentServiceLeaseStoreManager
+                .LeaseManager
+                .ChangeFeedModeSwitchingCheck(
+                    documentServiceLeases: await this.documentServiceLeaseStoreManager
+                        .LeaseContainer
+                            .GetAllLeasesAsync()
+                            .ConfigureAwait(false),
+                    changeFeedLeaseOptionsMode: this.changeFeedLeaseOptions.Mode);
 
             this.partitionManager = this.BuildPartitionManager(
                 containerRid,
                 partitionKeyRangeCache);
             this.initialized = true;
-        }
-
-        /// <summary>
-        /// If the lease container's lease document is found, this method checks for lease 
-        /// document's ChangeFeedMode and if the new ChangeFeedMode is different
-        /// from the current ChangeFeedMode, an exception is thrown.
-        /// This is based on an issue located at <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4308"/>.
-        /// </summary>
-        private async Task ChangeFeedModeSwitchingCheckAsync()
-        {
-            IReadOnlyList<DocumentServiceLease> documentServiceLeases = await this.documentServiceLeaseStoreManager
-                .LeaseContainer
-                .GetAllLeasesAsync()
-                .ConfigureAwait(false);
-
-            // No lease documents. Return.
-
-            if (documentServiceLeases.Count == 0)
-            {
-                return;
-            }
-
-            DocumentServiceLease documentServiceLease = documentServiceLeases[0];
-
-            // Mode attribute exists on lease document, but it is not set. legacy is always LatestVersion because
-            // AllVersionsAndDeletes does not exist. There should not be any legacy lease documents that are
-            // AllVersionsAndDeletes. If the ChangeFeedProcessor's mode is not legacy, an exception should thrown.
-            // If the ChangeFeedProcessor mode is not the mode in the lease document, an exception should be thrown.
-
-            bool shouldThrowException = this.VerifyChangeFeedProcessorMode(
-                changeFeedMode: 
-                    string.IsNullOrEmpty(documentServiceLease.Mode) 
-                        ? ChangeFeedMode.LatestVersion 
-                        : this.changeFeedLeaseOptions.Mode,
-                leaseChangeFeedMode: documentServiceLease.Mode,
-                normalizedProcessorChangeFeedMode: out string normalizedProcessorChangeFeedMode);
-
-            // If shouldThrowException is true, throw the exception.
-
-            if (shouldThrowException)
-            {
-                throw new ArgumentException(message: $"Switching {nameof(ChangeFeedMode)} {documentServiceLease.Mode} to {normalizedProcessorChangeFeedMode} is not allowed.");
-            }
-        }
-
-        private bool VerifyChangeFeedProcessorMode(
-            ChangeFeedMode changeFeedMode, 
-            string leaseChangeFeedMode,
-            out string normalizedProcessorChangeFeedMode)
-        {
-            normalizedProcessorChangeFeedMode = changeFeedMode == ChangeFeedMode.AllVersionsAndDeletes
-                ? HttpConstants.A_IMHeaderValues.FullFidelityFeed
-                : HttpConstants.A_IMHeaderValues.IncrementalFeed;
-
-            return string.Compare(leaseChangeFeedMode, normalizedProcessorChangeFeedMode, StringComparison.OrdinalIgnoreCase) != 0;
         }
 
         private PartitionManager BuildPartitionManager(
