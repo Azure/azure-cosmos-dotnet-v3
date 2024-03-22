@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System.Collections.Generic;
     using System.Diagnostics;
@@ -33,14 +33,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         private static readonly int[] PageSizes = new [] { 1, 10, 100, DocumentCount };
 
-        private static readonly IReadOnlyList<OrderByColumn> OrderByColumnPkAsc = new List<OrderByColumn>
+        private static readonly IReadOnlyList<OrderByColumn> OrderByColumnIdAsc = new List<OrderByColumn>
         {
-            new OrderByColumn("c.pk", SortOrder.Ascending)
+            new OrderByColumn("c.id", SortOrder.Ascending)
         };
 
-        private static readonly IReadOnlyList<OrderByColumn> OrderByColumnPkDesc = new List<OrderByColumn>
+        private static readonly IReadOnlyList<OrderByColumn> OrderByColumnIdDesc = new List<OrderByColumn>
         {
-            new OrderByColumn("c.pk", SortOrder.Descending)
+            new OrderByColumn("c.id", SortOrder.Descending)
         };
 
         [TestMethod]
@@ -52,18 +52,32 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             {
                 MakeTest(
                     queryText: @"
-                        SELECT c._rid AS _rid, [{""item"": c.pk}] AS orderByItems, c AS payload
+                        SELECT c._rid AS _rid, [{""item"": c.id}] AS orderByItems, c AS payload
                         FROM c
                         WHERE {documentdb-formattableorderbyquery-filter}
-                        ORDER BY c.pk",
-                    orderByColumns: OrderByColumnPkAsc),
+                        ORDER BY c.id",
+                    orderByColumns: OrderByColumnIdAsc),
                 MakeTest(
                     queryText: @"
-                        SELECT c._rid AS _rid, [{""item"": c.pk}] AS orderByItems, c AS payload
+                        SELECT c._rid AS _rid, [{""item"": c.id}] AS orderByItems, c AS payload
                         FROM c
                         WHERE {documentdb-formattableorderbyquery-filter}
-                        ORDER BY c.pk DESC",
-                    orderByColumns: OrderByColumnPkDesc),
+                        ORDER BY c.id DESC",
+                    orderByColumns: OrderByColumnIdDesc),
+                MakeTest(
+                    queryText: @"
+                        SELECT c._rid AS _rid, [{""item"": c.id}] AS orderByItems, c AS payload
+                        FROM c
+                        WHERE c.doesNotExist = true AND {documentdb-formattableorderbyquery-filter}
+                        ORDER BY c.id",
+                    orderByColumns: OrderByColumnIdAsc),
+                MakeTest(
+                    queryText: @"
+                        SELECT c._rid AS _rid, [{""item"": c.id}] AS orderByItems, c AS payload
+                        FROM c
+                        WHERE c.doesNotExist = true AND {documentdb-formattableorderbyquery-filter}
+                        ORDER BY c.id DESC",
+                    orderByColumns: OrderByColumnIdDesc),
             };
 
             await RunParityTests(
@@ -405,14 +419,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         private static async Task<IDocumentContainer> CreateDocumentContainerAsync(int documentCount)
         {
-            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
+            Documents.PartitionKeyDefinition partitionKeyDefinition = new Documents.PartitionKeyDefinition()
             {
                 Paths = new System.Collections.ObjectModel.Collection<string>()
                 {
-                    "/pk"
+                    "/id"
                 },
-                Kind = PartitionKind.Hash,
-                Version = PartitionKeyDefinitionVersion.V2,
+                Kind = Documents.PartitionKind.Hash,
+                Version = Documents.PartitionKeyDefinitionVersion.V2,
             };
 
             IMonadicDocumentContainer monadicDocumentContainer = new InMemoryContainer(partitionKeyDefinition);
@@ -433,7 +447,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             for (int i = 0; i < documentCount; i++)
             {
                 // Insert an item
-                CosmosObject item = CosmosObject.Parse($"{{\"pk\" : {i} }}");
+                CosmosObject item = CosmosObject.Parse($"{{\"id\" : {i} }}");
                 TryCatch<Record> monadicCreateRecord = await documentContainer.MonadicCreateItemAsync(item, cancellationToken: default);
                 Assert.IsTrue(monadicCreateRecord.Succeeded);
             }
