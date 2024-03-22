@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Query
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
 
     //    [Config(typeof(ServerGcConfig))]
 
@@ -99,7 +100,17 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Query
 
             private const int QueryCharge = 42;
 
-            private static readonly string CollectionRid = "1HNeAM-TiQY=";
+            private const string CollectionRid = "1HNeAM-TiQY=";
+
+            private const string _rid = "_rid";
+
+            private const string orderByItems = "orderByItems";
+
+            private const string payload = "payload";
+
+            private const string item = "item";
+
+            private const string Index = "index";
 
             private static readonly IReadOnlyDictionary<string, string> AdditionalHeaders = new Dictionary<string, string>
             {
@@ -171,13 +182,22 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Query
                     (ulong)index,
                     Documents.ResourceType.Document);
 
-                string documentText = "{" +
-                    "\"_rid\":\"" + resourceId.ToString() + "\"," +
-                    "\"orderByItems\":" + "[{\"item\": "+ index + "}]," +
-                    "\"payload\": {\"index\": " + index + "}" +
-                    "}";
+                CosmosElement document = CosmosObject.Create(new Dictionary<string, CosmosElement>
+                {
+                    [_rid] = CosmosString.Create(resourceId.ToString()),
+                    [orderByItems] = CosmosArray.Create(new List<CosmosElement>
+                    {
+                        CosmosObject.Create(new Dictionary<string, CosmosElement>
+                        {
+                            [item] = CosmosNumber64.Create(index)
+                        })
+                    }),
+                    [payload] = CosmosObject.Create(new Dictionary<string, CosmosElement>
+                    {
+                        [Index] = CosmosNumber64.Create(index)
+                    })
+                });
 
-                CosmosElement document = CosmosObject.Parse(documentText);
                 return document;
             }
 
@@ -253,7 +273,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Query
                 CosmosElement state = feedRangeState.State?.Value ?? CosmosNull.Create();
                 QueryPage queryPage = this.pages[feedRangeState.FeedRange][state];
 
-                await Task.Delay(TimeSpan.FromMilliseconds(20));
+                await Task.Delay(TimeSpan.FromMilliseconds(2));
                 return TryCatch<QueryPage>.FromResult(queryPage);
             }
 
