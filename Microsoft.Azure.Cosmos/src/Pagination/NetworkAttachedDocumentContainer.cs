@@ -207,7 +207,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             {
                 double requestCharge = responseMessage.Headers.RequestCharge;
                 string activityId = responseMessage.Headers.ActivityId;
-                int itemCount = responseMessage.Headers.ItemCount;
+                int itemCount = int.Parse(responseMessage.Headers.ItemCount);
                 ReadFeedState state = responseMessage.Headers.ContinuationToken != null ? ReadFeedState.Continuation(CosmosString.Create(responseMessage.Headers.ContinuationToken)) : null;
                 Dictionary<string, string> additionalHeaders = GetAdditionalHeaders(
                     responseMessage.Headers.CosmosMessageHeaders,
@@ -330,7 +330,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             {
                 double requestCharge = responseMessage.Headers.RequestCharge;
                 string activityId = responseMessage.Headers.ActivityId;
-                int itemCount = responseMessage.Headers.ItemCount;
+                int itemCount = int.Parse(responseMessage.Headers.ItemCount);
                 ChangeFeedState state = ChangeFeedState.Continuation(CosmosString.Create(responseMessage.Headers.ETag));
                 Dictionary<string, string> additionalHeaders = GetAdditionalHeaders(
                     responseMessage.Headers.CosmosMessageHeaders,
