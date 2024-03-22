@@ -70,5 +70,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         /// Gets or sets custom lease properties which can be managed from <see cref="LoadBalancingStrategy"/>.
         /// </summary>
         public abstract Dictionary<string, string> Properties { get; set; }
+
+        /// <summary>
+        /// Gets or sets the ChangeFeedMode.
+        /// </summary>
+        public abstract string Mode { get; set; }
     }
 }

@@ -22,7 +22,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             ContainerInternal monitoredContainer,
             ContainerInternal leaseContainer,
             string leaseContainerPrefix,
-            string instanceName)
+            string instanceName,
+            ChangeFeedMode changeFeedMode)
         {
             ContainerProperties containerProperties = await leaseContainer.GetCachedContainerPropertiesAsync(forceRefresh: false, NoOpTrace.Singleton, cancellationToken: default);
 
@@ -58,7 +59,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 .WithMonitoredContainer(monitoredContainer)
                 .WithLeaseContainer(leaseContainer)
                 .WithRequestOptionsFactory(requestOptionsFactory)
-                .WithHostName(instanceName);
+                .WithHostName(instanceName)
+                .WithChangeFeedMode(changeFeedMode);
 
             return leaseStoreManagerBuilder.Build();
         }
@@ -70,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
         private DocumentServiceLeaseStoreManagerBuilder WithMonitoredContainer(ContainerInternal monitoredContainer)
         {
-            this.monitoredContainer = monitoredContainer ?? throw new ArgumentNullException(nameof(leaseContainer));
+            this.monitoredContainer = monitoredContainer ?? throw new ArgumentNullException(nameof(monitoredContainer));
             return this;
         }
 
@@ -95,6 +97,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         private DocumentServiceLeaseStoreManagerBuilder WithHostName(string hostName)
         {
             this.options.HostName = hostName ?? throw new ArgumentNullException(nameof(hostName));
+            return this;
+        }
+
+        private DocumentServiceLeaseStoreManagerBuilder WithChangeFeedMode(ChangeFeedMode changeFeedMode)
+        {
+            this.options.Mode = changeFeedMode ?? throw new ArgumentNullException(nameof(changeFeedMode));
             return this;
         }
 
