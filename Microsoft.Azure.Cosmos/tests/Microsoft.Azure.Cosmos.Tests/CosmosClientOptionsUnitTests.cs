@@ -901,16 +901,14 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void RegionNameMappingTest()
         {
-            RegionNameMapper mapper = new RegionNameMapper();
-
             // Test normalized name
-            Assert.AreEqual(Regions.WestUS2, mapper.GetCosmosDBRegionName("westus2"));
+            Assert.AreEqual(Regions.WestUS2, RegionNameMapper.GetCosmosDBRegionName("westus2"));
 
             // Test with spaces
-            Assert.AreEqual(Regions.WestUS2, mapper.GetCosmosDBRegionName("west us 2"));
+            Assert.AreEqual(Regions.WestUS2, RegionNameMapper.GetCosmosDBRegionName("west us 2"));
 
             // Test for case insenstive
-            Assert.AreEqual(Regions.WestUS2, mapper.GetCosmosDBRegionName("wEsTuS2"));
+            Assert.AreEqual(Regions.WestUS2, RegionNameMapper.GetCosmosDBRegionName("wEsTuS2"));
         }
 
         [TestMethod]

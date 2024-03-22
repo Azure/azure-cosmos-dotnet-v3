@@ -28,9 +28,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             string? region = null,
             FaultInjectionEndpoint? endpoint = null)
         {
-
-            RegionNameMapper mapper = new RegionNameMapper();
-            this.region = string.IsNullOrEmpty(region) ? string.Empty : mapper.GetCosmosDBRegionName(region);
+            this.region = string.IsNullOrEmpty(region) ? string.Empty : RegionNameMapper.GetCosmosDBRegionName(region);
 
             this.operationType = operationType ?? FaultInjectionOperationType.All;
             this.connectionType = connectionType ?? FaultInjectionConnectionType.All;
@@ -41,8 +39,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// The operation type the rule will target.
         /// </summary>
         /// <returns>the <see cref="FaultInjectionOperationType"/>.</returns>
-        public FaultInjectionOperationType GetOperationType() 
-        { 
+        public FaultInjectionOperationType GetOperationType()
+        {
             return this.operationType;
         }
 
@@ -84,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 "FaultInjectionCondition{{ OperationType: {0}, ConnectionType: {1}, Region: {2}, Endpoint: {3}",
                 this.operationType,
                 this.connectionType,
-                this.region,  
+                this.region,
                 this.endpoint.ToString());
         }
     }

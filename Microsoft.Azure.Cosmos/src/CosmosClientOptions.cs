@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos
     ///     },
     ///     ConnectionMode = ConnectionMode.Gateway,
     /// };
-    /// 
+    ///
     /// CosmosClient client = new CosmosClient("endpoint", "key", clientOptions);
     /// ]]>
     /// </code>
@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Cosmos
         /// {
         ///     ApplicationRegion = Regions.EastUS
         /// };
-        /// 
+        ///
         /// CosmosClient client = new CosmosClient("endpoint", "key", clientOptions);
         /// ]]>
         /// </code>
@@ -184,7 +184,7 @@ namespace Microsoft.Azure.Cosmos
         /// {
         ///     ApplicationPreferredRegions = new List<string>(){ Regions.EastUS, Regions.WestUS }
         /// };
-        /// 
+        ///
         /// CosmosClient client = new CosmosClient("endpoint", "key", clientOptions);
         /// ]]>
         /// </code>
@@ -872,15 +872,14 @@ namespace Microsoft.Azure.Cosmos
                 connectionPolicy.CosmosClientTelemetryOptions = this.CosmosClientTelemetryOptions;
             }
 
-            RegionNameMapper mapper = new RegionNameMapper();
             if (!string.IsNullOrEmpty(this.ApplicationRegion))
             {
-                connectionPolicy.SetCurrentLocation(mapper.GetCosmosDBRegionName(this.ApplicationRegion));
+                connectionPolicy.SetCurrentLocation(RegionNameMapper.GetCosmosDBRegionName(this.ApplicationRegion));
             }
 
             if (this.ApplicationPreferredRegions != null)
             {
-                List<string> mappedRegions = this.ApplicationPreferredRegions.Select(s => mapper.GetCosmosDBRegionName(s)).ToList();
+                List<string> mappedRegions = this.ApplicationPreferredRegions.Select(s => RegionNameMapper.GetCosmosDBRegionName(s)).ToList();
 
                 connectionPolicy.SetPreferredLocations(mappedRegions);
             }

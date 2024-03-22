@@ -11,19 +11,18 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Maps a normalized region name to the format that CosmosDB is expecting (for e.g. from 'westus2' to 'West US 2')
     /// </summary>
-    internal sealed class RegionNameMapper
+    internal static class RegionNameMapper
     {
-        private readonly Dictionary<string, string> normalizedToCosmosDBRegionNameMapping;
+        private static readonly Dictionary<string, string> normalizedToCosmosDBRegionNameMapping;
 
-        public RegionNameMapper()
+        static RegionNameMapper()
         {
+            normalizedToCosmosDBRegionNameMapping = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
             FieldInfo[] fields = typeof(Regions).GetFields(BindingFlags.Public | BindingFlags.Static);
-
-            this.normalizedToCosmosDBRegionNameMapping = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-
             foreach (FieldInfo field in fields)
             {
-                this.normalizedToCosmosDBRegionNameMapping[field.Name] = field.GetValue(null).ToString();
+                normalizedToCosmosDBRegionNameMapping[field.Name] = field.GetValue(null).ToString();
             }
         }
 
@@ -33,7 +32,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="normalizedRegionName">An Azure region name in a normalized format. The input is not case sensitive.</param>
         /// <returns>A string that contains the region name in the format that CosmosDB expects.</returns>
-        public string GetCosmosDBRegionName(string normalizedRegionName)
+        public static string GetCosmosDBRegionName(string normalizedRegionName)
         {
             if (string.IsNullOrEmpty(normalizedRegionName))
             {
@@ -41,7 +40,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             normalizedRegionName = normalizedRegionName.Replace(" ", string.Empty);
-            if (this.normalizedToCosmosDBRegionNameMapping.TryGetValue(normalizedRegionName,
+            if (normalizedToCosmosDBRegionNameMapping.TryGetValue(normalizedRegionName,
                 out string cosmosDBRegionName))
             {
                 return cosmosDBRegionName;

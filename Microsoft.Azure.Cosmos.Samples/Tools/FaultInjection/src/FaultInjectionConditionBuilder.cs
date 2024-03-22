@@ -48,9 +48,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <returns>the <see cref="FaultInjectionConditionBuilder"/></returns>
         public FaultInjectionConditionBuilder WithRegion(string region)
         {
-            RegionNameMapper mapper = new RegionNameMapper();
-            string regionName = mapper.GetCosmosDBRegionName(region);
-            this.region = string.IsNullOrEmpty(regionName) 
+            string regionName = RegionNameMapper.GetCosmosDBRegionName(region);
+            this.region = string.IsNullOrEmpty(regionName)
                 ? throw new ArgumentNullException(nameof(region), "Argument 'region' cannot be null.") 
                 : regionName;
 
@@ -77,11 +76,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         public FaultInjectionCondition Build()
         {
             return new FaultInjectionCondition(
-                this.operationType, 
-                this.connectionType, 
-                this.region, 
+                this.operationType,
+                this.connectionType,
+                this.region,
                 this.endpoint);
         }
-
     }
 }

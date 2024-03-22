@@ -24,8 +24,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private readonly IRoutingMapProvider routingMapProvider;
         private readonly FaultInjectionApplicationContext applicationContext;
 
-        private readonly RegionNameMapper regionNameMapper = new RegionNameMapper();
-
         /// <summary>
         /// Initializes a new instance of the <see cref="FaultInjectionRuleProcessor"/> class.
         /// </summary>
@@ -136,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
             if (!this.CanErrorLimitToOperation(errorType))
             {
-                effectiveAddresses = effectiveAddresses.Select(address => 
+                effectiveAddresses = effectiveAddresses.Select(address =>
                     new Uri(string.Format(
                         "{0}://{1}:{2}/",
                         address.Scheme.ToString(),
@@ -175,7 +173,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 rule.GetCondition(),
                 this.IsWriteOnly(rule.GetCondition()));
 
-            resolvedPhysicalAdresses.ForEach(address => 
+            resolvedPhysicalAdresses.ForEach(address =>
                 new Uri(string.Format(
                 "{0}://{1}:{2}/",
                 address.Scheme.ToString(),
@@ -222,14 +220,14 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         {
             bool isWriteOnlyEndpoints = this.IsWriteOnly(condition);
 
-            if(!string.IsNullOrEmpty(condition.GetRegion()))
+            if (!string.IsNullOrEmpty(condition.GetRegion()))
             {
                 return new List<Uri> { this.ResolveFaultInjectionServiceEndpoint(condition.GetRegion(), isWriteOnlyEndpoints) };
             }
             else
             {
-                return isWriteOnlyEndpoints 
-                    ? this.globalEndpointManager.GetAvailableWriteEndpointsByLocation().Values.ToList() 
+                return isWriteOnlyEndpoints
+                    ? this.globalEndpointManager.GetAvailableWriteEndpointsByLocation().Values.ToList()
                     : this.globalEndpointManager.GetAvailableReadEndpointsByLocation().Values.ToList();
             }
         }
@@ -239,7 +237,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             if (isWriteOnlyEndpoints)
             {
                 if (this.globalEndpointManager.GetAvailableWriteEndpointsByLocation().TryGetValue(
-                    this.regionNameMapper.GetCosmosDBRegionName(region), 
+                    RegionNameMapper.GetCosmosDBRegionName(region),
                     out Uri? endpoint))
                 {
                     return endpoint;
@@ -248,7 +246,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             else
             {
                 if (this.globalEndpointManager.GetAvailableReadEndpointsByLocation().TryGetValue(
-                    this.regionNameMapper.GetCosmosDBRegionName(region),
+                    RegionNameMapper.GetCosmosDBRegionName(region),
                     out Uri? endpoint))
                 {
                     return endpoint;
@@ -260,7 +258,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
         private bool IsWriteOnly(FaultInjectionCondition condition)
         {
-            return condition.GetOperationType() != FaultInjectionOperationType.All 
+            return condition.GetOperationType() != FaultInjectionOperationType.All
                 && this.GetEffectiveOperationType(condition.GetOperationType()).IsWriteOperation();
         }
 
@@ -268,11 +266,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             List<Uri> regionEndpoints,
             FaultInjectionCondition condition,
             bool isWriteOnly)
-        {           
+        {
             FaultInjectionEndpoint addressEndpoints = condition.GetEndpoint();
             if (addressEndpoints == null || addressEndpoints == FaultInjectionEndpoint.Empty)
             {
-                return new List<Uri>{ };
+                return new List<Uri> { };
             }
 
             List<Uri> resolvedPhysicalAddresses = new List<Uri>();
@@ -377,5 +375,5 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         {
             return this.globalEndpointManager;
         }
-    }   
+    }
 }

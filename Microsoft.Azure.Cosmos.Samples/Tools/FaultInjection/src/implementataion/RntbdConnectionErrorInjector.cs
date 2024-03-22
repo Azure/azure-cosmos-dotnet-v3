@@ -15,14 +15,13 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     {
         private readonly FaultInjectionRuleStore ruleStore;
         private readonly FaultInjectionDynamicChannelStore channelStore;
-        private readonly RegionNameMapper regionNameMapper;
         private readonly Dictionary<string, string> regionSpecialCases;
 
         public RntbdConnectionErrorInjector(FaultInjectionRuleStore ruleStore, FaultInjectionDynamicChannelStore channelStore)
         {
             this.ruleStore = ruleStore ?? throw new ArgumentNullException(nameof(ruleStore));
             this.channelStore = channelStore ?? throw new ArgumentNullException(nameof(channelStore));
-            this.regionNameMapper = new RegionNameMapper();
+
             // Some regions have different names in the RNTBD endpoint and in the location endpoint
             // this dictionary maps the RNTBD endpoint region name to the location endpoint region name
             this.regionSpecialCases = new Dictionary<string, string>
@@ -37,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
         public bool Accept(IFaultInjectionRuleInternal rule)
         {
-            if ((rule.GetConnectionType() == FaultInjectionConnectionType.Direct 
+            if ((rule.GetConnectionType() == FaultInjectionConnectionType.Direct
                 || rule.GetConnectionType() == FaultInjectionConnectionType.All)
                 && (rule.GetType() == typeof(FaultInjectionConnectionErrorRule)))
             {
@@ -120,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                                         continue;
                                     }
 
-                                    if(this.ParseRntbdEndpointForNormalizedRegion(serverUri).Equals(this.ParseRntbdEndpointForNormalizedRegion(regionEndpoint)))
+                                    if (this.ParseRntbdEndpointForNormalizedRegion(serverUri).Equals(this.ParseRntbdEndpointForNormalizedRegion(regionEndpoint)))
                                     {
                                         if (random.NextDouble() < rule.GetResult().GetThresholdPercentage())
                                         {
@@ -152,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                                 //and marked unhealthy
                                 continue;
                             }
-                            
+
                             if (random.NextDouble() < rule.GetResult().GetThresholdPercentage())
                             {
                                 rule.ApplyRule();
@@ -215,8 +214,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private string ParseRntbdEndpointForNormalizedRegion(Uri endpoint)
         {
             string region = endpoint.ToString().Split(new char[] { '-' })[3];
-            region = this.regionNameMapper.GetCosmosDBRegionName(
-                this.regionSpecialCases.ContainsKey(region) 
+            region = RegionNameMapper.GetCosmosDBRegionName(
+                this.regionSpecialCases.ContainsKey(region)
                 ? this.regionSpecialCases[region]
                 : region);
             return region;
@@ -226,7 +225,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         {
             string region = endpoint.ToString().Split(new char[] { '-' }).Last();
             region = region[0..region.IndexOf('.')];
-            region = this.regionNameMapper.GetCosmosDBRegionName(region);
+            region = RegionNameMapper.GetCosmosDBRegionName(region);
             return region;
         }
     }
