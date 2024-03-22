@@ -267,14 +267,7 @@ namespace Microsoft.Azure.Cosmos
             set => this.CosmosMessageHeaders.EndEpk = value;
         }
 
-        internal virtual int ItemCount
-        {
-            get
-            {
-                string itemCountText = this.CosmosMessageHeaders.Get(HttpConstants.HttpHeaders.ItemCount);
-                return int.Parse(itemCountText, NumberStyles.Integer, CultureInfo.InvariantCulture);
-            }
-        }
+        internal virtual string ItemCount => this.CosmosMessageHeaders.Get(HttpConstants.HttpHeaders.ItemCount);
 
         /// <summary>
         /// Creates a new instance of <see cref="Headers"/>.
