@@ -1875,11 +1875,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             }
         }
 
-        private abstract class NonStreamingOrderByPipelineStage : IQueryPipelineStage
+        private sealed class NonStreamingOrderByPipelineStage : IQueryPipelineStage
         {
-            private const int MaximumPageSize = 2048;
-
             private const int FlatHeapSizeLimit = 4096;
+
+            private const int MaximumPageSize = 2048;
 
             private const string DisallowContinuationTokenMessage = "Continuation tokens are not supported for the non streaming order by pipeline.";
 
@@ -1897,17 +1897,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             private readonly IReadOnlyDictionary<string, string> additionalHeaders;
 
+            private readonly IEnumerator<OrderByQueryResult> enumerator;
+
+            private int totalBufferedResultCount;
+
             private bool firstPage;
 
-            public TryCatch<QueryPage> Current { get; protected set; }
+            public TryCatch<QueryPage> Current { get; private set; }
 
-            protected NonStreamingOrderByPipelineStage(
+            private NonStreamingOrderByPipelineStage(
                 int pageSize,
                 double totalRequestCharge,
                 string activityId,
                 Lazy<CosmosQueryExecutionInfo> cosmosQueryExecutionInfo,
                 DistributionPlanSpec distributionPlanSpec,
-                IReadOnlyDictionary<string, string> additionalHeaders)
+                IReadOnlyDictionary<string, string> additionalHeaders,
+                IEnumerator<OrderByQueryResult> enumerator,
+                int totalBufferedResultCount)
             {
                 this.pageSize = pageSize;
                 this.totalRequestCharge = totalRequestCharge;
@@ -1916,11 +1922,51 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 this.distributionPlanSpec = distributionPlanSpec;
                 this.additionalHeaders = additionalHeaders;
                 this.firstPage = true;
+                this.enumerator = enumerator ?? throw new ArgumentNullException(nameof(enumerator));
+                this.totalBufferedResultCount = totalBufferedResultCount;
             }
 
-            public abstract ValueTask DisposeAsync();
+            public ValueTask DisposeAsync()
+            {
+                this.enumerator.Dispose();
+                return default;
+            }
 
-            public abstract ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken);
+            public ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                List<CosmosElement> documents = this.totalBufferedResultCount >= this.pageSize ? new List<CosmosElement>(this.pageSize) : new List<CosmosElement>();
+                for (int count = 0; count < this.pageSize && this.enumerator.MoveNext(); ++count)
+                {
+                    documents.Add(this.enumerator.Current.Payload);
+                }
+
+                this.totalBufferedResultCount -= documents.Count;
+
+                if (this.firstPage || documents.Count > 0)
+                {
+                    double requestCharge = this.firstPage ? this.totalRequestCharge : 0;
+                    QueryPage queryPage = new QueryPage(
+                        documents: documents,
+                        requestCharge: requestCharge,
+                        activityId: this.activityId,
+                        cosmosQueryExecutionInfo: this.cosmosQueryExecutionInfo,
+                        distributionPlanSpec: this.distributionPlanSpec,
+                        disallowContinuationTokenMessage: DisallowContinuationTokenMessage,
+                        additionalHeaders: this.additionalHeaders,
+                        state: documents.Count > 0 ? NonStreamingOrderByInProgress : null,
+                        streaming: false);
+
+                    this.firstPage = false;
+                    this.Current = TryCatch<QueryPage>.FromResult(queryPage);
+                    return new ValueTask<bool>(true);
+                }
+                else
+                {
+                    return new ValueTask<bool>(false);
+                }
+            }
 
             public static async Task<IQueryPipelineStage> CreateAsync(
                 QueryPaginationOptions queryPaginationOptions,
@@ -1930,25 +1976,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 ITrace trace,
                 CancellationToken cancellationToken)
             {
-                int totalItemCount = 0;
-                foreach (OrderByQueryPartitionRangePageAsyncEnumerator enumerator in enumerators)
-                {
-                    totalItemCount += enumerator.BufferedResultCount;
-                }
-
                 int pageSize = queryPaginationOptions.PageSizeLimit.GetValueOrDefault(MaximumPageSize) > 0 ?
                     Math.Min(MaximumPageSize, queryPaginationOptions.PageSizeLimit.Value) :
                     MaximumPageSize;
 
-                if (totalItemCount < FlatHeapSizeLimit)
+                int totalBufferedResultCount = 0;
+                foreach (OrderByQueryPartitionRangePageAsyncEnumerator enumerator in enumerators)
                 {
-                    return await FlatHeapPipelineStage.CreateAsync(
-                        pageSize,
-                        sortOrders,
-                        enumerators,
-                        staticQueryPageParameters,
-                        trace,
-                        cancellationToken);
+                    totalBufferedResultCount += enumerator.BufferedResultCount;
                 }
 
                 OrderByQueryResultComparer comparer = new OrderByQueryResultComparer(sortOrders);
@@ -1959,185 +1994,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     trace,
                     cancellationToken);
 
-                return new MultiLevelHeapPipelineStage(
+                return new NonStreamingOrderByPipelineStage(
                     pageSize,
                     totalRequestCharge,
                     staticQueryPageParameters.ActivityId,
                     staticQueryPageParameters.CosmosQueryExecutionInfo,
                     staticQueryPageParameters.DistributionPlanSpec,
                     staticQueryPageParameters.AdditionalHeaders,
-                    orderbyQueryResultEnumerator);
-            }
-
-            private sealed class MultiLevelHeapPipelineStage : NonStreamingOrderByPipelineStage
-            {
-                private readonly IEnumerator<OrderByQueryResult> enumerator;
-
-                public MultiLevelHeapPipelineStage(
-                    int pageSize,
-                    double totalRequestCharge,
-                    string activityId,
-                    Lazy<CosmosQueryExecutionInfo> cosmosQueryExecutionInfo,
-                    DistributionPlanSpec distributionPlanSpec,
-                    IReadOnlyDictionary<string, string> additionalHeaders,
-                    IEnumerator<OrderByQueryResult> enumerator)
-                    : base(pageSize, totalRequestCharge, activityId, cosmosQueryExecutionInfo, distributionPlanSpec, additionalHeaders)
-                {
-                    this.enumerator = enumerator ?? throw new ArgumentNullException(nameof(enumerator));
-                }
-
-                public override ValueTask DisposeAsync()
-                {
-                    this.enumerator.Dispose();
-                    return default;
-                }
-
-                public override ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    List<CosmosElement> documents = new List<CosmosElement>();
-                    for (int count = 0; count < this.pageSize && this.enumerator.MoveNext(); ++count)
-                    {
-                        documents.Add(this.enumerator.Current.Payload);
-                    }
-
-                    if (this.firstPage || documents.Count > 0)
-                    {
-                        double requestCharge = this.firstPage ? this.totalRequestCharge : 0;
-                        QueryPage queryPage = new QueryPage(
-                            documents: documents,
-                            requestCharge: requestCharge,
-                            activityId: this.activityId,
-                            cosmosQueryExecutionInfo: this.cosmosQueryExecutionInfo,
-                            distributionPlanSpec: this.distributionPlanSpec,
-                            disallowContinuationTokenMessage: DisallowContinuationTokenMessage,
-                            additionalHeaders: this.additionalHeaders,
-                            state: documents.Count > 0 ? NonStreamingOrderByInProgress : null,
-                            streaming: false);
-
-                        this.firstPage = false;
-                        this.Current = TryCatch<QueryPage>.FromResult(queryPage);
-                        return new ValueTask<bool>(true);
-                    }
-                    else
-                    {
-                        return new ValueTask<bool>(false);
-                    }
-                }
-            }
-
-            private sealed class FlatHeapPipelineStage : NonStreamingOrderByPipelineStage
-            {
-                private readonly PriorityQueue<OrderByQueryResult> orderByQueryResults;
-
-                public static async Task<IQueryPipelineStage> CreateAsync(
-                    int pageSize,
-                    IReadOnlyList<SortOrder> sortOrders,
-                    IEnumerable<OrderByQueryPartitionRangePageAsyncEnumerator> enumerators,
-                    StaticQueryPageParameters staticQueryPageParameters,
-                    ITrace trace,
-                    CancellationToken cancellationToken)
-                {
-                    OrderByQueryResultComparer comparer = new OrderByQueryResultComparer(sortOrders);
-                    PriorityQueue<OrderByQueryResult> priorityQueue = new PriorityQueue<OrderByQueryResult>(comparer);
-
-                    double requestCharge = 0;
-                    foreach (OrderByQueryPartitionRangePageAsyncEnumerator enumerator in enumerators)
-                    {
-                        while (await enumerator.MoveNextAsync(trace, cancellationToken))
-                        {
-                            if (enumerator.Current.Failed)
-                            {
-                                if (IsSplitException(enumerator.Current.Exception))
-                                {
-                                    // TODO: [ndeshpan] Handle splits
-                                    throw new NotImplementedException(
-                                        $"Split is not handled in {nameof(FlatHeapPipelineStage)}",
-                                        enumerator.Current.Exception);
-                                }
-
-                                throw enumerator.Current.Exception;
-                            }
-
-                            requestCharge += enumerator.Current.Result.RequestCharge;
-
-                            foreach (CosmosElement document in enumerator.Current.Result.Page.Documents)
-                            {
-                                OrderByQueryResult orderByQueryResult = new OrderByQueryResult(document);
-                                priorityQueue.Enqueue(orderByQueryResult);
-                            }
-                        }
-                    }
-
-                    return new FlatHeapPipelineStage(
-                       priorityQueue,
-                       pageSize,
-                       requestCharge,
-                       staticQueryPageParameters.ActivityId,
-                       staticQueryPageParameters.CosmosQueryExecutionInfo,
-                       staticQueryPageParameters.DistributionPlanSpec,
-                       staticQueryPageParameters.AdditionalHeaders);
-                }
-
-                public FlatHeapPipelineStage(
-                    PriorityQueue<OrderByQueryResult> orderByQueryResults,
-                    int pageSize,
-                    double requestCharge,
-                    string activityId,
-                    Lazy<CosmosQueryExecutionInfo> cosmosQueryExecutionInfo,
-                    DistributionPlanSpec distributionPlanSpec,
-                    IReadOnlyDictionary<string, string> additionalHeaders)
-                    : base(
-                          pageSize,
-                          requestCharge,
-                          activityId,
-                          cosmosQueryExecutionInfo,
-                          distributionPlanSpec,
-                          additionalHeaders)
-                {
-                    this.orderByQueryResults = orderByQueryResults ?? throw new ArgumentNullException(nameof(orderByQueryResults));
-                }
-
-                public override ValueTask DisposeAsync()
-                {
-                    return default;
-                }
-
-                public override ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
-                {
-                    List<CosmosElement> documents = new List<CosmosElement>();
-                    int pageSize = this.pageSize;
-                    while (pageSize > 0 && this.orderByQueryResults.Count > 0)
-                    {
-                        OrderByQueryResult resultItem = this.orderByQueryResults.Dequeue();
-                        documents.Add(resultItem.Payload);
-                        pageSize--;
-                    }
-
-                    if (this.firstPage || documents.Count > 0)
-                    {
-                        double requestCharge = this.firstPage ? this.totalRequestCharge : 0;
-                        QueryPage queryPage = new QueryPage(
-                            documents: documents,
-                            requestCharge: requestCharge,
-                            activityId: this.activityId,
-                            cosmosQueryExecutionInfo: this.cosmosQueryExecutionInfo,
-                            distributionPlanSpec: this.distributionPlanSpec,
-                            disallowContinuationTokenMessage: DisallowContinuationTokenMessage,
-                            additionalHeaders: this.additionalHeaders,
-                            state: this.orderByQueryResults.Count > 0 ? NonStreamingOrderByInProgress : null,
-                            streaming: false);
-
-                        this.firstPage = false;
-                        this.Current = TryCatch<QueryPage>.FromResult(queryPage);
-                        return new ValueTask<bool>(true);
-                    }
-                    else
-                    {
-                        return new ValueTask<bool>(false);
-                    }
-                }
+                    orderbyQueryResultEnumerator,
+                    totalBufferedResultCount);
             }
         }
     }
