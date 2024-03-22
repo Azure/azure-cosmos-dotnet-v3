@@ -440,6 +440,9 @@ namespace Microsoft.Azure.Documents
             public const string CompositeIndexes = "compositeIndexes";
             public const string Order = "order";
 
+            public const string VectorIndexes = "vectorIndexes";
+            public const string VectorIndexType = "type";
+
             public const string SpatialIndexes = "spatialIndexes";
             public const string Types = "types";
             public const string BoundingBox = "boundingBox";
