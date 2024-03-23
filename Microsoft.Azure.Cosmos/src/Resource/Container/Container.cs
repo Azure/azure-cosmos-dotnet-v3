@@ -1681,7 +1681,6 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
             CancellationToken cancellationToken = default);
-
 #endif
     }
 }
