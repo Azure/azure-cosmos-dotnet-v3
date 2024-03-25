@@ -440,8 +440,13 @@ namespace Microsoft.Azure.Documents
             public const string CompositeIndexes = "compositeIndexes";
             public const string Order = "order";
 
+            public const string VectorEmbeddingPolicy = "vectorEmbeddingPolicy";
+            public const string VectorEmbeddings = "vectorEmbeddings";
             public const string VectorIndexes = "vectorIndexes";
             public const string VectorIndexType = "type";
+            public const string VectorDataType = "dataType";
+            public const string VectorDimensions = "dimensions";
+            public const string DistanceFunction = "distanceFunction";
 
             public const string SpatialIndexes = "spatialIndexes";
             public const string Types = "types";
