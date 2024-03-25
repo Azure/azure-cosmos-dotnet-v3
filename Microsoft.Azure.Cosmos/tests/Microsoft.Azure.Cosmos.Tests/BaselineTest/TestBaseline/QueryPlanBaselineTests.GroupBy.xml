@@ -312,6 +312,14 @@ GROUP BY c.age, c.name]]></RewrittenQuery>
           <Aggregates />
           <GroupByAliasToAggregateType>
             <AliasToAggregateType>
+              <Alias>min_age</Alias>
+              <AggregateOperator>Min</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>max_age</Alias>
+              <AggregateOperator>Max</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
               <Alias>count</Alias>
               <AggregateOperator>Count</AggregateOperator>
             </AliasToAggregateType>
@@ -322,14 +330,6 @@ GROUP BY c.age, c.name]]></RewrittenQuery>
             <AliasToAggregateType>
               <Alias>team</Alias>
               <AggregateOperator>null</AggregateOperator>
-            </AliasToAggregateType>
-            <AliasToAggregateType>
-              <Alias>min_age</Alias>
-              <AggregateOperator>Min</AggregateOperator>
-            </AliasToAggregateType>
-            <AliasToAggregateType>
-              <Alias>max_age</Alias>
-              <AggregateOperator>Max</AggregateOperator>
             </AliasToAggregateType>
             <AliasToAggregateType>
               <Alias>avg_age</Alias>
@@ -505,15 +505,15 @@ GROUP BY UPPER(c.name), SUBSTRING(c.address.city, 0, 3)]]></RewrittenQuery>
           <Aggregates />
           <GroupByAliasToAggregateType>
             <AliasToAggregateType>
+              <Alias>group_name</Alias>
+              <AggregateOperator>null</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
               <Alias>count</Alias>
               <AggregateOperator>Count</AggregateOperator>
             </AliasToAggregateType>
             <AliasToAggregateType>
               <Alias>info</Alias>
-              <AggregateOperator>null</AggregateOperator>
-            </AliasToAggregateType>
-            <AliasToAggregateType>
-              <Alias>group_name</Alias>
               <AggregateOperator>null</AggregateOperator>
             </AliasToAggregateType>
           </GroupByAliasToAggregateType>
@@ -718,12 +718,16 @@ GROUP BY c.name]]></RewrittenQuery>
           <Aggregates />
           <GroupByAliasToAggregateType>
             <AliasToAggregateType>
-              <Alias>count</Alias>
-              <AggregateOperator>Count</AggregateOperator>
+              <Alias>max_age</Alias>
+              <AggregateOperator>Max</AggregateOperator>
             </AliasToAggregateType>
             <AliasToAggregateType>
               <Alias>name</Alias>
               <AggregateOperator>null</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>count</Alias>
+              <AggregateOperator>Count</AggregateOperator>
             </AliasToAggregateType>
             <AliasToAggregateType>
               <Alias>$1</Alias>
@@ -735,10 +739,6 @@ GROUP BY c.name]]></RewrittenQuery>
             </AliasToAggregateType>
             <AliasToAggregateType>
               <Alias>$2</Alias>
-              <AggregateOperator>Max</AggregateOperator>
-            </AliasToAggregateType>
-            <AliasToAggregateType>
-              <Alias>max_age</Alias>
               <AggregateOperator>Max</AggregateOperator>
             </AliasToAggregateType>
             <AliasToAggregateType>

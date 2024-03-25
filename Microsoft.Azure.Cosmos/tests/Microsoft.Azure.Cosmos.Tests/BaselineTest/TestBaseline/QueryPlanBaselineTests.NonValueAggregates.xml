@@ -509,11 +509,11 @@ FROM c]]></RewrittenQuery>
           <Aggregates />
           <GroupByAliasToAggregateType>
             <AliasToAggregateType>
-              <Alias>min_blah</Alias>
+              <Alias>min_blah2</Alias>
               <AggregateOperator>Min</AggregateOperator>
             </AliasToAggregateType>
             <AliasToAggregateType>
-              <Alias>min_blah2</Alias>
+              <Alias>min_blah</Alias>
               <AggregateOperator>Min</AggregateOperator>
             </AliasToAggregateType>
           </GroupByAliasToAggregateType>
@@ -557,11 +557,11 @@ FROM c]]></RewrittenQuery>
           <Aggregates />
           <GroupByAliasToAggregateType>
             <AliasToAggregateType>
-              <Alias>max_blah2</Alias>
+              <Alias>max_blah</Alias>
               <AggregateOperator>Max</AggregateOperator>
             </AliasToAggregateType>
             <AliasToAggregateType>
-              <Alias>max_blah</Alias>
+              <Alias>max_blah2</Alias>
               <AggregateOperator>Max</AggregateOperator>
             </AliasToAggregateType>
           </GroupByAliasToAggregateType>
@@ -605,11 +605,11 @@ FROM c]]></RewrittenQuery>
           <Aggregates />
           <GroupByAliasToAggregateType>
             <AliasToAggregateType>
-              <Alias>avg_blah</Alias>
+              <Alias>avg_blah2</Alias>
               <AggregateOperator>Average</AggregateOperator>
             </AliasToAggregateType>
             <AliasToAggregateType>
-              <Alias>avg_blah2</Alias>
+              <Alias>avg_blah</Alias>
               <AggregateOperator>Average</AggregateOperator>
             </AliasToAggregateType>
           </GroupByAliasToAggregateType>
@@ -989,11 +989,11 @@ FROM c]]></RewrittenQuery>
           <Aggregates />
           <GroupByAliasToAggregateType>
             <AliasToAggregateType>
-              <Alias>count_blah</Alias>
+              <Alias>$1</Alias>
               <AggregateOperator>Count</AggregateOperator>
             </AliasToAggregateType>
             <AliasToAggregateType>
-              <Alias>$1</Alias>
+              <Alias>count_blah</Alias>
               <AggregateOperator>Count</AggregateOperator>
             </AliasToAggregateType>
           </GroupByAliasToAggregateType>
@@ -1181,11 +1181,11 @@ FROM c]]></RewrittenQuery>
           <Aggregates />
           <GroupByAliasToAggregateType>
             <AliasToAggregateType>
-              <Alias>$1</Alias>
+              <Alias>max_blah</Alias>
               <AggregateOperator>Max</AggregateOperator>
             </AliasToAggregateType>
             <AliasToAggregateType>
-              <Alias>max_blah</Alias>
+              <Alias>$1</Alias>
               <AggregateOperator>Max</AggregateOperator>
             </AliasToAggregateType>
           </GroupByAliasToAggregateType>
@@ -1229,11 +1229,11 @@ FROM c]]></RewrittenQuery>
           <Aggregates />
           <GroupByAliasToAggregateType>
             <AliasToAggregateType>
-              <Alias>$1</Alias>
+              <Alias>max_blah</Alias>
               <AggregateOperator>Max</AggregateOperator>
             </AliasToAggregateType>
             <AliasToAggregateType>
-              <Alias>max_blah</Alias>
+              <Alias>$1</Alias>
               <AggregateOperator>Max</AggregateOperator>
             </AliasToAggregateType>
           </GroupByAliasToAggregateType>
@@ -1428,15 +1428,15 @@ FROM c]]></RewrittenQuery>
           <Aggregates />
           <GroupByAliasToAggregateType>
             <AliasToAggregateType>
+              <Alias>$1</Alias>
+              <AggregateOperator>Count</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
               <Alias>count_blah</Alias>
               <AggregateOperator>Count</AggregateOperator>
             </AliasToAggregateType>
             <AliasToAggregateType>
               <Alias>count_blah2</Alias>
-              <AggregateOperator>Count</AggregateOperator>
-            </AliasToAggregateType>
-            <AliasToAggregateType>
-              <Alias>$1</Alias>
               <AggregateOperator>Count</AggregateOperator>
             </AliasToAggregateType>
           </GroupByAliasToAggregateType>
@@ -1486,11 +1486,11 @@ FROM c]]></RewrittenQuery>
               <AggregateOperator>Min</AggregateOperator>
             </AliasToAggregateType>
             <AliasToAggregateType>
-              <Alias>min_blah</Alias>
+              <Alias>min_blah2</Alias>
               <AggregateOperator>Min</AggregateOperator>
             </AliasToAggregateType>
             <AliasToAggregateType>
-              <Alias>min_blah2</Alias>
+              <Alias>min_blah</Alias>
               <AggregateOperator>Min</AggregateOperator>
             </AliasToAggregateType>
           </GroupByAliasToAggregateType>
@@ -1536,7 +1536,7 @@ FROM c]]></RewrittenQuery>
           <Aggregates />
           <GroupByAliasToAggregateType>
             <AliasToAggregateType>
-              <Alias>$1</Alias>
+              <Alias>max_blah</Alias>
               <AggregateOperator>Max</AggregateOperator>
             </AliasToAggregateType>
             <AliasToAggregateType>
@@ -1544,7 +1544,7 @@ FROM c]]></RewrittenQuery>
               <AggregateOperator>Max</AggregateOperator>
             </AliasToAggregateType>
             <AliasToAggregateType>
-              <Alias>max_blah</Alias>
+              <Alias>$1</Alias>
               <AggregateOperator>Max</AggregateOperator>
             </AliasToAggregateType>
           </GroupByAliasToAggregateType>
@@ -1594,11 +1594,11 @@ FROM c]]></RewrittenQuery>
               <AggregateOperator>Average</AggregateOperator>
             </AliasToAggregateType>
             <AliasToAggregateType>
-              <Alias>avg_blah</Alias>
+              <Alias>avg_blah2</Alias>
               <AggregateOperator>Average</AggregateOperator>
             </AliasToAggregateType>
             <AliasToAggregateType>
-              <Alias>avg_blah2</Alias>
+              <Alias>avg_blah</Alias>
               <AggregateOperator>Average</AggregateOperator>
             </AliasToAggregateType>
           </GroupByAliasToAggregateType>

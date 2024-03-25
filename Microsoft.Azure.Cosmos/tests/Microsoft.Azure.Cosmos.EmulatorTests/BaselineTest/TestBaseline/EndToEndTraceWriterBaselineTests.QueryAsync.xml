@@ -34,8 +34,12 @@
     │   │   ├── Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   │   │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │   ├── Service Interop Query Plan(00000000-0000-0000-0000-000000000000)  Query-Component  00:00:00:000  0.00 milliseconds  
+    │   │   ├── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │   │   └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │   └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │       └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   ├── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │   └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
     │       ├── Prefetching(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
     │       └── [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
@@ -215,6 +219,26 @@
                   "duration in milliseconds": 0
                 }
               ]
+            },
+            {
+              "name": "Get Partition Key Ranges",
+              "duration in milliseconds": 0,
+              "children": [
+                {
+                  "name": "Try Get Overlapping Ranges",
+                  "duration in milliseconds": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Get Partition Key Ranges",
+          "duration in milliseconds": 0,
+          "children": [
+            {
+              "name": "Try Get Overlapping Ranges",
+              "duration in milliseconds": 0
             }
           ]
         },
@@ -615,21 +639,19 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="FeedIterator Read Next Async" displayName="FeedIterator Read Next Async containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.FeedIterator Read Next Async" displayName="FeedIterator Read Next Async containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">FeedIterator Read Next Async</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_content_length_bytes">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.response_content_length_bytes">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -638,21 +660,19 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="FeedIterator Read Next Async" displayName="FeedIterator Read Next Async containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.FeedIterator Read Next Async" displayName="FeedIterator Read Next Async containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">FeedIterator Read Next Async</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_content_length_bytes">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.response_content_length_bytes">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -661,21 +681,19 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="FeedIterator Read Next Async" displayName="FeedIterator Read Next Async containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.FeedIterator Read Next Async" displayName="FeedIterator Read Next Async containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">FeedIterator Read Next Async</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_content_length_bytes">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.response_content_length_bytes">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -684,21 +702,19 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="FeedIterator Read Next Async" displayName="FeedIterator Read Next Async containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.FeedIterator Read Next Async" displayName="FeedIterator Read Next Async containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">FeedIterator Read Next Async</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_content_length_bytes">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.response_content_length_bytes">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -706,13 +722,6 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Query Document">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
@@ -755,8 +764,12 @@
     │   │   ├── Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   │   │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │   ├── Service Interop Query Plan(00000000-0000-0000-0000-000000000000)  Query-Component  00:00:00:000  0.00 milliseconds  
+    │   │   ├── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │   │   └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │   └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │       └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   ├── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │   └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
     │   │   ├── Prefetching(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
     │   │   └── [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
@@ -940,6 +953,26 @@
                   "duration in milliseconds": 0
                 }
               ]
+            },
+            {
+              "name": "Get Partition Key Ranges",
+              "duration in milliseconds": 0,
+              "children": [
+                {
+                  "name": "Try Get Overlapping Ranges",
+                  "duration in milliseconds": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Get Partition Key Ranges",
+          "duration in milliseconds": 0,
+          "children": [
+            {
+              "name": "Try Get Overlapping Ranges",
+              "duration in milliseconds": 0
             }
           ]
         },
@@ -1356,21 +1389,19 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_content_length_bytes">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.response_content_length_bytes">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -1379,21 +1410,19 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_content_length_bytes">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.response_content_length_bytes">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -1402,21 +1431,19 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_content_length_bytes">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.response_content_length_bytes">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -1425,21 +1452,19 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_content_length_bytes">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.response_content_length_bytes">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -1447,13 +1472,6 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Query Document">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
@@ -1497,8 +1515,12 @@
     │   │   ├── Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   │   │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │   ├── Service Interop Query Plan(00000000-0000-0000-0000-000000000000)  Query-Component  00:00:00:000  0.00 milliseconds  
+    │   │   ├── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │   │   └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │   └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │       └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   ├── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │   └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
     │       ├── Prefetching(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
     │       └── [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
@@ -1678,6 +1700,26 @@
                   "duration in milliseconds": 0
                 }
               ]
+            },
+            {
+              "name": "Get Partition Key Ranges",
+              "duration in milliseconds": 0,
+              "children": [
+                {
+                  "name": "Try Get Overlapping Ranges",
+                  "duration in milliseconds": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Get Partition Key Ranges",
+          "duration in milliseconds": 0,
+          "children": [
+            {
+              "name": "Try Get Overlapping Ranges",
+              "duration in milliseconds": 0
             }
           ]
         },
@@ -2078,21 +2120,19 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="FeedIterator Read Next Async" displayName="FeedIterator Read Next Async containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.FeedIterator Read Next Async" displayName="FeedIterator Read Next Async containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">FeedIterator Read Next Async</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_content_length_bytes">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.response_content_length_bytes">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -2101,21 +2141,19 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="FeedIterator Read Next Async" displayName="FeedIterator Read Next Async containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.FeedIterator Read Next Async" displayName="FeedIterator Read Next Async containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">FeedIterator Read Next Async</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_content_length_bytes">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.response_content_length_bytes">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -2124,21 +2162,19 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="FeedIterator Read Next Async" displayName="FeedIterator Read Next Async containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.FeedIterator Read Next Async" displayName="FeedIterator Read Next Async containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">FeedIterator Read Next Async</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_content_length_bytes">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.response_content_length_bytes">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -2147,21 +2183,19 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="FeedIterator Read Next Async" displayName="FeedIterator Read Next Async containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.FeedIterator Read Next Async" displayName="FeedIterator Read Next Async containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">FeedIterator Read Next Async</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_content_length_bytes">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.response_content_length_bytes">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -2169,13 +2203,6 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Query Document">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
@@ -2219,8 +2246,12 @@
     │   │   ├── Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   │   │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │   ├── Service Interop Query Plan(00000000-0000-0000-0000-000000000000)  Query-Component  00:00:00:000  0.00 milliseconds  
+    │   │   ├── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │   │   └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │   └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │       └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   ├── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │   └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
     │   │   ├── Prefetching(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
     │   │   └── [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
@@ -2404,6 +2435,26 @@
                   "duration in milliseconds": 0
                 }
               ]
+            },
+            {
+              "name": "Get Partition Key Ranges",
+              "duration in milliseconds": 0,
+              "children": [
+                {
+                  "name": "Try Get Overlapping Ranges",
+                  "duration in milliseconds": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Get Partition Key Ranges",
+          "duration in milliseconds": 0,
+          "children": [
+            {
+              "name": "Try Get Overlapping Ranges",
+              "duration in milliseconds": 0
             }
           ]
         },
@@ -2820,21 +2871,19 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_content_length_bytes">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.response_content_length_bytes">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -2843,21 +2892,19 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_content_length_bytes">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.response_content_length_bytes">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -2866,21 +2913,19 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_content_length_bytes">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.response_content_length_bytes">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -2889,21 +2934,19 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_content_length_bytes">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.response_content_length_bytes">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -2911,13 +2954,6 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Query Document">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
@@ -2985,8 +3021,12 @@
     │   │   │                                   [PointOperationStatisticsTraceDatum]
     │   │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │   │                               )
+    │   │   ├── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │   │   └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │   └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │       └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   ├── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │   └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
     │   │   ├── Prefetching(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
     │   │   └── [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
@@ -3220,6 +3260,26 @@
                   "duration in milliseconds": 0
                 }
               ]
+            },
+            {
+              "name": "Get Partition Key Ranges",
+              "duration in milliseconds": 0,
+              "children": [
+                {
+                  "name": "Try Get Overlapping Ranges",
+                  "duration in milliseconds": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Get Partition Key Ranges",
+          "duration in milliseconds": 0,
+          "children": [
+            {
+              "name": "Try Get Overlapping Ranges",
+              "duration in milliseconds": 0
             }
           ]
         },
@@ -3636,21 +3696,19 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_content_length_bytes">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.response_content_length_bytes">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -3659,21 +3717,19 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_content_length_bytes">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.response_content_length_bytes">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -3682,21 +3738,19 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_content_length_bytes">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.response_content_length_bytes">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -3705,21 +3759,19 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_content_length_bytes">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.response_content_length_bytes">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -3727,13 +3779,6 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Query Document">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
@@ -3779,9 +3824,15 @@
     │   │   ├── Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   │   │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │   ├── Service Interop Query Plan(00000000-0000-0000-0000-000000000000)  Query-Component  00:00:00:000  0.00 milliseconds  
+    │   │   ├── Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │   │   └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │   │       └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │   └── Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │       └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │           └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   ├── Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │   └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │       └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
     │       ├── Prefetching(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
     │       └── [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
@@ -3967,6 +4018,38 @@
                   ]
                 }
               ]
+            },
+            {
+              "name": "Get Overlapping Feed Ranges",
+              "duration in milliseconds": 0,
+              "children": [
+                {
+                  "name": "Get Partition Key Ranges",
+                  "duration in milliseconds": 0,
+                  "children": [
+                    {
+                      "name": "Try Get Overlapping Ranges",
+                      "duration in milliseconds": 0
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Get Overlapping Feed Ranges",
+          "duration in milliseconds": 0,
+          "children": [
+            {
+              "name": "Get Partition Key Ranges",
+              "duration in milliseconds": 0,
+              "children": [
+                {
+                  "name": "Try Get Overlapping Ranges",
+                  "duration in milliseconds": 0
+                }
+              ]
             }
           ]
         },
@@ -4367,21 +4450,19 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="FeedIterator Read Next Async" displayName="FeedIterator Read Next Async containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.FeedIterator Read Next Async" displayName="FeedIterator Read Next Async containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">FeedIterator Read Next Async</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_content_length_bytes">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.response_content_length_bytes">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -4390,21 +4471,19 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="FeedIterator Read Next Async" displayName="FeedIterator Read Next Async containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.FeedIterator Read Next Async" displayName="FeedIterator Read Next Async containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">FeedIterator Read Next Async</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_content_length_bytes">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.response_content_length_bytes">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -4413,21 +4492,19 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="FeedIterator Read Next Async" displayName="FeedIterator Read Next Async containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.FeedIterator Read Next Async" displayName="FeedIterator Read Next Async containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">FeedIterator Read Next Async</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_content_length_bytes">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.response_content_length_bytes">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -4436,21 +4513,19 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="FeedIterator Read Next Async" displayName="FeedIterator Read Next Async containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.FeedIterator Read Next Async" displayName="FeedIterator Read Next Async containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">FeedIterator Read Next Async</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_content_length_bytes">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.response_content_length_bytes">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -4458,13 +4533,6 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Query Document">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
@@ -4510,9 +4578,15 @@
     │   │   ├── Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   │   │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │   ├── Service Interop Query Plan(00000000-0000-0000-0000-000000000000)  Query-Component  00:00:00:000  0.00 milliseconds  
+    │   │   ├── Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │   │   └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │   │       └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │   └── Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │       └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │           └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   ├── Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │   └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │       └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
     │   │   ├── Prefetching(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
     │   │   └── [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
@@ -4702,6 +4776,38 @@
                   ]
                 }
               ]
+            },
+            {
+              "name": "Get Overlapping Feed Ranges",
+              "duration in milliseconds": 0,
+              "children": [
+                {
+                  "name": "Get Partition Key Ranges",
+                  "duration in milliseconds": 0,
+                  "children": [
+                    {
+                      "name": "Try Get Overlapping Ranges",
+                      "duration in milliseconds": 0
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Get Overlapping Feed Ranges",
+          "duration in milliseconds": 0,
+          "children": [
+            {
+              "name": "Get Partition Key Ranges",
+              "duration in milliseconds": 0,
+              "children": [
+                {
+                  "name": "Try Get Overlapping Ranges",
+                  "duration in milliseconds": 0
+                }
+              ]
             }
           ]
         },
@@ -5118,21 +5224,19 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_content_length_bytes">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.response_content_length_bytes">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -5141,21 +5245,19 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_content_length_bytes">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.response_content_length_bytes">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -5164,21 +5266,19 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_content_length_bytes">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.response_content_length_bytes">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -5187,21 +5287,19 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_content_length_bytes">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.response_content_length_bytes">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -5209,13 +5307,6 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Query Document">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
