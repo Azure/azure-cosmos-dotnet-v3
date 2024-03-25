@@ -924,6 +924,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Type clientMessageHandlerType = cosmosClient.ClientContext.DocumentClient.httpClient.HttpMessageHandler.GetType();
             Assert.AreEqual(socketHandlerType, clientMessageHandlerType);
         }
+
+        [TestMethod]
+        [TestCategory("MultiRegion")]
+        public async Task MultiRegionAccountTest()
+        {
+            string connectionString = TestCommon.GetMultiRegionConnectionString();
+            Assert.IsFalse(string.IsNullOrEmpty(connectionString), "Connection String Not Set");
+            using CosmosClient cosmosClient = new CosmosClient(connectionString);
+            Assert.IsNotNull(cosmosClient);
+            AccountProperties properties = await cosmosClient.ReadAccountAsync();
+            Assert.IsNotNull(properties);
+        }
        
         public static IReadOnlyList<string> GetActiveConnections()
         {
