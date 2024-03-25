@@ -197,7 +197,7 @@
             return new QueryPartitionProvider(queryEngineConfiguration);
         }
 
-        private static PartitionKeyDefinition CreatePartitionKeyDefinition()
+        internal static PartitionKeyDefinition CreatePartitionKeyDefinition()
         {
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
             {
@@ -306,7 +306,7 @@
                             true,
                             true)
                     },
-                    new PartitionKeyDefinition(),
+                    SubpartitionTests.CreatePartitionKeyDefinition(),
                     Cosmos.GeospatialType.Geometry));
             }
 
