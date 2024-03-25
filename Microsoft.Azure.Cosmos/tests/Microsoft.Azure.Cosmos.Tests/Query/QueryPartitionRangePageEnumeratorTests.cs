@@ -99,7 +99,6 @@
                             queryDataSource: documentContainer,
                             sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
                             feedRangeState: feedRangeState,
-                            partitionKey: null,
                             queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                             cancellationToken: default),
                         trace: NoOpTrace.Singleton);
@@ -142,7 +141,6 @@
                         queryDataSource: documentContainer,
                         sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
                         feedRangeState: feedRangeState,
-                        partitionKey: null,
                         queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                         cancellationToken: default),
                     trace: NoOpTrace.Singleton);
@@ -165,7 +163,6 @@
                         queryDataSource: documentContainer,
                         sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
                         feedRangeState: new FeedRangeState<QueryState>(ranges[0], state),
-                        partitionKey: null,
                         queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                         cancellationToken: cancellationToken),
                     trace: NoOpTrace.Singleton);

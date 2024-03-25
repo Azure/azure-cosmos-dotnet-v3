@@ -281,7 +281,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                     documentContainer,
                     updatedSqlQuerySpec,
                     feedRangeState,
-                    partitionKey,
                     queryPaginationOptions,
                     cancellationToken);
 
