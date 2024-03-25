@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal static string GetMultiRegionConnectionString()
         {
-            return Environment.GetEnvironmentVariable("COSMOSDB_MULTI_REGION");
+            return Cosmos.ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", string.Empty);
         }
 
         internal static CosmosClientBuilder GetDefaultConfiguration(
