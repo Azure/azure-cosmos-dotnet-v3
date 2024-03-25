@@ -930,7 +930,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task MultiRegionAccountTest()
         {
             string connectionString = TestCommon.GetMultiRegionConnectionString();
-            Assert.IsTrue(string.IsNullOrEmpty(connectionString), "Connection String Not Set");
+            Assert.IsTrue(string.IsNullOrEmpty(connectionString), "Connection String Not Set: " + connectionString[..10]);
             using CosmosClient cosmosClient = new CosmosClient(connectionString);
             Assert.IsNotNull(cosmosClient);
             AccountProperties properties = await cosmosClient.ReadAccountAsync();
