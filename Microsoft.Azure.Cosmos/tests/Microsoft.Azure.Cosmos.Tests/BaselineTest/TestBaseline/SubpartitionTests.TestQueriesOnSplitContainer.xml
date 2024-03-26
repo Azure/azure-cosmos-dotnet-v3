@@ -1,6 +1,39 @@
 ﻿<Results>
   <Result>
-    <Input />
+    <Input>
+      <Description>SELECT</Description>
+      <Query><![CDATA[SELECT c.id, c.value2 FROM c]]></Query>
+      <ODE>True</ODE>
+    </Input>
+    <Output>
+      <Documents><![CDATA[{"id":"2","value2":"12"},
+{"id":"2","value2":"17"},
+{"id":"2","value2":"2"},
+{"id":"2","value2":"22"},
+{"id":"2","value2":"27"},
+{"id":"2","value2":"32"},
+{"id":"2","value2":"37"},
+{"id":"2","value2":"42"},
+{"id":"2","value2":"47"},
+{"id":"2","value2":"52"},
+{"id":"2","value2":"57"},
+{"id":"2","value2":"62"},
+{"id":"2","value2":"67"},
+{"id":"2","value2":"7"},
+{"id":"2","value2":"72"},
+{"id":"2","value2":"77"},
+{"id":"2","value2":"82"},
+{"id":"2","value2":"87"},
+{"id":"2","value2":"92"},
+{"id":"2","value2":"97"}]]></Documents>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SELECT without ODE</Description>
+      <Query><![CDATA[SELECT c.id, c.value2 FROM c]]></Query>
+      <ODE>False</ODE>
+    </Input>
     <Output>
       <Documents><![CDATA[{"id":"2","value2":"12"},
 {"id":"2","value2":"17"},

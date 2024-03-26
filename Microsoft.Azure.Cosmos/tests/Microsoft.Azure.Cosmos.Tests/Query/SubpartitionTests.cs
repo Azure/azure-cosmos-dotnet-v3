@@ -33,7 +33,12 @@
         [TestMethod]
         public void TestQueriesOnSplitContainer()
         {
-            this.ExecuteTestSuite(new List<SubpartitionTestInput> { new SubpartitionTestInput("Test Queries on Split container") });
+            List<SubpartitionTestInput> inputs = new List<SubpartitionTestInput>
+                {
+                    new SubpartitionTestInput("SELECT", query: @"SELECT c.id, c.value2 FROM c", ode: true),
+                    new SubpartitionTestInput("SELECT without ODE", query: @"SELECT c.id, c.value2 FROM c", ode: false),
+                };
+            this.ExecuteTestSuite(inputs);
         }
 
         /// <summary>
@@ -58,11 +63,6 @@
             Assert.IsTrue(pkRangeId.Exception.InnerException.Message.StartsWith("Epk Range: [B5-D7-B7-26-D6-EA-DB-11-F1-EF-AD-92-12-15-D6-60,B5-D7-B7-26-D6-EA-DB-11-F1-EF-AD-92-12-15-D6-60-FF) is gone."), "Gone exception is expected!");
         }
 
-        public SubpartitionTestOutput ExecuteTest2(SubpartitionTestInput input)
-        {
-            return new SubpartitionTestOutput(new List<CosmosElement>());
-        }
-
         public override SubpartitionTestOutput ExecuteTest(SubpartitionTestInput input)
         {
             IMonadicDocumentContainer monadicDocumentContainer = CreateSplitDocumentContainerAsync(DocumentCount).Result;
@@ -74,7 +74,7 @@
                     PartitionKey = new PartitionKeyBuilder().Add(SplitPartitionKey.ToString()).Build()
                 };
             (CosmosQueryExecutionContextFactory.InputParameters inputParameters, CosmosQueryContextCore cosmosQueryContextCore) =
-                CreateInputParamsAndQueryContext(queryRequestOptions);
+                CreateInputParamsAndQueryContext(input, queryRequestOptions);
             IQueryPipelineStage queryPipelineStage = CosmosQueryExecutionContextFactory.Create(
                         documentContainer,
                         cosmosQueryContextCore,
@@ -95,9 +95,9 @@
             return new SubpartitionTestOutput(documents);
         }
 
-        private static Tuple<CosmosQueryExecutionContextFactory.InputParameters, CosmosQueryContextCore> CreateInputParamsAndQueryContext(QueryRequestOptions queryRequestOptions, bool clientDisableOde = false)
+        private static Tuple<CosmosQueryExecutionContextFactory.InputParameters, CosmosQueryContextCore> CreateInputParamsAndQueryContext(SubpartitionTestInput input, QueryRequestOptions queryRequestOptions)
         {
-            string query = @"SELECT c.id, c.value2 FROM c";
+            string query = input.Query;
             CosmosElement continuationToken = null;
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
             {
@@ -111,11 +111,13 @@
                 Version = PartitionKeyDefinitionVersion.V2,
             };
 
+            queryRequestOptions.EnableOptimisticDirectExecution = input.ODE;
+
             CosmosSerializerCore serializerCore = new();
             using StreamReader streamReader = new(serializerCore.ToStreamSqlQuerySpec(new SqlQuerySpec(query), Documents.ResourceType.Document));
             string sqlQuerySpecJsonString = streamReader.ReadToEnd();
 
-            (PartitionedQueryExecutionInfo partitionedQueryExecutionInfo, QueryPartitionProvider queryPartitionProvider) = GetPartitionedQueryExecutionInfoAndPartitionProvider(sqlQuerySpecJsonString, partitionKeyDefinition, clientDisableOde);
+            (PartitionedQueryExecutionInfo partitionedQueryExecutionInfo, QueryPartitionProvider queryPartitionProvider) = GetPartitionedQueryExecutionInfoAndPartitionProvider(sqlQuerySpecJsonString, partitionKeyDefinition);
             CosmosQueryExecutionContextFactory.InputParameters inputParameters = new CosmosQueryExecutionContextFactory.InputParameters(
                 sqlQuerySpec: new SqlQuerySpec(query),
                 initialUserContinuationToken: continuationToken,
@@ -147,9 +149,9 @@
             return Tuple.Create(inputParameters, cosmosQueryContextCore);
         }
 
-        internal static Tuple<PartitionedQueryExecutionInfo, QueryPartitionProvider> GetPartitionedQueryExecutionInfoAndPartitionProvider(string querySpecJsonString, PartitionKeyDefinition pkDefinition, bool clientDisableOde = false)
+        internal static Tuple<PartitionedQueryExecutionInfo, QueryPartitionProvider> GetPartitionedQueryExecutionInfoAndPartitionProvider(string querySpecJsonString, PartitionKeyDefinition pkDefinition)
         {
-            QueryPartitionProvider queryPartitionProvider = CreateCustomQueryPartitionProvider("clientDisableOptimisticDirectExecution", clientDisableOde.ToString().ToLower());
+            QueryPartitionProvider queryPartitionProvider = CreateCustomQueryPartitionProvider();
             TryCatch<PartitionedQueryExecutionInfo> tryGetQueryPlan = queryPartitionProvider.TryGetPartitionedQueryExecutionInfo(
                 querySpecJsonString: querySpecJsonString,
                 partitionKeyDefinition: pkDefinition,
@@ -165,7 +167,7 @@
             return Tuple.Create(partitionedQueryExecutionInfo, queryPartitionProvider);
         }
 
-        private static QueryPartitionProvider CreateCustomQueryPartitionProvider(string key, string value)
+        private static QueryPartitionProvider CreateCustomQueryPartitionProvider()
         {
             Dictionary<string, object> queryEngineConfiguration = new Dictionary<string, object>()
             {
@@ -191,8 +193,6 @@
                 {"sqlDisableFilterPlanOptimization", false},
                 {"clientDisableOptimisticDirectExecution", false}
             };
-
-            queryEngineConfiguration[key] = bool.TryParse(value, out bool boolValue) ? boolValue : value;
 
             return new QueryPartitionProvider(queryEngineConfiguration);
         }
@@ -227,7 +227,6 @@
             InMemoryContainer inMemoryContainer = new InMemoryContainer(partitionKeyDefinition, createSplitForMultiHashAtSecondlevel: true, resolvePartitionsBasedOnPrefix: true);
             for (int i = 0; i < numItems; i++)
             {
-                // Insert an item
                 CosmosObject item = CosmosObject.Parse($"{{\"id\" : \"{i % 5}\", \"value1\" : \"{Guid.NewGuid()}\", \"value2\" : \"{i}\" }}");
                 while (true)
                 {
@@ -351,13 +350,24 @@
 
     public class SubpartitionTestInput : BaselineTestInput
     {
-        public SubpartitionTestInput(string description)
+        public SubpartitionTestInput(string description, string query, bool ode)
             :base(description)
         {
+            this.Query = query;
+            this.ODE = ode;
         }
+
+        internal string Query { get; }
+
+        internal bool ODE { get; }
 
         public override void SerializeAsXml(XmlWriter xmlWriter)
         {
+            xmlWriter.WriteElementString("Description", this.Description);
+            xmlWriter.WriteStartElement("Query");
+            xmlWriter.WriteCData(this.Query);
+            xmlWriter.WriteEndElement();
+            xmlWriter.WriteElementString("ODE", this.ODE.ToString());
         }
     }
 
