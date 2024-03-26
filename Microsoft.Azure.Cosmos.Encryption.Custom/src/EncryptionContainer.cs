@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos;
     using Newtonsoft.Json.Linq;
 
     internal sealed class EncryptionContainer : Container
@@ -1023,6 +1022,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         }
 #endif
 
+#if SDKPROJECTREF
+        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
+            string processorName,
+            ChangeFeedHandler<ChangeFeedItemChange<T>> onChangesDelegate)
+        {
+            return this.container.GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(
+                processorName,
+                onChangesDelegate);
+        }
+#endif
         private async Task<ResponseMessage> ReadManyItemsHelperAsync(
            IReadOnlyList<(string id, PartitionKey partitionKey)> items,
            ReadManyRequestOptions readManyRequestOptions = null,
