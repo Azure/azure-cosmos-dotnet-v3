@@ -38,13 +38,28 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             MakeTest(
                 @"SELECT c.id AS Id, c.word AS Word " +
                 @"FROM c " +
+                @$"ORDER BY VectorDistance(""{Embedding}"", c.embedding, true, {{distanceFunction:'Cosine'}}) DESC",
+                Expectations.DocumentsAreInDescendingCosineDistanceOrder()),
+            MakeTest(
+                @"SELECT c.id AS Id, c.word AS Word " +
+                @"FROM c " +
                 @$"ORDER BY VectorDistance(""{Embedding}"", c.embedding, true, {{distanceFunction:'DotProduct'}}) ASC",
                 Expectations.DocumentsAreInDotProductDistanceOrder()),
             MakeTest(
                 @"SELECT c.id AS Id, c.word AS Word " +
                 @"FROM c " +
+                @$"ORDER BY VectorDistance(""{Embedding}"", c.embedding, true, {{distanceFunction:'DotProduct'}}) DESC",
+                Expectations.DocumentsAreInDescendingDotProductDistanceOrder()),
+            MakeTest(
+                @"SELECT c.id AS Id, c.word AS Word " +
+                @"FROM c " +
                 @$"ORDER BY VectorDistance(""{Embedding}"", c.embedding, true, {{distanceFunction:'Euclidean'}}) ASC",
-                Expectations.DocumentsAreInEuclideanDistanceOrder())
+                Expectations.DocumentsAreInEuclideanDistanceOrder()),
+            MakeTest(
+                @"SELECT c.id AS Id, c.word AS Word " +
+                @"FROM c " +
+                @$"ORDER BY VectorDistance(""{Embedding}"", c.embedding, true, {{distanceFunction:'Euclidean'}}) DESC",
+                Expectations.DocumentsAreInDescendingEuclideanDistanceOrder())
         };
 
         [Ignore("Requires new build of emulator and ServiceInterop from the 0318 branch")]
@@ -133,6 +148,24 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             public static IEnumerable<Document> DocumentsAreInEuclideanDistanceOrder()
             {
                 return DocumentsAreInCosineDistanceOrder();
+            }
+
+            public static IEnumerable<Document> DocumentsAreInDescendingCosineDistanceOrder()
+            {
+                return DocumentsAreInCosineDistanceOrder()
+                    .Reverse();
+            }
+
+            public static IEnumerable<Document> DocumentsAreInDescendingDotProductDistanceOrder()
+            {
+                return DocumentsAreInDotProductDistanceOrder()
+                    .Reverse();
+            }
+
+            public static IEnumerable<Document> DocumentsAreInDescendingEuclideanDistanceOrder()
+            {
+                return DocumentsAreInEuclideanDistanceOrder()
+                    .Reverse();
             }
         }
 
