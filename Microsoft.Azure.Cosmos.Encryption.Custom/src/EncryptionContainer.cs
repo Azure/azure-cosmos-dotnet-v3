@@ -1021,6 +1021,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 requestOptions,
                 cancellationToken);
         }
+
+        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
+            string processorName,
+            ChangeFeedHandler<ChangeFeedItemChange<T>> onChangesDelegate)
+        {
+            return this.container.GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
+                processorName,
+                onChangesDelegte);
+        }
 #endif
 
         private async Task<ResponseMessage> ReadManyItemsHelperAsync(
