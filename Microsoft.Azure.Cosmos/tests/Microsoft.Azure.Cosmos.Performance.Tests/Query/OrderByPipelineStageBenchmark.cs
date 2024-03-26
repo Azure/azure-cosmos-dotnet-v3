@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Query
 
             private readonly IReadOnlyDictionary<FeedRange, IReadOnlyDictionary<CosmosElement, QueryPage>> pages;
 
-            public MockDocumentContainer(IReadOnlyDictionary<FeedRange, IReadOnlyDictionary<CosmosElement, QueryPage>> pages)
+            private MockDocumentContainer(IReadOnlyDictionary<FeedRange, IReadOnlyDictionary<CosmosElement, QueryPage>> pages)
             {
                 this.pages = pages ?? throw new ArgumentNullException(nameof(pages));
             }
