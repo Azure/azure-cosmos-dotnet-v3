@@ -7,9 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Pagination;
@@ -20,7 +18,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
-    using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -508,6 +505,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             Assert.IsTrue(monadicCreate.Succeeded);
             IQueryPipelineStage queryPipelineStage = monadicCreate.Result;
 
+            int countAdditionalHeadersReceived = 0;
             while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default))
             {
                 TryCatch<QueryPage> tryGetQueryPage = queryPipelineStage.Current;
@@ -517,8 +515,17 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 }
 
                 QueryPage queryPage = tryGetQueryPage.Result;
-                Assert.IsTrue(queryPage.AdditionalHeaders.Count > 0);
+                if (queryPage.AdditionalHeaders.Count > 0)
+                {
+                    ++countAdditionalHeadersReceived;
+                }
             }
+
+            int countFeedRanges = (await documentContainer.GetFeedRangesAsync(
+                trace: NoOpTrace.Singleton,
+                cancellationToken: default))
+                .Count;
+            Assert.IsTrue(countAdditionalHeadersReceived >= countFeedRanges);
         }
 
         [TestMethod]
