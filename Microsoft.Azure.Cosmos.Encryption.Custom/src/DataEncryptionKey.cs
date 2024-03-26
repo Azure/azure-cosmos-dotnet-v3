@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using System;
 
     /// <summary>
-    /// Abstraction for a data encryption key for use in client-side encryption.
+    /// Abstraction for a data encryption key for use in client-side encryptions.
     /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
     /// </summary>
     public abstract class DataEncryptionKey
