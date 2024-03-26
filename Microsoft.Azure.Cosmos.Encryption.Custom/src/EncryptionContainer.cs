@@ -1028,7 +1028,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             return this.container.GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
                 processorName,
-                onChangesDelegte);
+                onChangesDelegate);
         }
 #endif
 
