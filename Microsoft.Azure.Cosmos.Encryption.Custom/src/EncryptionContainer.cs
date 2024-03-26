@@ -1027,7 +1027,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             string processorName,
             ChangeFeedHandler<ChangeFeedItemChange<T>> onChangesDelegate)
         {
-            throw new NotImplementedException();
+            return this.container.GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(
+                processorName,
+                onChangesDelegate);
         }
 #endif
         private async Task<ResponseMessage> ReadManyItemsHelperAsync(
