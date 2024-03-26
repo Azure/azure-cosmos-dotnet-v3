@@ -590,6 +590,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 partitionKey: null,
                 GetQueryPlan(query),
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: pageSize),
+                containerQueryProperties: new ContainerQueryProperties(),
                 maxConcurrency: 10,
                 requestCancellationToken: default,
                 requestContinuationToken: state);

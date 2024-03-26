@@ -8,15 +8,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using System.Collections;
     using System.Collections.Generic;
     using System.Collections.Immutable;
+    using Debug = System.Diagnostics.Debug;
     using System.IO;
     using System.Linq;
     using System.Reflection;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
+    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core;
@@ -35,6 +38,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using static Microsoft.Azure.Cosmos.Query.Core.SqlQueryResumeFilter;
     using ResourceIdentifier = Cosmos.Pagination.ResourceIdentifier;
     using UInt128 = UInt128;
+    using Microsoft.Azure.Documents.Routing;
 
     // Collection useful for mocking requests and repartitioning (splits / merge).
     internal class InMemoryContainer : IMonadicDocumentContainer
@@ -46,9 +50,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         private PartitionKeyHashRangeDictionary<List<Change>> partitionedChanges;
         private Dictionary<int, PartitionKeyHashRange> partitionKeyRangeIdToHashRange;
         private Dictionary<int, PartitionKeyHashRange> cachedPartitionKeyRangeIdToHashRange;
+        private readonly bool createSplitForMultiHashAtSecondlevel;
+        private readonly bool resolvePartitionsBasedOnPrefix;
 
         public InMemoryContainer(
-            PartitionKeyDefinition partitionKeyDefinition)
+            PartitionKeyDefinition partitionKeyDefinition,
+            bool createSplitForMultiHashAtSecondlevel = false,
+            bool resolvePartitionsBasedOnPrefix = false)
         {
             this.partitionKeyDefinition = partitionKeyDefinition ?? throw new ArgumentNullException(nameof(partitionKeyDefinition));
             PartitionKeyHashRange fullRange = new PartitionKeyHashRange(startInclusive: null, endExclusive: new PartitionKeyHash(Cosmos.UInt128.MaxValue));
@@ -66,6 +74,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 { 0, fullRange }
             };
             this.parentToChildMapping = new Dictionary<int, (int, int)>();
+            this.createSplitForMultiHashAtSecondlevel = createSplitForMultiHashAtSecondlevel;
+            this.resolvePartitionsBasedOnPrefix = resolvePartitionsBasedOnPrefix;
         }
 
         public Task<TryCatch<List<FeedRangeEpk>>> MonadicGetFeedRangesAsync(
@@ -471,7 +481,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             using (ITrace childTrace = trace.StartChild("Query Transport", TraceComponent.Transport, TraceLevel.Info))
             {
-                TryCatch<int> monadicPartitionKeyRangeId = this.MonadicGetPartitionKeyRangeIdFromFeedRange(feedRangeState.FeedRange);
+                FeedRange feedRange = this.resolvePartitionsBasedOnPrefix ? 
+                    ResolveFeedRangeBasedOnPrefixContainer(feedRangeState.FeedRange, this.partitionKeyDefinition) :
+                    feedRangeState.FeedRange;
+                TryCatch<int> monadicPartitionKeyRangeId = this.MonadicGetPartitionKeyRangeIdFromFeedRange(feedRange);
                 if (monadicPartitionKeyRangeId.Failed)
                 {
                     return Task.FromResult(TryCatch<QueryPage>.FromException(monadicPartitionKeyRangeId.Exception));
@@ -941,6 +954,29 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             return Task.FromResult(TryCatch.FromResult());
         }
 
+        internal static FeedRange ResolveFeedRangeBasedOnPrefixContainer(
+            FeedRange feedRange,
+            PartitionKeyDefinition partitionKeyDefinition)
+        {
+            if (feedRange is FeedRangePartitionKey feedRangePartitionKey)
+            {
+                if (partitionKeyDefinition != null && partitionKeyDefinition.Kind == PartitionKind.MultiHash
+                    && feedRangePartitionKey.PartitionKey.InternalKey?.Components?.Count < partitionKeyDefinition.Paths?.Count)
+                {
+                    PartitionKeyHash partitionKeyHash = feedRangePartitionKey.PartitionKey.InternalKey.Components[0] switch
+                    {
+                        null => PartitionKeyHash.V2.HashUndefined(),
+                        StringPartitionKeyComponent stringPartitionKey => PartitionKeyHash.V2.Hash((string)stringPartitionKey.ToObject()),
+                        NumberPartitionKeyComponent numberPartitionKey => PartitionKeyHash.V2.Hash(Number64.ToDouble(numberPartitionKey.Value)),
+                        _ => throw new ArgumentOutOfRangeException(),
+                    };
+                    feedRange = new FeedRangeEpk(new Documents.Routing.Range<string>(min: partitionKeyHash.Value, max: partitionKeyHash.Value + "-FF", isMinInclusive:true, isMaxInclusive: false));
+                }
+            }
+
+            return feedRange;
+        }
+
         public Task<TryCatch> MonadicMergeAsync(
             FeedRangeInternal feedRange1,
             FeedRangeInternal feedRange2,
@@ -1335,7 +1371,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             }
         }
 
-        private TryCatch<int> MonadicGetPartitionKeyRangeIdFromFeedRange(FeedRange feedRange)
+        internal TryCatch<int> MonadicGetPartitionKeyRangeIdFromFeedRange(FeedRange feedRange)
         {
             int partitionKeyRangeId;
             if (feedRange is FeedRangeEpk feedRangeEpk)
@@ -1404,10 +1440,116 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
         private static PartitionKeyHashRange FeedRangeEpkToHashRange(FeedRangeEpk feedRangeEpk)
         {
-            PartitionKeyHash? start = feedRangeEpk.Range.Min == string.Empty ? (PartitionKeyHash?)null : PartitionKeyHash.Parse(feedRangeEpk.Range.Min);
-            PartitionKeyHash? end = feedRangeEpk.Range.Max == string.Empty || feedRangeEpk.Range.Max == "FF" ? (PartitionKeyHash?)null : PartitionKeyHash.Parse(feedRangeEpk.Range.Max);
+            PartitionKeyHash? start =
+                feedRangeEpk.Range.Min == string.Empty ?
+                (PartitionKeyHash?)null :
+                FromHashString(feedRangeEpk.Range.Min);
+            PartitionKeyHash? end = 
+                feedRangeEpk.Range.Max == string.Empty || feedRangeEpk.Range.Max == "FF" ?
+                (PartitionKeyHash?)null :
+                FromHashString(feedRangeEpk.Range.Max);
             PartitionKeyHashRange hashRange = new PartitionKeyHashRange(start, end);
             return hashRange;
+        }
+
+        /// <summary>
+        /// Creates a partition key hash from a rangeHash value. Supports if the rangeHash is over a hierarchical partition key.
+        /// </summary>
+        private static PartitionKeyHash FromHashString(string rangeHash)
+        {
+            List<UInt128> hashes = new();
+            foreach(string hashComponent in GetHashComponents(rangeHash))
+            {
+                // Hash FF has a special meaning in CosmosDB stack. It represents the max range which needs to be correctly represented for UInt128 parsing.
+                string value = hashComponent.Equals("FF", StringComparison.OrdinalIgnoreCase) ?
+                    "FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF" :
+                    hashComponent;
+
+                bool success = UInt128.TryParse(value, out UInt128 uInt128);
+                Debug.Assert(success, "InMemoryContainer Assert!", "UInt128 parsing must succeed");
+                hashes.Add(uInt128);
+            }
+
+            return new PartitionKeyHash(hashes.ToArray());
+        }
+
+        /// <summary>
+        /// PartitionKeyHash.Parse requires a UInt128 parse-able string which itself requires hyphens to be present between subsequent byte values.
+        /// The hash values generated by rest of the (test) code may or may not honor this.
+        /// Furthermore, in case of hierarchical partitions, the hash values are concatenated together and therefore need to be broken into separate segments for parsing each one individually.
+        /// </summary>
+        /// <param name="rangeValue"></param>
+        /// <returns></returns>
+        private static IEnumerable<string> GetHashComponents(string rangeValue)
+        {
+            int start = 0;
+
+            while (start < rangeValue.Length)
+            {
+                string uInt128Segment = FixupUInt128(rangeValue, ref start);
+                yield return uInt128Segment;
+            }
+        }
+
+        private static string FixupUInt128(string buffer, ref int start)
+        {
+            string result;
+            if (buffer.Length <= start + 2)
+            {
+                result = buffer.Substring(start);
+                start = buffer.Length;
+            }
+            else
+            {
+                StringBuilder stringBuilder = new StringBuilder();
+                int index = start;
+                bool done = false;
+                int count = 0;
+                while (!done)
+                {
+                    Debug.Assert(buffer[index] != '-', "InMemoryContainer Assert!", "First character of a chunk cannot be a hyphen");
+                    stringBuilder.Append(buffer[index]);
+                    index++;
+
+                    Debug.Assert(index < buffer.Length, "InMemoryContainer Assert!", "At least 2 characters must be found in a chunk");
+                    Debug.Assert(buffer[index] != '-', "InMemoryContainer Assert!", "Second character of a chunk cannot be a hyphen");
+                    stringBuilder.Append(buffer[index]);
+                    index++;
+
+                    if ((index < buffer.Length) && (buffer[index] == '-'))
+                    {
+                        index++;
+                    }
+
+                    count++;
+                    done = count == 16 || (index >= buffer.Length);
+
+                    if (!done)
+                    {
+                        stringBuilder.Append('-');
+                    }
+                }
+
+                start = index;
+
+                result = stringBuilder.ToString();
+                Debug.Assert(
+                    result.Length >= 2,
+                    "InMemoryContainer Assert!",
+                    "At least 1 byte must be present in hash value");
+                Debug.Assert(
+                    result[0] != '-' && result[result.Length - 1] != '-',
+                    "InMemoryContainer Assert!",
+                    "Hyphens should NOT be present at the start of end of the string");
+                Debug.Assert(
+                    Enumerable
+                        .Range(1, result.Length - 1)
+                        .All(i => (i % 3 == 2) == (result[i] == '-')),
+                    "InMemoryContainer Assert!",
+                    "Hyphens should be (only) present after every subsequent byte value");
+            }
+
+            return result;
         }
 
         private static FeedRangeEpk HashRangeToFeedRangeEpk(PartitionKeyHashRange hashRange)
@@ -1439,7 +1581,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             // For MultiHash Collection, split at top level to ensure documents for top level key exist across partitions
             // after split
-            if (medianPkHash.HashValues.Count > 1)
+            if (medianPkHash.HashValues.Count > 1 && !this.createSplitForMultiHashAtSecondlevel)
             {
                 return new PartitionKeyHash(medianPkHash.HashValues[0]);
             }

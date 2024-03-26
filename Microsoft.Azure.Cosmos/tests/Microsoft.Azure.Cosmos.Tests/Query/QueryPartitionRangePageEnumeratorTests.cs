@@ -100,6 +100,7 @@
                             sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
                             feedRangeState: feedRangeState,
                             partitionKey: null,
+                            containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
                             queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                             cancellationToken: default),
                         trace: NoOpTrace.Singleton);
@@ -143,6 +144,7 @@
                         sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
                         feedRangeState: feedRangeState,
                         partitionKey: null,
+                        containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
                         queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                         cancellationToken: default),
                     trace: NoOpTrace.Singleton);
@@ -166,6 +168,7 @@
                         sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
                         feedRangeState: new FeedRangeState<QueryState>(ranges[0], state),
                         partitionKey: null,
+                        containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
                         queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                         cancellationToken: cancellationToken),
                     trace: NoOpTrace.Singleton);

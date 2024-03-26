@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Tracing;
     using static Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.PartitionMapper;
 
@@ -137,6 +138,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
             IReadOnlyList<FeedRangeEpk> targetRanges,
             Cosmos.PartitionKey? partitionKey,
             QueryPaginationOptions queryPaginationOptions,
+            ContainerQueryProperties containerQueryProperties,
             int maxConcurrency,
             PrefetchPolicy prefetchPolicy,
             CosmosElement continuationToken,
@@ -162,7 +164,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
 
             CrossPartitionRangePageAsyncEnumerator<QueryPage, QueryState> crossPartitionPageEnumerator = new CrossPartitionRangePageAsyncEnumerator<QueryPage, QueryState>(
                 feedRangeProvider: documentContainer,
-                createPartitionRangeEnumerator: ParallelCrossPartitionQueryPipelineStage.MakeCreateFunction(documentContainer, sqlQuerySpec, queryPaginationOptions, partitionKey, cancellationToken),
+                createPartitionRangeEnumerator: ParallelCrossPartitionQueryPipelineStage.MakeCreateFunction(documentContainer, sqlQuerySpec, queryPaginationOptions, partitionKey, containerQueryProperties, cancellationToken),
                 comparer: Comparer.Singleton,
                 maxConcurrency: maxConcurrency,
                 prefetchPolicy: prefetchPolicy,
@@ -249,12 +251,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
             SqlQuerySpec sqlQuerySpec,
             QueryPaginationOptions queryPaginationOptions,
             Cosmos.PartitionKey? partitionKey,
+            ContainerQueryProperties containerQueryProperties,
             CancellationToken cancellationToken) => (FeedRangeState<QueryState> feedRangeState) => new QueryPartitionRangePageAsyncEnumerator(
                 queryDataSource,
                 sqlQuerySpec,
                 feedRangeState,
                 partitionKey,
                 queryPaginationOptions,
+                containerQueryProperties,
                 cancellationToken);
 
         public void SetCancellationToken(CancellationToken cancellationToken)

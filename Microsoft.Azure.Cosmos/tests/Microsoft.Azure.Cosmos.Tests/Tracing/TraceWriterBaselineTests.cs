@@ -758,6 +758,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 partitionKey: null,
                 GetQueryPlan(query),
                 new QueryPaginationOptions(pageSizeHint: pageSize),
+                containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
                 maxConcurrency: 10,
                 requestCancellationToken: default,
                 requestContinuationToken: state);

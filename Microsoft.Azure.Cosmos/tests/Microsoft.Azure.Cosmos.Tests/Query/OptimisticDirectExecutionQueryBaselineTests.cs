@@ -1255,18 +1255,18 @@
 
         public override Task<ContainerQueryProperties> GetCachedContainerQueryPropertiesAsync(string containerLink, Cosmos.PartitionKey? partitionKey, ITrace trace, CancellationToken cancellationToken)
         {
-           return Task.FromResult(new ContainerQueryProperties(
-                "test",
-                new List<Range<string>>
-                { 
-                    new Range<string>(
-                        PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
-                        PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
-                        true,
-                        true)
-                },
-                new PartitionKeyDefinition(),
-                Cosmos.GeospatialType.Geometry));
+            return Task.FromResult(new ContainerQueryProperties(
+                 "test",
+                 new List<Range<string>>
+                 { 
+                     new Range<string>(
+                         PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                         PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+                         true,
+                         true)
+                 },
+                 new PartitionKeyDefinition(),
+                 Cosmos.GeospatialType.Geometry));
         }
 
         public override async Task<bool> GetClientDisableOptimisticDirectExecutionAsync()
