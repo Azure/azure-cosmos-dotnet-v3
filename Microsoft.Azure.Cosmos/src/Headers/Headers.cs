@@ -287,6 +287,11 @@ namespace Microsoft.Azure.Cosmos
             };
         }
 
+        internal Headers(CosmosMessageHeadersInternal cosmosMessageHeaders)
+        {
+            this.CosmosMessageHeaders = cosmosMessageHeaders;
+        }
+
         /// <summary>
         /// Gets the value of a particular header.
         /// </summary>
@@ -403,6 +408,20 @@ namespace Microsoft.Azure.Cosmos
         public virtual T GetHeaderValue<T>(string headerName)
         {
             return this.CosmosMessageHeaders.GetHeaderValue<T>(headerName);
+        }
+
+        /// <summary>
+        /// Clones the current <see cref="Headers"/>.
+        /// </summary>
+        /// <returns>a cloned copy of the current <see cref="Headers"/></returns>
+        public Headers Clone()
+        {
+            StoreRequestHeaders clone = new StoreRequestHeaders();
+            foreach (string key in this.CosmosMessageHeaders.AllKeys())
+            {
+                clone.Add(key, this.CosmosMessageHeaders[key]);
+            }
+            return new Headers(clone);
         }
 
         /// <summary>

@@ -355,6 +355,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos.Samples\Tools\FaultInjection\src\FaultInjection.csproj" />
+  </ItemGroup>
 
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>

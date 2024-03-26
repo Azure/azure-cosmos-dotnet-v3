@@ -686,6 +686,22 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Availability Stragey to be used for periods of high latency
+        /// </summary>
+        /// <param name="strategy"></param>
+        /// <returns>The CosmosClientBuilder</returns>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        CosmosClientBuilder WithAvailibilityStrategy(AvailabilityStrategy strategy)
+        {
+            this.clientOptions.AvailabilityStrategy = strategy;
+            return this;
+        }
+
+        /// <summary>
         /// Specify a store client factory to use for all transport requests for cosmos client.
         /// </summary>
         /// <remarks>

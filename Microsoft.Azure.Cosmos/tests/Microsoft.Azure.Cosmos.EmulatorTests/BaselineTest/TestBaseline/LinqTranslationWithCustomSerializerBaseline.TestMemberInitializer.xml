@@ -1,0 +1,48 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ DataObject initializer with constant value]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc == new DataObject() {NumericField = 12, StringField = "12"}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root = {"number": 12, "String_value": "12", "id": null, "Pk": null})]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select w/ DataObject initializer]]></Description>
+      <Expression><![CDATA[query.Select(doc => new DataObject() {NumericField = 12, StringField = "12"})]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"number": 12, "String_value": "12", "id": null, "Pk": null} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Deeper than top level reference]]></Description>
+      <Expression><![CDATA[query.Select(doc => IIF((doc.NumericField > 12), new DataObject() {NumericField = 12, StringField = "12"}, new DataObject() {NumericField = 12, StringField = "12"}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ((root["NumericField"] > 12) ? {"number": 12, "String_value": "12", "id": null, "Pk": null} : {"number": 12, "String_value": "12", "id": null, "Pk": null}) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ DataObject initializer with member initialization]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc == new DataObject() {NumericField = doc.NumericField, StringField = doc.StringField})).Select(b => "A")]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE "A" 
+FROM root 
+WHERE (root = {"NumericField": root["NumericField"], "StringField": root["StringField"]})]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>
