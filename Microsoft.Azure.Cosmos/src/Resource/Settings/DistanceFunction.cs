@@ -13,19 +13,19 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Represents the euclidean distance function.
         /// </summary>
-        [EnumMember(Value = "Euclidean")]
+        [EnumMember(Value = "euclidean")]
         Euclidean,
 
         /// <summary>
         /// Represents the cosine distance function.
         /// </summary>
-        [EnumMember(Value = "Cosine")]
+        [EnumMember(Value = "cosine")]
         Cosine,
 
         /// <summary>
         /// Represents the dot product distance function.
         /// </summary>
-        [EnumMember(Value = "DotProduct")]
+        [EnumMember(Value = "dotproduct")]
         DotProduct
     }
 }

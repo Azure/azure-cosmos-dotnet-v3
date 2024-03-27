@@ -18,19 +18,19 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Represents a flat vector index type.
         /// </summary>
-        [EnumMember(Value = "Flat")]
+        [EnumMember(Value = "flat")]
         Flat,
 
         /// <summary>
         /// Represents a Disk ANN vector index type.
         /// </summary>
-        [EnumMember(Value = "DiskANN")]
+        [EnumMember(Value = "diskANN")]
         DiskANN,
 
         /// <summary>
         /// Represents a quantized flat vector index type.
         /// </summary>
-        [EnumMember(Value = "QuantizedFlat")]
+        [EnumMember(Value = "quantizedFlat")]
         QuantizedFlat
     }
 
