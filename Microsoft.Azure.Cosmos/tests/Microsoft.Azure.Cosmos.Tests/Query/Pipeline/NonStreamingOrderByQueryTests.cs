@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using System.Threading;
     using System;
     using System.Linq;
+    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
 
     [TestClass]
     public class NonStreamingOrderByQueryTests
@@ -31,22 +32,44 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         private const int DocumentCount = 420;
 
+        private const int LeafPageCount = 100;
+
+        private const int PageSize = 10;
+
+        private const string ActivityId = "ActivityId";
+
+        private const int QueryCharge = 42;
+
+        private const string CollectionRid = "1HNeAM-TiQY=";
+
+        private const string RId = "_rid";
+
+        private const string OrderByItems = "orderByItems";
+
+        private const string Payload = "payload";
+
+        private const string Item = "item";
+
+        private const string Index = "index";
+
+        private const string IndexString = "indexString";
+
         private static readonly int[] PageSizes = new [] { 1, 10, 100, DocumentCount };
 
-        private static readonly IReadOnlyList<OrderByColumn> OrderByColumnIdAsc = new List<OrderByColumn>
-        {
-            new OrderByColumn("c.id", SortOrder.Ascending)
-        };
-
-        private static readonly IReadOnlyList<OrderByColumn> OrderByColumnIdDesc = new List<OrderByColumn>
-        {
-            new OrderByColumn("c.id", SortOrder.Descending)
-        };
-
         [TestMethod]
-        public async Task ParityTests()
+        public async Task InMemoryContainerParityTests()
         {
             IDocumentContainer documentContainer = await CreateDocumentContainerAsync(DocumentCount);
+
+            IReadOnlyList<OrderByColumn> idColumnAsc = new List<OrderByColumn>
+            {
+                new OrderByColumn("c.id", SortOrder.Ascending)
+            };
+
+            IReadOnlyList<OrderByColumn> idColumnDesc = new List<OrderByColumn>
+            {
+                new OrderByColumn("c.id", SortOrder.Descending)
+            };
 
             IReadOnlyList<TestCase> testCases = new List<TestCase>
             {
@@ -56,49 +79,137 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                         FROM c
                         WHERE {documentdb-formattableorderbyquery-filter}
                         ORDER BY c.id",
-                    orderByColumns: OrderByColumnIdAsc),
+                    orderByColumns: idColumnAsc),
                 MakeTest(
                     queryText: @"
                         SELECT c._rid AS _rid, [{""item"": c.id}] AS orderByItems, c AS payload
                         FROM c
                         WHERE {documentdb-formattableorderbyquery-filter}
                         ORDER BY c.id DESC",
-                    orderByColumns: OrderByColumnIdDesc),
+                    orderByColumns: idColumnDesc),
+
+                // Empty result set
                 MakeTest(
                     queryText: @"
                         SELECT c._rid AS _rid, [{""item"": c.id}] AS orderByItems, c AS payload
                         FROM c
                         WHERE c.doesNotExist = true AND {documentdb-formattableorderbyquery-filter}
                         ORDER BY c.id",
-                    orderByColumns: OrderByColumnIdAsc),
+                    orderByColumns: idColumnAsc),
                 MakeTest(
                     queryText: @"
                         SELECT c._rid AS _rid, [{""item"": c.id}] AS orderByItems, c AS payload
                         FROM c
                         WHERE c.doesNotExist = true AND {documentdb-formattableorderbyquery-filter}
                         ORDER BY c.id DESC",
-                    orderByColumns: OrderByColumnIdDesc),
+                    orderByColumns: idColumnDesc),
             };
 
             await RunParityTests(
                 documentContainer,
+                new NonStreamingDocumentContainer(documentContainer),
                 await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, default),
                 testCases);
         }
 
+        [TestMethod]
+        public async Task ShufflingContainerParityTests()
+        {
+            IReadOnlyList<ParityTestCase> testCases = new List<ParityTestCase>
+            {
+                MakeParityTest(
+                    feedMode: PartitionedFeedMode.NonStreaming,
+                    documentCreationMode: DocumentCreationMode.SingleItem,
+                    queryText: @"
+                        SELECT c._rid AS _rid, [{""item"": c.index}] AS orderByItems, c AS payload
+                        FROM c
+                        WHERE {documentdb-formattableorderbyquery-filter}
+                        ORDER BY c.index",
+                    orderByColumns: new List<OrderByColumn>
+                        {
+                            new OrderByColumn($"c.{Index}", SortOrder.Ascending)
+                        }),
+                MakeParityTest(
+                    feedMode: PartitionedFeedMode.NonStreamingReversed,
+                    documentCreationMode: DocumentCreationMode.SingleItem,
+                    queryText: @"
+                        SELECT c._rid AS _rid, [{""item"": c.index}] AS orderByItems, c AS payload
+                        FROM c
+                        WHERE {documentdb-formattableorderbyquery-filter}
+                        ORDER BY c.index DESC",
+                    orderByColumns: new List<OrderByColumn>
+                    {
+                        new OrderByColumn($"c.{Index}", SortOrder.Descending)
+                    }),
+                MakeParityTest(
+                    feedMode: PartitionedFeedMode.NonStreaming,
+                    documentCreationMode: DocumentCreationMode.MultiItem,
+                    queryText: @"
+                        SELECT c._rid AS _rid, [{""item"": c.index}, {""item"": c.indexString}] AS orderByItems, c AS payload
+                        FROM c
+                        WHERE {documentdb-formattableorderbyquery-filter}
+                        ORDER BY c.index, c.indexString",
+                    orderByColumns: new List<OrderByColumn>
+                    {
+                        new OrderByColumn($"c.{Index}", SortOrder.Ascending),
+                        new OrderByColumn($"c.{IndexString}", SortOrder.Ascending)
+                    }),
+                MakeParityTest(
+                    feedMode: PartitionedFeedMode.NonStreamingReversed,
+                    documentCreationMode: DocumentCreationMode.MultiItem,
+                    queryText: @"
+                        SELECT c._rid AS _rid, [{""item"": c.index}, {""item"": c.indexString}] AS orderByItems, c AS payload
+                        FROM c
+                        WHERE {documentdb-formattableorderbyquery-filter}
+                        ORDER BY c.index DESC, c.indexString DESC",
+                    orderByColumns: new List<OrderByColumn>
+                    {
+                        new OrderByColumn($"c.{Index}", SortOrder.Descending),
+                        new OrderByColumn($"c.{IndexString}", SortOrder.Descending)
+                    }),
+                MakeParityTest(
+                    feedMode: PartitionedFeedMode.NonStreaming,
+                    documentCreationMode: DocumentCreationMode.MultiItemSwapped,
+                    queryText: @"
+                        SELECT c._rid AS _rid, [{""item"": c.indexString}, {""item"": c.index}] AS orderByItems, c AS payload
+                        FROM c
+                        WHERE {documentdb-formattableorderbyquery-filter}
+                        ORDER BY c.indexString, c.index",
+                    orderByColumns: new List<OrderByColumn>
+                    {
+                        new OrderByColumn($"c.{IndexString}", SortOrder.Ascending),
+                        new OrderByColumn($"c.{Index}", SortOrder.Ascending),
+                    }),
+                MakeParityTest(
+                    feedMode: PartitionedFeedMode.NonStreamingReversed,
+                    documentCreationMode: DocumentCreationMode.MultiItemSwapped,
+                    queryText: @"
+                        SELECT c._rid AS _rid, [{""item"": c.indexString}, {""item"": c.index}] AS orderByItems, c AS payload
+                        FROM c
+                        WHERE {documentdb-formattableorderbyquery-filter}
+                        ORDER BY c.indexString DESC, c.index DESC",
+                    orderByColumns: new List<OrderByColumn>
+                    {
+                        new OrderByColumn($"c.{IndexString}", SortOrder.Descending),
+                        new OrderByColumn($"c.{Index}", SortOrder.Descending),
+                    }),
+            };
+
+            await RunParityTests(testCases);
+        }
+
         private static async Task RunParityTests(
             IDocumentContainer documentContainer,
+            IDocumentContainer nonStreamingDocumentContainer,
             IReadOnlyList<FeedRangeEpk> ranges,
             IReadOnlyList<TestCase> testCases)
         {
-            IDocumentContainer nonStreamingContainer = new NonStreamingDocumentContainer(documentContainer);
-
             foreach (TestCase testCase in testCases)
             {
                 foreach (int pageSize in testCase.PageSizes)
                 {
                     IReadOnlyList<CosmosElement> nonStreamingResult = await CreateAndRunPipelineStage(
-                        documentContainer: nonStreamingContainer,
+                        documentContainer: nonStreamingDocumentContainer,
                         ranges: ranges,
                         queryText: testCase.QueryText,
                         orderByColumns: testCase.OrderByColumns,
@@ -144,11 +255,58 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             {
                 Assert.IsTrue(stage.Current.Succeeded);
                 Assert.IsTrue(stage.Current.Result.Documents.Count <= pageSize);
-                DebugTraceHelpers.TracePage(stage.Current.Result);
+                DebugTraceHelpers.TracePipelineStagePage(stage.Current.Result);
                 documents.AddRange(stage.Current.Result.Documents);
             }
 
             return documents;
+        }
+
+        private static async Task RunParityTests(IReadOnlyList<ParityTestCase> testCases)
+        {
+            foreach (ParityTestCase testCase in testCases)
+            {
+                IReadOnlyList<FeedRangeEpk> ranges = new List<FeedRangeEpk>
+                {
+                    new FeedRangeEpk(new Documents.Routing.Range<string>(string.Empty, "AA", true, false)),
+                    new FeedRangeEpk(new Documents.Routing.Range<string>("AA", "BB", true, false)),
+                    new FeedRangeEpk(new Documents.Routing.Range<string>("BB", "CC", true, false)),
+                    new FeedRangeEpk(new Documents.Routing.Range<string>("CC", "DD", true, false)),
+                    new FeedRangeEpk(new Documents.Routing.Range<string>("DD", "EE", true, false)),
+                    new FeedRangeEpk(new Documents.Routing.Range<string>("EE", "FF", true, false)),
+                };
+
+                IDocumentContainer nonStreamingDocumentContainer = MockDocumentContainer.Create(ranges, testCase.FeedMode, testCase.DocumentCreationMode);
+
+                IDocumentContainer streamingDocumentContainer = MockDocumentContainer.Create(
+                    ranges,
+                    testCase.FeedMode & PartitionedFeedMode.StreamingReversed,
+                    testCase.DocumentCreationMode);
+
+                foreach (int pageSize in testCase.PageSizes)
+                {
+                    DebugTraceHelpers.TraceNonStreamingPipelineStarting();
+                    IReadOnlyList<CosmosElement> nonStreamingResult = await CreateAndRunPipelineStage(
+                        documentContainer: nonStreamingDocumentContainer,
+                        ranges: ranges,
+                        queryText: testCase.QueryText,
+                        orderByColumns: testCase.OrderByColumns,
+                        pageSize: pageSize);
+
+                    DebugTraceHelpers.TraceStreamingPipelineStarting();
+                    IReadOnlyList<CosmosElement> streamingResult = await CreateAndRunPipelineStage(
+                        documentContainer: streamingDocumentContainer,
+                        ranges: ranges,
+                        queryText: testCase.QueryText,
+                        orderByColumns: testCase.OrderByColumns,
+                        pageSize: pageSize);
+
+                    if (!streamingResult.SequenceEqual(nonStreamingResult))
+                    {
+                        Assert.Fail($"Results mismatch for query:\n{testCase.QueryText}\npageSize: {pageSize}");
+                    }
+                }
+            }
         }
 
         private static TestCase MakeTest(string queryText, IReadOnlyList<OrderByColumn> orderByColumns)
@@ -164,7 +322,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             return new TestCase(queryText, orderByColumns, pageSizes);
         }
 
-        private sealed class TestCase
+        private class TestCase
         {
             public string QueryText { get; }
 
@@ -180,6 +338,44 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 this.QueryText = queryText;
                 this.OrderByColumns = orderByColumns;
                 this.PageSizes = pageSizes;
+            }
+        }
+
+        private static ParityTestCase MakeParityTest(
+            PartitionedFeedMode feedMode,
+            DocumentCreationMode documentCreationMode,
+            string queryText,
+            IReadOnlyList<OrderByColumn> orderByColumns)
+        {
+            return MakeParityTest(feedMode, documentCreationMode, queryText, orderByColumns, PageSizes);
+        }
+
+        private static ParityTestCase MakeParityTest(
+            PartitionedFeedMode feedMode,
+            DocumentCreationMode documentCreationMode,
+            string queryText,
+            IReadOnlyList<OrderByColumn> orderByColumns,
+            int[] pageSizes)
+        {
+            return new ParityTestCase(feedMode, documentCreationMode, queryText, orderByColumns, pageSizes);
+        }
+
+        private sealed class ParityTestCase : TestCase
+        {
+            public PartitionedFeedMode FeedMode { get; }
+
+            public DocumentCreationMode DocumentCreationMode { get; }
+
+            public ParityTestCase(
+                PartitionedFeedMode feedMode,
+                DocumentCreationMode documentCreationMode,
+                string queryText,
+                IReadOnlyList<OrderByColumn> orderByColumns,
+                int[] pageSizes)
+                : base(queryText, orderByColumns, pageSizes)
+            {
+                this.FeedMode = feedMode;
+                this.DocumentCreationMode = documentCreationMode;
             }
         }
 
@@ -369,12 +565,30 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         private static class DebugTraceHelpers
         {
-            private const bool enabled = false;
+            private const bool Enabled = false;
+
+            [Conditional("DEBUG")]
+            public static void TraceNonStreamingPipelineStarting()
+            {
+                if (Enabled)
+                {
+                    System.Diagnostics.Trace.WriteLine("\nStarting non streaming pipeline\n");
+                }
+            }
+
+            [Conditional("DEBUG")]
+            public static void TraceStreamingPipelineStarting()
+            {
+                if (Enabled)
+                {
+                    System.Diagnostics.Trace.WriteLine("\nStarting streaming pipeline\n");
+                }
+            }
 
             [Conditional("DEBUG")]
             public static void TracePipelineStagePage(QueryPage page)
             {
-                if (enabled)
+                if (Enabled)
                 {
                     System.Diagnostics.Trace.WriteLine("\nReceived next page from pipeline: ");
                     TracePage(page);
@@ -384,7 +598,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             [Conditional("DEBUG")]
             public static void TraceBackendResponse(QueryPage page)
             {
-                if (enabled)
+                if (Enabled)
                 {
                     System.Diagnostics.Trace.WriteLine("Serving query from backend: ");
                     TracePage(page);
@@ -394,7 +608,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             [Conditional("DEBUG")]
             public static void TracePage(QueryPage page)
             {
-                if (enabled)
+                if (Enabled)
                 {
                     System.Diagnostics.Trace.WriteLine("Page:");
                     System.Diagnostics.Trace.WriteLine($"    ActivityId: {page.ActivityId}");
@@ -416,6 +630,287 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             }
         }
 
+        private class MockDocumentContainer : IDocumentContainer
+        {
+            private readonly IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>> pages;
+
+            private readonly bool streaming;
+
+            public static IDocumentContainer Create(IReadOnlyList<FeedRangeEpk> feedRanges, PartitionedFeedMode feedMode, DocumentCreationMode documentCreationMode)
+            {
+                IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>> pages = CreatePartitionedFeed(
+                    feedRanges,
+                    LeafPageCount,
+                    PageSize,
+                    feedMode,
+                    (index) => CreateDocument(index, documentCreationMode));
+                return new MockDocumentContainer(pages, !feedMode.HasFlag(PartitionedFeedMode.NonStreaming));
+            }
+
+            private MockDocumentContainer(IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>> pages, bool streaming)
+            {
+                this.pages = pages ?? throw new ArgumentNullException(nameof(pages));
+                this.streaming = streaming; 
+            }
+
+            public Task<ChangeFeedPage> ChangeFeedAsync(FeedRangeState<ChangeFeedState> feedRangeState, ChangeFeedPaginationOptions changeFeedPaginationOptions, ITrace trace, CancellationToken cancellationToken)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task<Record> CreateItemAsync(CosmosObject payload, CancellationToken cancellationToken)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task<List<FeedRangeEpk>> GetChildRangeAsync(FeedRangeInternal feedRange, ITrace trace, CancellationToken cancellationToken)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task<List<FeedRangeEpk>> GetFeedRangesAsync(ITrace trace, CancellationToken cancellationToken)
+            {
+                return Task.FromResult(this.pages.Keys.Cast<FeedRangeEpk>().ToList());
+            }
+
+            public Task<string> GetResourceIdentifierAsync(ITrace trace, CancellationToken cancellationToken)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task MergeAsync(FeedRangeInternal feedRange1, FeedRangeInternal feedRange2, CancellationToken cancellationToken)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task<TryCatch<ChangeFeedPage>> MonadicChangeFeedAsync(FeedRangeState<ChangeFeedState> feedRangeState, ChangeFeedPaginationOptions changeFeedPaginationOptions, ITrace trace, CancellationToken cancellationToken)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task<TryCatch<Record>> MonadicCreateItemAsync(CosmosObject payload, CancellationToken cancellationToken)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task<TryCatch<List<FeedRangeEpk>>> MonadicGetChildRangeAsync(FeedRangeInternal feedRange, ITrace trace, CancellationToken cancellationToken)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task<TryCatch<List<FeedRangeEpk>>> MonadicGetFeedRangesAsync(ITrace trace, CancellationToken cancellationToken)
+            {
+                return Task.FromResult(TryCatch<List<FeedRangeEpk>>.FromResult(this.pages.Keys.Cast<FeedRangeEpk>().ToList()));
+            }
+
+            public Task<TryCatch<string>> MonadicGetResourceIdentifierAsync(ITrace trace, CancellationToken cancellationToken)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task<TryCatch> MonadicMergeAsync(FeedRangeInternal feedRange1, FeedRangeInternal feedRange2, CancellationToken cancellationToken)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task<TryCatch<QueryPage>> MonadicQueryAsync(SqlQuerySpec sqlQuerySpec, FeedRangeState<QueryState> feedRangeState, QueryPaginationOptions queryPaginationOptions, ITrace trace, CancellationToken cancellationToken)
+            {
+                IReadOnlyList<IReadOnlyList<CosmosElement>> feedRangePages = this.pages[feedRangeState.FeedRange];
+                int index = feedRangeState.State == null ? 0 : int.Parse(((CosmosString)feedRangeState.State.Value).Value);
+                IReadOnlyList<CosmosElement> documents = feedRangePages[index];
+
+                QueryState state = index < feedRangePages.Count - 1 ? new QueryState(CosmosString.Create((index + 1).ToString())) : null;
+                QueryPage queryPage = new QueryPage(
+                    documents: documents,
+                    requestCharge: QueryCharge,
+                    activityId: ActivityId,
+                    cosmosQueryExecutionInfo: null,
+                    distributionPlanSpec: null,
+                    disallowContinuationTokenMessage: null,
+                    additionalHeaders: null,
+                    state: state,
+                    streaming: this.streaming);
+
+                return Task.FromResult(TryCatch<QueryPage>.FromResult(queryPage));
+            }
+
+            public Task<TryCatch<ReadFeedPage>> MonadicReadFeedAsync(FeedRangeState<ReadFeedState> feedRangeState, ReadFeedPaginationOptions readFeedPaginationOptions, ITrace trace, CancellationToken cancellationToken)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task<TryCatch<Record>> MonadicReadItemAsync(CosmosElement partitionKey, string identifer, CancellationToken cancellationToken)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task<TryCatch> MonadicRefreshProviderAsync(ITrace trace, CancellationToken cancellationToken)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task<TryCatch> MonadicSplitAsync(FeedRangeInternal feedRange, CancellationToken cancellationToken)
+            {
+                throw new NotImplementedException();
+            }
+
+            public async Task<QueryPage> QueryAsync(SqlQuerySpec sqlQuerySpec, FeedRangeState<QueryState> feedRangeState, QueryPaginationOptions queryPaginationOptions, ITrace trace, CancellationToken cancellationToken)
+            {
+                TryCatch<QueryPage> queryPage = await this.MonadicQueryAsync(sqlQuerySpec, feedRangeState, queryPaginationOptions, trace, cancellationToken);
+                return queryPage.Result;
+            }
+
+            public Task<ReadFeedPage> ReadFeedAsync(FeedRangeState<ReadFeedState> feedRangeState, ReadFeedPaginationOptions readFeedPaginationOptions, ITrace trace, CancellationToken cancellationToken)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task<Record> ReadItemAsync(CosmosElement partitionKey, string identifier, CancellationToken cancellationToken)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task RefreshProviderAsync(ITrace trace, CancellationToken cancellationToken)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task SplitAsync(FeedRangeInternal feedRange, CancellationToken cancellationToken)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        [Flags]
+        enum PartitionedFeedMode
+        {
+            Streaming = 0,
+            NonStreaming = 1,
+            Reversed = 2,
+
+            StreamingReversed = Streaming | Reversed,
+            NonStreamingReversed = NonStreaming | Reversed,
+        }
+
+        private static IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>> CreatePartitionedFeed(
+            IReadOnlyList<FeedRangeEpk> feedRanges,
+            int leafPageCount,
+            int pageSize,
+            PartitionedFeedMode mode,
+            Func<int, CosmosElement> createDocument)
+        {
+            int feedRangeIndex = 0;
+            Dictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>> pages = new Dictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>>();
+            foreach (FeedRangeEpk feedRange in feedRanges)
+            {
+                int index = feedRangeIndex;
+                List<IReadOnlyList<CosmosElement>> leafPages = new List<IReadOnlyList<CosmosElement>>(leafPageCount);
+                for (int pageIndex = 0; pageIndex < leafPageCount; ++pageIndex)
+                {
+                    List<CosmosElement> documents = new List<CosmosElement>(pageSize);
+                    for (int documentCount = 0; documentCount < pageSize; ++documentCount)
+                    {
+                        documents.Add(createDocument(index));
+                        index += feedRanges.Count;
+                    }
+
+                    if (mode.HasFlag(PartitionedFeedMode.Reversed))
+                    {
+                        documents.Reverse();
+                    }
+
+                    leafPages.Add(documents);
+                }
+
+                if (mode.HasFlag(PartitionedFeedMode.NonStreaming))
+                {
+                    FischerYatesShuffle(leafPages);
+                }
+
+                if (mode == PartitionedFeedMode.StreamingReversed)
+                {
+                    leafPages.Reverse();
+                }
+
+                pages.Add(feedRange, leafPages);
+                ++feedRangeIndex;
+            }
+
+            return pages;
+        }
+
+        [Flags]
+        enum DocumentCreationMode
+        {
+            SingleItem = 0,
+            MultiItem = 1,
+            Swapped = 2,
+
+            MultiItemSwapped = MultiItem | Swapped,
+        }
+
+        private static CosmosElement CreateDocument(int index, DocumentCreationMode mode)
+        {
+            CosmosElement indexElement = CosmosNumber64.Create(index);
+            CosmosElement indexStringElement = CosmosString.Create(index.ToString("D4"));
+
+            List<CosmosElement> orderByItems = new List<CosmosElement>
+            {
+                CosmosObject.Create(new Dictionary<string, CosmosElement>
+                {
+                    [Item] = indexElement
+                })
+            };
+
+            if (mode.HasFlag(DocumentCreationMode.MultiItem))
+            {
+                orderByItems.Add(CosmosObject.Create(new Dictionary<string, CosmosElement>
+                {
+                    [Item] = indexStringElement
+                }));
+            }
+
+            if (mode.HasFlag(DocumentCreationMode.Swapped))
+            {
+                orderByItems.Reverse();
+            }
+
+            Dictionary<string, CosmosElement> payload = new Dictionary<string, CosmosElement>
+            {
+                [Index] = indexElement
+            };
+
+            if (mode.HasFlag(DocumentCreationMode.MultiItem))
+            {
+                payload.Add(IndexString, indexStringElement);
+            }
+
+            Documents.ResourceId resourceId = Documents.ResourceId.NewCollectionChildResourceId(
+                CollectionRid,
+                (ulong)index,
+                Documents.ResourceType.Document);
+
+            CosmosElement document = CosmosObject.Create(new Dictionary<string, CosmosElement>
+            {
+                [RId] = CosmosString.Create(resourceId.ToString()),
+                [OrderByItems] = CosmosArray.Create(orderByItems),
+                [Payload] = CosmosObject.Create(payload)
+            });
+
+            return document;
+        }
+
+        private static void FischerYatesShuffle<T>(IList<T> list)
+        {
+            Random random = new Random();
+            for (int index = list.Count - 1; index > 0; --index)
+            {
+                int other = random.Next(index + 1);
+                T temp = list[index];
+                list[index] = list[other];
+                list[other] = temp;
+            }
+        }
 
         private static async Task<IDocumentContainer> CreateDocumentContainerAsync(int documentCount)
         {
@@ -447,7 +942,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             for (int i = 0; i < documentCount; i++)
             {
                 // Insert an item
-                CosmosObject item = CosmosObject.Parse($"{{\"id\" : {i} }}");
+                CosmosObject item = CosmosObject.Parse($"{{\"id\": {i}, \"repeated\": {i % 5} }}");
                 TryCatch<Record> monadicCreateRecord = await documentContainer.MonadicCreateItemAsync(item, cancellationToken: default);
                 Assert.IsTrue(monadicCreateRecord.Succeeded);
             }
