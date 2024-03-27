@@ -302,7 +302,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     }
 
                     // For backwards compatibility the default value of streaming for ORDER BY is _true_
-                    nonStreaming = nonStreaming || (!page.Streaming.GetValueOrDefault(true));
+                    nonStreaming = nonStreaming || (!page.Streaming.GetValueOrDefault(true) && (page.State != null));
 
                     if (enumerator.Current.Result.Enumerator.MoveNext())
                     {
