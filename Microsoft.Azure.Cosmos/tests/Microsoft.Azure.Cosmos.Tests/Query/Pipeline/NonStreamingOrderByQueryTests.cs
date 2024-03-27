@@ -79,14 +79,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                         FROM c
                         WHERE {documentdb-formattableorderbyquery-filter}
                         ORDER BY c.id",
-                    orderByColumns: idColumnAsc),
+                    orderByColumns: idColumnAsc,
+                    validate: result => Validate.IndexIsInOrder(result, propertyName: "id", DocumentCount, reversed: false)),
                 MakeTest(
                     queryText: @"
                         SELECT c._rid AS _rid, [{""item"": c.id}] AS orderByItems, c AS payload
                         FROM c
                         WHERE {documentdb-formattableorderbyquery-filter}
                         ORDER BY c.id DESC",
-                    orderByColumns: idColumnDesc),
+                    orderByColumns: idColumnDesc,
+                    validate: result => Validate.IndexIsInOrder(result, propertyName: "id",DocumentCount, reversed: true)),
 
                 // Empty result set
                 MakeTest(
@@ -95,14 +97,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                         FROM c
                         WHERE c.doesNotExist = true AND {documentdb-formattableorderbyquery-filter}
                         ORDER BY c.id",
-                    orderByColumns: idColumnAsc),
+                    orderByColumns: idColumnAsc,
+                    validate: result => result.Count == 0),
                 MakeTest(
                     queryText: @"
                         SELECT c._rid AS _rid, [{""item"": c.id}] AS orderByItems, c AS payload
                         FROM c
                         WHERE c.doesNotExist = true AND {documentdb-formattableorderbyquery-filter}
                         ORDER BY c.id DESC",
-                    orderByColumns: idColumnDesc),
+                    orderByColumns: idColumnDesc,
+                    validate: result => result.Count == 0),
             };
 
             await RunParityTests(
@@ -115,6 +119,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         [TestMethod]
         public async Task ShufflingContainerParityTests()
         {
+            static bool IndexIsInOrder(IReadOnlyList<CosmosElement> result, bool reversed)
+            {
+                return Validate.IndexIsInOrder(result, propertyName: Index, LeafPageCount * PageSize, reversed);
+            }
+
             IReadOnlyList<ParityTestCase> testCases = new List<ParityTestCase>
             {
                 MakeParityTest(
@@ -126,9 +135,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                         WHERE {documentdb-formattableorderbyquery-filter}
                         ORDER BY c.index",
                     orderByColumns: new List<OrderByColumn>
-                        {
-                            new OrderByColumn($"c.{Index}", SortOrder.Ascending)
-                        }),
+                    {
+                        new OrderByColumn($"c.{Index}", SortOrder.Ascending)
+                    },
+                    validate: result => IndexIsInOrder(result, reversed: false)),
                 MakeParityTest(
                     feedMode: PartitionedFeedMode.NonStreamingReversed,
                     documentCreationMode: DocumentCreationMode.SingleItem,
@@ -140,7 +150,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     orderByColumns: new List<OrderByColumn>
                     {
                         new OrderByColumn($"c.{Index}", SortOrder.Descending)
-                    }),
+                    },
+                    validate: result => IndexIsInOrder(result, reversed: true)),
                 MakeParityTest(
                     feedMode: PartitionedFeedMode.NonStreaming,
                     documentCreationMode: DocumentCreationMode.MultiItem,
@@ -153,7 +164,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     {
                         new OrderByColumn($"c.{Index}", SortOrder.Ascending),
                         new OrderByColumn($"c.{IndexString}", SortOrder.Ascending)
-                    }),
+                    },
+                    validate: result => IndexIsInOrder(result, reversed: false)),
                 MakeParityTest(
                     feedMode: PartitionedFeedMode.NonStreamingReversed,
                     documentCreationMode: DocumentCreationMode.MultiItem,
@@ -166,7 +178,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     {
                         new OrderByColumn($"c.{Index}", SortOrder.Descending),
                         new OrderByColumn($"c.{IndexString}", SortOrder.Descending)
-                    }),
+                    },
+                    validate: result => IndexIsInOrder(result, reversed: true)),
                 MakeParityTest(
                     feedMode: PartitionedFeedMode.NonStreaming,
                     documentCreationMode: DocumentCreationMode.MultiItemSwapped,
@@ -179,7 +192,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     {
                         new OrderByColumn($"c.{IndexString}", SortOrder.Ascending),
                         new OrderByColumn($"c.{Index}", SortOrder.Ascending),
-                    }),
+                    },
+                    validate: result => IndexIsInOrder(result, reversed: false)),
                 MakeParityTest(
                     feedMode: PartitionedFeedMode.NonStreamingReversed,
                     documentCreationMode: DocumentCreationMode.MultiItemSwapped,
@@ -192,7 +206,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     {
                         new OrderByColumn($"c.{IndexString}", SortOrder.Descending),
                         new OrderByColumn($"c.{Index}", SortOrder.Descending),
-                    }),
+                    },
+                    validate: result => IndexIsInOrder(result, reversed: true)),
             };
 
             await RunParityTests(testCases);
@@ -225,6 +240,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     if (!streamingResult.SequenceEqual(nonStreamingResult))
                     {
                         Assert.Fail($"Results mismatch for query:\n{testCase.QueryText}\npageSize: {pageSize}");
+                    }
+
+                    if (!testCase.Validate(nonStreamingResult))
+                    {
+                        Assert.Fail($"Could not validate result for query:\n{testCase.QueryText}\npageSize: {pageSize}");
                     }
                 }
             }
@@ -309,17 +329,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             }
         }
 
-        private static TestCase MakeTest(string queryText, IReadOnlyList<OrderByColumn> orderByColumns)
+        private static TestCase MakeTest(string queryText, IReadOnlyList<OrderByColumn> orderByColumns, Func<IReadOnlyList<CosmosElement>, bool> validate)
         {
-            return MakeTest(queryText, orderByColumns, PageSizes);
+            return MakeTest(queryText, orderByColumns, PageSizes, validate);
         }
 
         private static TestCase MakeTest(
             string queryText,
             IReadOnlyList<OrderByColumn> orderByColumns,
-            int[] pageSizes)
+            int[] pageSizes,
+            Func<IReadOnlyList<CosmosElement>, bool> validate)
         {
-            return new TestCase(queryText, orderByColumns, pageSizes);
+            return new TestCase(queryText, orderByColumns, pageSizes, validate);
         }
 
         private class TestCase
@@ -330,14 +351,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             public int[] PageSizes { get; }
 
+            public Func<IReadOnlyList<CosmosElement>, bool> Validate { get; }
+
             public TestCase(
                 string queryText,
                 IReadOnlyList<OrderByColumn> orderByColumns,
-                int[] pageSizes)
+                int[] pageSizes,
+                Func<IReadOnlyList<CosmosElement>, bool> validate)
             {
                 this.QueryText = queryText;
                 this.OrderByColumns = orderByColumns;
                 this.PageSizes = pageSizes;
+                this.Validate = validate;
             }
         }
 
@@ -345,9 +370,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             PartitionedFeedMode feedMode,
             DocumentCreationMode documentCreationMode,
             string queryText,
-            IReadOnlyList<OrderByColumn> orderByColumns)
+            IReadOnlyList<OrderByColumn> orderByColumns,
+            Func<IReadOnlyList<CosmosElement>, bool> validate)
         {
-            return MakeParityTest(feedMode, documentCreationMode, queryText, orderByColumns, PageSizes);
+            return MakeParityTest(feedMode, documentCreationMode, queryText, orderByColumns, PageSizes, validate);
         }
 
         private static ParityTestCase MakeParityTest(
@@ -355,9 +381,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             DocumentCreationMode documentCreationMode,
             string queryText,
             IReadOnlyList<OrderByColumn> orderByColumns,
-            int[] pageSizes)
+            int[] pageSizes,
+            Func<IReadOnlyList<CosmosElement>, bool> validate)
         {
-            return new ParityTestCase(feedMode, documentCreationMode, queryText, orderByColumns, pageSizes);
+            return new ParityTestCase(feedMode, documentCreationMode, queryText, orderByColumns, pageSizes, validate);
         }
 
         private sealed class ParityTestCase : TestCase
@@ -371,11 +398,35 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 DocumentCreationMode documentCreationMode,
                 string queryText,
                 IReadOnlyList<OrderByColumn> orderByColumns,
-                int[] pageSizes)
-                : base(queryText, orderByColumns, pageSizes)
+                int[] pageSizes,
+                Func<IReadOnlyList<CosmosElement>, bool> validate)
+                : base(queryText, orderByColumns, pageSizes, validate)
             {
                 this.FeedMode = feedMode;
                 this.DocumentCreationMode = documentCreationMode;
+            }
+        }
+
+        private static class Validate
+        {
+            public static bool IndexIsInOrder(IReadOnlyList<CosmosElement> documents, string propertyName, int count, bool reversed)
+            {
+                List<int> expected = Enumerable
+                    .Range(0, count)
+                    .ToList();
+
+                if (reversed)
+                {
+                    expected.Reverse();
+                }
+
+                IEnumerable<int> actual = documents
+                    .Cast<CosmosObject>()
+                    .Select(x => x[propertyName])
+                    .Cast<CosmosNumber64>()
+                    .Select(x => (int)Number64.ToLong(x.Value));
+
+                return expected.SequenceEqual(actual);
             }
         }
 
