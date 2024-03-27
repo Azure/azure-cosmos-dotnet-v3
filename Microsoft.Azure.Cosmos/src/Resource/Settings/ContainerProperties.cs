@@ -78,6 +78,9 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = "clientEncryptionPolicy", NullValueHandling = NullValueHandling.Ignore)]
         private ClientEncryptionPolicy clientEncryptionPolicyInternal;
 
+        [JsonProperty(PropertyName = Constants.Properties.VectorEmbeddingPolicy, NullValueHandling = NullValueHandling.Ignore)]
+        private VectorEmbeddingPolicy vectorEmbeddingPolicyInternal;
+
         [JsonProperty(PropertyName = "computedProperties", NullValueHandling = NullValueHandling.Ignore)]
         private Collection<ComputedProperty> computedProperties;
 
@@ -287,6 +290,26 @@ namespace Microsoft.Azure.Cosmos
 
                 this.indexingPolicyInternal = value;
             }
+        }
+
+        /// <summary>
+        /// Gets or sets the client encryption policy information for storing items in a container from the Azure Cosmos service.
+        /// </summary>
+        /// <value>
+        /// It is an optional property.
+        /// By default, ClientEncryptionPolicy is set to null meaning the feature is turned off for the container.
+        /// </value>
+        /// <remarks>
+        /// <para>
+        /// The <see cref="VectorEmbeddingPolicy"/> will be applied to all the items in the container as the default policy.
+        /// </para>
+        /// </remarks>
+        [JsonIgnore]
+        public VectorEmbeddingPolicy VectorEmbeddingPolicy
+        {
+            get => this.vectorEmbeddingPolicyInternal;
+
+            set => this.vectorEmbeddingPolicyInternal = value;
         }
 
         /// <summary>
