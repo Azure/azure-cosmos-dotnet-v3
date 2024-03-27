@@ -19,9 +19,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Query
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
 
-    //    [Config(typeof(ServerGcConfig))]
-
-
     [MemoryDiagnoser]
     public class OrderByPipelineStageBenchmark
     {

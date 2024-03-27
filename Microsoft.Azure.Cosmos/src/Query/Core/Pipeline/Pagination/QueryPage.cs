@@ -37,7 +37,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination
             this.DistributionPlanSpec = distributionPlanSpec;
             this.DisallowContinuationTokenMessage = disallowContinuationTokenMessage;
             this.Streaming = streaming;
-
         }
 
         public IReadOnlyList<CosmosElement> Documents { get; }
