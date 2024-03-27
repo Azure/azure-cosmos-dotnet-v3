@@ -6,13 +6,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.Immutable;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
+    using static IndexUtilizationHelper;
 
     internal sealed class SkipEmptyPageQueryPipelineStage : IQueryPipelineStage
     {
@@ -100,7 +100,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     }
 
                     this.cumulativeRequestCharge += sourcePage.RequestCharge;
-                    this.cumulativeAdditionalHeaders = sourcePage.AdditionalHeaders;
+                    this.cumulativeAdditionalHeaders = AccumulateIndexUtilization(
+                        cumulativeHeaders: this.cumulativeAdditionalHeaders,
+                        currentHeaders: sourcePage.AdditionalHeaders);
                 }
                 else
                 {
@@ -114,7 +116,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                             cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
                             distributionPlanSpec: default,
                             disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
-                            additionalHeaders: sourcePage.AdditionalHeaders,
+                            additionalHeaders: AccumulateIndexUtilization(
+                                cumulativeHeaders: this.cumulativeAdditionalHeaders,
+                                currentHeaders: sourcePage.AdditionalHeaders),
                             state: sourcePage.State,
                             streaming: sourcePage.Streaming);
                         this.cumulativeRequestCharge = 0;

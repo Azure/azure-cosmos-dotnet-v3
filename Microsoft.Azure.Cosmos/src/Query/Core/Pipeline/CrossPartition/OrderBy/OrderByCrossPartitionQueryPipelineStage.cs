@@ -42,11 +42,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         private sealed class InitializationParameters
         {
             public IDocumentContainer DocumentContainer { get; }
+
             public SqlQuerySpec SqlQuerySpec { get; }
+            
             public IReadOnlyList<FeedRangeEpk> TargetRanges { get; }
+            
             public Cosmos.PartitionKey? PartitionKey { get; }
+            
             public IReadOnlyList<OrderByColumn> OrderByColumns { get; }
+            
             public QueryPaginationOptions QueryPaginationOptions { get; }
+            
             public int MaxConcurrency { get; }
 
             public InitializationParameters(
@@ -68,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             }
         }
 
-        private sealed class StaticQueryPageParameters
+        private sealed class QueryPageParameters
         {
             public string ActivityId { get; }
 
@@ -78,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             public IReadOnlyDictionary<string, string> AdditionalHeaders { get; }
 
-            public StaticQueryPageParameters(
+            public QueryPageParameters(
                 string activityId,
                 Lazy<CosmosQueryExecutionInfo> cosmosQueryExecutionInfo,
                 DistributionPlanSpec distributionPlanSpec,
@@ -97,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             Initialized
         }
 
-        private readonly InitializationParameters init;
+        private readonly InitializationParameters initializationParameters;
 
         private ExecutionState state;
 
@@ -107,9 +113,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
         public TryCatch<QueryPage> Current => this.GetCurrentPage();
 
-        private OrderByCrossPartitionQueryPipelineStage(InitializationParameters init)
+        private OrderByCrossPartitionQueryPipelineStage(InitializationParameters initializationParameters)
         {
-            this.init = init ?? throw new ArgumentNullException(nameof(init));
+            this.initializationParameters = initializationParameters ?? throw new ArgumentNullException(nameof(initializationParameters));
             this.state = ExecutionState.Uninitialized;
             this.bufferedPages = new Queue<QueryPage>();
         }
@@ -135,7 +141,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             {
                 // Note: when we set the state to initialized here, we no longer allowing a retry for these failures
                 // To allow retries, we must not set the state to initialized until construction of the inner pipeline succeeds
-                (this.inner, this.bufferedPages) = await MoveNextAsync_InitializeAsync(this.init, trace, cancellationToken);
+                (this.inner, this.bufferedPages) = await MoveNextAsync_InitializeAsync(this.initializationParameters, trace, cancellationToken);
                 this.state = ExecutionState.Initialized;
 
                 if (this.bufferedPages.Count > 0)
@@ -147,10 +153,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             if (this.bufferedPages.Count > 0)
             {
                 this.bufferedPages.Dequeue();
-                if (this.bufferedPages.Count > 0)
-                {
-                    return true;
-                }
+                return this.bufferedPages.Count > 0;
             }
 
             TryCatch<bool> hasNext = await this.inner.TryAsync(pipelineStage => pipelineStage.MoveNextAsync(trace, cancellationToken));
@@ -261,7 +264,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             bool nonStreaming = false;
             Queue<QueryPage> bufferedPages = new Queue<QueryPage>();
-            StaticQueryPageParameters staticQueryPageParameters = null;
+            QueryPageParameters queryPageParameters = null;
             while (uninitializedEnumeratorsAndTokens.Count != 0)
             {
                 (OrderByQueryPartitionRangePageAsyncEnumerator enumerator, OrderByContinuationToken token) = uninitializedEnumeratorsAndTokens.Dequeue();
@@ -289,12 +292,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     }
 
                     QueryPage page = enumerator.Current.Result.Page;
-                    if (staticQueryPageParameters == null)
+                    if (queryPageParameters == null)
                     {
                         // It is difficult to merge the headers because the type is not strong enough to support merging.
                         // Moreover, the existing code also does not merge the headers.
                         // Instead they grab the headers at random from some pages and send them onwards.
-                        staticQueryPageParameters = new StaticQueryPageParameters(
+                        queryPageParameters = new QueryPageParameters(
                             activityId: page.ActivityId,
                             cosmosQueryExecutionInfo: page.CosmosQueryExecutionInfo,
                             distributionPlanSpec: page.DistributionPlanSpec,
@@ -350,7 +353,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     init.QueryPaginationOptions,
                     sortOrders,
                     orderbyEnumerators,
-                    staticQueryPageParameters,
+                    queryPageParameters,
                     trace,
                     cancellationToken);
             }
@@ -1972,7 +1975,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 QueryPaginationOptions queryPaginationOptions,
                 IReadOnlyList<SortOrder> sortOrders,
                 IEnumerable<OrderByQueryPartitionRangePageAsyncEnumerator> enumerators,
-                StaticQueryPageParameters staticQueryPageParameters,
+                QueryPageParameters queryPageParameters,
                 ITrace trace,
                 CancellationToken cancellationToken)
             {
@@ -1997,10 +2000,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 return new NonStreamingOrderByPipelineStage(
                     pageSize,
                     totalRequestCharge,
-                    staticQueryPageParameters.ActivityId,
-                    staticQueryPageParameters.CosmosQueryExecutionInfo,
-                    staticQueryPageParameters.DistributionPlanSpec,
-                    staticQueryPageParameters.AdditionalHeaders,
+                    queryPageParameters.ActivityId,
+                    queryPageParameters.CosmosQueryExecutionInfo,
+                    queryPageParameters.DistributionPlanSpec,
+                    queryPageParameters.AdditionalHeaders,
                     orderbyQueryResultEnumerator,
                     totalBufferedResultCount);
             }

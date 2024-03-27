@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.Azure.Documents;
+    using static IndexUtilizationHelper;
 
     internal abstract partial class AggregateQueryPipelineStage : QueryPipelineStageBase
     {
@@ -100,13 +100,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
 
                     requestCharge += sourcePage.RequestCharge;
 
-                    // Note-2024-02-02:
-                    // Here the IndexMetrics headers are non-accumulative, so we are copying that header from the source page.
-                    // Other headers might need similar traeatment, and it's up to the area owner to implement that here.
-                    if (sourcePage.AdditionalHeaders.ContainsKey(HttpConstants.HttpHeaders.IndexUtilization))
-                    {
-                        cumulativeAdditionalHeaders = new Dictionary<string, string>() {{ HttpConstants.HttpHeaders.IndexUtilization, sourcePage.AdditionalHeaders[HttpConstants.HttpHeaders.IndexUtilization] }};
-                    }
+                    cumulativeAdditionalHeaders = AccumulateIndexUtilization(
+                        cumulativeHeaders: cumulativeAdditionalHeaders,
+                        currentHeaders: sourcePage.AdditionalHeaders);
 
                     foreach (CosmosElement element in sourcePage.Documents)
                     {
