@@ -70,13 +70,15 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Sets the mode for the change freed processor.
+        /// Sets the mode for the change feed processor.
         /// </summary>
         /// <param name="changeFeedMode"></param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
         internal ChangeFeedProcessorBuilder WithChangeFeedMode(ChangeFeedMode changeFeedMode)
         {
             this.changeFeedProcessorOptions.Mode = changeFeedMode;
+            this.changeFeedLeaseOptions.Mode = changeFeedMode;
+
             return this;
         }
 

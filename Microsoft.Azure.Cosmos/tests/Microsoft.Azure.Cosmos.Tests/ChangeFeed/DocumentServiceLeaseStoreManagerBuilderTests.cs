@@ -36,7 +36,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 Mock.Of<ContainerInternal>(),
                 leaseContainerMock.Object,
                 Guid.NewGuid().ToString(),
-                Guid.NewGuid().ToString());
+                Guid.NewGuid().ToString(),
+                ChangeFeedMode.LatestVersion);
         }
 
         [TestMethod]
@@ -59,7 +60,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 Mock.Of<ContainerInternal>(),
                 leaseContainerMock.Object,
                 Guid.NewGuid().ToString(),
-                Guid.NewGuid().ToString());
+                Guid.NewGuid().ToString(),
+                ChangeFeedMode.LatestVersion);
         }
 
         [TestMethod]
@@ -82,7 +84,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 Mock.Of<ContainerInternal>(),
                 leaseContainerMock.Object,
                 Guid.NewGuid().ToString(),
-                Guid.NewGuid().ToString());
+                Guid.NewGuid().ToString(),
+                ChangeFeedMode.LatestVersion);
         }
 
         [TestMethod]
@@ -105,7 +108,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 Mock.Of<ContainerInternal>(),
                 leaseContainerMock.Object,
                 Guid.NewGuid().ToString(),
-                Guid.NewGuid().ToString()));
+                Guid.NewGuid().ToString(),
+                ChangeFeedMode.LatestVersion));
         }
     }
 }

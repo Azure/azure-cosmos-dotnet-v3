@@ -124,7 +124,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 LeaseId = leaseDocId,
                 LeaseToken = leaseToken,
                 ContinuationToken = continuationToken,
-                FeedRange = new FeedRangeEpk(partitionKeyRange.ToRange())
+                FeedRange = new FeedRangeEpk(partitionKeyRange.ToRange()),
+                Mode = this.GetChangeFeedMode()
             };
 
             this.requestOptionsFactory.AddPartitionKeyIfNeeded((string pk) => documentServiceLease.LeasePartitionKey = pk, Guid.NewGuid().ToString());
@@ -148,12 +149,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 LeaseId = leaseDocId,
                 LeaseToken = leaseToken,
                 ContinuationToken = continuationToken,
-                FeedRange = feedRange
+                FeedRange = feedRange,
+                Mode = this.GetChangeFeedMode()
             };
 
             this.requestOptionsFactory.AddPartitionKeyIfNeeded((string pk) => documentServiceLease.LeasePartitionKey = pk, Guid.NewGuid().ToString());
 
             return this.TryCreateDocumentServiceLeaseAsync(documentServiceLease);
+        }
+
+        private string GetChangeFeedMode()
+        {
+            return this.options.Mode == ChangeFeedMode.AllVersionsAndDeletes
+                ? HttpConstants.A_IMHeaderValues.FullFidelityFeed
+                : HttpConstants.A_IMHeaderValues.IncrementalFeed;
         }
 
         public override async Task ReleaseAsync(DocumentServiceLease lease)
