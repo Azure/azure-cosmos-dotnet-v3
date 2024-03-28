@@ -28,15 +28,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
 
             private ComputeDistinctQueryPipelineStage(
                 DistinctMap distinctMap,
-                IQueryPipelineStage source,
-                CancellationToken cancellationToken)
-                : base(distinctMap, source, cancellationToken)
+                IQueryPipelineStage source)
+                : base(distinctMap, source)
             {
             }
 
             public static TryCatch<IQueryPipelineStage> MonadicCreate(
                 CosmosElement requestContinuation,
-                CancellationToken cancellationToken,
                 MonadicCreatePipelineStage monadicCreatePipelineStage,
                 DistinctQueryType distinctQueryType)
             {
@@ -68,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                     return TryCatch<IQueryPipelineStage>.FromException(tryCreateDistinctMap.Exception);
                 }
 
-                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(distinctContinuationToken.SourceToken, cancellationToken);
+                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(distinctContinuationToken.SourceToken);
                 if (!tryCreateSource.Succeeded)
                 {
                     return TryCatch<IQueryPipelineStage>.FromException(tryCreateSource.Exception);
@@ -77,18 +75,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                 return TryCatch<IQueryPipelineStage>.FromResult(
                     new ComputeDistinctQueryPipelineStage(
                         tryCreateDistinctMap.Result,
-                        tryCreateSource.Result,
-                        cancellationToken));
+                        tryCreateSource.Result));
             }
 
-            public override async ValueTask<bool> MoveNextAsync(ITrace trace)
+            public override async ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
             {
                 if (trace == null)
                 {
                     throw new ArgumentNullException(nameof(trace));
                 }
 
-                if (!await this.inputStage.MoveNextAsync(trace))
+                if (!await this.inputStage.MoveNextAsync(trace, cancellationToken))
                 {
                     this.Current = default;
                     return false;
@@ -129,12 +126,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                     documents: distinctResults,
                     requestCharge: sourcePage.RequestCharge,
                     activityId: sourcePage.ActivityId,
-                    responseLengthInBytes: sourcePage.ResponseLengthInBytes,
                     cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
                     distributionPlanSpec: default,
                     disallowContinuationTokenMessage: ComputeDistinctQueryPipelineStage.UseTryGetContinuationTokenMessage,
                     additionalHeaders: sourcePage.AdditionalHeaders,
-                    state: queryState);
+                    state: queryState,
+                    streaming: sourcePage.Streaming);
 
                 this.Current = TryCatch<QueryPage>.FromResult(queryPage);
                 return true;

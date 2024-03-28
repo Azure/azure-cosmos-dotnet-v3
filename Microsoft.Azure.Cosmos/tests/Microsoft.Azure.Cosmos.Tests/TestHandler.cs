@@ -38,8 +38,11 @@
                 {
                     ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK)
                     {
-                        Content = new MemoryStream(Encoding.UTF8.GetBytes(@"{ ""Documents"": [{ ""id"": ""Test""}]}"))
+                        Content = new MemoryStream(Encoding.UTF8.GetBytes(@"{ ""_count"": 1,  ""Documents"": [{ ""id"": ""Test""}]}"))
                     };
+
+                    responseMessage.Headers.Add(HttpConstants.HttpHeaders.ItemCount, "1");
+
                     return responseMessage;
                 });
         }

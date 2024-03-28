@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Pagination
 {
     using System;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Tracing;
 
@@ -12,6 +13,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
     {
         T Current { get; }
 
-        ValueTask<bool> MoveNextAsync(ITrace trace);
+        ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken);
     }
 }

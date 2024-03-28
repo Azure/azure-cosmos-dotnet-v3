@@ -19,9 +19,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
         public ChangeFeedPartitionRangePageAsyncEnumerator(
             IChangeFeedDataSource changeFeedDataSource,
             FeedRangeState<ChangeFeedState> feedRangeState,
-            ChangeFeedPaginationOptions changeFeedPaginationOptions,
-            CancellationToken cancellationToken)
-            : base(feedRangeState, cancellationToken)
+            ChangeFeedPaginationOptions changeFeedPaginationOptions)
+            : base(feedRangeState)
         {
             this.changeFeedDataSource = changeFeedDataSource ?? throw new ArgumentNullException(nameof(changeFeedDataSource));
             this.changeFeedPaginationOptions = changeFeedPaginationOptions ?? throw new ArgumentNullException(nameof(changeFeedPaginationOptions));

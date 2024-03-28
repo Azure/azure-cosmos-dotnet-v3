@@ -200,7 +200,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     distinctQueryType: distinctQueryType,
                     dcountAlias: dcountAlias);
                 
-                if(!await stage.MoveNextAsync(NoOpTrace.Singleton))
+                if(!await stage.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default))
                 {
                     break;
                 }
@@ -222,22 +222,20 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             DistinctQueryType distinctQueryType,
             string dcountAlias)
         {
-            MonadicCreatePipelineStage source = (CosmosElement continuationToken, CancellationToken cancellationToken) =>
+            MonadicCreatePipelineStage source = (CosmosElement continuationToken) =>
                 TryCatch<IQueryPipelineStage>.FromResult(MockQueryPipelineStage.Create(pages, continuationToken));
 
-            MonadicCreatePipelineStage createDistinctQueryPipelineStage = (CosmosElement continuationToken, CancellationToken cancellationToken) => 
+            MonadicCreatePipelineStage createDistinctQueryPipelineStage = (CosmosElement continuationToken) => 
                 DistinctQueryPipelineStage.MonadicCreate(
                     executionEnvironment: executionEnvironment,
                     requestContinuation: continuationToken,
                     distinctQueryType: distinctQueryType,
-                    cancellationToken: cancellationToken,
                     monadicCreatePipelineStage: source);
 
             TryCatch<IQueryPipelineStage> tryCreateDCountQueryPipelineStage = DCountQueryPipelineStage.MonadicCreate(
                 executionEnvironment: executionEnvironment,
                 continuationToken: requestContinuationToken,
                 info: new DCountInfo { DCountAlias = dcountAlias },
-                cancellationToken: default,
                 monadicCreatePipelineStage: createDistinctQueryPipelineStage);
             Assert.IsTrue(tryCreateDCountQueryPipelineStage.Succeeded);
 

@@ -31,7 +31,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 queryInfo: new QueryInfo() { },
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 maxConcurrency: 10,
-                requestCancellationToken: default,
                 requestContinuationToken: default); ;
             Assert.IsTrue(monadicCreatePipeline.Succeeded);
         }

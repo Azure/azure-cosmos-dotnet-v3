@@ -17,8 +17,25 @@ namespace Microsoft.Azure.Cosmos.Pagination
         private readonly PartitionRangePageAsyncEnumerator<TPage, TState> enumerator;
         private TryCatch<TPage>? bufferedPage;
 
-        public BufferedPartitionRangePageAsyncEnumerator(PartitionRangePageAsyncEnumerator<TPage, TState> enumerator, CancellationToken cancellationToken)
-            : base(enumerator.FeedRangeState, cancellationToken)
+        public override Exception BufferedException
+        {
+            get
+            {
+                if (this.bufferedPage.HasValue && this.bufferedPage.Value.Failed)
+                {
+                    return this.bufferedPage.Value.Exception;
+                }
+
+                return null;
+            }
+        }
+
+        public override int BufferedItemCount => this.bufferedPage.HasValue && this.bufferedPage.Value.Succeeded ?
+            this.bufferedPage.Value.Result.ItemCount :
+            0;
+
+        public BufferedPartitionRangePageAsyncEnumerator(PartitionRangePageAsyncEnumerator<TPage, TState> enumerator)
+            : base(enumerator.FeedRangeState)
         {
             this.enumerator = enumerator ?? throw new ArgumentNullException(nameof(enumerator));
         }
@@ -59,15 +76,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
             using (ITrace prefetchTrace = trace.StartChild("Prefetch", TraceComponent.Pagination, TraceLevel.Info))
             {
-                await this.enumerator.MoveNextAsync(prefetchTrace);
+                await this.enumerator.MoveNextAsync(prefetchTrace, cancellationToken);
                 this.bufferedPage = this.enumerator.Current;
             }
-        }
-
-        public override void SetCancellationToken(CancellationToken cancellationToken)
-        {
-            base.SetCancellationToken(cancellationToken);
-            this.enumerator.SetCancellationToken(cancellationToken);
         }
     }
 }

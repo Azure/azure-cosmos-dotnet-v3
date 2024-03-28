@@ -7,9 +7,11 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
     using System;
     using System.Collections.Generic;
     using System.Threading;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class ReadFeedCrossFeedRangeAsyncEnumerable : IAsyncEnumerable<TryCatch<ReadFeedPage>>
     {
@@ -33,10 +35,10 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
             CrossPartitionReadFeedAsyncEnumerator innerEnumerator = CrossPartitionReadFeedAsyncEnumerator.Create(
                 this.documentContainer,
                 innerState,
-                this.readFeedPaginationOptions,
-                cancellationToken);
+                this.readFeedPaginationOptions);
 
-            return new ReadFeedCrossFeedRangeAsyncEnumerator(innerEnumerator);
+            ReadFeedCrossFeedRangeAsyncEnumerator readFeedEnumerator = new ReadFeedCrossFeedRangeAsyncEnumerator(innerEnumerator);
+            return new TracingAsyncEnumerator<TryCatch<ReadFeedPage>>(readFeedEnumerator, NoOpTrace.Singleton, cancellationToken);
         }
     }
 }

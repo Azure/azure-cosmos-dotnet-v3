@@ -330,12 +330,12 @@ namespace Microsoft.Azure.Cosmos
                         cosmosResponseMessage.Content.CopyTo(memoryStream);
                     }
 
-                    long responseLengthBytes = memoryStream.Length;
                     CosmosQueryClientCore.ParseRestStream(
                         memoryStream,
                         resourceType,
                         out CosmosArray documents,
-                        out CosmosObject distributionPlan);
+                        out CosmosObject distributionPlan,
+                        out bool? streaming);
 
                     DistributionPlanSpec distributionPlanSpec = null;
 
@@ -384,12 +384,12 @@ namespace Microsoft.Azure.Cosmos
                         documents,
                         cosmosResponseMessage.Headers.RequestCharge,
                         cosmosResponseMessage.Headers.ActivityId,
-                        responseLengthBytes,
                         cosmosQueryExecutionInfo,
                         distributionPlanSpec,
                         disallowContinuationTokenMessage: null,
                         additionalHeaders,
-                        queryState);
+                        queryState,
+                        streaming);
 
                     return TryCatch<QueryPage>.FromResult(response);
                 }
@@ -461,11 +461,13 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="resourceType">The resource type</param>
         /// <param name="documents">An array of CosmosElements parsed from the response body</param>
         /// <param name="distributionPlan">An object containing the distribution plan for the client</param>
+        /// <param name="streaming">An optional return value indicating if the backend response is streaming</param>
         public static void ParseRestStream(
             Stream stream,
             ResourceType resourceType,
             out CosmosArray documents,
-            out CosmosObject distributionPlan)
+            out CosmosObject distributionPlan,
+            out bool? streaming)
         {
             if (!(stream is MemoryStream memoryStream))
             {
@@ -507,7 +509,8 @@ namespace Microsoft.Azure.Cosmos
             //                  "Name": "root"
             //              }
             //          }
-            //      }
+            //      },
+            //      "_streaming": true
             // }
             // You want to create a CosmosElement for each document in "Documents".
 
@@ -557,6 +560,21 @@ namespace Microsoft.Azure.Cosmos
             else
             {
                 distributionPlan = null;
+            }
+
+            if (resourceType == ResourceType.Document && jsonNavigator.TryGetObjectProperty(jsonNavigator.GetRootNode(), "_streaming", out ObjectProperty streamingProperty))
+            {
+                JsonNodeType jsonNodeType = jsonNavigator.GetNodeType(streamingProperty.ValueNode);
+                streaming = jsonNodeType switch
+                {
+                    JsonNodeType.False => false,
+                    JsonNodeType.True => true,
+                    _ => throw new InvalidOperationException($"Response Body Contract was violated. QueryResponse had _streaming property as a non boolean: {jsonNodeType}"),
+                };
+            }
+            else
+            {
+                streaming = null;
             }
         }
     }

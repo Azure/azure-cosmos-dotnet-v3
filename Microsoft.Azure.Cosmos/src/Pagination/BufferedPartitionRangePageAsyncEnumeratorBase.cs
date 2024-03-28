@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Pagination
 {
+    using System;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -12,10 +13,14 @@ namespace Microsoft.Azure.Cosmos.Pagination
         where TPage : Page<TState>
         where TState : State
     {
-        protected BufferedPartitionRangePageAsyncEnumeratorBase(FeedRangeState<TState> feedRangeState, CancellationToken cancellationToken)
-            : base(feedRangeState, cancellationToken)
+        protected BufferedPartitionRangePageAsyncEnumeratorBase(FeedRangeState<TState> feedRangeState)
+            : base(feedRangeState)
         {
         }
+
+        public abstract Exception BufferedException { get; }
+
+        public abstract int BufferedItemCount { get; }
 
         public abstract ValueTask PrefetchAsync(ITrace trace, CancellationToken cancellationToken);
     }

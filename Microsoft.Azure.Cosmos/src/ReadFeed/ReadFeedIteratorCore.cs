@@ -181,8 +181,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                     CrossPartitionReadFeedAsyncEnumerator.Create(
                         documentContainer,
                         new CrossFeedRangeState<ReadFeedState>(monadicReadFeedState.Result.FeedRangeStates),
-                        readFeedPaginationOptions,
-                        cancellationToken));
+                        readFeedPaginationOptions));
             }
 
             this.hasMoreResults = true;
@@ -232,12 +231,11 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
             }
 
             CrossPartitionReadFeedAsyncEnumerator enumerator = this.monadicEnumerator.Result;
-            enumerator.SetCancellationToken(cancellationToken);
 
             TryCatch<CrossFeedRangePage<Pagination.ReadFeedPage, ReadFeedState>> monadicPage;
             try
             {
-                if (!await enumerator.MoveNextAsync(trace))
+                if (!await enumerator.MoveNextAsync(trace, cancellationToken))
                 {
                     throw new InvalidOperationException("Should not be calling enumerator that does not have any more results");
                 }

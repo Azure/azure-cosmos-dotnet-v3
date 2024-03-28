@@ -24,10 +24,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
 
             private ClientTakeQueryPipelineStage(
                 IQueryPipelineStage source,
-                CancellationToken cancellationToken,
                 int takeCount,
                 TakeEnum takeEnum)
-                : base(source, cancellationToken, takeCount)
+                : base(source, takeCount)
             {
                 this.takeEnum = takeEnum;
             }
@@ -35,7 +34,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
             public static TryCatch<IQueryPipelineStage> MonadicCreateLimitStage(
                 int limitCount,
                 CosmosElement requestContinuationToken,
-                CancellationToken cancellationToken,
                 MonadicCreatePipelineStage monadicCreatePipelineStage)
             {
                 if (limitCount < 0)
@@ -89,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                     sourceToken = null;
                 }
 
-                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(sourceToken, cancellationToken);
+                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(sourceToken);
                 if (tryCreateSource.Failed)
                 {
                     return tryCreateSource;
@@ -97,7 +95,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
 
                 IQueryPipelineStage stage = new ClientTakeQueryPipelineStage(
                     tryCreateSource.Result,
-                    cancellationToken,
                     limitContinuationToken.Limit,
                     TakeEnum.Limit);
 
@@ -107,7 +104,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
             public static TryCatch<IQueryPipelineStage> MonadicCreateTopStage(
                 int topCount,
                 CosmosElement requestContinuationToken,
-                CancellationToken cancellationToken,
                 MonadicCreatePipelineStage monadicCreatePipelineStage)
             {
                 if (topCount < 0)
@@ -161,7 +157,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                     sourceToken = null;
                 }
 
-                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(sourceToken, cancellationToken);
+                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(sourceToken);
                 if (tryCreateSource.Failed)
                 {
                     return tryCreateSource;
@@ -169,23 +165,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
 
                 IQueryPipelineStage stage = new ClientTakeQueryPipelineStage(
                     tryCreateSource.Result,
-                    cancellationToken,
                     topContinuationToken.Top,
                     TakeEnum.Top);
 
                 return TryCatch<IQueryPipelineStage>.FromResult(stage);
             }
 
-            public override async ValueTask<bool> MoveNextAsync(ITrace trace)
+            public override async ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
             {
-                this.cancellationToken.ThrowIfCancellationRequested();
+                cancellationToken.ThrowIfCancellationRequested();
 
                 if (trace == null)
                 {
                     throw new ArgumentNullException(nameof(trace));
                 }
 
-                if (this.ReturnedFinalPage || !await this.inputStage.MoveNextAsync(trace))
+                if (this.ReturnedFinalPage || !await this.inputStage.MoveNextAsync(trace, cancellationToken))
                 {
                     this.Current = default;
                     this.takeCount = 0;
@@ -229,12 +224,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                     documents: takedDocuments,
                     requestCharge: sourcePage.RequestCharge,
                     activityId: sourcePage.ActivityId,
-                    responseLengthInBytes: sourcePage.ResponseLengthInBytes,
                     cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
                     distributionPlanSpec: default,
                     disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
                     additionalHeaders: sourcePage.AdditionalHeaders,
-                    state: state);
+                    state: state,
+                    streaming: sourcePage.Streaming);
 
                 this.Current = TryCatch<QueryPage>.FromResult(queryPage);
                 return true;

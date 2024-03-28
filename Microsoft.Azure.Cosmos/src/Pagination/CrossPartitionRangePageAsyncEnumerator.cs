@@ -26,7 +26,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
         private readonly IFeedRangeProvider feedRangeProvider;
         private readonly CreatePartitionRangePageAsyncEnumerator<TPage, TState> createPartitionRangeEnumerator;
         private readonly AsyncLazy<IQueue<PartitionRangePageAsyncEnumerator<TPage, TState>>> lazyEnumerators;
-        private CancellationToken cancellationToken;
         private FeedRangeState<TState>? nextState;
 
         public CrossPartitionRangePageAsyncEnumerator(
@@ -35,12 +34,10 @@ namespace Microsoft.Azure.Cosmos.Pagination
             IComparer<PartitionRangePageAsyncEnumerator<TPage, TState>> comparer,
             int? maxConcurrency,
             PrefetchPolicy prefetchPolicy,
-            CancellationToken cancellationToken,
             CrossFeedRangeState<TState> state = default)
         {
             this.feedRangeProvider = feedRangeProvider ?? throw new ArgumentNullException(nameof(feedRangeProvider));
             this.createPartitionRangeEnumerator = createPartitionRangeEnumerator ?? throw new ArgumentNullException(nameof(createPartitionRangeEnumerator));
-            this.cancellationToken = cancellationToken;
 
             this.lazyEnumerators = new AsyncLazy<IQueue<PartitionRangePageAsyncEnumerator<TPage, TState>>>((ITrace trace, CancellationToken token) =>
                 InitializeEnumeratorsAsync(
@@ -58,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public FeedRangeInternal CurrentRange { get; private set; }
 
-        public async ValueTask<bool> MoveNextAsync(ITrace trace)
+        public async ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
         {
             if (trace == null)
             {
@@ -69,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             {
                 IQueue<PartitionRangePageAsyncEnumerator<TPage, TState>> enumerators = await this.lazyEnumerators.GetValueAsync(
                     childTrace,
-                    cancellationToken: this.cancellationToken);
+                    cancellationToken);
                 if (enumerators.Count == 0)
                 {
                     this.Current = default;
@@ -79,11 +76,10 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 }
 
                 PartitionRangePageAsyncEnumerator<TPage, TState> currentPaginator = enumerators.Dequeue();
-                currentPaginator.SetCancellationToken(this.cancellationToken);
                 bool moveNextResult = false;
                 try
                 {
-                    moveNextResult = await currentPaginator.MoveNextAsync(childTrace);
+                    moveNextResult = await currentPaginator.MoveNextAsync(childTrace, cancellationToken);
                 }
                 catch
                 {
@@ -96,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 {
                     // Current enumerator is empty,
                     // so recursively retry on the next enumerator.
-                    return await this.MoveNextAsync(childTrace);
+                    return await this.MoveNextAsync(childTrace, cancellationToken);
                 }
 
                 if (currentPaginator.Current.Failed)
@@ -114,18 +110,18 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         List<FeedRangeEpk> childRanges = await this.feedRangeProvider.GetChildRangeAsync(
                             currentPaginator.FeedRangeState.FeedRange,
                             childTrace,
-                            this.cancellationToken);
+                            cancellationToken);
 
                         if (childRanges.Count <= 1)
                         {
                             // We optimistically assumed that the cache is not stale.
                             // In the event that it is (where we only get back one child / the partition that we think got split)
                             // Then we need to refresh the cache
-                            await this.feedRangeProvider.RefreshProviderAsync(childTrace, this.cancellationToken);
+                            await this.feedRangeProvider.RefreshProviderAsync(childTrace, cancellationToken);
                             childRanges = await this.feedRangeProvider.GetChildRangeAsync(
                                 currentPaginator.FeedRangeState.FeedRange,
                                 childTrace,
-                                this.cancellationToken);
+                                cancellationToken);
                         }
 
                         if (childRanges.Count < 1)
@@ -157,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         }
 
                         // Recursively retry
-                        return await this.MoveNextAsync(childTrace);
+                        return await this.MoveNextAsync(childTrace, cancellationToken);
                     }
 
                     // Just enqueue the paginator and the user can decide if they want to retry.
@@ -216,11 +212,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
             nextState = default;
             return false;
-        }
-
-        public void SetCancellationToken(CancellationToken cancellationToken)
-        {
-            this.cancellationToken = cancellationToken;
         }
 
         private static bool IsSplitException(Exception exeception)
@@ -304,8 +295,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 PartitionRangePageAsyncEnumerator<TPage, TState> enumerator = createPartitionRangeEnumerator(feedRangeState);
                 BufferedPartitionRangePageAsyncEnumeratorBase<TPage, TState> bufferedEnumerator = policy switch
                 {
-                    PrefetchPolicy.PrefetchSinglePage => new BufferedPartitionRangePageAsyncEnumerator<TPage, TState>(enumerator, cancellationToken),
-                    PrefetchPolicy.PrefetchAll => new FullyBufferedPartitionRangeAsyncEnumerator<TPage, TState>(enumerator, cancellationToken),
+                    PrefetchPolicy.PrefetchSinglePage => new BufferedPartitionRangePageAsyncEnumerator<TPage, TState>(enumerator),
+                    PrefetchPolicy.PrefetchAll => new FullyBufferedPartitionRangeAsyncEnumerator<TPage, TState>(enumerator),
                     _ => throw new ArgumentOutOfRangeException(nameof(policy)),
                 };
                 bufferedEnumerators.Add(bufferedEnumerator);

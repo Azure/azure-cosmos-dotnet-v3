@@ -14,12 +14,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
     internal sealed class LazyQueryPipelineStage : IQueryPipelineStage
     {
         private readonly AsyncLazy<TryCatch<IQueryPipelineStage>> lazyTryCreateStage;
-        private CancellationToken cancellationToken;
 
-        public LazyQueryPipelineStage(AsyncLazy<TryCatch<IQueryPipelineStage>> lazyTryCreateStage, CancellationToken cancellationToken)
+        public LazyQueryPipelineStage(AsyncLazy<TryCatch<IQueryPipelineStage>> lazyTryCreateStage)
         {
             this.lazyTryCreateStage = lazyTryCreateStage ?? throw new ArgumentNullException(nameof(lazyTryCreateStage));
-            this.cancellationToken = cancellationToken;
         }
 
         public TryCatch<QueryPage> Current { get; private set; }
@@ -38,14 +36,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             return default;
         }
 
-        public async ValueTask<bool> MoveNextAsync(ITrace trace)
+        public async ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
         {
             if (trace == null)
             {
                 throw new ArgumentNullException(nameof(trace));
             }
 
-            TryCatch<IQueryPipelineStage> tryCreateStage = await this.lazyTryCreateStage.GetValueAsync(trace, this.cancellationToken);
+            TryCatch<IQueryPipelineStage> tryCreateStage = await this.lazyTryCreateStage.GetValueAsync(trace, cancellationToken);
             if (tryCreateStage.Failed)
             {
                 this.Current = TryCatch<QueryPage>.FromException(tryCreateStage.Exception);
@@ -53,8 +51,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             }
 
             IQueryPipelineStage stage = tryCreateStage.Result;
-            stage.SetCancellationToken(this.cancellationToken);
-            if (!await stage.MoveNextAsync(trace))
+            if (!await stage.MoveNextAsync(trace, cancellationToken))
             {
                 this.Current = default;
                 return false;
@@ -62,11 +59,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
             this.Current = stage.Current;
             return true;
-        }
-
-        public void SetCancellationToken(CancellationToken cancellationToken)
-        {
-            this.cancellationToken = cancellationToken;
         }
     }
 }

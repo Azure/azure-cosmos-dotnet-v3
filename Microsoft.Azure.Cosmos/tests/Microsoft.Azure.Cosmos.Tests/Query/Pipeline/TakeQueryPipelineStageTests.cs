@@ -92,8 +92,7 @@
                 executionEnvironment: executionEnvironment,
                 limitCount: takeCount,
                 requestContinuationToken: continuationToken,
-                cancellationToken: default,
-                monadicCreatePipelineStage: (CosmosElement continuationToken, CancellationToken cancellationToken) => TryCatch<IQueryPipelineStage>.FromResult(source));
+                monadicCreatePipelineStage: (CosmosElement continuationToken) => TryCatch<IQueryPipelineStage>.FromResult(source));
             Assert.IsTrue(tryCreateSkipQueryPipelineStage.Succeeded);
 
             IQueryPipelineStage takeQueryPipelineStage = tryCreateSkipQueryPipelineStage.Result;

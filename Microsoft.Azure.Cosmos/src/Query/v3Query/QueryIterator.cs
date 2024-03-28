@@ -192,14 +192,12 @@ namespace Microsoft.Azure.Cosmos.Query
             try
             {
                 // This catches exception thrown by the pipeline and converts it to QueryResponse
-                this.queryPipelineStage.SetCancellationToken(cancellationToken);
-                if (!await this.queryPipelineStage.MoveNextAsync(trace))
+                if (!await this.queryPipelineStage.MoveNextAsync(trace, cancellationToken))
                 {
                     this.hasMoreResults = false;
                     return QueryResponse.CreateSuccess(
                         result: EmptyPage,
                         count: EmptyPage.Count,
-                        responseLengthBytes: default,
                         serializationOptions: this.cosmosSerializationFormatOptions,
                         responseHeaders: new CosmosQueryResponseMessageHeaders(
                             continauationToken: default,
@@ -248,7 +246,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 return QueryResponse.CreateSuccess(
                     result: tryGetQueryPage.Result.Documents,
                     count: tryGetQueryPage.Result.Documents.Count,
-                    responseLengthBytes: tryGetQueryPage.Result.ResponseLengthInBytes,
                     serializationOptions: this.cosmosSerializationFormatOptions,
                     responseHeaders: headers,
                     trace: trace);

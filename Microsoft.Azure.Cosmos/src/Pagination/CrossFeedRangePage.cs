@@ -21,6 +21,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public TBackendPage Page { get; }
 
+        public override int ItemCount => this.Page.ItemCount;
+
         protected override ImmutableHashSet<string> DerivedClassBannedHeaders => bannedHeaders;
     }
 }

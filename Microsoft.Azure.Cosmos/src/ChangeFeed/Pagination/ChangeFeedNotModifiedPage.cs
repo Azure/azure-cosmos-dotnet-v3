@@ -20,6 +20,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
         {
         }
 
+        public override int ItemCount => 0;
+
         protected override ImmutableHashSet<string> DerivedClassBannedHeaders => bannedHeaders;
     }
 }

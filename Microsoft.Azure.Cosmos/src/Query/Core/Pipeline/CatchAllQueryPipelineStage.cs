@@ -13,12 +13,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
     internal sealed class CatchAllQueryPipelineStage : QueryPipelineStageBase
     {
-        public CatchAllQueryPipelineStage(IQueryPipelineStage inputStage, CancellationToken cancellationToken)
-            : base(inputStage, cancellationToken)
+        public CatchAllQueryPipelineStage(IQueryPipelineStage inputStage)
+            : base(inputStage)
         {
         }
 
-        public override async ValueTask<bool> MoveNextAsync(ITrace trace)
+        public override async ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
         {
             if (trace == null)
             {
@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
             try
             {
-                if (!await this.inputStage.MoveNextAsync(trace))
+                if (!await this.inputStage.MoveNextAsync(trace, cancellationToken))
                 {
                     this.Current = default;
                     return false;

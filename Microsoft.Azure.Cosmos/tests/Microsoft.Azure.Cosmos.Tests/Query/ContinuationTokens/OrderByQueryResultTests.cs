@@ -33,7 +33,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 memoryStream,
                 Documents.ResourceType.Document,
                 out CosmosArray documents,
-                out CosmosObject distributionPlan);
+                out CosmosObject distributionPlan,
+                out bool? streaming);
 
             List<OrderByQueryResult> orderByQueryResults = documents.Select(x => new OrderByQueryResult(x)).ToList();
             Assert.AreEqual(14, orderByQueryResults.Count);

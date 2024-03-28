@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            return new TracingAsyncEnumerator<TryCatch<TPage>>(this.createPartitionRangeEnumerator(this.feedRangeState), this.trace);
+            return new TracingAsyncEnumerator<TryCatch<TPage>>(this.createPartitionRangeEnumerator(this.feedRangeState), this.trace, cancellationToken);
         }
     }
 }

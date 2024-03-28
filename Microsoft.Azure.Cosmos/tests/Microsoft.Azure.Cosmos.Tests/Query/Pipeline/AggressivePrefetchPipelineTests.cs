@@ -242,12 +242,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     documents: documents,
                     requestCharge: 3.0,
                     activityId: "E7980B1F-436E-44DF-B7A5-655C56D38648",
-                    responseLengthInBytes: 48,
                     cosmosQueryExecutionInfo: new Lazy<CosmosQueryExecutionInfo>(() => new CosmosQueryExecutionInfo(false, false)),
                     distributionPlanSpec: default,
                     disallowContinuationTokenMessage: null,
                     additionalHeaders: null,
-                    state: continuationToken);
+                    state: continuationToken,
+                    streaming: default);
 
                 return TryCatch<QueryPage>.FromResult(page);
             }
