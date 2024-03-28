@@ -112,6 +112,30 @@ namespace Microsoft.Azure.Cosmos
         public Collection<Collection<CompositePath>> CompositeIndexes { get; internal set; } = new Collection<Collection<CompositePath>>();
 
         /// <summary>
+        /// Gets the vector indexes for additional indexes
+        /// </summary>
+        /// <example>
+        /// <![CDATA[
+        /// "vectorIndexes": [
+        ///  {
+        ///    "path": "/vector1",
+        ///    "type": "diskANN"
+        ///  },
+        ///  {
+        ///    "path": "/vector2",
+        ///    "type": "dlat "
+        ///  },
+        ///  {
+        ///    "path": "/vector3",
+        ///    "type": "quantizedFlat"
+        ///  }
+        /// ]
+        /// ]]>
+        /// </example>
+        [JsonProperty(PropertyName = "vectorIndexes")]
+        public Collection<VectorIndexPath> VectorIndexes { get; internal set; } = new Collection<VectorIndexPath>();
+
+        /// <summary>
         /// Collection of spatial index definitions to be used
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.SpatialIndexes)]
