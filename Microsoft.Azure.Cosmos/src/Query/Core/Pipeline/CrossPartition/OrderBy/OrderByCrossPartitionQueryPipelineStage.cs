@@ -153,7 +153,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             if (this.bufferedPages.Count > 0)
             {
                 this.bufferedPages.Dequeue();
-                return this.bufferedPages.Count > 0;
+                if (this.bufferedPages.Count > 0)
+                {
+                    return true;
+                }
             }
 
             TryCatch<bool> hasNext = await this.inner.TryAsync(pipelineStage => pipelineStage.MoveNextAsync(trace, cancellationToken));
