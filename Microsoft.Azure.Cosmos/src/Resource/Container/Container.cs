@@ -1697,7 +1697,7 @@ namespace Microsoft.Azure.Cosmos
         /// ManualResetEvent allProcessedDocumentsEvent = new ManualResetEvent(false);
         /// 
         /// ChangeFeedProcessor changeFeedProcessor = this.Container
-        ///     .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: "processor", onChangesDelegate: (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItemChange<dynamic>> documents, CancellationToken token) =>
+        ///     .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: "processor", onChangesDelegate: (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItem<dynamic>> documents, CancellationToken token) =>
         /// {
         ///     Console.WriteLine($"number of documents processed: {documents.Count}");
         ///     
@@ -1705,7 +1705,7 @@ namespace Microsoft.Azure.Cosmos
         ///     string pk = default;
         ///     string description = default;
         ///     
-        ///     foreach (ChangeFeedItemChange<dynamic> changeFeedItem in documents)
+        ///     foreach (ChangeFeedItem<dynamic> changeFeedItem in documents)
         ///     {
         ///         if (changeFeedItem.Metadata.OperationType != ChangeFeedOperationType.Delete)
         ///         {
@@ -1754,7 +1754,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
         public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
             string processorName,
-            ChangeFeedHandler<ChangeFeedItemChange<T>> onChangesDelegate);
+            ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate);
 #endif
     }
 }

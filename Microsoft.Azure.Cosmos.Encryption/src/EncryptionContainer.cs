@@ -758,7 +758,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 #if SDKPROJECTREF
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
             string processorName,
-            ChangeFeedHandler<ChangeFeedItemChange<T>> onChangesDelegate)
+            ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate)
         {
             throw new NotImplementedException();
         }
