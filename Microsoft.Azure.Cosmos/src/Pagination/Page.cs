@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             Microsoft.Azure.Documents.HttpConstants.HttpHeaders.ActivityId,
         }.ToImmutableHashSet();
 
-        private static readonly IReadOnlyDictionary<string, string> EmptyDictionary = new Dictionary<string, string>();
+        private static readonly IReadOnlyDictionary<string, string> EmptyDictionary = new Dictionary<string, string>().ToImmutableDictionary();
 
         protected Page(
             double requestCharge,

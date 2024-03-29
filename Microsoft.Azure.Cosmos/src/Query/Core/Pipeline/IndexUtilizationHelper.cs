@@ -29,19 +29,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                 return currentHeaders;
             }
 
-            Dictionary<string, string> additionalHeaders;
-            if (currentHeaders is Dictionary<string, string> currentHeadersDictionary)
+            // We could try to cast currentHeaders to a dictionary, but this can cause unpleasant side effects with singletons
+            Dictionary<string, string> additionalHeaders = new Dictionary<string, string>();
+
+            // Until we get the new .NET version, we need to copy the headers manually.
+            foreach (KeyValuePair<string, string> header in currentHeaders)
             {
-                additionalHeaders = currentHeadersDictionary;
-            }
-            else
-            {
-                // Until we get the new .NET version, we need to copy the headers manually.
-                additionalHeaders = new Dictionary<string, string>();
-                foreach (KeyValuePair<string, string> header in currentHeaders)
-                {
-                    additionalHeaders.Add(header.Key, header.Value);
-                }
+                additionalHeaders.Add(header.Key, header.Value);
             }
 
             additionalHeaders.Add(

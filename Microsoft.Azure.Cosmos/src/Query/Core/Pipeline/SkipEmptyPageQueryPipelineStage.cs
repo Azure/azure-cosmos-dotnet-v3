@@ -90,7 +90,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                             cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
                             distributionPlanSpec: default,
                             disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
-                            additionalHeaders: sourcePage.AdditionalHeaders,
+                            additionalHeaders: AccumulateIndexUtilization(
+                                cumulativeHeaders: this.cumulativeAdditionalHeaders,
+                                currentHeaders: sourcePage.AdditionalHeaders),
                             state: default,
                             streaming: sourcePage.Streaming);
                         this.cumulativeRequestCharge = 0;
