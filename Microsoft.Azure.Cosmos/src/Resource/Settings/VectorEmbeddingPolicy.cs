@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets a collection of <see cref="Embedding"/> that contains the vector embeddings of documents in collection in the Azure Cosmos DB service.
         /// </summary>
         [JsonProperty(PropertyName = "vectorEmbeddings")]
-        private readonly IEnumerable<Embedding> Embeddings;
+        public readonly IEnumerable<Embedding> Embeddings;
 
         /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 

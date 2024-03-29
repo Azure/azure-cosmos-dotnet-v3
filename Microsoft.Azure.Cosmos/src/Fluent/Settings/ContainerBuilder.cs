@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Fluent
 {
     using System;
+    using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -20,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         private ConflictResolutionPolicy conflictResolutionPolicy;
         private ChangeFeedPolicy changeFeedPolicy;
         private ClientEncryptionPolicy clientEncryptionPolicy;
+        private VectorEmbeddingPolicy vectorEmbeddingPolicy;
 
         /// <summary>
         /// Creates an instance for unit-testing
@@ -112,6 +114,25 @@ namespace Microsoft.Azure.Cosmos.Fluent
                 this,
                 (clientEncryptionPolicy) => this.AddClientEncryptionPolicy(clientEncryptionPolicy),
                 policyFormatVersion);
+        }
+
+        /// <summary>
+        /// Defined the vector embedding policy for this Azure Cosmos container
+        /// </summary>
+        /// <param name="embeddings">List of vector embeddings to include in the policy definition.</param>
+        /// <returns>An instance of <see cref="VectorEmbeddingPolicyDefinition"/>.</returns>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        VectorEmbeddingPolicyDefinition WithVectorEmbeddingPolicy(
+            IEnumerable<Embedding> embeddings)
+        {
+            return new VectorEmbeddingPolicyDefinition(
+                this,
+                embeddings,
+                (embeddingPolicy) => this.AddVectorEmbeddingPolicy(embeddingPolicy));
         }
 
         /// <summary>
@@ -220,6 +241,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
                 containerProperties.ClientEncryptionPolicy = this.clientEncryptionPolicy;
             }
 
+            if (this.vectorEmbeddingPolicy != null)
+            {
+                containerProperties.VectorEmbeddingPolicy = this.vectorEmbeddingPolicy;
+            }
+
             return containerProperties;
         }
 
@@ -253,6 +279,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
         private void AddClientEncryptionPolicy(ClientEncryptionPolicy clientEncryptionPolicy)
         {
             this.clientEncryptionPolicy = clientEncryptionPolicy;
+        }
+
+        private void AddVectorEmbeddingPolicy(VectorEmbeddingPolicy embeddingPolicy)
+        {
+            this.vectorEmbeddingPolicy = embeddingPolicy;
         }
     }
 }

@@ -114,6 +114,17 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Defines a <see cref="VectorIndexPath"/> in the current <see cref="Container"/>'s definition.
+        /// </summary>
+        /// <returns>An instance of <see cref="VectorIndexDefinition{T}"/>.</returns>
+        public VectorIndexDefinition<IndexingPolicyDefinition<T>> WithVectorIndex()
+        {
+            return new VectorIndexDefinition<IndexingPolicyDefinition<T>>(
+                this,
+                (vectorIndex) => this.AddVectorIndexPath(vectorIndex));
+        }
+
+        /// <summary>
         /// Applies the current definition to the parent.
         /// </summary>
         /// <returns>An instance of the parent.</returns>
@@ -131,6 +142,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
         private void AddSpatialPath(SpatialPath spatialSpec)
         {
             this.indexingPolicy.SpatialIndexes.Add(spatialSpec);
+        }
+
+        private void AddVectorIndexPath(VectorIndexPath vectorIndexPath)
+        {
+            this.indexingPolicy.VectorIndexes.Add(vectorIndexPath);
         }
 
         private void AddIncludedPaths(IEnumerable<string> paths)

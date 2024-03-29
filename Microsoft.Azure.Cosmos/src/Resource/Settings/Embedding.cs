@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.Collections.Generic;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
@@ -13,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Represents the embedding settings for the vector index.
     /// </summary>
-    public class Embedding
+    public class Embedding : IEquatable<Embedding>
     {
         /// <summary>
         /// Gets or sets a string containing the path of the vector index.
@@ -47,5 +48,14 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         [JsonExtensionData]
         internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+
+        /// <inheritdoc/>
+        public bool Equals(Embedding that)
+        {
+            return this.Path.Equals(that.Path)
+                && this.VectorDataType.Equals(that.VectorDataType)
+                && this.Dimensions == that.Dimensions
+                && this.Dimensions.Equals(that.Dimensions);
+        }
     }
 }
