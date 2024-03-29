@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             /// <summary>
             /// If this is true, it's a signal that new work should not be queued up.
             /// </summary>
-            internal bool FinishedEnumerating
+            public bool FinishedEnumerating
             => Volatile.Read(ref this.enumerator) == null;
 
             /// <summary>
@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             /// When testing, this can also include be a <see cref="ParallelPrefetchTestConfig"/>.
             /// We reuse this to keep allocations down in non-test cases.
             /// </summary>
-            internal ITrace PrefetchTrace { get; private set; }
+            public ITrace PrefetchTrace { get; private set; }
 
             /// <summary>
             /// The <see cref="IEnumerator{T}"/> which will produce the next <see cref="IPrefetcher"/>
@@ -47,15 +47,15 @@ namespace Microsoft.Azure.Cosmos.Pagination
             /// 
             /// If <see cref="FinishedEnumerating"/> == true, this returns null.
             /// </summary>
-            internal IEnumerator<IPrefetcher> Enumerator
+            public IEnumerator<IPrefetcher> Enumerator
             => Volatile.Read(ref this.enumerator);
 
             /// <summary>
             /// <see cref="CancellationToken"/> provided via <see cref="PrefetchInParallelAsync(IEnumerable{IPrefetcher}, int, ITrace, CancellationToken)"/>.
             /// </summary>
-            internal CancellationToken CancellationToken { get; private set; }
+            public CancellationToken CancellationToken { get; private set; }
 
-            internal CommonPrefetchState(ITrace prefetchTrace, IEnumerator<IPrefetcher> enumerator, CancellationToken cancellationToken)
+            public CommonPrefetchState(ITrace prefetchTrace, IEnumerator<IPrefetcher> enumerator, CancellationToken cancellationToken)
             {
                 this.PrefetchTrace = prefetchTrace;
                 this.enumerator = enumerator;
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             /// <summary>
             /// Cause <see cref="FinishedEnumerating"/> to return true.
             /// </summary>
-            internal void SetFinishedEnumerating()
+            public void SetFinishedEnumerating()
             {
                 Volatile.Write(ref this.enumerator, null);
             }
@@ -82,14 +82,14 @@ namespace Microsoft.Azure.Cosmos.Pagination
             /// <summary>
             /// State common to the whole <see cref="PrefetchInParallelAsync"/> call.
             /// </summary>
-            internal CommonPrefetchState CommonState { get; private set; }
+            public CommonPrefetchState CommonState { get; private set; }
 
             /// <summary>
             /// <see cref="IPrefetcher"/> which must be invoked next.
             /// </summary>
-            internal IPrefetcher CurrentPrefetcher { get; set; }
+            public IPrefetcher CurrentPrefetcher { get; set; }
 
-            internal SinglePrefetchState(CommonPrefetchState commonState, IPrefetcher initialPrefetcher)
+            public SinglePrefetchState(CommonPrefetchState commonState, IPrefetcher initialPrefetcher)
             {
                 this.CommonState = commonState;
                 this.CurrentPrefetcher = initialPrefetcher;
@@ -108,14 +108,14 @@ namespace Microsoft.Azure.Cosmos.Pagination
             private int startedTasks;
             private int awaitedTasks;
 
-            internal ArrayPool<IPrefetcher> PrefetcherPool { get; private set; }
-            internal ArrayPool<Task> TaskPool { get; private set; }
-            internal ArrayPool<object> ObjectPool { get; private set; }
+            public ArrayPool<IPrefetcher> PrefetcherPool { get; private set; }
+            public ArrayPool<Task> TaskPool { get; private set; }
+            public ArrayPool<object> ObjectPool { get; private set; }
 
-            internal int StartedTasks
+            public int StartedTasks
             => this.startedTasks;
 
-            internal int AwaitedTasks
+            public int AwaitedTasks
             => this.awaitedTasks;
 
             string ITrace.Name => this.innerTrace.Name;
@@ -138,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
             IReadOnlyDictionary<string, object> ITrace.Data => this.innerTrace.Data;
 
-            internal ParallelPrefetchTestConfig(
+            public ParallelPrefetchTestConfig(
                 ArrayPool<IPrefetcher> prefetcherPool,
                 ArrayPool<Task> taskPool,
                 ArrayPool<object> objectPool)
@@ -148,17 +148,17 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 this.ObjectPool = objectPool;
             }
 
-            internal void SetInnerTrace(ITrace trace)
+            public void SetInnerTrace(ITrace trace)
             {
                 this.innerTrace = trace;
             }
 
-            internal void TaskStarted()
+            public void TaskStarted()
             {
                 Interlocked.Increment(ref this.startedTasks);
             }
 
-            internal void TaskAwaited()
+            public void TaskAwaited()
             {
                 Interlocked.Increment(ref this.awaitedTasks);
             }
@@ -224,7 +224,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
         /// <summary>
         /// Exposed for testing purposes, do not call directly.
         /// </summary>
-        internal static Task PrefetchInParallelCoreAsync(
+        public static Task PrefetchInParallelCoreAsync(
             IEnumerable<IPrefetcher> prefetchers,
             int maxConcurrency,
             ITrace trace,
