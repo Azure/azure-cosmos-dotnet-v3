@@ -15,6 +15,16 @@ namespace Microsoft.Azure.Cosmos.Pagination
     internal static partial class ParallelPrefetch
     {
         /// <summary>
+        /// Number of tasks started at one time, maximum, when working through prefetchers.
+        /// 
+        /// Also used as a the limit between Low and High concurrency implementations.
+        /// 
+        /// This number should be reasonable large, but less than the point where a 
+        /// Task[BatchLimit] ends up on the LOH (which will be around 8,192).
+        /// </summary>
+        private const int BatchLimit = 512;
+
+        /// <summary>
         /// Common state that is needed for all tasks started via <see cref="PrefetchInParallelAsync(IEnumerable{IPrefetcher}, int, ITrace, CancellationToken)"/>, unless
         /// certain special cases hold.
         /// 
@@ -95,16 +105,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 this.CurrentPrefetcher = initialPrefetcher;
             }
         }
-
-        /// <summary>
-        /// Number of tasks started at one time, maximum, when working through prefetchers.
-        /// 
-        /// Also used as a the limit between Low and High concurrency implementations.
-        /// 
-        /// This number should be reasonable large, but less than the point where a 
-        /// Task[BatchLimit] ends up on the LOH (which will be around 8,192).
-        /// </summary>
-        private const int BatchLimit = 512;
 
         public static Task PrefetchInParallelAsync(
             IEnumerable<IPrefetcher> prefetchers,
