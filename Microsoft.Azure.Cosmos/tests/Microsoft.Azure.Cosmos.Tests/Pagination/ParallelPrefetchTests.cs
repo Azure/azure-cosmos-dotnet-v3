@@ -9,7 +9,6 @@
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Antlr4.Runtime.Tree;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
