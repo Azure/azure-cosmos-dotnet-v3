@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
             if (queue.Count == 0)
             {
-                return (new EmptyEnumerator(), totalRequestCharge);
+                return (EmptyEnumerator.Instance, totalRequestCharge);
             }
 
             return (new OrderByCrossPartitionEnumerator(queue), totalRequestCharge);
@@ -129,9 +129,15 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         private sealed class EmptyEnumerator : IEnumerator<OrderByQueryResult>
         {
+            public static readonly EmptyEnumerator Instance = new EmptyEnumerator();
+
             public OrderByQueryResult Current => throw new InvalidOperationException();
 
             object IEnumerator.Current => this.Current;
+
+            private EmptyEnumerator()
+            {
+            }
 
             public bool MoveNext()
             {
@@ -168,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
             public OrderByQueryResult Current { get; private set; }
 
-            object IEnumerator.Current => throw new NotImplementedException();
+            object IEnumerator.Current => this.Current;
 
             public PageEnumerator(IReadOnlyList<CosmosElement> page)
             {
