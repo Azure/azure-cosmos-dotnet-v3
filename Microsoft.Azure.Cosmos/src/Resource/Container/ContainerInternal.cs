@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos
 
         public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
             string processorName,
-            ChangeFeedHandler<ChangeFeedItemChange<T>> onChangesDelegate);
+            ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate);
 #endif
 
         public abstract class TryExecuteQueryResult
