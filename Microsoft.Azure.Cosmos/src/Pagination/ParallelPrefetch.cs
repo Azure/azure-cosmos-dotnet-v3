@@ -162,35 +162,35 @@ namespace Microsoft.Azure.Cosmos.Pagination
         /// </summary>
         private static T[] RentArray<T>(ParallelPrefetchTestConfig config, int minSize, bool clear)
         {
-            T[] ret;
+            T[] result;
             if (config != null)
             {
 #pragma warning disable IDE0045 // Convert to conditional expression - chained else if is clearer
                 if (typeof(T) == typeof(IPrefetcher))
                 {
-                    ret = (T[])(object)config.PrefetcherPool.Rent(minSize);
+                    result = (T[])(object)config.PrefetcherPool.Rent(minSize);
                 }
                 else if (typeof(T) == typeof(Task))
                 {
-                    ret = (T[])(object)config.TaskPool.Rent(minSize);
+                    result = (T[])(object)config.TaskPool.Rent(minSize);
                 }
                 else
                 {
-                    ret = (T[])(object)config.ObjectPool.Rent(minSize);
+                    result = (T[])(object)config.ObjectPool.Rent(minSize);
                 }
 #pragma warning restore IDE0045
             }
             else
             {
-                ret = ArrayPool<T>.Shared.Rent(minSize);
+                result = ArrayPool<T>.Shared.Rent(minSize);
             }
 
             if (clear)
             {
-                Array.Clear(ret, 0, ret.Length);
+                Array.Clear(result, 0, result.Length);
             }
 
-            return ret;
+            return result;
         }
 
         /// <summary>
@@ -289,18 +289,18 @@ namespace Microsoft.Azure.Cosmos.Pagination
                                     //
                                     // we need this lock because at this point there
                                     // are other Tasks potentially also looking to call
-                                    // e.MoveNext()
+                                    // enumerator.MoveNext()
                                     lock (innerCommonState)
                                     {
                                         // this can have transitioned to null since we last checked
                                         // so this is basically double-check locking
-                                        IEnumerator<IPrefetcher> e = innerCommonState.Enumerator;
-                                        if (e == null)
+                                        IEnumerator<IPrefetcher> enumerator = innerCommonState.Enumerator;
+                                        if (enumerator == null)
                                         {
                                             return;
                                         }
 
-                                        if (!e.MoveNext())
+                                        if (!enumerator.MoveNext())
                                         {
                                             // we're done, signal to every other task to also bail
                                             innerCommonState.SetFinishedEnumerating();
@@ -309,7 +309,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                                         }
 
                                         // move on to the new IPrefetcher just obtained
-                                        innerState.CurrentPrefetcher = e.Current;
+                                        innerState.CurrentPrefetcher = enumerator.Current;
                                     }
                                 }
                             }
@@ -347,18 +347,18 @@ namespace Microsoft.Azure.Cosmos.Pagination
         /// 
         /// Synchronization is the concern of the caller, not this method.
         /// </summary>
-        private static int FillPrefetcherBuffer(CommonPrefetchState commonState, IPrefetcher[] prefetchers, int startIndex, int endIndex, IEnumerator<IPrefetcher> e)
+        private static int FillPrefetcherBuffer(CommonPrefetchState commonState, IPrefetcher[] prefetchers, int startIndex, int endIndex, IEnumerator<IPrefetcher> enumerator)
         {
             int curIndex;
             for (curIndex = startIndex; curIndex < endIndex; curIndex++)
             {
-                if (!e.MoveNext())
+                if (!enumerator.MoveNext())
                 {
                     commonState.SetFinishedEnumerating();
                     break;
                 }
 
-                prefetchers[curIndex] = e.Current;
+                prefetchers[curIndex] = enumerator.Current;
             }
 
             return curIndex;
@@ -407,17 +407,17 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 {
                     config?.SetInnerTrace(prefetchTrace);
 
-                    using (IEnumerator<IPrefetcher> e = prefetchers.GetEnumerator())
+                    using (IEnumerator<IPrefetcher> enumerator = prefetchers.GetEnumerator())
                     {
-                        if (!e.MoveNext())
+                        if (!enumerator.MoveNext())
                         {
                             // literally nothing to prefetch
                             return;
                         }
 
-                        IPrefetcher first = e.Current;
+                        IPrefetcher first = enumerator.Current;
 
-                        if (!e.MoveNext())
+                        if (!enumerator.MoveNext())
                         {
                             // special case: a single prefetcher... just await it, and skip all the heavy work
                             config?.TaskStarted();
@@ -431,15 +431,15 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
                         initialPrefetchers = RentArray<IPrefetcher>(config, maxConcurrency, clear: false);
                         initialPrefetchers[0] = first;
-                        initialPrefetchers[1] = e.Current;
+                        initialPrefetchers[1] = enumerator.Current;
 
-                        CommonPrefetchState commonState = new (config ?? prefetchTrace, e, cancellationToken);
+                        CommonPrefetchState commonState = new (config ?? prefetchTrace, enumerator, cancellationToken);
 
                         // batch up a bunch of IPrefetchers to kick off
                         // 
                         // we do this separately from starting the Tasks so we can avoid a lock
                         // and quicky get to maxConcurrency degrees of parallelism
-                        nextPrefetcherIndex = FillPrefetcherBuffer(commonState, initialPrefetchers, 2, maxConcurrency, e);
+                        nextPrefetcherIndex = FillPrefetcherBuffer(commonState, initialPrefetchers, 2, maxConcurrency, enumerator);
 
                         // actually start all the tasks, stashing them in a rented Task[]
                         runningTasks = RentArray<Task>(config, nextPrefetcherIndex, clear: false);
@@ -535,17 +535,17 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 {
                     config?.SetInnerTrace(prefetchTrace);
 
-                    using (IEnumerator<IPrefetcher> e = prefetchers.GetEnumerator())
+                    using (IEnumerator<IPrefetcher> enumerator = prefetchers.GetEnumerator())
                     {
-                        if (!e.MoveNext())
+                        if (!enumerator.MoveNext())
                         {
                             // no prefetchers at all
                             return;
                         }
 
-                        IPrefetcher first = e.Current;
+                        IPrefetcher first = enumerator.Current;
 
-                        if (!e.MoveNext())
+                        if (!enumerator.MoveNext())
                         {
                             // special case: a single prefetcher... just await it, and skip all the heavy work
                             config?.TaskStarted();
@@ -559,12 +559,12 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
                         currentBatch = RentArray<IPrefetcher>(config, BatchLimit, clear: false);
                         currentBatch[0] = first;
-                        currentBatch[1] = e.Current;
+                        currentBatch[1] = enumerator.Current;
 
                         // we need this all null because we use null as a stopping condition later
                         runningTasks = RentArray<object>(config, BatchLimit, clear: true);
 
-                        CommonPrefetchState commonState = new (config ?? prefetchTrace, e, cancellationToken);
+                        CommonPrefetchState commonState = new (config ?? prefetchTrace, enumerator, cancellationToken);
 
                         // what we do here is buffer up to BatchLimit IPrefetchers to start
                         // and then... start them all
@@ -575,7 +575,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         // grab our first bunch of prefetchers outside of the lock
                         //
                         // we know that maxConcurrency > BatchLimit, so can just pass it as our cutoff here
-                        int bufferedPrefetchers = FillPrefetcherBuffer(commonState, currentBatch, 2, BatchLimit, e);
+                        int bufferedPrefetchers = FillPrefetcherBuffer(commonState, currentBatch, 2, BatchLimit, enumerator);
 
                         int nextChunkIndex = 0;
                         object[] currentChunk = runningTasks;
@@ -590,9 +590,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         while (true)
                         {
                             // start and store the last set of Tasks we got from FillPrefetcherBuffer
-                            for (int toStartIx = 0; toStartIx < bufferedPrefetchers; toStartIx++)
+                            for (int toStartIndex = 0; toStartIndex < bufferedPrefetchers; toStartIndex++)
                             {
-                                IPrefetcher prefetcher = currentBatch[toStartIx];
+                                IPrefetcher prefetcher = currentBatch[toStartIndex];
                                 Task startedTask = CommonStartTaskAsync(config, commonState, prefetcher);
 
                                 currentChunk[nextChunkIndex] = startedTask;
@@ -642,7 +642,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                                 // grab the next set of prefetchers to start
                                 try
                                 {
-                                    bufferedPrefetchers = FillPrefetcherBuffer(commonState, currentBatch, 0, nextBatchSizeLimit, e);
+                                    bufferedPrefetchers = FillPrefetcherBuffer(commonState, currentBatch, 0, nextBatchSizeLimit, enumerator);
                                 }
                                 catch (Exception exc)
                                 {
