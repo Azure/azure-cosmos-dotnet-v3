@@ -436,62 +436,6 @@
         }
 
         /// <summary>
-        /// ITrace which does nothing.
-        /// </summary>
-        private sealed class NullTrace : ITrace
-        {
-            public string Name => "Null";
-
-            public Guid Id => Guid.Empty;
-
-            public DateTime StartTime => DateTime.MinValue;
-
-            public TimeSpan Duration => TimeSpan.MaxValue;
-
-            public Cosmos.Tracing.TraceLevel Level => Cosmos.Tracing.TraceLevel.Off;
-
-            public TraceComponent Component => TraceComponent.Unknown;
-
-            public TraceSummary Summary => new();
-
-            public ITrace Parent => null;
-
-            public IReadOnlyList<ITrace> Children => new List<ITrace>();
-
-            public IReadOnlyDictionary<string, object> Data => new Dictionary<string, object>();
-
-            public void AddChild(ITrace trace)
-            {
-            }
-
-            public void AddDatum(string key, TraceDatum traceDatum)
-            {
-            }
-
-            public void AddDatum(string key, object value)
-            {
-            }
-
-            public void AddOrUpdateDatum(string key, object value)
-            {
-            }
-
-            public void Dispose()
-            {
-            }
-
-            public ITrace StartChild(string name)
-            {
-                return this;
-            }
-
-            public ITrace StartChild(string name, TraceComponent component, Cosmos.Tracing.TraceLevel level)
-            {
-                return this;
-            }
-        }
-
-        /// <summary>
         /// ITrace which only traces children and parents.
         /// </summary>
         private sealed class SimpleTrace : ITrace
@@ -578,7 +522,7 @@
         /// </summary>
         private static readonly int[] Concurrencies = new[] { 1, 2, 511, 512, 513, int.MaxValue };
 
-        private static readonly ITrace EmptyTrace = new NullTrace();
+        private static readonly ITrace EmptyTrace = NoOpTrace.Singleton;
 
         [TestMethod]
         public async Task ParameterValidationAsync()
