@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private readonly ChangesHandler<T> legacyOnChanges;
         private readonly ChangeFeedHandler<T> onChanges;
         private readonly ChangeFeedHandlerWithManualCheckpoint<T> onChangesWithManualCheckpoint;
-        private readonly ChangeFeedHandler<ChangeFeedItemChange<T>> onAllVersionsAndDeletesChanges;
+        private readonly ChangeFeedHandler<ChangeFeedItem<T>> onAllVersionsAndDeletesChanges;
         private readonly CosmosSerializerCore serializerCore;
 
         public ChangeFeedObserverFactoryCore(
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         }
 
         public ChangeFeedObserverFactoryCore(
-            ChangeFeedHandler<ChangeFeedItemChange<T>> onChanges,
+            ChangeFeedHandler<ChangeFeedItem<T>> onChanges,
             CosmosSerializerCore serializerCore)
             : this(serializerCore)
         {
@@ -130,7 +130,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             Stream stream,
             CancellationToken cancellationToken)
         {
-            IReadOnlyCollection<ChangeFeedItemChange<T>> changes = this.AllVersionsAsIReadOnlyCollection(stream, context);
+            IReadOnlyCollection<ChangeFeedItem<T>> changes = this.AllVersionsAsIReadOnlyCollection(stream, context);
             if (changes.Count == 0)
             {
                 return Task.CompletedTask;
@@ -156,13 +156,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             }
         }
 
-        private IReadOnlyCollection<ChangeFeedItemChange<T>> AllVersionsAsIReadOnlyCollection(
+        private IReadOnlyCollection<ChangeFeedItem<T>> AllVersionsAsIReadOnlyCollection(
             Stream stream,
             ChangeFeedObserverContextCore context)
         {
             try
             {
-                 return CosmosFeedResponseSerializer.FromFeedResponseStream<ChangeFeedItemChange<T>>(
+                 return CosmosFeedResponseSerializer.FromFeedResponseStream<ChangeFeedItem<T>>(
                     this.serializerCore,
                     stream);
             }

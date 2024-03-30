@@ -39,13 +39,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             Exception exception = default;
 
             ChangeFeedProcessor processor = monitoredContainer
-                .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: "processor", onChangesDelegate: (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItemChange<dynamic>> docs, CancellationToken token) =>
+                .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: "processor", onChangesDelegate: (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItem<dynamic>> docs, CancellationToken token) =>
                 {
                     string id = default;
                     string pk = default;
                     string description = default;
 
-                    foreach (ChangeFeedItemChange<dynamic> change in docs)
+                    foreach (ChangeFeedItem<dynamic> change in docs)
                     {
                         if (change.Metadata.OperationType != ChangeFeedOperationType.Delete)
                         {
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     Assert.IsTrue(context.Diagnostics.ToString().Contains("Change Feed Processor Read Next Async"));
                     Assert.AreEqual(expected: 3, actual: docs.Count);
 
-                    ChangeFeedItemChange<dynamic> createChange = docs.ElementAt(0);
+                    ChangeFeedItem<dynamic> createChange = docs.ElementAt(0);
                     Assert.IsNotNull(createChange.Current);
                     Assert.AreEqual(expected: "1", actual: createChange.Current.id.ToString());
                     Assert.AreEqual(expected: "1", actual: createChange.Current.pk.ToString());
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     Assert.AreEqual(expected: createChange.Metadata.PreviousLsn, actual: 0);
                     Assert.IsNull(createChange.Previous);
 
-                    ChangeFeedItemChange<dynamic> replaceChange = docs.ElementAt(1);
+                    ChangeFeedItem<dynamic> replaceChange = docs.ElementAt(1);
                     Assert.IsNotNull(replaceChange.Current);
                     Assert.AreEqual(expected: "1", actual: replaceChange.Current.id.ToString());
                     Assert.AreEqual(expected: "1", actual: replaceChange.Current.pk.ToString());
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     Assert.AreEqual(expected: createChange.Metadata.Lsn, actual: replaceChange.Metadata.PreviousLsn);
                     Assert.IsNull(replaceChange.Previous);
 
-                    ChangeFeedItemChange<dynamic> deleteChange = docs.ElementAt(2);
+                    ChangeFeedItem<dynamic> deleteChange = docs.ElementAt(2);
                     Assert.IsNull(deleteChange.Current.id);
                     Assert.AreEqual(expected: deleteChange.Metadata.OperationType, actual: ChangeFeedOperationType.Delete);
                     Assert.AreEqual(expected: replaceChange.Metadata.Lsn, actual: deleteChange.Metadata.PreviousLsn);
@@ -341,7 +341,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             ChangeFeedProcessor allVersionsAndDeletesProcessorAtomic = null;
 
             ChangeFeedProcessorBuilder allVersionsAndDeletesProcessorBuilder = monitoredContainer
-                .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: $"processorName", onChangesDelegate: (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItemChange<dynamic>> documents, CancellationToken token) => Task.CompletedTask)
+                .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: $"processorName", onChangesDelegate: (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItem<dynamic>> documents, CancellationToken token) => Task.CompletedTask)
                 .WithInstanceName(Guid.NewGuid().ToString())
                 .WithMaxItems(1)
                 .WithLeaseContainer(leaseContainer)

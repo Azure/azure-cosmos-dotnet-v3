@@ -23,19 +23,19 @@ namespace Microsoft.Azure.Cosmos
     /// PartitionKey partitionKey = new PartitionKey(@"learning");
     /// ChangeFeedStartFrom changeFeedStartFrom = ChangeFeedStartFrom.Now(FeedRange.FromPartitionKey(partitionKey));
     /// 
-    /// using (FeedIterator<ChangeFeedItemChanges<ToDoActivity>> feedIterator = container.GetChangeFeedIterator<ChangeFeedItemChanges<ToDoActivity>>(
+    /// using (FeedIterator<ChangeFeedItem<ToDoActivity>> feedIterator = container.GetChangeFeedIterator<ChangeFeedItemChanges<ToDoActivity>>(
     ///     changeFeedStartFrom: changeFeedStartFrom,
     ///     changeFeedMode: changeFeedMode))
     /// {
     ///     while (feedIterator.HasMoreResults)
     ///     {
-    ///         FeedResponse<ChangeFeedItemChanges<ToDoActivity>> feedResponse = await feedIterator.ReadNextAsync();
+    ///         FeedResponse<ChangeFeedItem<ToDoActivity>> feedResponse = await feedIterator.ReadNextAsync();
     ///         
     ///         if (feedResponse.StatusCode != HttpStatusCode.NotModified)
     ///         {
-    ///             IEnumerable<ChangeFeedItemChanges<ToDoActivity>> feedResource = feedResponse.Resource;
+    ///             IEnumerable<ChangeFeedItem<ToDoActivity>> feedResource = feedResponse.Resource;
     ///             
-    ///             foreach(ChangeFeedItemChanges<ToDoActivity> itemChanges in feedResource)
+    ///             foreach(ChangeFeedItem<ToDoActivity> itemChanges in feedResource)
     ///             {
     ///                 ToDoActivity currentToDoActivity = itemChanges.Current;
     ///                 ToDoActivity previousToDoActivity = itemChanges.Previous;
@@ -47,13 +47,13 @@ namespace Microsoft.Azure.Cosmos
     /// ]]>
     /// </code>
     /// </example>
-    /// <remarks><see cref="ChangeFeedItemChange{T}"/> is an optional helper class that uses Newtonsoft serialization libraries. Users are welcome to create their own custom helper class.</remarks>
+    /// <remarks><see cref="ChangeFeedItem{T}"/> is an optional helper class that uses Newtonsoft serialization libraries. Users are welcome to create their own custom helper class.</remarks>
 #if PREVIEW
     public
 #else
     internal
 #endif  
-        class ChangeFeedItemChange<T>
+        class ChangeFeedItem<T>
     {
         /// <summary>
         /// The full fidelity change feed current item.
