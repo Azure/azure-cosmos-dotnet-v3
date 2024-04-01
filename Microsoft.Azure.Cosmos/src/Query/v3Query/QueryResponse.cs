@@ -38,7 +38,6 @@ namespace Microsoft.Azure.Cosmos
         private QueryResponse(
             IReadOnlyList<CosmosElement> result,
             int count,
-            long responseLengthBytes,
             CosmosQueryResponseMessageHeaders responseHeaders,
             HttpStatusCode statusCode,
             RequestMessage requestMessage,
@@ -55,7 +54,6 @@ namespace Microsoft.Azure.Cosmos
         {
             this.CosmosElements = result;
             this.Count = count;
-            this.ResponseLengthBytes = responseLengthBytes;
             this.memoryStream = memoryStream;
             this.CosmosSerializationOptions = serializationOptions;
         }
@@ -68,14 +66,6 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual CosmosQueryResponseMessageHeaders QueryHeaders => (CosmosQueryResponseMessageHeaders)this.Headers;
 
-        /// <summary>
-        /// Gets the response length in bytes
-        /// </summary>
-        /// <remarks>
-        /// This value is only set for Direct mode.
-        /// </remarks>
-        internal long ResponseLengthBytes { get; }
-
         internal virtual CosmosSerializationFormatOptions CosmosSerializationOptions { get; }
 
         internal bool GetHasMoreResults()
@@ -86,7 +76,6 @@ namespace Microsoft.Azure.Cosmos
         internal static QueryResponse CreateSuccess(
             IReadOnlyList<CosmosElement> result,
             int count,
-            long responseLengthBytes,
             CosmosQueryResponseMessageHeaders responseHeaders,
             CosmosSerializationFormatOptions serializationOptions,
             ITrace trace)
@@ -94,11 +83,6 @@ namespace Microsoft.Azure.Cosmos
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException("count must be positive");
-            }
-
-            if (responseLengthBytes < 0)
-            {
-                throw new ArgumentOutOfRangeException("responseLengthBytes must be positive");
             }
 
             Lazy<MemoryStream> memoryStream = new Lazy<MemoryStream>(() => CosmosElementSerializer.ToStream(
@@ -110,7 +94,6 @@ namespace Microsoft.Azure.Cosmos
             QueryResponse cosmosQueryResponse = new QueryResponse(
                result: result,
                count: count,
-               responseLengthBytes: responseLengthBytes,
                responseHeaders: responseHeaders,
                statusCode: HttpStatusCode.OK,
                cosmosException: null,
@@ -132,7 +115,6 @@ namespace Microsoft.Azure.Cosmos
             QueryResponse cosmosQueryResponse = new QueryResponse(
                 result: new List<CosmosElement>(),
                 count: 0,
-                responseLengthBytes: 0,
                 responseHeaders: responseHeaders,
                 statusCode: statusCode,
                 cosmosException: cosmosException,

@@ -20,9 +20,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         public ReadFeedPartitionRangeEnumerator(
             IReadFeedDataSource readFeedDataSource,
             FeedRangeState<ReadFeedState> feedRangeState,
-            ReadFeedPaginationOptions readFeedPaginationOptions,
-            CancellationToken cancellationToken)
-            : base(feedRangeState, cancellationToken)
+            ReadFeedPaginationOptions readFeedPaginationOptions)
+            : base(feedRangeState)
         {
             this.readFeedDataSource = readFeedDataSource ?? throw new ArgumentNullException(nameof(readFeedDataSource));
             this.readFeedPaginationOptions = readFeedPaginationOptions;

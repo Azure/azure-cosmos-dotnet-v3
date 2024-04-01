@@ -424,7 +424,6 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             ResponseMessage cosmosResponse = QueryResponse.CreateSuccess(
                 cosmosElements,
                 1,
-                Encoding.UTF8.GetByteCount(serializedItem),
                 new CosmosQueryResponseMessageHeaders(
                     continauationToken: null,
                     disallowContinuationTokenMessage: null,

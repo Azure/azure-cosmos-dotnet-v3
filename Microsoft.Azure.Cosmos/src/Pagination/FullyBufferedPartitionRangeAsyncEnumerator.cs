@@ -17,15 +17,30 @@ namespace Microsoft.Azure.Cosmos.Pagination
         private readonly PartitionRangePageAsyncEnumerator<TPage, TState> enumerator;
         private readonly List<TPage> bufferedPages;
         private int currentIndex;
+        private int bufferedItemCount;
         private Exception exception;
 
-        private bool HasPrefetched => (this.exception != null) || (this.bufferedPages.Count > 0);
+        private bool hasPrefetched;
 
-        public FullyBufferedPartitionRangeAsyncEnumerator(PartitionRangePageAsyncEnumerator<TPage, TState> enumerator, CancellationToken cancellationToken)
-            : base(enumerator.FeedRangeState, cancellationToken)
+        public override Exception BufferedException => this.exception;
+
+        public override int BufferedItemCount => this.bufferedItemCount;
+
+        public FullyBufferedPartitionRangeAsyncEnumerator(PartitionRangePageAsyncEnumerator<TPage, TState> enumerator)
+            : this(enumerator, null)
+        {
+        }
+
+        public FullyBufferedPartitionRangeAsyncEnumerator(PartitionRangePageAsyncEnumerator<TPage, TState> enumerator, IReadOnlyList<TPage> bufferedPages)
+            : base(enumerator.FeedRangeState)
         {
             this.enumerator = enumerator ?? throw new ArgumentNullException(nameof(enumerator));
             this.bufferedPages = new List<TPage>();
+
+            if (bufferedPages != null)
+            {
+                this.bufferedPages.AddRange(bufferedPages);
+            }
         }
 
         public override ValueTask DisposeAsync()
@@ -40,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 throw new ArgumentNullException(nameof(trace));
             }
 
-            if (this.HasPrefetched)
+            if (this.hasPrefetched)
             {
                 return;
             }
@@ -49,13 +64,14 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
             using (ITrace prefetchTrace = trace.StartChild("Prefetch", TraceComponent.Pagination, TraceLevel.Info))
             {
-                while (await this.enumerator.MoveNextAsync(prefetchTrace))
+                while (await this.enumerator.MoveNextAsync(prefetchTrace, cancellationToken))
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     TryCatch<TPage> current = this.enumerator.Current;
                     if (current.Succeeded)
                     {
                         this.bufferedPages.Add(current.Result);
+                        this.bufferedItemCount += current.Result.ItemCount;
                     }
                     else
                     {
@@ -64,6 +80,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     }
                 }
             }
+
+            this.hasPrefetched = true;
         }
 
         protected override async Task<TryCatch<TPage>> GetNextPageAsync(ITrace trace, CancellationToken cancellationToken)
@@ -79,18 +97,12 @@ namespace Microsoft.Azure.Cosmos.Pagination
             }
             else
             {
-                await this.enumerator.MoveNextAsync(trace);
+                await this.enumerator.MoveNextAsync(trace, cancellationToken);
                 result = this.enumerator.Current;
             }
 
             ++this.currentIndex;
             return result;
-        }
-
-        public override void SetCancellationToken(CancellationToken cancellationToken)
-        {
-            base.SetCancellationToken(cancellationToken);
-            this.enumerator.SetCancellationToken(cancellationToken);
         }
     }
 }

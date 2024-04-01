@@ -376,72 +376,56 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 
         public override IndexMetricsParserTestOutput ExecuteTest(IndexMetricsParserTestInput input)
         {
-            string indexMetricsNonODE = default;
             // Execute without ODE
-            QueryRequestOptions requestOptions = new QueryRequestOptions() { PopulateIndexMetrics = true, EnableOptimisticDirectExecution = false };
+            string indexMetricsNonODE = RunTest(input.Query, enableOptimisticDirectExecution: false);
 
-            FeedIterator<CosmosElement> itemQuery = testContainer.GetItemQueryIterator<CosmosElement>(
-                input.Query,
+            // Execute with ODE
+            string indexMetricsODE = RunTest(input.Query, enableOptimisticDirectExecution: true);
+
+            // Make sure ODE and non-ODE is consistent
+            Assert.AreEqual(indexMetricsNonODE, indexMetricsODE);
+
+            return new IndexMetricsParserTestOutput(indexMetricsNonODE);
+        }
+
+        private static string RunTest(string query, bool enableOptimisticDirectExecution)
+        {
+            QueryRequestOptions requestOptions = new QueryRequestOptions() { PopulateIndexMetrics = true, EnableOptimisticDirectExecution = enableOptimisticDirectExecution };
+
+            using FeedIterator<CosmosElement> itemQuery = testContainer.GetItemQueryIterator<CosmosElement>(
+                query,
                 requestOptions: requestOptions);
 
             // Index Metrics is returned fully on the first page so no need to worry about result set
-            int roundTripCount = 1;
+            int roundTripCount = 0;
+            string indexMetrics = null;
             while (itemQuery.HasMoreResults)
             {
                 FeedResponse<CosmosElement> page = itemQuery.ReadNextAsync().Result;
                 Assert.IsTrue(page.Headers.AllKeys().Length > 1);
 
-                if (roundTripCount > 1)
+                if (roundTripCount > 0)
                 {
-                     if (page.IndexMetrics != null) Assert.Fail("Expected only Index Metrics on first round trip. Current round trip %n", roundTripCount);
+                    if (page.IndexMetrics != null)
+                    {
+                        Assert.Fail("Expected only Index Metrics on first round trip. Current round trip %n", roundTripCount);
+                    }
                 }
                 else
                 {
                     Assert.IsNotNull(page.Headers.Get(HttpConstants.HttpHeaders.IndexUtilization), "Expected index utilization headers for query");
                     Assert.IsNotNull(page.IndexMetrics, "Expected index metrics response for query");
 
-                    indexMetricsNonODE = page.IndexMetrics;
+                    indexMetrics = page.IndexMetrics;
                 }
 
                 roundTripCount++;
             }
 
-            // Execute with ODE
-            string indexMetricsODE = default;
-            QueryRequestOptions requestOptions2 = new QueryRequestOptions() { PopulateIndexMetrics = true, EnableOptimisticDirectExecution = true };
-
-            FeedIterator<CosmosElement> itemQuery2 = testContainer.GetItemQueryIterator<CosmosElement>(
-                input.Query,
-                requestOptions: requestOptions2);
-
-            // Index Metrics is returned fully on the first page so no need to worry about result set
-            int roundTripCount2 = 1;
-            while (itemQuery2.HasMoreResults)
-            {
-                FeedResponse<CosmosElement> page2 = itemQuery2.ReadNextAsync().Result;
-                Assert.IsTrue(page2.Headers.AllKeys().Length > 1);
-
-                if (roundTripCount2 > 1)
-                {
-                    if (page2.IndexMetrics != null) Assert.Fail("Expected only Index Metrics on first round trip. Current round trip %n", roundTripCount2);
-                }
-                else
-                {
-                    Assert.IsNotNull(page2.Headers.Get(HttpConstants.HttpHeaders.IndexUtilization), "Expected index utilization headers for query");
-                    Assert.IsNotNull(page2.IndexMetrics, "Expected index metrics response for query");
-
-                    indexMetricsODE = page2.IndexMetrics;
-                }
-
-                roundTripCount2++;
-            }
-
-            // Make sure ODE and non-ODE is consistent
-            Assert.AreEqual(indexMetricsNonODE, indexMetricsODE);
-
-            return new IndexMetricsParserTestOutput(indexMetricsNonODE);            
+            return indexMetrics;
         }
     }
+
 
     public sealed class IndexMetricsParserTestInput : BaselineTestInput
     {
