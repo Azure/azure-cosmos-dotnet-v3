@@ -63,6 +63,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             response.Headers.ETag = Guid.NewGuid().ToString();
             response.Headers.ActivityId = Guid.NewGuid().ToString();
             response.Headers.RequestCharge = 1;
+            response.Headers[HttpConstants.HttpHeaders.ItemCount] = "0";
 
             context.SetupSequence(c => c.ProcessResourceOperationStreamAsync(
                 It.IsAny<string>(),
@@ -122,6 +123,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             response.Headers.ETag = Guid.NewGuid().ToString();
             response.Headers.ActivityId = Guid.NewGuid().ToString();
             response.Headers.RequestCharge = 1;
+            response.Headers[HttpConstants.HttpHeaders.ItemCount] = "0";
 
             context.SetupSequence(c => c.ProcessResourceOperationStreamAsync(
                 It.IsAny<string>(),

@@ -24,9 +24,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
             SqlQuerySpec sqlQuerySpec,
             FeedRangeState<QueryState> feedRangeState,
             Cosmos.PartitionKey? partitionKey,
-            QueryPaginationOptions queryPaginationOptions,
-            CancellationToken cancellationToken)
-            : base(feedRangeState, cancellationToken)
+            QueryPaginationOptions queryPaginationOptions)
+            : base(feedRangeState)
         {
             this.queryDataSource = queryDataSource ?? throw new ArgumentNullException(nameof(queryDataSource));
             this.sqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));

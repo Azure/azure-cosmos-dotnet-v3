@@ -19,7 +19,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using Microsoft.Azure.Cosmos.Query.Core.Parser;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQuery;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Tokens;
@@ -68,18 +67,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 {
                     // Query Iterator requires that the creation of the query context is deferred until the user calls ReadNextAsync
                     AsyncLazy<TryCatch<IQueryPipelineStage>> lazyTryCreateStage = new AsyncLazy<TryCatch<IQueryPipelineStage>>(
-                        valueFactory: (trace, innerCancellationToken) => CosmosQueryExecutionContextFactory.TryCreateCoreContextAsync(
+                        valueFactory: (trace, innerCancellationToken) => TryCreateCoreContextAsync(
                             documentContainer,
                             cosmosQueryContext,
                             inputParameters,
                             trace,
                             innerCancellationToken));
 
-                    LazyQueryPipelineStage lazyQueryPipelineStage = new LazyQueryPipelineStage(lazyTryCreateStage: lazyTryCreateStage, cancellationToken: default);
+                    LazyQueryPipelineStage lazyQueryPipelineStage = new LazyQueryPipelineStage(lazyTryCreateStage: lazyTryCreateStage);
                     return lazyQueryPipelineStage;
                 });
 
-            CatchAllQueryPipelineStage catchAllQueryPipelineStage = new CatchAllQueryPipelineStage(nameCacheStaleRetryQueryPipelineStage, cancellationToken: default);
+            CatchAllQueryPipelineStage catchAllQueryPipelineStage = new CatchAllQueryPipelineStage(nameCacheStaleRetryQueryPipelineStage);
             return catchAllQueryPipelineStage;
         }
 
@@ -201,11 +200,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                                     forceRefresh: false,
                                     createQueryPipelineTrace);
 
-                                return CosmosQueryExecutionContextFactory.TryCreatePassthroughQueryExecutionContext(
+                                return TryCreatePassthroughQueryExecutionContext(
                                     documentContainer,
                                     inputParameters,
-                                    targetRanges,
-                                    cancellationToken);
+                                    targetRanges);
                             }
                         }
                     }
@@ -240,7 +238,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            List<Documents.PartitionKeyRange> targetRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
+            List<Documents.PartitionKeyRange> targetRanges = await GetTargetPartitionKeyRangesAsync(
                    cosmosQueryContext.QueryClient,
                    cosmosQueryContext.ResourceLink,
                    partitionedQueryExecutionInfo,
@@ -291,15 +289,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 {
                     SetTestInjectionPipelineType(inputParameters, Passthrough);
 
-                    tryCreatePipelineStage = CosmosQueryExecutionContextFactory.TryCreatePassthroughQueryExecutionContext(
+                    tryCreatePipelineStage = TryCreatePassthroughQueryExecutionContext(
                         documentContainer,
                         inputParameters,
-                        targetRanges,
-                        cancellationToken);
+                        targetRanges);
                 }
                 else
                 {
-                    tryCreatePipelineStage = TryCreateSpecializedDocumentQueryExecutionContext(documentContainer, cosmosQueryContext, inputParameters, targetRanges, partitionedQueryExecutionInfo, cancellationToken);
+                    tryCreatePipelineStage = TryCreateSpecializedDocumentQueryExecutionContext(
+                        documentContainer,
+                        cosmosQueryContext,
+                        inputParameters,
+                        targetRanges,
+                        partitionedQueryExecutionInfo);
                 }
             }
 
@@ -330,7 +332,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             // Test code added to confirm the correct pipeline is being utilized
             SetTestInjectionPipelineType(inputParameters, OptimisticDirectExecution);
 
-            TryCatch<IQueryPipelineStage> tryCreatePipelineStage = CosmosQueryExecutionContextFactory.TryCreateOptimisticDirectExecutionContext(
+            TryCatch<IQueryPipelineStage> tryCreatePipelineStage = TryCreateOptimisticDirectExecutionContext(
                 documentContainer,
                 cosmosQueryContext,
                 containerQueryProperties,
@@ -359,8 +361,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                         cosmosQueryContext,
                         inputParameters,
                         targetRanges,
-                        partitionedQueryExecutionInfo,
-                        cancellationToken);
+                        partitionedQueryExecutionInfo);
                 }
                 else 
                 { 
@@ -382,8 +383,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             CosmosQueryContext cosmosQueryContext,
             InputParameters inputParameters,
             List<Documents.PartitionKeyRange> targetRanges,
-            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
-            CancellationToken cancellationToken)
+            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo)
         {
             SetTestInjectionPipelineType(inputParameters, Specialized);
 
@@ -412,13 +412,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     inputParameters.TestInjections);
             }
 
-            return CosmosQueryExecutionContextFactory.TryCreateSpecializedDocumentQueryExecutionContext(
+            return TryCreateSpecializedDocumentQueryExecutionContext(
                 documentContainer,
                 cosmosQueryContext,
                 inputParameters,
                 partitionedQueryExecutionInfo,
-                targetRanges,
-                cancellationToken);
+                targetRanges);
         }
 
         private static async Task<TryCatch<IQueryPipelineStage>> TryCreateSpecializedDocumentQueryExecutionContextAsync(
@@ -436,7 +435,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                trace,
                cancellationToken);
 
-            List<Documents.PartitionKeyRange> targetRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
+            List<Documents.PartitionKeyRange> targetRanges = await GetTargetPartitionKeyRangesAsync(
                   cosmosQueryContext.QueryClient,
                   cosmosQueryContext.ResourceLink,
                   partitionedQueryExecutionInfo,
@@ -450,8 +449,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 cosmosQueryContext,
                 inputParameters,
                 targetRanges,
-                partitionedQueryExecutionInfo,
-                cancellationToken);
+                partitionedQueryExecutionInfo);
         }
 
         private static TryCatch<IQueryPipelineStage> TryCreateOptimisticDirectExecutionContext(
@@ -468,27 +466,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 inputParameters: inputParameters,
                 targetRange: new FeedRangeEpk(targetRange.ToRange()),
                 fallbackQueryPipelineStageFactory: (continuationToken) =>
-                {
                     // In fallback scenario, the Specialized pipeline is always invoked
-                    Task<TryCatch<IQueryPipelineStage>> tryCreateContext =
-                        CosmosQueryExecutionContextFactory.TryCreateSpecializedDocumentQueryExecutionContextAsync(
-                            documentContainer,
-                            cosmosQueryContext,
-                            containerQueryProperties,
-                            inputParameters.WithContinuationToken(continuationToken),
-                            NoOpTrace.Singleton,
-                            default);
-
-                    return tryCreateContext;
-                },
+                    TryCreateSpecializedDocumentQueryExecutionContextAsync(
+                        documentContainer,
+                        cosmosQueryContext,
+                        containerQueryProperties,
+                        inputParameters.WithContinuationToken(continuationToken),
+                        NoOpTrace.Singleton,
+                        cancellationToken),
                 cancellationToken: cancellationToken);
         }
 
         private static TryCatch<IQueryPipelineStage> TryCreatePassthroughQueryExecutionContext(
             DocumentContainer documentContainer,
             InputParameters inputParameters,
-            List<Documents.PartitionKeyRange> targetRanges,
-            CancellationToken cancellationToken)
+            List<Documents.PartitionKeyRange> targetRanges)
         {
             // Return a parallel context, since we still want to be able to handle splits and concurrency / buffering.
             return ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
@@ -507,7 +499,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 partitionKey: inputParameters.PartitionKey,
                 prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
                 maxConcurrency: inputParameters.MaxConcurrency,
-                cancellationToken: cancellationToken,
                 continuationToken: inputParameters.InitialUserContinuationToken);
         }
 
@@ -516,8 +507,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             CosmosQueryContext cosmosQueryContext,
             InputParameters inputParameters,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
-            List<Documents.PartitionKeyRange> targetRanges, 
-            CancellationToken cancellationToken)
+            List<Documents.PartitionKeyRange> targetRanges)
         {
             QueryInfo queryInfo = partitionedQueryExecutionInfo.QueryInfo;
 
@@ -577,8 +567,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 queryPaginationOptions: new QueryPaginationOptions(
                     pageSizeHint: (int)optimalPageSize),
                 maxConcurrency: inputParameters.MaxConcurrency,
-                requestContinuationToken: inputParameters.InitialUserContinuationToken,
-                requestCancellationToken: cancellationToken);
+                requestContinuationToken: inputParameters.InitialUserContinuationToken);
         }
 
         private static async Task<PartitionedQueryExecutionInfo> GetPartitionedQueryExecutionInfoAsync(
@@ -784,7 +773,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             List<Documents.PartitionKeyRange> targetRanges;
             if (partitionedQueryExecutionInfo != null || inputParameters.InitialFeedRange != null)
             {
-                targetRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
+                targetRanges = await GetTargetPartitionKeyRangesAsync(
                     cosmosQueryContext.QueryClient,
                     cosmosQueryContext.ResourceLink,
                     partitionedQueryExecutionInfo,

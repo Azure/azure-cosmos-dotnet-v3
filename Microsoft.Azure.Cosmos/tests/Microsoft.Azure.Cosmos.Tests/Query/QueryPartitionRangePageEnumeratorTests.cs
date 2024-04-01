@@ -100,8 +100,7 @@
                             sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
                             feedRangeState: feedRangeState,
                             partitionKey: null,
-                            queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
-                            cancellationToken: default),
+                            queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10)),
                         trace: NoOpTrace.Singleton);
                     HashSet<string> resourceIdentifiers = await this.DrainFullyAsync(enumerable);
 
@@ -143,8 +142,7 @@
                         sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
                         feedRangeState: feedRangeState,
                         partitionKey: null,
-                        queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
-                        cancellationToken: default),
+                        queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10)),
                     trace: NoOpTrace.Singleton);
             }
 
@@ -166,9 +164,9 @@
                         sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
                         feedRangeState: new FeedRangeState<QueryState>(ranges[0], state),
                         partitionKey: null,
-                        queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
-                        cancellationToken: cancellationToken),
-                    trace: NoOpTrace.Singleton);
+                        queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10)),
+                    trace: NoOpTrace.Singleton,
+                    cancellationToken: cancellationToken);
 
                 return Task.FromResult(enumerator);
             }

@@ -526,14 +526,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 CrossPartitionReadFeedAsyncEnumerator enumerator = CrossPartitionReadFeedAsyncEnumerator.Create(
                     documentContainer,
                     new CrossFeedRangeState<ReadFeedState>(ReadFeedCrossFeedRangeState.CreateFromBeginning().FeedRangeStates),
-                    new ReadFeedPaginationOptions(pageSizeHint: 10),
-                    cancellationToken: default);
+                    new ReadFeedPaginationOptions(pageSizeHint: 10));
 
                 int numChildren = 1; // One extra since we need to read one past the last user page to get the null continuation.
                 TraceForBaselineTesting rootTrace;
                 using (rootTrace = TraceForBaselineTesting.GetRootTrace())
                 {
-                    while (await enumerator.MoveNextAsync(rootTrace))
+                    while (await enumerator.MoveNextAsync(rootTrace, cancellationToken: default))
                     {
                         numChildren++;
                     }
@@ -559,14 +558,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                         ChangeFeedCrossFeedRangeState.CreateFromBeginning().FeedRangeStates),
                     new ChangeFeedPaginationOptions(
                         ChangeFeedMode.Incremental,
-                        pageSizeHint: int.MaxValue),
-                    cancellationToken: default);
+                        pageSizeHint: int.MaxValue));
 
                 int numChildren = 0;
                 TraceForBaselineTesting rootTrace;
                 using (rootTrace = TraceForBaselineTesting.GetRootTrace())
                 {
-                    while (await enumerator.MoveNextAsync(rootTrace))
+                    while (await enumerator.MoveNextAsync(rootTrace, cancellationToken: default))
                     {
                         numChildren++;
 
@@ -597,7 +595,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 int numChildren = (await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, default)).Count; // One extra since we need to read one past the last user page to get the null continuation.
                 using (rootTrace = TraceForBaselineTesting.GetRootTrace())
                 {
-                    while (await pipelineStage.MoveNextAsync(rootTrace))
+                    while (await pipelineStage.MoveNextAsync(rootTrace, cancellationToken: default))
                     {
                         numChildren++;
                     }
@@ -759,7 +757,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 GetQueryPlan(query),
                 new QueryPaginationOptions(pageSizeHint: pageSize),
                 maxConcurrency: 10,
-                requestCancellationToken: default,
                 requestContinuationToken: state);
 
             tryCreatePipeline.ThrowIfFailed();
