@@ -31,9 +31,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
             private ClientDistinctQueryPipelineStage(
                 DistinctQueryType distinctQueryType,
                 DistinctMap distinctMap,
-                IQueryPipelineStage source,
-                CancellationToken cancellationToken)
-                : base(distinctMap, source, cancellationToken)
+                IQueryPipelineStage source)
+                : base(distinctMap, source)
             {
                 if ((distinctQueryType != DistinctQueryType.Unordered) && (distinctQueryType != DistinctQueryType.Ordered))
                 {
@@ -45,7 +44,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
 
             public static TryCatch<IQueryPipelineStage> MonadicCreate(
                 CosmosElement requestContinuation,
-                CancellationToken cancellationToken,
                 MonadicCreatePipelineStage monadicCreatePipelineStage,
                 DistinctQueryType distinctQueryType)
             {
@@ -101,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                     sourceToken = null;
                 }
 
-                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(sourceToken, cancellationToken);
+                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(sourceToken);
                 if (!tryCreateSource.Succeeded)
                 {
                     return TryCatch<IQueryPipelineStage>.FromException(tryCreateSource.Exception);
@@ -111,20 +109,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                     new ClientDistinctQueryPipelineStage(
                         distinctQueryType,
                         tryCreateDistinctMap.Result,
-                        tryCreateSource.Result,
-                        cancellationToken));
+                        tryCreateSource.Result));
             }
 
-            public override async ValueTask<bool> MoveNextAsync(ITrace trace)
+            public override async ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
             {
-                this.cancellationToken.ThrowIfCancellationRequested();
+                cancellationToken.ThrowIfCancellationRequested();
 
                 if (trace == null)
                 {
                     throw new ArgumentNullException(nameof(trace));
                 }
 
-                if (!await this.inputStage.MoveNextAsync(trace))
+                if (!await this.inputStage.MoveNextAsync(trace, cancellationToken))
                 {
                     this.Current = default;
                     return false;
@@ -142,7 +139,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                 List<CosmosElement> distinctResults = new List<CosmosElement>();
                 foreach (CosmosElement document in sourcePage.Documents)
                 {
-                    this.cancellationToken.ThrowIfCancellationRequested();
+                    cancellationToken.ThrowIfCancellationRequested();
 
                     if (this.distinctMap.Add(document, out UInt128 _))
                     {
@@ -171,12 +168,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                         documents: distinctResults,
                         requestCharge: sourcePage.RequestCharge,
                         activityId: sourcePage.ActivityId,
-                        responseLengthInBytes: sourcePage.ResponseLengthInBytes,
                         cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
                         distributionPlanSpec: default,
                         disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
                         additionalHeaders: sourcePage.AdditionalHeaders,
-                        state: state);
+                        state: state,
+                        streaming: sourcePage.Streaming);
                 }
                 else
                 {
@@ -184,12 +181,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                         documents: distinctResults,
                         requestCharge: sourcePage.RequestCharge,
                         activityId: sourcePage.ActivityId,
-                        responseLengthInBytes: sourcePage.ResponseLengthInBytes,
                         cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
                         distributionPlanSpec: default,
                         disallowContinuationTokenMessage: ClientDistinctQueryPipelineStage.DisallowContinuationTokenMessage,
                         additionalHeaders: sourcePage.AdditionalHeaders,
-                        state: null);
+                        state: null,
+                        streaming: sourcePage.Streaming);
                 }
 
                 this.Current = TryCatch<QueryPage>.FromResult(queryPage);
