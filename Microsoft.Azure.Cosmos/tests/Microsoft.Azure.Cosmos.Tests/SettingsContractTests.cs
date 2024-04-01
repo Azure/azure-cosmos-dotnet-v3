@@ -826,6 +826,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [Ignore("Vector Indexing Policy is not a part of the document collection, and hence the test was skipped.")]
         public async Task ContainerV2CompatTest()
         {
             string containerId = "SerializeContainerTest";
