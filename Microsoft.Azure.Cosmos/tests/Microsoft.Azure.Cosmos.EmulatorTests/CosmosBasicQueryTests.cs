@@ -6,14 +6,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Cosmos.Scripts;
+    using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Linq;
-    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -197,7 +199,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             using (await containerWithThrottle.ReadItemStreamAsync(firstItemIdAndPk, new PartitionKey(firstItemIdAndPk))) { }
 
             Documents.IStoreModel storeModel = clientWithThrottle.ClientContext.DocumentClient.StoreModel;
-            Mock<Documents.IStoreModel> mockStore = new Mock<Documents.IStoreModel>();
+            Mock<Documents.IStoreModelExtension> mockStore = new Mock<Documents.IStoreModelExtension>();
             clientWithThrottle.ClientContext.DocumentClient.StoreModel = mockStore.Object;
 
             // Cause 429 after the first call
@@ -211,8 +213,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     if (callCount > 1)
                     {
-                        INameValueCollection headers = new StoreRequestNameValueCollection();
-                        headers.Add(Documents.HttpConstants.HttpHeaders.RetryAfterInMilliseconds, "42");
+                        INameValueCollection headers = new Documents.Collections.StoreResponseNameValueCollection
+                        {
+                            { Documents.HttpConstants.HttpHeaders.RetryAfterInMilliseconds, "42" }
+                        };
                         activityId = Guid.NewGuid().ToString();
                         headers.Add(Documents.HttpConstants.HttpHeaders.ActivityId, activityId);
                         Documents.DocumentServiceResponse response = new Documents.DocumentServiceResponse(
@@ -235,7 +239,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     requestOptions: new QueryRequestOptions()
                     {
                         MaxItemCount = 1,
-                        MaxConcurrency = 1
+                        MaxConcurrency = 1,
+                        EnableOptimisticDirectExecution = false,
                     }))
                 {
                     while (feedIterator.HasMoreResults)
@@ -263,7 +268,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 requestOptions: new QueryRequestOptions()
                 {
                     MaxItemCount = 1,
-                    MaxConcurrency = 1
+                    MaxConcurrency = 1,
+                    EnableOptimisticDirectExecution = false,
                 });
 
             // First request should be a success
@@ -685,6 +691,187 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // There is no way to simulate MM conflicts on the emulator but the list operations should work
         }
 
+        [TestMethod]
+        public async Task QueryActivityIdTests()
+        {
+            RequestHandler[] requestHandlers = new RequestHandler[1];
+            requestHandlers[0] = new CustomHandler();
+
+            CosmosClientBuilder builder = TestCommon.GetDefaultConfiguration();
+            builder.AddCustomHandlers(requestHandlers);
+
+            CosmosClient cosmosClient = builder.Build();
+            Database database = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            Container container = await database.CreateContainerAsync(Guid.NewGuid().ToString(),
+                                                                      "/pk",
+                                                                      throughput: 12000);
+
+            // Create items
+            for (int i = 0; i < 500; i++)
+            {
+                await container.CreateItemAsync<ToDoActivity>(ToDoActivity.CreateRandomToDoActivity());
+            }
+
+            QueryRequestOptions queryRequestOptions = new QueryRequestOptions
+            {
+                MaxItemCount = 50
+            };
+
+            FeedIterator<ToDoActivity> feedIterator = container.GetItemQueryIterator<ToDoActivity>(
+                "select * from c",
+                null,
+                queryRequestOptions);
+
+            while (feedIterator.HasMoreResults)
+            {
+                await feedIterator.ReadNextAsync();
+            }
+
+            await database.DeleteAsync();
+            cosmosClient.Dispose();
+        }
+
+        [TestMethod]
+        public async Task QueryActivityIdWithContinuationTokenAndTraceTest()
+        {
+            using (ITrace rootTrace = Trace.GetRootTrace("Root Trace"))
+            {
+                CosmosClient client = DirectCosmosClient;
+                Container container = client.GetContainer(DatabaseId, ContainerId);
+                // Create items
+                for (int i = 0; i < 500; i++)
+                {
+                    await container.CreateItemAsync<ToDoActivity>(ToDoActivity.CreateRandomToDoActivity());
+                }
+
+                QueryRequestOptions queryRequestOptions = new QueryRequestOptions
+                {
+                    MaxItemCount = 50
+                };
+
+                FeedIteratorInternal feedIterator = 
+                    (FeedIteratorInternal)container.GetItemQueryStreamIterator(
+                    "select * from c",
+                    null,
+                    queryRequestOptions);
+
+                string continuationToken = (await feedIterator.ReadNextAsync(rootTrace, CancellationToken.None)).ContinuationToken;
+                rootTrace.Data.TryGetValue("Query Correlated ActivityId",
+                                            out object firstCorrelatedActivityId);
+
+                // use Continuation Token to create new iterator and use same trace
+                FeedIteratorInternal feedIteratorNew =
+                    (FeedIteratorInternal)container.GetItemQueryStreamIterator(
+                    "select * from c",
+                    continuationToken,
+                    queryRequestOptions);
+
+                while (feedIteratorNew.HasMoreResults)
+                {
+                    await feedIteratorNew.ReadNextAsync(rootTrace, CancellationToken.None);
+                }
+
+                // Test trace has 2 correlated ActivityIds
+                rootTrace.Data.TryGetValue("Query Correlated ActivityId",
+                                            out object correlatedActivityIds);
+                List<string> correlatedIdList = correlatedActivityIds.ToString().Split(',').ToList();
+                Assert.AreEqual(correlatedIdList.Count, 2);
+                Assert.AreEqual(correlatedIdList[0], firstCorrelatedActivityId.ToString());
+            }
+
+        }
+
+        //TODO: Remove Ignore flag once emulator is updated to 0415
+        [Ignore]
+        [TestMethod]
+        public async Task TesOdeTokenCompatibilityWithNonOdePipeline()
+        {
+            string query = "select top 200 * from c";
+            CosmosClient client = DirectCosmosClient;
+            Container container = client.GetContainer(DatabaseId, ContainerId);
+                
+            // Create items
+            for (int i = 0; i < 500; i++)
+            {
+                await container.CreateItemAsync<ToDoActivity>(ToDoActivity.CreateRandomToDoActivity());
+            }
+
+            QueryRequestOptions queryRequestOptions = new QueryRequestOptions
+            {
+                MaxItemCount = 50,
+            };
+
+            FeedIteratorInternal feedIterator =
+                (FeedIteratorInternal)container.GetItemQueryStreamIterator(
+                query,
+                null,
+                queryRequestOptions);
+
+            ResponseMessage responseMessage = await feedIterator.ReadNextAsync(CancellationToken.None);
+            string continuationToken = responseMessage.ContinuationToken;
+
+            QueryRequestOptions newQueryRequestOptions = new QueryRequestOptions
+            {
+                MaxItemCount = 50,
+                EnableOptimisticDirectExecution = false
+            };
+
+            // use Continuation Token to create new iterator and use same trace
+            FeedIterator feedIteratorNew =
+                container.GetItemQueryStreamIterator(
+                query,
+                continuationToken,
+                newQueryRequestOptions);
+
+            while (feedIteratorNew.HasMoreResults)
+            {
+                responseMessage = await feedIteratorNew.ReadNextAsync(CancellationToken.None);
+            }
+
+            string expectedErrorMessage = "Execution of this query using the supplied continuation token requires EnableOptimisticDirectExecution to be set in QueryRequestOptions. ";
+            Assert.IsTrue(responseMessage.CosmosException.ToString().Contains(expectedErrorMessage));
+        }
+
+        private class CustomHandler : RequestHandler
+        {
+            string correlatedActivityId;
+
+            public CustomHandler()
+            {
+                this.correlatedActivityId = null;
+            }
+
+            public override async Task<ResponseMessage> SendAsync(RequestMessage requestMessage,
+                                                                CancellationToken cancellationToken)
+            {
+                if (requestMessage.OperationType == Documents.OperationType.Query)
+                {
+                    bool headerPresent = requestMessage.Headers.CosmosMessageHeaders.TryGetValue(Microsoft.Azure.Documents.WFConstants.BackendHeaders.CorrelatedActivityId, out string requestActivityId);
+                    if (!headerPresent)
+                    {
+                        Assert.Fail("Correlated ActivityId header not present in request");
+                    }
+
+                    if (this.correlatedActivityId == null)
+                    {
+                        if (requestActivityId == Guid.Empty.ToString())
+                        {
+                            Assert.Fail("Request has empty guid as correlated activity id");
+                        }
+
+                        this.correlatedActivityId = requestActivityId;
+                    }
+
+                    if (this.correlatedActivityId != requestActivityId)
+                    {
+                        Assert.Fail("Correlated ActivityId is different between query requests");
+                    }
+                }
+
+                return await base.SendAsync(requestMessage, cancellationToken);
+            }
+        }
+
         private delegate FeedIterator<T> Query<T>(string querytext, string continuationToken, QueryRequestOptions options);
         private delegate FeedIterator QueryStream(string querytext, string continuationToken, QueryRequestOptions options);
 
@@ -795,25 +982,32 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseIfNotExistsAsync(DatabaseName, Throughput);
             Database database = databaseResponse.Database;
 
-            Container container = await database.DefineContainer(TestCollection, $"/{DefaultKey}")
-                .WithUniqueKey().Path($"/{DefaultKey}").Attach().CreateIfNotExistsAsync();
-
-            List<string> queryKeys = new List<string>();
-
-            List<TestCollectionObject> testCollectionObjects = JsonConvert.DeserializeObject<List<TestCollectionObject>>(
-                "[{\"id\":\"70627503-7cb2-4a79-bcec-5e55765aa080\",\"objectKey\":\"message~phone~u058da564bfaa66cb031606db664dbfda~phone~ud75ce020af5f8bfb75a9097a66d452f2~Chat~20190927000042Z\",\"text\":null,\"text2\":null},{\"id\":\"507079b7-a5be-4da4-9158-16fc961cd474\",\"objectKey\":\"message~phone~u058da564bfaa66cb031606db664dbfda~phone~ud75ce020af5f8bfb75a9097a66d452f2~Chat~20190927125742Z\",\"text\":null,\"text2\":null}]");
-            foreach (TestCollectionObject testCollectionObject in testCollectionObjects)
+            try
             {
-                await WriteDocument(container, testCollectionObject);
-                queryKeys.Add(testCollectionObject.ObjectKey);
+                Container container = await database.DefineContainer(TestCollection, $"/{DefaultKey}")
+                    .WithUniqueKey().Path($"/{DefaultKey}").Attach().CreateIfNotExistsAsync();
+
+                List<string> queryKeys = new List<string>();
+
+                List<TestCollectionObject> testCollectionObjects = JsonConvert.DeserializeObject<List<TestCollectionObject>>(
+                    "[{\"id\":\"70627503-7cb2-4a79-bcec-5e55765aa080\",\"objectKey\":\"message~phone~u058da564bfaa66cb031606db664dbfda~phone~ud75ce020af5f8bfb75a9097a66d452f2~Chat~20190927000042Z\",\"text\":null,\"text2\":null},{\"id\":\"507079b7-a5be-4da4-9158-16fc961cd474\",\"objectKey\":\"message~phone~u058da564bfaa66cb031606db664dbfda~phone~ud75ce020af5f8bfb75a9097a66d452f2~Chat~20190927125742Z\",\"text\":null,\"text2\":null}]");
+                foreach (TestCollectionObject testCollectionObject in testCollectionObjects)
+                {
+                    await WriteDocument(container, testCollectionObject);
+                    queryKeys.Add(testCollectionObject.ObjectKey);
+                }
+
+                List<TestCollectionObject> results = container
+                    .GetItemLinqQueryable<TestCollectionObject>(true, requestOptions: RunInParallelOptions())
+                    .Where(r => queryKeys.Contains(r.ObjectKey))
+                    .ToList(); // ERROR OCCURS WHEN QUERY IS EXECUTED
+
+                Console.WriteLine($"[\"{string.Join("\", \n\"", results.Select(r => r.ObjectKey))}\"]");
             }
-
-            List<TestCollectionObject> results = container
-                .GetItemLinqQueryable<TestCollectionObject>(true, requestOptions: RunInParallelOptions())
-                .Where(r => queryKeys.Contains(r.ObjectKey))
-                .ToList(); // ERROR OCCURS WHEN QUERY IS EXECUTED
-
-            Console.WriteLine($"[\"{string.Join("\", \n\"", results.Select(r => r.ObjectKey))}\"]");
+            finally
+            {
+                await database.DeleteAsync();
+            }
         }
 
         private static async Task WriteDocument(Container container, TestCollectionObject testData)

@@ -23,6 +23,7 @@ using System.IO;
 using System.Linq;
 using HdrHistogram.Iteration;
 using HdrHistogram.Output;
+using Microsoft.Azure.Documents;
 
 namespace HdrHistogram
 {
@@ -211,9 +212,9 @@ namespace HdrHistogram
         /// </remarks>
         public static void Record(this IRecorder recorder, Action action)
         {
-            var start = Stopwatch.GetTimestamp();
+            var start = ValueStopwatch.GetTimestamp();
             action();
-            var elapsed = Stopwatch.GetTimestamp() - start;
+            var elapsed = ValueStopwatch.GetTimestamp() - start;
             recorder.RecordValue(elapsed);
         }
 
@@ -251,12 +252,12 @@ namespace HdrHistogram
             public Timer(IRecorder recorder)
             {
                 _recorder = recorder;
-                _start = Stopwatch.GetTimestamp();
+                _start = ValueStopwatch.GetTimestamp();
             }
 
             public void Dispose()
             {
-                var elapsed = Stopwatch.GetTimestamp() - _start;
+                var elapsed = ValueStopwatch.GetTimestamp() - _start;
                 _recorder.RecordValue(elapsed);
             }
         }

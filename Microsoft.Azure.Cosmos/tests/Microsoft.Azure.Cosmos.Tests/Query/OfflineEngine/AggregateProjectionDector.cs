@@ -55,6 +55,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             private sealed class AggregateScalarExpressionDetector : SqlScalarExpressionVisitor<bool>
             {
                 public static readonly AggregateScalarExpressionDetector Singleton = new AggregateScalarExpressionDetector();
+                
+                public override bool Visit(SqlAllScalarExpression sqlAllScalarExpression)
+                {
+                    // No need to worry about aggregates within the subquery (they will recursively get rewritten).
+                    return false;
+                }
 
                 public override bool Visit(SqlArrayCreateScalarExpression sqlArrayCreateScalarExpression)
                 {
@@ -105,6 +111,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                     return false;
                 }
 
+                public override bool Visit(SqlFirstScalarExpression sqlFirstScalarExpression)
+                {
+                    // No need to worry about aggregates within the subquery (they will recursively get rewritten).
+                    return false;
+                }
+
                 public override bool Visit(SqlFunctionCallScalarExpression sqlFunctionCallScalarExpression)
                 {
                     Aggregate aggregate;
@@ -121,6 +133,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                     }
 
                     return hasAggregates;
+                }
+
+                public override bool Visit(SqlLastScalarExpression sqlLastScalarExpression)
+                {
+                    // No need to worry about aggregates within the subquery (they will recursively get rewritten).
+                    return false;
                 }
 
                 public override bool Visit(SqlLikeScalarExpression sqlLikeScalarExpression)

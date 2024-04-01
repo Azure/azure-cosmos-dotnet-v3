@@ -27,7 +27,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await base.TestInit();
             string PartitionKey = "/pk";
             ContainerResponse response = await this.database.CreateContainerAsync(
-                new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
+                new ContainerProperties(
+                    id: Guid.NewGuid().ToString(), 
+                    partitionKeyPath: PartitionKey),
+                throughput: 15000,
                 cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
             this.container = response;
@@ -91,40 +94,64 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(1, toStreamCount, "parameter should use custom serializer");
                 Assert.AreEqual(0, fromStreamCount);
 
-                toStreamCount = 0;
-                fromStreamCount = 0;
-
-                FeedIterator<ToDoActivity> itemIterator = container.GetItemQueryIterator<ToDoActivity>(
-                    query);
-                List<ToDoActivity> items = new List<ToDoActivity>();
-                while (itemIterator.HasMoreResults)
+                foreach (bool enableODE in new bool[] { false, true })
                 {
-                    items.AddRange(await itemIterator.ReadNextAsync());
-                }
+                    toStreamCount = 0;
+                    fromStreamCount = 0;
 
-                Assert.AreEqual(1, toStreamCount);
-                Assert.AreEqual(1, fromStreamCount);
-
-                toStreamCount = 0;
-                fromStreamCount = 0;
-
-                // Verify that the custom serializer is actually being used via stream
-                FeedIterator itemStreamIterator = container.GetItemQueryStreamIterator(
-                    query);
-                while (itemStreamIterator.HasMoreResults)
-                {
-                    ResponseMessage response = await itemStreamIterator.ReadNextAsync();
-                    using (StreamReader reader = new StreamReader(response.Content))
+                    FeedIterator<ToDoActivity> itemIterator = container.GetItemQueryIterator<ToDoActivity>(
+                        query,
+                        requestOptions: new QueryRequestOptions() { EnableOptimisticDirectExecution = enableODE }
+                        );
+                    List<ToDoActivity> items = new List<ToDoActivity>();
+                    while (itemIterator.HasMoreResults)
                     {
-                        string content = await reader.ReadToEndAsync();
-                        Assert.IsTrue(content.Contains("9001.42"));
-                        Assert.IsFalse(content.Contains("description"), "Description should be ignored and not in the JSON");
+                        items.AddRange(await itemIterator.ReadNextAsync());
                     }
+
+                    // The toStreamCount variable will differ between ODE and non-ODE pipelines due to the non-ODE pipelines needing to get the query plan which makes an additional serialization call during its initialization.
+                    if (enableODE)
+                    {
+                        Assert.AreEqual(1, toStreamCount);
+                    }
+                    else
+                    {
+                        Assert.AreEqual(2, toStreamCount);
+                    }
+                    
+                    Assert.AreEqual(1, fromStreamCount);
+
+                    toStreamCount = 0;
+                    fromStreamCount = 0;
+
+                    // Verify that the custom serializer is actually being used via stream
+                    FeedIterator itemStreamIterator = container.GetItemQueryStreamIterator(
+                        query,
+                        requestOptions: new QueryRequestOptions() { EnableOptimisticDirectExecution = enableODE }
+                        );
+                    while (itemStreamIterator.HasMoreResults)
+                    {
+                        ResponseMessage response = await itemStreamIterator.ReadNextAsync();
+                        using (StreamReader reader = new StreamReader(response.Content))
+                        {
+                            string content = await reader.ReadToEndAsync();
+                            Assert.IsTrue(content.Contains("9001.42"));
+                            Assert.IsFalse(content.Contains("description"), "Description should be ignored and not in the JSON");
+                        }
+                    }
+
+                    // The toStreamCount variable will differ between ODE and non-ODE pipelines due to the non-ODE pipelines needing to get the query plan which makes an additional serialization call during its initialization.
+                    if (enableODE)
+                    {
+                        Assert.AreEqual(1, toStreamCount);
+                    }
+                    else
+                    {
+                        Assert.AreEqual(2, toStreamCount);
+                    }
+
+                    Assert.AreEqual(0, fromStreamCount);
                 }
-
-                Assert.AreEqual(1, toStreamCount);
-                Assert.AreEqual(0, fromStreamCount);
-
             }
             finally
             {

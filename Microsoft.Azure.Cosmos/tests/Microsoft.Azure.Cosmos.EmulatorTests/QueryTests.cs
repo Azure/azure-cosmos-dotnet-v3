@@ -68,6 +68,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.CleanUp();
         }
 
+        [TestCleanup]
+        public void TestCleanup()
+        {
+            this.CleanUp();
+
+            this.client.Dispose();
+            this.primaryReadonlyClient.Dispose();
+            this.secondaryReadonlyClient.Dispose();
+        }
+
         [ClassInitialize]
         public static void Initialize(TestContext textContext)
         {
@@ -607,7 +617,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 doc.StringField = "222";
                 Document documentDefinition = (Document)doc;
                 documentDefinition.SetPropertyValue("pk", "test");
-                INameValueCollection requestHeaders = new StoreRequestNameValueCollection
+                INameValueCollection requestHeaders = new Documents.Collections.RequestNameValueCollection()
                 {
                     { "x-ms-indexing-directive", "exclude" }
                 };
@@ -645,7 +655,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     StringField = "333",
                 };
                 doc.SetPropertyValue("pk", "test");
-                INameValueCollection requestHeaders = new StoreRequestNameValueCollection
+                INameValueCollection requestHeaders = new Documents.Collections.RequestNameValueCollection()
                 {
                     { "x-ms-indexing-directive", "include" }
                 };
@@ -777,12 +787,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.TestQueryUnicodeDocument(useGateway: true, protocol: Protocol.Https);
         }
 
-        [TestMethod]
-        public void TestQueryUnicodeDocumentHttpsDirect()
-        {
-            this.TestQueryUnicodeDocument(useGateway: false, protocol: Protocol.Https);
-        }
-
         private void TestQueryUnicodeDocument(bool useGateway, Protocol protocol)
         {
             try
@@ -800,7 +804,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     sourceCollection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
                     DocumentCollection collection = testClient.Create<DocumentCollection>(database.GetIdOrFullName(), sourceCollection);
 
-                    INameValueCollection requestHeaders = new StoreRequestNameValueCollection
+                    INameValueCollection requestHeaders = new Documents.Collections.RequestNameValueCollection()
                     {
                         { "x-ms-indexing-directive", "include" }
                     };
@@ -1681,7 +1685,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 SqlQuerySpec querySpec = new SqlQuerySpec(string.Format("SELECT * FROM r"));
                 using (HttpClient httpClient = new HttpClient())
                 {
-                    StoreRequestNameValueCollection headers = new StoreRequestNameValueCollection();
+                    RequestNameValueCollection headers = new();
                     httpClient.AddMasterAuthorizationHeader("post", coll.ResourceId, "docs", headers, masterKey);
                     httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
                     httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.EnableScanInQuery, bool.TrueString);
@@ -1866,11 +1870,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             QueryMetrics queryMetrics = QueryMetrics.CreateFromIEnumerable(feedResonse.QueryMetrics.Values);
 
-            Assert.IsTrue(queryMetrics.BackendMetrics.RetrievedDocumentCount > 0);
-            Assert.IsTrue(queryMetrics.BackendMetrics.RetrievedDocumentSize > 0);
-            Assert.IsTrue(queryMetrics.BackendMetrics.OutputDocumentCount > 0);
-            Assert.IsTrue(queryMetrics.BackendMetrics.OutputDocumentSize > 0);
-            Assert.IsTrue(queryMetrics.BackendMetrics.IndexHitRatio > 0);
+            Assert.IsTrue(queryMetrics.ServerSideMetrics.RetrievedDocumentCount > 0);
+            Assert.IsTrue(queryMetrics.ServerSideMetrics.RetrievedDocumentSize > 0);
+            Assert.IsTrue(queryMetrics.ServerSideMetrics.OutputDocumentCount > 0);
+            Assert.IsTrue(queryMetrics.ServerSideMetrics.OutputDocumentSize > 0);
+            Assert.IsTrue(queryMetrics.ServerSideMetrics.IndexHitRatio > 0);
 
             await client.DeleteDatabaseAsync(database);
         }
@@ -1956,7 +1960,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     query,
                     feedOptions).AsDocumentQuery().ExecuteNextAsync().Result;
             queryMetrics = result.QueryMetrics.Values.Aggregate((curr, acc) => curr + acc);
-            Assert.AreEqual(TimeSpan.Zero, queryMetrics.BackendMetrics.IndexLookupTime);
+            Assert.AreEqual(TimeSpan.Zero, queryMetrics.ServerSideMetrics.IndexLookupTime);
 
             // Without ForceQueryScan
             feedOptions = new FeedOptions()
@@ -1972,7 +1976,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     query,
                     feedOptions).AsDocumentQuery().ExecuteNextAsync().Result;
             queryMetrics = result.QueryMetrics.Values.Aggregate((curr, acc) => curr + acc);
-            Assert.AreNotEqual(TimeSpan.Zero, queryMetrics.BackendMetrics.IndexLookupTime);
+            Assert.AreNotEqual(TimeSpan.Zero, queryMetrics.ServerSideMetrics.IndexLookupTime);
         }
 
         private void TestFeedOptionInput(
@@ -2131,12 +2135,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 if (!(e.InnerException is DocumentClientException exception))
                 {
-                    throw e;
+                    throw;
                 }
 
                 if (exception.StatusCode != HttpStatusCode.BadRequest)
                 {
-                    throw e;
+                    throw;
                 }
 
                 Assert.IsTrue(exception.Message.Contains("continuation token limit specified is not large enough"));
@@ -2155,12 +2159,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 if (!(e.InnerException is DocumentClientException exception))
                 {
-                    throw e;
+                    throw;
                 }
 
                 if (exception.StatusCode != HttpStatusCode.BadRequest)
                 {
-                    throw e;
+                    throw;
                 }
 
                 Assert.IsTrue(exception.Message.Contains("Please pass in a valid continuation token size limit which must be a positive integer"));
@@ -2287,7 +2291,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             string indexUtilization = response.ResponseHeaders[WFConstants.BackendHeaders.IndexUtilization];
 
                             QueryMetrics queryMetrics = new QueryMetrics(
-                                BackendMetrics.ParseFromDelimitedString(responseQueryMetrics),
+                                responseQueryMetrics,
                                 IndexUtilizationInfo.CreateFromString(indexUtilization),
                                 ClientSideMetrics.Empty);
                             this.ValidateQueryMetrics(queryMetrics);
@@ -2311,19 +2315,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(0, metrics.ClientSideMetrics.Retries);
             //We are not checking VMExecutionTime, since that is not a public property
             //Assert.IsTrue(metrics.QueryEngineTimes.VMExecutionTime.TotalMilliseconds > 0, "Expected VMExecutionTimeInMs to be > 0, metrics = {0}", metrics);
-            Assert.IsTrue(metrics.BackendMetrics.QueryPreparationTimes.QueryCompilationTime.TotalMilliseconds > 0, "Expected CompileTimeInMs to be > 0, metrics = {0}", metrics);
+            Assert.IsTrue(metrics.ServerSideMetrics.QueryPreparationTimes.QueryCompilationTime.TotalMilliseconds > 0, "Expected CompileTimeInMs to be > 0, metrics = {0}", metrics);
             //We are not checking DocumentLoadTime and RetrievedDocumentCount, since some queries don't return any documents (especially in the last continuation).
             //Assert.IsTrue(metrics.QueryEngineTimes.DocumentLoadTime.TotalMilliseconds > 0, "Expected DocumentLoadTimeInMs to be > 0, metrics = {0}", metrics);
             //Assert.IsTrue(metrics.RetrievedDocumentCount > 0, "Expected RetrievedDocumentCount to be > 0, metrics = {0}", metrics);
-            Assert.IsTrue(metrics.BackendMetrics.TotalTime.TotalMilliseconds > 0, "Expected TotalExecutionTimeInMs to be > 0, metrics = {0}", metrics);
+            Assert.IsTrue(metrics.ServerSideMetrics.TotalTime.TotalMilliseconds > 0, "Expected TotalExecutionTimeInMs to be > 0, metrics = {0}", metrics);
             //Assert.IsTrue(metrics.QueryEngineTimes.WriteOutputTime.TotalMilliseconds > 0, "Expected WriteOutputTimeInMs to be > 0, metrics = {0}", metrics);
             //Assert.IsTrue(metrics.RetrievedDocumentSize > 0, "Expected RetrievedDocumentSize to be > 0, metrics = {0}", metrics);
-            Assert.IsTrue(metrics.BackendMetrics.IndexLookupTime.TotalMilliseconds > 0, "Expected IndexLookupTimeInMs to be > 0, metrics = {0}", metrics);
-            Assert.IsTrue(metrics.BackendMetrics.QueryPreparationTimes.LogicalPlanBuildTime.TotalMilliseconds > 0, "Expected LogicalPlanBuildTimeInMs to be > 0, metrics = {0}", metrics);
+            Assert.IsTrue(metrics.ServerSideMetrics.IndexLookupTime.TotalMilliseconds > 0, "Expected IndexLookupTimeInMs to be > 0, metrics = {0}", metrics);
+            Assert.IsTrue(metrics.ServerSideMetrics.QueryPreparationTimes.LogicalPlanBuildTime.TotalMilliseconds > 0, "Expected LogicalPlanBuildTimeInMs to be > 0, metrics = {0}", metrics);
             //Assert.AreEqual(metrics.QueryEngineTimes.VMExecutionTime - metrics.QueryEngineTimes.IndexLookupTime - metrics.QueryEngineTimes.DocumentLoadTime - metrics.QueryEngineTimes.WriteOutputTime,
             //    metrics.QueryEngineTimes.RuntimeExecutionTimes.TotalTime);
-            Assert.IsTrue(metrics.BackendMetrics.RuntimeExecutionTimes.QueryEngineExecutionTime >= metrics.BackendMetrics.RuntimeExecutionTimes.SystemFunctionExecutionTime + metrics.BackendMetrics.RuntimeExecutionTimes.UserDefinedFunctionExecutionTime,
-                "Expected Query VM Execution Time to be > {0}, metrics = {1}", metrics.BackendMetrics.RuntimeExecutionTimes.SystemFunctionExecutionTime + metrics.BackendMetrics.RuntimeExecutionTimes.UserDefinedFunctionExecutionTime, metrics);
+            Assert.IsTrue(metrics.ServerSideMetrics.RuntimeExecutionTimes.QueryEngineExecutionTime >= metrics.ServerSideMetrics.RuntimeExecutionTimes.SystemFunctionExecutionTime + metrics.ServerSideMetrics.RuntimeExecutionTimes.UserDefinedFunctionExecutionTime,
+                "Expected Query VM Execution Time to be > {0}, metrics = {1}", metrics.ServerSideMetrics.RuntimeExecutionTimes.SystemFunctionExecutionTime + metrics.ServerSideMetrics.RuntimeExecutionTimes.UserDefinedFunctionExecutionTime, metrics);
             //Assert.IsTrue(metrics.QueryEngineTimes.VMExecutionTime >= metrics.QueryEngineTimes.RuntimeExecutionTimes.TotalTime,
             //    "Expected Query VM Execution Time to be > {0}, metrics = {1}", metrics.QueryEngineTimes.RuntimeExecutionTimes.TotalTime, metrics);
         }
@@ -2549,7 +2553,7 @@ function sproc(feed) {
                     StringField = index.ToString(CultureInfo.InvariantCulture),
                 };
                 doc.SetPropertyValue("pk", "test");
-                INameValueCollection headers = new StoreRequestNameValueCollection();
+                INameValueCollection headers = new Documents.Collections.RequestNameValueCollection();
                 if (!collection.IndexingPolicy.Automatic && manualIndex)
                 {
                     headers.Add("x-ms-indexing-directive", "include");
@@ -2620,7 +2624,7 @@ function sproc(feed) {
                     StringField = index.ToString(CultureInfo.InvariantCulture),
                 };
 
-                INameValueCollection headers = new StoreRequestNameValueCollection();
+                INameValueCollection headers = new Documents.Collections.RequestNameValueCollection();
                 if (!collection.IndexingPolicy.Automatic && manualIndex)
                 {
                     headers.Add("x-ms-indexing-directive", "include");

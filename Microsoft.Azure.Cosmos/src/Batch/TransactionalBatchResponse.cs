@@ -311,6 +311,9 @@ namespace Microsoft.Azure.Cosmos
                 {
                     SubStatusCode = this.SubStatusCode,
                     RetryAfter = TimeSpan.FromMilliseconds(retryAfterMilliseconds),
+                    SessionToken = this.Headers.Session,
+                    PartitionKeyRangeId = this.Headers.PartitionKeyRangeId,
+                    ActivityId = this.ActivityId,
                 };
 
                 result.Trace = trace;
@@ -342,6 +345,9 @@ namespace Microsoft.Azure.Cosmos
                     }
 
                     operationResult.Trace = trace;
+                    operationResult.SessionToken = responseMessage.Headers.Session;
+                    operationResult.PartitionKeyRangeId = responseMessage.Headers.PartitionKeyRangeId;
+                    operationResult.ActivityId = responseMessage.Headers.ActivityId;
 
                     results.Add(operationResult);
                     return r;

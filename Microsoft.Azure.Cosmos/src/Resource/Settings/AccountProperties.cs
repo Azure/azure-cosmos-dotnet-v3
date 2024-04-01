@@ -7,8 +7,11 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Text;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     /// <summary> 
     /// Represents a <see cref="AccountProperties"/>. A AccountProperties is the container for databases in the Azure Cosmos DB service.
@@ -42,6 +45,9 @@ namespace Microsoft.Azure.Cosmos
         [JsonIgnore]
         public IEnumerable<AccountRegion> ReadableRegions => this.ReadLocationsInternal;
 
+        [JsonIgnore]
+        private string id;
+
         /// <summary>
         /// Gets the Id of the resource in the Azure Cosmos DB service.
         /// </summary>
@@ -52,19 +58,20 @@ namespace Microsoft.Azure.Cosmos
         /// Unlike <see cref="Documents.Resource.ResourceId"/>, which is set internally, this Id is settable by the user and is not immutable.
         /// </para>
         /// <para>
-        /// When working with document resources, they too have this settable Id property. 
-        /// If an Id is not supplied by the user the SDK will automatically generate a new GUID and assign its value to this property before
-        /// persisting the document in the database. 
-        /// You can override this auto Id generation by setting the disableAutomaticIdGeneration parameter on the <see cref="Microsoft.Azure.Cosmos.DocumentClient"/> instance to true.
-        /// This will prevent the SDK from generating new Ids. 
-        /// </para>
-        /// <para>
         /// The following characters are restricted and cannot be used in the Id property:
         ///  '/', '\\', '?', '#'
         /// </para>
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.Id)]
-        public string Id { get; internal set; }
+        public string Id
+        {
+            get => this.id;
+
+            internal set
+            {
+                this.id = value;
+            }
+        }
 
         /// <summary>
         /// Gets the entity tag associated with the resource from the Azure Cosmos DB service.
@@ -233,5 +240,12 @@ namespace Microsoft.Azure.Cosmos
                 return new Dictionary<string, object>();
             }
         }
+
+        /// <summary>
+        /// This contains additional values for scenarios where the SDK is not aware of new fields. 
+        /// This ensures that if resource is read and updated none of the fields will be lost in the process.
+        /// </summary>
+        [JsonExtensionData]
+        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
     }
 }

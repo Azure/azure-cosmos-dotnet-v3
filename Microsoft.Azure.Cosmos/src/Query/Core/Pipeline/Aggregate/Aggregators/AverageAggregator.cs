@@ -198,11 +198,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
             /// Returns the average or undefined if any of the intermediate averages resulted in an undefined value.
             /// </summary>
             /// <returns>The average or undefined if any of the intermediate averages resulted in an undefined value.</returns>
-            public CosmosNumber GetAverage()
+            public CosmosElement GetAverage()
             {
                 if (!this.Sum.HasValue || this.Count <= 0)
                 {
-                    return null;
+                    return CosmosUndefined.Create();
                 }
 
                 return CosmosNumber64.Create(this.Sum.Value / this.Count);

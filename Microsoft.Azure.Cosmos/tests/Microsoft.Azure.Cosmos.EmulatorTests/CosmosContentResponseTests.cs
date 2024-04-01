@@ -6,28 +6,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Net;
-    using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public class CosmosContentResponseTests
+    public class CosmosContentResponseTests : BaseCosmosClientHelper
     {
-        private CosmosClient cosmosClient;
-        private Database database;
         private Container container;
         private ContainerInternal containerInternal;
 
         [TestInitialize]
-        public async Task TestInit()
+        public async Task TestInitialize()
         {
-            this.cosmosClient = TestCommon.CreateCosmosClient();
-            this.database = await this.cosmosClient.CreateDatabaseAsync(
-                   id: Guid.NewGuid().ToString());
+            await base.TestInit();
 
             this.container = await this.database.CreateContainerAsync(
                      id: "ItemNoResponseTest",
@@ -36,15 +28,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestCleanup]
-        public async Task TestCleanup()
+        public async Task TestCleanUp()
         {
-            if (this.cosmosClient == null)
-            {
-                return;
-            }
-
-            using (await this.database.DeleteStreamAsync()) { }
-            this.cosmosClient.Dispose();
+            await base.TestCleanup();
         }
 
         [TestMethod]

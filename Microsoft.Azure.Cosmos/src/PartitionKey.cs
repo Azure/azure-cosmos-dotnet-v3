@@ -49,6 +49,11 @@ namespace Microsoft.Azure.Cosmos
         internal bool IsNone { get; }
 
         /// <summary>
+        /// String representation of None for use when representing Partition Key as none.
+        /// </summary>
+        internal const string NoneString = "None";
+
+        /// <summary>
         /// Creates a new partition key value.
         /// </summary>
         /// <param name="partitionKeyValue">The value to use as partition key.</param>
@@ -173,6 +178,11 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The string representation of the partition key value</returns>
         public override string ToString()
         {
+            if (this.IsNone)
+            {
+                return NoneString;
+            }
+            
             if (this.InternalKey == null)
             {
                 return PartitionKey.NullPartitionKeyInternal.ToJsonString();

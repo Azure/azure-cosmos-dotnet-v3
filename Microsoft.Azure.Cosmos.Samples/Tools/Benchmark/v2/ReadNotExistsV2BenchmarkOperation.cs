@@ -9,7 +9,6 @@ namespace CosmosBenchmark
     using System.IO;
     using System.Net;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 
@@ -22,6 +21,8 @@ namespace CosmosBenchmark
         private string nextExecutionItemId;
 
         private readonly DocumentClient documentClient;
+
+        public BenchmarkOperationType OperationType => BenchmarkOperationType.Read;
 
         public ReadNotExistsV2BenchmarkOperation(
             DocumentClient documentClient,
@@ -53,13 +54,14 @@ namespace CosmosBenchmark
             {
                 if (dce.StatusCode != HttpStatusCode.NotFound)
                 {
-                    throw new Exception($"ReadItem failed wth {dce?.StatusCode} {dce?.ToString()}");
+                    throw new Exception($"ReadItem failed with {dce?.StatusCode} {dce?.ToString()}");
                 }
 
                 return new OperationResult()
                 {
                     DatabseName = databsaeName,
                     ContainerName = containerName,
+                    OperationType = this.OperationType,
                     RuCharges = dce.RequestCharge,
                     LazyDiagnostics = () => dce.ToString(),
                 };

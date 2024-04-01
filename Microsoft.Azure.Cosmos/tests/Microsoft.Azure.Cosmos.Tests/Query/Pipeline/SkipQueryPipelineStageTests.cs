@@ -11,6 +11,7 @@
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -51,14 +52,13 @@
                 executionEnvironment: executionEnvironment,
                 offsetCount: offsetCount,
                 continuationToken: continuationToken,
-                cancellationToken: default,
-                monadicCreatePipelineStage: (CosmosElement continuationToken, CancellationToken token) => TryCatch<IQueryPipelineStage>.FromResult(source));
+                monadicCreatePipelineStage: (CosmosElement continuationToken) => TryCatch<IQueryPipelineStage>.FromResult(source));
             Assert.IsTrue(tryCreateSkipQueryPipelineStage.Succeeded);
 
             IQueryPipelineStage aggregateQueryPipelineStage = tryCreateSkipQueryPipelineStage.Result;
 
             List<CosmosElement> elements = new List<CosmosElement>();
-            await foreach (TryCatch<QueryPage> page in new EnumerableStage(aggregateQueryPipelineStage))
+            await foreach (TryCatch<QueryPage> page in new EnumerableStage(aggregateQueryPipelineStage, NoOpTrace.Singleton))
             {
                 page.ThrowIfFailed();
 

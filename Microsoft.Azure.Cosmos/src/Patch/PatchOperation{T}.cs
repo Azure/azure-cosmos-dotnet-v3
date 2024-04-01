@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     /// Defines PatchOperation with a value parameter.
     /// </summary>
     /// <typeparam name="T">Data type of value provided for PatchOperation.</typeparam>
-    internal abstract class PatchOperation<T> : PatchOperation
+    public abstract class PatchOperation<T> : PatchOperation
     {
         /// <summary>
         /// Value parameter.

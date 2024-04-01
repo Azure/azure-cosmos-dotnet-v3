@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
     /// </summary>
     internal sealed class AggregateProjectionTransformer
     {
-        private static readonly CosmosNumber Undefined = null;
+        private static readonly CosmosElement Undefined = CosmosUndefined.Create();
 
         private readonly AggregateProjectionTransformerVisitor visitor;
 
@@ -79,6 +79,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                     this.dataSource = dataSource;
                 }
 
+                public override SqlScalarExpression Visit(SqlAllScalarExpression sqlAllScalarExpression)
+                {
+                    // No need to worry about aggregates within the subquery (they will recursively get rewritten).
+                    return sqlAllScalarExpression;
+                }
+
                 public override SqlScalarExpression Visit(SqlArrayCreateScalarExpression sqlArrayCreateScalarExpression)
                 {
                     List<SqlScalarExpression> items = new List<SqlScalarExpression>();
@@ -132,6 +138,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 {
                     // No need to worry about aggregates within the subquery (they will recursively get rewritten).
                     return sqlExistsScalarExpression;
+                }
+
+                public override SqlScalarExpression Visit(SqlFirstScalarExpression sqlFirstScalarExpression)
+                {
+                    // No need to worry about aggregates within the subquery (they will recursively get rewritten).
+                    return sqlFirstScalarExpression;
                 }
 
                 public override SqlScalarExpression Visit(SqlFunctionCallScalarExpression sqlFunctionCallScalarExpression)
@@ -203,13 +215,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
                             case Aggregate.Avg:
                             case Aggregate.Sum:
-                                CosmosNumber sum = CosmosNumber64.Create(0);
+                                CosmosElement sum = CosmosNumber64.Create(0);
                                 double count = 0;
                                 foreach (CosmosElement result in results)
                                 {
-                                    if ((result is CosmosNumber resultAsNumber) && (sum != Undefined))
+                                    if ((result is CosmosNumber resultAsNumber) && (sum is CosmosNumber num))
                                     {
-                                        sum = CosmosNumber64.Create(Number64.ToDouble(sum.Value) + Number64.ToDouble(resultAsNumber.Value));
+                                        sum = CosmosNumber64.Create(Number64.ToDouble(num.Value) + Number64.ToDouble(resultAsNumber.Value));
                                         count++;
                                     }
                                     else
@@ -218,7 +230,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                                     }
                                 }
 
-                                if (sum != Undefined)
+                                if (sum is CosmosNumber number)
                                 {
                                     if (aggregate == Aggregate.Avg)
                                     {
@@ -228,12 +240,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                                         }
                                         else
                                         {
-                                            aggregationResult = CosmosNumber64.Create(Number64.ToDouble(sum.Value) / count);
+                                            aggregationResult = CosmosNumber64.Create(Number64.ToDouble(number.Value) / count);
                                         }
                                     }
                                     else
                                     {
-                                        aggregationResult = CosmosNumber64.Create(Number64.ToDouble(sum.Value));
+                                        aggregationResult = CosmosNumber64.Create(Number64.ToDouble(number.Value));
                                     }
                                 }
                                 else
@@ -285,6 +297,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                         sqlInScalarExpression.Needle.Accept(this),
                         sqlInScalarExpression.Not,
                         items);
+                }
+
+                public override SqlScalarExpression Visit(SqlLastScalarExpression sqlLastScalarExpression)
+                {
+                    // No need to worry about aggregates within the subquery (they will recursively get rewritten).
+                    return sqlLastScalarExpression;
                 }
 
                 public override SqlScalarExpression Visit(SqlLikeScalarExpression sqlLikeScalarExpression)
@@ -409,6 +427,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             {
                 SqlStringLiteral literal = SqlStringLiteral.Create(cosmosString.Value);
                 return SqlLiteralScalarExpression.Create(literal);
+            }
+
+            public SqlScalarExpression Visit(CosmosUndefined cosmosUndefined)
+            {
+                return SqlLiteralScalarExpression.Create(SqlUndefinedLiteral.Create());
             }
         }
     }

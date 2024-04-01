@@ -24,15 +24,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
         public TryCatch<QueryPage> Current => this.emptyAsyncEnumerator.Current;
 
-        public ValueTask DisposeAsync() => this.emptyAsyncEnumerator.DisposeAsync();
-
-        public ValueTask<bool> MoveNextAsync() => this.emptyAsyncEnumerator.MoveNextAsync();
-
-        public ValueTask<bool> MoveNextAsync(ITrace trace) => this.emptyAsyncEnumerator.MoveNextAsync(trace);
-
-        public void SetCancellationToken(CancellationToken cancellationToken)
+        public ValueTask DisposeAsync()
         {
-            // No work to do since this enumerator is fully sync.
+            return this.emptyAsyncEnumerator.DisposeAsync();
+        }
+
+        public ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
+        {
+            return this.emptyAsyncEnumerator.MoveNextAsync(trace);
         }
     }
 }

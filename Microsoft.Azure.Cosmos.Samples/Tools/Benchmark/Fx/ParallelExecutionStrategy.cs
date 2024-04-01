@@ -11,6 +11,7 @@ namespace CosmosBenchmark
     using System.Threading;
     using System.Threading.Tasks;
     using Newtonsoft.Json;
+    using OpenTelemetry.Metrics;
 
     internal class ParallelExecutionStrategy : IExecutionStrategy
     {
@@ -25,9 +26,9 @@ namespace CosmosBenchmark
         }
 
         public async Task<RunSummary> ExecuteAsync(
+            BenchmarkConfig benchmarkConfig,
             int serialExecutorConcurrency,
             int serialExecutorIterationCount,
-            bool traceFailures,
             double warmupFraction)
         {
             IExecutor warmupExecutor = new SerialOperationExecutor(
@@ -36,9 +37,11 @@ namespace CosmosBenchmark
             await warmupExecutor.ExecuteAsync(
                     (int)(serialExecutorIterationCount * warmupFraction),
                     isWarmup: true,
-                    traceFailures: traceFailures,
-                    completionCallback: () => { });
+                    traceFailures: benchmarkConfig.TraceFailures,
+                    completionCallback: () => { }, 
+                    benchmarkConfig);
 
+            Utility.TeePrint("Starting execution {0} tasks", serialExecutorConcurrency);
             IExecutor[] executors = new IExecutor[serialExecutorConcurrency];
             for (int i = 0; i < serialExecutorConcurrency; i++)
             {
@@ -53,14 +56,19 @@ namespace CosmosBenchmark
                 _ = executors[i].ExecuteAsync(
                         iterationCount: serialExecutorIterationCount,
                         isWarmup: false,
-                        traceFailures: traceFailures,
-                        completionCallback: () => Interlocked.Decrement(ref this.pendingExecutorCount));
+                        traceFailures: benchmarkConfig.TraceFailures,
+                        completionCallback: () => Interlocked.Decrement(ref this.pendingExecutorCount),
+                        benchmarkConfig);
             }
 
-            return await this.LogOutputStats(executors);
+            return await this.LogOutputStats(
+                benchmarkConfig,
+                executors);
         }
 
-        private async Task<RunSummary> LogOutputStats(IExecutor[] executors)
+        private async Task<RunSummary> LogOutputStats(
+            BenchmarkConfig benchmarkConfig,
+            IExecutor[] executors)
         {
             const int outputLoopDelayInSeconds = 1;
             IList<int> perLoopCounters = new List<int>();
@@ -103,20 +111,20 @@ namespace CosmosBenchmark
 
             using (ConsoleColorContext ct = new ConsoleColorContext(ConsoleColor.Green))
             {
-                Console.WriteLine();
-                Console.WriteLine("Summary:");
-                Console.WriteLine("--------------------------------------------------------------------- ");
+                Utility.TeeTraceInformation("Summary:");
+                Utility.TeeTraceInformation("--------------------------------------------------------------------- ");
                 lastSummary.Print(lastSummary.failedOpsCount + lastSummary.successfulOpsCount);
 
                 // Skip first 5 and last 5 counters as outliers
                 IEnumerable<int> exceptFirst5 = perLoopCounters.Skip(5);
                 int[] summaryCounters = exceptFirst5.Take(exceptFirst5.Count() - 5).OrderByDescending(e => e).ToArray();
 
-                RunSummary runSummary = new RunSummary();
+                RunSummary runSummary = new RunSummary(
+                    benchmarkConfig,
+                    executors.Length);
 
                 if (summaryCounters.Length > 10)
                 {
-                    Console.WriteLine();
                     Utility.TeeTraceInformation("After Excluding outliers");
 
                     runSummary.Top10PercentAverageRps = Math.Round(summaryCounters.Take((int)(0.1 * summaryCounters.Length)).Average(), 0);
@@ -148,7 +156,7 @@ namespace CosmosBenchmark
                     Utility.TeeTraceInformation("Please adjust ItemCount high to run of at-least 1M");
                 }
 
-                Console.WriteLine("--------------------------------------------------------------------- ");
+                Utility.TeeTraceInformation("--------------------------------------------------------------------- ");
 
                 return runSummary;
             }

@@ -22,6 +22,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Parser;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.Routing;
@@ -30,10 +32,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
+    using static Microsoft.Azure.Cosmos.Query.Core.SqlQueryResumeFilter;
     using ResourceIdentifier = Cosmos.Pagination.ResourceIdentifier;
+    using UInt128 = UInt128;
 
     // Collection useful for mocking requests and repartitioning (splits / merge).
-    internal sealed class InMemoryContainer : IMonadicDocumentContainer
+    internal class InMemoryContainer : IMonadicDocumentContainer
     {
         private readonly PartitionKeyDefinition partitionKeyDefinition;
         private readonly Dictionary<int, (int, int)> parentToChildMapping;
@@ -280,8 +284,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                             requestCharge: 42)));
             }
 
-            PartitionKeyHash partitionKeyHash = GetHashFromPartitionKey(
-                partitionKey,
+            PartitionKeyHash partitionKeyHash = GetHashFromPartitionKeys(
+                new List<CosmosElement> { partitionKey },
                 this.partitionKeyDefinition);
 
             if (!this.partitionedRecords.TryGetValue(partitionKeyHash, out Records records))
@@ -438,6 +442,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 ReadFeedPage readFeedPage = new ReadFeedPage(
                     responseStream,
                     requestCharge: 42,
+                    itemCount: cosmosDocuments.Count,
                     activityId: Guid.NewGuid().ToString(),
                     additionalHeaders: new Dictionary<string, string>()
                     {
@@ -449,7 +454,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             }
         }
 
-        public Task<TryCatch<QueryPage>> MonadicQueryAsync(
+        public virtual Task<TryCatch<QueryPage>> MonadicQueryAsync(
             SqlQuerySpec sqlQuerySpec,
             FeedRangeState<QueryState> feedRangeState,
             QueryPaginationOptions queryPaginationOptions,
@@ -507,7 +512,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 }
 
                 SqlQuery sqlQuery = monadicParse.Result;
-                if ((sqlQuery.OrderByClause != null) && (feedRangeState.State != null))
+                if ((sqlQuery.OrderByClause != null) && (feedRangeState.State != null) && (sqlQuerySpec.ResumeFilter == null))
                 {
                     // This is a hack.
                     // If the query is an ORDER BY query then we need to seek to the resume term.
@@ -546,6 +551,49 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 }
                 IEnumerable<CosmosElement> queryResults = SqlInterpreter.ExecuteQuery(documents, sqlQuery);
                 IEnumerable<CosmosElement> queryPageResults = queryResults;
+
+                // If the resume value is passed in query spec, filter out the results that has order by item value smaller than resume values
+                if (sqlQuerySpec.ResumeFilter != null)
+                {
+                    if (sqlQuery.OrderByClause.OrderByItems.Length != 1)
+                    {
+                        throw new NotImplementedException("Can only support a single order by column");
+                    }
+
+                    SqlOrderByItem orderByItem = sqlQuery.OrderByClause.OrderByItems[0];
+                    IEnumerator<CosmosElement> queryResultEnumerator = queryPageResults.GetEnumerator();
+
+                    int skipCount = 0;
+                    while(queryResultEnumerator.MoveNext())
+                    {
+                        CosmosObject document = (CosmosObject)queryResultEnumerator.Current;
+                        CosmosElement orderByValue = ((CosmosObject)((CosmosArray)document["orderByItems"])[0])["item"];
+
+                        int sortOrderCompare = sqlQuerySpec.ResumeFilter.ResumeValues[0].CompareTo(orderByValue);
+
+                        if (sortOrderCompare != 0)
+                        {
+                            sortOrderCompare = orderByItem.IsDescending ? -sortOrderCompare : sortOrderCompare;
+                        }
+
+                        if (sortOrderCompare < 0)
+                        {
+                            // We might have passed the item due to deletions and filters.
+                            break;
+                        }
+
+                        if (sortOrderCompare >= 0)
+                        {
+                            // This document does not match the sort order, so skip it.
+                            skipCount++;
+                        }
+                    }
+
+                    queryPageResults = queryPageResults.Skip(skipCount);
+
+                    // NOTE: We still need to handle duplicate values and break the tie with the rid
+                    // But since all the values are unique for our testing purposes we can ignore this for now.
+                }
 
                 // Filter for the continuation token
                 string continuationResourceId;
@@ -602,9 +650,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 queryPageResults = queryPageResults.Take((queryPaginationOptions ?? QueryPaginationOptions.Default).PageSizeLimit.GetValueOrDefault(int.MaxValue));
                 List<CosmosElement> queryPageResultList = queryPageResults.ToList();
                 QueryState queryState;
-                if (queryPageResultList.LastOrDefault() is CosmosObject lastDocument)
+                if (queryPageResultList.LastOrDefault() is CosmosObject lastDocument
+                    && lastDocument.TryGetValue<CosmosString>("_rid", out CosmosString resourceId))
                 {
-                    string currentResourceId = ((CosmosString)lastDocument["_rid"]).Value;
+                    string currentResourceId = resourceId.Value;
                     int currentSkipCount = queryPageResultList
                         .Where(document => ((CosmosString)((CosmosObject)document)["_rid"]).Value == currentResourceId)
                         .Count();
@@ -645,11 +694,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                             queryPageResultList,
                             requestCharge: 42,
                             activityId: Guid.NewGuid().ToString(),
-                            responseLengthInBytes: 1337,
                             cosmosQueryExecutionInfo: default,
+                            distributionPlanSpec: default,
                             disallowContinuationTokenMessage: default,
                             additionalHeaders: additionalHeaders.ToImmutable(),
-                            state: queryState)));
+                            state: queryState,
+                            streaming: default)));
             }
         }
 
@@ -745,6 +795,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         new ChangeFeedSuccessPage(
                             responseStream,
                             requestCharge: 42,
+                            itemCount: cosmosDocuments.Count,
                             activityId: Guid.NewGuid().ToString(),
                             additionalHeaders: default,
                             responseState)));
@@ -796,9 +847,20 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             }
 
             // Split the range space
-            PartitionKeyHashRanges partitionKeyHashRanges = PartitionKeyHashRangeSplitterAndMerger.SplitRange(
-                parentRange,
-                rangeCount: 2);
+            PartitionKeyHashRanges partitionKeyHashRanges;
+            if (this.partitionKeyDefinition.Kind == PartitionKind.MultiHash &&
+                this.partitionKeyDefinition.Paths.Count > 1)
+            {
+                //For MultiHash, to help with testing we will split using the median partition key among documents.
+                PartitionKeyHash midPoint = this.ComputeMedianSplitPointAmongDocumentsInPKRange(parentRange);
+                partitionKeyHashRanges = PartitionKeyHashRangeSplitterAndMerger.SplitRange(parentRange, midPoint);
+            }
+            else
+            {
+                partitionKeyHashRanges = PartitionKeyHashRangeSplitterAndMerger.SplitRange(
+                    parentRange,
+                    rangeCount: 2);
+            }
 
             // Update the partition routing map
             int maxPartitionKeyRangeId = this.partitionKeyRangeIdToHashRange.Keys.Max();
@@ -1083,16 +1145,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             CosmosObject payload,
             PartitionKeyDefinition partitionKeyDefinition)
         {
-            CosmosElement partitionKey = GetPartitionKeyFromPayload(payload, partitionKeyDefinition);
-            return GetHashFromPartitionKey(partitionKey, partitionKeyDefinition);
+            IList<CosmosElement> partitionKey = GetPartitionKeysFromPayload(payload, partitionKeyDefinition);
+            return GetHashFromPartitionKeys(partitionKey, partitionKeyDefinition);
         }
 
         private static PartitionKeyHash GetHashFromObjectModel(
             Cosmos.PartitionKey payload,
             PartitionKeyDefinition partitionKeyDefinition)
         {
-            CosmosElement partitionKey = GetPartitionKeyFromObjectModel(payload);
-            return GetHashFromPartitionKey(partitionKey, partitionKeyDefinition);
+            IList<CosmosElement> partitionKeys = GetPartitionKeysFromObjectModel(payload);
+            return GetHashFromPartitionKeys(partitionKeys, partitionKeyDefinition);
         }
 
         private static CosmosElement GetPartitionKeyFromPayload(CosmosObject payload, PartitionKeyDefinition partitionKeyDefinition)
@@ -1130,23 +1192,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             return partitionKey;
         }
 
-        private static CosmosElement GetPartitionKeyFromObjectModel(Cosmos.PartitionKey payload)
-        {
-            CosmosArray partitionKeyPayload = CosmosArray.Parse(payload.ToJsonString());
-            if (partitionKeyPayload.Count != 1)
-            {
-                throw new ArgumentOutOfRangeException("Can only support a single partition key path.");
-            }
-
-            return partitionKeyPayload[0];
-        }
-
-        private static PartitionKeyHash GetHashFromPartitionKey(CosmosElement partitionKey, PartitionKeyDefinition partitionKeyDefinition)
+        private static IList<CosmosElement> GetPartitionKeysFromPayload(CosmosObject payload, PartitionKeyDefinition partitionKeyDefinition)
         {
             // Restrict the partition key definition for now to keep things simple
-            if (partitionKeyDefinition.Kind != PartitionKind.Hash)
+            if (partitionKeyDefinition.Kind != PartitionKind.MultiHash && partitionKeyDefinition.Kind != PartitionKind.Hash)
             {
-                throw new ArgumentOutOfRangeException("Can only support hash partitioning");
+                throw new ArgumentOutOfRangeException("Can only support Hash/MultiHash partitioning");
             }
 
             if (partitionKeyDefinition.Version != Documents.PartitionKeyDefinitionVersion.V2)
@@ -1154,21 +1205,85 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 throw new ArgumentOutOfRangeException("Can only support hash v2");
             }
 
-            if (partitionKeyDefinition.Paths.Count != 1)
+            IList<CosmosElement> cosmosElements = new List<CosmosElement>();
+            foreach (string partitionKeyPath in partitionKeyDefinition.Paths)
             {
-                throw new ArgumentOutOfRangeException("Can only support a single partition key path.");
+                IEnumerable<string> tokens = partitionKeyPath.Split("/").Skip(1);
+                CosmosElement partitionKey = payload;
+                foreach (string token in tokens)
+                {
+                    if (partitionKey != default)
+                    {
+                        if (!payload.TryGetValue(token, out partitionKey))
+                        {
+                            partitionKey = default;
+                        }
+                    }
+                }
+                cosmosElements.Add(partitionKey);
+            }
+            return cosmosElements;
+        }
+
+        private static IList<CosmosElement> GetPartitionKeysFromObjectModel(Cosmos.PartitionKey payload)
+        {
+            CosmosArray partitionKeyPayload = CosmosArray.Parse(payload.ToJsonString());
+            List<CosmosElement> cosmosElemementPayload = new List<CosmosElement>();
+            foreach (CosmosElement element in partitionKeyPayload)
+            {
+                cosmosElemementPayload.Add(element);
+            }
+            return cosmosElemementPayload;
+        }
+
+        private static PartitionKeyHash GetHashFromPartitionKeys(IList<CosmosElement> partitionKeys, PartitionKeyDefinition partitionKeyDefinition)
+        {
+            // Restrict the partition key definition for now to keep things simple
+            if (partitionKeyDefinition.Kind != PartitionKind.MultiHash && partitionKeyDefinition.Kind != PartitionKind.Hash)
+            {
+                throw new ArgumentOutOfRangeException("Can only support Hash/MultiHash partitioning");
             }
 
-            PartitionKeyHash partitionKeyHash = partitionKey switch
+            if (partitionKeyDefinition.Version != Documents.PartitionKeyDefinitionVersion.V2)
             {
-                null => PartitionKeyHash.V2.HashUndefined(),
-                CosmosString stringPartitionKey => PartitionKeyHash.V2.Hash(stringPartitionKey.Value),
-                CosmosNumber numberPartitionKey => PartitionKeyHash.V2.Hash(Number64.ToDouble(numberPartitionKey.Value)),
-                CosmosBoolean cosmosBoolean => PartitionKeyHash.V2.Hash(cosmosBoolean.Value),
-                CosmosNull _ => PartitionKeyHash.V2.HashNull(),
-                _ => throw new ArgumentOutOfRangeException(),
-            };
-            return partitionKeyHash;
+                throw new ArgumentOutOfRangeException("Can only support hash v2");
+            }
+
+            IList<UInt128> partitionKeyHashValues = new List<UInt128>();
+
+            foreach (CosmosElement partitionKey in partitionKeys)
+            {
+                if (partitionKey is CosmosArray cosmosArray)
+                {
+                    foreach (CosmosElement element in cosmosArray)
+                    {
+                        PartitionKeyHash elementHash = element switch
+                        {
+                            null => PartitionKeyHash.V2.HashUndefined(),
+                            CosmosString stringPartitionKey => PartitionKeyHash.V2.Hash(stringPartitionKey.Value),
+                            CosmosNumber numberPartitionKey => PartitionKeyHash.V2.Hash(Number64.ToDouble(numberPartitionKey.Value)),
+                            CosmosBoolean cosmosBoolean => PartitionKeyHash.V2.Hash(cosmosBoolean.Value),
+                            CosmosNull _ => PartitionKeyHash.V2.HashNull(),
+                            _ => throw new ArgumentOutOfRangeException(),
+                        };
+                        partitionKeyHashValues.Add(elementHash.HashValues[0]);
+                    }
+                    continue;
+                }
+
+                PartitionKeyHash partitionKeyHash = partitionKey switch
+                {
+                    null => PartitionKeyHash.V2.HashUndefined(),
+                    CosmosString stringPartitionKey => PartitionKeyHash.V2.Hash(stringPartitionKey.Value),
+                    CosmosNumber numberPartitionKey => PartitionKeyHash.V2.Hash(Number64.ToDouble(numberPartitionKey.Value)),
+                    CosmosBoolean cosmosBoolean => PartitionKeyHash.V2.Hash(cosmosBoolean.Value),
+                    CosmosNull _ => PartitionKeyHash.V2.HashNull(),
+                    _ => throw new ArgumentOutOfRangeException(),
+                };
+                partitionKeyHashValues.Add(partitionKeyHash.HashValues[0]);
+            }
+
+            return new PartitionKeyHash(partitionKeyHashValues.ToArray());
         }
 
         private static CosmosObject ConvertRecordToCosmosElement(Record record)
@@ -1195,9 +1310,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         {
             if (feedRange is FeedRangePartitionKey feedRangePartitionKey)
             {
-                CosmosElement partitionKey = GetPartitionKeyFromObjectModel(feedRangePartitionKey.PartitionKey);
-                CosmosElement partitionKeyFromRecord = GetPartitionKeyFromPayload(record.Payload, partitionKeyDefinition);
-                return partitionKey.Equals(partitionKeyFromRecord);
+                IList<CosmosElement> partitionKey = GetPartitionKeysFromObjectModel(feedRangePartitionKey.PartitionKey);
+                IList<CosmosElement> partitionKeyFromRecord = GetPartitionKeysFromPayload(record.Payload, partitionKeyDefinition);
+                if (partitionKeyDefinition.Kind == PartitionKind.MultiHash)
+                {
+                    PartitionKeyHash partitionKeyHash = GetHashFromPartitionKeys(partitionKey, partitionKeyDefinition);
+                    PartitionKeyHash partitionKeyFromRecordHash = GetHashFromPartitionKeys(partitionKeyFromRecord, partitionKeyDefinition);
+
+                    return partitionKeyHash.Equals(partitionKeyFromRecordHash) || partitionKeyFromRecordHash.Value.StartsWith(partitionKeyHash.Value);
+                }
+                return partitionKey.SequenceEqual(partitionKeyFromRecord);
             }
             else if (feedRange is FeedRangeEpk feedRangeEpk)
             {
@@ -1300,6 +1422,32 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     isMaxInclusive: false));
         }
 
+        private PartitionKeyHash ComputeMedianSplitPointAmongDocumentsInPKRange(PartitionKeyHashRange hashRange)
+        {
+            if (!this.partitionedRecords.TryGetValue(hashRange, out Records parentRecords))
+            {
+                throw new InvalidOperationException("failed to find the range.");
+            }
+
+            List<PartitionKeyHash> partitionKeyHashes = new List<PartitionKeyHash>();
+            foreach (Record record in parentRecords)
+            {
+                PartitionKeyHash partitionKeyHash = GetHashFromPayload(record.Payload, this.partitionKeyDefinition);
+                partitionKeyHashes.Add(partitionKeyHash);
+            }
+
+            partitionKeyHashes.Sort();
+            PartitionKeyHash medianPkHash = partitionKeyHashes[partitionKeyHashes.Count / 2];
+
+            // For MultiHash Collection, split at top level to ensure documents for top level key exist across partitions
+            // after split
+            if (medianPkHash.HashValues.Count > 1)
+            {
+                return new PartitionKeyHash(medianPkHash.HashValues[0]);
+            }
+
+            return medianPkHash;
+        }
         public Task<TryCatch<string>> MonadicGetResourceIdentifierAsync(ITrace trace, CancellationToken cancellationToken)
         {
             return Task.FromResult(TryCatch<string>.FromResult("AYIMAMmFOw8YAAAAAAAAAA=="));
@@ -1507,6 +1655,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             public SqlScalarExpression Visit(CosmosString cosmosString)
             {
                 return SqlLiteralScalarExpression.Create(SqlStringLiteral.Create(cosmosString.Value));
+            }
+
+            public SqlScalarExpression Visit(CosmosUndefined cosmosUndefined)
+            {
+                return SqlLiteralScalarExpression.Create(SqlUndefinedLiteral.Create());
             }
         }
     }

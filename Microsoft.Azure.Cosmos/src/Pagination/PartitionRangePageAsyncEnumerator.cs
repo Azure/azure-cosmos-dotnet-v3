@@ -14,16 +14,13 @@ namespace Microsoft.Azure.Cosmos.Pagination
     /// <summary>
     /// Has the ability to page through a partition range.
     /// </summary>
-    internal abstract class PartitionRangePageAsyncEnumerator<TPage, TState> : IAsyncEnumerator<TryCatch<TPage>>
+    internal abstract class PartitionRangePageAsyncEnumerator<TPage, TState> : ITracingAsyncEnumerator<TryCatch<TPage>>
         where TPage : Page<TState>
         where TState : State
     {
-        private CancellationToken cancellationToken;
-
-        protected PartitionRangePageAsyncEnumerator(FeedRangeState<TState> feedRangeState, CancellationToken cancellationToken)
+        protected PartitionRangePageAsyncEnumerator(FeedRangeState<TState> feedRangeState)
         {
             this.FeedRangeState = feedRangeState;
-            this.cancellationToken = cancellationToken;
         }
 
         public FeedRangeState<TState> FeedRangeState { get; private set; }
@@ -34,12 +31,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         private bool HasMoreResults => !this.HasStarted || (this.FeedRangeState.State != default);
 
-        public ValueTask<bool> MoveNextAsync()
-        {
-            return this.MoveNextAsync(NoOpTrace.Singleton);
-        }
-
-        public async ValueTask<bool> MoveNextAsync(ITrace trace)
+        public async ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
         {
             if (trace == null)
             {
@@ -53,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     return false;
                 }
 
-                this.Current = await this.GetNextPageAsync(trace: childTrace, cancellationToken: this.cancellationToken);
+                this.Current = await this.GetNextPageAsync(trace: childTrace, cancellationToken);
                 if (this.Current.Succeeded)
                 {
                     this.FeedRangeState = new FeedRangeState<TState>(this.FeedRangeState.FeedRange, this.Current.Result.State);
@@ -67,10 +59,5 @@ namespace Microsoft.Azure.Cosmos.Pagination
         protected abstract Task<TryCatch<TPage>> GetNextPageAsync(ITrace trace, CancellationToken cancellationToken);
 
         public abstract ValueTask DisposeAsync();
-
-        public virtual void SetCancellationToken(CancellationToken cancellationToken)
-        {
-            this.cancellationToken = cancellationToken;
-        }
     }
 }

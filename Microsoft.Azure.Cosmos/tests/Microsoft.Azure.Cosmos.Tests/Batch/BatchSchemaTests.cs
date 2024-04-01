@@ -9,9 +9,11 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.IO;
     using System.Linq;
     using System.Net;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
+    using Microsoft.Azure.Cosmos.Serialization.HybridRow;
+    using Microsoft.Azure.Cosmos.Serialization.HybridRow.IO;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -69,6 +71,52 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [Owner("vivekra")]
+        public void TestWriteOperationWithBinaryIdByteArray()
+        {
+            ISpanResizer<byte> resizer = new MemorySpanResizer<byte>(100);
+            RowBuffer row = new RowBuffer(capacity: 100, resizer: resizer);
+            row.InitLayout(HybridRowVersion.V1, BatchSchemaProvider.BatchOperationLayout, BatchSchemaProvider.BatchLayoutResolver);
+
+            byte[] testBinaryId = new byte[] { 1, 2, 3, 4, };
+            ItemRequestOptions requestOptions = new();
+            requestOptions.Properties = new Dictionary<string, object>()
+            {
+                { WFConstants.BackendHeaders.BinaryId, testBinaryId },
+            };
+            TransactionalBatchItemRequestOptions transactionalBatchItemRequestOptions =
+                TransactionalBatchItemRequestOptions.FromItemRequestOptions(requestOptions);
+            ItemBatchOperation operation = new ItemBatchOperation(
+                operationType: OperationType.Patch,
+                operationIndex: 0,
+                partitionKey: Cosmos.PartitionKey.Null,
+                requestOptions: transactionalBatchItemRequestOptions);
+
+            int length = operation.GetApproximateSerializedLength();
+            Assert.AreEqual(testBinaryId.Length, length);
+
+            Result r = RowWriter.WriteBuffer(ref row, operation, ItemBatchOperation.WriteOperation);
+            if (r != Result.Success)
+            {
+                Assert.Fail(r.ToString());
+            }
+
+            bool foundBinaryId = false;
+            RowReader reader = new RowReader(ref row);
+            while (reader.Read())
+            {
+                if (reader.PathSpan == Utf8String.TranscodeUtf16("binaryId"))
+                {
+                    foundBinaryId = true;
+                    reader.ReadBinary(out byte[] binaryId);
+                    CollectionAssert.AreEqual(testBinaryId, binaryId);
+                }
+            }
+
+            Assert.IsTrue(foundBinaryId);
+        }
+
+        [TestMethod]
         [Owner("abpai")]
         public async Task BatchResponseDeserializationAsync()
         {
@@ -100,8 +148,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 serializerCore: MockCosmosUtil.Serializer,
                 trace: NoOpTrace.Singleton,
                 cancellationToken: CancellationToken.None);
+            ResponseMessage response = new ResponseMessage((HttpStatusCode)StatusCodes.MultiStatus) { Content = responseContent };
+            response.Headers.Session = Guid.NewGuid().ToString();
+            response.Headers.ActivityId = Guid.NewGuid().ToString();
             TransactionalBatchResponse batchResponse = await TransactionalBatchResponse.FromResponseMessageAsync(
-                new ResponseMessage((HttpStatusCode)StatusCodes.MultiStatus) { Content = responseContent },
+                response,
                 batchRequest,
                 MockCosmosUtil.Serializer,
                 true,
@@ -111,6 +162,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNotNull(batchRequest);
             Assert.AreEqual(HttpStatusCode.Conflict, batchResponse.StatusCode);
             Assert.AreEqual(2, batchResponse.Count);
+            Assert.AreEqual(response.Headers.Session, batchResponse[0].SessionToken);
+            Assert.AreEqual(response.Headers.Session, batchResponse[1].SessionToken);
+            Assert.AreEqual(response.Headers.ActivityId, batchResponse[0].ActivityId);
+            Assert.AreEqual(response.Headers.ActivityId, batchResponse[1].ActivityId);
+
 
             CosmosBatchOperationResultEqualityComparer comparer = new CosmosBatchOperationResultEqualityComparer();
             Assert.IsTrue(comparer.Equals(results[0], batchResponse[0]));

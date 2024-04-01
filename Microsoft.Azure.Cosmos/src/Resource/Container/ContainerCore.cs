@@ -12,8 +12,10 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Pagination;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
@@ -291,7 +293,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 partitionKeyRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
-                    containerRId,
+                    refreshedContainerRId,
                     ContainerCore.allRanges,
                     trace,
                     forceRefresh: true);
@@ -332,6 +334,7 @@ namespace Microsoft.Azure.Cosmos
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 this,
                 this.queryClient,
+                correlatedActivityId: Guid.NewGuid(),
                 changeFeedRequestOptions: changeFeedRequestOptions);
             DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
 
@@ -340,7 +343,8 @@ namespace Microsoft.Azure.Cosmos
                 changeFeedStartFrom: changeFeedStartFrom,
                 changeFeedMode: changeFeedMode,
                 changeFeedRequestOptions: changeFeedRequestOptions,
-                clientContext: this.ClientContext);
+                clientContext: this.ClientContext,
+                container: this);
         }
 
         public override FeedIterator<T> GetChangeFeedIterator<T>(
@@ -361,6 +365,7 @@ namespace Microsoft.Azure.Cosmos
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 this,
                 this.queryClient,
+                Guid.NewGuid(),
                 changeFeedRequestOptions: changeFeedRequestOptions);
             DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
 
@@ -369,6 +374,7 @@ namespace Microsoft.Azure.Cosmos
                 changeFeedStartFrom: changeFeedStartFrom,
                 changeFeedMode: changeFeedMode,
                 changeFeedRequestOptions: changeFeedRequestOptions,
+                container: this,
                 clientContext: this.ClientContext);
 
             return new FeedIteratorCore<T>(
@@ -506,7 +512,6 @@ namespace Microsoft.Azure.Cosmos
                 collectionRid,
                 previousValue: null,
                 request: null,
-                cancellationToken,
                 NoOpTrace.Singleton);
 
             // Not found.
@@ -521,7 +526,6 @@ namespace Microsoft.Azure.Cosmos
                     collectionRid,
                     previousValue: null,
                     request: null,
-                    cancellationToken,
                     NoOpTrace.Singleton);
             }
 
@@ -556,7 +560,8 @@ namespace Microsoft.Azure.Cosmos
                     responseMessage.StatusCode,
                     responseMessage.Headers,
                     null,
-                    new CosmosTraceDiagnostics(trace));
+                    new CosmosTraceDiagnostics(trace),
+                    responseMessage.RequestMessage);
             }
 
             responseMessage.EnsureSuccessStatusCode();
@@ -624,6 +629,76 @@ namespace Microsoft.Azure.Cosmos
               requestEnricher: null,
               trace: trace,
               cancellationToken: cancellationToken);
+        }
+
+        public override FeedIterator GetChangeFeedStreamIteratorWithQuery(
+           ChangeFeedStartFrom changeFeedStartFrom,
+           ChangeFeedMode changeFeedMode,
+           ChangeFeedQuerySpec changeFeedQuerySpec,
+           ChangeFeedRequestOptions changeFeedRequestOptions = null)
+        {
+            if (changeFeedStartFrom == null)
+            {
+                throw new ArgumentNullException(nameof(changeFeedStartFrom));
+            }
+
+            if (changeFeedMode == null)
+            {
+                throw new ArgumentNullException(nameof(changeFeedMode));
+            }
+
+            NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
+                this,
+                this.queryClient,
+                correlatedActivityId: Guid.NewGuid(),
+                changeFeedRequestOptions: changeFeedRequestOptions);
+            DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
+
+            return new ChangeFeedIteratorCore(
+                documentContainer: documentContainer,
+                changeFeedStartFrom: changeFeedStartFrom,
+                changeFeedMode: changeFeedMode,
+                changeFeedRequestOptions: changeFeedRequestOptions,
+                clientContext: this.ClientContext,
+                changeFeedQuerySpec: changeFeedQuerySpec,
+                container: this);
+        }
+
+        public override FeedIterator<T> GetChangeFeedIteratorWithQuery<T>(
+           ChangeFeedStartFrom changeFeedStartFrom,
+           ChangeFeedMode changeFeedMode,
+           ChangeFeedQuerySpec changeFeedQuerySpec,
+           ChangeFeedRequestOptions changeFeedRequestOptions = null)
+        {
+            if (changeFeedStartFrom == null)
+            {
+                throw new ArgumentNullException(nameof(changeFeedStartFrom));
+            }
+
+            if (changeFeedMode == null)
+            {
+                throw new ArgumentNullException(nameof(changeFeedMode));
+            }
+
+            NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
+                this,
+                this.queryClient,
+                Guid.NewGuid(),
+                changeFeedRequestOptions: changeFeedRequestOptions);
+            DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
+
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
+                documentContainer: documentContainer,
+                changeFeedStartFrom: changeFeedStartFrom,
+                changeFeedMode: changeFeedMode,
+                changeFeedRequestOptions: changeFeedRequestOptions,
+                clientContext: this.ClientContext,
+                container: this,
+                changeFeedQuerySpec: changeFeedQuerySpec);
+
+            return new FeedIteratorCore<T>(
+                changeFeedIteratorCore,
+                responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
         }
     }
 }

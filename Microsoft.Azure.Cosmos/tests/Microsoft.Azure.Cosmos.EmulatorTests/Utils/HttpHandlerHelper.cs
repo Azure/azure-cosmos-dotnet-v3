@@ -17,18 +17,51 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         public Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> RequestCallBack { get; set; }
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        public Func<HttpResponseMessage, Task<HttpResponseMessage>> ResponseIntercepter { get; set; }
+
+        public Action<HttpRequestMessage, Exception> ExceptionIntercepter { get; set; }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            if(this.RequestCallBack != null)
+            HttpResponseMessage httpResponse = null;
+            if (this.RequestCallBack != null)
             {
                 Task<HttpResponseMessage> response = this.RequestCallBack(request, cancellationToken);
                 if(response != null)
                 {
-                    return response;
+                    httpResponse = await response;
+                    if (httpResponse != null)
+                    {
+                        if (this.ResponseIntercepter != null)
+                        {
+                            httpResponse = await this.ResponseIntercepter(httpResponse);
+                        }
+                        return httpResponse;
+                    }
                 }
             }
-            
-            return base.SendAsync(request, cancellationToken);
+
+            try
+            {
+                httpResponse = await base.SendAsync(request, cancellationToken);
+            }
+            catch (Exception ex) {
+
+                if (this.ExceptionIntercepter == null)
+                {
+                    throw;
+                }
+                this.ExceptionIntercepter.Invoke(request, ex);
+
+                throw; // Anyway throw this exception
+            }
+           
+            if (this.ResponseIntercepter != null)
+            {
+                httpResponse = await this.ResponseIntercepter(httpResponse);
+            }
+
+            return httpResponse;
         }
     }
 }

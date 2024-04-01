@@ -16,7 +16,7 @@
 dotnet run CosmosBenchmark.csproj -e {ACCOUNT_ENDPOINT} -k {ACCOUNT_KEY}  -w {workloadtype}
 ```
 
-Dry tun targeting emulator will look like below
+Dry run targeting emulator will look like below
 ```
 dotnet run CosmosBenchmark.csproj -e "https://localhost:8081" -k "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==" -w {workloadtype}
 ```
@@ -54,6 +54,7 @@ cd 'azure-cosmos-dotnet-v3/Microsoft.Azure.Cosmos.Samples/Tools/Benchmark'
 dotnet build --configuration Release -p:"OSSProjectRef=true;ShouldUnsetParentConfigurationAndPlatform=false"
 
 ```
+
 For PerfRuns with reports (INTERNAL)
 ```
 
@@ -87,36 +88,47 @@ while($true){
 >dotnet run CosmosBenchmark.csproj
 CosmosBenchmark 1.0.0
 Copyright (C) 2019 CosmosBenchmark
-
-  -e                     Required. Cosmos account end point
-
-  -k                     Required. Cosmos account master key
-
-  --database             Database to use
-
-  --container            Collection to use
-
-  -t                     Collection throughput use
-
-  -n                     Number of documents to insert
-
-  --cleanuponstart       Start with new collection
-
-  --cleanuponfinish      Clean-up after run
-
-  --partitionkeypath     Container partition key path
-
-  --pl                   Degree of parallism
-
-  --itemtemplatefile     Item template
-
-  --minthreadpoolsize    Min thread pool size
-
-  --help                 Display this help screen.
-
-  --version              Display version information.
+  -w                                Required. Workload type insert, read
+  -e                                Required. Cosmos account end point
+  -k                                Required. Cosmos account master key
+  --workloadname                    Workload Name, it will override the workloadType value in published results
+  --database                        Database to use
+  --container                       Collection to use
+  -t                                Collection throughput use
+  -n                                Number of documents to insert
+  --consistencylevel                Client consistency level to override
+  --enablelatencypercentiles        Enable latency percentiles
+  --cleanuponstart                  Start with new collection
+  --cleanuponfinish                 Clean-up after run
+  --partitionkeypath                Container partition key path
+  --pl                              Degree of parallism
+  --tcp                             MaxRequestsPerTcpConnection
+  --maxtcpconnectionsperendpoint    MaxTcpConnectionsPerEndpoint
+  --itemtemplatefile                Item template
+  --minthreadpoolsize               Min thread pool size
+  --tracefailures                   Write the task execution failure to console. Useful for debugging failures
+  --publishresults                  Publish run results
+  --commitid                        Commit ID, only for publish
+  --commitdate                      Commit date, only for publish
+  --committime                      Commit time, only for publish
+  --branchname                      Branch name, only for publish
+  --resultspartitionkeyvalue        Partitionkey, only for publish
+  --disablecoresdklogging           Disable core SDK logging
+  --enabletelemetry                 Enable Telemetry Feature 
+  --telemetryscheduleinsec          Telemetry Schedule in Seconds
+  --enableDistributedTracing        Enable Distributed Tracing Feature
+  --resultsendpoint                 Endpoint to publish results to
+  --resultskey                      Key to publish results to
+  --resultsdatabase                 Database to publish results to
+  --resultscontainer                Container to publish results to
+  --help                            Display this help screen.
+  --version                         Display version information.
 ```
 
 ## Running on Azure
 
 If you want to quickly get results, you can use our [guide to leverage Azure Container Instances](./AzureContainerInstances/README.md) to execute the benchmarks in any number of Azure regions with very little setup required.
+
+## Running on Azure VM
+
+If you want to execute benchmarking on multiple machines with one ARM Template, you can use our [guide to leverage Azure Virtual Machines](./AzureVmBenchmark/README.md).

@@ -26,21 +26,23 @@ namespace Microsoft.Azure.Cosmos.Routing
     internal class PartitionRoutingHelper
     {
         public static IReadOnlyList<Range<string>> GetProvidedPartitionKeyRanges(
-            SqlQuerySpec querySpec,
+            string querySpecJsonString,
             bool enableCrossPartitionQuery,
             bool parallelizeCrossPartitionQuery,
             bool isContinuationExpected,
             bool hasLogicalPartitionKey,
             bool allowDCount,
             bool allowNonValueAggregates,
+            bool useSystemPrefix,
             PartitionKeyDefinition partitionKeyDefinition,
             QueryPartitionProvider queryPartitionProvider,
             string clientApiVersion,
+            Cosmos.GeospatialType geospatialType,
             out QueryInfo queryInfo)
         {
-            if (querySpec == null)
+            if (querySpecJsonString == null)
             {
-                throw new ArgumentNullException(nameof(querySpec));
+                throw new ArgumentNullException(nameof(querySpecJsonString));
             }
 
             if (partitionKeyDefinition == null)
@@ -54,13 +56,15 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
             TryCatch<PartitionedQueryExecutionInfo> tryGetPartitionQueryExecutionInfo = queryPartitionProvider.TryGetPartitionedQueryExecutionInfo(
-                querySpec: querySpec,
+                querySpecJsonString: querySpecJsonString,
                 partitionKeyDefinition: partitionKeyDefinition,
                 requireFormattableOrderByQuery: VersionUtility.IsLaterThan(clientApiVersion, HttpConstants.VersionDates.v2016_11_14),
                 isContinuationExpected: isContinuationExpected,
                 allowNonValueAggregateQuery: allowNonValueAggregates,
                 hasLogicalPartitionKey: hasLogicalPartitionKey,
-                allowDCount: allowDCount);
+                allowDCount: allowDCount,
+                useSystemPrefix: useSystemPrefix,
+                geospatialType: geospatialType);
             if (!tryGetPartitionQueryExecutionInfo.Succeeded)
             {
                 throw new BadRequestException(tryGetPartitionQueryExecutionInfo.Exception);

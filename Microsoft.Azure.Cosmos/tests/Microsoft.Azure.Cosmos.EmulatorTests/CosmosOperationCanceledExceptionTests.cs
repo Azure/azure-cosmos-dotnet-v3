@@ -7,8 +7,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -100,10 +98,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string message = ce.Message;
                 string diagnostics = ce.Diagnostics.ToString();
                 string toString = ce.ToString();
-                Assert.IsTrue(toString.Contains(diagnostics));
-                Assert.IsTrue(message.Contains(diagnostics));
-                string messageWithoutDiagnostics = message.Substring(0, message.IndexOf(Environment.NewLine)).Trim();
-                Assert.IsTrue(toString.Contains(messageWithoutDiagnostics));
+                Assert.IsTrue(toString.Contains(diagnostics), $"Exception ToString() : {toString} does not contain diagnostics: {diagnostics}");
+                Assert.IsTrue(message.Contains(diagnostics), $"Message : {message} does not contain diagnostics: {diagnostics}");
+                string messageWithoutDiagnostics = message[..message.IndexOf(Environment.NewLine)].Trim();
+                Assert.IsTrue(toString.Contains(messageWithoutDiagnostics), $"Exception ToString() : {toString} does not contain message: {messageWithoutDiagnostics}");
             }
 
             try
@@ -120,10 +118,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string message = ce.Message;
                 string diagnostics = ce.Diagnostics.ToString();
                 string toString = ce.ToString();
-                Assert.IsTrue(toString.Contains(diagnostics));
-                Assert.IsTrue(message.Contains(diagnostics));
-                string messageWithoutDiagnostics = message.Substring(0, message.IndexOf(Environment.NewLine)).Trim();
-                Assert.IsTrue(toString.Contains(messageWithoutDiagnostics));
+                Assert.IsTrue(toString.Contains(diagnostics), $"Exception ToString() : {toString} does not contain diagnostics: {diagnostics}");
+                Assert.IsTrue(message.Contains(diagnostics), $"Message : {message} does not contain diagnostics: {diagnostics}");
+                string messageWithoutDiagnostics = message[..message.IndexOf(Environment.NewLine)].Trim();
+                Assert.IsTrue(toString.Contains(messageWithoutDiagnostics), $"Exception ToString() : {toString} does not contain message: {messageWithoutDiagnostics}");
             }
         }
     }

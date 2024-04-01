@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Represents the template class used by feed methods (enumeration operations) for the Azure Cosmos DB service.
@@ -37,7 +38,6 @@ namespace Microsoft.Azure.Cosmos
         private QueryResponse(
             IReadOnlyList<CosmosElement> result,
             int count,
-            long responseLengthBytes,
             CosmosQueryResponseMessageHeaders responseHeaders,
             HttpStatusCode statusCode,
             RequestMessage requestMessage,
@@ -54,7 +54,6 @@ namespace Microsoft.Azure.Cosmos
         {
             this.CosmosElements = result;
             this.Count = count;
-            this.ResponseLengthBytes = responseLengthBytes;
             this.memoryStream = memoryStream;
             this.CosmosSerializationOptions = serializationOptions;
         }
@@ -67,14 +66,6 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual CosmosQueryResponseMessageHeaders QueryHeaders => (CosmosQueryResponseMessageHeaders)this.Headers;
 
-        /// <summary>
-        /// Gets the response length in bytes
-        /// </summary>
-        /// <remarks>
-        /// This value is only set for Direct mode.
-        /// </remarks>
-        internal long ResponseLengthBytes { get; }
-
         internal virtual CosmosSerializationFormatOptions CosmosSerializationOptions { get; }
 
         internal bool GetHasMoreResults()
@@ -85,7 +76,6 @@ namespace Microsoft.Azure.Cosmos
         internal static QueryResponse CreateSuccess(
             IReadOnlyList<CosmosElement> result,
             int count,
-            long responseLengthBytes,
             CosmosQueryResponseMessageHeaders responseHeaders,
             CosmosSerializationFormatOptions serializationOptions,
             ITrace trace)
@@ -93,11 +83,6 @@ namespace Microsoft.Azure.Cosmos
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException("count must be positive");
-            }
-
-            if (responseLengthBytes < 0)
-            {
-                throw new ArgumentOutOfRangeException("responseLengthBytes must be positive");
             }
 
             Lazy<MemoryStream> memoryStream = new Lazy<MemoryStream>(() => CosmosElementSerializer.ToStream(
@@ -109,7 +94,6 @@ namespace Microsoft.Azure.Cosmos
             QueryResponse cosmosQueryResponse = new QueryResponse(
                result: result,
                count: count,
-               responseLengthBytes: responseLengthBytes,
                responseHeaders: responseHeaders,
                statusCode: HttpStatusCode.OK,
                cosmosException: null,
@@ -131,7 +115,6 @@ namespace Microsoft.Azure.Cosmos
             QueryResponse cosmosQueryResponse = new QueryResponse(
                 result: new List<CosmosElement>(),
                 count: 0,
-                responseLengthBytes: 0,
                 responseHeaders: responseHeaders,
                 statusCode: statusCode,
                 cosmosException: cosmosException,
@@ -163,6 +146,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly CosmosSerializerCore serializerCore;
         private readonly CosmosSerializationFormatOptions serializationOptions;
+        private readonly IReadOnlyList<T> resource;
 
         private QueryResponse(
             HttpStatusCode httpStatusCode,
@@ -170,26 +154,25 @@ namespace Microsoft.Azure.Cosmos
             CosmosQueryResponseMessageHeaders responseMessageHeaders,
             CosmosDiagnostics diagnostics,
             CosmosSerializerCore serializerCore,
-            CosmosSerializationFormatOptions serializationOptions)
+            CosmosSerializationFormatOptions serializationOptions,
+            RequestMessage requestMessage)
         {
             this.QueryHeaders = responseMessageHeaders;
             this.Diagnostics = diagnostics;
             this.serializerCore = serializerCore;
             this.serializationOptions = serializationOptions;
             this.StatusCode = httpStatusCode;
-            this.Count = cosmosElements.Count;
-            this.Resource = CosmosElementSerializer.GetResources<T>(
+            this.resource = CosmosElementSerializer.GetResources<T>(
                 cosmosArray: cosmosElements,
                 serializerCore: serializerCore);
 
-            this.IndexUtilizationText = new Lazy<string>(() =>
-            {
-                IndexUtilizationInfo parsedIndexUtilizationInfo = IndexUtilizationInfo.CreateFromString(responseMessageHeaders.IndexUtilizationText);
-                StringBuilder stringBuilder = new StringBuilder();
-                IndexMetricWriter indexMetricWriter = new IndexMetricWriter(stringBuilder);
-                indexMetricWriter.WriteIndexMetrics(parsedIndexUtilizationInfo);
-                return stringBuilder.ToString();
-            });
+            // 1/25/2024: The default for request message is plain text
+            // for any release after this date, no longer base64 encoded
+            this.IndexUtilizationText = ResponseMessage.DecodeIndexMetrics(
+                responseMessageHeaders, 
+                isBase64Encoded: false);
+            
+            this.RequestMessage = requestMessage;
         }
 
         public override string ContinuationToken => this.Headers.ContinuationToken;
@@ -202,20 +185,22 @@ namespace Microsoft.Azure.Cosmos
 
         public override CosmosDiagnostics Diagnostics { get; }
 
-        public override int Count { get; }
+        public override int Count => this.resource.Count;
 
         internal CosmosQueryResponseMessageHeaders QueryHeaders { get; }
 
         private Lazy<string> IndexUtilizationText { get; }
 
-        public override string IndexMetrics => this.IndexUtilizationText.Value;
+        public override string IndexMetrics => this.IndexUtilizationText?.Value;
 
         public override IEnumerator<T> GetEnumerator()
         {
             return this.Resource.GetEnumerator();
         }
 
-        public override IEnumerable<T> Resource { get; }
+        public override IEnumerable<T> Resource => this.resource;
+
+        internal override RequestMessage RequestMessage { get; }
 
         internal static QueryResponse<TInput> CreateResponse<TInput>(
             QueryResponse cosmosQueryResponse,
@@ -232,7 +217,8 @@ namespace Microsoft.Azure.Cosmos
                     responseMessageHeaders: cosmosQueryResponse.QueryHeaders,
                     diagnostics: cosmosQueryResponse.Diagnostics,
                     serializerCore: serializerCore,
-                    serializationOptions: cosmosQueryResponse.CosmosSerializationOptions);
+                    serializationOptions: cosmosQueryResponse.CosmosSerializationOptions,
+                    requestMessage: cosmosQueryResponse.RequestMessage);
             }
             return queryResponse;
         }

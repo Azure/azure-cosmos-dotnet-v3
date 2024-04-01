@@ -11,12 +11,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Cosmos Patch request options
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    sealed class PatchItemRequestOptions : ItemRequestOptions
+    public sealed class PatchItemRequestOptions : ItemRequestOptions
     {
         /// <summary>
         /// Gets or sets condition to be checked before the patch operations in the Azure Cosmos DB service.

@@ -7,11 +7,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
-    using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.Azure.Cosmos.Tests;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -96,6 +97,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Mock<DocumentServiceLeaseContainer> leaseContainer = new Mock<DocumentServiceLeaseContainer>();
             leaseContainer.Setup(l => l.GetOwnedLeasesAsync()).Returns(Task.FromResult(Enumerable.Empty<DocumentServiceLease>()));
+            leaseContainer.Setup(l => l.GetAllLeasesAsync()).ReturnsAsync(new List<DocumentServiceLease>());
 
             Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
             leaseStoreManager.Setup(l => l.LeaseContainer).Returns(leaseContainer.Object);
@@ -146,6 +148,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Mock<DocumentServiceLeaseContainer> leaseContainer = new Mock<DocumentServiceLeaseContainer>();
             leaseContainer.Setup(l => l.GetOwnedLeasesAsync()).Returns(Task.FromResult(ownedLeases));
+            leaseContainer.Setup(l => l.GetAllLeasesAsync()).ReturnsAsync(new List<DocumentServiceLease>());
 
             Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
             leaseStoreManager.Setup(l => l.LeaseContainer).Returns(leaseContainer.Object);
@@ -209,7 +212,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             await processor.StopAsync();
             Mock.Get(leaseContainer.Object)
-                .Verify(store => store.GetAllLeasesAsync(), Times.Once);
+                .Verify(store => store.GetAllLeasesAsync(), Times.Exactly(2));
         }
 
 
@@ -233,6 +236,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             Mock<ContainerInternal> mockedContainer = MockCosmosUtil.CreateMockContainer(containerName: containerName);
             mockedContainer.Setup(c => c.ClientContext).Returns(ChangeFeedProcessorCoreTests.GetMockedClientContext());
+            string monitoredContainerRid = "V4lVAMl0wuQ=";
+            mockedContainer.Setup(c => c.GetCachedRIDAsync(It.IsAny<bool>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>())).ReturnsAsync(monitoredContainerRid);
             Mock<DatabaseInternal> mockedDatabase = MockCosmosUtil.CreateMockDatabase();
             mockedContainer.Setup(c => c.Database).Returns(mockedDatabase.Object);
             return mockedContainer.Object;

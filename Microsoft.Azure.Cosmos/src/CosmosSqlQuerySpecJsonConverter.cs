@@ -24,7 +24,8 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool CanConvert(Type objectType)
         {
-            return typeof(SqlParameter) == objectType;
+            return typeof(SqlParameter) == objectType
+                || typeof(SqlQueryResumeValue).IsAssignableFrom(objectType);
         }
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
@@ -34,36 +35,37 @@ namespace Microsoft.Azure.Cosmos
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
-            SqlParameter sqlParameter = (SqlParameter)value;
-
-            writer.WriteStartObject();
-            writer.WritePropertyName("name");
-            serializer.Serialize(writer, sqlParameter.Name);
-            writer.WritePropertyName("value");
-
-            // if the SqlParameter has stream value we dont pass it through the custom serializer.
-            if (sqlParameter.Value is SerializedParameterValue serializedEncryptedData)
+            if (value is SqlParameter sqlParameter)
             {
-                using (StreamReader streamReader = new StreamReader(serializedEncryptedData.valueStream))
+                writer.WriteStartObject();
+                writer.WritePropertyName("name");
+                serializer.Serialize(writer, sqlParameter.Name);
+                writer.WritePropertyName("value");
+
+                // if the SqlParameter has stream value we dont pass it through the custom serializer.
+                if (sqlParameter.Value is SerializedParameterValue serializedEncryptedData)
                 {
-                    string parameterValue = streamReader.ReadToEnd();
-                    writer.WriteRawValue(parameterValue);
+                    writer.WriteRawValue(serializedEncryptedData.rawSerializedJsonValue);
                 }
-            }
-            else
-            {
-                // Use the user serializer for the parameter values so custom conversions are correctly handled
-                using (Stream str = this.UserSerializer.ToStream(sqlParameter.Value))
+                else
                 {
-                    using (StreamReader streamReader = new StreamReader(str))
+                    // Use the user serializer for the parameter values so custom conversions are correctly handled
+                    using (Stream str = this.UserSerializer.ToStream(sqlParameter.Value))
                     {
-                        string parameterValue = streamReader.ReadToEnd();
-                        writer.WriteRawValue(parameterValue);
+                        using (StreamReader streamReader = new StreamReader(str))
+                        {
+                            string parameterValue = streamReader.ReadToEnd();
+                            writer.WriteRawValue(parameterValue);
+                        }
                     }
                 }
-            }
 
-            writer.WriteEndObject();
+                writer.WriteEndObject();
+            }
+            else if (value is SqlQueryResumeValue resumeValue)
+            {
+                SqlQueryResumeValue.Serialize(writer, resumeValue, serializer);
+            }
         }
 
         /// <summary>
@@ -81,7 +83,8 @@ namespace Microsoft.Azure.Cosmos
 
             JsonSerializerSettings settings = new JsonSerializerSettings()
             {
-                Converters = new List<JsonConverter>() { new CosmosSqlQuerySpecJsonConverter(cosmosSerializer ?? propertiesSerializer) }
+                Converters = new List<JsonConverter>() { new CosmosSqlQuerySpecJsonConverter(cosmosSerializer ?? propertiesSerializer) },
+                MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
             };
 
             return new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer(settings));

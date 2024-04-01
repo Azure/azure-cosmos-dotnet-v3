@@ -28,6 +28,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly GlobalEndpointManager globalEndpointManager;
         private readonly GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
         private readonly bool enableEndpointDiscovery;
+        private readonly bool isPertitionLevelFailoverEnabled;
         private int failoverRetryCount;
 
         private int sessionTokenRetryCount;
@@ -41,8 +42,9 @@ namespace Microsoft.Azure.Cosmos
         public ClientRetryPolicy(
             GlobalEndpointManager globalEndpointManager,
             GlobalPartitionEndpointManager partitionKeyRangeLocationCache,
+            RetryOptions retryOptions,
             bool enableEndpointDiscovery,
-            RetryOptions retryOptions)
+            bool isPertitionLevelFailoverEnabled)
         {
             this.throttlingRetry = new ResourceThrottleRetryPolicy(
                 retryOptions.MaxRetryAttemptsOnThrottledRequests,
@@ -55,6 +57,7 @@ namespace Microsoft.Azure.Cosmos
             this.sessionTokenRetryCount = 0;
             this.serviceUnavailableRetryCount = 0;
             this.canUseMultipleWriteLocations = false;
+            this.isPertitionLevelFailoverEnabled = isPertitionLevelFailoverEnabled;
         }
 
         /// <summary> 
@@ -89,6 +92,20 @@ namespace Microsoft.Azure.Cosmos
                 ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
                     clientException?.StatusCode,
                     clientException?.GetSubStatus());
+                if (shouldRetryResult != null)
+                {
+                    return shouldRetryResult;
+                }
+            }
+
+            // Any metadata request will throw a cosmos exception from CosmosHttpClientCore if
+            // it receives a 503 service unavailable from gateway. This check is to add retry
+            // mechanism for the metadata requests in such cases.
+            if (exception is CosmosException cosmosException)
+            {
+                ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
+                    cosmosException.StatusCode,
+                    cosmosException.Headers.SubStatusCode);
                 if (shouldRetryResult != null)
                 {
                     return shouldRetryResult;
@@ -137,8 +154,15 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.retryContext != null)
             {
-                // set location-based routing directive based on request retry context
-                request.RequestContext.RouteToLocation(this.retryContext.RetryLocationIndex, this.retryContext.RetryRequestOnPreferredLocations);
+                if (this.retryContext.RouteToHub)
+                {
+                    request.RequestContext.RouteToLocation(this.globalEndpointManager.GetHubUri());
+                }
+                else
+                {
+                    // set location-based routing directive based on request retry context
+                    request.RequestContext.RouteToLocation(this.retryContext.RetryLocationIndex, this.retryContext.RetryRequestOnPreferredLocations);
+                }
             }
 
             // Resolve the endpoint for the request and pin the resolution to the resolved endpoint
@@ -185,6 +209,31 @@ namespace Microsoft.Azure.Cosmos
                     this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
                     this.documentServiceRequest?.ResourceAddress ?? string.Empty);
 
+                if (this.globalEndpointManager.IsMultimasterMetadataWriteRequest(this.documentServiceRequest))
+                {
+                    bool forceRefresh = false;
+
+                    if (this.retryContext != null && this.retryContext.RouteToHub)
+                    {
+                        forceRefresh = true;
+                        
+                    }
+
+                    ShouldRetryResult retryResult = await this.ShouldRetryOnEndpointFailureAsync(
+                        isReadRequest: false,
+                        markBothReadAndWriteAsUnavailable: false,
+                        forceRefresh: forceRefresh,
+                        retryOnPreferredLocations: false,
+                        overwriteEndpointDiscovery: true);
+
+                    if (retryResult.ShouldRetry)
+                    {
+                        this.retryContext.RouteToHub = true;
+                    }
+                    
+                    return retryResult;
+                }
+
                 return await this.ShouldRetryOnEndpointFailureAsync(
                     isReadRequest: false,
                     markBothReadAndWriteAsUnavailable: false,
@@ -211,12 +260,11 @@ namespace Microsoft.Azure.Cosmos
             if (statusCode == HttpStatusCode.NotFound
                 && subStatusCode == SubStatusCodes.ReadSessionNotAvailable)
             {
-                return this.ShouldRetryOnSessionNotAvailable();
+                return this.ShouldRetryOnSessionNotAvailable(this.documentServiceRequest);
             }
-
-            // Received 503.0 due to client connect timeout or Gateway
-            if (statusCode == HttpStatusCode.ServiceUnavailable
-                && subStatusCode == SubStatusCodes.Unknown)
+            
+            // Received 503 due to client connect timeout or Gateway
+            if (statusCode == HttpStatusCode.ServiceUnavailable)
             {
                 DefaultTrace.TraceWarning("ClientRetryPolicy: ServiceUnavailable. Refresh cache and retry. Failed Location: {0}; ResourceAddress: {1}",
                     this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
@@ -237,9 +285,10 @@ namespace Microsoft.Azure.Cosmos
             bool isReadRequest,
             bool markBothReadAndWriteAsUnavailable,
             bool forceRefresh,
-            bool retryOnPreferredLocations)
+            bool retryOnPreferredLocations,
+            bool overwriteEndpointDiscovery = false)
         {
-            if (!this.enableEndpointDiscovery || this.failoverRetryCount > MaxRetryCount)
+            if (this.failoverRetryCount > MaxRetryCount || (!this.enableEndpointDiscovery && !overwriteEndpointDiscovery))
             {
                 DefaultTrace.TraceInformation("ClientRetryPolicy: ShouldRetryOnEndpointFailureAsync() Not retrying. Retry count = {0}, Endpoint = {1}", 
                     this.failoverRetryCount,
@@ -249,7 +298,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.failoverRetryCount++;
 
-            if (this.locationEndpoint != null)
+            if (this.locationEndpoint != null && !overwriteEndpointDiscovery)
             {
                 if (isReadRequest || markBothReadAndWriteAsUnavailable)
                 {
@@ -295,7 +344,7 @@ namespace Microsoft.Azure.Cosmos
             return ShouldRetryResult.RetryAfter(retryDelay);
         }
 
-        private ShouldRetryResult ShouldRetryOnSessionNotAvailable()
+        private ShouldRetryResult ShouldRetryOnSessionNotAvailable(DocumentServiceRequest request)
         {
             this.sessionTokenRetryCount++;
 
@@ -308,7 +357,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (this.canUseMultipleWriteLocations)
                 {
-                    ReadOnlyCollection<Uri> endpoints = this.isReadRequest ? this.globalEndpointManager.ReadEndpoints : this.globalEndpointManager.WriteEndpoints;
+                    ReadOnlyCollection<Uri> endpoints = this.globalEndpointManager.GetApplicableEndpoints(request, this.isReadRequest);
 
                     if (this.sessionTokenRetryCount > endpoints.Count)
                     {
@@ -351,7 +400,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// For a ServiceUnavailable (503.0) we could be having a timeout from Direct/TCP locally or a request to Gateway request with a similar response due to an endpoint not yet available.
-        /// We try and retry the request only if there are other regions available.
+        /// We try and retry the request only if there are other regions available. The retry logic is applicable for single master write accounts as well.
         /// </summary>
         private ShouldRetryResult ShouldRetryOnServiceUnavailable()
         {
@@ -362,9 +411,11 @@ namespace Microsoft.Azure.Cosmos
             }
 
             if (!this.canUseMultipleWriteLocations
-                    && !this.isReadRequest)
+                    && !this.isReadRequest
+                    && !this.isPertitionLevelFailoverEnabled)
             {
-                // Write requests on single master cannot be retried, no other regions available
+                // Write requests on single master cannot be retried if partition level failover is disabled.
+                // This means there are no other regions available to serve the writes.
                 return ShouldRetryResult.NoRetry();
             }
 
@@ -394,6 +445,8 @@ namespace Microsoft.Azure.Cosmos
         {
             public int RetryLocationIndex { get; set; }
             public bool RetryRequestOnPreferredLocations { get; set; }
+
+            public bool RouteToHub { get; set; }
         }
     }
 }

@@ -25,6 +25,7 @@ namespace Microsoft.Azure.Cosmos.Query
             Guid correlatedActivityId,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
+            bool useSystemPrefix,
             string containerResourceId = null)
             : base(
                 client,
@@ -35,6 +36,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 correlatedActivityId,
                 isContinuationExpected,
                 allowNonValueAggregateQuery,
+                useSystemPrefix,
                 containerResourceId)
         {
         }
@@ -49,16 +51,17 @@ namespace Microsoft.Azure.Cosmos.Query
             ITrace trace,
             CancellationToken cancellationToken)
         {
+            AdditionalRequestHeaders additionalRequestHeaders = new AdditionalRequestHeaders(this.CorrelatedActivityId, isContinuationExpected, optimisticDirectExecute: false);
+
             return this.QueryClient.ExecuteItemQueryAsync(
                 resourceUri: this.ResourceLink,
                 resourceType: this.ResourceTypeEnum,
                 operationType: this.OperationTypeEnum,
-                clientQueryCorrelationId: this.CorrelatedActivityId,
                 requestOptions: queryRequestOptions,
+                additionalRequestHeaders: additionalRequestHeaders,
                 sqlQuerySpec: querySpecForInit,
                 continuationToken: continuationToken,
                 feedRange: feedRange,
-                isContinuationExpected: isContinuationExpected,
                 pageSize: pageSize,
                 trace: trace,
                 cancellationToken: cancellationToken);
@@ -81,6 +84,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 sqlQuerySpec,
                 partitionKey,
                 supportedQueryFeatures,
+                this.CorrelatedActivityId,
                 trace,
                 cancellationToken);
         }

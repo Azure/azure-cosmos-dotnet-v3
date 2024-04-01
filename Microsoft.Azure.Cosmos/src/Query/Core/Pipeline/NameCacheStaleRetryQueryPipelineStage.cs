@@ -31,16 +31,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
         public TryCatch<QueryPage> Current { get; private set; }
 
-        public ValueTask DisposeAsync() => this.currentQueryPipelineStage.DisposeAsync();
-
-        public ValueTask<bool> MoveNextAsync()
+        public ValueTask DisposeAsync()
         {
-            return this.MoveNextAsync(NoOpTrace.Singleton);
+            return this.currentQueryPipelineStage.DisposeAsync();
         }
 
-        public async ValueTask<bool> MoveNextAsync(ITrace trace)
+        public async ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
         {
-            if (!await this.currentQueryPipelineStage.MoveNextAsync(trace))
+            if (!await this.currentQueryPipelineStage.MoveNextAsync(trace, cancellationToken))
             {
                 return false;
             }
@@ -63,16 +61,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     this.alreadyRetried = true;
                     await this.currentQueryPipelineStage.DisposeAsync();
                     this.currentQueryPipelineStage = this.queryPipelineStageFactory();
-                    return await this.MoveNextAsync();
+                    return await this.MoveNextAsync(trace, cancellationToken);
                 }
             }
 
             return true;
-        }
-
-        public void SetCancellationToken(CancellationToken cancellationToken)
-        {
-            this.currentQueryPipelineStage.SetCancellationToken(cancellationToken);
         }
     }
 }

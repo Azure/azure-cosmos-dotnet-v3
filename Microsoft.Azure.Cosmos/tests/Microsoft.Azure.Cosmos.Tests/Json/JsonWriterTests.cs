@@ -16,7 +16,7 @@
 
         #region Literals
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void TrueTest()
         {
             string expectedString = "true";
@@ -37,7 +37,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void FalseTest()
         {
             string expectedString = "false";
@@ -58,7 +58,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NullTest()
         {
             string expectedString = "null";
@@ -80,7 +80,7 @@
         #endregion
         #region Numbers
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void IntegerTest()
         {
             string expectedString = "1337";
@@ -103,7 +103,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void DoubleTest()
         {
             string expectedString = "1337.1337";
@@ -126,7 +126,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NaNTest()
         {
             string expectedString = "\"NaN\"";
@@ -149,7 +149,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void PositiveInfinityTest()
         {
             string expectedString = "\"Infinity\"";
@@ -172,7 +172,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NegativeInfinityTest()
         {
             string expectedString = "\"-Infinity\"";
@@ -195,7 +195,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NegativeNumberTest()
         {
             string expectedString = "-1337.1337";
@@ -218,7 +218,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NumberWithScientificNotationTest()
         {
             string expectedString = "6.02252E+23";
@@ -241,7 +241,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NumberRegressionTest()
         {
             // regression test - the value 0.00085647800000000004 was being incorrectly rejected
@@ -267,7 +267,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NumberPrecisionTest()
         {
             string expectedString = "[2.7620553993338772e+018,2.7620553993338778e+018]";
@@ -303,7 +303,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void LargeNumbersTest()
         {
             string expectedString = @"[1,-1,10,-10,14997460357411200,14997460357411000,1499746035741101,1499746035741109,-14997460357411200,-14997460357411000,-1499746035741101,-1499746035741109,1499746035741128,1499752659822592,1499752939110661,1499753827614475,1499970126403840,1499970590815128,1499970842400644,1499971371510025,1499972760675685,1499972969962006,1499973086735836,1499973302072392,1499976826748983]";
@@ -343,7 +343,7 @@
         #endregion
         #region String
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void EmptyStringTest()
         {
             string expectedString = "\"\"";
@@ -364,7 +364,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void StringTest()
         {
             string expectedString = "\"Hello World\"";
@@ -387,7 +387,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void SystemStringTest()
         {
             int systemStringId = 0;
@@ -418,7 +418,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void DateTimeStringsTest()
         {
             {
@@ -633,7 +633,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void HexStringsTest()
         {
             {
@@ -719,7 +719,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void CompressedStringsTest()
         {
             {
@@ -933,7 +933,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void GuidStringsTest()
         {
             {
@@ -1325,7 +1325,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void ReferenceStringsTest()
         {
             {
@@ -1501,97 +1501,97 @@
                 };
                 byte[] binaryPayload = new byte[]
                 {
-                    0x80, 0xEB, 0xCE, 0x02, 0x89, 0x70, 0x72, 0x6F,
+                    0x80, 0xEB, 0xD2, 0x02, 0x89, 0x70, 0x72, 0x6F,
                     0x70, 0x65, 0x72, 0x74, 0x79, 0x31, 0x86, 0x76,
                     0x61, 0x6C, 0x75, 0x65, 0x31, 0x89, 0x70, 0x72,
                     0x6F, 0x70, 0x65, 0x72, 0x74, 0x79, 0x32, 0xC3,
                     0x0E, 0x89, 0x70, 0x72, 0x6F, 0x70, 0x65, 0x72,
-                    0x74, 0x79, 0x33, 0xE2, 0x64, 0x89, 0x70, 0x72,
-                    0x6F, 0x70, 0x65, 0x72, 0x74, 0x79, 0x30, 0xC3,
-                    0x04, 0xC3, 0x15, 0xC3, 0x21, 0x89, 0x70, 0x72,
-                    0x6F, 0x70, 0x65, 0x72, 0x74, 0x79, 0x34, 0x89,
-                    0x70, 0x72, 0x6F, 0x70, 0x65, 0x72, 0x74, 0x79,
-                    0x35, 0x89, 0x70, 0x72, 0x6F, 0x70, 0x65, 0x72,
-                    0x74, 0x79, 0x36, 0x89, 0x70, 0x72, 0x6F, 0x70,
-                    0x65, 0x72, 0x74, 0x79, 0x37, 0x89, 0x70, 0x72,
-                    0x6F, 0x70, 0x65, 0x72, 0x74, 0x79, 0x38, 0x89,
-                    0x70, 0x72, 0x6F, 0x70, 0x65, 0x72, 0x74, 0x79,
-                    0x39, 0xC3, 0x0E, 0xC3, 0x0E, 0xC3, 0x0E, 0xC3,
-                    0x6F, 0xC3, 0x65, 0xC3, 0x5B, 0xC3, 0x47, 0xC3,
-                    0x3D, 0xC3, 0x21, 0xC3, 0x15, 0xC3, 0x04, 0xC3,
-                    0x2D, 0xC3, 0x21, 0xC3, 0x0E, 0xC3, 0x3D, 0xC3,
-                    0x0E, 0xC3, 0x47, 0xE2, 0xB8, 0x8E, 0x53, 0x74,
-                    0x72, 0x69, 0x6E, 0x67, 0x56, 0x61, 0x6C, 0x75,
-                    0x65, 0x5F, 0x5F, 0x30, 0x8E, 0x53, 0x74, 0x72,
-                    0x69, 0x6E, 0x67, 0x56, 0x61, 0x6C, 0x75, 0x65,
-                    0x5F, 0x5F, 0x31, 0x8E, 0x53, 0x74, 0x72, 0x69,
-                    0x6E, 0x67, 0x56, 0x61, 0x6C, 0x75, 0x65, 0x5F,
-                    0x5F, 0x32, 0x8E, 0x53, 0x74, 0x72, 0x69, 0x6E,
-                    0x67, 0x56, 0x61, 0x6C, 0x75, 0x65, 0x5F, 0x5F,
-                    0x33, 0x8E, 0x53, 0x74, 0x72, 0x69, 0x6E, 0x67,
-                    0x56, 0x61, 0x6C, 0x75, 0x65, 0x5F, 0x5F, 0x34,
-                    0x8E, 0x53, 0x74, 0x72, 0x69, 0x6E, 0x67, 0x56,
-                    0x61, 0x6C, 0x75, 0x65, 0x5F, 0x5F, 0x35, 0x8E,
+                    0x74, 0x79, 0x33, 0xE5, 0x64, 0x16, 0x89, 0x70,
+                    0x72, 0x6F, 0x70, 0x65, 0x72, 0x74, 0x79, 0x30,
+                    0xC3, 0x04, 0xC3, 0x15, 0xC3, 0x21, 0x89, 0x70,
+                    0x72, 0x6F, 0x70, 0x65, 0x72, 0x74, 0x79, 0x34,
+                    0x89, 0x70, 0x72, 0x6F, 0x70, 0x65, 0x72, 0x74,
+                    0x79, 0x35, 0x89, 0x70, 0x72, 0x6F, 0x70, 0x65,
+                    0x72, 0x74, 0x79, 0x36, 0x89, 0x70, 0x72, 0x6F,
+                    0x70, 0x65, 0x72, 0x74, 0x79, 0x37, 0x89, 0x70,
+                    0x72, 0x6F, 0x70, 0x65, 0x72, 0x74, 0x79, 0x38,
+                    0x89, 0x70, 0x72, 0x6F, 0x70, 0x65, 0x72, 0x74,
+                    0x79, 0x39, 0xC3, 0x0E, 0xC3, 0x0E, 0xC3, 0x0E,
+                    0xC3, 0x70, 0xC3, 0x66, 0xC3, 0x5C, 0xC3, 0x48,
+                    0xC3, 0x3E, 0xC3, 0x21, 0xC3, 0x15, 0xC3, 0x04,
+                    0xC3, 0x2E, 0xC3, 0x21, 0xC3, 0x0E, 0xC3, 0x3E,
+                    0xC3, 0x0E, 0xC3, 0x48, 0xE5, 0xB8, 0x16, 0x8E,
                     0x53, 0x74, 0x72, 0x69, 0x6E, 0x67, 0x56, 0x61,
-                    0x6C, 0x75, 0x65, 0x5F, 0x5F, 0x36, 0x8E, 0x53,
+                    0x6C, 0x75, 0x65, 0x5F, 0x5F, 0x30, 0x8E, 0x53,
                     0x74, 0x72, 0x69, 0x6E, 0x67, 0x56, 0x61, 0x6C,
-                    0x75, 0x65, 0x5F, 0x5F, 0x37, 0x8E, 0x53, 0x74,
+                    0x75, 0x65, 0x5F, 0x5F, 0x31, 0x8E, 0x53, 0x74,
                     0x72, 0x69, 0x6E, 0x67, 0x56, 0x61, 0x6C, 0x75,
-                    0x65, 0x5F, 0x5F, 0x38, 0x8E, 0x53, 0x74, 0x72,
+                    0x65, 0x5F, 0x5F, 0x32, 0x8E, 0x53, 0x74, 0x72,
                     0x69, 0x6E, 0x67, 0x56, 0x61, 0x6C, 0x75, 0x65,
-                    0x5F, 0x5F, 0x39, 0x86, 0x76, 0x61, 0x6C, 0x75,
-                    0x65, 0x32, 0xC4, 0x33, 0x01, 0xC4, 0x33, 0x01,
-                    0xC4, 0x24, 0x01, 0xC4, 0x15, 0x01, 0xC4, 0x06,
-                    0x01, 0xC3, 0xE8, 0xC3, 0xD9, 0xC3, 0xCA, 0xC3,
-                    0xBB, 0xC3, 0xAC, 0xC3, 0x9D, 0xC3, 0x47, 0xC4,
-                    0x33, 0x01, 0xC3, 0x51, 0xC4, 0x33, 0x01, 0xC3,
-                    0x5B, 0xE2, 0xAA, 0x8C, 0x54, 0x65, 0x78, 0x74,
-                    0x56, 0x61, 0x6C, 0x75, 0x65, 0x5F, 0x5F, 0x30,
-                    0x8C, 0x54, 0x65, 0x78, 0x74, 0x56, 0x61, 0x6C,
-                    0x75, 0x65, 0x5F, 0x5F, 0x31, 0x8C, 0x54, 0x65,
-                    0x78, 0x74, 0x56, 0x61, 0x6C, 0x75, 0x65, 0x5F,
-                    0x5F, 0x32, 0x8C, 0x54, 0x65, 0x78, 0x74, 0x56,
-                    0x61, 0x6C, 0x75, 0x65, 0x5F, 0x5F, 0x33, 0x8C,
-                    0x54, 0x65, 0x78, 0x74, 0x56, 0x61, 0x6C, 0x75,
-                    0x65, 0x5F, 0x5F, 0x34, 0x8C, 0x54, 0x65, 0x78,
-                    0x74, 0x56, 0x61, 0x6C, 0x75, 0x65, 0x5F, 0x5F,
-                    0x35, 0x8C, 0x54, 0x65, 0x78, 0x74, 0x56, 0x61,
-                    0x6C, 0x75, 0x65, 0x5F, 0x5F, 0x36, 0x8C, 0x54,
-                    0x65, 0x78, 0x74, 0x56, 0x61, 0x6C, 0x75, 0x65,
-                    0x5F, 0x5F, 0x37, 0x8C, 0x54, 0x65, 0x78, 0x74,
-                    0x56, 0x61, 0x6C, 0x75, 0x65, 0x5F, 0x5F, 0x38,
-                    0x8C, 0x54, 0x65, 0x78, 0x74, 0x56, 0x61, 0x6C,
+                    0x5F, 0x5F, 0x33, 0x8E, 0x53, 0x74, 0x72, 0x69,
+                    0x6E, 0x67, 0x56, 0x61, 0x6C, 0x75, 0x65, 0x5F,
+                    0x5F, 0x34, 0x8E, 0x53, 0x74, 0x72, 0x69, 0x6E,
+                    0x67, 0x56, 0x61, 0x6C, 0x75, 0x65, 0x5F, 0x5F,
+                    0x35, 0x8E, 0x53, 0x74, 0x72, 0x69, 0x6E, 0x67,
+                    0x56, 0x61, 0x6C, 0x75, 0x65, 0x5F, 0x5F, 0x36,
+                    0x8E, 0x53, 0x74, 0x72, 0x69, 0x6E, 0x67, 0x56,
+                    0x61, 0x6C, 0x75, 0x65, 0x5F, 0x5F, 0x37, 0x8E,
+                    0x53, 0x74, 0x72, 0x69, 0x6E, 0x67, 0x56, 0x61,
+                    0x6C, 0x75, 0x65, 0x5F, 0x5F, 0x38, 0x8E, 0x53,
+                    0x74, 0x72, 0x69, 0x6E, 0x67, 0x56, 0x61, 0x6C,
                     0x75, 0x65, 0x5F, 0x5F, 0x39, 0x86, 0x76, 0x61,
-                    0x6C, 0x75, 0x65, 0x33, 0xC4, 0xE5, 0x01, 0xC4,
-                    0xE5, 0x01, 0xC4, 0xD8, 0x01, 0xC4, 0xCB, 0x01,
-                    0xC4, 0xBE, 0x01, 0xC4, 0xA4, 0x01, 0xC4, 0x97,
-                    0x01, 0xC4, 0x8A, 0x01, 0xC4, 0x7D, 0x01, 0xC4,
-                    0x70, 0x01, 0xC4, 0x63, 0x01, 0xC3, 0x65, 0xC4,
-                    0xE5, 0x01, 0xC3, 0x6F, 0xC4, 0xE5, 0x01, 0xC3,
-                    0x2D, 0xE2, 0xA0, 0x8B, 0x42, 0x72, 0x6F, 0x77,
-                    0x6E, 0x44, 0x6F, 0x67, 0x5F, 0x5F, 0x30, 0x8B,
+                    0x6C, 0x75, 0x65, 0x32, 0xC4, 0x35, 0x01, 0xC4,
+                    0x35, 0x01, 0xC4, 0x26, 0x01, 0xC4, 0x17, 0x01,
+                    0xC4, 0x08, 0x01, 0xC3, 0xEA, 0xC3, 0xDB, 0xC3,
+                    0xCC, 0xC3, 0xBD, 0xC3, 0xAE, 0xC3, 0x9F, 0xC3,
+                    0x48, 0xC4, 0x35, 0x01, 0xC3, 0x52, 0xC4, 0x35,
+                    0x01, 0xC3, 0x5C, 0xE5, 0xAA, 0x16, 0x8C, 0x54,
+                    0x65, 0x78, 0x74, 0x56, 0x61, 0x6C, 0x75, 0x65,
+                    0x5F, 0x5F, 0x30, 0x8C, 0x54, 0x65, 0x78, 0x74,
+                    0x56, 0x61, 0x6C, 0x75, 0x65, 0x5F, 0x5F, 0x31,
+                    0x8C, 0x54, 0x65, 0x78, 0x74, 0x56, 0x61, 0x6C,
+                    0x75, 0x65, 0x5F, 0x5F, 0x32, 0x8C, 0x54, 0x65,
+                    0x78, 0x74, 0x56, 0x61, 0x6C, 0x75, 0x65, 0x5F,
+                    0x5F, 0x33, 0x8C, 0x54, 0x65, 0x78, 0x74, 0x56,
+                    0x61, 0x6C, 0x75, 0x65, 0x5F, 0x5F, 0x34, 0x8C,
+                    0x54, 0x65, 0x78, 0x74, 0x56, 0x61, 0x6C, 0x75,
+                    0x65, 0x5F, 0x5F, 0x35, 0x8C, 0x54, 0x65, 0x78,
+                    0x74, 0x56, 0x61, 0x6C, 0x75, 0x65, 0x5F, 0x5F,
+                    0x36, 0x8C, 0x54, 0x65, 0x78, 0x74, 0x56, 0x61,
+                    0x6C, 0x75, 0x65, 0x5F, 0x5F, 0x37, 0x8C, 0x54,
+                    0x65, 0x78, 0x74, 0x56, 0x61, 0x6C, 0x75, 0x65,
+                    0x5F, 0x5F, 0x38, 0x8C, 0x54, 0x65, 0x78, 0x74,
+                    0x56, 0x61, 0x6C, 0x75, 0x65, 0x5F, 0x5F, 0x39,
+                    0x86, 0x76, 0x61, 0x6C, 0x75, 0x65, 0x33, 0xC4,
+                    0xE8, 0x01, 0xC4, 0xE8, 0x01, 0xC4, 0xDB, 0x01,
+                    0xC4, 0xCE, 0x01, 0xC4, 0xC1, 0x01, 0xC4, 0xA7,
+                    0x01, 0xC4, 0x9A, 0x01, 0xC4, 0x8D, 0x01, 0xC4,
+                    0x80, 0x01, 0xC4, 0x73, 0x01, 0xC4, 0x66, 0x01,
+                    0xC3, 0x66, 0xC4, 0xE8, 0x01, 0xC3, 0x70, 0xC4,
+                    0xE8, 0x01, 0xC3, 0x2E, 0xE5, 0xA0, 0x16, 0x8B,
                     0x42, 0x72, 0x6F, 0x77, 0x6E, 0x44, 0x6F, 0x67,
-                    0x5F, 0x5F, 0x31, 0x8B, 0x42, 0x72, 0x6F, 0x77,
-                    0x6E, 0x44, 0x6F, 0x67, 0x5F, 0x5F, 0x32, 0x8B,
+                    0x5F, 0x5F, 0x30, 0x8B, 0x42, 0x72, 0x6F, 0x77,
+                    0x6E, 0x44, 0x6F, 0x67, 0x5F, 0x5F, 0x31, 0x8B,
                     0x42, 0x72, 0x6F, 0x77, 0x6E, 0x44, 0x6F, 0x67,
-                    0x5F, 0x5F, 0x33, 0x8B, 0x42, 0x72, 0x6F, 0x77,
-                    0x6E, 0x44, 0x6F, 0x67, 0x5F, 0x5F, 0x34, 0x8B,
+                    0x5F, 0x5F, 0x32, 0x8B, 0x42, 0x72, 0x6F, 0x77,
+                    0x6E, 0x44, 0x6F, 0x67, 0x5F, 0x5F, 0x33, 0x8B,
                     0x42, 0x72, 0x6F, 0x77, 0x6E, 0x44, 0x6F, 0x67,
-                    0x5F, 0x5F, 0x35, 0x8B, 0x42, 0x72, 0x6F, 0x77,
-                    0x6E, 0x44, 0x6F, 0x67, 0x5F, 0x5F, 0x36, 0x8B,
+                    0x5F, 0x5F, 0x34, 0x8B, 0x42, 0x72, 0x6F, 0x77,
+                    0x6E, 0x44, 0x6F, 0x67, 0x5F, 0x5F, 0x35, 0x8B,
                     0x42, 0x72, 0x6F, 0x77, 0x6E, 0x44, 0x6F, 0x67,
-                    0x5F, 0x5F, 0x37, 0x8B, 0x42, 0x72, 0x6F, 0x77,
-                    0x6E, 0x44, 0x6F, 0x67, 0x5F, 0x5F, 0x38, 0x8B,
+                    0x5F, 0x5F, 0x36, 0x8B, 0x42, 0x72, 0x6F, 0x77,
+                    0x6E, 0x44, 0x6F, 0x67, 0x5F, 0x5F, 0x37, 0x8B,
                     0x42, 0x72, 0x6F, 0x77, 0x6E, 0x44, 0x6F, 0x67,
-                    0x5F, 0x5F, 0x39, 0x86, 0x76, 0x61, 0x6C, 0x75,
-                    0x65, 0x34, 0xC4, 0x93, 0x02, 0xC4, 0x93, 0x02,
-                    0xC4, 0x87, 0x02, 0xC4, 0x7B, 0x02, 0xC4, 0x6F,
-                    0x02, 0xC4, 0x57, 0x02, 0xC4, 0x4B, 0x02, 0xC4,
-                    0x3F, 0x02, 0xC4, 0x33, 0x02, 0xC4, 0x27, 0x02,
-                    0xC4, 0x1B, 0x02, 0x89, 0x70, 0x72, 0x6F, 0x70,
-                    0x65, 0x72, 0x74, 0x79, 0x41, 0x86, 0x76, 0x61,
-                    0x6C, 0x75, 0x65, 0x41, 0xC4, 0xBB, 0x02, 0xC4,
-                    0xC5, 0x02
+                    0x5F, 0x5F, 0x38, 0x8B, 0x42, 0x72, 0x6F, 0x77,
+                    0x6E, 0x44, 0x6F, 0x67, 0x5F, 0x5F, 0x39, 0x86,
+                    0x76, 0x61, 0x6C, 0x75, 0x65, 0x34, 0xC4, 0x97,
+                    0x02, 0xC4, 0x97, 0x02, 0xC4, 0x8B, 0x02, 0xC4,
+                    0x7F, 0x02, 0xC4, 0x73, 0x02, 0xC4, 0x5B, 0x02,
+                    0xC4, 0x4F, 0x02, 0xC4, 0x43, 0x02, 0xC4, 0x37,
+                    0x02, 0xC4, 0x2B, 0x02, 0xC4, 0x1F, 0x02, 0x89,
+                    0x70, 0x72, 0x6F, 0x70, 0x65, 0x72, 0x74, 0x79,
+                    0x41, 0x86, 0x76, 0x61, 0x6C, 0x75, 0x65, 0x41,
+                    0xC4, 0xBF, 0x02, 0xC4, 0xC9, 0x02
                 };
 
                 this.VerifyWriter(tokensToWrite, binaryPayload);
@@ -1600,7 +1600,7 @@
         #endregion
         #region Array
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void EmptyArrayTest()
         {
             string expectedString = "[]";
@@ -1622,7 +1622,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void SingleItemArrayTest()
         {
             string expectedString = "[true]";
@@ -1646,7 +1646,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void IntArrayTest()
         {
             string expectedString = "[-2,-1,0,1,2]";
@@ -1686,7 +1686,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NumberArrayTest()
         {
             string expectedString = "[15,22,0.1,-0.073,7.70001E+91]";
@@ -1726,7 +1726,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void BooleanArrayTest()
         {
             string expectedString = "[true,false]";
@@ -1754,7 +1754,67 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
+        public void BooleanLargeArrayTest()
+        {
+            string expectedString = "[true,false,true,false,true,false,false,false,true,false,true,false,true,true,true,false,true]";
+            byte[] binaryOutput =
+            {
+                BinaryFormat,
+                JsonBinaryEncoding.TypeMarker.Array1ByteLengthAndCount,
+                // length
+                17,
+                // count
+                17,
+                JsonBinaryEncoding.TypeMarker.True,
+                JsonBinaryEncoding.TypeMarker.False,
+                JsonBinaryEncoding.TypeMarker.True,
+                JsonBinaryEncoding.TypeMarker.False,
+                JsonBinaryEncoding.TypeMarker.True,
+                JsonBinaryEncoding.TypeMarker.False,
+                JsonBinaryEncoding.TypeMarker.False,
+                JsonBinaryEncoding.TypeMarker.False,
+                JsonBinaryEncoding.TypeMarker.True,
+                JsonBinaryEncoding.TypeMarker.False,
+                JsonBinaryEncoding.TypeMarker.True,
+                JsonBinaryEncoding.TypeMarker.False,
+                JsonBinaryEncoding.TypeMarker.True,
+                JsonBinaryEncoding.TypeMarker.True,
+                JsonBinaryEncoding.TypeMarker.True,
+                JsonBinaryEncoding.TypeMarker.False,
+                JsonBinaryEncoding.TypeMarker.True,
+            };
+
+            JsonToken[] tokensToWrite =
+            {
+                JsonToken.ArrayStart(),
+                JsonToken.Boolean(true),
+                JsonToken.Boolean(false),
+                JsonToken.Boolean(true),
+                JsonToken.Boolean(false),
+                JsonToken.Boolean(true),
+                JsonToken.Boolean(false),
+                JsonToken.Boolean(false),
+                JsonToken.Boolean(false),
+                JsonToken.Boolean(true),
+                JsonToken.Boolean(false),
+                JsonToken.Boolean(true),
+                JsonToken.Boolean(false),
+                JsonToken.Boolean(true),
+                JsonToken.Boolean(true),
+                JsonToken.Boolean(true),
+                JsonToken.Boolean(false),
+                JsonToken.Boolean(true),
+                JsonToken.ArrayEnd(),
+            };
+
+            this.VerifyWriter(tokensToWrite, expectedString);
+            this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, null, false);
+        }
+
+        [TestMethod]
+        [Owner("mayapainter")]
         public void StringArrayTest()
         {
             string expectedString = @"[""Hello"",""World"",""Bye""]";
@@ -1794,7 +1854,61 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
+        public void StringLargeArrayTest()
+        {
+            int stringCount = 20;
+
+            string expectedString = @"[";
+            for (int index = 0; index < stringCount; index++)
+            {
+                if (index == 0)
+                {
+                    expectedString += @"""Hello0""";
+                }
+                else
+                {
+                    expectedString += @",""Hello" + index + @"""";
+                }
+
+            }
+            expectedString += "]";
+
+            List<byte[]> binaryOutputBuilder = new List<byte[]>
+            {
+                new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.Array1ByteLengthAndCount }
+            };
+
+            List<byte[]> strings = new List<byte[]>();
+
+            for (int index = 0; index < stringCount; index++)
+            {
+                string value = "Hello" + index;
+                strings.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + value.Length) });
+                strings.Add(Encoding.UTF8.GetBytes(value));
+            }
+            byte[] stringBytes = strings.SelectMany(x => x).ToArray();
+
+            binaryOutputBuilder.Add(new byte[] { (byte)stringBytes.Length });
+            binaryOutputBuilder.Add(new byte[] { (byte)stringCount });
+            binaryOutputBuilder.Add(stringBytes);
+            byte[] binaryOutput = binaryOutputBuilder.SelectMany(x => x).ToArray();
+
+            JsonToken[] tokensToWrite = new JsonToken[stringCount + 2];
+            tokensToWrite[0] = JsonToken.ArrayStart();
+            for (int index = 1; index < stringCount + 1; index++)
+            {
+                tokensToWrite[index] = JsonToken.String("Hello" + (index - 1));
+            }
+            tokensToWrite[stringCount + 1] = JsonToken.ArrayEnd();
+
+            this.VerifyWriter(tokensToWrite, expectedString);
+            this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, null, false);
+        }
+
+        [TestMethod]
+        [Owner("mayapainter")]
         public void NullArrayTest()
         {
             string expectedString = "[null,null,null]";
@@ -1824,7 +1938,52 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
+        public void NullLargeArrayTest()
+        {
+            int nullCount = 300;
+
+            string expectedString = "[";
+            for (int index = 0; index < nullCount; index++)
+            {
+                expectedString += (index == 0) ? "null" : ",null";
+            }
+            expectedString += "]";
+
+            List<byte[]> binaryOutputBuilder = new List<byte[]>
+            {
+                new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.Array2ByteLengthAndCount },
+                // length
+                BitConverter.GetBytes((ushort)nullCount),
+                // count
+                BitConverter.GetBytes((ushort)nullCount),
+            };
+
+            byte[] elementsBytes = new byte[nullCount];
+
+            for (int index = 0; index < nullCount; index++)
+            {
+                elementsBytes[index] = JsonBinaryEncoding.TypeMarker.Null;
+            }
+
+            binaryOutputBuilder.Add(elementsBytes);
+            byte[] binaryOutput = binaryOutputBuilder.SelectMany(x => x).ToArray();
+
+            JsonToken[] tokensToWrite = new JsonToken[nullCount + 2];
+            tokensToWrite[0] = JsonToken.ArrayStart();
+            for (int index = 1; index < nullCount + 1; index++)
+            {
+                tokensToWrite[index] = JsonToken.Null();
+            }
+            tokensToWrite[nullCount + 1] = JsonToken.ArrayEnd();
+
+            this.VerifyWriter(tokensToWrite, expectedString);
+            this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, null, false);
+        }
+
+        [TestMethod]
+        [Owner("mayapainter")]
         public void ObjectArrayTest()
         {
             string expectedString = "[{},{}]";
@@ -1854,7 +2013,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void AllPrimitiveArrayTest()
         {
             string expectedString = "[0,0,-1,-1.1,1,2,\"hello\",null,true,false]";
@@ -1905,7 +2064,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NestedArrayTest()
         {
             string expectedString = "[[],[]]";
@@ -1935,7 +2094,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void StrangeNumberArrayTest()
         {
             string expectedString = @"[
@@ -1994,7 +2153,7 @@
         #endregion Array
         #region Escaping
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void EscapeCharacterTest()
         {
             /// <summary>
@@ -2026,7 +2185,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void UnicodeEscapeTest()
         {
             // You don't have to escape a regular unicode character
@@ -2042,7 +2201,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void TwoAdjacentUnicodeCharactersTest()
         {
             // 2 unicode escape characters that are not surrogate pairs
@@ -2059,7 +2218,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void UnicodeTest()
         {
             // You don't have to escape a regular unicode character
@@ -2083,7 +2242,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void EmojiUTF32Test()
         {
             // You don't have to escape a regular unicode character
@@ -2107,7 +2266,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void ControlCharacterTests()
         {
             HashSet<char> escapeCharacters = new HashSet<char> { '\b', '\f', '\n', '\r', '\t', '\\', '"', '/' };
@@ -2132,7 +2291,7 @@
         #endregion
         #region Objects
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void EmptyObjectTest()
         {
             string expectedString = "{}";
@@ -2154,7 +2313,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void SimpleObjectTest()
         {
             string expectedString = "{\"GlossDiv\":10,\"title\": \"example glossary\" }";
@@ -2222,7 +2381,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void AllPrimitivesObjectTest()
         {
             string expectedString = @"{
@@ -2425,7 +2584,7 @@
         #endregion
         #region Exceptions
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void ArrayNotStartedTest()
         {
             JsonToken[] tokensToWrite =
@@ -2438,7 +2597,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void ObjectNotStartedTest()
         {
             JsonToken[] tokensToWrite =
@@ -2451,7 +2610,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void PropertyArrayOrObjectNotStartedTest()
         {
             JsonToken[] tokensToWrite =
@@ -2466,7 +2625,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void MissingPropertyTest()
         {
             JsonToken[] tokensToWrite =
@@ -2481,7 +2640,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void PropertyAlreadyAddedTest()
         {
             string duplicateFieldName = "This property is added twice";
@@ -2501,7 +2660,7 @@
         #endregion
         #region ExtendedTypes
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void Int8Test()
         {
             sbyte[] values = new sbyte[] { sbyte.MinValue, sbyte.MinValue + 1, -1, 0, 1, sbyte.MaxValue, sbyte.MaxValue - 1 };
@@ -2531,7 +2690,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void Int16Test()
         {
             short[] values = new short[] { short.MinValue, short.MinValue + 1, -1, 0, 1, short.MaxValue, short.MaxValue - 1 };
@@ -2561,7 +2720,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void Int32Test()
         {
             int[] values = new int[] { int.MinValue, int.MinValue + 1, -1, 0, 1, int.MaxValue, int.MaxValue - 1 };
@@ -2591,7 +2750,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void Int64Test()
         {
             long[] values = new long[] { long.MinValue, long.MinValue + 1, -1, 0, 1, long.MaxValue, long.MaxValue - 1 };
@@ -2621,7 +2780,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void UInt32Test()
         {
             uint[] values = new uint[] { uint.MinValue, uint.MinValue + 1, 0, 1, uint.MaxValue, uint.MaxValue - 1 };
@@ -2651,7 +2810,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void Float32Test()
         {
             float[] values = new float[] { float.MinValue, float.MinValue + 1, 0, 1, float.MaxValue, float.MaxValue - 1 };
@@ -2681,7 +2840,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void Float64Test()
         {
             double[] values = new double[] { double.MinValue, double.MinValue + 1, 0, 1, double.MaxValue, double.MaxValue - 1 };
@@ -2711,7 +2870,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void GuidTest()
         {
             Guid[] values = new Guid[] { Guid.Empty, Guid.NewGuid() };
@@ -2741,7 +2900,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void BinaryTest()
         {
             {

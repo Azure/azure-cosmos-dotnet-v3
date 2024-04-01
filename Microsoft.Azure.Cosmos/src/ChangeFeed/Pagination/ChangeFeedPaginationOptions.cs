@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
     using System.Linq;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Pagination;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Documents;
 
     internal sealed class ChangeFeedPaginationOptions : PaginationOptions
@@ -30,13 +31,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
             ChangeFeedMode mode,
             int? pageSizeHint = null,
             JsonSerializationFormat? jsonSerializationFormat = null,
-            Dictionary<string, string> additionalHeaders = null)
-            : base(pageSizeHint, jsonSerializationFormat, additionalHeaders)
+            Dictionary<string, string> additionalHeaders = null,
+            ChangeFeedQuerySpec changeFeedQuerySpec = null)
+            : base(pageSizeHint, additionalHeaders)
         {
             this.Mode = mode ?? throw new ArgumentNullException(nameof(mode));
+            this.ChangeFeedQuerySpec = changeFeedQuerySpec;
+            this.JsonSerializationFormat = jsonSerializationFormat;
         }
 
         public ChangeFeedMode Mode { get; }
+
+        public ChangeFeedQuerySpec ChangeFeedQuerySpec { get; }
+
+        public JsonSerializationFormat? JsonSerializationFormat { get; }
 
         protected override ImmutableHashSet<string> BannedAdditionalHeaders => BannedHeaders;
     }

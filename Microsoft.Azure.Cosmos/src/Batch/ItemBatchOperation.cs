@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Diagnostics;
     using System.IO;
-    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Handlers;
@@ -189,57 +188,10 @@ namespace Microsoft.Azure.Cosmos
                     }
                 }
 
-                if (options.Properties != null)
+                r = options.WriteRequestProperties(ref writer, pkWritten);
+                if (r != Result.Success)
                 {
-                    if (options.Properties.TryGetValue(WFConstants.BackendHeaders.BinaryId, out object binaryIdObj))
-                    {
-                        if (binaryIdObj is byte[] binaryId)
-                        {
-                            r = writer.WriteBinary("binaryId", binaryId);
-                            if (r != Result.Success)
-                            {
-                                return r;
-                            }
-                        }
-                    }
-
-                    if (options.Properties.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKey, out object epkObj))
-                    {
-                        if (epkObj is byte[] epk)
-                        {
-                            r = writer.WriteBinary("effectivePartitionKey", epk);
-                            if (r != Result.Success)
-                            {
-                                return r;
-                            }
-                        }
-                    }
-
-                    if (!pkWritten && options.Properties.TryGetValue(
-                            HttpConstants.HttpHeaders.PartitionKey,
-                            out object pkStrObj))
-                    {
-                        if (pkStrObj is string pkString)
-                        {
-                            r = writer.WriteString("partitionKey", pkString);
-                            if (r != Result.Success)
-                            {
-                                return r;
-                            }
-                        }
-                    }
-
-                    if (options.Properties.TryGetValue(WFConstants.BackendHeaders.TimeToLiveInSeconds, out object ttlObj))
-                    {
-                        if (ttlObj is string ttlStr && int.TryParse(ttlStr, out int ttl))
-                        {
-                            r = writer.WriteInt32("timeToLiveInSeconds", ttl);
-                            if (r != Result.Success)
-                            {
-                                return r;
-                            }
-                        }
-                    }
+                    return r;
                 }
             }
 
@@ -296,24 +248,7 @@ namespace Microsoft.Azure.Cosmos
                     length += 7; // "Default", "Include", "Exclude" are possible values
                 }
 
-                if (this.RequestOptions.Properties != null)
-                {
-                    if (this.RequestOptions.Properties.TryGetValue(WFConstants.BackendHeaders.BinaryId, out object binaryIdObj))
-                    {
-                        if (binaryIdObj is byte[] binaryId)
-                        {
-                            length += binaryId.Length;
-                        }
-                    }
-
-                    if (this.RequestOptions.Properties.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKey, out object epkObj))
-                    {
-                        if (epkObj is byte[] epk)
-                        {
-                            length += epk.Length;
-                        }
-                    }
-                }
+                length += this.RequestOptions.GetRequestPropertiesSerializationLength();
             }
 
             return length;

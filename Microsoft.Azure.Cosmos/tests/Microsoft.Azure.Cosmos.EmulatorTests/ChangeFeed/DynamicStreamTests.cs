@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     this.database,
                     "fixedLeases");
 
-            Container fixedLeasesContainer = this.cosmosClient.GetContainer(this.database.Id, "fixedLeases");
+            Container fixedLeasesContainer = this.GetClient().GetContainer(this.database.Id, "fixedLeases");
 
             try
             {
@@ -318,6 +318,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             Assert.IsNotNull(changeFeedProcessorContext.Headers);
             Assert.IsNotNull(changeFeedProcessorContext.Headers.Session);
             Assert.IsTrue(changeFeedProcessorContext.Headers.RequestCharge > 0);
+            string diagnosticsAsString = changeFeedProcessorContext.Diagnostics.ToString();
+            Assert.IsTrue(diagnosticsAsString.Contains("Change Feed Processor Read Next Async"));
         }
     }
 }

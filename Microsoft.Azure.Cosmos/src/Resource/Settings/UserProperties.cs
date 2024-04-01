@@ -5,8 +5,10 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     /// <summary> 
     /// Represents a user in the Azure Cosmos DB service.
@@ -38,11 +40,6 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// <para>
         /// Every resource within an Azure Cosmos DB database account needs to have a unique identifier. 
-        /// </para>
-        /// <para>
-        /// When working with document resources, they too have this settable Id property. 
-        /// If an Id is not supplied by the user the SDK will automatically generate a new GUID and assign its value to this property before
-        /// persisting the document in the database. 
         /// </para>
         /// <para>
         /// The following characters are restricted and cannot be used in the Id property:
@@ -113,5 +110,12 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <value>The self-link of the permissions associated with the user.</value>
         internal string PermissionsLink => $"{this.SelfLink?.TrimEnd('/')}/{ this.Permissions}";
+
+        /// <summary>
+        /// This contains additional values for scenarios where the SDK is not aware of new fields. 
+        /// This ensures that if resource is read and updated none of the fields will be lost in the process.
+        /// </summary>
+        [JsonExtensionData]
+        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
     }
 }

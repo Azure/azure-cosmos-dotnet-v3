@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [SDK.EmulatorTests.TestClass]
+    [TestCategory("ReadFeed")]
     public sealed class ReadFeedAsyncEnumerableTests : BaseCosmosClientHelper
     {
         private ContainerInternal Container = null;

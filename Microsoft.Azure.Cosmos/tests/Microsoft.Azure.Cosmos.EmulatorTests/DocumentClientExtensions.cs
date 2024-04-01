@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     //Internal Test hooks.
@@ -21,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         //This will lock the client instance to a particular replica Index.
         public static void LockClient(this DocumentClient client, uint replicaIndex)
         {
-            client.initializeTask.Wait();
+            client.EnsureValidClientAsync(NoOpTrace.Singleton).Wait();
             ServerStoreModel serverStoreModel = (client.StoreModel as ServerStoreModel);
             if (serverStoreModel != null)
             {
@@ -31,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         public static void ForceAddressRefresh(this DocumentClient client, bool forceAddressRefresh)
         {
-            client.initializeTask.Wait();
+            client.EnsureValidClientAsync(NoOpTrace.Singleton).Wait();
             ServerStoreModel serverStoreModel = (client.StoreModel as ServerStoreModel);
             if (serverStoreModel != null)
             {
@@ -42,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         //Returns the address of replica.
         public static string GetAddress(this DocumentClient client)
         {
-            client.initializeTask.Wait();
+            client.EnsureValidClientAsync(NoOpTrace.Singleton).Wait();
             return (client.StoreModel as ServerStoreModel).LastReadAddress;
         }
     }

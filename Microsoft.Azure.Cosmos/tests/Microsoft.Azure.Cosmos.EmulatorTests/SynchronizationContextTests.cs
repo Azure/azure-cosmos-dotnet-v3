@@ -6,17 +6,49 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Linq;
+    using System.Net;
+    using System.Net.Http;
+    using System.Text;
     using System.Threading;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
+    using Microsoft.Azure.Documents;
 
     [TestClass]
     public class SynchronizationContextTests
     {
-        [TestMethod]
+        [DataTestMethod]
+        [DataRow(false, DisplayName = "SynchronizationContextTests - Client Telemetry disabled")]
+        [DataRow(true, DisplayName = "SynchronizationContextTests - Client Telemetry enabled")]
         [Timeout(30000)]
-        public void VerifySynchronizationContextDoesNotLock()
+        public void VerifySynchronizationContextDoesNotLock(bool withClientTelemetry)
         {
+            HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
+            {
+                RequestCallBack = (request, cancellation) =>
+                {
+                    if (request.RequestUri.AbsoluteUri.Contains(Paths.ClientConfigPathSegment))
+                    {
+                        HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
+                        AccountClientConfiguration clientConfigProperties = new AccountClientConfiguration
+                        {
+                            ClientTelemetryConfiguration = new ClientTelemetryConfiguration
+                            {
+                                IsEnabled = withClientTelemetry,
+                                Endpoint = withClientTelemetry? "http://dummy.telemetry.endpoint/" : null
+                            }
+                        };
+                        string payload = JsonConvert.SerializeObject(clientConfigProperties);
+                        result.Content = new StringContent(payload, Encoding.UTF8, "application/json");
+                        return Task.FromResult(result);
+                    }
+
+                    return null;
+                }
+            };
+
             string databaseId = Guid.NewGuid().ToString();
             SynchronizationContext prevContext = SynchronizationContext.Current;
             try
@@ -25,11 +57,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 SynchronizationContext.SetSynchronizationContext(syncContext);
                 syncContext.Post(_ =>
                 {
-                    using (CosmosClient client = TestCommon.CreateCosmosClient())
+                    using (CosmosClient client = TestCommon.CreateCosmosClient(
+                                                                customizeClientBuilder: (builder) => builder
+                                                                                                        .WithClientTelemetryOptions(new CosmosClientTelemetryOptions ()
+                                                                                                        {
+                                                                                                            DisableSendingMetricsToService = !withClientTelemetry
+                                                                                                        })
+                                                                                                        .WithHttpClientFactory(() => new HttpClient(httpHandler))))
                     {
                         Cosmos.Database database = client.CreateDatabaseAsync(databaseId).GetAwaiter().GetResult();
                         database = client.CreateDatabaseIfNotExistsAsync(databaseId).GetAwaiter().GetResult();
-
                         database.ReadStreamAsync().ConfigureAwait(false).GetAwaiter().GetResult();
                         database.ReadAsync().ConfigureAwait(false).GetAwaiter().GetResult();
 
@@ -48,6 +85,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Assert.IsNotNull(response);
                         string diagnostics = response.Diagnostics.ToString();
                         Assert.IsTrue(diagnostics.Contains("Synchronization Context"));
+                        Assert.IsTrue(diagnostics.Contains("Client Configuration"));
 
                         using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
 
@@ -127,12 +165,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             finally
             {
                 SynchronizationContext.SetSynchronizationContext(prevContext);
+                
                 using (CosmosClient client = TestCommon.CreateCosmosClient())
                 {
                     client.GetDatabase(databaseId).DeleteAsync().GetAwaiter().GetResult();
                 }
             }
         }
+
+        
 
         public class TestSynchronizationContext : SynchronizationContext
         {

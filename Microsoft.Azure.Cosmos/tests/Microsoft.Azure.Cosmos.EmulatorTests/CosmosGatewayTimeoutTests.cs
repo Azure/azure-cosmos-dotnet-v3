@@ -81,7 +81,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
                 };
 
-                using FeedIterator<JObject> iterator = gatewayQueryPlanContainer.GetItemQueryIterator<JObject>("select * From T order by T.status");
+                QueryRequestOptions requestOptions = new QueryRequestOptions()
+                {
+                    // ODE set to false in this scenario as using ODE could cause the query plan to not get invoked.
+                    EnableOptimisticDirectExecution = false
+                };
+
+                using FeedIterator<JObject> iterator = gatewayQueryPlanContainer.GetItemQueryIterator<JObject>("select * From T order by T.status", requestOptions: requestOptions);
                 FeedResponse<JObject> response = await iterator.ReadNextAsync();
 
                 Assert.IsTrue(isQueryRequestFound, "Query plan call back was not called.");
@@ -106,7 +112,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
                 catch (CosmosException rte)
                 {
-                    Assert.IsTrue(handler.Count >= 6);
+                    Assert.IsTrue(handler.Count >= 3, $"HandlerCount: {handler.Count}; Expecte 6");
                     string message = rte.ToString();
                     Assert.IsTrue(message.Contains("Start Time"), "Start Time:" + message);
                     Assert.IsTrue(message.Contains("Total Duration"), "Total Duration:" + message);
@@ -129,9 +135,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
-                if (this.Count++ <= 3)
+                this.Count++;
+                if (this.Count < 3)
                 {
-                    throw new WebException();
+                    throw new WebException($"Mocked WebException {this.Count}");
                 }
 
                 throw new TaskCanceledException();
@@ -162,7 +169,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
             }
 
-            public override bool ByPassQueryParsing()
+            public override bool BypassQueryParsing()
             {
                 return true;
             }

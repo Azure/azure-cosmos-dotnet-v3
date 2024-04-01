@@ -111,9 +111,20 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
                 writer.WriteEndDocument();
             }
 
+            // Remove ATTRIBUTE-VALUE tag as some of these values can change with different runs
             // Compare the output to the baseline and fail if they differ.
-            string outputText = Regex.Replace(File.ReadAllText(outputPath), @"\s+", "");
-            string baselineText = Regex.Replace(File.ReadAllText(baselinePath), @"\s+", "");
+            string outputText =
+                Regex.Replace(
+                    Regex.Replace(
+                            File.ReadAllText(outputPath), @"\s+", string.Empty), 
+                @"<OPERATION>[\w\W]*?</OPERATION>", string.Empty); // in changefeed test in was changing
+
+            string baselineText =
+                Regex.Replace(
+                    Regex.Replace(
+                            File.ReadAllText(baselinePath), @"\s+", string.Empty), 
+                @"<OPERATION>[\w\W]*?</OPERATION>", string.Empty);
+
             int commonPrefixLength = 0;
             foreach (Tuple<char, char> characters in outputText.Zip(baselineText, (first, second) => new Tuple<char, char>(first, second)))
             {
@@ -142,8 +153,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
                     Please run the ..\azure-cosmos-dotnet-v3\UpdateContracts.ps1 script to update the baselines.
                     Expected: {baselineTextSuffix},
                     Actual:   {outputTextSuffix},
-                    OutputPath: {outputPath},
-                    BaselinePath: {baselinePath}");
+                    OutputPath: {Path.GetFullPath(outputPath)},
+                    BaselinePath: {Path.GetFullPath(baselinePath)}");
         }
 
         /// <summary>

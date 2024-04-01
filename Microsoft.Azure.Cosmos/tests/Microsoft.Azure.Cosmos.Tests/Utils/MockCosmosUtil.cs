@@ -8,11 +8,15 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System.Net;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -30,14 +34,18 @@ namespace Microsoft.Azure.Cosmos.Tests
             Cosmos.ConsistencyLevel? accountConsistencyLevel = null,
             bool enableTelemetry = false)
         {
-            DocumentClient documentClient = accountConsistencyLevel.HasValue ? new MockDocumentClient(accountConsistencyLevel.Value) : new MockDocumentClient();
-            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
-            customizeClientBuilder?.Invoke(cosmosClientBuilder);
-            if(enableTelemetry)
+            ConnectionPolicy policy = new ConnectionPolicy
             {
-                cosmosClientBuilder.WithTelemetryEnabled();
-            }
+                CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions
+                {
+                    DisableSendingMetricsToService = !enableTelemetry
+                }
+            };
 
+            DocumentClient documentClient = accountConsistencyLevel.HasValue ? new MockDocumentClient(accountConsistencyLevel.Value, policy) : new MockDocumentClient(policy);
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
+            
+            customizeClientBuilder?.Invoke(cosmosClientBuilder);
             return cosmosClientBuilder.Build(documentClient);
         }
 
@@ -113,6 +121,41 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<RntbdConstants.RntdbEnumerationDirection>()
             )).Returns(Task.FromResult(true));
             return partitionRoutingHelperMock;
+        }
+
+        public static Task<HttpResponseMessage> CreateHttpResponseOfAddresses(List<string> physicalUris)
+        {
+            List<Address> addresses = new List<Address>();
+            for (int i = 0; i < physicalUris.Count; i++)
+            {
+                addresses.Add(new Address() 
+                { 
+                    IsPrimary = i == 0, 
+                    PhysicalUri = physicalUris[i], 
+                    Protocol = RuntimeConstants.Protocols.RNTBD, 
+                    PartitionKeyRangeId = "YxM9ANCZIwABAAAAAAAAAA==" 
+                });
+            };
+
+            FeedResource<Address> addressFeedResource = new FeedResource<Address>()
+            {
+                Id = "YxM9ANCZIwABAAAAAAAAAA==",
+                SelfLink = "dbs/YxM9AA==/colls/YxM9ANCZIwA=/docs/YxM9ANCZIwABAAAAAAAAAA==/",
+                Timestamp = DateTime.Now,
+                InnerCollection = new Collection<Address>(addresses),
+            };
+
+            StringBuilder feedResourceString = new StringBuilder();
+            addressFeedResource.SaveTo(feedResourceString);
+
+            StringContent content = new StringContent(feedResourceString.ToString());
+            HttpResponseMessage responseMessage = new HttpResponseMessage()
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = content,
+            };
+
+            return Task.FromResult(responseMessage);
         }
     }
 }

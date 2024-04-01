@@ -8,9 +8,11 @@ namespace CosmosCTL
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Extensions.Logging;
 
     internal static class Utils
@@ -69,11 +71,7 @@ namespace CosmosCTL
                         }
                         else
                         {
-                            AggregateException innerExceptions = task.Exception.Flatten();
-                            if (innerExceptions.InnerExceptions.FirstOrDefault(innerEx => innerEx is CosmosException) is CosmosException cosmosException)
-                            {
-                                logger.LogError(cosmosException, "Failure pre-populating container {0}", container.Id);
-                            }
+                            Utils.LogError(logger, $"Pre-populating {container.Id}", task.Exception);
 
                             Interlocked.Increment(ref failures);
                         }
@@ -120,6 +118,109 @@ namespace CosmosCTL
             }
 
             return document;
+        }
+
+        public static async Task<InitializationResult> CreateDatabaseAndContainerAsync(
+            CTLConfig config,
+            CosmosClient cosmosClient)
+        {
+            InitializationResult result = new InitializationResult()
+            {
+                CreatedDatabase = false,
+                CreatedContainer = false
+            };
+
+            Database database;
+            try
+            {
+                database = await cosmosClient.GetDatabase(config.Database).ReadAsync();
+            }
+            catch (CosmosException exception) when (exception.StatusCode == HttpStatusCode.NotFound)
+            {
+                await cosmosClient.CreateDatabaseAsync(config.Database, config.DatabaseThroughput);
+
+                result.CreatedDatabase = true;
+                database = cosmosClient.GetDatabase(config.Database);
+            }
+
+            Container container;
+            try
+            {
+                container = await database.GetContainer(config.Collection).ReadContainerAsync();
+            }
+            catch (CosmosException exception) when (exception.StatusCode == HttpStatusCode.NotFound)
+            {
+                if (config.Throughput > 0)
+                {
+                    await database.CreateContainerAsync(config.Collection, $"/{config.CollectionPartitionKey}", config.Throughput);
+                }
+                else
+                {
+                    await database.CreateContainerAsync(config.Collection, $"/{config.CollectionPartitionKey}");
+                }
+
+                result.CreatedContainer = true;
+            }
+
+            return result;
+        }
+
+        public static void LogDiagnostics(
+            ILogger logger,
+            string operationName,
+            TimeSpan timerContextLatency,
+            CTLConfig config,
+            CosmosDiagnostics cosmosDiagnostics)
+        {
+
+            if (timerContextLatency > config.DiagnosticsThresholdDurationAsTimespan)
+            {
+                logger.LogInformation($"{operationName}; LatencyInMs:{timerContextLatency.TotalMilliseconds}; request took more than latency threshold {config.DiagnosticsThresholdDuration}, diagnostics: {cosmosDiagnostics}");
+            }
+
+            CosmosTraceDiagnostics traceDiagnostics = (CosmosTraceDiagnostics)cosmosDiagnostics;
+            if (traceDiagnostics.IsGoneExceptionHit())
+            {
+                logger.LogInformation($"{operationName}; LatencyInMs:{timerContextLatency.TotalMilliseconds}; request contains 410(GoneExceptions), diagnostics:{cosmosDiagnostics}");
+                return;
+            }
+        }
+
+        public static void LogError(
+            ILogger logger,
+            string context,
+            Exception ex,
+            string extraDetails = null)
+        {
+            if (ex is AggregateException aggregateException)
+            {
+                AggregateException innerExceptions = aggregateException.Flatten();
+                ex = innerExceptions.InnerExceptions.FirstOrDefault();
+            }
+            
+            if (ex is CosmosException cosmosException && cosmosException.StatusCode == HttpStatusCode.TooManyRequests)
+            {
+                // Not consider throttles as errors
+            }
+            else
+            {
+                logger.LogError(ex, $"[ERROR][{context}]{extraDetails ?? string.Empty}");
+            }
+        }
+
+        public static void LogError(
+            ILogger logger,
+            string context,
+            string error)
+        {
+            logger.LogError($"[ERROR][{context}]{error}");
+        }
+
+        public struct InitializationResult
+        {
+            public bool CreatedDatabase;
+            public bool CreatedContainer;
+            public long InsertedDocuments;
         }
     }
 }

@@ -17,9 +17,9 @@ namespace CosmosBenchmark
                 });
         private const int DefaultCapacity = 1024;
 
-        public static string ToString<T>(T input)
+        public static string ToString<T>(T input, int capacity = JsonHelper.DefaultCapacity)
         {
-            using (MemoryStream stream = JsonHelper.ToStream(input))
+            using (MemoryStream stream = JsonHelper.ToStream(input, capacity))
             using (StreamReader sr = new StreamReader(stream))
             {
                 return sr.ReadToEnd();
@@ -31,15 +31,15 @@ namespace CosmosBenchmark
             return JsonConvert.DeserializeObject<T>(payload);
         }
 
-        public static MemoryStream ToStream<T>(T input)
+        public static MemoryStream ToStream<T>(T input, int capacity = JsonHelper.DefaultCapacity)
         {
-            byte[] blob = System.Buffers.ArrayPool<byte>.Shared.Rent(JsonHelper.DefaultCapacity);
-            MemoryStream memStreamPayload = new MemoryStream(blob, 0, JsonHelper.DefaultCapacity, writable: true, publiclyVisible: true);
+            byte[] blob = System.Buffers.ArrayPool<byte>.Shared.Rent(capacity);
+            MemoryStream memStreamPayload = new MemoryStream(blob, 0, capacity, writable: true, publiclyVisible: true);
             memStreamPayload.SetLength(0);
             memStreamPayload.Position = 0;
             using (StreamWriter streamWriter = new StreamWriter(memStreamPayload,
                 encoding: JsonHelper.DefaultEncoding,
-                bufferSize: JsonHelper.DefaultCapacity,
+                bufferSize: capacity,
                 leaveOpen: true))
             {
                 using (JsonWriter writer = new JsonTextWriter(streamWriter))

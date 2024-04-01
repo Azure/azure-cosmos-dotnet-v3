@@ -9,6 +9,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal sealed class EncryptionDatabaseResponse : DatabaseResponse
     {
+        private readonly DatabaseResponse databaseResponse;
+
+        private readonly EncryptionCosmosClient encryptionCosmosClient;
+
         public EncryptionDatabaseResponse(
             DatabaseResponse databaseResponse,
             EncryptionCosmosClient encryptionCosmosClient)
@@ -18,10 +22,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         public override Database Database => new EncryptionDatabase(this.databaseResponse.Database, this.encryptionCosmosClient);
-
-        private readonly DatabaseResponse databaseResponse;
-
-        private readonly EncryptionCosmosClient encryptionCosmosClient;
 
         public override Headers Headers => this.databaseResponse.Headers;
 

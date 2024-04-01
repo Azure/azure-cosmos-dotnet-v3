@@ -24,21 +24,32 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// QueryMetrics that with all members having default (but not null) members.
         /// </summary>
         public static readonly QueryMetrics Empty = new QueryMetrics(
-            backendMetrics: BackendMetrics.Empty,
+            deliminatedString: string.Empty,
             indexUtilizationInfo: IndexUtilizationInfo.Empty,
             clientSideMetrics: ClientSideMetrics.Empty);
 
         public QueryMetrics(
-            BackendMetrics backendMetrics,
+            ServerSideMetricsInternal serverSideMetrics,
             IndexUtilizationInfo indexUtilizationInfo,
             ClientSideMetrics clientSideMetrics)
         {
-            this.BackendMetrics = backendMetrics ?? throw new ArgumentNullException(nameof(backendMetrics));
+            this.ServerSideMetrics = serverSideMetrics ?? throw new ArgumentNullException(nameof(serverSideMetrics));
             this.IndexUtilizationInfo = indexUtilizationInfo ?? throw new ArgumentNullException(nameof(indexUtilizationInfo));
             this.ClientSideMetrics = clientSideMetrics ?? throw new ArgumentNullException(nameof(clientSideMetrics));
         }
 
-        public BackendMetrics BackendMetrics { get; }
+        public QueryMetrics(
+            string deliminatedString,
+            IndexUtilizationInfo indexUtilizationInfo,
+            ClientSideMetrics clientSideMetrics)
+            : this(!String.IsNullOrWhiteSpace(deliminatedString) &&
+                    ServerSideMetricsParser.TryParse(deliminatedString, out ServerSideMetricsInternal serverSideMetrics)
+                ? serverSideMetrics
+                : ServerSideMetricsInternal.Empty, indexUtilizationInfo, clientSideMetrics)
+        {
+        }
+
+        public ServerSideMetricsInternal ServerSideMetrics { get; }
 
         public IndexUtilizationInfo IndexUtilizationInfo { get; }
 
@@ -52,11 +63,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// <returns>A new <see cref="QueryMetrics"/> instance that is the sum of two <see cref="QueryMetrics"/> instances</returns>
         public static QueryMetrics operator +(QueryMetrics queryMetrics1, QueryMetrics queryMetrics2)
         {
-            QueryMetrics.Accumulator queryMetricsAccumulator = new QueryMetrics.Accumulator();
-            queryMetricsAccumulator = queryMetricsAccumulator.Accumulate(queryMetrics1);
-            queryMetricsAccumulator = queryMetricsAccumulator.Accumulate(queryMetrics2);
+            QueryMetricsAccumulator queryMetricsAccumulator = new QueryMetricsAccumulator();
+            queryMetricsAccumulator.Accumulate(queryMetrics1);
+            queryMetricsAccumulator.Accumulate(queryMetrics2);
 
-            return QueryMetrics.Accumulator.ToQueryMetrics(queryMetricsAccumulator);
+            return queryMetricsAccumulator.GetQueryMetrics();
         }
 
         /// <summary>
@@ -83,53 +94,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 throw new ArgumentNullException(nameof(queryMetricsList));
             }
 
-            QueryMetrics.Accumulator queryMetricsAccumulator = new QueryMetrics.Accumulator();
+            QueryMetricsAccumulator queryMetricsAccumulator = new QueryMetricsAccumulator();
             foreach (QueryMetrics queryMetrics in queryMetricsList)
             {
-                queryMetricsAccumulator = queryMetricsAccumulator.Accumulate(queryMetrics);
+                queryMetricsAccumulator.Accumulate(queryMetrics);
             }
 
-            return QueryMetrics.Accumulator.ToQueryMetrics(queryMetricsAccumulator);
-        }
-
-        public ref struct Accumulator
-        {
-            public Accumulator(
-                BackendMetrics.Accumulator backendMetricsAccumulator,
-                IndexUtilizationInfo.Accumulator indexUtilizationInfoAccumulator,
-                ClientSideMetrics.Accumulator clientSideMetricsAccumulator)
-            {
-                this.BackendMetricsAccumulator = backendMetricsAccumulator;
-                this.IndexUtilizationInfoAccumulator = indexUtilizationInfoAccumulator;
-                this.ClientSideMetricsAccumulator = clientSideMetricsAccumulator;
-            }
-
-            public BackendMetrics.Accumulator BackendMetricsAccumulator { get; }
-
-            public IndexUtilizationInfo.Accumulator IndexUtilizationInfoAccumulator { get; }
-
-            public ClientSideMetrics.Accumulator ClientSideMetricsAccumulator { get; }
-
-            public Accumulator Accumulate(QueryMetrics queryMetrics)
-            {
-                if (queryMetrics == null)
-                {
-                    throw new ArgumentNullException(nameof(queryMetrics));
-                }
-
-                return new Accumulator(
-                    backendMetricsAccumulator: this.BackendMetricsAccumulator.Accumulate(queryMetrics.BackendMetrics),
-                    indexUtilizationInfoAccumulator: this.IndexUtilizationInfoAccumulator.Accumulate(queryMetrics.IndexUtilizationInfo),
-                    clientSideMetricsAccumulator: this.ClientSideMetricsAccumulator.Accumulate(queryMetrics.ClientSideMetrics));
-            }
-
-            public static QueryMetrics ToQueryMetrics(Accumulator accumulator)
-            {
-                return new QueryMetrics(
-                    BackendMetrics.Accumulator.ToBackendMetrics(accumulator.BackendMetricsAccumulator),
-                    IndexUtilizationInfo.Accumulator.ToIndexUtilizationInfo(accumulator.IndexUtilizationInfoAccumulator),
-                    ClientSideMetrics.Accumulator.ToClientSideMetrics(accumulator.ClientSideMetricsAccumulator));
-            }
+            return queryMetricsAccumulator.GetQueryMetrics();
         }
     }
 }

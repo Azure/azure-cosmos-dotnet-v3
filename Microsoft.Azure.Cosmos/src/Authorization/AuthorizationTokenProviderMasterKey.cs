@@ -22,8 +22,7 @@ namespace Microsoft.Azure.Cosmos
         private const string MacSignatureString = "to sign";
         private const string EnableAuthFailureTracesConfig = "enableAuthFailureTraces";
         private readonly Lazy<bool> enableAuthFailureTraces;
-        private readonly IComputeHash authKeyHashFunction;
-        private bool isDisposed = false;
+        private IComputeHash authKeyHashFunction;
 
         public AuthorizationTokenProviderMasterKey(IComputeHash computeHash)
         {
@@ -66,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
             AuthorizationTokenType tokenType)
         {
             // this is masterkey authZ
-            headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
+            headers[HttpConstants.HttpHeaders.XDate] = Rfc1123DateTimeCache.UtcNow();
 
             string authorizationToken = AuthorizationHelper.GenerateKeyAuthorizationSignature(
                 requestVerb,
@@ -97,7 +96,7 @@ namespace Microsoft.Azure.Cosmos
             ITrace trace)
         {
             // this is masterkey authZ
-            headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
+            headers[HttpConstants.HttpHeaders.XDate] = Rfc1123DateTimeCache.UtcNow();
 
             string authorizationToken = AuthorizationHelper.GenerateKeyAuthorizationSignature(
                 requestVerb,
@@ -119,7 +118,7 @@ namespace Microsoft.Azure.Cosmos
             string verb,
             AuthorizationTokenType tokenType)
         {
-            string dateTime = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
+            string dateTime = Rfc1123DateTimeCache.UtcNow();
             headersCollection[HttpConstants.HttpHeaders.XDate] = dateTime;
 
             string token = AuthorizationHelper.GenerateKeyAuthorizationSignature(
@@ -169,11 +168,14 @@ namespace Microsoft.Azure.Cosmos
 
         public override void Dispose()
         {
-            if (!this.isDisposed)
-            {
-                this.authKeyHashFunction.Dispose();
-                this.isDisposed = true;
-            }
+            this.Dispose(disposing: true);
+
+            // This object will be cleaned up by the Dispose method.
+            // Therefore, you should call GC.SuppressFinalize to
+            // take this object off the finalization queue
+            // and prevent finalization code for this object
+            // from executing a second time.
+            GC.SuppressFinalize(this);
         }
 
         private static string NormalizeAuthorizationPayload(string input)
@@ -197,6 +199,29 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return builder.ToString();
+        }
+
+        // Dispose(bool disposing) executes in two distinct scenarios.
+        // If disposing equals true, the method has been called directly
+        // or indirectly by a user's code. Managed and unmanaged resources
+        // can be disposed.
+        // If disposing equals false, the method has been called by the
+        // runtime from inside the finalizer and you should not reference
+        // other objects. Only unmanaged resources can be disposed.
+        private void Dispose(bool disposing)
+        {
+            this.authKeyHashFunction?.Dispose();
+            this.authKeyHashFunction = null;
+        }
+
+        // Use C# finalizer syntax for finalization code.
+        // This finalizer will run only if the Dispose method does not get called.
+        // It gives your base class the opportunity to finalize.
+        ~AuthorizationTokenProviderMasterKey()
+        {
+            // Calling Dispose(disposing: false) is optimal in terms of
+            // readability and maintainability.
+            this.Dispose(disposing: false);
         }
     }
 }

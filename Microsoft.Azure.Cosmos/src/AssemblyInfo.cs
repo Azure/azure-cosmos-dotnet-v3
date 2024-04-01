@@ -5,6 +5,10 @@
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2" + AssemblyKeys.MoqPublicKey)]
+[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.FaultInjection" + AssemblyKeys.ProductPublicKey)]
+[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.FaultInjection" + AssemblyKeys.TestPublicKey)]
+[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.FaultInjection.Tests" + AssemblyKeys.ProductPublicKey)]
+[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.FaultInjection.Tests" + AssemblyKeys.TestPublicKey)]
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Friends" + AssemblyKeys.ProductPublicKey)]
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Friends" + AssemblyKeys.TestPublicKey)]
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Extensions" + AssemblyKeys.ProductPublicKey)]
@@ -27,8 +31,6 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.NetFramework.Tests" + AssemblyKeys.TestPublicKey)]
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Analytics.Core" + AssemblyKeys.ProductPublicKey)]
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Analytics.Core" + AssemblyKeys.TestPublicKey)]
-[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Telemetry" + AssemblyKeys.ProductPublicKey)]
-[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Telemetry" + AssemblyKeys.TestPublicKey)]
 [assembly: InternalsVisibleTo("CosmosCTL" + AssemblyKeys.ProductPublicKey)]
 [assembly: InternalsVisibleTo("CosmosCTL" + AssemblyKeys.TestPublicKey)]
 [assembly: InternalsVisibleTo("CosmosBenchmark" + AssemblyKeys.ProductPublicKey)]

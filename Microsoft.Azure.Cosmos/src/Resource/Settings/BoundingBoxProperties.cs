@@ -3,7 +3,9 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
 {
+    using System.Collections.Generic;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Represents bounding box for geometry spatial path in the Azure Cosmos DB service
@@ -70,5 +72,12 @@ namespace Microsoft.Azure.Cosmos
         {
             get; set;
         }
+
+        /// <summary>
+        /// This contains additional values for scenarios where the SDK is not aware of new fields. 
+        /// This ensures that if resource is read and updated none of the fields will be lost in the process.
+        /// </summary>
+        [JsonExtensionData]
+        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
     }
 }

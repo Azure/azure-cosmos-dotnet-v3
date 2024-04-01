@@ -9,12 +9,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Response from the Cosmos DB service for a <see cref="Cosmos.ClientEncryptionKey"/> related request.
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-        class ClientEncryptionKeyResponse : Response<ClientEncryptionKeyProperties>
+    public class ClientEncryptionKeyResponse : Response<ClientEncryptionKeyProperties>
     {
         /// <summary>
         /// Creates a client encryption key response as a no-op for mock testing.
@@ -27,17 +22,19 @@ namespace Microsoft.Azure.Cosmos
         // A non-public constructor to ensure the factory is used to create the object.
         // This will prevent memory leaks when handling the HttpResponseMessage.
         internal ClientEncryptionKeyResponse(
-            HttpStatusCode httpStatusCode,
-            Headers headers,
-            ClientEncryptionKeyProperties keyProperties,
-            ClientEncryptionKey key,
-            CosmosDiagnostics diagnostics)
+           HttpStatusCode httpStatusCode,
+           Headers headers,
+           ClientEncryptionKeyProperties keyProperties,
+           ClientEncryptionKey key,
+           CosmosDiagnostics diagnostics,
+           RequestMessage requestMessage)
         {
             this.StatusCode = httpStatusCode;
             this.Headers = headers;
             this.Resource = keyProperties;
             this.ClientEncryptionKey = key;
             this.Diagnostics = diagnostics;
+            this.RequestMessage = requestMessage;
         }
 
         /// <summary>
@@ -65,6 +62,9 @@ namespace Microsoft.Azure.Cosmos
 
         /// <inheritdoc/>
         public override string ETag => this.Headers?.ETag;
+
+        /// <inheritdoc/>
+        internal override RequestMessage RequestMessage { get; }
 
         /// <summary>
         /// Get the client encryption key implicitly from an encryption key response.

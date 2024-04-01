@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly CosmosClient client;
         private readonly ConsistencyLevel? requestedClientConsistencyLevel;
+        private readonly PriorityLevel? requestedPriorityLevel;
         private readonly DiagnosticsHandler diagnosticsHandler;
         private readonly RequestHandler invalidPartitionExceptionRetryHandler;
         private readonly RequestHandler transportHandler;
@@ -26,11 +27,13 @@ namespace Microsoft.Azure.Cosmos
         public ClientPipelineBuilder(
             CosmosClient client,
             ConsistencyLevel? requestedClientConsistencyLevel,
+            PriorityLevel? requestedClientPriorityLevel,
             IReadOnlyCollection<RequestHandler> customHandlers,
-            ClientTelemetry telemetry)
+            TelemetryToServiceHelper telemetryToServiceHelper)
         {
             this.client = client ?? throw new ArgumentNullException(nameof(client));
             this.requestedClientConsistencyLevel = requestedClientConsistencyLevel;
+            this.requestedPriorityLevel = requestedClientPriorityLevel;
             this.transportHandler = new TransportHandler(client);
             Debug.Assert(this.transportHandler.InnerHandler == null, nameof(this.transportHandler));
 
@@ -45,16 +48,11 @@ namespace Microsoft.Azure.Cosmos
 #if !INTERNAL
             this.diagnosticsHandler = new DiagnosticsHandler();
             Debug.Assert(this.diagnosticsHandler.InnerHandler == null, nameof(this.diagnosticsHandler));
-
-            if (telemetry != null)
-            {
-                this.telemetryHandler = new TelemetryHandler(telemetry);
-                Debug.Assert(this.telemetryHandler.InnerHandler == null, nameof(this.telemetryHandler));
-            }
 #else
             this.diagnosticsHandler = null;
-            this.telemetryHandler = null;
 #endif
+            this.telemetryHandler = new TelemetryHandler(telemetryToServiceHelper);
+            Debug.Assert(this.telemetryHandler.InnerHandler == null, nameof(this.telemetryHandler));
 
             this.UseRetryPolicy();
             this.AddCustomHandlers(customHandlers);
@@ -154,7 +152,8 @@ namespace Microsoft.Azure.Cosmos
         {
             RequestInvokerHandler root = new RequestInvokerHandler(
                 this.client,
-                this.requestedClientConsistencyLevel);
+                this.requestedClientConsistencyLevel,
+                this.requestedPriorityLevel);
 
             RequestHandler current = root;
             if (this.CustomHandlers != null && this.CustomHandlers.Any())

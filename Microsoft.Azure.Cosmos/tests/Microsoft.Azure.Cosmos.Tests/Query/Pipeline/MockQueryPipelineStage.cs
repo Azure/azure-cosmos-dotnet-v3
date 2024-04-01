@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 {
     using System;
     using System.Collections.Generic;
-    using System.Runtime.InteropServices.WindowsRuntime;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -14,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
-    using Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests;
     using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class MockQueryPipelineStage : QueryPipelineStageBase
@@ -24,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         public long PageIndex { get; private set; }
 
         public MockQueryPipelineStage(IReadOnlyList<IReadOnlyList<CosmosElement>> pages)
-            : base(EmptyQueryPipelineStage.Singleton, cancellationToken: default)
+            : base(EmptyQueryPipelineStage.Singleton)
         {
             this.pages = pages ?? throw new ArgumentNullException(nameof(pages));
         }
@@ -44,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             return stage;
         }
 
-        public override ValueTask<bool> MoveNextAsync(ITrace trace)
+        public override ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
         {
             if (this.PageIndex == this.pages.Count)
             {
@@ -58,11 +56,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 documents: documents,
                 requestCharge: default,
                 activityId: Guid.NewGuid().ToString(),
-                responseLengthInBytes: default,
                 cosmosQueryExecutionInfo: default,
+                distributionPlanSpec: default,
                 disallowContinuationTokenMessage: default,
                 additionalHeaders: default,
-                state: state);
+                state: state,
+                streaming: default);
             this.Current = TryCatch<QueryPage>.FromResult(page);
             return new ValueTask<bool>(true);
         }

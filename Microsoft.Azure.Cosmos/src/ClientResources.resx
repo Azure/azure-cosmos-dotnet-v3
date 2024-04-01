@@ -268,10 +268,16 @@
     <value>Failed to deserialize response returned by server.</value>
   </data>
   <data name="StringCompareToInvalidConstant" xml:space="preserve">
-    <value>The right hand side of string.CompareTo() comparison must be constant '0'</value>
+    <value>The right-hand side of String.CompareTo() comparison must be constant '0'.</value>
+  </data>
+  <data name="StringCompareInvalidConstant" xml:space="preserve">
+    <value>The right-hand side of String.Compare() comparison must be constant '0'.</value>
   </data>
   <data name="StringCompareToInvalidOperator" xml:space="preserve">
     <value>Invalid operator for string.CompareTo(). Vaid operators are ('==', '&lt;', '&lt;=', '&gt;' or '&gt;=')</value>
+  </data>
+  <data name="StringCompareInvalidOperator" xml:space="preserve">
+    <value>Invalid operator for string.Compare(). Vaid operators are ('==', '&lt;', '&lt;=', '&gt;' or '&gt;=')</value>
   </data>
   <data name="TokenRefreshInProgress" xml:space="preserve">
     <value>Token refresh in progress.</value>
@@ -298,7 +304,7 @@
     <value>Instantiation of only value types, anonymous types and spatial types are supported.</value>
   </data>
   <data name="UnsupportedBulkRequestOptions" xml:space="preserve">
-    <value>Consistency, Session, and Triggers are not allowed when AllowBulkExecution is set to true.</value>
+    <value>Consistency, Session, Properties, and Triggers are not allowed when AllowBulkExecution is set to true.</value>
   </data>
   <data name="EncryptorNotConfigured" xml:space="preserve">
     <value>The client was not configured to allow for encryption. Create the client by using cosmosClientBuilder.WithEncryptor.</value>

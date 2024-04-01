@@ -7,16 +7,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System;
     using System.Collections.Generic;
     using System.Net;
-    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
+    [TestCategory("Batch")]
     public class BatchAsyncContainerExecutorTests
     {
-        private static CosmosSerializer cosmosDefaultJsonSerializer = new CosmosJsonDotNetSerializer();
+        private readonly static CosmosSerializer cosmosDefaultJsonSerializer = new CosmosJsonDotNetSerializer();
         private CosmosClient cosmosClient;
         private ContainerInternal cosmosContainer;
 
@@ -61,6 +61,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 MyDocument document = cosmosDefaultJsonSerializer.FromStream<MyDocument>(result.ResourceStream);
                 Assert.AreEqual(i.ToString(), document.id);
+                Assert.IsNotNull(result.PartitionKeyRangeId);
 
                 ItemResponse<MyDocument> storedDoc = await this.cosmosContainer.ReadItemAsync<MyDocument>(i.ToString(), new Cosmos.PartitionKey(i.ToString()));
                 Assert.IsNotNull(storedDoc.Resource);
@@ -79,6 +80,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             MyDocument myDocument = new MyDocument() { id = id, Status = id };
 
             await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => executor.ValidateOperationAsync(new ItemBatchOperation(OperationType.Replace, 0, new Cosmos.PartitionKey(id), id, cosmosDefaultJsonSerializer.ToStream(myDocument)), new ItemRequestOptions() { SessionToken = "something" }));
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => executor.ValidateOperationAsync(
+                new ItemBatchOperation(OperationType.Replace, 0, new Cosmos.PartitionKey(id), id, cosmosDefaultJsonSerializer.ToStream(myDocument)), 
+                new ItemRequestOptions() { Properties = new Dictionary<string, object>() { { "test", "test" } } }));
             await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => executor.ValidateOperationAsync(
                 new ItemBatchOperation(OperationType.Replace, 0, new Cosmos.PartitionKey(id), id, cosmosDefaultJsonSerializer.ToStream(myDocument)), 
                 new ItemRequestOptions() { DedicatedGatewayRequestOptions = new DedicatedGatewayRequestOptions { MaxIntegratedCacheStaleness = TimeSpan.FromMinutes(3) }  }));

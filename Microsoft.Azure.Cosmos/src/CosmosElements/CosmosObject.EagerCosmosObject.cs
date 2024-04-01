@@ -49,8 +49,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
                 foreach (KeyValuePair<string, CosmosElement> kvp in this.dictionary)
                 {
-                    jsonWriter.WriteFieldName(kvp.Key);
-                    kvp.Value.WriteTo(jsonWriter);
+                    if (kvp.Value is not CosmosUndefined)
+                    {
+                        jsonWriter.WriteFieldName(kvp.Key);
+                        kvp.Value.WriteTo(jsonWriter);
+                    }
                 }
 
                 jsonWriter.WriteObjectEnd();

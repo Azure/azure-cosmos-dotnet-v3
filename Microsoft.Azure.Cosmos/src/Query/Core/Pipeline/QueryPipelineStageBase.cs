@@ -14,28 +14,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
     internal abstract class QueryPipelineStageBase : IQueryPipelineStage
     {
         protected readonly IQueryPipelineStage inputStage;
-        protected CancellationToken cancellationToken;
 
-        protected QueryPipelineStageBase(IQueryPipelineStage inputStage, CancellationToken cancellationToken)
+        protected QueryPipelineStageBase(IQueryPipelineStage inputStage)
         {
             this.inputStage = inputStage ?? throw new ArgumentNullException(nameof(inputStage));
-            this.cancellationToken = cancellationToken;
         }
 
         public TryCatch<QueryPage> Current { get; protected set; }
 
-        public ValueTask DisposeAsync() => this.inputStage.DisposeAsync();
-
-        public ValueTask<bool> MoveNextAsync() => this.MoveNextAsync(NoOpTrace.Singleton);
-
-        public abstract ValueTask<bool> MoveNextAsync(ITrace trace);
-
-        public void SetCancellationToken(CancellationToken cancellationToken)
+        public ValueTask DisposeAsync()
         {
-            // Only here to support legacy query iterator and ExecuteNextAsync
-            // can be removed only we only expose IAsyncEnumerable in v4 sdk.
-            this.cancellationToken = cancellationToken;
-            this.inputStage.SetCancellationToken(cancellationToken);
+            return this.inputStage.DisposeAsync();
         }
+
+        public abstract ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken);
     }
 }

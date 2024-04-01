@@ -31,6 +31,8 @@ namespace Microsoft.Azure.Cosmos
             this.ResourceStream = other.ResourceStream;
             this.RequestCharge = other.RequestCharge;
             this.RetryAfter = other.RetryAfter;
+            this.SessionToken = other.SessionToken;
+            this.ActivityId = other.ActivityId;
         }
 
         /// <summary>
@@ -90,6 +92,21 @@ namespace Microsoft.Azure.Cosmos
         /// Gets detail on the completion status of the operation.
         /// </summary>
         internal virtual SubStatusCodes SubStatusCode { get; set; } 
+
+        /// <summary>
+        /// Gets the SessionToken assigned to this result, if any.
+        /// </summary>
+        internal virtual string SessionToken { get; set; }
+
+        /// <summary>
+        /// A string containing the partition key range id assigned to this result.
+        /// </summary>
+        internal virtual string PartitionKeyRangeId { get; set; }
+
+        /// <summary>
+        /// ActivityId related to the operation
+        /// </summary>
+        internal virtual string ActivityId { get; set; }
 
         internal ITrace Trace { get; set; }
 
@@ -197,7 +214,7 @@ namespace Microsoft.Azure.Cosmos
             return Result.Success;
         }
 
-        internal ResponseMessage ToResponseMessage()
+        internal ResponseMessage ToResponseMessage(ContainerInternal cosmosContainerCore = null)
         {
             Headers headers = new Headers()
             {
@@ -205,11 +222,22 @@ namespace Microsoft.Azure.Cosmos
                 ETag = this.ETag,
                 RetryAfter = this.RetryAfter,
                 RequestCharge = this.RequestCharge,
+                Session = this.SessionToken,
+                PartitionKeyRangeId = this.PartitionKeyRangeId,
+                ActivityId = this.ActivityId,
+            };
+
+            // Need this information in Open telemetry hence adding this information in the request
+            RequestMessage requestMessage = new ()
+            {
+                ContainerId = cosmosContainerCore?.Id,
+                DatabaseId = cosmosContainerCore?.Database?.Id,
+                Trace = null
             };
 
             ResponseMessage responseMessage = new ResponseMessage(
                 statusCode: this.StatusCode,
-                requestMessage: null,
+                requestMessage: requestMessage,
                 headers: headers,
                 cosmosException: null,
                 trace: this.Trace ?? NoOpTrace.Singleton)

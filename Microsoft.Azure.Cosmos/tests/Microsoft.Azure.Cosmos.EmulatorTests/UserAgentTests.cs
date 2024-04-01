@@ -88,19 +88,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.IsTrue(serialization.Contains(envInfo.ProcessArchitecture));
             string[] values = serialization.Split('|');
-            Assert.AreEqual($"cosmos-netstandard-sdk/{envInfo.ClientVersion}", values[0]);
-            Assert.AreEqual(envInfo.DirectVersion, values[1]);
-            Assert.AreEqual("0", values[2]);
-            Assert.AreEqual(envInfo.ProcessArchitecture, values[3]);
-            Assert.AreEqual(envInfo.OperatingSystem, values[4]);
-            Assert.AreEqual(envInfo.RuntimeFramework, values[5]);
+            string previewFlag = string.Empty;
+#if PREVIEW
+            previewFlag = "P";
+#endif
+            Assert.AreEqual($"cosmos-netstandard-sdk/{envInfo.ClientVersion}" + previewFlag, values[0]);
+            Assert.AreEqual("0", values[1]);
+            Assert.AreEqual(envInfo.ProcessArchitecture, values[2]);
+            Assert.AreEqual(envInfo.OperatingSystem, values[3]);
+            Assert.AreEqual(envInfo.RuntimeFramework, values[4]);
         }
 
         [TestMethod]
         public async Task VerifyUserAgentWithRegionConfiguration()
         {
             string databaseName = Guid.NewGuid().ToString();
-            string containerName = Guid.NewGuid().ToString();
+            string containerName = Guid.NewGuid().ToString();           
 
             {
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
@@ -189,11 +192,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     string userAgentString = client.DocumentClient.ConnectionPolicy.UserAgentContainer.UserAgent;
                     if (i <= max)
                     {
-                        Assert.AreEqual(userAgentString.Split('|')[2], i.ToString());
+                        Assert.AreEqual(userAgentString.Split('|')[1], i.ToString());
                     }
                     else
                     {
-                        Assert.AreEqual(userAgentString.Split('|')[2], max.ToString());
+                        Assert.AreEqual(userAgentString.Split('|')[1], max.ToString());
                     }
                 }
             }
@@ -218,7 +221,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await Task.WhenAll(tasks);
             List<int> actual = tasks.Select(r => 
-                        int.Parse(r.Result.DocumentClient.ConnectionPolicy.UserAgentContainer.UserAgent.Split('|')[2])).ToList();
+                        int.Parse(r.Result.DocumentClient.ConnectionPolicy.UserAgentContainer.UserAgent.Split('|')[1])).ToList();
             actual.Sort();
             CollectionAssert.AreEqual(expected, actual);
         }
@@ -373,7 +376,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             protected override void GetEnvironmentInformation(
                 out string clientVersion,
-                out string directVersion,
                 out string processArchitecture,
                 out string operatingSystem,
                 out string runtimeFramework)
@@ -383,7 +385,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 base.GetEnvironmentInformation(
                     clientVersion: out clientVersion,
-                    directVersion: out directVersion,
                     processArchitecture: out processArchitecture,
                     operatingSystem: out _,
                     runtimeFramework: out runtimeFramework);
@@ -404,7 +405,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             Cosmos.UserAgentContainer userAgentContainer = client.ClientOptions.GetConnectionPolicy(client.ClientId).UserAgentContainer;
             string userAgentString = userAgentContainer.UserAgent;
-            string clientId = userAgentString.Split('|')[2];
+            string clientId = userAgentString.Split('|')[1];
             return clientId;
         }
     }

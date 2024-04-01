@@ -35,7 +35,7 @@
 
         public int QueryPlanCalls { get; private set; }
 
-        public override bool ByPassQueryParsing()
+        public override bool BypassQueryParsing()
         {
             return this.forceQueryPlanGatewayElseServiceInterop;
         }
@@ -47,6 +47,7 @@
             SqlQuerySpec sqlQuerySpec,
             Cosmos.PartitionKey? partitionKey,
             string supportedQueryFeatures,
+            Guid correlatedActivityId,
             ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -58,6 +59,7 @@
                 sqlQuerySpec,
                 partitionKey,
                 supportedQueryFeatures,
+                correlatedActivityId,
                 trace,
                 cancellationToken);
         }
@@ -66,12 +68,11 @@
             string resourceUri,
             ResourceType resourceType,
             OperationType operationType,
-            Guid clientQueryCorrelationId,
             FeedRange feedRange,
             QueryRequestOptions requestOptions,
+            AdditionalRequestHeaders additionalRequestHeaders,
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
-            bool isContinuationExpected,
             int pageSize,
             ITrace trace,
             CancellationToken cancellationToken)
@@ -80,12 +81,11 @@
                 resourceUri: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,
-                clientQueryCorrelationId: clientQueryCorrelationId,
+                feedRange: feedRange,
                 requestOptions: requestOptions,
+                additionalRequestHeaders: additionalRequestHeaders,
                 sqlQuerySpec: sqlQuerySpec,
                 continuationToken: continuationToken,
-                feedRange: feedRange,
-                isContinuationExpected: isContinuationExpected,
                 pageSize: pageSize,
                 trace: trace,
                 cancellationToken: cancellationToken);

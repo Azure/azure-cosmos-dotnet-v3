@@ -193,7 +193,7 @@
             catch (Exception ex)
             {
                 Console.WriteLine("Error in reading container: {0}", ex.Message);
-                throw ex;
+                throw;
             }
 
             Console.WriteLine("Running bulk operations demo for container {0} with a Bulk enabled CosmosClient.", ContainerName);

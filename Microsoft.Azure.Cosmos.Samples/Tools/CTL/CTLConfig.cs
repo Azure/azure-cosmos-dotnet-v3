@@ -11,6 +11,7 @@ namespace CosmosCTL
     using CommandLine.Text;
     using Microsoft.Azure.Cosmos;
     using Newtonsoft.Json;
+    using static CosmosCTL.ReservoirProvider;
 
     public class CTLConfig
     {
@@ -44,6 +45,9 @@ namespace CosmosCTL
         [Option("ctl_throughput", Required = false, HelpText = "Provisioned throughput to use")]
         public int Throughput { get; set; } = 100000;
 
+        [Option("ctl_db_throughput", Required = false, HelpText = "Provisioned throughput to use for databases")]
+        public int? DatabaseThroughput { get; set; }
+
         [Option("ctl_read_write_query_pct", Required = false, HelpText = "Distribution of read, writes, and queries")]
         public string ReadWriteQueryPercentage { get; set; } = "90,9,1";
 
@@ -73,7 +77,7 @@ namespace CosmosCTL
         }
 
         [Option("ctl_content_response_on_write", Required = false, HelpText = "Should return content response on writes")]
-        public bool IsContentResponseOnWriteEnabled { get; set; } = true;
+        public bool? IsContentResponseOnWriteEnabled { get; set; } = true;
 
         [Option("ctl_output_event_traces", Required = false, HelpText = "Outputs TraceSource to console")]
         public bool OutputEventTraces { get; set; } = false;
@@ -93,11 +97,14 @@ namespace CosmosCTL
         [Option("ctl_logging_context", Required = false, HelpText = "Defines a custom context to use on metrics")]
         public string LogginContext { get; set; } = string.Empty;
 
-        [Option("ctl_telemetry_endpoint", Required = false, HelpText = "telemetry juno end point")]
-        public string TelemetryEndpoint { get; set; }
+        [Option("ctl_reservoir_type", Required = false, HelpText = "Defines the reservoir type. Valid values are: Uniform, SlidingWindow and ExponentialDecay. The default value is SlidingWindow.")]
+        public ReservoirTypes ReservoirType { get; set; } = ReservoirTypes.SlidingWindow;
 
-        [Option("ctl_telemetry_schedule_in_sec", Required = false, HelpText = "telemetry task schedule time in sec")]
-        public string TelemetryScheduleInSeconds { get; set; }
+        [Option("ctl_reservoir_sample_size", Required = false, HelpText = "The reservoir sample size.")]
+        public int ReservoirSampleSize { get; set; } = 1028;
+
+        [Option("ctl_disable_client_telemetry", Required = false, HelpText = "Disable Client Telemetry Feature in SDK. Make sure you enable it from the portal also.")]
+        public bool DisableClientTelemetry { get; set; } = false;
 
         internal TimeSpan RunningTimeDurationAsTimespan { get; private set; } = TimeSpan.FromHours(10);
         internal TimeSpan DiagnosticsThresholdDurationAsTimespan { get; private set; } = TimeSpan.FromSeconds(60);
@@ -123,12 +130,19 @@ namespace CosmosCTL
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ApplicationName = CTLConfig.UserAgentSuffix,
-                EnableClientTelemetry = true
+                CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions()
+                {
+                    DisableSendingMetricsToService = this.DisableClientTelemetry,
+                }
             };
+
+            Console.WriteLine("ApplicationName = " + CTLConfig.UserAgentSuffix);
+            Console.WriteLine("DisableSendingMetricsToService = " + this.DisableClientTelemetry);
 
             if (this.UseGatewayMode)
             {
                 clientOptions.ConnectionMode = ConnectionMode.Gateway;
+                Console.WriteLine("ConnectionMode = " + ConnectionMode.Gateway);
             }
 
             if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))
@@ -136,6 +150,7 @@ namespace CosmosCTL
                 if (Enum.TryParse(this.ConsistencyLevel, out ConsistencyLevel consistencyLevel))
                 {
                     clientOptions.ConsistencyLevel = consistencyLevel;
+                    Console.WriteLine("ConsistencyLevel = " + consistencyLevel);
                 }
                 else
                 {

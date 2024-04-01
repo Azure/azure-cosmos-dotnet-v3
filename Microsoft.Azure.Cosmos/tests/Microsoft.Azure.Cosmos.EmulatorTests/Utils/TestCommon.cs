@@ -73,12 +73,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return (endpoint, authKey);
         }
 
+        internal static string GetMultiRegionConnectionString()
+        {
+            return Cosmos.ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", string.Empty);
+        }
+
         internal static CosmosClientBuilder GetDefaultConfiguration(
             bool useCustomSeralizer = true,
-            bool validatePartitionKeyRangeCalls = false)
+            bool validatePartitionKeyRangeCalls = false,
+            string accountEndpointOverride = null)
         {
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();
-            CosmosClientBuilder clientBuilder = new CosmosClientBuilder(accountEndpoint: endpoint, authKeyOrResourceToken: authKey);
+            CosmosClientBuilder clientBuilder = new CosmosClientBuilder(
+                accountEndpoint: accountEndpointOverride ?? endpoint,
+                authKeyOrResourceToken: authKey);
             if (useCustomSeralizer)
             {
                 clientBuilder.WithCustomSerializer(new CosmosJsonDotNetSerializer());
@@ -95,9 +103,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         internal static CosmosClient CreateCosmosClient(
             Action<CosmosClientBuilder> customizeClientBuilder = null,
             bool useCustomSeralizer = true,
-            bool validatePartitionKeyRangeCalls = false)
+            bool validatePartitionKeyRangeCalls = false,
+            string accountEndpointOverride = null)
         {
-            CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration(useCustomSeralizer, validatePartitionKeyRangeCalls);
+            CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration(useCustomSeralizer, validatePartitionKeyRangeCalls, accountEndpointOverride);
             customizeClientBuilder?.Invoke(cosmosClientBuilder);
 
             CosmosClient client = cosmosClientBuilder.Build();
@@ -136,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 cosmosClientBuilder.WithConnectionModeGateway();
             }
-
+            
             return cosmosClientBuilder.Build();
         }
 
@@ -151,8 +160,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             RetryOptions retryOptions = null,
             ApiType apiType = ApiType.None,
             EventHandler<ReceivedResponseEventArgs> recievedResponseEventHandler = null,
-            bool useMultipleWriteLocations = false,
-            bool enableClientTelemetry = false)
+            bool useMultipleWriteLocations = false)
         {
             string authKey = ConfigurationManager.AppSettings["MasterKey"];
 
@@ -262,7 +270,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (string.IsNullOrEmpty(key)) throw new ArgumentException("key");
             if (headers == null) throw new ArgumentNullException("headers");
 
-            string xDate = DateTime.UtcNow.ToString("r");
+            string xDate = Rfc1123DateTimeCache.UtcNow();
 
             client.DefaultRequestHeaders.Remove(HttpConstants.HttpHeaders.XDate);
             client.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.XDate, xDate);
@@ -282,7 +290,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             List<T> result = new List<T>();
 
-            INameValueCollection localHeaders = new StoreRequestNameValueCollection();
+            INameValueCollection localHeaders = new RequestNameValueCollection();
             if (headers != null)
             {
                 localHeaders.Add(headers);
@@ -369,14 +377,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string dekId,
             DatabaseInlineCore databaseInlineCore)
         {
-            EncryptionKeyWrapMetadata metadata = new EncryptionKeyWrapMetadata("custom", dekId, "tempMetadata");
+            EncryptionKeyWrapMetadata metadata = new EncryptionKeyWrapMetadata("custom", dekId, "tempMetadata", "algo");
 
-            byte[] wrappedDataEncryptionKey = new byte[32];
             // Generate random bytes cryptographically.
-            using (RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider())
-            {
-                rngCsp.GetBytes(wrappedDataEncryptionKey);
-            }
+            byte[] wrappedDataEncryptionKey =  RandomNumberGenerator.GetBytes(32);
 
             ClientEncryptionKeyProperties clientEncryptionKeyProperties = new ClientEncryptionKeyProperties(
                 dekId,

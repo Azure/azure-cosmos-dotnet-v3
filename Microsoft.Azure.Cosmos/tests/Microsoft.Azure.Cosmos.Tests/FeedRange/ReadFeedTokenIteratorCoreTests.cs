@@ -190,7 +190,8 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 queryRequestOptions: null,
                 continuationToken: continuationToken,
                 readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: pageSize),
-                cancellationToken: default);
+                cancellationToken: default,
+                container: null);
         }
 
         private static async Task<IDocumentContainer> CreateDocumentContainerAsync(

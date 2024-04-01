@@ -1,0 +1,92 @@
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+namespace Microsoft.Azure.Cosmos.Tests.Telemetry
+{
+    using System;
+    using System.Net;
+    using System.Threading.Tasks;
+    using Cosmos.Telemetry;
+    using Cosmos.Telemetry.Diagnostics;
+    using Cosmos.Tracing;
+    using Diagnostics;
+    using Documents;
+    using VisualStudio.TestTools.UnitTesting;
+
+    [TestClass]
+    public class DiagnosticsFilterHelperTest
+    {
+        private Trace rootTrace;
+        [TestInitialize]
+        public void Initialize()
+        {
+            using (this.rootTrace = Trace.GetRootTrace(name: "RootTrace"))
+            {
+                Task.Delay(1).Wait();
+            }
+        }
+
+        [TestMethod]
+        public void CheckReturnFalseOnSuccessAndLowerLatencyThanConfiguredConfig()
+        {
+            Assert.IsTrue(this.rootTrace.Duration > TimeSpan.Zero);
+
+            CosmosThresholdOptions distributedTracingOptions = new CosmosThresholdOptions
+            {
+                PointOperationLatencyThreshold = this.rootTrace.Duration.Add(TimeSpan.FromSeconds(1))
+            };
+            
+            OpenTelemetryAttributes response = new OpenTelemetryAttributes
+            {
+                StatusCode = HttpStatusCode.Accepted,
+                Diagnostics = new CosmosTraceDiagnostics(this.rootTrace)
+            };
+
+            Assert.IsFalse(
+                DiagnosticsFilterHelper
+                                .IsLatencyThresholdCrossed(distributedTracingOptions, OperationType.Read, response), 
+                $" Response time is {response.Diagnostics.GetClientElapsedTime().Milliseconds}ms " +
+                $"and Configured threshold value is {distributedTracingOptions.PointOperationLatencyThreshold.Milliseconds}ms " +
+                $"and Is response Success : {response.StatusCode.IsSuccess()}" );
+        }
+
+        [TestMethod]
+        public void CheckReturnTrueOnFailedStatusCode()
+        {
+            Assert.IsTrue(this.rootTrace.Duration > TimeSpan.Zero);
+            OpenTelemetryAttributes response = new OpenTelemetryAttributes
+            {
+                StatusCode = HttpStatusCode.BadRequest,
+                Diagnostics = new CosmosTraceDiagnostics(this.rootTrace)
+            };
+
+            Assert.IsTrue(
+                !DiagnosticsFilterHelper
+                    .IsSuccessfulResponse(response.StatusCode, response.SubStatusCode),
+                $" Response time is {response.Diagnostics.GetClientElapsedTime().Milliseconds}ms " +
+                $"and Is response Success : {response.StatusCode.IsSuccess()}");
+        }
+
+        [TestMethod]
+        public void CheckedDefaultThresholdBasedOnOperationType()
+        {
+            Assert.IsTrue(this.rootTrace.Duration > TimeSpan.Zero);
+
+            CosmosThresholdOptions config = new CosmosThresholdOptions();
+
+            Array values = Enum.GetValues(typeof(OperationType));
+
+            foreach(OperationType operationType in values)
+            {
+                TimeSpan defaultThreshold = DiagnosticsFilterHelper.DefaultThreshold(operationType, config);
+
+                if(DiagnosticsFilterHelper.IsPointOperation(operationType))
+                    Assert.AreEqual(defaultThreshold, config.PointOperationLatencyThreshold);
+                else
+                    Assert.AreEqual(defaultThreshold, config.NonPointOperationLatencyThreshold);
+            }
+        }
+
+    }
+}

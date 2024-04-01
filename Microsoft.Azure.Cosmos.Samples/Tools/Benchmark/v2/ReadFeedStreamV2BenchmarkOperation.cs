@@ -40,6 +40,8 @@ namespace CosmosBenchmark
             this.sampleJObject = JsonHelper.Deserialize<Dictionary<string, object>>(sampleJson);
         }
 
+        public BenchmarkOperationType OperationType => BenchmarkOperationType.Read;
+
         public async Task<OperationResult> ExecuteOnceAsync()
         {
             Uri containerUri = UriFactory.CreateDocumentCollectionUri(this.databsaeName, this.containerName);
@@ -52,6 +54,7 @@ namespace CosmosBenchmark
             {
                 DatabseName = databsaeName,
                 ContainerName = containerName,
+                OperationType = this.OperationType,
                 RuCharges = ruCharges,
                 LazyDiagnostics = () => feedResponse.QueryMetrics.ToString(),
             };
@@ -75,7 +78,7 @@ namespace CosmosBenchmark
                         new RequestOptions() { PartitionKey = new PartitionKey(this.nextExecutionItemPartitionKey) });
                 if (itemResponse.StatusCode != HttpStatusCode.Created)
                 {
-                    throw new Exception($"Create failed with statuscode: {itemResponse.StatusCode}");
+                    throw new Exception($"Create failed with status code: {itemResponse.StatusCode}");
                 }
             }
         }

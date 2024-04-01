@@ -36,6 +36,21 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             return true;
         }
 
+        public override bool Visit(SqlAllScalarExpression first, SqlObject secondAsObject)
+        {
+            if (!(secondAsObject is SqlAllScalarExpression second))
+            {
+                return false;
+            }
+
+            if (!Equals(first.Subquery, second.Subquery))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
         public override bool Visit(SqlArrayCreateScalarExpression first, SqlObject secondAsObject)
         {
             if (!(secondAsObject is SqlArrayCreateScalarExpression second))
@@ -216,6 +231,21 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             return true;
         }
 
+        public override bool Visit(SqlFirstScalarExpression first, SqlObject secondAsObject)
+        {
+            if (!(secondAsObject is SqlFirstScalarExpression second))
+            {
+                return false;
+            }
+
+            if (!Equals(first.Subquery, second.Subquery))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
         public override bool Visit(SqlFromClause first, SqlObject secondAsObject)
         {
             if (!(secondAsObject is SqlFromClause second))
@@ -364,6 +394,21 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             }
 
             if (!Equals(first.Right, second.Right))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        public override bool Visit(SqlLastScalarExpression first, SqlObject secondAsObject)
+        {
+            if (!(secondAsObject is SqlLastScalarExpression second))
+            {
+                return false;
+            }
+
+            if (!Equals(first.Subquery, second.Subquery))
             {
                 return false;
             }

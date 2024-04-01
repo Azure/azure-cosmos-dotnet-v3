@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
             CosmosElement distinctMapContinuationToken) => distinctQueryType switch
             {
                 DistinctQueryType.None => throw new ArgumentException("distinctQueryType can not be None. This part of code is not supposed to be reachable. Please contact support to resolve this issue."),
-                DistinctQueryType.Unordered => UnorderdDistinctMap.TryCreate(distinctMapContinuationToken),
+                DistinctQueryType.Unordered => UnorderedDistinctMap.TryCreate(distinctMapContinuationToken),
                 DistinctQueryType.Ordered => OrderedDistinctMap.TryCreate(distinctMapContinuationToken),
                 _ => throw new ArgumentException($"Unrecognized DistinctQueryType: {distinctQueryType}."),
             };

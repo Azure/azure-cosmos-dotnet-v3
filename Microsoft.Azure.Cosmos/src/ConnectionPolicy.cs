@@ -8,7 +8,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.ObjectModel;
     using System.Collections.Specialized;
     using System.Net.Http;
-    using Microsoft.Azure.Cosmos.Telemetry;
+    using System.Net.Security;
+    using System.Security.Cryptography.X509Certificates;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 
@@ -17,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class ConnectionPolicy
     {
-        private const int defaultRequestTimeout = 10;
+        private const int defaultRequestTimeout = 6;
         // defaultMediaRequestTimeout is based upon the blob client timeout and the retry policy.
         private const int defaultMediaRequestTimeout = 300;
         private const int defaultMaxConcurrentFanoutRequests = 32;
@@ -28,6 +29,7 @@ namespace Microsoft.Azure.Cosmos
 
         private Protocol connectionProtocol;
         private ObservableCollection<string> preferredLocations;
+        private ObservableCollection<Uri> accountInitializationCustomEndpoints;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ConnectionPolicy"/> class to connect to the Azure Cosmos DB service.
@@ -42,15 +44,15 @@ namespace Microsoft.Azure.Cosmos
             this.MediaReadMode = MediaReadMode.Buffered;
             this.UserAgentContainer = new UserAgentContainer(clientId: 0);
             this.preferredLocations = new ObservableCollection<string>();
+            this.accountInitializationCustomEndpoints = new ObservableCollection<Uri>();
             this.EnableEndpointDiscovery = true;
             this.MaxConnectionLimit = defaultMaxConcurrentConnectionLimit;
             this.RetryOptions = new RetryOptions();
             this.EnableReadRequestsFallback = null;
-#if PREVIEW
-            this.EnableClientTelemetry = ConfigurationManager.GetEnvironmentVariable<bool>(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, false);
-#endif
+            this.ServerCertificateCustomValidationCallback = null;
 
-    }
+            this.CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions();
+        }
 
         /// <summary>
         /// Automatically populates the <see cref="PreferredLocations"/> for geo-replicated database accounts in the Azure Cosmos DB service,
@@ -61,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!RegionProximityUtil.SourceRegionToTargetRegionsRTTInMs.ContainsKey(location))
             {
-                throw new ArgumentException("Current location is not a valid Azure region.");
+                throw new ArgumentException($"ApplicationRegion configuration '{location}' is not a valid Azure region or the current SDK version does not recognize it. If the value represents a valid region, make sure you are using the latest SDK version.");
             }
 
             List<string> proximityBasedPreferredLocations = RegionProximityUtil.GeneratePreferredRegionList(location);
@@ -87,6 +89,27 @@ namespace Microsoft.Azure.Cosmos
             foreach (string preferredLocation in regions)
             {
                 this.preferredLocations.Add(preferredLocation);
+            }
+        }
+
+        /// <summary>
+        /// Sets the custom private endpoints required to fetch account information from
+        /// private domain names.
+        /// </summary>
+        /// <param name="customEndpoints">An instance of <see cref="IEnumerable{T}"/> containing the custom DNS endpoints
+        /// provided by the customer.</param>
+        public void SetAccountInitializationCustomEndpoints(
+            IEnumerable<Uri> customEndpoints)
+        {
+            if (customEndpoints == null)
+            {
+                throw new ArgumentNullException(nameof(customEndpoints));
+            }
+
+            this.accountInitializationCustomEndpoints.Clear();
+            foreach (Uri endpoint in customEndpoints)
+            {
+                this.accountInitializationCustomEndpoints.Add(endpoint);
             }
         }
 
@@ -131,7 +154,7 @@ namespace Microsoft.Azure.Cosmos
         /// Default value is <see cref="Cosmos.ConnectionMode.Gateway"/>
         /// </value>
         /// <remarks>
-        /// For more information, see <see href="https://docs.microsoft.com/en-us/azure/documentdb/documentdb-performance-tips#direct-connection">Connection policy: Use direct connection mode</see>.
+        /// For more information, see <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3#direct-connection">Connection policy: Use direct connection mode</see>.
         /// </remarks>
         public ConnectionMode ConnectionMode
         {
@@ -160,7 +183,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// This setting is not used when <see cref="ConnectionMode"/> is set to <see cref="Cosmos.ConnectionMode.Gateway"/>.
         /// Gateway mode only supports HTTPS.
-        /// For more information, see <see href="https://docs.microsoft.com/en-us/azure/documentdb/documentdb-performance-tips#use-tcp">Connection policy: Use the TCP protocol</see>.
+        /// For more information, see <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3#networking">Connection policy: Use the HTTPS protocol</see>.
         /// </remarks>
         public Protocol ConnectionProtocol
         {
@@ -209,12 +232,6 @@ namespace Microsoft.Azure.Cosmos
         {
             get;
             set;
-        }
-
-        internal bool EnableClientTelemetry 
-        { 
-            get; 
-            set; 
         }
 
         /// <summary>
@@ -277,6 +294,24 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Gets the custom private endpoints for geo-replicated database accounts in the Azure Cosmos DB service. 
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// During the CosmosClient initialization the account information, including the available regions, is obtained from the <see cref="CosmosClient.Endpoint"/>.
+        /// Should the global endpoint become inaccessible, the CosmosClient will attempt to obtain the account information issuing requests to the custom endpoints
+        /// provided in the customAccountEndpoints list.
+        /// </para>
+        /// </remarks>
+        public Collection<Uri> AccountInitializationCustomEndpoints
+        {
+            get
+            {
+                return this.accountInitializationCustomEndpoints;
+            }
+        }
+
+        /// <summary>
         /// Gets or sets the flag to enable endpoint discovery for geo-replicated database accounts in the Azure Cosmos DB service.
         /// </summary>
         /// <remarks>
@@ -292,6 +327,15 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public bool EnablePartitionLevelFailover
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Gets or sets the certificate validation callback.
+        /// </summary>
+        internal Func<X509Certificate2, X509Chain, SslPolicyErrors, Boolean> ServerCertificateCustomValidationCallback
         {
             get;
             set;
@@ -360,7 +404,7 @@ namespace Microsoft.Azure.Cosmos
         /// set to 9 and <see cref="Cosmos.RetryOptions.MaxRetryWaitTimeInSeconds"/> set to 30 seconds.
         /// </value>
         /// <remarks>
-        /// For more information, see <see href="https://docs.microsoft.com/en-us/azure/documentdb/documentdb-performance-tips#429">Handle rate limiting/request rate too large</see>.
+        /// For more information, see <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3#429">Handle rate limiting/request rate too large</see>.
         /// </remarks>
         public RetryOptions RetryOptions
         {
@@ -451,6 +495,18 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Gets or sets the boolean flag to enable replica validation.
+        /// </summary>
+        /// <value>
+        /// The default value for this parameter is false.
+        /// </value>
+        public bool? EnableAdvancedReplicaSelectionForTcp
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
         /// (Direct/TCP) This is an advanced setting that controls the number of TCP connections that will be opened eagerly to each Cosmos DB back-end.
         /// </summary>
         /// <value>
@@ -460,6 +516,15 @@ namespace Microsoft.Azure.Cosmos
         /// This setting must be used with caution. When used improperly, it can lead to client machine ephemeral port exhaustion <see href="https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-outbound-connections">Azure SNAT port exhaustion</see>.
         /// </remarks>
         internal int? MaxTcpPartitionCount
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Gets or sets Client Telemetry Options like feature flags and corresponding options
+        /// </summary>
+        internal CosmosClientTelemetryOptions CosmosClientTelemetryOptions
         {
             get;
             set;

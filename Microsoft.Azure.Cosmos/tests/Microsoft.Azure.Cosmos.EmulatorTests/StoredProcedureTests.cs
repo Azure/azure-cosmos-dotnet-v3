@@ -2,11 +2,9 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-using System.Net.Http;
-using Microsoft.Azure.Documents.Client;
-
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
+    using System.Net.Http;
     using System;
     using System.Collections.Generic;
     using System.IO;
@@ -14,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -34,8 +31,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 SendingRequestEventArgs = this.SendingRequestEventHandlerScriptsVerifier,
             };
 
-            this.cosmosClient = TestCommon.CreateCosmosClient(clientOptions);
-            this.database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString(),
+            this.SetClient(TestCommon.CreateCosmosClient(clientOptions));
+            this.database = await this.GetClient().CreateDatabaseAsync(Guid.NewGuid().ToString(),
                 cancellationToken: this.cancellationToken);
 
             string containerName = Guid.NewGuid().ToString();

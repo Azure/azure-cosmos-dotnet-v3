@@ -11,12 +11,7 @@ namespace Microsoft.Azure.Cosmos
     /// to the corresponding type response using the
     /// CosmosClient serializer
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    abstract class CosmosResponseFactory
+    public abstract class CosmosResponseFactory
     {
         /// <summary>
         /// Creates a FeedResponse from a response message

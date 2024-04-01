@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
 
     internal abstract class ScriptsCore : Scripts
     {
-        private readonly ContainerInternal container;
+        protected readonly ContainerInternal container;
 
         internal ScriptsCore(
             ContainerInternal container,
@@ -83,11 +83,12 @@ namespace Microsoft.Azure.Cosmos.Scripts
         {
             return new FeedIteratorCore(
                clientContext: this.ClientContext,
-               this.container.LinkUri,
+               resourceLink: this.container.LinkUri,
                resourceType: ResourceType.StoredProcedure,
                queryDefinition: queryDefinition,
                continuationToken: continuationToken,
-               options: requestOptions);
+               options: requestOptions,
+               container: this.container);
         }
 
         public override FeedIterator<T> GetStoredProcedureQueryIterator<T>(
@@ -311,11 +312,12 @@ namespace Microsoft.Azure.Cosmos.Scripts
         {
             return new FeedIteratorCore(
                clientContext: this.ClientContext,
-               this.container.LinkUri,
+               resourceLink: this.container.LinkUri,
                resourceType: ResourceType.Trigger,
                queryDefinition: queryDefinition,
                continuationToken: continuationToken,
-               options: requestOptions);
+               options: requestOptions,
+               container: this.container);
         }
 
         public override FeedIterator<T> GetTriggerQueryIterator<T>(
@@ -481,11 +483,12 @@ namespace Microsoft.Azure.Cosmos.Scripts
         {
             return new FeedIteratorCore(
                clientContext: this.ClientContext,
-               this.container.LinkUri,
+               resourceLink: this.container.LinkUri,
                resourceType: ResourceType.UserDefinedFunction,
                queryDefinition: queryDefinition,
                continuationToken: continuationToken,
-               options: requestOptions);
+               options: requestOptions,
+               container: this.container);
         }
 
         public override FeedIterator<T> GetUserDefinedFunctionQueryIterator<T>(

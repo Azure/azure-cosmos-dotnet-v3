@@ -26,6 +26,8 @@ namespace CosmosBenchmark
 
         private readonly DocumentClient documentClient;
 
+        public BenchmarkOperationType OperationType => BenchmarkOperationType.Read;
+
         public ReadTExistsV2BenchmarkOperation(
             DocumentClient documentClient,
             string dbName,
@@ -57,6 +59,7 @@ namespace CosmosBenchmark
             {
                 DatabseName = databsaeName,
                 ContainerName = containerName,
+                OperationType = this.OperationType,
                 RuCharges = ruCharges,
                 LazyDiagnostics = () => itemResponse.RequestDiagnosticsString,
             };
@@ -85,7 +88,7 @@ namespace CosmosBenchmark
 
                     if (itemResponse.StatusCode != HttpStatusCode.Created)
                     {
-                        throw new Exception($"Create failed with statuscode: {itemResponse.StatusCode}");
+                        throw new Exception($"Create failed with status code: {itemResponse.StatusCode}");
                     }
                 }
             }

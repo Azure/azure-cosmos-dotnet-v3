@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     {
         public static ChangeFeedPartitionKeyResultSetIteratorCore Create(
             DocumentServiceLease lease,
+            ChangeFeedMode mode,
             string continuationToken,
             int? maxItemCount,
             ContainerInternal container,
@@ -56,22 +57,27 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             return new ChangeFeedPartitionKeyResultSetIteratorCore(
                 container: container,
+                mode: mode,
                 changeFeedStartFrom: startFrom,
                 options: requestOptions);
         }
 
         private readonly CosmosClientContext clientContext;
-        private readonly ContainerInternal container;
+
         private readonly ChangeFeedRequestOptions changeFeedOptions;
+        private readonly ChangeFeedMode mode;
+
         private ChangeFeedStartFrom changeFeedStartFrom;
         private bool hasMoreResultsInternal;
 
         private ChangeFeedPartitionKeyResultSetIteratorCore(
             ContainerInternal container,
+            ChangeFeedMode mode,
             ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedRequestOptions options)
         {
             this.container = container ?? throw new ArgumentNullException(nameof(container));
+            this.mode = mode;
             this.changeFeedStartFrom = changeFeedStartFrom ?? throw new ArgumentNullException(nameof(changeFeedStartFrom));
             this.clientContext = this.container.ClientContext;
             this.changeFeedOptions = options;
@@ -91,7 +97,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         /// <returns>A change feed response from cosmos service</returns>
         public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            return this.ReadNextAsync(NoOpTrace.Singleton);
+            return this.clientContext.OperationHelperAsync(
+                                operationName: "Change Feed Processor Read Next Async",
+                                containerName: this.container?.Id,
+                                databaseName: this.container?.Database?.Id ?? this.databaseName,
+                                operationType: Documents.OperationType.ReadFeed,
+                                requestOptions: this.changeFeedOptions,
+                                task: (trace) => this.ReadNextAsync(trace, cancellationToken),
+                                openTelemetry: (response) => new OpenTelemetryResponse(
+                                    responseMessage: response),
+                                traceComponent: TraceComponent.ChangeFeed,
+                                traceLevel: TraceLevel.Info);
         }
 
         public override async Task<ResponseMessage> ReadNextAsync(ITrace trace, CancellationToken cancellationToken = default)
@@ -115,9 +131,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                             this.changeFeedOptions.PageSizeHint.Value.ToString(CultureInfo.InvariantCulture));
                     }
 
-                    requestMessage.Headers.Add(
-                        HttpConstants.HttpHeaders.A_IM,
-                        HttpConstants.A_IMHeaderValues.IncrementalFeed);
+                    // Add the necessary mode headers
+                    this.mode.Accept(requestMessage);
                 },
                 feedRange: this.changeFeedStartFrom.FeedRange,
                 streamPayload: default,

@@ -6,21 +6,20 @@ namespace CosmosBenchmark
 {
     using System;
     using System.Threading.Tasks;
+    using OpenTelemetry.Metrics;
 
     internal interface IExecutionStrategy
     {
         public static IExecutionStrategy StartNew(
-            BenchmarkConfig config,
             Func<IBenchmarkOperation> benchmarkOperation)
         {
             return new ParallelExecutionStrategy(benchmarkOperation);
         }
 
         public Task<RunSummary> ExecuteAsync(
+            BenchmarkConfig benchmarkConfig,
             int serialExecutorConcurrency,
             int serialExecutorIterationCount,
-            bool traceFalures,
             double warmupFraction);
-
     }
 }

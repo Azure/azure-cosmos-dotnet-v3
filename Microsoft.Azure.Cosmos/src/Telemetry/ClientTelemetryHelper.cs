@@ -5,168 +5,134 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
     using System.Collections.Generic;
-    using System.Net.Http;
-    using System.Threading;
+    using System.Linq;
+    using System.Text;
     using System.Threading.Tasks;
-    using HdrHistogram;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.Handler;
+    using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Microsoft.Azure.Documents.Rntbd;
 
-    internal class ClientTelemetryHelper
+    internal static class ClientTelemetryHelper
     {
-        internal static AzureVMMetadata azMetadata = null;
-
-        private static readonly Uri vmMetadataEndpointUrl = ClientTelemetryOptions.GetVmMetadataUrl();
-
         /// <summary>
         /// Task to get Account Properties from cache if available otherwise make a network call.
         /// </summary>
         /// <returns>Async Task</returns>
-        internal static async Task<AccountProperties> SetAccountNameAsync(DocumentClient documentclient)
+        internal static async Task<AccountProperties> SetAccountNameAsync(GlobalEndpointManager globalEndpointManager)
         {
             DefaultTrace.TraceVerbose("Getting Account Information for Telemetry.");
             try
             {
-                if (documentclient.GlobalEndpointManager != null)
+                if (globalEndpointManager != null)
                 {
-                    return await documentclient.GlobalEndpointManager.GetDatabaseAccountAsync();
+                    return await globalEndpointManager.GetDatabaseAccountAsync();
                 }
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError("Exception while getting account information in client telemetry : " + ex.Message);
+                DefaultTrace.TraceError("Exception while getting account information in client telemetry : {0}", ex.Message);
             }
 
             return null;
         }
 
         /// <summary>
-        /// Task to collect virtual machine metadata information. using instance metedata service API.
-        /// ref: https://docs.microsoft.com/en-us/azure/virtual-machines/windows/instance-metadata-service?tabs=windows
-        /// Collects only application region and environment information
-        /// </summary>
-        /// <returns>Async Task</returns>
-        internal static async Task<AzureVMMetadata> LoadAzureVmMetaDataAsync(CosmosHttpClient httpClient)
-        {
-            if (azMetadata == null)
-            {
-                DefaultTrace.TraceVerbose("Getting VM Metadata Information for Telemetry.");
-                try
-                {
-                    static ValueTask<HttpRequestMessage> CreateRequestMessage()
-                    {
-                        HttpRequestMessage request = new HttpRequestMessage()
-                        {
-                            RequestUri = vmMetadataEndpointUrl,
-                            Method = HttpMethod.Get,
-                        };
-                        request.Headers.Add("Metadata", "true");
-
-                        return new ValueTask<HttpRequestMessage>(request);
-                    }
-
-                    using HttpResponseMessage httpResponseMessage = await httpClient
-                        .SendHttpAsync(createRequestMessageAsync: CreateRequestMessage,
-                        resourceType: ResourceType.Telemetry,
-                        timeoutPolicy: HttpTimeoutPolicyDefault.Instance,
-                        clientSideRequestStatistics: null,
-                        cancellationToken: new CancellationToken()); // Do not want to cancel the whole process if this call fails
-
-                    azMetadata = await ClientTelemetryOptions.ProcessResponseAsync(httpResponseMessage);
-
-                }
-                catch (Exception ex)
-                {
-                    DefaultTrace.TraceError("Exception in LoadAzureVmMetaDataAsync() " + ex.Message);
-                }
-            }
-
-            return azMetadata;
-        }
-
-        /// <summary>
-        /// Record System Usage and return recorded metrics
+        /// Record System Usage and update passed system Info collection. Right now, it collects following metrics
+        /// 1) CPU Usage
+        /// 2) Memory Remaining
+        /// 3) Available Threads
+        /// 
         /// </summary>
         /// <param name="systemUsageHistory"></param>
-        /// <returns>ReportPayload</returns>
-        internal static (SystemInfo cpuInfo, SystemInfo memoryInfo) RecordSystemUsage(SystemUsageHistory systemUsageHistory)
+        /// <param name="isDirectConnectionMode"></param>
+        private static List<SystemInfo> RecordSystemUsage(
+                SystemUsageHistory systemUsageHistory, 
+                bool isDirectConnectionMode)
         {
-            LongConcurrentHistogram cpuHistogram = new LongConcurrentHistogram(ClientTelemetryOptions.CpuMin,
-                                                        ClientTelemetryOptions.CpuMax,
-                                                        ClientTelemetryOptions.CpuPrecision);
-
-            LongConcurrentHistogram memoryHistogram = new LongConcurrentHistogram(ClientTelemetryOptions.MemoryMin,
-                                                           ClientTelemetryOptions.MemoryMax,
-                                                           ClientTelemetryOptions.MemoryPrecision);
-
             if (systemUsageHistory.Values == null)
             {
-                return (null, null);
+                return null;
             }
 
-            DefaultTrace.TraceInformation("System Usage recorded by telemetry is : " + systemUsageHistory);
-
-            foreach (SystemUsageLoad systemUsage in systemUsageHistory.Values)
+            DefaultTrace.TraceVerbose("System Usage recorded by telemetry is : {0}", systemUsageHistory);
+            
+            List<SystemInfo> systemInfoCollection = new List<SystemInfo>(6)
             {
-                float? cpuValue = systemUsage.CpuUsage;
-                if (cpuValue.HasValue && !float.IsNaN(cpuValue.Value))
+                TelemetrySystemUsage.GetCpuInfo(systemUsageHistory.Values),
+                TelemetrySystemUsage.GetMemoryRemainingInfo(systemUsageHistory.Values),
+                TelemetrySystemUsage.GetAvailableThreadsInfo(systemUsageHistory.Values),
+                TelemetrySystemUsage.GetThreadWaitIntervalInMs(systemUsageHistory.Values),
+                TelemetrySystemUsage.GetThreadStarvationSignalCount(systemUsageHistory.Values)
+            }; // Reset System Information
+
+            if (isDirectConnectionMode)
+            {
+                systemInfoCollection.Add(TelemetrySystemUsage.GetTcpConnectionCount(systemUsageHistory.Values));
+            }
+
+            return systemInfoCollection;
+        }
+        
+        /// <summary>
+        /// Record CPU and memory usage which will be sent as part of telemetry information
+        /// </summary>
+        internal static List<SystemInfo> RecordSystemUtilization(DiagnosticsHandlerHelper helper, bool isDirectMode)
+        {
+            try
+            {
+                DefaultTrace.TraceVerbose("Started Recording System Usage for telemetry.");
+
+                SystemUsageHistory systemUsageHistory = helper.GetClientTelemetrySystemHistory();
+
+                if (systemUsageHistory != null)
                 {
-                    cpuHistogram.RecordValue((long)(cpuValue * ClientTelemetryOptions.HistogramPrecisionFactor));
+                    return ClientTelemetryHelper.RecordSystemUsage(
+                        systemUsageHistory: systemUsageHistory,
+                        isDirectConnectionMode: isDirectMode);
                 }
-
-                long? memoryLoad = systemUsage.MemoryAvailable;
-                if (memoryLoad.HasValue)
+                else
                 {
-                    memoryHistogram.RecordValue(memoryLoad.Value);
+                    DefaultTrace.TraceWarning("System Usage History not available");
                 }
             }
-
-            SystemInfo memoryInfoPayload = null;
-            if (memoryHistogram.TotalCount > 0)
+            catch (Exception ex)
             {
-                memoryInfoPayload = new SystemInfo(ClientTelemetryOptions.MemoryName, ClientTelemetryOptions.MemoryUnit);
-                memoryInfoPayload.SetAggregators(memoryHistogram, ClientTelemetryOptions.KbToMbFactor);
+                DefaultTrace.TraceError("System Usage Recording Error : {0} ", ex);
             }
-
-            SystemInfo cpuInfoPayload = null;
-            if (cpuHistogram.TotalCount > 0)
-            {
-                cpuInfoPayload = new SystemInfo(ClientTelemetryOptions.CpuName, ClientTelemetryOptions.CpuUnit);
-                cpuInfoPayload.SetAggregators(cpuHistogram, ClientTelemetryOptions.HistogramPrecisionFactor);
-            }
-
-            return (cpuInfoPayload, memoryInfoPayload);
+            return null;
         }
 
         /// <summary>
-        /// Convert map with operation information to list of operations along with request latency and request charge metrics
+        /// Get comma separated list of regions contacted from the diagnostic
         /// </summary>
-        /// <param name="metrics"></param>
-        /// <returns>Collection of ReportPayload</returns>
-        internal static List<OperationInfo> ToListWithMetricsInfo(IDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> metrics)
+        /// <returns>Comma separated region list</returns>
+        internal static string GetContactedRegions(IReadOnlyCollection<(string regionName, Uri uri)> regionList)
         {
-            DefaultTrace.TraceInformation("Aggregating operation information to list started");
-
-            List<OperationInfo> payloadWithMetricInformation = new List<OperationInfo>();
-            foreach (KeyValuePair<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> entry in metrics)
+            if (regionList == null || regionList.Count == 0)
             {
-                OperationInfo payloadForLatency = entry.Key;
-                payloadForLatency.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
-                payloadForLatency.SetAggregators(entry.Value.latency, ClientTelemetryOptions.TicksToMsFactor);
-
-                payloadWithMetricInformation.Add(payloadForLatency);
-
-                OperationInfo payloadForRequestCharge = payloadForLatency.Copy();
-                payloadForRequestCharge.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestChargeName, ClientTelemetryOptions.RequestChargeUnit);
-                payloadForRequestCharge.SetAggregators(entry.Value.requestcharge, ClientTelemetryOptions.HistogramPrecisionFactor);
-
-                payloadWithMetricInformation.Add(payloadForRequestCharge);
+                return null;
             }
 
-            DefaultTrace.TraceInformation("Aggregating operation information to list done");
+            if (regionList.Count == 1)
+            {
+                return regionList.ElementAt(0).regionName;
+            }
+            
+            StringBuilder regionsContacted = new StringBuilder();
+            foreach ((string name, _) in regionList)
+            {
+                if (regionsContacted.Length > 0)
+                {
+                    regionsContacted.Append(",");
 
-            return payloadWithMetricInformation;
+                }
+
+                regionsContacted.Append(name);
+            }
+
+            return regionsContacted.ToString();
         }
 
     }

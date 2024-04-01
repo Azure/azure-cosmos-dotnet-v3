@@ -5,11 +5,11 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 {
     using System;
-    using System.Collections.Generic;
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -39,6 +39,25 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Mock<ContainerInternal> containerMock = new Mock<ContainerInternal>();
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
+            mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
+                It.Is<string>(str => str.Contains("Change Feed Processor")),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<Documents.OperationType>(),
+                It.IsAny<RequestOptions>(),
+                It.IsAny<Func<ITrace, Task<ResponseMessage>>>(),
+                It.IsAny<Func<ResponseMessage, OpenTelemetryAttributes>>(),
+                It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
+                It.IsAny<TraceLevel>()))
+               .Returns<string, string, string, Documents.OperationType, RequestOptions, Func<ITrace, Task<ResponseMessage>>,Func<ResponseMessage, OpenTelemetryAttributes>, TraceComponent, TraceLevel>(
+                (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, comp, level) =>
+                {
+                    using (ITrace trace = Trace.GetRootTrace(operationName, comp, level))
+                    {
+                        return func(trace);
+                    }
+                });
+
             mockContext.Setup(c => c.ProcessResourceOperationStreamAsync(
                 It.IsAny<string>(),
                 It.IsAny<Documents.ResourceType>(),
@@ -48,15 +67,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<FeedRange>(),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
-                It.IsAny<ITrace>(),
+                It.Is<ITrace>(t => !(t is NoOpTrace)),
                 It.IsAny<CancellationToken>()
                 )
             ).ReturnsAsync(responseMessage);
             containerMock.Setup(c => c.ClientContext).Returns(mockContext.Object);
             containerMock.Setup(c => c.LinkUri).Returns("http://localhot");
-
+            containerMock.Setup(c => c.Id).Returns("containerId");
+            containerMock.Setup(c => c.Database.Id).Returns("databaseId");
+            
             ChangeFeedPartitionKeyResultSetIteratorCore iterator = ChangeFeedPartitionKeyResultSetIteratorCore.Create(
                 lease: documentServiceLeaseCore,
+                mode: ChangeFeedMode.LatestVersion,
                 continuationToken: null,
                 maxItemCount: itemCount,
                 container: containerMock.Object,
@@ -97,6 +119,25 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Mock<ContainerInternal> containerMock = new Mock<ContainerInternal>();
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
+            mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
+                It.Is<string>(str => str.Contains("Change Feed Processor")),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<Documents.OperationType>(),
+                It.IsAny<RequestOptions>(),
+                It.IsAny<Func<ITrace, Task<ResponseMessage>>>(),
+                It.IsAny<Func<ResponseMessage, OpenTelemetryAttributes>>(),
+                It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
+                It.IsAny<TraceLevel>()))
+               .Returns<string, string, string, Documents.OperationType, RequestOptions, Func<ITrace, Task<ResponseMessage>>, Func<ResponseMessage, OpenTelemetryAttributes>, TraceComponent, TraceLevel>(
+                (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, comp, level) =>
+                {
+                    using (ITrace trace = Trace.GetRootTrace(operationName, comp, level))
+                    {
+                        return func(trace);
+                    }
+                });
+
             mockContext.SetupSequence(c => c.ProcessResourceOperationStreamAsync(
                 It.IsAny<string>(),
                 It.Is<Documents.ResourceType>(rt => rt == Documents.ResourceType.Document),
@@ -106,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<FeedRange>(),
                 It.IsAny<Stream>(),
                 It.Is<Action<RequestMessage>>(enricher => validateEnricher(enricher)),
-                It.IsAny<ITrace>(),
+                It.Is<ITrace>(t => !(t is NoOpTrace)),
                 It.IsAny<CancellationToken>()
                 )
             )
@@ -114,9 +155,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             .ReturnsAsync(secondResponse);
             containerMock.Setup(c => c.ClientContext).Returns(mockContext.Object);
             containerMock.Setup(c => c.LinkUri).Returns("http://localhot");
-
+            containerMock.Setup(c => c.Id).Returns("containerId");
+            containerMock.Setup(c => c.Database.Id).Returns("databaseId");
+            
             ChangeFeedPartitionKeyResultSetIteratorCore iterator = ChangeFeedPartitionKeyResultSetIteratorCore.Create(
                 lease: documentServiceLeaseCore,
+                mode: ChangeFeedMode.AllVersionsAndDeletes,
                 continuationToken: null,
                 maxItemCount: itemCount,
                 container: containerMock.Object,
@@ -145,6 +189,25 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Mock<ContainerInternal> containerMock = new Mock<ContainerInternal>();
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
+            mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
+                It.Is<string>(str => str.Contains("Change Feed Processor")),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<Documents.OperationType>(),
+                It.IsAny<RequestOptions>(),
+                It.IsAny<Func<ITrace, Task<ResponseMessage>>>(),
+                It.IsAny<Func<ResponseMessage, OpenTelemetryAttributes>>(),
+                It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
+                It.IsAny<TraceLevel>()))
+               .Returns<string, string, string, Documents.OperationType, RequestOptions, Func<ITrace, Task<ResponseMessage>>, Func<ResponseMessage, OpenTelemetryAttributes>, TraceComponent, TraceLevel>(
+                (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, comp, level) =>
+                {
+                    using (ITrace trace = Trace.GetRootTrace(operationName, comp, level))
+                    {
+                        return func(trace);
+                    }
+                });
+
             mockContext.Setup(c => c.ProcessResourceOperationStreamAsync(
                 It.IsAny<string>(),
                 It.Is<Documents.ResourceType>(rt => rt == Documents.ResourceType.Document),
@@ -154,15 +217,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<FeedRange>(fr => fr is FeedRangePartitionKeyRange),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
-                It.IsAny<ITrace>(),
+                It.Is<ITrace>(t => !(t is NoOpTrace)),
                 It.IsAny<CancellationToken>()
                 )
             ).ReturnsAsync(new ResponseMessage(System.Net.HttpStatusCode.OK));
             containerMock.Setup(c => c.ClientContext).Returns(mockContext.Object);
             containerMock.Setup(c => c.LinkUri).Returns("http://localhot");
-
+            containerMock.Setup(c => c.Id).Returns("containerId");
+            containerMock.Setup(c => c.Database.Id).Returns("databaseId");
+            
             ChangeFeedPartitionKeyResultSetIteratorCore iterator = ChangeFeedPartitionKeyResultSetIteratorCore.Create(
                 lease: documentServiceLeaseCore,
+                mode: ChangeFeedMode.LatestVersion,
                 continuationToken: null,
                 maxItemCount: itemCount,
                 container: containerMock.Object,
@@ -181,7 +247,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<FeedRange>(fr => fr is FeedRangePartitionKeyRange),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
-                It.IsAny<ITrace>(),
+                It.Is<ITrace>(t => !(t is NoOpTrace)),
                 It.IsAny<CancellationToken>()
                 ), Times.Once);
         }
@@ -205,6 +271,25 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Mock<ContainerInternal> containerMock = new Mock<ContainerInternal>();
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
+            mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
+                It.Is<string>(str => str.Contains("Change Feed Processor")),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<Documents.OperationType>(),
+                It.IsAny<RequestOptions>(),
+                It.IsAny<Func<ITrace, Task<ResponseMessage>>>(),
+                It.IsAny<Func<ResponseMessage, OpenTelemetryAttributes>>(),
+                It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
+                It.IsAny<TraceLevel>()))
+               .Returns<string, string, string, Documents.OperationType, RequestOptions, Func<ITrace, Task<ResponseMessage>>, Func<ResponseMessage, OpenTelemetryAttributes>, TraceComponent, TraceLevel>(
+                (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, comp, level) =>
+                {
+                    using (ITrace trace = Trace.GetRootTrace(operationName, comp, level))
+                    {
+                        return func(trace);
+                    }
+                });
+
             mockContext.Setup(c => c.ProcessResourceOperationStreamAsync(
                 It.IsAny<string>(),
                 It.Is<Documents.ResourceType>(rt => rt == Documents.ResourceType.Document),
@@ -214,17 +299,21 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<FeedRange>(fr => fr is FeedRangeEpk),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
-                It.IsAny<ITrace>(),
+                It.Is<ITrace>(t => !(t is NoOpTrace)),
                 It.IsAny<CancellationToken>()
                 )
             ).ReturnsAsync(new ResponseMessage(System.Net.HttpStatusCode.OK));
             containerMock.Setup(c => c.ClientContext).Returns(mockContext.Object);
-            containerMock.Setup(c => c.LinkUri).Returns("http://localhot");
+            containerMock.Setup(c => c.LinkUri).Returns("http://localhost");
+            containerMock.Setup(c => c.Id).Returns("containerId");
+            containerMock.Setup(c => c.Database.Id).Returns("databaseId");
+
             MockDocumentClient mockDocumentClient = new MockDocumentClient();
             mockContext.Setup(c => c.DocumentClient).Returns(mockDocumentClient);          
 
             ChangeFeedPartitionKeyResultSetIteratorCore iterator = ChangeFeedPartitionKeyResultSetIteratorCore.Create(
                 lease: documentServiceLeaseCore,
+                mode: ChangeFeedMode.LatestVersion,
                 continuationToken: null,
                 maxItemCount: itemCount,
                 container: containerMock.Object,
@@ -243,7 +332,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<FeedRange>(fr => fr is FeedRangeEpk),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
-                It.IsAny<ITrace>(),
+                It.Is<ITrace>(t => !(t is NoOpTrace)),
                 It.IsAny<CancellationToken>()
                 ), Times.Once);
         }

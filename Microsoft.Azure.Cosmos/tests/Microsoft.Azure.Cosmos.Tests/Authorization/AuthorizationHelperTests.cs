@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Authorization
     using System.Globalization;
     using System.Text;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -21,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Authorization
         public void TestGenerateAuthorizationTokenWithHashCoreDoesNotEncodeUrl()
         {
             Mock<INameValueCollection> mockHeaders = new Mock<INameValueCollection>();
-            mockHeaders.SetupGet(h => h["x-ms-date"]).Returns(DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture));
+            mockHeaders.SetupGet(h => h["x-ms-date"]).Returns(Rfc1123DateTimeCache.UtcNow());
             Mock<IComputeHash> hashHelperMock = new Mock<IComputeHash>();
             hashHelperMock.Setup(
                 ch => ch.ComputeHash(It.IsAny<ArraySegment<byte>>()))

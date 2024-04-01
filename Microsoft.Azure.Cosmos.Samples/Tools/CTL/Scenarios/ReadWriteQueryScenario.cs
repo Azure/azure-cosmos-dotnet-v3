@@ -30,7 +30,7 @@ namespace CosmosCTL
         {
             if (!TryParseReadWriteQueryPercentages(config.ReadWriteQueryPercentage, out this.readWriteQueryPercentage))
             {
-                logger.LogError("Cannot correctly parse {0} = {1}", nameof(config.ReadWriteQueryPercentage), config.ReadWriteQueryPercentage);
+                Utils.LogError(logger, "Config", $"Cannot correctly parse {nameof(config.ReadWriteQueryPercentage)} = {config.ReadWriteQueryPercentage}");
                 return;
             }
 
@@ -70,7 +70,7 @@ namespace CosmosCTL
             }
             catch (Exception unhandledException)
             {
-                logger.LogError(unhandledException, "Unhandled exception executing {0}", nameof(ReadWriteQueryScenario));
+                Utils.LogError(logger, loggingContextIdentifier, unhandledException);
             }
             finally
             {
@@ -105,56 +105,55 @@ namespace CosmosCTL
             CounterOptions querySuccessMeter = new CounterOptions { Name = "#Query Successful Operations", Context = loggingContextIdentifier };
             CounterOptions queryFailureMeter = new CounterOptions { Name = "#Query Unsuccessful Operations", Context = loggingContextIdentifier };
 
-            TimerOptions readLatencyTimer = new TimerOptions
+            TimerOptions readLatencyTimer = new()
             {
                 Name = "Read latency",
                 MeasurementUnit = Unit.Requests,
                 DurationUnit = TimeUnit.Milliseconds,
                 RateUnit = TimeUnit.Seconds,
                 Context = loggingContextIdentifier,
-                Reservoir = () => new App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir()
+                Reservoir = () => ReservoirProvider.GetReservoir(config)
             };
 
-            TimerOptions writeLatencyTimer = new TimerOptions
+            TimerOptions writeLatencyTimer = new ()
             {
                 Name = "Write latency",
                 MeasurementUnit = Unit.Requests,
                 DurationUnit = TimeUnit.Milliseconds,
                 RateUnit = TimeUnit.Seconds,
                 Context = loggingContextIdentifier,
-                Reservoir = () => new App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir()
+                Reservoir = () => ReservoirProvider.GetReservoir(config)
             };
 
-            TimerOptions queryLatencyTimer = new TimerOptions
+            TimerOptions queryLatencyTimer = new ()
             {
                 Name = "Query latency",
                 MeasurementUnit = Unit.Requests,
                 DurationUnit = TimeUnit.Milliseconds,
                 RateUnit = TimeUnit.Seconds,
                 Context = loggingContextIdentifier,
-                Reservoir = () => new App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir()
+                Reservoir = () => ReservoirProvider.GetReservoir(config)
             };
 
             SemaphoreSlim concurrencyControlSemaphore = new SemaphoreSlim(config.Concurrency);
             Stopwatch stopwatch = Stopwatch.StartNew();
             int writeRange = readWriteQueryPercentage.ReadPercentage + readWriteQueryPercentage.WritePercentage;
-            long diagnosticsThresholdDuration = (long)config.DiagnosticsThresholdDurationAsTimespan.TotalMilliseconds;
             List<Task> operations = new List<Task>();
             for (long i = 0; ShouldContinue(stopwatch, i, config); i++)
             {
                 await concurrencyControlSemaphore.WaitAsync(cancellationToken);
-                long index = (long)i % 100;
+                long index = i % 100;
                 if (index < readWriteQueryPercentage.ReadPercentage)
                 {
                     operations.Add(CTLOperationHandler<ItemResponse<Dictionary<string, string>>>.PerformOperationAsync(
-                        diagnosticsLoggingThreshold: diagnosticsThresholdDuration,
                         createTimerContext: () => metrics.Measure.Timer.Time(readLatencyTimer),
                         resultProducer: new SingleExecutionResultProducer<ItemResponse<Dictionary<string, string>>>(() => this.CreateReadOperation(
                             operation: i,
                             partitionKeyAttributeName: config.CollectionPartitionKey,
                             containers: initializationResult.Containers,
                             createdDocumentsPerContainer: this.createdDocuments)),
-                        onSuccess: () => {
+                        onSuccess: () =>
+                        {
                             concurrencyControlSemaphore.Release();
                             metrics.Measure.Counter.Increment(readSuccessMeter);
                         },
@@ -162,21 +161,24 @@ namespace CosmosCTL
                         {
                             concurrencyControlSemaphore.Release();
                             metrics.Measure.Counter.Increment(readFailureMeter);
-                            logger.LogError(ex, "Failure during read operation");
+                            Utils.LogError(logger, loggingContextIdentifier, ex, "Failure during read operation");
                         },
-                        logDiagnostics: (ItemResponse<Dictionary<string, string>> response) => logger.LogInformation("Read request took more than latency threshold {0}, diagnostics: {1}", config.DiagnosticsThresholdDuration, response.Diagnostics.ToString()),
-                        cancellationToken: cancellationToken));
+                        logDiagnostics: (ItemResponse<Dictionary<string, string>> response, TimeSpan latency) => Utils.LogDiagnostics(
+                            logger: logger,
+                            operationName: "Read",
+                            timerContextLatency: latency,
+                            config: config,
+                            cosmosDiagnostics: response.Diagnostics)));
                 }
                 else if (index < writeRange)
                 {
                     operations.Add(CTLOperationHandler<ItemResponse<Dictionary<string, string>>>.PerformOperationAsync(
-                        diagnosticsLoggingThreshold: diagnosticsThresholdDuration,
                         createTimerContext: () => metrics.Measure.Timer.Time(writeLatencyTimer),
                         resultProducer: new SingleExecutionResultProducer<ItemResponse<Dictionary<string, string>>>(() => this.CreateWriteOperation(
                             operation: i,
                             partitionKeyAttributeName: config.CollectionPartitionKey,
                             containers: initializationResult.Containers,
-                            isContentResponseOnWriteEnabled: config.IsContentResponseOnWriteEnabled)),
+                            isContentResponseOnWriteEnabled: config.IsContentResponseOnWriteEnabled.Value)),
                         onSuccess: () =>
                         {
                             concurrencyControlSemaphore.Release();
@@ -186,16 +188,19 @@ namespace CosmosCTL
                         {
                             concurrencyControlSemaphore.Release();
                             metrics.Measure.Counter.Increment(writeFailureMeter);
-                            logger.LogError(ex, "Failure during write operation");
+                            Utils.LogError(logger, loggingContextIdentifier, ex, "Failure during write operation");
                         },
-                        logDiagnostics: (ItemResponse<Dictionary<string, string>> response) => logger.LogInformation("Write request took more than latency threshold {0}, diagnostics: {1}", config.DiagnosticsThresholdDuration, response.Diagnostics.ToString()),
-                        cancellationToken: cancellationToken));
+                        logDiagnostics: (ItemResponse<Dictionary<string, string>> response, TimeSpan latency) => Utils.LogDiagnostics(
+                            logger: logger,
+                            operationName: "Write",
+                            timerContextLatency: latency,
+                            config: config,
+                            cosmosDiagnostics: response.Diagnostics)));
 
                 }
                 else
                 {
                     operations.Add(CTLOperationHandler<FeedResponse<Dictionary<string, string>>>.PerformOperationAsync(
-                        diagnosticsLoggingThreshold: diagnosticsThresholdDuration,
                         createTimerContext: () => metrics.Measure.Timer.Time(queryLatencyTimer),
                         resultProducer: new IteratorResultProducer<Dictionary<string, string>>(this.CreateQueryOperation(
                             operation: i,
@@ -209,10 +214,14 @@ namespace CosmosCTL
                         {
                             concurrencyControlSemaphore.Release();
                             metrics.Measure.Counter.Increment(queryFailureMeter);
-                            logger.LogError(ex, "Failure during query operation");
+                            Utils.LogError(logger, loggingContextIdentifier, ex, "Failure during query operation");
                         },
-                        logDiagnostics: (FeedResponse<Dictionary<string, string>> response) => logger.LogInformation("Query request took more than latency threshold {0}, diagnostics: {1}", config.DiagnosticsThresholdDuration, response.Diagnostics.ToString()),
-                        cancellationToken: cancellationToken));
+                        logDiagnostics: (FeedResponse<Dictionary<string, string>> response, TimeSpan latency) => Utils.LogDiagnostics(
+                            logger: logger,
+                            operationName: "Query",
+                            timerContextLatency: latency,
+                            config: config,
+                            cosmosDiagnostics: response.Diagnostics)));
                 }
             }
 

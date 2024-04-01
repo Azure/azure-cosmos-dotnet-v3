@@ -190,7 +190,7 @@ namespace Microsoft.Azure.Cosmos
                         {
                             this.cachedAccessToken = await this.tokenCredential.GetTokenAsync(
                                 requestContext: this.tokenRequestContext,
-                                cancellationToken: default);
+                                cancellationToken: this.cancellationToken);
 
                             if (!this.cachedAccessToken.HasValue)
                             {

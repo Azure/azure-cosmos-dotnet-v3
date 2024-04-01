@@ -8,8 +8,10 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Globalization;
+    using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
@@ -33,10 +35,12 @@ namespace Microsoft.Azure.Cosmos.Pagination
         private readonly ChangeFeedRequestOptions changeFeedRequestOptions;
         private readonly string resourceLink;
         private readonly ResourceType resourceType;
+        private readonly Guid correlatedActivityId;
 
         public NetworkAttachedDocumentContainer(
             ContainerInternal container,
             CosmosQueryClient cosmosQueryClient,
+            Guid correlatedActivityId,
             QueryRequestOptions queryRequestOptions = null,
             ChangeFeedRequestOptions changeFeedRequestOptions = null,
             string resourceLink = null,
@@ -48,6 +52,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             this.changeFeedRequestOptions = changeFeedRequestOptions;
             this.resourceLink = resourceLink ?? this.container.LinkUri;
             this.resourceType = resourceType;
+            this.correlatedActivityId = correlatedActivityId;
         }
 
         public Task<TryCatch> MonadicSplitAsync(
@@ -187,11 +192,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         request.Headers.ContinuationToken = ((CosmosString)readFeedContinuationState.ContinuationToken).Value;
                     }
 
-                    if (readFeedPaginationOptions.JsonSerializationFormat.HasValue)
-                    {
-                        request.Headers[HttpConstants.HttpHeaders.ContentSerializationFormat] = readFeedPaginationOptions.JsonSerializationFormat.Value.ToContentSerializationFormatString();
-                    }
-
                     foreach (KeyValuePair<string, string> kvp in readFeedPaginationOptions.AdditionalHeaders)
                     {
                         request.Headers[kvp.Key] = kvp.Value;
@@ -207,6 +207,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             {
                 double requestCharge = responseMessage.Headers.RequestCharge;
                 string activityId = responseMessage.Headers.ActivityId;
+                int itemCount = int.Parse(responseMessage.Headers.ItemCount);
                 ReadFeedState state = responseMessage.Headers.ContinuationToken != null ? ReadFeedState.Continuation(CosmosString.Create(responseMessage.Headers.ContinuationToken)) : null;
                 Dictionary<string, string> additionalHeaders = GetAdditionalHeaders(
                     responseMessage.Headers.CosmosMessageHeaders,
@@ -215,6 +216,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 ReadFeedPage readFeedPage = new ReadFeedPage(
                     responseMessage.Content,
                     requestCharge,
+                    itemCount,
                     activityId,
                     additionalHeaders,
                     state);
@@ -253,16 +255,17 @@ namespace Microsoft.Azure.Cosmos.Pagination
             }
 
             QueryRequestOptions queryRequestOptions = this.queryRequestOptions == null ? new QueryRequestOptions() : this.queryRequestOptions;
+            AdditionalRequestHeaders additionalRequestHeaders = new AdditionalRequestHeaders(this.correlatedActivityId, isContinuationExpected: false, optimisticDirectExecute: queryPaginationOptions.OptimisticDirectExecute);
+
             TryCatch<QueryPage> monadicQueryPage = await this.cosmosQueryClient.ExecuteItemQueryAsync(
                 this.resourceLink,
                 this.resourceType,
                 Documents.OperationType.Query,
-                Guid.NewGuid(),
                 feedRangeState.FeedRange,
                 queryRequestOptions,
+                additionalRequestHeaders,
                 sqlQuerySpec,
                 feedRangeState.State == null ? null : ((CosmosString)feedRangeState.State.Value).Value,
-                isContinuationExpected: false,
                 queryPaginationOptions.PageSizeLimit ?? int.MaxValue,
                 trace,
                 cancellationToken);
@@ -283,6 +286,12 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 throw new ArgumentNullException(nameof(changeFeedPaginationOptions));
             }
 
+            Stream streamPayload = null;
+            if (changeFeedPaginationOptions.ChangeFeedQuerySpec != null && changeFeedPaginationOptions.ChangeFeedQuerySpec.ShouldSerializeQueryText())
+            {
+                streamPayload = this.container.ClientContext.SerializerCore.ToStream<ChangeFeed.ChangeFeedQuerySpec>(changeFeedPaginationOptions.ChangeFeedQuerySpec);
+            }
+
             ResponseMessage responseMessage = await this.container.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: this.container.LinkUri,
                 resourceType: ResourceType.Document,
@@ -293,7 +302,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 {
                     if (changeFeedPaginationOptions.PageSizeLimit.HasValue)
                     {
-                        request.Headers[HttpConstants.HttpHeaders.PageSize] = changeFeedPaginationOptions.PageSizeLimit.Value.ToString();
+                        request.Headers.PageSize = changeFeedPaginationOptions.PageSizeLimit.Value.ToString();
                     }
 
                     feedRangeState.State.Accept(ChangeFeedStateRequestMessagePopulator.Singleton, request);
@@ -302,7 +311,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
                     if (changeFeedPaginationOptions.JsonSerializationFormat.HasValue)
                     {
-                        request.Headers[HttpConstants.HttpHeaders.ContentSerializationFormat] = changeFeedPaginationOptions.JsonSerializationFormat.Value.ToContentSerializationFormatString();
+                        request.Headers.ContentSerializationFormat = changeFeedPaginationOptions.JsonSerializationFormat.Value.ToContentSerializationFormatString();
                     }
 
                     foreach (KeyValuePair<string, string> kvp in changeFeedPaginationOptions.AdditionalHeaders)
@@ -311,7 +320,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     }
                 },
                 feedRange: feedRangeState.FeedRange,
-                streamPayload: default,
+                streamPayload: streamPayload ?? default,
                 trace: trace,
                 cancellationToken: cancellationToken);
 
@@ -321,6 +330,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             {
                 double requestCharge = responseMessage.Headers.RequestCharge;
                 string activityId = responseMessage.Headers.ActivityId;
+                int itemCount = int.Parse(responseMessage.Headers.ItemCount);
                 ChangeFeedState state = ChangeFeedState.Continuation(CosmosString.Create(responseMessage.Headers.ETag));
                 Dictionary<string, string> additionalHeaders = GetAdditionalHeaders(
                     responseMessage.Headers.CosmosMessageHeaders,
@@ -332,6 +342,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     changeFeedPage = new ChangeFeedSuccessPage(
                         responseMessage.Content,
                         requestCharge,
+                        itemCount,
                         activityId,
                         additionalHeaders,
                         state);

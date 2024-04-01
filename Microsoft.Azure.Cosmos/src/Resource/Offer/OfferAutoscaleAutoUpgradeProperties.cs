@@ -4,8 +4,10 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System.Collections.Generic;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     internal sealed class OfferAutoscaleAutoUpgradeProperties
     {
@@ -13,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
         /// Default constructor for serialization
         /// </summary>
         [JsonConstructor]
-        private OfferAutoscaleAutoUpgradeProperties()
+        internal OfferAutoscaleAutoUpgradeProperties()
         {
         }
 
@@ -24,6 +26,13 @@ namespace Microsoft.Azure.Cosmos
 
         [JsonProperty(PropertyName = Constants.Properties.AutopilotThroughputPolicy, NullValueHandling = NullValueHandling.Ignore)]
         public AutoscaleThroughputProperties ThroughputProperties { get; private set; }
+
+        /// <summary>
+        /// This contains additional values for scenarios where the SDK is not aware of new fields. 
+        /// This ensures that if resource is read and updated none of the fields will be lost in the process.
+        /// </summary>
+        [JsonExtensionData]
+        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
 
         internal string GetJsonString()
         {
@@ -39,6 +48,14 @@ namespace Microsoft.Azure.Cosmos
 
             [JsonProperty(PropertyName = Constants.Properties.AutopilotThroughputPolicyIncrementPercent, NullValueHandling = NullValueHandling.Ignore)]
             public int IncrementPercent { get; private set; }
+
+            /// <summary>
+            /// This contains additional values for scenarios where the SDK is not aware of new fields. 
+            /// This ensures that if resource is read and updated none of the fields will be lost in the process.
+            /// </summary>
+            [JsonExtensionData]
+            internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+
         }
     }
 }

@@ -73,7 +73,8 @@ namespace Microsoft.Azure.Cosmos
                 SubStatusCodeLiteral = this.SubStatusCodeLiteral,
                 ContentType = this.ContentType,
                 QueryMetricsText = QueryMetricsText,
-                IndexUtilizationText = IndexUtilizationText
+                IndexUtilizationText = IndexUtilizationText,
+                CorrelatedActivityId = this.CorrelatedActivityId
             };
         }
 
@@ -108,7 +109,8 @@ namespace Microsoft.Azure.Cosmos
                 SubStatusCodeLiteral = sourceHeaders.SubStatusCodeLiteral ?? (substatusCode.HasValue ? substatusCode.Value.ToString() : null),
                 ContentType = sourceHeaders.ContentType,
                 QueryMetricsText = sourceHeaders.QueryMetricsText,
-                IndexUtilizationText = sourceHeaders.IndexUtilizationText
+                IndexUtilizationText = sourceHeaders.IndexUtilizationText,
+                CorrelatedActivityId = sourceHeaders.CorrelatedActivityId
             };
         }
     }

@@ -58,6 +58,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             this.stringBuilder.AppendFormat("C_Guid(\"{0}\")", cosmosGuid.Value);
         }
 
+        public void Visit(CosmosUndefined cosmosUndefined)
+        {
+            throw new ArgumentException($"{nameof(CosmosUndefined)} is not a legal argument.");
+        }
+
         public void Visit(CosmosNull cosmosNull)
         {
             this.stringBuilder.Append("null");

@@ -17,7 +17,6 @@ namespace CosmosCTL
         /// <summary>
         /// Waits until the synchronization semaphore is available, creates a new operation and handles resolution.
         /// </summary>
-        /// <param name="diagnosticsLoggingThreshold">Latency threshold above which <paramref name="logDiagnostics"/> will be called.</param>
         /// <param name="createTimerContext">Creates a <see cref="TimerContext"/> to measure operation latency.</param>
         /// <param name="resultProducer">Producer to generate operation calls as a producer-consumer.</param>
         /// <param name="onSuccess">Event handler for operation success.</param>
@@ -26,13 +25,11 @@ namespace CosmosCTL
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
         public static async Task PerformOperationAsync(
-            long diagnosticsLoggingThreshold,
             Func<TimerContext> createTimerContext,
             ICTLResultProducer<T> resultProducer,
             Action onSuccess,
             Action<Exception> onFailure,
-            Action<T> logDiagnostics,
-            CancellationToken cancellationToken)
+            Action<T, TimeSpan> logDiagnostics)
         {
             while (resultProducer.HasMoreResults)
             {
@@ -40,13 +37,9 @@ namespace CosmosCTL
                 {
                     await resultProducer.GetNextAsync().ContinueWith(task =>
                     {
-                        long latency = (long)timerContext.Elapsed.TotalMilliseconds;
                         if (task.IsCompletedSuccessfully)
                         {
-                            if (latency > diagnosticsLoggingThreshold)
-                            {
-                                logDiagnostics(task.Result);
-                            }
+                            logDiagnostics(task.Result, timerContext.Elapsed);
 
                             if (!resultProducer.HasMoreResults)
                             {

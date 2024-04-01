@@ -74,8 +74,11 @@ namespace Microsoft.Azure.Cosmos.Serializer
             jsonWriter.WriteArrayStart();
             foreach (CosmosElement element in cosmosElements)
             {
-                count++;
-                element.WriteTo(jsonWriter);
+                if (element is not CosmosUndefined)
+                {
+                    count++;
+                    element.WriteTo(jsonWriter);
+                }
             }
 
             jsonWriter.WriteArrayEnd();

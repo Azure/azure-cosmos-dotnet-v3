@@ -39,6 +39,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Database dbExists = await client.CreateDatabaseAsync("NotFoundTest" + Guid.NewGuid().ToString());
             await this.ContainerOperations(database: dbExists, dbNotExist: false);
+            await dbExists.DeleteStreamAsync();
         }
 
         [TestMethod]
@@ -76,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             {
                 // Recreate the collection with the same name on a different client.
-                CosmosClient newClient = TestCommon.CreateCosmosClient();
+                using CosmosClient newClient = TestCommon.CreateCosmosClient();
                 Database db2 = newClient.GetDatabase(db.Id);
                 Container container2 = await db2.CreateContainerAsync(
                     id: container.Id,

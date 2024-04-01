@@ -384,7 +384,7 @@ namespace Microsoft.Azure.Cosmos
                     RMResources.InvalidTokenTimeRange,
                     startDateTime.ToString("r", CultureInfo.InvariantCulture),
                     expiryDateTime.ToString("r", CultureInfo.InvariantCulture),
-                    DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture));
+                    Rfc1123DateTimeCache.UtcNow());
 
                 DefaultTrace.TraceError(message);
 
@@ -482,7 +482,7 @@ namespace Microsoft.Azure.Cosmos
                     throw new UnauthorizedException(RMResources.InvalidDateHeader);
                 }
 
-                headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
+                headers[HttpConstants.HttpHeaders.XDate] = Rfc1123DateTimeCache.UtcNow();
                 xDate = AuthorizationHelper.GetHeaderValue(headers, HttpConstants.HttpHeaders.XDate);
             }
 
@@ -662,7 +662,7 @@ namespace Microsoft.Azure.Cosmos
                     RMResources.InvalidTokenTimeRange,
                     utcStartTime.ToString("r", CultureInfo.InvariantCulture),
                     DateTime.MaxValue.ToString("r", CultureInfo.InvariantCulture),
-                    DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture));
+                    Rfc1123DateTimeCache.UtcNow());
 
                 DefaultTrace.TraceError(message);
 

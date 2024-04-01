@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 {
     using System;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
@@ -12,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -88,7 +90,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                     if (serverLease.Owner != oldOwner)
                     {
                         DefaultTrace.TraceInformation("{0} lease token was taken over by owner '{1}'", lease.CurrentLeaseToken, serverLease.Owner);
-                        throw new LeaseLostException(lease);
+                        throw new LeaseLostException(
+                            lease, 
+                            CosmosExceptionFactory.Create(
+                                statusCode: HttpStatusCode.PreconditionFailed, 
+                                message: $"{lease.CurrentLeaseToken} lease token was taken over by owner '{serverLease.Owner}'",
+                                headers: new Headers(),
+                                stackTrace: default,
+                                trace: NoOpTrace.Singleton,
+                                error: default,
+                                innerException: default),
+                            isGone: false);
                     }
                     serverLease.Owner = this.options.HostName;
                     serverLease.Properties = lease.Properties;
@@ -112,7 +124,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 LeaseId = leaseDocId,
                 LeaseToken = leaseToken,
                 ContinuationToken = continuationToken,
-                FeedRange = new FeedRangeEpk(partitionKeyRange.ToRange())
+                FeedRange = new FeedRangeEpk(partitionKeyRange.ToRange()),
+                Mode = this.GetChangeFeedMode()
             };
 
             this.requestOptionsFactory.AddPartitionKeyIfNeeded((string pk) => documentServiceLease.LeasePartitionKey = pk, Guid.NewGuid().ToString());
@@ -136,7 +149,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 LeaseId = leaseDocId,
                 LeaseToken = leaseToken,
                 ContinuationToken = continuationToken,
-                FeedRange = feedRange
+                FeedRange = feedRange,
+                Mode = this.GetChangeFeedMode()
             };
 
             this.requestOptionsFactory.AddPartitionKeyIfNeeded((string pk) => documentServiceLease.LeasePartitionKey = pk, Guid.NewGuid().ToString());
@@ -144,12 +158,32 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             return this.TryCreateDocumentServiceLeaseAsync(documentServiceLease);
         }
 
+        private string GetChangeFeedMode()
+        {
+            return this.options.Mode == ChangeFeedMode.AllVersionsAndDeletes
+                ? HttpConstants.A_IMHeaderValues.FullFidelityFeed
+                : HttpConstants.A_IMHeaderValues.IncrementalFeed;
+        }
+
         public override async Task ReleaseAsync(DocumentServiceLease lease)
         {
             if (lease == null)
+            {
                 throw new ArgumentNullException(nameof(lease));
+            }
 
-            DocumentServiceLease refreshedLease = await this.TryGetLeaseAsync(lease).ConfigureAwait(false);
+            DocumentServiceLease refreshedLease;
+            try
+            {
+                refreshedLease = await this.TryGetLeaseAsync(lease).ConfigureAwait(false);
+            }
+            catch (CosmosException cosmosException) 
+            when (cosmosException.StatusCode == HttpStatusCode.NotFound && cosmosException.SubStatusCode == (int)SubStatusCodes.Unknown)
+            {
+                // Lease is being released after a split, the split itself delete the lease, this is expected
+                return;
+            }
+
             if (refreshedLease == null)
             {
                 DefaultTrace.TraceInformation("Lease with token {0} failed to release lease. The lease is gone already.", lease.CurrentLeaseToken);
@@ -165,7 +199,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                     if (serverLease.Owner != lease.Owner)
                     {
                         DefaultTrace.TraceInformation("Lease with token {0} no need to release lease. The lease was already taken by another host '{1}'.", lease.CurrentLeaseToken, serverLease.Owner);
-                        throw new LeaseLostException(lease);
+                        throw new LeaseLostException(
+                            lease,
+                            CosmosExceptionFactory.Create(
+                                statusCode: HttpStatusCode.PreconditionFailed,
+                                message: $"{lease.CurrentLeaseToken} lease token was taken over by owner '{serverLease.Owner}'",
+                                headers: new Headers(),
+                                stackTrace: default,
+                                trace: NoOpTrace.Singleton,
+                                error: default,
+                                innerException: default),
+                            isGone: false);
                     }
                     serverLease.Owner = null;
                     return serverLease;
@@ -207,7 +251,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                     if (serverLease.Owner != lease.Owner)
                     {
                         DefaultTrace.TraceInformation("Lease with token {0} was taken over by owner '{1}'", lease.CurrentLeaseToken, serverLease.Owner);
-                        throw new LeaseLostException(lease);
+                        throw new LeaseLostException(
+                            lease,
+                            CosmosExceptionFactory.Create(
+                                statusCode: HttpStatusCode.PreconditionFailed,
+                                message: $"{lease.CurrentLeaseToken} lease token was taken over by owner '{serverLease.Owner}'",
+                                headers: new Headers(),
+                                stackTrace: default,
+                                trace: NoOpTrace.Singleton,
+                                error: default,
+                                innerException: default),
+                            isGone: false);
                     }
                     return serverLease;
                 }).ConfigureAwait(false);
@@ -220,7 +274,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             if (lease.Owner != this.options.HostName)
             {
                 DefaultTrace.TraceInformation("Lease with token '{0}' was taken over by owner '{1}' before lease properties update", lease.CurrentLeaseToken, lease.Owner);
-                throw new LeaseLostException(lease);
+                throw new LeaseLostException(
+                    lease,
+                    CosmosExceptionFactory.Create(
+                        statusCode: HttpStatusCode.PreconditionFailed,
+                        message: $"{lease.CurrentLeaseToken} lease token was taken over by owner '{lease.Owner}'",
+                        headers: new Headers(),
+                        stackTrace: default,
+                        trace: NoOpTrace.Singleton,
+                        error: default,
+                        innerException: default),
+                    isGone: false);
             }
 
             return await this.leaseUpdater.UpdateLeaseAsync(
@@ -232,7 +296,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                     if (serverLease.Owner != lease.Owner)
                     {
                         DefaultTrace.TraceInformation("Lease with token '{0}' was taken over by owner '{1}'", lease.CurrentLeaseToken, serverLease.Owner);
-                        throw new LeaseLostException(lease);
+                        throw new LeaseLostException(
+                            lease,
+                            CosmosExceptionFactory.Create(
+                                statusCode: HttpStatusCode.PreconditionFailed,
+                                message: $"{lease.CurrentLeaseToken} lease token was taken over by owner '{serverLease.Owner}'",
+                                headers: new Headers(),
+                                stackTrace: default,
+                                trace: NoOpTrace.Singleton,
+                                error: default,
+                                innerException: default),
+                            isGone: false);
                     }
                     serverLease.Properties = lease.Properties;
                     return serverLease;

@@ -27,12 +27,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             public Geometry Location { get; set; }
         }
 
-        private readonly DocumentClient client;
+        private DocumentClient client;
 
-        public SpatialTest()
+        [TestInitialize]
+        public void TestInitialize()
         {
             this.client = TestCommon.CreateClient(true, defaultConsistencyLevel: ConsistencyLevel.Session);
             this.CleanUp();
+        }
+
+        [TestCleanup]
+        public void TestCleanup()
+        {
+            this.CleanUp();
+            this.client.Dispose();
         }
 
         [TestMethod]

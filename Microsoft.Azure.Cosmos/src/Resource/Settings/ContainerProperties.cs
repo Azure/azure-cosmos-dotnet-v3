@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Represents a document container in the Azure Cosmos DB service. A container is a named logical container for documents.
@@ -77,6 +78,16 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = "clientEncryptionPolicy", NullValueHandling = NullValueHandling.Ignore)]
         private ClientEncryptionPolicy clientEncryptionPolicyInternal;
 
+        [JsonProperty(PropertyName = "computedProperties", NullValueHandling = NullValueHandling.Ignore)]
+        private Collection<ComputedProperty> computedProperties;
+
+        /// <summary>
+        /// This contains additional values for scenarios where the SDK is not aware of new fields. 
+        /// This ensures that if resource is read and updated none of the fields will be lost in the process.
+        /// </summary>
+        [JsonExtensionData]
+        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+
         private IReadOnlyList<IReadOnlyList<string>> partitionKeyPathTokens;
         private string id;
 
@@ -100,12 +111,11 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateRequiredProperties();
         }
 
-#if PREVIEW
         /// <summary>
         /// Initializes a new instance of the <see cref="ContainerProperties"/> class for the Azure Cosmos DB service.
         /// </summary>
         /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
-        /// <param name="partitionKeyPaths">The path to the partition key. Example: /location</param>
+        /// <param name="partitionKeyPaths">The paths of the hierarchical partition keys. Example: ["/tenantId", "/userId"]</param>
         public ContainerProperties(string id, IReadOnlyList<string> partitionKeyPaths)
         {
             this.Id = id;
@@ -115,7 +125,6 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateRequiredProperties();
         }
 
-#endif
         /// <summary>
         /// Gets or sets the <see cref="Cosmos.PartitionKeyDefinitionVersion"/>
         ///
@@ -170,13 +179,6 @@ namespace Microsoft.Azure.Cosmos
         /// <para>
         /// Every resource within an Azure Cosmos DB database account needs to have a unique identifier.
         /// Unlike <see cref="Documents.Resource.ResourceId"/>, which is set internally, this Id is settable by the user and is not immutable.
-        /// </para>
-        /// <para>
-        /// When working with document resources, they too have this settable Id property.
-        /// If an Id is not supplied by the user the SDK will automatically generate a new GUID and assign its value to this property before
-        /// persisting the document in the database.
-        /// You can override this auto Id generation by setting the disableAutomaticIdGeneration parameter on the <see cref="Microsoft.Azure.Cosmos.DocumentClient"/> instance to true.
-        /// This will prevent the SDK from generating new Ids.
         /// </para>
         /// <para>
         /// The following characters are restricted and cannot be used in the Id property:
@@ -238,7 +240,7 @@ namespace Microsoft.Azure.Cosmos
         public DateTime? LastModified { get; private set; }
 
         /// <summary>
-        /// Gets the client encryption policy information for storing items in a container from the Azure Cosmos service.
+        /// Gets or sets the client encryption policy information for storing items in a container from the Azure Cosmos service.
         /// </summary>
         /// <value>
         /// It is an optional property.
@@ -250,12 +252,7 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// </remarks>
         [JsonIgnore]
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-            ClientEncryptionPolicy ClientEncryptionPolicy
+        public ClientEncryptionPolicy ClientEncryptionPolicy
         {
             get => this.clientEncryptionPolicyInternal;
 
@@ -289,6 +286,48 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 this.indexingPolicyInternal = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the collection containing <see cref="ComputedProperty"/> objects in the container.
+        /// </summary>
+        /// <value>
+        /// The collection containing <see cref="ComputedProperty"/> objects associated with the container.
+        /// </value>
+
+        /// <summary>
+        /// Gets or sets the collection containing <see cref="ComputedProperty"/> objects in the container.
+        /// </summary>
+        /// <value>
+        /// The collection containing <see cref="ComputedProperty"/> objects associated with the container.
+        /// </value>
+        [JsonIgnore]
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        Collection<ComputedProperty> ComputedProperties
+        {
+            get
+            {
+                if (this.computedProperties == null)
+                {
+                    this.computedProperties = new Collection<ComputedProperty>();
+                }
+
+                return this.computedProperties;
+            }
+
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentException($"{nameof(value)}");
+                }
+
+                this.computedProperties = value;
             }
         }
 
@@ -347,12 +386,11 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
-#if PREVIEW
                 if (this.PartitionKey?.Kind == PartitionKind.MultiHash && this.PartitionKey?.Paths.Count > 1)
                 {
-                    throw new NotImplementedException($"This MultiHash collection has more than 1 partition key path please use `PartitionKeyPaths`");
+                    throw new NotImplementedException($"This subpartitioned container has more than 1 partition key path please use `PartitionKeyPaths`");
                 }
-#endif
+
                 return this.PartitionKey?.Paths != null && this.PartitionKey.Paths.Count > 0 ? this.PartitionKey?.Paths[0] : null;
             }
             set
@@ -362,16 +400,22 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentNullException(nameof(this.PartitionKeyPath));
                 }
 
+                PartitionKeyDefinitionVersion? currentDefinitionVersion = this.PartitionKeyDefinitionVersion;
+
                 this.PartitionKey = new PartitionKeyDefinition
                 {
                     Paths = new Collection<string>() { value }
                 };
+                
+                if (currentDefinitionVersion.HasValue)
+                {
+                    this.PartitionKeyDefinitionVersion = currentDefinitionVersion.Value;
+                }
             }
         }
 
-#if PREVIEW
         /// <summary>
-        /// JSON path used for containers partitioning
+        /// List of JSON paths used for containers with hierarchical partition keys
         /// </summary>
         [JsonIgnore]
         public IReadOnlyList<string> PartitionKeyPaths
@@ -400,7 +444,6 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-#endif
         /// <summary>
         /// Gets or sets the time to live base time stamp property path.
         /// </summary>
@@ -647,12 +690,10 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentOutOfRangeException($"Container {this.Id} is not partitioned");
                 }
 
-#if PREVIEW
                 if (this.PartitionKey.Kind == Documents.PartitionKind.MultiHash && this.PartitionKeyPaths == null)
                 {
                     throw new ArgumentOutOfRangeException($"Container {this.Id} is not partitioned");
                 }
-#endif
 
                 List<IReadOnlyList<string>> partitionKeyPathTokensList = new List<IReadOnlyList<string>>();
                 foreach (string path in this.PartitionKey?.Paths)
@@ -693,7 +734,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.ClientEncryptionPolicy != null)
             {
-                this.ClientEncryptionPolicy.ValidatePartitionKeyPathsAreNotEncrypted(this.PartitionKeyPathTokens);
+                this.ClientEncryptionPolicy.ValidatePartitionKeyPathsIfEncrypted(this.PartitionKeyPathTokens);
             }
         }
     }

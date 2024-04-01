@@ -3,12 +3,8 @@
     <Input>
       <Description>Custom Handler</Description>
       <Setup><![CDATA[
-    TimeSpan delayTime = TimeSpan.FromSeconds(2);
-    RequestHandler requestHandler = new RequestHandlerSleepHelper(delayTime);
-    CosmosClient cosmosClient = TestCommon.CreateCosmosClient(builder =>
-        builder.AddCustomHandlers(requestHandler));
-
-    DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+ 
+    DatabaseResponse databaseResponse = await miscCosmosClient.CreateDatabaseAsync("miscdbcustonhandler");
     EndToEndTraceWriterBaselineTests.AssertCustomHandlerTime(
         databaseResponse.Diagnostics.ToString(),
         requestHandler.FullHandlerName,
@@ -20,103 +16,224 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── CreateDatabaseAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+└── CreateDatabaseAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   (
     │       [Client Configuration]
     │       Redacted To Not Change The Baselines From Run To Run
+    │       [DistributedTraceId]
+    │       Redacted To Not Change The Baselines From Run To Run
     │   )
-    └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        ├── Waiting for Initialization of client to complete(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        └── Microsoft.Azure.Cosmos.EmulatorTests.Tracing.EndToEndTraceWriterBaselineTests+RequestHandlerSleepHelper(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-            └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                │   (
-                │       [System Info]
-                │       Redacted To Not Change The Baselines From Run To Run
-                │   )
-                └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                    └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                        └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                            └── Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                                    (
-                                        [Client Side Request Stats]
-                                        Redacted To Not Change The Baselines From Run To Run
-                                        [PointOperationStatisticsTraceDatum]
-                                        Redacted To Not Change The Baselines From Run To Run
-                                    )
+    ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │   ├── Waiting for Initialization of client to complete(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
+    │   └── Microsoft.Azure.Cosmos.EmulatorTests.Tracing.EndToEndTraceWriterBaselineTests+RequestHandlerSleepHelper(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │       └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │           │   (
+    │           │       [System Info]
+    │           │       Redacted To Not Change The Baselines From Run To Run
+    │           │   )
+    │           └── Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │                   └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │                       └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │                           └── Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │                                   (
+    │                                       [Client Side Request Stats]
+    │                                       Redacted To Not Change The Baselines From Run To Run
+    │                                       [PointOperationStatisticsTraceDatum]
+    │                                       Redacted To Not Change The Baselines From Run To Run
+    │                                   )
+    └── Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
+  "Summary": {},
   "name": "CreateDatabaseAsync",
-  "id": "00000000-0000-0000-0000-000000000000",
-  "caller info": {
-    "member": "MemberName",
-    "file": "FilePath",
-    "line": 42
-  },
-  "start time": "12:00:00:000",
+  "start datetime": "0001-01-01T00:00:00Z",
   "duration in milliseconds": 0,
   "data": {
-    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
+    "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
   },
   "children": [
     {
       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "Waiting for Initialization of client to complete",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0
         },
         {
           "name": "Microsoft.Azure.Cosmos.EmulatorTests.Tracing.EndToEndTraceWriterBaselineTests+RequestHandlerSleepHelper",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "data": {
                 "System Info": "Redacted To Not Change The Baselines From Run To Run"
               },
               "children": [
                 {
+                  "name": "Microsoft.Azure.Cosmos.Handlers.TelemetryHandler",
+                  "duration in milliseconds": 0,
+                  "children": [
+                    {
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
+                      "duration in milliseconds": 0,
+                      "children": [
+                        {
+                          "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
+                          "duration in milliseconds": 0,
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                              "duration in milliseconds": 0,
+                              "children": [
+                                {
+                                  "name": "Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request",
+                                  "duration in milliseconds": 0,
+                                  "data": {
+                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
+                                    "PointOperationStatisticsTraceDatum": "Redacted To Not Change The Baselines From Run To Run"
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Response Serialization",
+      "duration in milliseconds": 0
+    }
+  ]
+}]]></Json><OTelActivities>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.DeleteAsync" displayName="DeleteAsync ">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">DeleteAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">miscdbcustonhandler</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Delete</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateDatabaseAsync" displayName="CreateDatabaseAsync ">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateDatabaseAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">miscdbcustonhandler</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+</OTelActivities></Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Custom Handler</Description>
+      <Setup><![CDATA[
+    RequestOptions requestOptions = new RequestOptions();
+    DatabaseResponse databaseResponse = await client.CreateDatabaseAsync(
+        id: "miscdbdataplane",
+        requestOptions: requestOptions);
+    ITrace trace = ((CosmosTraceDiagnostics)databaseResponse.Diagnostics).Value;
+    await databaseResponse.Database.DeleteAsync();
+]]></Setup>
+    </Input>
+    <Output>
+      <Text><![CDATA[.
+└── CreateDatabaseAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │   (
+    │       [Client Configuration]
+    │       Redacted To Not Change The Baselines From Run To Run
+    │       [DistributedTraceId]
+    │       Redacted To Not Change The Baselines From Run To Run
+    │   )
+    ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │       │   (
+    │       │       [System Info]
+    │       │       Redacted To Not Change The Baselines From Run To Run
+    │       │   )
+    │       └── Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │                   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │                       └── Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │                               (
+    │                                   [Client Side Request Stats]
+    │                                   Redacted To Not Change The Baselines From Run To Run
+    │                                   [PointOperationStatisticsTraceDatum]
+    │                                   Redacted To Not Change The Baselines From Run To Run
+    │                               )
+    └── Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+]]></Text>
+      <Json><![CDATA[{
+  "Summary": {},
+  "name": "CreateDatabaseAsync",
+  "start datetime": "0001-01-01T00:00:00Z",
+  "duration in milliseconds": 0,
+  "data": {
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
+    "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
+  },
+  "children": [
+    {
+      "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+      "duration in milliseconds": 0,
+      "children": [
+        {
+          "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
+          "duration in milliseconds": 0,
+          "data": {
+            "System Info": "Redacted To Not Change The Baselines From Run To Run"
+          },
+          "children": [
+            {
+              "name": "Microsoft.Azure.Cosmos.Handlers.TelemetryHandler",
+              "duration in milliseconds": 0,
+              "children": [
+                {
                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "children": [
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
                           "children": [
                             {
                               "name": "Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
                               "data": {
                                 "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
@@ -134,121 +251,49 @@
           ]
         }
       ]
-    }
-  ]
-}]]></Json>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description>Custom Handler</Description>
-      <Setup><![CDATA[
-    RequestOptions requestOptions = new RequestOptions();
-    DatabaseResponse databaseResponse = await client.CreateDatabaseAsync(
-        id: Guid.NewGuid().ToString(),
-        requestOptions: requestOptions);
-    ITrace trace = ((CosmosTraceDiagnostics)databaseResponse.Diagnostics).Value;
-    await databaseResponse.Database.DeleteAsync();
-]]></Setup>
-    </Input>
-    <Output>
-      <Text><![CDATA[.
-└── CreateDatabaseAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   (
-    │       [Client Configuration]
-    │       Redacted To Not Change The Baselines From Run To Run
-    │   )
-    └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-            │   (
-            │       [System Info]
-            │       Redacted To Not Change The Baselines From Run To Run
-            │   )
-            └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                    └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                        └── Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                                (
-                                    [Client Side Request Stats]
-                                    Redacted To Not Change The Baselines From Run To Run
-                                    [PointOperationStatisticsTraceDatum]
-                                    Redacted To Not Change The Baselines From Run To Run
-                                )
-]]></Text>
-      <Json><![CDATA[{
-  "name": "CreateDatabaseAsync",
-  "id": "00000000-0000-0000-0000-000000000000",
-  "caller info": {
-    "member": "MemberName",
-    "file": "FilePath",
-    "line": 42
-  },
-  "start time": "12:00:00:000",
-  "duration in milliseconds": 0,
-  "data": {
-    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
-  },
-  "children": [
+    },
     {
-      "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
-      "duration in milliseconds": 0,
-      "children": [
-        {
-          "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
-          "duration in milliseconds": 0,
-          "data": {
-            "System Info": "Redacted To Not Change The Baselines From Run To Run"
-          },
-          "children": [
-            {
-              "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "children": [
-                {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "children": [
-                    {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
-                      "duration in milliseconds": 0,
-                      "children": [
-                        {
-                          "name": "Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "caller info": {
-                            "member": "MemberName",
-                            "file": "FilePath",
-                            "line": 42
-                          },
-                          "start time": "12:00:00:000",
-                          "duration in milliseconds": 0,
-                          "data": {
-                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
-                            "PointOperationStatisticsTraceDatum": "Redacted To Not Change The Baselines From Run To Run"
-                          }
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
+      "name": "Response Serialization",
+      "duration in milliseconds": 0
     }
   ]
-}]]></Json>
-    </Output>
+}]]></Json><OTelActivities>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.DeleteAsync" displayName="DeleteAsync ">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">DeleteAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">miscdbdataplane</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Delete</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateDatabaseAsync" displayName="CreateDatabaseAsync ">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateDatabaseAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">miscdbdataplane</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+  </ACTIVITY>
+  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="LatencyOverThreshold" />
+</OTelActivities></Output>
   </Result>
 </Results>

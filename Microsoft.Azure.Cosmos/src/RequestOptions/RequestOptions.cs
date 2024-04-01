@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using Microsoft.Azure.Documents;
+    using Telemetry;
 
     /// <summary>
     /// The default cosmos request options
@@ -17,8 +18,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the If-Match (ETag) associated with the request in the Azure Cosmos DB service.
         /// </summary>
         /// <remarks>
-        /// Most commonly used with the Delete* and Replace* methods of <see cref="Container"/> such as <see cref="Container.ReplaceItemAsync{T}(T, string, PartitionKey?, ItemRequestOptions, System.Threading.CancellationToken)"/>
-        /// but can be used with other methods like <see cref="Container.ReadItemAsync{T}(string, PartitionKey, ItemRequestOptions, System.Threading.CancellationToken)"/> for caching scenarios.
+        /// Most commonly used with the Delete* and Replace* methods of <see cref="Container"/> such as <see cref="Container.ReplaceItemAsync{T}(T, string, PartitionKey?, ItemRequestOptions, System.Threading.CancellationToken)"/>.
         /// </remarks>
         public string IfMatchEtag { get; set; }
 
@@ -36,15 +36,40 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public IReadOnlyDictionary<string, object> Properties { get; set; }
 
-#if PREVIEW
         /// <summary>
         /// Gets or sets a delegate which injects/appends a custom header in the request.
         /// </summary>
-        public 
-#else
-        internal        
-#endif
-        Action<Headers> AddRequestHeaders { get; set; }
+        public Action<Headers> AddRequestHeaders { get; set; }
+
+        /// <summary>
+        /// Gets or sets the priority level for a request.
+        /// </summary>
+        /// <remarks>
+        /// Setting priority level only has an effect if Priority Based Execution is enabled.
+        /// If it is not enabled, the priority level is ignored by the backend.
+        /// If <see cref="CosmosClientOptions.AllowBulkExecution"/> is set to true on CosmosClient, priority level set in RequestOptions is ignored.
+        /// Default PriorityLevel for each request is treated as High. It can be explicitly set to Low for some requests.
+        /// When Priority based execution is enabled, if there are more requests than the configured RU/S in a second, 
+        /// then Cosmos DB will throttle low priority requests to allow high priority requests to execute.
+        /// This does not limit the throughput available to each priority level. Each priority level can consume the complete
+        /// provisioned throughput in absence of the other. If both priorities are present and the user goes above the
+        /// configured RU/s, low priority requests start getting throttled first to allow execution of mission critical workloads.
+        /// </remarks>
+        /// <seealso href="https://aka.ms/CosmosDB/PriorityBasedExecution"/>
+        public PriorityLevel? PriorityLevel { get; set; }
+
+        /// <summary>
+        /// Threshold values for Distributed Tracing. 
+        /// These values decides whether to generate operation level <see cref="System.Diagnostics.Tracing.EventSource"/> with request diagnostics or not.
+        /// </summary>
+        public CosmosThresholdOptions CosmosThresholdOptions { get; set; }
+
+        /// <summary>
+        /// List of regions to be excluded routing the request to.
+        /// This can be used to route a request to a specific region by excluding all other regions.
+        /// If all regions are excluded, then the request will be routed to the primary/hub region.
+        /// </summary>
+        public List<string> ExcludeRegions { get; set; }
 
         /// <summary>
         /// Gets or sets the boolean to use effective partition key routing in the cosmos db request.
@@ -90,19 +115,19 @@ namespace Microsoft.Azure.Cosmos
                 request.Headers.Add(HttpConstants.HttpHeaders.IfNoneMatch, this.IfNoneMatchEtag);
             }
 
+            if (this.PriorityLevel.HasValue)
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.PriorityLevel, this.PriorityLevel.ToString());
+            }
+
             this.AddRequestHeaders?.Invoke(request.Headers);
         }
 
-#if PREVIEW
         /// <summary>
         /// Clone RequestOptions.
         /// </summary>
         /// <returns> cloned RequestOptions. </returns>
-        public
-#else
-        internal
-#endif
-        RequestOptions ShallowCopy()
+        public RequestOptions ShallowCopy()
         {
             return this.MemberwiseClone() as RequestOptions;
         }

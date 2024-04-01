@@ -11,26 +11,58 @@ namespace Microsoft.Azure.Cosmos
     internal abstract class HttpTimeoutPolicy
     {
         public abstract string TimeoutPolicyName { get; }
-        public abstract TimeSpan MaximumRetryTimeLimit { get; }
         public abstract int TotalRetryCount { get; }
         public abstract IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> GetTimeoutEnumerator();
         public abstract bool IsSafeToRetry(HttpMethod httpMethod);
 
+        public abstract bool ShouldRetryBasedOnResponse(HttpMethod requestHttpMethod, HttpResponseMessage responseMessage);
+
+        public virtual bool ShouldThrow503OnTimeout => false;
+
         public static HttpTimeoutPolicy GetTimeoutPolicy(
            DocumentServiceRequest documentServiceRequest)
         {
+            //Query Plan Requests
             if (documentServiceRequest.ResourceType == ResourceType.Document
                 && documentServiceRequest.OperationType == OperationType.QueryPlan)
             {
-                return HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance;
+                return HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout;
             }
 
-            if (documentServiceRequest.ResourceType == ResourceType.PartitionKeyRange)
+            //Get Partition Key Range Requests
+            if (documentServiceRequest.ResourceType == ResourceType.PartitionKeyRange
+                && documentServiceRequest.OperationType == OperationType.ReadFeed)
+            {
+                return HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout;
+            }
+
+            //Get Addresses Requests
+            if (documentServiceRequest.ResourceType == ResourceType.Address)
             {
                 return HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance;
             }
 
+            //Data Plane Read
+            if (!HttpTimeoutPolicy.IsMetaData(documentServiceRequest) && documentServiceRequest.IsReadOnlyRequest)
+            {
+                return HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout;
+            }
+
+            //Meta Data Read
+            if (HttpTimeoutPolicy.IsMetaData(documentServiceRequest) && documentServiceRequest.IsReadOnlyRequest)
+            {
+                return HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout;
+            }
+
+            //Default behavior
             return HttpTimeoutPolicyDefault.Instance;
+        }
+
+        private static bool IsMetaData(DocumentServiceRequest request)
+        {
+            return (request.OperationType != Documents.OperationType.ExecuteJavaScript && request.ResourceType == ResourceType.StoredProcedure) ||
+                request.ResourceType != ResourceType.Document;
+
         }
     }
 }

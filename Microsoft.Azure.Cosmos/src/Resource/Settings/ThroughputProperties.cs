@@ -5,8 +5,10 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Represents a throughput of the resources in the Azure Cosmos DB service.
@@ -31,14 +33,14 @@ namespace Microsoft.Azure.Cosmos
         /// Default constructor for serialization
         /// </summary>
         [JsonConstructor]
-        private ThroughputProperties()
+        internal ThroughputProperties()
         {
         }
 
         /// <summary>
         /// Create a instance for fixed throughput
         /// </summary>
-        private ThroughputProperties(OfferContentProperties offerContentProperties)
+        internal ThroughputProperties(OfferContentProperties offerContentProperties)
         {
             this.OfferVersion = Constants.Offers.OfferVersion_V2;
             this.Content = offerContentProperties;
@@ -169,5 +171,12 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.OfferVersion, DefaultValueHandling = DefaultValueHandling.Ignore)]
         internal string OfferVersion { get; private set; }
+
+        /// <summary>
+        /// This contains additional values for scenarios where the SDK is not aware of new fields. 
+        /// This ensures that if resource is read and updated none of the fields will be lost in the process.
+        /// </summary>
+        [JsonExtensionData]
+        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
     }
 }

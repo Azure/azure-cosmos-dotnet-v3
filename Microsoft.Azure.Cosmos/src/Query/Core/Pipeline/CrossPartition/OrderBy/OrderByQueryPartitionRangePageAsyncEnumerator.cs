@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 {
     using System;
+    using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Pagination;
@@ -15,30 +16,44 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
     internal sealed class OrderByQueryPartitionRangePageAsyncEnumerator : PartitionRangePageAsyncEnumerator<OrderByQueryPage, QueryState>, IPrefetcher
     {
         private readonly InnerEnumerator innerEnumerator;
-        private readonly BufferedPartitionRangePageAsyncEnumerator<OrderByQueryPage, QueryState> bufferedEnumerator;
+        private readonly BufferedPartitionRangePageAsyncEnumeratorBase<OrderByQueryPage, QueryState> bufferedEnumerator;
 
-        public OrderByQueryPartitionRangePageAsyncEnumerator(
+        public static OrderByQueryPartitionRangePageAsyncEnumerator Create(
             IQueryDataSource queryDataSource,
             SqlQuerySpec sqlQuerySpec,
             FeedRangeState<QueryState> feedRangeState,
             PartitionKey? partitionKey,
             QueryPaginationOptions queryPaginationOptions,
             string filter,
-            CancellationToken cancellationToken)
-            : base(feedRangeState, cancellationToken)
+            PrefetchPolicy prefetchPolicy)
         {
-            this.StartOfPageState = feedRangeState.State;
-            this.innerEnumerator = new InnerEnumerator(
+            InnerEnumerator enumerator = new InnerEnumerator(
                 queryDataSource,
                 sqlQuerySpec,
                 feedRangeState,
                 partitionKey,
                 queryPaginationOptions,
-                filter,
-                cancellationToken);
-            this.bufferedEnumerator = new BufferedPartitionRangePageAsyncEnumerator<OrderByQueryPage, QueryState>(
-                this.innerEnumerator,
-                cancellationToken);
+                filter);
+
+            BufferedPartitionRangePageAsyncEnumeratorBase<OrderByQueryPage, QueryState> bufferedEnumerator = prefetchPolicy switch
+            {
+                PrefetchPolicy.PrefetchSinglePage => new BufferedPartitionRangePageAsyncEnumerator<OrderByQueryPage, QueryState>(enumerator),
+                PrefetchPolicy.PrefetchAll => new FullyBufferedPartitionRangeAsyncEnumerator<OrderByQueryPage, QueryState>(enumerator),
+                _ => throw new ArgumentOutOfRangeException(nameof(prefetchPolicy)),
+            };
+
+            return new OrderByQueryPartitionRangePageAsyncEnumerator(enumerator, bufferedEnumerator, feedRangeState);
+        }
+
+        private OrderByQueryPartitionRangePageAsyncEnumerator(
+            InnerEnumerator innerEnumerator,
+            BufferedPartitionRangePageAsyncEnumeratorBase<OrderByQueryPage, QueryState> bufferedEnumerator,
+            FeedRangeState<QueryState> feedRangeState)
+            : base(feedRangeState)
+        {
+            this.innerEnumerator = innerEnumerator ?? throw new ArgumentNullException(nameof(innerEnumerator));
+            this.bufferedEnumerator = bufferedEnumerator ?? throw new ArgumentNullException(nameof(bufferedEnumerator));
+            this.StartOfPageState = feedRangeState.State;
         }
 
         public SqlQuerySpec SqlQuerySpec => this.innerEnumerator.SqlQuerySpec;
@@ -49,21 +64,48 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
         public QueryState StartOfPageState { get; private set; }
 
-        public override ValueTask DisposeAsync() => default;
+        public int BufferedResultCount => this.bufferedEnumerator.BufferedItemCount;
+
+        public override ValueTask DisposeAsync()
+        {
+            // the innerEnumerator is passed to the bufferedEnumerator
+            return this.bufferedEnumerator.DisposeAsync();
+        }
 
         protected override async Task<TryCatch<OrderByQueryPage>> GetNextPageAsync(ITrace trace, CancellationToken cancellationToken)
         {
             this.StartOfPageState = this.FeedRangeState.State;
-            await this.bufferedEnumerator.MoveNextAsync(trace);
+            await this.bufferedEnumerator.MoveNextAsync(trace, cancellationToken);
             return this.bufferedEnumerator.Current;
         }
 
-        public ValueTask PrefetchAsync(ITrace trace, CancellationToken cancellationToken) => this.bufferedEnumerator.PrefetchAsync(trace, cancellationToken);
+        public ValueTask PrefetchAsync(ITrace trace, CancellationToken cancellationToken)
+        {
+            return this.bufferedEnumerator.PrefetchAsync(trace, cancellationToken);
+        }
+
+        public OrderByQueryPartitionRangePageAsyncEnumerator CloneAsFullyBufferedEnumerator()
+        {
+            if (this.Current.Failed)
+            {
+                throw new InvalidOperationException($"{nameof(CloneAsFullyBufferedEnumerator)} is valid only if the enumerator has not failed");
+            }
+
+            InnerEnumerator innerEnumerator = this.innerEnumerator.CloneWithMaxPageSize();
+
+            FullyBufferedPartitionRangeAsyncEnumerator<OrderByQueryPage, QueryState> bufferedEnumerator = new FullyBufferedPartitionRangeAsyncEnumerator<OrderByQueryPage, QueryState>(
+                innerEnumerator,
+                new List<OrderByQueryPage> { this.Current.Result });
+
+            return new OrderByQueryPartitionRangePageAsyncEnumerator(
+                innerEnumerator,
+                bufferedEnumerator,
+                this.FeedRangeState);
+        }
 
         private sealed class InnerEnumerator : PartitionRangePageAsyncEnumerator<OrderByQueryPage, QueryState>
         {
             private readonly IQueryDataSource queryDataSource;
-            private readonly QueryPaginationOptions queryPaginationOptions;
 
             public InnerEnumerator(
                 IQueryDataSource queryDataSource,
@@ -71,14 +113,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 FeedRangeState<QueryState> feedRangeState,
                 PartitionKey? partitionKey,
                 QueryPaginationOptions queryPaginationOptions,
-                string filter,
-                CancellationToken cancellationToken)
-                : base(feedRangeState, cancellationToken)
+                string filter)
+                : base(feedRangeState)
             {
                 this.queryDataSource = queryDataSource ?? throw new ArgumentNullException(nameof(queryDataSource));
                 this.SqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
                 this.PartitionKey = partitionKey;
-                this.queryPaginationOptions = queryPaginationOptions ?? QueryPaginationOptions.Default;
+                this.QueryPaginationOptions = queryPaginationOptions ?? QueryPaginationOptions.Default;
                 this.Filter = filter;
             }
 
@@ -89,6 +130,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             public QueryPaginationOptions QueryPaginationOptions { get; }
 
             public string Filter { get; }
+
+            public InnerEnumerator CloneWithMaxPageSize()
+            {
+                QueryPaginationOptions options = new QueryPaginationOptions(
+                    pageSizeHint: int.MaxValue,
+                    optimisticDirectExecute: this.QueryPaginationOptions.OptimisticDirectExecute,
+                    additionalHeaders: this.QueryPaginationOptions.AdditionalHeaders);
+
+                return new InnerEnumerator(
+                    this.queryDataSource,
+                    this.SqlQuerySpec,
+                    this.FeedRangeState,
+                    this.PartitionKey,
+                    options,
+                    this.Filter);
+            }
 
             public override ValueTask DisposeAsync() => default;
 
@@ -102,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     .MonadicQueryAsync(
                         sqlQuerySpec: this.SqlQuerySpec,
                         feedRangeState: new FeedRangeState<QueryState>(feedRange, this.FeedRangeState.State),
-                        queryPaginationOptions: this.queryPaginationOptions,
+                        queryPaginationOptions: this.QueryPaginationOptions,
                         trace: trace,
                         cancellationToken);
                 if (monadicQueryPage.Failed)

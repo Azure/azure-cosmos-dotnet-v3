@@ -212,6 +212,32 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public void ItemLINQQueryWithInvalidContinuationTokenTest()
+        {
+            string malformedString = "Malformed String";
+            FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemLinqQueryable<ToDoActivity>().ToFeedIterator();
+
+            while (feedIterator.HasMoreResults)
+            {
+                IOrderedQueryable<ToDoActivity> querable = this.Container.GetItemLinqQueryable<ToDoActivity>(
+                    continuationToken: malformedString);
+                try
+                {
+                    FeedIterator<ToDoActivity> iterator = querable.ToFeedIterator();
+                }
+                catch (CosmosException exception)
+                {
+                    Assert.IsTrue(exception.StatusCode == System.Net.HttpStatusCode.BadRequest);
+                    Assert.IsTrue(exception.SubStatusCode == (int)Documents.SubStatusCodes.MalformedContinuationToken);
+                    Assert.IsTrue(exception.Message.Contains(malformedString));
+                    return;
+                }
+
+                Assert.Fail("Should never reach till here, hence ensuring that an exception is always recieved");
+            }
+        }
+
+        [TestMethod]
         public async Task ItemLINQQueryWithContinuationTokenTest()
         {
             // Creating items for query.
@@ -450,6 +476,64 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             linqQueryable = containerFromCamelCaseClient.GetItemLinqQueryable<ToDoActivity>(true);
             queriable = linqQueryable.Where(item => item.CamelCase == "camelCase");
             Assert.AreEqual(queriable.Count(), 2);
+        }
+
+        [TestMethod]
+        public async Task LinqHasValue()
+        {
+            IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(this.Container, pkCount: 2, perPKItemCount: 1, randomPartitionKey: true);
+
+            CosmosLinqSerializerOptions camelCaseSerialization = new CosmosLinqSerializerOptions
+            {
+                PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase
+            };
+            CosmosLinqSerializerOptions defaultSerialization = new CosmosLinqSerializerOptions
+            {
+                PropertyNamingPolicy = CosmosPropertyNamingPolicy.Default
+            };
+            CosmosLinqSerializerOptions[] serializerOptions = new[] { null, camelCaseSerialization, defaultSerialization };
+
+            foreach(CosmosLinqSerializerOptions linqSerializerOptions in serializerOptions)
+            {
+                IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(true, null, null, linqSerializerOptions);
+                // Nullable<T>.HasValue translates to IS_DEFINED - should work regardless of serialization/casing
+                IQueryable<ToDoActivity> queriable = linqQueryable.Where(item => item.nullableInt.HasValue);
+                Assert.AreEqual(2, queriable.Count(), "HasValue should have returned two items.");
+            }
+        }
+
+        [TestMethod]
+        public async Task LinqWithIgnoreNullValuesHasValueNoResults()
+        {
+            static void builder(CosmosClientBuilder action)
+            {
+                action.WithSerializerOptions(new CosmosSerializationOptions()
+                {
+                    IgnoreNullValues = true
+                });
+            }
+            CosmosClient nullValuesClient = TestCommon.CreateCosmosClient(builder, false);
+            Cosmos.Database database = nullValuesClient.GetDatabase(this.database.Id);
+            Container containerFromNulValuesClient = database.GetContainer(this.Container.Id);
+
+            IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(containerFromNulValuesClient, pkCount: 2, perPKItemCount: 1, randomPartitionKey: true);
+
+            CosmosLinqSerializerOptions camelCaseSerialization = new CosmosLinqSerializerOptions
+            {
+                PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase
+            };
+            CosmosLinqSerializerOptions defaultSerialization = new CosmosLinqSerializerOptions
+            {
+                PropertyNamingPolicy = CosmosPropertyNamingPolicy.Default
+            };
+            CosmosLinqSerializerOptions[] serializerOptions = new[] { null, camelCaseSerialization, defaultSerialization };
+
+            foreach (CosmosLinqSerializerOptions linqSerializerOptions in serializerOptions)
+            {
+                IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(true, null, null, linqSerializerOptions);
+                IQueryable<ToDoActivity> queriable = linqQueryable.Where(item => item.nullableInt.HasValue);
+                Assert.AreEqual(0, queriable.Count(), "HasValue should have returned zero items.");
+            }
         }
 
         [TestMethod]
@@ -794,8 +878,64 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await TestSearch(x => x.description.Contains("todo"), "CONTAINS", false, 0);
             await TestSearch(x => x.description.Contains("tOdO", StringComparison.OrdinalIgnoreCase), "CONTAINS", true, 200);
-
         }
+
+        [TestMethod]
+        public async Task LinqAggregatesWithContinuationTokenTest()
+        {
+            await ToDoActivity.CreateRandomItems(container: this.Container, pkCount: 1, perPKItemCount: 2, randomPartitionKey: true);
+
+            QueryRequestOptions requestOptions = new QueryRequestOptions()
+            {
+                MaxItemCount = 1
+            };
+
+            IOrderedQueryable<ToDoActivity> firstQuery = this.Container.GetItemLinqQueryable<ToDoActivity>(allowSynchronousQueryExecution: true, requestOptions: requestOptions);
+
+            int count = await firstQuery.CountAsync();
+            double average = firstQuery.Average(x => x.taskNum);
+
+            string continuationToken = null;
+
+            FeedIterator<ToDoActivity> firstFeedIterator = firstQuery.ToFeedIterator();
+
+            // if instead of while loop in order to retrieve continuation token
+            if (firstFeedIterator.HasMoreResults)
+            {
+                FeedResponse<ToDoActivity> firstFeedResponse = await firstFeedIterator.ReadNextAsync();
+
+                continuationToken = firstFeedResponse.ContinuationToken;
+            }
+
+            Assert.AreEqual(2, count);
+            Assert.IsNotNull(continuationToken);
+
+            IOrderedQueryable<ToDoActivity> secondQuery = this.Container.GetItemLinqQueryable<ToDoActivity>(allowSynchronousQueryExecution: true, continuationToken: continuationToken, requestOptions: requestOptions);
+
+            try
+            {
+                count = await secondQuery.CountAsync();
+                Assert.Fail("Expected Count query to return exception");
+            }
+            catch (CosmosException exception)
+            {
+                Assert.IsTrue(exception.StatusCode == System.Net.HttpStatusCode.BadRequest);
+                Assert.IsTrue(exception.SubStatusCode == (int)Documents.SubStatusCodes.MalformedContinuationToken);
+                Assert.IsTrue(exception.Message.Contains("ParallelCrossPartitionQueryPipelineStage"));
+            }
+
+            try
+            {
+                average = secondQuery.Average(x => x.taskNum);
+                Assert.Fail("Expected Average query to return exception");
+            }
+            catch (CosmosException exception)
+            {
+                Assert.IsTrue(exception.StatusCode == System.Net.HttpStatusCode.BadRequest);
+                Assert.IsTrue(exception.SubStatusCode == (int)Documents.SubStatusCodes.MalformedContinuationToken);
+                Assert.IsTrue(exception.Message.Contains("ParallelCrossPartitionQueryPipelineStage"));
+            }
+        }     
 
         [TestMethod]
         public async Task LinqSelectEverythingWithoutQueryableTest()
@@ -827,7 +967,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             public decimal decimaleValue;
             public bool booleanValue;
             public NumberLinqItem[] children;
-
         }
 
         private async Task<List<T>> FetchResults<T>(QueryDefinition queryDefinition)

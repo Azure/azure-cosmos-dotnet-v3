@@ -28,12 +28,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
             HttpStatusCode httpStatusCode,
             Headers headers,
             StoredProcedureProperties storedProcedureProperties,
-            CosmosDiagnostics diagnostics)
+            CosmosDiagnostics diagnostics,
+            RequestMessage requestMessage)
         {
             this.StatusCode = httpStatusCode;
             this.Headers = headers;
             this.Resource = storedProcedureProperties;
             this.Diagnostics = diagnostics;
+            this.RequestMessage = requestMessage;
         }
 
         /// <inheritdoc/>
@@ -64,6 +66,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// The token for use with session consistency requests.
         /// </value>
         public virtual string SessionToken => this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.SessionToken);
+
+        /// <inheritdoc/>
+        internal override RequestMessage RequestMessage { get; }
 
         /// <summary>
         /// Get <see cref="StoredProcedureProperties"/> implicitly from <see cref="StoredProcedureResponse"/>

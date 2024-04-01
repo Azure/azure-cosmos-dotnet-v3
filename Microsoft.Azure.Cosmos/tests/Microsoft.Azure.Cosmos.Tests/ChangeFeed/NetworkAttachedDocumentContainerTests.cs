@@ -33,7 +33,8 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             Mock<CosmosQueryClient> client = new Mock<CosmosQueryClient>();
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 container.Object,
-                client.Object);
+                client.Object,
+                Guid.NewGuid());
 
             TryCatch result = await networkAttachedDocumentContainer.MonadicRefreshProviderAsync(
                 trace: NoOpTrace.Singleton,
@@ -62,6 +63,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             response.Headers.ETag = Guid.NewGuid().ToString();
             response.Headers.ActivityId = Guid.NewGuid().ToString();
             response.Headers.RequestCharge = 1;
+            response.Headers[HttpConstants.HttpHeaders.ItemCount] = "0";
 
             context.SetupSequence(c => c.ProcessResourceOperationStreamAsync(
                 It.IsAny<string>(),
@@ -79,7 +81,8 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
 
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 container.Object,
-                Mock.Of<CosmosQueryClient>());
+                Mock.Of<CosmosQueryClient>(),
+                Guid.NewGuid());
 
             await networkAttachedDocumentContainer.MonadicChangeFeedAsync(
                 feedRangeState: new FeedRangeState<ChangeFeedState>(new FeedRangePartitionKeyRange("0"), ChangeFeedState.Beginning()),
@@ -112,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             {
                 RequestMessage requestMessage = new RequestMessage();
                 enricher(requestMessage);
-                Assert.AreEqual(ChangeFeedModeFullFidelity.FullFidelityHeader, requestMessage.Headers[HttpConstants.HttpHeaders.A_IM]);
+                Assert.AreEqual(HttpConstants.A_IMHeaderValues.FullFidelityFeed, requestMessage.Headers[HttpConstants.HttpHeaders.A_IM]);
                 return true;
             };
 
@@ -120,6 +123,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             response.Headers.ETag = Guid.NewGuid().ToString();
             response.Headers.ActivityId = Guid.NewGuid().ToString();
             response.Headers.RequestCharge = 1;
+            response.Headers[HttpConstants.HttpHeaders.ItemCount] = "0";
 
             context.SetupSequence(c => c.ProcessResourceOperationStreamAsync(
                 It.IsAny<string>(),
@@ -137,11 +141,12 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
 
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 container.Object,
-                Mock.Of<CosmosQueryClient>());
+                Mock.Of<CosmosQueryClient>(),
+                Guid.NewGuid());
 
             await networkAttachedDocumentContainer.MonadicChangeFeedAsync(
                 feedRangeState: new FeedRangeState<ChangeFeedState>(new FeedRangePartitionKeyRange("0"), ChangeFeedState.Beginning()),
-                changeFeedPaginationOptions: new ChangeFeedPaginationOptions(ChangeFeedMode.FullFidelity, pageSizeHint: 10),
+                changeFeedPaginationOptions: new ChangeFeedPaginationOptions(ChangeFeedMode.AllVersionsAndDeletes, pageSizeHint: 10),
                 trace: NoOpTrace.Singleton,
                 cancellationToken: default);
 

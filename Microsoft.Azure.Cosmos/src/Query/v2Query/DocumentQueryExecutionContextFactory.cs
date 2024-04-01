@@ -104,6 +104,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     allowNonValueAggregateQuery: true,
                     hasLogicalPartitionKey: feedOptions.PartitionKey != null,
                     allowDCount: true,
+                    geospatialType: collection.GeospatialConfig.GeospatialType,
                     cancellationToken: token);
 
                 if (DocumentQueryExecutionContextFactory.ShouldCreateSpecializedDocumentQueryExecutionContext(

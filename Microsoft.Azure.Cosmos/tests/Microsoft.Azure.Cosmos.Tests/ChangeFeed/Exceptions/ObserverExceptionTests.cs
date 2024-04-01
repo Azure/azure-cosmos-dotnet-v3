@@ -7,9 +7,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System;
     using System.IO;
     using System.Runtime.Serialization.Formatters.Binary;
+    using System.Text;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Newtonsoft.Json;
 
     [TestClass]
     [TestCategory("ChangeFeed")]
@@ -37,13 +39,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             ChangeFeedProcessorContextCore changeFeedProcessorContext = new ChangeFeedProcessorContextCore(observerContext);
             Exception exception = new Exception("randomMessage");
             ChangeFeedProcessorUserException originalException = new ChangeFeedProcessorUserException(exception, changeFeedProcessorContext);
-            byte[] buffer = new byte[4096];
-            BinaryFormatter formatter = new BinaryFormatter();
-            MemoryStream stream1 = new MemoryStream(buffer);
-            MemoryStream stream2 = new MemoryStream(buffer);
 
-            formatter.Serialize(stream1, originalException);
-            ChangeFeedProcessorUserException deserializedException = (ChangeFeedProcessorUserException)formatter.Deserialize(stream2);
+            string json = JsonConvert.SerializeObject(originalException);
+            ChangeFeedProcessorUserException deserializedException = JsonConvert.DeserializeObject<ChangeFeedProcessorUserException>(json);
 
             Assert.AreEqual(originalException.Message, deserializedException.Message);
             Assert.AreEqual(originalException.InnerException.Message, deserializedException.InnerException.Message);
@@ -54,13 +52,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public void ValidateSerialization_NullFields()
         {
             ChangeFeedProcessorUserException originalException = new ChangeFeedProcessorUserException(null, null);
-            byte[] buffer = new byte[4096];
-            BinaryFormatter formatter = new BinaryFormatter();
-            MemoryStream stream1 = new MemoryStream(buffer);
-            MemoryStream stream2 = new MemoryStream(buffer);
-
-            formatter.Serialize(stream1, originalException);
-            ChangeFeedProcessorUserException deserializedException = (ChangeFeedProcessorUserException)formatter.Deserialize(stream2);
+            string json = JsonConvert.SerializeObject(originalException);
+            ChangeFeedProcessorUserException deserializedException = JsonConvert.DeserializeObject<ChangeFeedProcessorUserException>(json);
 
             Assert.AreEqual(originalException.Message, deserializedException.Message);
             Assert.IsNull(deserializedException.InnerException);

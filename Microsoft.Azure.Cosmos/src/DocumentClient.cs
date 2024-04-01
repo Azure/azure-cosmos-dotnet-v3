@@ -12,8 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Net;
     using System.Net.Http;
-    using System.Net.Http.Headers;
-    using System.Runtime.CompilerServices;
+    using System.Net.Security;
     using System.Security;
     using System.Text;
     using System.Threading;
@@ -24,11 +23,13 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
+    using Microsoft.Azure.Documents.FaultInjection;
     using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
 
@@ -109,9 +110,19 @@ namespace Microsoft.Azure.Cosmos
         private const int DefaultRntbdReceiveHangDetectionTimeSeconds = 65;
         private const int DefaultRntbdSendHangDetectionTimeSeconds = 10;
         private const bool DefaultEnableCpuMonitor = true;
+        private const string DefaultInitTaskKey = "InitTaskKey";
+
+        private readonly bool IsLocalQuorumConsistency = false;
+        private readonly bool isReplicaAddressValidationEnabled;
+
+        //Fault Injection
+        private readonly IChaosInterceptorFactory chaosInterceptorFactory;
+        private readonly IChaosInterceptor chaosInterceptor;
+
+        private bool isChaosInterceptorInititalized = false;
 
         //Auth
-        private readonly AuthorizationTokenProvider cosmosAuthorization;
+        internal readonly AuthorizationTokenProvider cosmosAuthorization;
 
         // Gateway has backoff/retry logic to hide transient errors.
         private RetryPolicy retryPolicy;
@@ -131,11 +142,14 @@ namespace Microsoft.Azure.Cosmos
         private int rntbdSendHangDetectionTimeSeconds = DefaultRntbdSendHangDetectionTimeSeconds;
         private bool enableCpuMonitor = DefaultEnableCpuMonitor;
         private int rntbdMaxConcurrentOpeningConnectionCount = 5;
+        private string clientId;
 
         //Consistency
         private Documents.ConsistencyLevel? desiredConsistencyLevel;
 
-        private CosmosAccountServiceConfiguration accountServiceConfiguration;
+        internal CosmosAccountServiceConfiguration accountServiceConfiguration { get; private set; }
+
+        internal TelemetryToServiceHelper telemetryToServiceHelper { get; set; }
 
         private ClientCollectionCache collectionCache;
 
@@ -144,7 +158,6 @@ namespace Microsoft.Azure.Cosmos
         //Private state.
         private bool isSuccessfullyInitialized;
         private bool isDisposed;
-        private object initializationSyncLock;  // guards initializeTask
 
         // creator of TransportClient is responsible for disposing it.
         private IStoreClientFactory storeClientFactory;
@@ -160,13 +173,22 @@ namespace Microsoft.Azure.Cosmos
         //Trace Id.
         private int traceId;
 
+        //RemoteCertificateValidationCallback
+        internal RemoteCertificateValidationCallback remoteCertificateValidationCallback;
+
+        //Distributed Tracing Flag
+        internal CosmosClientTelemetryOptions cosmosClientTelemetryOptions;
+
         //SessionContainer.
         internal ISessionContainer sessionContainer;
+
+        private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
 
         private AsyncLazy<QueryPartitionProvider> queryPartitionProvider;
 
         private DocumentClientEventSource eventSource;
-        internal Task initializeTask;
+        private Func<bool, Task<bool>> initializeTaskFactory;
+        internal AsyncCacheNonBlocking<string, bool> initTaskCache;
 
         private JsonSerializerSettings serializerSettings;
         private event EventHandler<SendingRequestEventArgs> sendingRequest;
@@ -217,6 +239,8 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.Initialize(serviceEndpoint, connectionPolicy, desiredConsistencyLevel);
+            this.initTaskCache = new AsyncCacheNonBlocking<string, bool>(cancellationToken: this.cancellationTokenSource.Token);
+            this.isReplicaAddressValidationEnabled = ConfigurationManager.IsReplicaAddressValidationEnabled(connectionPolicy);
         }
 
         /// <summary>
@@ -411,6 +435,11 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="enableCpuMonitor">Flag that indicates whether client-side CPU monitoring is enabled for improved troubleshooting.</param>
         /// <param name="transportClientHandlerFactory">Transport client handler factory.</param>
         /// <param name="storeClientFactory">Factory that creates store clients sharing the same transport client to optimize network resource reuse across multiple document clients in the same process.</param>
+        /// <param name="isLocalQuorumConsistency">Flag to allow Quorum Read with Eventual Consistency Account</param>
+        /// <param name="cosmosClientId"></param>
+        /// <param name="remoteCertificateValidationCallback">This delegate responsible for validating the third party certificate. </param>
+        /// <param name="cosmosClientTelemetryOptions">This is distributed tracing flag</param>
+        /// <param name="chaosInterceptorFactory">This is the chaos interceptor used for fault injection</param>
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal.
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
@@ -434,7 +463,12 @@ namespace Microsoft.Azure.Cosmos
                               ISessionContainer sessionContainer = null,
                               bool? enableCpuMonitor = null,
                               Func<TransportClient, TransportClient> transportClientHandlerFactory = null,
-                              IStoreClientFactory storeClientFactory = null)
+                              IStoreClientFactory storeClientFactory = null,
+                              bool isLocalQuorumConsistency = false,
+                              string cosmosClientId = null,
+                              RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
+                              CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null,
+                              IChaosInterceptorFactory chaosInterceptorFactory = null)
         {
             if (sendingRequestEventArgs != null)
             {
@@ -455,6 +489,10 @@ namespace Microsoft.Azure.Cosmos
 
             this.cosmosAuthorization = cosmosAuthorization ?? throw new ArgumentNullException(nameof(cosmosAuthorization));
             this.transportClientHandlerFactory = transportClientHandlerFactory;
+            this.IsLocalQuorumConsistency = isLocalQuorumConsistency;
+            this.initTaskCache = new AsyncCacheNonBlocking<string, bool>(cancellationToken: this.cancellationTokenSource.Token);
+            this.chaosInterceptorFactory = chaosInterceptorFactory;
+            this.chaosInterceptor = chaosInterceptorFactory?.CreateInterceptor(this);
 
             this.Initialize(
                 serviceEndpoint: serviceEndpoint,
@@ -463,7 +501,10 @@ namespace Microsoft.Azure.Cosmos
                 handler: handler,
                 sessionContainer: sessionContainer,
                 enableCpuMonitor: enableCpuMonitor,
-                storeClientFactory: storeClientFactory);
+                storeClientFactory: storeClientFactory,
+                cosmosClientId: cosmosClientId,
+                remoteCertificateValidationCallback: remoteCertificateValidationCallback,
+                cosmosClientTelemetryOptions: cosmosClientTelemetryOptions);
         }
 
         /// <summary>
@@ -534,11 +575,11 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Internal constructor purely for unit-testing
         /// </summary>
-        internal DocumentClient(Uri serviceEndpoint, string authKey)
+        internal DocumentClient(Uri serviceEndpoint, ConnectionPolicy connectionPolicy)
         {
             // do nothing 
             this.ServiceEndpoint = serviceEndpoint;
-            this.ConnectionPolicy = new ConnectionPolicy();
+            this.ConnectionPolicy = connectionPolicy ?? new ConnectionPolicy();
         }
 
         internal virtual async Task<ClientCollectionCache> GetCollectionCacheAsync(ITrace trace)
@@ -625,8 +666,13 @@ namespace Microsoft.Azure.Cosmos
             catch (DocumentClientException ex)
             {
                 // Clear the caches to ensure that we don't have partial results
-                this.collectionCache = new ClientCollectionCache(this.sessionContainer, this.GatewayStoreModel, this, this.retryPolicy);
-                this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache);
+                this.collectionCache = new ClientCollectionCache(
+                    sessionContainer: this.sessionContainer, 
+                    storeModel: this.GatewayStoreModel, 
+                    tokenProvider: this, 
+                    retryPolicy: this.retryPolicy,
+                    telemetryToServiceHelper: this.telemetryToServiceHelper);
+                this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager);
 
                 DefaultTrace.TraceWarning("{0} occurred while OpenAsync. Exception Message: {1}", ex.ToString(), ex.Message);
             }
@@ -639,14 +685,19 @@ namespace Microsoft.Azure.Cosmos
             ISessionContainer sessionContainer = null,
             bool? enableCpuMonitor = null,
             IStoreClientFactory storeClientFactory = null,
-            TokenCredential tokenCredential = null)
+            TokenCredential tokenCredential = null,
+            string cosmosClientId = null,
+            RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
+            CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null)
         {
             if (serviceEndpoint == null)
             {
                 throw new ArgumentNullException("serviceEndpoint");
             }
 
-            DefaultTrace.InitEventListener();
+            this.clientId = cosmosClientId;
+            this.remoteCertificateValidationCallback = remoteCertificateValidationCallback;
+            this.cosmosClientTelemetryOptions = cosmosClientTelemetryOptions ?? new CosmosClientTelemetryOptions();
 
             this.queryPartitionProvider = new AsyncLazy<QueryPartitionProvider>(async () =>
             {
@@ -896,6 +947,18 @@ namespace Microsoft.Azure.Cosmos
                 this.sendingRequest,
                 this.receivedResponse);
 
+            // Loading VM Information (non blocking call and initialization won't fail if this call fails)
+            VmMetadataApiHandler.TryInitialize(this.httpClient);
+
+            // Starting ClientTelemetry Job
+            this.telemetryToServiceHelper = TelemetryToServiceHelper.CreateAndInitializeClientConfigAndTelemetryJob(this.clientId,
+                                                                 this.ConnectionPolicy,
+                                                                 this.cosmosAuthorization,
+                                                                 this.httpClient,
+                                                                 this.ServiceEndpoint,
+                                                                 this.GlobalEndpointManager,
+                                                                 this.cancellationTokenSource);
+
             if (sessionContainer != null)
             {
                 this.sessionContainer = sessionContainer;
@@ -916,15 +979,20 @@ namespace Microsoft.Azure.Cosmos
             // Setup the proxy to be  used based on connection mode.
             // For gateway: GatewayProxy.
             // For direct: WFStoreProxy [set in OpenAsync()].
-            this.initializationSyncLock = new object();
-
             this.eventSource = DocumentClientEventSource.Instance;
 
-            this.initializeTask = TaskHelper.InlineIfPossibleAsync(
-                () => this.GetInitializationTaskAsync(storeClientFactory: storeClientFactory),
-                new ResourceThrottleRetryPolicy(
-                    this.ConnectionPolicy.RetryOptions.MaxRetryAttemptsOnThrottledRequests,
-                    this.ConnectionPolicy.RetryOptions.MaxRetryWaitTimeInSeconds));
+            this.initializeTaskFactory = (_) => TaskHelper.InlineIfPossible<bool>(
+                    () => this.GetInitializationTaskAsync(storeClientFactory: storeClientFactory),
+                    new ResourceThrottleRetryPolicy(
+                        this.ConnectionPolicy.RetryOptions.MaxRetryAttemptsOnThrottledRequests,
+                        this.ConnectionPolicy.RetryOptions.MaxRetryWaitTimeInSeconds));
+
+            // Create the task to start the initialize task
+            // Task will be awaited on in the EnsureValidClientAsync
+            Task initTask = this.initTaskCache.GetAsync(
+                       key: DocumentClient.DefaultInitTaskKey,
+                       singleValueInitFunc: this.initializeTaskFactory,
+                       forceRefresh: (_) => false);
 
             // ContinueWith on the initialization task is needed for handling the UnobservedTaskException
             // if this task throws for some reason. Awaiting inside a constructor is not supported and
@@ -933,11 +1001,8 @@ namespace Microsoft.Azure.Cosmos
             // UnobservedTaskException by using ContinueWith method w/ TaskContinuationOptions.OnlyOnFaulted
             // and accessing the Exception property on the target task.
 #pragma warning disable VSTHRD110 // Observe result of async calls
-            this.initializeTask.ContinueWith(t =>
+            initTask.ContinueWith(t => DefaultTrace.TraceWarning("initializeTask failed {0}", t.Exception), TaskContinuationOptions.OnlyOnFaulted);
 #pragma warning restore VSTHRD110 // Observe result of async calls
-            {
-                DefaultTrace.TraceWarning("initializeTask failed {0}", t.Exception);
-            }, TaskContinuationOptions.OnlyOnFaulted);
 
             this.traceId = Interlocked.Increment(ref DocumentClient.idCounter);
             DefaultTrace.TraceInformation(string.Format(
@@ -953,7 +1018,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         // Always called from under the lock except when called from Intilialize method during construction.
-        private async Task GetInitializationTaskAsync(IStoreClientFactory storeClientFactory)
+        private async Task<bool> GetInitializationTaskAsync(IStoreClientFactory storeClientFactory)
         {
             await this.InitializeGatewayConfigurationReaderAsync();
 
@@ -972,8 +1037,13 @@ namespace Microsoft.Azure.Cosmos
 
             this.GatewayStoreModel = gatewayStoreModel;
 
-            this.collectionCache = new ClientCollectionCache(this.sessionContainer, this.GatewayStoreModel, this, this.retryPolicy);
-            this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache);
+            this.collectionCache = new ClientCollectionCache(
+                    sessionContainer: this.sessionContainer, 
+                    storeModel: this.GatewayStoreModel, 
+                    tokenProvider: this, 
+                    retryPolicy: this.retryPolicy,
+                    telemetryToServiceHelper: this.telemetryToServiceHelper);
+            this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager);
             this.ResetSessionTokenRetryPolicy = new ResetSessionTokenRetryPolicyFactory(this.sessionContainer, this.collectionCache, this.retryPolicy);
 
             gatewayStoreModel.SetCaches(this.partitionKeyRangeCache, this.collectionCache);
@@ -986,6 +1056,8 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.InitializeDirectConnectivity(storeClientFactory);
             }
+
+            return true;
         }
 
         private async Task InitializeCachesAsync(string databaseName, DocumentCollection collection, CancellationToken cancellationToken)
@@ -1174,6 +1246,23 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Returns the account properties available in the service configuration if the client was initialized.
+        /// </summary>
+        public bool TryGetCachedAccountProperties(out AccountProperties properties)
+        {
+            if (this.isSuccessfullyInitialized
+                && this.accountServiceConfiguration != null
+                && this.accountServiceConfiguration.AccountProperties != null)
+            {
+                properties = this.accountServiceConfiguration.AccountProperties;
+                return true;
+            }
+
+            properties = null;
+            return false;
+        }
+
+        /// <summary>
         /// Disposes the client for the Azure Cosmos DB service.
         /// </summary>
         /// <example>
@@ -1190,6 +1279,19 @@ namespace Microsoft.Azure.Cosmos
             {
                 return;
             }
+
+            if (this.telemetryToServiceHelper != null)
+            {
+                this.telemetryToServiceHelper.Dispose();
+                this.telemetryToServiceHelper = null;
+            }
+
+            if (!this.cancellationTokenSource.IsCancellationRequested)
+            {
+                this.cancellationTokenSource.Cancel();
+            }
+
+            this.cancellationTokenSource.Dispose();
 
             if (this.StoreModel != null)
             {
@@ -1208,7 +1310,11 @@ namespace Microsoft.Azure.Cosmos
                 this.storeClientFactory = null;
             }
 
-            this.AddressResolver = null;
+            if (this.AddressResolver != null)
+            {
+                this.AddressResolver.Dispose();
+                this.AddressResolver = null;
+            }
 
             if (this.httpClient != null)
             {
@@ -1241,6 +1347,12 @@ namespace Microsoft.Azure.Cosmos
                 this.queryPartitionProvider.Value.Dispose();
             }
 
+            if (this.initTaskCache != null)
+            {
+                this.initTaskCache.Dispose();
+                this.initTaskCache = null;
+            }
+
             DefaultTrace.TraceInformation("DocumentClient with id {0} disposed.", this.traceId);
             DefaultTrace.Flush();
 
@@ -1268,7 +1380,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// Test hook to enable unit test of DocumentClient.
         /// </remarks>
-        internal IStoreModel StoreModel { get; set; }
+        internal IStoreModelExtension StoreModel { get; set; }
 
         /// <summary>
         /// Gets and sets the gateway IStoreModel object.
@@ -1276,7 +1388,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// Test hook to enable unit test of DocumentClient.
         /// </remarks>
-        internal IStoreModel GatewayStoreModel { get; set; }
+        internal IStoreModelExtension GatewayStoreModel { get; set; }
 
         /// <summary>
         /// Gets and sets on execute scalar query callback
@@ -1371,6 +1483,44 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        /// <summary>
+        /// Establishes and Initializes the Rntbd connection to all the backend replica nodes
+        /// for the given database name and container.
+        /// </summary>
+        /// <param name="databaseName">A string containing the cosmos database name.</param>
+        /// <param name="containerLinkUri">A string containing the cosmos container link uri.</param>
+        /// <param name="cancellationToken">An instance of the <see cref="CancellationToken"/>.</param>
+        internal async Task OpenConnectionsToAllReplicasAsync(
+            string databaseName,
+            string containerLinkUri,
+            CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrEmpty(databaseName) ||
+                string.IsNullOrEmpty(containerLinkUri))
+            {
+                string resourceName = string.IsNullOrEmpty(databaseName) ?
+                    nameof(databaseName) :
+                    nameof(containerLinkUri);
+
+                throw new ArgumentNullException(resourceName);
+            }
+
+            if (this.StoreModel != null)
+            {
+                try
+                {
+                    await this.StoreModel.OpenConnectionsToAllReplicasAsync(
+                        databaseName,
+                        containerLinkUri,
+                        cancellationToken);
+                }
+                catch (Exception)
+                {
+                    throw;
+                }
+            }
+        }
+
         private static string NormalizeAuthorizationPayload(string input)
         {
             const int expansionBuffer = 12;
@@ -1404,19 +1554,9 @@ namespace Microsoft.Azure.Cosmos
                                 this.rntbdPortReuseMode);
         }
 
-        private void ThrowIfDisposed()
-        {
-            if (this.isDisposed)
-            {
-                throw new ObjectDisposedException("DocumentClient");
-            }
-        }
-
         internal virtual async Task EnsureValidClientAsync(ITrace trace)
         {
-            this.ThrowIfDisposed();
-
-            if (this.isSuccessfullyInitialized)
+            if (this.cancellationTokenSource.IsCancellationRequested || this.isSuccessfullyInitialized)
             {
                 return;
             }
@@ -1429,38 +1569,31 @@ namespace Microsoft.Azure.Cosmos
                 // client which is unusable and can resume working if it failed initialization once.
                 // If we have to reinitialize the client, it needs to happen in thread safe manner so that
                 // we dont re-initalize the task again for each incoming call.
-                Task initTask = null;
-
-                lock (this.initializationSyncLock)
-                {
-                    initTask = this.initializeTask;
-                }
-
                 try
                 {
-                    await initTask;
-                    this.isSuccessfullyInitialized = true;
-                    return;
+                    this.isSuccessfullyInitialized = await this.initTaskCache.GetAsync(
+                        key: DocumentClient.DefaultInitTaskKey,
+                        singleValueInitFunc: this.initializeTaskFactory,
+                        forceRefresh: (_) => false);
+                }
+                catch (DocumentClientException ex)
+                {
+                    throw Resource.CosmosExceptions.CosmosExceptionFactory.Create(
+                         dce: ex,
+                         trace: trace);
                 }
                 catch (Exception e)
                 {
-                    DefaultTrace.TraceWarning("initializeTask failed {0}", e.ToString());
-                    childTrace.AddDatum("initializeTask failed", e.ToString());
+                    DefaultTrace.TraceWarning("EnsureValidClientAsync initializeTask failed {0}", e);
+                    childTrace.AddDatum("initializeTask failed", e);
+                    throw;
                 }
 
-                lock (this.initializationSyncLock)
+                if (this.chaosInterceptorFactory != null && !this.isChaosInterceptorInititalized)
                 {
-                    // if the task has not been updated by another caller, update it
-                    if (object.ReferenceEquals(this.initializeTask, initTask))
-                    {
-                        this.initializeTask = this.GetInitializationTaskAsync(storeClientFactory: null);
-                    }
-
-                    initTask = this.initializeTask;
+                    this.isChaosInterceptorInititalized = true;
+                    await this.chaosInterceptorFactory.ConfigureChaosInterceptorAsync();
                 }
-
-                await initTask;
-                this.isSuccessfullyInitialized = true;
             }
         }
 
@@ -1530,7 +1663,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.ValidateResource(database);
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Create, ResourceType.Database);
 
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Create,
@@ -1770,7 +1903,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("document");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Create, ResourceType.Document);
             Document typedDocument = Document.FromObject(document, this.GetSerializerSettingsForRequest(options));
 
             this.ValidateResource(typedDocument);
@@ -1865,7 +1998,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.ValidateResource(documentCollection);
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Create, ResourceType.Collection);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Create,
                 databaseLink,
@@ -2053,7 +2186,7 @@ namespace Microsoft.Azure.Cosmos
                 options.RestorePointInTime = Helpers.ToUnixTime(restoreTime.Value);
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Create, ResourceType.Collection);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Create,
                 databaseLink,
@@ -2180,7 +2313,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.ValidateResource(storedProcedure);
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Create, ResourceType.StoredProcedure);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Create,
                 collectionLink,
@@ -2275,7 +2408,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.ValidateResource(trigger);
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Create, ResourceType.Trigger);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Create,
                 collectionLink,
@@ -2361,7 +2494,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.ValidateResource(function);
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Create, ResourceType.UserDefinedFunction);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Create,
                 collectionLink,
@@ -2434,7 +2567,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.ValidateResource(userDefinedType);
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Create, ResourceType.UserDefinedType);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Create,
                 databaseLink,
@@ -2518,7 +2651,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.ValidateResource(snapshot);
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Create, ResourceType.Snapshot);
 
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Create,
@@ -2581,7 +2714,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("databaseLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Delete, ResourceType.Database);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Delete,
                 ResourceType.Database,
@@ -2639,7 +2772,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("documentLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Delete, ResourceType.Document);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Delete,
                 ResourceType.Document,
@@ -2698,7 +2831,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("documentCollectionLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Delete, ResourceType.Collection);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Delete,
                 ResourceType.Collection,
@@ -2755,7 +2888,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("storedProcedureLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Delete, ResourceType.StoredProcedure);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Delete,
                 ResourceType.StoredProcedure,
@@ -2812,7 +2945,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("triggerLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Delete, ResourceType.Trigger);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Delete,
                 ResourceType.Trigger,
@@ -2869,7 +3002,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("functionLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Delete, ResourceType.UserDefinedFunction);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Delete,
                 ResourceType.UserDefinedFunction,
@@ -2926,7 +3059,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("conflictLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Delete, ResourceType.Conflict);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Delete,
                 ResourceType.Conflict,
@@ -2984,7 +3117,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("snapshotLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Delete, ResourceType.Snapshot);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Delete,
                 ResourceType.Snapshot,
@@ -3027,7 +3160,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.ValidateResource(documentCollection);
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Replace, ResourceType.Collection);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Replace,
                 altLink ?? this.GetLinkForRouting(documentCollection),
@@ -3208,7 +3341,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.ValidateResource(document);
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Replace, ResourceType.Document);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Replace,
                 documentLink,
@@ -3284,7 +3417,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.ValidateResource(storedProcedure);
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Replace, ResourceType.StoredProcedure);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Replace,
                 altLink ?? this.GetLinkForRouting(storedProcedure),
@@ -3354,7 +3487,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.ValidateResource(trigger);
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Replace, ResourceType.Trigger);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Replace,
                 altLink ?? this.GetLinkForRouting(trigger),
@@ -3428,7 +3561,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.ValidateResource(function);
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Replace, ResourceType.UserDefinedFunction);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Replace,
                 altLink ?? this.GetLinkForRouting(function),
@@ -3563,7 +3696,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.ValidateResource(userDefinedType);
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Replace, ResourceType.UserDefinedType);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Replace,
                 altLink ?? this.GetLinkForRouting(userDefinedType),
@@ -3644,7 +3777,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("databaseLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Read, ResourceType.Database);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Read,
                 ResourceType.Database,
@@ -3724,7 +3857,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("documentLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Read, ResourceType.Document);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Read,
                 ResourceType.Document,
@@ -3806,7 +3939,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("documentLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Read, ResourceType.Document);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Read,
                 ResourceType.Document,
@@ -3889,7 +4022,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("documentCollectionLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Read, ResourceType.Collection);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Read,
                 ResourceType.Collection,
@@ -3968,7 +4101,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("storedProcedureLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Read, ResourceType.StoredProcedure);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Read,
                 ResourceType.StoredProcedure,
@@ -4047,7 +4180,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("triggerLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Read, ResourceType.Trigger);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Read,
                 ResourceType.Trigger,
@@ -4126,7 +4259,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("functionLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Read, ResourceType.UserDefinedFunction);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Read,
                 ResourceType.UserDefinedFunction,
@@ -4205,7 +4338,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("conflictLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Read, ResourceType.Conflict);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Read,
                 ResourceType.Conflict,
@@ -4370,7 +4503,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("documentSchemaLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Read, ResourceType.Schema);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Read,
                 ResourceType.Schema,
@@ -4450,7 +4583,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("userDefinedTypeLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Read, ResourceType.UserDefinedType);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Read,
                 ResourceType.UserDefinedType,
@@ -4526,7 +4659,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("snapshotLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Read, ResourceType.Snapshot);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Read,
                 ResourceType.Snapshot,
@@ -5476,7 +5609,7 @@ namespace Microsoft.Azure.Cosmos
                     await writer.FlushAsync();
                     storedProcedureInputStream.Position = 0;
 
-                    INameValueCollection headers = this.GetRequestHeaders(options);
+                    INameValueCollection headers = this.GetRequestHeaders(options, OperationType.ExecuteJavaScript, ResourceType.StoredProcedure);
                     using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                         OperationType.ExecuteJavaScript,
                         ResourceType.StoredProcedure,
@@ -5485,7 +5618,7 @@ namespace Microsoft.Azure.Cosmos
                         AuthorizationTokenType.PrimaryMasterKey,
                         headers))
                     {
-                        request.Headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r");
+                        request.Headers[HttpConstants.HttpHeaders.XDate] = Rfc1123DateTimeCache.UtcNow();
                         if (options?.PartitionKeyRangeId == null)
                         {
                             await this.AddPartitionKeyInformationAsync(
@@ -5564,7 +5697,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.ValidateResource(database);
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Upsert, ResourceType.Database);
 
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Upsert,
@@ -5722,7 +5855,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("document");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Upsert, ResourceType.Document);
             Document typedDocument = Document.FromObject(document, this.GetSerializerSettingsForRequest(options));
             this.ValidateResource(typedDocument);
 
@@ -5872,7 +6005,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.ValidateResource(storedProcedure);
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Upsert, ResourceType.StoredProcedure);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Upsert,
                 collectionLink,
@@ -5967,7 +6100,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.ValidateResource(trigger);
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Upsert, ResourceType.Trigger);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Upsert,
                 collectionLink,
@@ -6053,7 +6186,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.ValidateResource(function);
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Upsert, ResourceType.UserDefinedFunction);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Upsert,
                 collectionLink,
@@ -6126,7 +6259,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.ValidateResource(userDefinedType);
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Upsert, ResourceType.UserDefinedType);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Upsert,
                 databaseLink,
@@ -6352,8 +6485,13 @@ namespace Microsoft.Azure.Cosmos
 
                 AccountProperties databaseAccount = await gatewayModel.GetDatabaseAccountAsync(CreateRequestMessage,
                                                                                                clientSideRequestStatistics: null);
-
                 this.UseMultipleWriteLocations = this.ConnectionPolicy.UseMultipleWriteLocations && databaseAccount.EnableMultipleWriteLocations;
+
+                if (this.queryPartitionProvider.IsValueCreated)
+                {
+                    (await this.QueryPartitionProvider).Update(databaseAccount.QueryEngineConfiguration);
+                }
+
                 return databaseAccount;
             }
 
@@ -6455,10 +6593,17 @@ namespace Microsoft.Azure.Cosmos
             return resource.SelfLink ?? resource.AltLink;
         }
 
-        internal void EnsureValidOverwrite(Documents.ConsistencyLevel desiredConsistencyLevel)
+        internal void EnsureValidOverwrite(
+            Documents.ConsistencyLevel desiredConsistencyLevel,
+            OperationType? operationType = null,
+            ResourceType? resourceType = null)
         {
             Documents.ConsistencyLevel defaultConsistencyLevel = this.accountServiceConfiguration.DefaultConsistencyLevel;
-            if (!this.IsValidConsistency(defaultConsistencyLevel, desiredConsistencyLevel))
+            if (!this.IsValidConsistency(
+                        defaultConsistencyLevel, 
+                        desiredConsistencyLevel,
+                        operationType,
+                        resourceType))
             {
                 throw new ArgumentException(string.Format(
                     CultureInfo.CurrentUICulture,
@@ -6468,14 +6613,23 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private bool IsValidConsistency(Documents.ConsistencyLevel backendConsistency, Documents.ConsistencyLevel desiredConsistency)
+        private bool IsValidConsistency(
+            Documents.ConsistencyLevel backendConsistency, 
+            Documents.ConsistencyLevel desiredConsistency,
+            OperationType? operationType,
+            ResourceType? resourceType)
         {
             if (this.allowOverrideStrongerConsistency)
             {
                 return true;
             }
 
-            return ValidationHelpers.IsValidConsistencyLevelOverwrite(backendConsistency, desiredConsistency);
+            return ValidationHelpers.IsValidConsistencyLevelOverwrite(
+                backendConsistency: backendConsistency,
+                desiredConsistency: desiredConsistency,
+                isLocalQuorumConsistency: this.IsLocalQuorumConsistency,
+                operationType: operationType,
+                resourceType: resourceType);
         }
 
         private void InitializeDirectConnectivity(IStoreClientFactory storeClientFactory)
@@ -6500,6 +6654,18 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
+                // It is decided to switch this feature off completely for external users but keep it unchanged for internal users,
+                // due to the nature of information, we are collecting here. RNTBD is internal protocol and we do not expose it to the customers.
+                Documents.Telemetry.DistributedTracingOptions distributedTracingOptions = new ()
+                {
+#if INTERNAL
+                    IsDistributedTracingEnabled = !this.cosmosClientTelemetryOptions.DisableDistributedTracing
+#else
+                    IsDistributedTracingEnabled = false
+#endif
+
+                };
+
                 StoreClientFactory newClientFactory = new StoreClientFactory(
                     this.ConnectionPolicy.ConnectionProtocol,
                     (int)this.ConnectionPolicy.RequestTimeout.TotalSeconds,
@@ -6521,7 +6687,10 @@ namespace Microsoft.Azure.Cosmos
                     retryWithConfiguration: this.ConnectionPolicy.RetryOptions?.GetRetryWithConfiguration(),
                     enableTcpConnectionEndpointRediscovery: this.ConnectionPolicy.EnableTcpConnectionEndpointRediscovery,
                     addressResolver: this.AddressResolver,
-                    rntbdMaxConcurrentOpeningConnectionCount: this.rntbdMaxConcurrentOpeningConnectionCount);
+                    rntbdMaxConcurrentOpeningConnectionCount: this.rntbdMaxConcurrentOpeningConnectionCount,
+                    remoteCertificateValidationCallback: this.remoteCertificateValidationCallback,
+                    distributedTracingOptions: distributedTracingOptions,
+                    chaosInterceptor: this.chaosInterceptor);
 
                 if (this.transportClientHandlerFactory != null)
                 {
@@ -6549,7 +6718,8 @@ namespace Microsoft.Azure.Cosmos
                 this.ConnectionPolicy.EnableReadRequestsFallback ?? (this.accountServiceConfiguration.DefaultConsistencyLevel != Documents.ConsistencyLevel.BoundedStaleness),
                 !this.enableRntbdChannel,
                 this.UseMultipleWriteLocations && (this.accountServiceConfiguration.DefaultConsistencyLevel != Documents.ConsistencyLevel.Strong),
-                true);
+                true,
+                enableReplicaValidation: this.isReplicaAddressValidationEnabled);
 
             if (subscribeRntbdStatus)
             {
@@ -6574,7 +6744,8 @@ namespace Microsoft.Azure.Cosmos
                     serviceEndpoint: this.ServiceEndpoint,
                     cosmosAuthorization: this.cosmosAuthorization,
                     connectionPolicy: this.ConnectionPolicy,
-                    httpClient: this.httpClient);
+                    httpClient: this.httpClient,
+                    cancellationToken: this.cancellationTokenSource.Token);
 
             this.accountServiceConfiguration = new CosmosAccountServiceConfiguration(accountReader.InitializeReaderAsync);
 
@@ -6701,13 +6872,16 @@ namespace Microsoft.Azure.Cosmos
             return requestOptions?.JsonSerializerSettings ?? this.serializerSettings;
         }
 
-        private INameValueCollection GetRequestHeaders(Documents.Client.RequestOptions options)
+        private INameValueCollection GetRequestHeaders(
+            Documents.Client.RequestOptions options,
+            OperationType operationType,
+            ResourceType resourceType)
         {
             Debug.Assert(
-                this.initializeTask.IsCompleted,
+                this.isSuccessfullyInitialized,
                 "GetRequestHeaders should be called after initialization task has been awaited to avoid blocking while accessing ConsistencyLevel property");
 
-            INameValueCollection headers = new StoreRequestNameValueCollection();
+            RequestNameValueCollection headers = new RequestNameValueCollection();
 
             if (this.UseMultipleWriteLocations)
             {
@@ -6717,7 +6891,11 @@ namespace Microsoft.Azure.Cosmos
             if (this.desiredConsistencyLevel.HasValue)
             {
                 // check anyways since default consistency level might have been refreshed.
-                if (!this.IsValidConsistency(this.accountServiceConfiguration.DefaultConsistencyLevel, this.desiredConsistencyLevel.Value))
+                if (!this.IsValidConsistency(
+                            backendConsistency: this.accountServiceConfiguration.DefaultConsistencyLevel, 
+                            desiredConsistency: this.desiredConsistencyLevel.Value,
+                            operationType: operationType,
+                            resourceType: resourceType))
                 {
                     throw new ArgumentException(string.Format(
                             CultureInfo.CurrentUICulture,
@@ -6726,7 +6904,7 @@ namespace Microsoft.Azure.Cosmos
                             this.accountServiceConfiguration.DefaultConsistencyLevel));
                 }
 
-                headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, this.desiredConsistencyLevel.Value.ToString());
+                headers.ConsistencyLevel = this.desiredConsistencyLevel.Value.ToString();
             }
 
             if (options == null)
@@ -6738,17 +6916,21 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (options.AccessCondition.Type == Documents.Client.AccessConditionType.IfMatch)
                 {
-                    headers.Set(HttpConstants.HttpHeaders.IfMatch, options.AccessCondition.Condition);
+                    headers.IfMatch = options.AccessCondition.Condition;
                 }
                 else
                 {
-                    headers.Set(HttpConstants.HttpHeaders.IfNoneMatch, options.AccessCondition.Condition);
+                    headers.IfNoneMatch = options.AccessCondition.Condition;
                 }
             }
 
             if (options.ConsistencyLevel.HasValue)
             {
-                if (!this.IsValidConsistency(this.accountServiceConfiguration.DefaultConsistencyLevel, options.ConsistencyLevel.Value))
+                if (!this.IsValidConsistency(
+                            backendConsistency: this.accountServiceConfiguration.DefaultConsistencyLevel,
+                            desiredConsistency: options.ConsistencyLevel.Value,
+                            operationType: operationType,
+                            resourceType: resourceType))
                 {
                     throw new ArgumentException(string.Format(
                             CultureInfo.CurrentUICulture,
@@ -6758,6 +6940,11 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, options.ConsistencyLevel.ToString());
+            }
+
+            if (options.PriorityLevel.HasValue)
+            {
+                headers.Set(HttpConstants.HttpHeaders.PriorityLevel, options.PriorityLevel.ToString());
             }
 
             if (options.IndexingDirective.HasValue)

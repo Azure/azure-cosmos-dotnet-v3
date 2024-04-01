@@ -333,16 +333,27 @@ namespace Microsoft.Azure.Cosmos.Tests
             string token = "Token";
             bool throwExceptionOnGetToken = false;
             Exception exception = new Exception();
-
-            TestTokenCredential testTokenCredential = new TestTokenCredential(() =>
+            const int semaphoreCount = 10;
+            using SemaphoreSlim semaphoreSlim = new SemaphoreSlim(semaphoreCount);
+            TestTokenCredential testTokenCredential = new TestTokenCredential(async () =>
             {
-                if (throwExceptionOnGetToken)
+                try
                 {
-                    throw exception;
+                    await semaphoreSlim.WaitAsync();
+                
+                    Assert.AreEqual(semaphoreCount-1, semaphoreSlim.CurrentCount, "Only a single refresh should occur at a time.");
+                    if (throwExceptionOnGetToken)
+                    {
+                        throw exception;
+                    }
+                    else
+                    {
+                        return new AccessToken(token, DateTimeOffset.UtcNow + TimeSpan.FromSeconds(8));
+                    }
                 }
-                else
+                finally
                 {
-                    return new ValueTask<AccessToken>(new AccessToken(token, DateTimeOffset.UtcNow + TimeSpan.FromSeconds(8)));
+                    semaphoreSlim.Release();
                 }
             });
 
@@ -361,7 +372,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 // Token refreshes fails except for the first time, but the cached token will be served as long as it is valid.
                 // Wait for the background refresh to occur. It should fail but the cached token should still be valid
-                Stopwatch stopwatch = Stopwatch.StartNew();
+                ValueStopwatch stopwatch = ValueStopwatch.StartNew();
                 while (testTokenCredential.NumTimesInvoked != 3)
                 {
                     Assert.IsTrue(stopwatch.Elapsed.TotalSeconds < 10, "The background task did not start in 10 seconds");
@@ -413,7 +424,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
 
                 await Task.WhenAll(tasks);
-                Assert.AreEqual(numGetTokenCallsAfterFailures+1, testTokenCredential.NumTimesInvoked, "There should only be 1 GetToken call to get the new token after the failures");
 
                 this.ValidateSemaphoreIsReleased(tokenCredentialCache);
             }

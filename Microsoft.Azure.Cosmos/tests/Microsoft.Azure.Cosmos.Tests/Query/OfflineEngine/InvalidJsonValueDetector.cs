@@ -68,5 +68,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         }
 
         public bool Visit(CosmosString cosmosString) => false;
+
+        public bool Visit(CosmosUndefined cosmosUndefined) => false;
     }
 }

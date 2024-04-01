@@ -10,20 +10,40 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Tracing;
 
-    internal sealed class BufferedPartitionRangePageAsyncEnumerator<TPage, TState> : PartitionRangePageAsyncEnumerator<TPage, TState>, IPrefetcher
+    internal sealed class BufferedPartitionRangePageAsyncEnumerator<TPage, TState> : BufferedPartitionRangePageAsyncEnumeratorBase<TPage, TState>
         where TPage : Page<TState>
         where TState : State
     {
         private readonly PartitionRangePageAsyncEnumerator<TPage, TState> enumerator;
         private TryCatch<TPage>? bufferedPage;
 
-        public BufferedPartitionRangePageAsyncEnumerator(PartitionRangePageAsyncEnumerator<TPage, TState> enumerator, CancellationToken cancellationToken)
-            : base(enumerator.FeedRangeState, cancellationToken)
+        public override Exception BufferedException
+        {
+            get
+            {
+                if (this.bufferedPage.HasValue && this.bufferedPage.Value.Failed)
+                {
+                    return this.bufferedPage.Value.Exception;
+                }
+
+                return null;
+            }
+        }
+
+        public override int BufferedItemCount => this.bufferedPage.HasValue && this.bufferedPage.Value.Succeeded ?
+            this.bufferedPage.Value.Result.ItemCount :
+            0;
+
+        public BufferedPartitionRangePageAsyncEnumerator(PartitionRangePageAsyncEnumerator<TPage, TState> enumerator)
+            : base(enumerator.FeedRangeState)
         {
             this.enumerator = enumerator ?? throw new ArgumentNullException(nameof(enumerator));
         }
 
-        public override ValueTask DisposeAsync() => this.enumerator.DisposeAsync();
+        public override ValueTask DisposeAsync()
+        {
+            return this.enumerator.DisposeAsync();
+        }
 
         protected override async Task<TryCatch<TPage>> GetNextPageAsync(ITrace trace, CancellationToken cancellationToken)
         {
@@ -40,29 +60,25 @@ namespace Microsoft.Azure.Cosmos.Pagination
             return returnValue;
         }
 
-        public async ValueTask PrefetchAsync(ITrace trace, CancellationToken cancellationToken)
+        public override async ValueTask PrefetchAsync(ITrace trace, CancellationToken cancellationToken)
         {
             if (trace == null)
             {
                 throw new ArgumentNullException(nameof(trace));
             }
 
+            if (this.bufferedPage.HasValue)
+            {
+                return;
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+
             using (ITrace prefetchTrace = trace.StartChild("Prefetch", TraceComponent.Pagination, TraceLevel.Info))
             {
-                if (this.bufferedPage.HasValue)
-                {
-                    return;
-                }
-
-                await this.enumerator.MoveNextAsync(prefetchTrace);
+                await this.enumerator.MoveNextAsync(prefetchTrace, cancellationToken);
                 this.bufferedPage = this.enumerator.Current;
             }
-        }
-
-        public override void SetCancellationToken(CancellationToken cancellationToken)
-        {
-            base.SetCancellationToken(cancellationToken);
-            this.enumerator.SetCancellationToken(cancellationToken);
         }
     }
 }

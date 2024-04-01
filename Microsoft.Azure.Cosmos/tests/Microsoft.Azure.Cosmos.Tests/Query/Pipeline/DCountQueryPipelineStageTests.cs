@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using PageList = System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<Microsoft.Azure.Cosmos.CosmosElements.CosmosElement>>;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     [TestClass]
     public sealed class DCountQueryPipelineStageTests
@@ -171,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 distinctQueryType: distinctQueryType,
                 dcountAlias: dcountAlias);
 
-            await foreach (TryCatch<QueryPage> page in new EnumerableStage(stage))
+            await foreach (TryCatch<QueryPage> page in new EnumerableStage(stage, NoOpTrace.Singleton))
             {
                 page.ThrowIfFailed();
                 elements.AddRange(page.Result.Documents);
@@ -199,7 +200,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     distinctQueryType: distinctQueryType,
                     dcountAlias: dcountAlias);
                 
-                if(!await stage.MoveNextAsync())
+                if(!await stage.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default))
                 {
                     break;
                 }
@@ -221,22 +222,20 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             DistinctQueryType distinctQueryType,
             string dcountAlias)
         {
-            MonadicCreatePipelineStage source = (CosmosElement continuationToken, CancellationToken cancellationToken) =>
+            MonadicCreatePipelineStage source = (CosmosElement continuationToken) =>
                 TryCatch<IQueryPipelineStage>.FromResult(MockQueryPipelineStage.Create(pages, continuationToken));
 
-            MonadicCreatePipelineStage createDistinctQueryPipelineStage = (CosmosElement continuationToken, CancellationToken cancellationToken) => 
+            MonadicCreatePipelineStage createDistinctQueryPipelineStage = (CosmosElement continuationToken) => 
                 DistinctQueryPipelineStage.MonadicCreate(
                     executionEnvironment: executionEnvironment,
                     requestContinuation: continuationToken,
                     distinctQueryType: distinctQueryType,
-                    cancellationToken: cancellationToken,
                     monadicCreatePipelineStage: source);
 
             TryCatch<IQueryPipelineStage> tryCreateDCountQueryPipelineStage = DCountQueryPipelineStage.MonadicCreate(
                 executionEnvironment: executionEnvironment,
                 continuationToken: requestContinuationToken,
                 info: new DCountInfo { DCountAlias = dcountAlias },
-                cancellationToken: default,
                 monadicCreatePipelineStage: createDistinctQueryPipelineStage);
             Assert.IsTrue(tryCreateDCountQueryPipelineStage.Succeeded);
 

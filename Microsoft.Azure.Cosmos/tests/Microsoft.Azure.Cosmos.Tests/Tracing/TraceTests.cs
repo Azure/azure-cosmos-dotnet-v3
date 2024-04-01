@@ -97,35 +97,18 @@
             HashSet<string> storeResultProperties = typeof(StoreResult).GetProperties(BindingFlags.Public | BindingFlags.Instance).Select(x => x.Name).ToHashSet<string>();
             string datumKey = "ClientStats";
             Trace trace = Trace.GetRootTrace("Test");
-            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace);
             trace.AddDatum(datumKey, datum);
 
-            StoreResult storeResult = new StoreResult(
-                storeResponse: new StoreResponse(),
-                exception: null,
-                partitionKeyRangeId: 42.ToString(),
-                lsn: 1337,
-                quorumAckedLsn: 23,
-                requestCharge: 3.14,
-                currentReplicaSetSize: 4,
-                currentWriteQuorum: 3,
-                isValid: true,
-                storePhysicalAddress: new Uri("http://storephysicaladdress.com"),
-                globalCommittedLSN: 1234,
-                numberOfReadRegions: 13,
-                itemLSN: 15,
-                sessionToken: new SimpleSessionToken(42),
-                usingLocalLSN: true,
-                activityId: Guid.Empty.ToString(),
-                backendRequestDurationInMs: "4.2",
-                transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats());
+            ReferenceCountedDisposable<StoreResult> storeResult = StoreResult.CreateForTesting(storeResponse: new StoreResponse());
 
             StoreResponseStatistics storeResponseStatistics = new StoreResponseStatistics(
                             DateTime.MinValue,
                             DateTime.MaxValue,
-                            storeResult,
+                            storeResult.Target,
                             ResourceType.Document,
                             OperationType.Query,
+                            "42",
                             new Uri("http://someUri1.com"));
 
             ((List<StoreResponseStatistics>)datum.GetType().GetField("storeResponseStatistics", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(datum)).Add(storeResponseStatistics);
@@ -137,11 +120,11 @@
             List<string> jsonPropertyNames = storeResultJObject.Properties().Select(p => p.Name).ToList();
 
             storeResultProperties.Add("BELatencyInMs");
-            storeResultProperties.Remove(nameof(storeResult.BackendRequestDurationInMs));
+            storeResultProperties.Remove(nameof(storeResult.Target.BackendRequestDurationInMs));
             storeResultProperties.Add("TransportException");
-            storeResultProperties.Remove(nameof(storeResult.Exception));
+            storeResultProperties.Remove(nameof(storeResult.Target.Exception));
             storeResultProperties.Add("transportRequestTimeline");
-            storeResultProperties.Remove(nameof(storeResult.TransportRequestStats));
+            storeResultProperties.Remove(nameof(storeResult.Target.TransportRequestStats));
 
             foreach (string key in jsonPropertyNames)
             {

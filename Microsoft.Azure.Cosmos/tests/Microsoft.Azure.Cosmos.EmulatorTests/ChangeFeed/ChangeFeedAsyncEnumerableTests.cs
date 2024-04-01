@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [SDK.EmulatorTests.TestClass]
+    [TestCategory("ChangeFeed")]
     public sealed class ChangeFeedAsyncEnumerableTests : BaseCosmosClientHelper
     {
         private ContainerInternal Container = null;

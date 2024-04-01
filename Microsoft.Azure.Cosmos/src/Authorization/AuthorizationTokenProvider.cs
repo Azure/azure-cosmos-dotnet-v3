@@ -13,13 +13,15 @@ namespace Microsoft.Azure.Cosmos
 
     internal abstract class AuthorizationTokenProvider : ICosmosAuthorizationTokenProvider, IAuthorizationTokenProvider, IDisposable
     {
+        private readonly DateTime creationTime = DateTime.UtcNow;
+
         public async Task AddSystemAuthorizationHeaderAsync(
             DocumentServiceRequest request, 
             string federationId, 
             string verb, 
             string resourceId)
         {
-            request.Headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
+            request.Headers[HttpConstants.HttpHeaders.XDate] = Rfc1123DateTimeCache.UtcNow();
 
             request.Headers[HttpConstants.HttpHeaders.Authorization] = (await this.GetUserAuthorizationAsync(
                 resourceId ?? request.ResourceAddress,
@@ -54,6 +56,11 @@ namespace Microsoft.Azure.Cosmos
             DocumentClientException dce,
             string authorizationToken,
             string payload);
+
+        public virtual TimeSpan GetAge()
+        {
+            return DateTime.UtcNow.Subtract(this.creationTime);
+        }
 
         public static AuthorizationTokenProvider CreateWithResourceTokenOrAuthKey(string authKeyOrResourceToken)
         {

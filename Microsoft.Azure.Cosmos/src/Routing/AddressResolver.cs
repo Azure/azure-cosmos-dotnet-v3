@@ -263,7 +263,10 @@ namespace Microsoft.Azure.Cosmos
 
             ContainerProperties collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken, NoOpTrace.Singleton);
             CollectionRoutingMap routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
-                collection.ResourceId, null, request, cancellationToken, NoOpTrace.Singleton);
+                collectionRid: collection.ResourceId,
+                previousValue: null,
+                request: request,
+                trace: NoOpTrace.Singleton);
 
             if (routingMap != null && request.ForceCollectionRoutingMapRefresh)
             {
@@ -271,7 +274,11 @@ namespace Microsoft.Azure.Cosmos
                     "AddressResolver.ResolveAddressesAndIdentityAsync ForceCollectionRoutingMapRefresh collection.ResourceId = {0}",
                     collection.ResourceId);
 
-                routingMap = await this.collectionRoutingMapCache.TryLookupAsync(collection.ResourceId, routingMap, request, cancellationToken, NoOpTrace.Singleton);
+                routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
+                    collectionRid: collection.ResourceId,
+                    previousValue: routingMap,
+                    request: request,
+                    trace: NoOpTrace.Singleton);
             }
 
             if (request.ForcePartitionKeyRangeRefresh)
@@ -280,7 +287,11 @@ namespace Microsoft.Azure.Cosmos
                 request.ForcePartitionKeyRangeRefresh = false;
                 if (routingMap != null)
                 {
-                    routingMap = await this.collectionRoutingMapCache.TryLookupAsync(collection.ResourceId, routingMap, request, cancellationToken, NoOpTrace.Singleton);
+                    routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
+                        collectionRid: collection.ResourceId,
+                        previousValue: routingMap,
+                        request: request,
+                        trace: NoOpTrace.Singleton);
                 }
             }
 
@@ -293,10 +304,9 @@ namespace Microsoft.Azure.Cosmos
                 collectionRoutingMapCacheIsUptoDate = false;
                 collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken, NoOpTrace.Singleton);
                 routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
-                        collection.ResourceId,
+                        collectionRid: collection.ResourceId,
                         previousValue: null,
                         request: request,
-                        cancellationToken: cancellationToken,
                         trace: NoOpTrace.Singleton);
             }
 
@@ -319,7 +329,6 @@ namespace Microsoft.Azure.Cosmos
                 if (!collectionCacheIsUptoDate)
                 {
                     request.ForceNameCacheRefresh = true;
-                    collectionCacheIsUptoDate = true;
                     collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken, NoOpTrace.Singleton);
                     if (collection.ResourceId != routingMap.CollectionUniqueId)
                     {
@@ -327,22 +336,19 @@ namespace Microsoft.Azure.Cosmos
                         // for this new collection rid. Mark it as such.
                         collectionRoutingMapCacheIsUptoDate = false;
                         routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
-                            collection.ResourceId,
+                            collectionRid: collection.ResourceId,
                             previousValue: null,
                             request: request,
-                            cancellationToken: cancellationToken,
                             trace: NoOpTrace.Singleton);
                     }
                 }
 
                 if (!collectionRoutingMapCacheIsUptoDate)
                 {
-                    collectionRoutingMapCacheIsUptoDate = true;
                     routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
                         collection.ResourceId,
                         previousValue: routingMap,
                         request: request,
-                        cancellationToken: cancellationToken,
                         trace: NoOpTrace.Singleton);
                 }
 
@@ -449,7 +455,6 @@ namespace Microsoft.Azure.Cosmos
             PartitionKeyRange range;
             string partitionKeyString = request.Headers[HttpConstants.HttpHeaders.PartitionKey];
 
-            object effectivePartitionKeyStringObject = null;
             if (partitionKeyString != null)
             {
                 range = AddressResolver.TryResolveServerPartitionByPartitionKey(
@@ -461,7 +466,7 @@ namespace Microsoft.Azure.Cosmos
             }
             else if (request.Properties != null && request.Properties.TryGetValue(
                 WFConstants.BackendHeaders.EffectivePartitionKeyString,
-                out effectivePartitionKeyStringObject))
+                out object effectivePartitionKeyStringObject))
             {
                 // Allow EPK only for partitioned collection (excluding migrated fixed collections)
                 if (!collection.HasPartitionKey || collection.PartitionKey.IsSystemKey.GetValueOrDefault(false))
