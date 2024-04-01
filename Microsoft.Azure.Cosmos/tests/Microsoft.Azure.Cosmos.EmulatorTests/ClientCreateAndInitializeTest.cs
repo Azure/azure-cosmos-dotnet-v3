@@ -25,8 +25,63 @@
         {
             await this.TestInit();
 
+            List<Embedding> embeddings = new List<Embedding>()
+            {
+                new Embedding()
+                {
+                    Path = "/vector1",
+                    VectorDataType = VectorDataType.Int8,
+                    DistanceFunction = DistanceFunction.DotProduct,
+                    Dimensions = 1200,
+                },
+                new Embedding()
+                {
+                    Path = "/vector2",
+                    VectorDataType = VectorDataType.Uint8,
+                    DistanceFunction = DistanceFunction.Cosine,
+                    Dimensions = 3,
+                },
+                new Embedding()
+                {
+                    Path = "/vector3",
+                    VectorDataType = VectorDataType.Float32,
+                    DistanceFunction = DistanceFunction.Euclidean,
+                    Dimensions = 400,
+                },
+            };
+
+            ContainerProperties properties = new ContainerProperties(id: "ClientCreateAndInitializeContainer", partitionKeyPath: PartitionKey)
+            {
+                VectorEmbeddingPolicy = new(embeddings),
+                IndexingPolicy = new Cosmos.IndexingPolicy()
+                {
+                    VectorIndexes = new()
+                    {
+                        new VectorIndexPath()
+                        {
+                            Path = "/vector1",
+                            Type = VectorIndexType.Flat,
+                        },
+                        new VectorIndexPath()
+                        {
+                            Path = "/vector2",
+                            Type = VectorIndexType.Flat,
+                        },
+                        new VectorIndexPath()
+                        {
+                            Path = "/vector3",
+                            Type = VectorIndexType.Flat,
+                        }
+                    },
+                    CompositeIndexes = new()
+                    {
+
+                    }
+                },
+            };
+
             ContainerResponse response = await this.database.CreateContainerAsync(
-                        new ContainerProperties(id: "ClientCreateAndInitializeContainer", partitionKeyPath: PartitionKey),
+                        properties,
                         throughput: 20000,
                         cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
