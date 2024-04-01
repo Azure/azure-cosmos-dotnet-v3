@@ -44,6 +44,16 @@ namespace Microsoft.Azure.Cosmos.Linq
         public IDictionary<object, string> Parameters;
 
         /// <summary>
+        /// Dictionary for group by key substitution.
+        /// </summary>
+        public ParameterSubstitution GroupByKeySubstitution;
+
+        /// <summary>
+        /// Boolean to indicate a GroupBy expression is the last expression to finished processing.
+        /// </summary>
+        public bool LastExpressionIsGroupBy;
+
+        /// <summary>
         /// If the FROM clause uses a parameter name, it will be substituted for the parameter used in 
         /// the lambda expressions for the WHERE and SELECT clauses.
         /// </summary>
@@ -86,6 +96,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             this.subqueryBindingStack = new Stack<SubqueryBinding>();
             this.Parameters = parameters;
             this.clientOperation = null;
+            this.LastExpressionIsGroupBy = false;
 
             if (linqSerializerOptionsInternal?.CustomCosmosLinqSerializer != null)
             {
@@ -104,6 +115,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.CosmosLinqSerializer = TranslationContext.DefaultLinqSerializer;
                 this.MemberNames = TranslationContext.DefaultMemberNames;
             }
+
+            this.GroupByKeySubstitution = new ParameterSubstitution();
         }
 
         public ScalarOperationKind ClientOperation => this.clientOperation ?? ScalarOperationKind.None;
@@ -120,17 +133,25 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public Expression LookupSubstitution(ParameterExpression parameter)
         {
+            if (this.CurrentQuery.GroupByParameter != null)
+            {
+                Expression groupBySubstitutionExpression = this.GroupByKeySubstitution.Lookup(parameter);
+                if (groupBySubstitutionExpression != null)
+                {
+                    return groupBySubstitutionExpression;
+                }
+            }
             return this.substitutions.Lookup(parameter);
         }
 
-        public ParameterExpression GenFreshParameter(Type parameterType, string baseParameterName)
+        public ParameterExpression GenerateFreshParameter(Type parameterType, string baseParameterName, bool includeSuffix = true)
         {
-            return Utilities.NewParameter(baseParameterName, parameterType, this.InScope);
+            return Utilities.NewParameter(baseParameterName, parameterType, this.InScope, includeSuffix);
         }
 
         public Func<string, ParameterExpression> GetGenFreshParameterFunc()
         {
-            return (paramName) => this.GenFreshParameter(typeof(object), paramName);
+            return (paramName) => this.GenerateFreshParameter(typeof(object), paramName);
         }
 
         /// <summary>
@@ -211,12 +232,12 @@ namespace Microsoft.Azure.Cosmos.Linq
                 throw new ArgumentNullException("collection");
             }
 
-            this.collectionStack.Add(collection);
+            if (this.CurrentQuery.GroupByParameter == null) this.collectionStack.Add(collection);
         }
 
         public void PopCollection()
         {
-            this.collectionStack.RemoveAt(this.collectionStack.Count - 1);
+            if (this.CurrentQuery.GroupByParameter == null) this.collectionStack.RemoveAt(this.collectionStack.Count - 1);
         }
 
         /// <summary>
@@ -226,7 +247,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="name">Suggested name for the input parameter.</param>
         public ParameterExpression SetInputParameter(Type type, string name)
         {
-            return this.CurrentQuery.fromParameters.SetInputParameter(type, name, this.InScope);
+            return this.CurrentQuery.FromParameters.SetInputParameter(type, name, this.InScope);
         }
 
         /// <summary>
@@ -237,7 +258,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         public void SetFromParameter(ParameterExpression parameter, SqlCollection collection)
         {
             Binding binding = new Binding(parameter, collection, isInCollection: true);
-            this.CurrentQuery.fromParameters.Add(binding);
+            this.CurrentQuery.FromParameters.Add(binding);
         }
 
         /// <summary>
