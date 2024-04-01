@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Serializer;
 
     /// <summary>
     /// Operations for reading, replacing, or deleting a specific, existing container or item in a container by id.
@@ -972,9 +971,6 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to go through the items.</returns>
-        /// <remarks>
-        /// Query as a stream only supports single partition queries 
-        /// </remarks>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#stream-api</exception>
         /// <example>
         /// 1. Create a query to get all the ToDoActivity that have a cost greater than 9000 for the specified partition
@@ -1115,9 +1111,6 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to go through the items.</returns>
-        /// <remarks>
-        /// Query as a stream only supports single partition queries 
-        /// </remarks>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#stream-api</exception>
         /// <example>
         /// Create a query to get all the ToDoActivity that have a cost greater than 9000 for the specified partition
@@ -1168,9 +1161,6 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to go through the items.</returns>
-        /// <remarks>
-        /// Query as a stream only supports single partition queries 
-        /// </remarks>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
         /// <example>
         /// Create a query to get all the ToDoActivity that have a cost greater than 9000 for the specified partition
@@ -1691,6 +1681,80 @@ namespace Microsoft.Azure.Cosmos
             FeedRange feedRange,
             CancellationToken cancellationToken = default);
 
+        /// <summary>
+        /// Initializes a <see cref="GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes"/> for change feed processing with all versions and deletes.
+        /// </summary>
+        /// <typeparam name="T">Document type</typeparam>
+        /// <param name="processorName">A name that identifies the Processor and the particular work it will do.</param>
+        /// <param name="onChangesDelegate">Delegate to receive all changes and deletes</param>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// Container leaseContainer = await this.database.CreateContainerAsync(
+        ///     new ContainerProperties(id: "leases", partitionKeyPath: "/id"),
+        ///     cancellationToken: this.cancellationToken);
+        ///     
+        /// ManualResetEvent allProcessedDocumentsEvent = new ManualResetEvent(false);
+        /// 
+        /// ChangeFeedProcessor changeFeedProcessor = this.Container
+        ///     .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: "processor", onChangesDelegate: (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItem<dynamic>> documents, CancellationToken token) =>
+        /// {
+        ///     Console.WriteLine($"number of documents processed: {documents.Count}");
+        ///     
+        ///     string id = default;
+        ///     string pk = default;
+        ///     string description = default;
+        ///     
+        ///     foreach (ChangeFeedItem<dynamic> changeFeedItem in documents)
+        ///     {
+        ///         if (changeFeedItem.Metadata.OperationType != ChangeFeedOperationType.Delete)
+        ///         {
+        ///             id = changeFeedItem.Current.id.ToString();
+        ///             pk = changeFeedItem.Current.pk.ToString();
+        ///             description = changeFeedItem.Current.description.ToString();
+        ///         }
+        ///         else
+        ///         {
+        ///             id = changeFeedItem.Previous.id.ToString();
+        ///             pk = changeFeedItem.Previous.pk.ToString();
+        ///             description = changeFeedItem.Previous.description.ToString();
+        ///         }
+        ///         
+        ///         ChangeFeedOperationType operationType = changeFeedItem.Metadata.OperationType;
+        ///         long previousLsn = changeFeedItem.Metadata.PreviousLsn;
+        ///         DateTime conflictResolutionTimestamp = changeFeedItem.Metadata.ConflictResolutionTimestamp;
+        ///         long lsn = changeFeedItem.Metadata.Lsn;
+        ///         bool isTimeToLiveExpired = changeFeedItem.Metadata.IsTimeToLiveExpired;
+        ///     }
+        ///     
+        ///     return Task.CompletedTask;
+        /// })
+        /// .WithInstanceName(Guid.NewGuid().ToString())
+        /// .WithLeaseContainer(leaseContainer)
+        /// .WithErrorNotification((leaseToken, error) =>
+        /// {
+        ///     Console.WriteLine(error.ToString());
+        ///     
+        ///     return Task.CompletedTask;
+        /// })
+        /// .Build();
+        /// 
+        /// await changeFeedProcessor.StartAsync();
+        /// await Task.Delay(1000);
+        /// await this.Container.CreateItemAsync<dynamic>(new { id = "1", pk = "1", description = "original test" }, partitionKey: new PartitionKey("1"));
+        /// await this.Container.UpsertItemAsync<dynamic>(new { id = "1", pk = "1", description = "test after replace" }, partitionKey: new PartitionKey("1"));
+        /// await this.Container.DeleteItemAsync<dynamic>(id: "1", partitionKey: new PartitionKey("1"));
+        /// 
+        /// allProcessedDocumentsEvent.WaitOne(10 * 1000);
+        /// 
+        /// await changeFeedProcessor.StopAsync();
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
+            string processorName,
+            ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate);
 #endif
     }
 }

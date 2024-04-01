@@ -34,6 +34,7 @@
     <None Remove="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.ReadManyAsync.xml" />
     <None Remove="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.StreamPointOperationsAsync.xml" />
     <None Remove="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.TypedPointOperationsAsync.xml" />
+	<None Remove="BaselineTest\TestBaseline\IndexMetricsParserBaselineTest.IndexUtilizationClientSideExistenceTest.xml" />
 	<None Remove="BaselineTest\TestBaseline\IndexMetricsParserBaselineTest.IndexUtilizationParse.xml" />
 	<None Remove="BaselineTest\TestBaseline\IndexMetricsParserBaselineTest.IndexUtilizationHeaderLengthTest.xml" />
 	<None Remove="BaselineTest\TestBaseline\LinqGeneralBaselineTests.TestLambdaReuse.xml" />
@@ -102,6 +103,9 @@
     <Content Include="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.ChangeFeedAsync.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+	<Content Include="BaselineTest\TestBaseline\IndexMetricsParserBaselineTest.IndexUtilizationClientSideExistenceTest.xml">
+		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	</Content>
 	<Content Include="BaselineTest\TestBaseline\IndexMetricsParserBaselineTest.IndexUtilizationParse.xml">
 		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	</Content>

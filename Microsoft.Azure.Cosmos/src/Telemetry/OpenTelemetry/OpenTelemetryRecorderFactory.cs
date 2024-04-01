@@ -22,7 +22,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                            clientNamespace: $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}",
                            resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
                            isActivityEnabled: true,
-                           suppressNestedClientActivities: true),
+                           suppressNestedClientActivities: true, 
+                           isStable: false),
             isThreadSafe: true);
 
         public static OpenTelemetryCoreRecorder CreateRecorder(string operationName,
@@ -56,24 +57,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         clientContext: clientContext,
                         config: requestOptions?.CosmosThresholdOptions ?? clientContext.ClientOptions?.CosmosClientTelemetryOptions.CosmosThresholdOptions);
                 }
-#if !INTERNAL
-                // Need a parent activity which groups all network activities under it and is logged in diagnostics and used for tracing purpose.
-                // If there are listeners at network level then scope is enabled and it tries to create activity.
-                // However, if available listeners are not subscribed to network event then it will lead to scope being enabled but no activity is created.
-                else
-                {
-                    DiagnosticScope requestScope = LazyScopeFactory.Value.CreateScope(name: $"{OpenTelemetryAttributeKeys.NetworkLevelPrefix}.{operationName}");
-                    openTelemetryRecorder = requestScope.IsEnabled ? OpenTelemetryCoreRecorder.CreateNetworkLevelParentActivity(networkScope: requestScope) : openTelemetryRecorder;
-                }
 
-                // If there are no listeners at operation level and network level and no parent activity created.
-                // Then create a dummy activity as there should be a parent level activity always to send a traceid to the backend services through context propagation.
-                // The parent activity id is logged in diagnostics and used for tracing purpose.
-                if (Activity.Current is null)
-                {
-                    openTelemetryRecorder = OpenTelemetryCoreRecorder.CreateParentActivity(operationName);
-                }
-#endif
                 // Safety check as diagnostic logs should not break the code.
                 if (Activity.Current?.TraceId != null)
                 {
