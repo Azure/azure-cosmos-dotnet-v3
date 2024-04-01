@@ -442,6 +442,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 ReadFeedPage readFeedPage = new ReadFeedPage(
                     responseStream,
                     requestCharge: 42,
+                    itemCount: cosmosDocuments.Count,
                     activityId: Guid.NewGuid().ToString(),
                     additionalHeaders: new Dictionary<string, string>()
                     {
@@ -693,12 +694,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                             queryPageResultList,
                             requestCharge: 42,
                             activityId: Guid.NewGuid().ToString(),
-                            responseLengthInBytes: 1337,
                             cosmosQueryExecutionInfo: default,
                             distributionPlanSpec: default,
                             disallowContinuationTokenMessage: default,
                             additionalHeaders: additionalHeaders.ToImmutable(),
-                            state: queryState)));
+                            state: queryState,
+                            streaming: default)));
             }
         }
 
@@ -794,6 +795,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         new ChangeFeedSuccessPage(
                             responseStream,
                             requestCharge: 42,
+                            itemCount: cosmosDocuments.Count,
                             activityId: Guid.NewGuid().ToString(),
                             additionalHeaders: default,
                             responseState)));

@@ -3,21 +3,14 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
 {
-    using Microsoft.Azure.Cosmos.EmulatorTests.Query;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
-    using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using System;
-    using System.Text.RegularExpressions;
     using System.Threading.Tasks;
     using System.Xml;
     using System.Collections.Generic;
-    using System.Linq;
-    using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Serialization.HybridRow.Schemas;
     using Newtonsoft.Json.Linq;
-    using System.Collections.Concurrent;
 
     [Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestClass]
     public class QueryBaselineTest : BaselineTests<QueryTestInput, QueryTestOutput>

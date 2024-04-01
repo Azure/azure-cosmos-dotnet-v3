@@ -220,8 +220,7 @@
                 executionEnvironment: executionEnvironment,
                 requestContinuation: continuationToken,
                 distinctQueryType: distinctQueryType,
-                cancellationToken: default,
-                monadicCreatePipelineStage: (CosmosElement continuationToken, CancellationToken cancellationToken) => TryCatch<IQueryPipelineStage>.FromResult(source));
+                monadicCreatePipelineStage: (CosmosElement continuationToken) => TryCatch<IQueryPipelineStage>.FromResult(source));
             Assert.IsTrue(tryCreateDistinctQueryPipelineStage.Succeeded);
 
             IQueryPipelineStage distinctQueryPipelineStage = tryCreateDistinctQueryPipelineStage.Result;
