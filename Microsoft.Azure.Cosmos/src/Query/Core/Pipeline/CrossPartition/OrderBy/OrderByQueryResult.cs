@@ -28,6 +28,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
     {
         private readonly CosmosObject cosmosObject;
 
+        private readonly IReadOnlyList<OrderByItem> orderByItems;
+
         public OrderByQueryResult(CosmosElement cosmosElement)
         {
             if (cosmosElement == null)
@@ -41,6 +43,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             }
 
             this.cosmosObject = cosmosObject;
+            this.orderByItems = GetOrderByItems(cosmosObject);
         }
 
         /// <summary>
@@ -51,17 +54,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             get
             {
                 // cassandra row uses __sys_rid as opposed to _rid
-                if (!this.cosmosObject.TryGetValue("_rid", out CosmosElement cosmosElement))
+                if (!this.cosmosObject.TryGetValue(FieldNames.Rid, out CosmosElement cosmosElement))
                 {
-                    if (!this.cosmosObject.TryGetValue("__sys_rid", out cosmosElement))
+                    if (!this.cosmosObject.TryGetValue(FieldNames.CassandraRid, out cosmosElement))
                     {
-                        throw new InvalidOperationException($"Underlying object does not have an '_rid' or '__sys_rid' field.");
+                        throw new InvalidOperationException($"Underlying object does not have an '{FieldNames.Rid}' or '{FieldNames.CassandraRid}' field.");
                     }
                 }
 
                 if (!(cosmosElement is CosmosString cosmosString))
                 {
-                    throw new InvalidOperationException($"'_rid' or '__sys_rid' field was not a string.");
+                    throw new InvalidOperationException($"'{FieldNames.Rid}' or ' {FieldNames.CassandraRid} ' field.g.");
                 }
 
                 return cosmosString.Value;
@@ -71,29 +74,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         /// <summary>
         /// Gets the order by items from the document.
         /// </summary>
-        public IReadOnlyList<OrderByItem> OrderByItems
-        {
-            get
-            {
-                if (!this.cosmosObject.TryGetValue("orderByItems", out CosmosElement cosmosElement))
-                {
-                    throw new InvalidOperationException($"Underlying object does not have an 'orderByItems' field.");
-                }
-
-                if (!(cosmosElement is CosmosArray cosmosArray))
-                {
-                    throw new InvalidOperationException($"orderByItems field was not an array.");
-                }
-
-                List<OrderByItem> orderByItems = new List<OrderByItem>(cosmosArray.Count);
-                foreach (CosmosElement orderByItem in cosmosArray)
-                {
-                    orderByItems.Add(new OrderByItem(orderByItem));
-                }
-
-                return orderByItems;
-            }
-        }
+        public IReadOnlyList<OrderByItem> OrderByItems => this.orderByItems;
 
         /// <summary>
         /// Gets the actual document.
@@ -102,13 +83,45 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         {
             get
             {
-                if (!this.cosmosObject.TryGetValue("payload", out CosmosElement cosmosElement))
+                if (!this.cosmosObject.TryGetValue(FieldNames.Payload, out CosmosElement cosmosElement))
                 {
                     return CosmosUndefined.Create();
                 }
 
                 return cosmosElement;
             }
+        }
+
+        private static IReadOnlyList<OrderByItem> GetOrderByItems(CosmosObject cosmosObject)
+        {
+            if (!cosmosObject.TryGetValue(FieldNames.OrderByItems, out CosmosElement cosmosElement))
+            {
+                throw new InvalidOperationException($"Underlying object does not have an 'orderByItems' field.");
+            }
+
+            if (!(cosmosElement is CosmosArray cosmosArray))
+            {
+                throw new InvalidOperationException($"orderByItems field was not an array.");
+            }
+
+            List<OrderByItem> orderByItems = new List<OrderByItem>(cosmosArray.Count);
+            foreach (CosmosElement orderByItem in cosmosArray)
+            {
+                orderByItems.Add(new OrderByItem(orderByItem));
+            }
+
+            return orderByItems;
+        }
+
+        private static class FieldNames
+        {
+            public const string OrderByItems = "orderByItems";
+
+            public const string Payload = "payload";
+
+            public const string Rid = "_rid";
+
+            public const string CassandraRid = "__sys_rid";
         }
     }
 }

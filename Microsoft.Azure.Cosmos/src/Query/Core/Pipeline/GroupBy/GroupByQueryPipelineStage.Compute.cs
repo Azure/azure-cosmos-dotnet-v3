@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -29,16 +28,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
 
             private ComputeGroupByQueryPipelineStage(
                 IQueryPipelineStage source,
-                CancellationToken cancellationToken,
                 GroupingTable groupingTable,
                 int pageSize)
-                : base(source, cancellationToken, groupingTable, pageSize)
+                : base(source, groupingTable, pageSize)
             {
             }
 
             public static TryCatch<IQueryPipelineStage> MonadicCreate(
                 CosmosElement requestContinuation,
-                CancellationToken cancellationToken,
                 MonadicCreatePipelineStage monadicCreatePipelineStage,
                 IReadOnlyList<AggregateOperator> aggregates,
                 IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
@@ -71,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                 }
                 else
                 {
-                    tryCreateSource = monadicCreatePipelineStage(groupByContinuationToken.SourceContinuationToken, cancellationToken);
+                    tryCreateSource = monadicCreatePipelineStage(groupByContinuationToken.SourceContinuationToken);
                 }
 
                 if (!tryCreateSource.Succeeded)
@@ -94,14 +91,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                 return TryCatch<IQueryPipelineStage>.FromResult(
                     new ComputeGroupByQueryPipelineStage(
                         tryCreateSource.Result,
-                        cancellationToken,
                         tryCreateGroupingTable.Result,
                         pageSize));
             }
 
-            public override async ValueTask<bool> MoveNextAsync(ITrace trace)
+            public override async ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
             {
-                this.cancellationToken.ThrowIfCancellationRequested();
+                cancellationToken.ThrowIfCancellationRequested();
 
                 if (trace == null)
                 {
@@ -116,7 +112,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
 
                 // Draining GROUP BY is broken down into two stages:
                 QueryPage queryPage;
-                if (await this.inputStage.MoveNextAsync(trace))
+                if (await this.inputStage.MoveNextAsync(trace, cancellationToken))
                 {
                     // Stage 1: 
                     // Drain the groupings fully from all continuation and all partitions
@@ -142,12 +138,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                         documents: EmptyResults,
                         requestCharge: sourcePage.RequestCharge,
                         activityId: sourcePage.ActivityId,
-                        responseLengthInBytes: sourcePage.ResponseLengthInBytes,
                         cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
                         distributionPlanSpec: default,
                         disallowContinuationTokenMessage: null,
                         additionalHeaders: sourcePage.AdditionalHeaders,
-                        state: state);
+                        state: state,
+                        streaming: sourcePage.Streaming);
                 }
                 else
                 {
@@ -173,12 +169,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                         documents: results,
                         requestCharge: default,
                         activityId: default,
-                        responseLengthInBytes: default,
                         cosmosQueryExecutionInfo: default,
                         distributionPlanSpec: default,
                         disallowContinuationTokenMessage: default,
                         additionalHeaders: default,
-                        state: state);
+                        state: state,
+                        streaming: null);
                 }
 
                 this.Current = TryCatch<QueryPage>.FromResult(queryPage);

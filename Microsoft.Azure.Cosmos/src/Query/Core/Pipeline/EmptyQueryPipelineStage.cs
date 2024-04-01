@@ -29,14 +29,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             return this.emptyAsyncEnumerator.DisposeAsync();
         }
 
-        public ValueTask<bool> MoveNextAsync(ITrace trace)
+        public ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
         {
             return this.emptyAsyncEnumerator.MoveNextAsync(trace);
-        }
-
-        public void SetCancellationToken(CancellationToken cancellationToken)
-        {
-            // No work to do since this enumerator is fully sync.
         }
     }
 }
