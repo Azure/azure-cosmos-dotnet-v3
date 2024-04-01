@@ -2177,18 +2177,6 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.UniqueKeyPolicy UniqueKeyPolicy;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.UniqueKeyPolicy get_UniqueKeyPolicy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_UniqueKeyPolicy(Microsoft.Azure.Cosmos.UniqueKeyPolicy);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.VectorEmbeddingPolicy get_VectorEmbeddingPolicy()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.VectorEmbeddingPolicy get_VectorEmbeddingPolicy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Microsoft.Azure.Cosmos.VectorEmbeddingPolicy VectorEmbeddingPolicy[Newtonsoft.Json.JsonIgnoreAttribute()]": {
-          "Type": "Property",
-          "Attributes": [
-            "JsonIgnoreAttribute"
-          ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.VectorEmbeddingPolicy VectorEmbeddingPolicy;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.VectorEmbeddingPolicy get_VectorEmbeddingPolicy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_VectorEmbeddingPolicy(Microsoft.Azure.Cosmos.VectorEmbeddingPolicy);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
         "System.Collections.Generic.IReadOnlyList`1[System.String] get_PartitionKeyPaths()": {
           "Type": "Method",
           "Attributes": [],
@@ -2403,11 +2391,6 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Void set_UniqueKeyPolicy(Microsoft.Azure.Cosmos.UniqueKeyPolicy);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Void set_VectorEmbeddingPolicy(Microsoft.Azure.Cosmos.VectorEmbeddingPolicy)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Void set_VectorEmbeddingPolicy(Microsoft.Azure.Cosmos.VectorEmbeddingPolicy);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -4916,11 +4899,6 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.SpatialIndexDefinition`1[Microsoft.Azure.Cosmos.Fluent.IndexingPolicyDefinition`1[T]] WithSpatialIndex();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.Fluent.VectorIndexDefinition`1[Microsoft.Azure.Cosmos.Fluent.IndexingPolicyDefinition`1[T]] WithVectorIndex()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.VectorIndexDefinition`1[Microsoft.Azure.Cosmos.Fluent.IndexingPolicyDefinition`1[T]] WithVectorIndex();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
         "T Attach()": {
           "Type": "Method",
           "Attributes": [],
@@ -5382,20 +5360,6 @@
             "JsonPropertyAttribute"
           ],
           "MethodInfo": "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.SpatialPath] SpatialIndexes;CanRead:True;CanWrite:True;System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.SpatialPath] get_SpatialIndexes();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.VectorIndexPath] get_VectorIndexes()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.VectorIndexPath] get_VectorIndexes();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.VectorIndexPath] VectorIndexes[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"vectorIndexes\")]": {
-          "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
-          "MethodInfo": "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.VectorIndexPath] VectorIndexes;CanRead:True;CanWrite:True;System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.VectorIndexPath] get_VectorIndexes();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.Collections.ObjectModel.Collection`1[System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.CompositePath]] CompositeIndexes[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"compositeIndexes\")]": {
           "Type": "Property",

@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos
         ///  },
         ///  {
         ///    "path": "/vector2",
-        ///    "type": "dlat "
+        ///    "type": "flat "
         ///  },
         ///  {
         ///    "path": "/vector3",
