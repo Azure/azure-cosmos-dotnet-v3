@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         private Lazy<ParameterExpression> alias;
 
         /// <summary>
-        /// Input subquery/ query to the left of the current query. 
+        /// Input subquery / query to the left of the current query. 
         /// </summary>
         private QueryUnderConstruction inputQuery;
 

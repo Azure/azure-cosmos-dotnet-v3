@@ -2,6 +2,18 @@
   <Result>
     <Input>
       <Description><![CDATA[GroupBy Single Value Select Key]]></Description>
+      <Expression><![CDATA[query.GroupBy(k => k, (key, values) => key)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+GROUP BY root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy Single Value Select Key]]></Description>
       <Expression><![CDATA[query.GroupBy(k => k.Id, (key, values) => key)]]></Expression>
     </Input>
     <Output>
@@ -61,7 +73,7 @@ GROUP BY root["id"] ]]></SqlQuery>
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[GroupBy Single Value With Count]]></Description>
+      <Description><![CDATA[GroupBy Single Value With Average]]></Description>
       <Expression><![CDATA[query.GroupBy(k => k.Id, (key, values) => values.Average(value => value.Int))]]></Expression>
     </Input>
     <Output>
@@ -103,8 +115,10 @@ GROUP BY root["Int"] ]]></SqlQuery>
       <Expression><![CDATA[query.GroupBy(k => k.Int, (key, values) => "string")]]></Expression>
     </Input>
     <Output>
-      <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Expression with NodeType 'Constant' is not supported.]]></ErrorMessage>
+      <SqlQuery><![CDATA[
+SELECT VALUE "string" 
+FROM root 
+GROUP BY root["Int"] ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -154,7 +168,7 @@ GROUP BY root["Int"] ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Expression with NodeType 'Multiple value selector' is not supported.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Expression with NodeType 'New' is not supported.]]></ErrorMessage>
     </Output>
   </Result>
   <Result>

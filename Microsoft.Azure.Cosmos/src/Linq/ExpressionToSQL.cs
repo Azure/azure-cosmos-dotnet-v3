@@ -1734,7 +1734,18 @@ namespace Microsoft.Azure.Cosmos.Linq
             // The value selector function needs to be either a MethodCall or an AnonymousType
             switch (valueSelectorExpression.NodeType)
             {
+                case ExpressionType.Constant:
+                {
+                    ConstantExpression constantExpression = (ConstantExpression)valueSelectorExpression;
+                    SqlScalarExpression selectExpression = ExpressionToSql.VisitConstant(constantExpression, context);
+
+                    SqlSelectSpec sqlSpec = SqlSelectValueSpec.Create(selectExpression);
+                    SqlSelectClause select = SqlSelectClause.Create(sqlSpec, null);
+                    context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
+                    break;
+                }
                 case ExpressionType.Parameter:
+                {
                     ParameterExpression parameterValueExpression = (ParameterExpression)valueSelectorExpression;
                     SqlScalarExpression selectExpression = ExpressionToSql.VisitParameter(parameterValueExpression, context);
 
@@ -1742,8 +1753,9 @@ namespace Microsoft.Azure.Cosmos.Linq
                     SqlSelectClause select = SqlSelectClause.Create(sqlSpec, null);
                     context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
                     break;
-                    
+                }    
                 case ExpressionType.Call:
+                {
                     // Single Value Selector
                     MethodCallExpression methodCallExpression = (MethodCallExpression)valueSelectorExpression;
                     switch (methodCallExpression.Method.Name)
@@ -1756,11 +1768,11 @@ namespace Microsoft.Azure.Cosmos.Linq
                             ExpressionToSql.VisitMethodCall(methodCallExpression, context);
                             break;
                         default:
-                            throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.MethodNotSupported, methodCallExpression.Method.Name ));
+                            throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.MethodNotSupported, methodCallExpression.Method.Name));
                     }
 
                     break;
-
+                }
                 case ExpressionType.New:
                     // TODO: Multi Value Selector
                     throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.ExpressionTypeIsNotSupported, ExpressionType.New));
