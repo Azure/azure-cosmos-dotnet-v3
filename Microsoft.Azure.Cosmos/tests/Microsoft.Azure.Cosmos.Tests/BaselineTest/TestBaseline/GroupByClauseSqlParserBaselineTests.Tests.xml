@@ -5,7 +5,7 @@
       <Query><![CDATA[SELECT * GROUP BY 1]]></Query>
     </Input>
     <Output>
-      <ParsedQuery><![CDATA[SELECT *GROUP BY 1 ]]></ParsedQuery>
+      <ParsedQuery><![CDATA[SELECT * GROUP BY 1 ]]></ParsedQuery>
     </Output>
   </Result>
   <Result>
@@ -14,7 +14,7 @@
       <Query><![CDATA[SELECT * GrOuP By 1]]></Query>
     </Input>
     <Output>
-      <ParsedQuery><![CDATA[SELECT *GROUP BY 1 ]]></ParsedQuery>
+      <ParsedQuery><![CDATA[SELECT * GROUP BY 1 ]]></ParsedQuery>
     </Output>
   </Result>
   <Result>
@@ -23,7 +23,7 @@
       <Query><![CDATA[SELECT * GROUP BY 1, 2, 3]]></Query>
     </Input>
     <Output>
-      <ParsedQuery><![CDATA[SELECT *GROUP BY 1, 2, 3 ]]></ParsedQuery>
+      <ParsedQuery><![CDATA[SELECT * GROUP BY 1, 2, 3 ]]></ParsedQuery>
     </Output>
   </Result>
   <Result>
