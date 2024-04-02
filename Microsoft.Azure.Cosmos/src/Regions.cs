@@ -378,11 +378,11 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Name of the Azure Taiwan North region in the Azure Cosmos DB service.
         /// </summary>
-        public const string TaiwanNorth = "TaiwanNorth";
+        public const string TaiwanNorth = "Taiwan North";
 
         /// <summary>
         /// Name of the Azure Taiwan Northwest region in the Azure Cosmos DB service.
         /// </summary>
-        public const string TaiwanNorthwest = "TaiwanNorthwest";
+        public const string TaiwanNorthwest = "Taiwan Northwest";
     }
 }
