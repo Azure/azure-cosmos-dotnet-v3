@@ -36,6 +36,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 partitionKey: null,
+                containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
                 maxConcurrency: 10,
                 prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
                 continuationToken: null);
@@ -53,6 +54,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 partitionKey: null,
+                containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
                 maxConcurrency: 10,
                 prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
                 continuationToken: CosmosObject.Create(new Dictionary<string, CosmosElement>()));
@@ -71,6 +73,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 partitionKey: null,
+                containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
                 maxConcurrency: 10,
                 prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>()));
@@ -89,6 +92,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 partitionKey: null,
+                containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
                 maxConcurrency: 10,
                 prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>() { CosmosString.Create("asdf") }));
@@ -111,6 +115,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 targetRanges: new List<FeedRangeEpk>() { new FeedRangeEpk(new Documents.Routing.Range<string>(min: "A", max: "B", isMinInclusive: true, isMaxInclusive: false)) },
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 partitionKey: null,
+                containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
                 maxConcurrency: 10,
                 prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>() { ParallelContinuationToken.ToCosmosElement(token) }));
@@ -140,6 +145,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 },
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 partitionKey: null,
+                containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
                 maxConcurrency: 10,
                 prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
                 continuationToken: CosmosArray.Create(
@@ -180,6 +186,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                         cancellationToken: default),
                     queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                     partitionKey: null,
+                    containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
                     maxConcurrency: 10,
                     prefetchPolicy: aggressivePrefetch ? PrefetchPolicy.PrefetchAll : PrefetchPolicy.PrefetchSinglePage,
                     continuationToken: continuationToken);
