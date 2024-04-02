@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Contracts
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Drawing;
     using System.IO;
     using System.Linq;
     using System.Reflection;
@@ -79,6 +80,25 @@ namespace Microsoft.Azure.Cosmos.Contracts
             }
 
             CollectionAssert.AreEquivalent(locationNames, cosmosRegions);
+        }
+
+        [TestMethod]
+        public void RegionValueCheck()
+        {
+            string[] cosmosRegions = typeof(Regions)
+                            .GetMembers(BindingFlags.Static | BindingFlags.Public)
+                            .Select(e => e.Name)
+                            .ToArray();
+            foreach (string region in cosmosRegions)
+            {
+                string locationNameValue = typeof(LocationNames).GetField(region).GetValue(null).ToString();
+                string regionNameValue = typeof(Regions).GetField(region).GetValue(null).ToString();
+                Assert.IsTrue(locationNameValue == regionNameValue);
+            }
+            string[] locationNames = typeof(LocationNames)
+                            .GetMembers(BindingFlags.Static | BindingFlags.Public)
+                            .Select(e => e.Name)
+                            .ToArray();
         }
 
         [TestMethod]
