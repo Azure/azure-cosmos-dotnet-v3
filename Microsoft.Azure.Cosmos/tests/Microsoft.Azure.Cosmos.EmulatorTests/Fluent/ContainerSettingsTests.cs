@@ -553,21 +553,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     new Embedding()
                     {
                         Path = vector1Path,
-                        VectorDataType = VectorDataType.Int8,
+                        DataType = VectorDataType.Int8,
                         DistanceFunction = DistanceFunction.DotProduct,
                         Dimensions = 1200,
                     },
                     new Embedding()
                     {
                         Path = vector2Path,
-                        VectorDataType = VectorDataType.Uint8,
+                        DataType = VectorDataType.Uint8,
                         DistanceFunction = DistanceFunction.Cosine,
                         Dimensions = 3,
                     },
                     new Embedding()
                     {
                         Path = vector3Path,
-                        VectorDataType = VectorDataType.Float32,
+                        DataType = VectorDataType.Float32,
                         DistanceFunction = DistanceFunction.Euclidean,
                         Dimensions = 400,
                     },

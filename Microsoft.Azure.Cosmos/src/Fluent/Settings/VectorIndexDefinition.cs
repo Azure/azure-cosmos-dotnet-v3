@@ -5,13 +5,12 @@
 namespace Microsoft.Azure.Cosmos.Fluent
 {
     using System;
-    using System.Collections.ObjectModel;
 
     /// <summary>
     /// Vector index fluent definition.
     /// </summary>
     /// <seealso cref="VectorIndexPath"/>
-    public class VectorIndexDefinition<T>
+    internal class VectorIndexDefinition<T>
     {
         private readonly VectorIndexPath vectorIndexPath = new VectorIndexPath();
         private readonly T parent;

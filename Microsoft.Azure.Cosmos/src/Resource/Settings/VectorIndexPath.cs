@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
     /// }
     /// ]]>
     /// </example>
-    public sealed class VectorIndexPath
+    internal sealed class VectorIndexPath
     {
         /// <summary>
         /// Gets or sets the full path in a document used for vector indexing.

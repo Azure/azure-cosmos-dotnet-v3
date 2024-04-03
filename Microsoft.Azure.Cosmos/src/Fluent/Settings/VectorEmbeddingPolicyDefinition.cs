@@ -10,12 +10,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
     /// <summary>
     /// <see cref="VectorEmbeddingPolicy"/> fluent definition.
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    class VectorEmbeddingPolicyDefinition
+    internal class VectorEmbeddingPolicyDefinition
     {
         private readonly ContainerBuilder parent;
         private readonly Action<VectorEmbeddingPolicy> attachCallback;

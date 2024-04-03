@@ -132,8 +132,8 @@ namespace Microsoft.Azure.Cosmos
         /// ]
         /// ]]>
         /// </example>
-        [JsonProperty(PropertyName = "vectorIndexes")]
-        internal Collection<VectorIndexPath> VectorIndexes { get; set; } = new Collection<VectorIndexPath>();
+        [JsonProperty(PropertyName = "vectorIndexes", NullValueHandling = NullValueHandling.Ignore)]
+        internal Collection<VectorIndexPath> VectorIndexes { get; set; }
 
         /// <summary>
         /// Collection of spatial index definitions to be used

@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Represents the embedding settings for the vector index.
     /// </summary>
-    public class Embedding : IEquatable<Embedding>
+    internal class Embedding : IEquatable<Embedding>
     {
         /// <summary>
         /// Gets or sets a string containing the path of the vector index.
@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         [JsonProperty(PropertyName = "dataType")]
         [JsonConverter(typeof(StringEnumConverter))]
-        public VectorDataType VectorDataType { get; set; }
+        public VectorDataType DataType { get; set; }
 
         /// <summary>
         /// Gets or sets a long integer representing the dimensions of a vector. 
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos
         public bool Equals(Embedding that)
         {
             return this.Path.Equals(that.Path)
-                && this.VectorDataType.Equals(that.VectorDataType)
+                && this.DataType.Equals(that.DataType)
                 && this.Dimensions == that.Dimensions
                 && this.Dimensions.Equals(that.Dimensions);
         }

@@ -102,7 +102,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Ignore("Vector Indexing Policy is not a part of the document collection, and hence the test was skipped.")]
         public void DefaultIndexingPolicySameAsDocumentCollection()
         {
             ContainerProperties containerSettings = new ContainerProperties("TestContainer", "/partitionKey")
@@ -187,7 +186,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Embedding embedding1 = new ()
             {
                 Path = "/vector1",
-                VectorDataType = VectorDataType.Int8,
+                DataType = VectorDataType.Int8,
                 DistanceFunction = DistanceFunction.DotProduct,
                 Dimensions = 1200,
             };
@@ -195,7 +194,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Embedding embedding2 = new ()
             {
                 Path = "/vector2",
-                VectorDataType = VectorDataType.Uint8,
+                DataType = VectorDataType.Uint8,
                 DistanceFunction = DistanceFunction.Cosine,
                 Dimensions = 3,
             };
@@ -203,7 +202,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Embedding embedding3 = new ()
             {
                 Path = "/vector3",
-                VectorDataType = VectorDataType.Float32,
+                DataType = VectorDataType.Float32,
                 DistanceFunction = DistanceFunction.Euclidean,
                 Dimensions = 400,
             };
