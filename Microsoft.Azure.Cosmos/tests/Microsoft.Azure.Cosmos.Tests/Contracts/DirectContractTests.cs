@@ -6,18 +6,15 @@ namespace Microsoft.Azure.Cosmos.Contracts
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Drawing;
     using System.IO;
     using System.Linq;
     using System.Reflection;
     using System.Runtime.InteropServices;
-    using System.Text;
     using System.Text.RegularExpressions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
 
     [TestCategory("Windows")]
     [TestClass]
@@ -93,12 +90,8 @@ namespace Microsoft.Azure.Cosmos.Contracts
             {
                 string locationNameValue = typeof(LocationNames).GetField(region).GetValue(null).ToString();
                 string regionNameValue = typeof(Regions).GetField(region).GetValue(null).ToString();
-                Assert.IsTrue(locationNameValue == regionNameValue);
+                Assert.AreEqual(locationNameValue, regionNameValue);
             }
-            string[] locationNames = typeof(LocationNames)
-                            .GetMembers(BindingFlags.Static | BindingFlags.Public)
-                            .Select(e => e.Name)
-                            .ToArray();
         }
 
         [TestMethod]
