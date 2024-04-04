@@ -164,7 +164,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
 
         private sealed class OptimisticDirectExecutionQueryPipelineImpl : IQueryPipelineStage
         {
-            private const int ClientQLCompatibilityLevel = 1;
+            private const int ClientQLCompatibilityLevel = 0;
             private readonly QueryPartitionRangePageAsyncEnumerator queryPartitionRangePageAsyncEnumerator;
 
             private OptimisticDirectExecutionQueryPipelineImpl(
