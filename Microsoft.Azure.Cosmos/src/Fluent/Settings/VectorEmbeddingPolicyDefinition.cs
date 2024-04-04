@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
 
     /// <summary>
     /// <see cref="VectorEmbeddingPolicy"/> fluent definition.
@@ -14,11 +15,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
     {
         private readonly ContainerBuilder parent;
         private readonly Action<VectorEmbeddingPolicy> attachCallback;
-        private readonly IEnumerable<Embedding> vectorEmbeddings;
+        private readonly Collection<Embedding> vectorEmbeddings;
 
         internal VectorEmbeddingPolicyDefinition(
             ContainerBuilder parent,
-            IEnumerable<Embedding> embeddings,
+            Collection<Embedding> embeddings,
             Action<VectorEmbeddingPolicy> attachCallback)
         {
             this.parent = parent ?? throw new ArgumentNullException(nameof(parent));

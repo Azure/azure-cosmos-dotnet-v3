@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
@@ -18,7 +19,7 @@ namespace Microsoft.Azure.Cosmos
         /// Initializes a new instance of the <see cref="VectorEmbeddingPolicy"/> class.
         /// </summary>
         /// <param name="embeddings">List of embeddings to include in the policy definition.</param>        
-        public VectorEmbeddingPolicy(IEnumerable<Embedding> embeddings)
+        public VectorEmbeddingPolicy(Collection<Embedding> embeddings)
         {
             VectorEmbeddingPolicy.ValidateEmbeddings(embeddings);
             this.Embeddings = embeddings;
@@ -28,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets a collection of <see cref="Embedding"/> that contains the vector embeddings of documents in collection in the Azure Cosmos DB service.
         /// </summary>
         [JsonProperty(PropertyName = "vectorEmbeddings")]
-        public readonly IEnumerable<Embedding> Embeddings;
+        public readonly Collection<Embedding> Embeddings;
 
         /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 

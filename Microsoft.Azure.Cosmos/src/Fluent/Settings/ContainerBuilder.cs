@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -122,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="embeddings">List of vector embeddings to include in the policy definition.</param>
         /// <returns>An instance of <see cref="VectorEmbeddingPolicyDefinition"/>.</returns>
         internal VectorEmbeddingPolicyDefinition WithVectorEmbeddingPolicy(
-            IEnumerable<Embedding> embeddings)
+            Collection<Embedding> embeddings)
         {
             return new VectorEmbeddingPolicyDefinition(
                 this,

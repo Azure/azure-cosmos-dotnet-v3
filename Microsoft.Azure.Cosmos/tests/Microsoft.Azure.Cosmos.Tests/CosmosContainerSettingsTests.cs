@@ -207,7 +207,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Dimensions = 400,
             };
 
-            List<Embedding> embeddings = new List<Embedding>()
+            Collection<Embedding> embeddings = new Collection<Embedding>()
             {
                 embedding1,
                 embedding2,

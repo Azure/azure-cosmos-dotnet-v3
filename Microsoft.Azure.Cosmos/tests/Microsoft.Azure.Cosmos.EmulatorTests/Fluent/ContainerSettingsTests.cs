@@ -548,7 +548,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             try
             {
-                List<Embedding> embeddings = new List<Embedding>()
+                Collection<Embedding> embeddings = new Collection<Embedding>()
                 {
                     new Embedding()
                     {
