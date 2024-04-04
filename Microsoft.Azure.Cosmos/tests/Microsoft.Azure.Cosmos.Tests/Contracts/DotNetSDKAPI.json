@@ -7100,6 +7100,16 @@
           "Attributes": [],
           "MethodInfo": "System.String SwitzerlandWest;IsInitOnly:False;IsStatic:True;"
         },
+        "System.String TaiwanNorth": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String TaiwanNorth;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String TaiwanNorthwest": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String TaiwanNorthwest;IsInitOnly:False;IsStatic:True;"
+        },
         "System.String UAECentral": {
           "Type": "Field",
           "Attributes": [],
@@ -7164,6 +7174,11 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String USSecWest;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String USSecWestCentral": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String USSecWestCentral;IsInitOnly:False;IsStatic:True;"
         },
         "System.String WestCentralUS": {
           "Type": "Field",
