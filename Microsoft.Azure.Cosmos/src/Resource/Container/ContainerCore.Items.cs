@@ -1222,7 +1222,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
             string processorName,
-            ChangeFeedHandler<ChangeFeedItemChange<T>> onChangesDelegate)
+            ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate)
         {
             if (processorName == null)
             {

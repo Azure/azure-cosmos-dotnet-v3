@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.ReadFeed;
-    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Tracing;
 
     // This class acts as a wrapper for environments that use SynchronizationContext.
@@ -660,15 +659,6 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions,
                 task: (trace) => base.DeleteAllItemsByPartitionKeyStreamAsync(partitionKey, trace, requestOptions, cancellationToken),
                 openTelemetry: (response) => new OpenTelemetryResponse(response));
-        }
-
-        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
-            string processorName,
-            ChangeFeedHandler<ChangeFeedItemChange<T>> onChangesDelegate)
-        {
-            return base.GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(
-                processorName,
-                onChangesDelegate);
         }
     }
 }

@@ -8,12 +8,15 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Collections.ObjectModel;
+    using System.Data.Common;
     using System.Diagnostics;
     using System.Globalization;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
+    using System.Text.RegularExpressions;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Serialization.HybridRow;
     using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.Azure.Cosmos.SqlObjects;
@@ -64,6 +67,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             public const string FirstOrDefault = "FirstOrDefault";
             public const string Max = "Max";
             public const string Min = "Min";
+            public const string GroupBy = "GroupBy";
             public const string OrderBy = "OrderBy";
             public const string OrderByDescending = "OrderByDescending";
             public const string Select = "Select";
@@ -109,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         /// <summary>
         /// Translate an expression into a query.
-        /// Query is constructed as a side-effect in context.currentQuery.
+        /// Query is constructed as a side-effect in context.CurrentQuery.
         /// </summary>
         /// <param name="inputExpression">Expression to translate.</param>
         /// <param name="context">Context for translation.</param>
@@ -805,8 +809,8 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             if (usePropertyRef)
             {
-                SqlIdentifier propertyIdnetifier = SqlIdentifier.Create(memberName);
-                SqlPropertyRefScalarExpression propertyRefExpression = SqlPropertyRefScalarExpression.Create(memberExpression, propertyIdnetifier);
+                SqlIdentifier propertyIdentifier = SqlIdentifier.Create(memberName);
+                SqlPropertyRefScalarExpression propertyRefExpression = SqlPropertyRefScalarExpression.Create(memberExpression, propertyIdentifier);
                 return propertyRefExpression;
             }
             else
@@ -997,7 +1001,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             SqlQuery query = context.CurrentQuery.FlattenAsPossible().GetSqlQuery();
             SqlCollection subqueryCollection = SqlSubqueryCollection.Create(query);
 
-            ParameterExpression parameterExpression = context.GenFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
+            ParameterExpression parameterExpression = context.GenerateFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
             Binding binding = new Binding(parameterExpression, subqueryCollection, isInCollection: false, isInputParameter: true);
 
             context.CurrentQuery = new QueryUnderConstruction(context.GetGenFreshParameterFunc());
@@ -1111,7 +1115,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             Collection collection = ExpressionToSql.ConvertToCollection(body);
             context.PushCollection(collection);
-            ParameterExpression parameter = context.GenFreshParameter(type, parameterName);
+            ParameterExpression parameter = context.GenerateFreshParameter(type, parameterName);
             context.PushParameter(parameter, context.CurrentSubqueryBinding.ShouldBeOnNewQuery);
             context.PopParameter();
             context.PopCollection();
@@ -1120,7 +1124,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
-        /// Visit a method call, construct the corresponding query in context.currentQuery.
+        /// Visit a method call, construct the corresponding query in context.CurrentQuery.
         /// At ExpressionToSql point only LINQ method calls are allowed.
         /// These methods are static extension methods of IQueryable or IEnumerable.
         /// </summary>
@@ -1149,11 +1153,18 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             Type inputElementType = TypeSystem.GetElementType(inputCollection.Type);
             Collection collection = ExpressionToSql.Translate(inputCollection, context);
+
             context.PushCollection(collection);
 
             Collection result = new Collection(inputExpression.Method.Name);
             bool shouldBeOnNewQuery = context.CurrentQuery.ShouldBeOnNewQuery(inputExpression.Method.Name, inputExpression.Arguments.Count);
             context.PushSubqueryBinding(shouldBeOnNewQuery);
+
+            if (context.LastExpressionIsGroupBy)
+            {
+                throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, "Group By cannot be followed by other methods"));
+            }
+
             switch (inputExpression.Method.Name)
             {
                 case LinqMethods.Any:
@@ -1217,6 +1228,13 @@ namespace Microsoft.Azure.Cosmos.Linq
                     {
                         SqlSelectClause select = ExpressionToSql.VisitAggregateFunction(inputExpression.Arguments, context, SqlFunctionCallScalarExpression.Names.Min);
                         context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
+                        break;
+                    }
+                case LinqMethods.GroupBy:
+                    {
+                        context.CurrentQuery = context.PackageCurrentQueryIfNeccessary();
+                        result = ExpressionToSql.VisitGroupBy(returnElementType, inputExpression.Arguments, context);
+                        context.LastExpressionIsGroupBy = true;
                         break;
                     }
                 case LinqMethods.OrderBy:
@@ -1376,6 +1394,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 case LinqMethods.Skip:
                 case LinqMethods.Take:
                 case LinqMethods.Distinct:
+                case LinqMethods.GroupBy:
                     isSubqueryExpression = true;
                     expressionObjKind = SubqueryKind.ArrayScalarExpression;
                     break;
@@ -1405,7 +1424,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
-        /// Visit an lambda expression which is in side a lambda and translate it to a scalar expression or a collection scalar expression.
+        /// Visit an lambda expression which is inside a lambda and translate it to a scalar expression or a collection scalar expression.
         /// If it is a collection scalar expression, e.g. should be translated to subquery such as SELECT VALUE ARRAY, SELECT VALUE EXISTS, 
         /// SELECT VALUE [aggregate], the subquery will be aliased to a new binding for the FROM clause. E.g. consider 
         /// Select(family => family.Children.Select(child => child.Grade)). Since the inner Select corresponds to a subquery, this method would 
@@ -1508,7 +1527,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 SqlQuery query = ExpressionToSql.CreateSubquery(expression, parameters, context);
 
-                ParameterExpression parameterExpression = context.GenFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
+                ParameterExpression parameterExpression = context.GenerateFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
                 SqlCollection subqueryCollection = ExpressionToSql.CreateSubquerySqlCollection(
                     query,
                     isMinMaxAvgMethod ? SubqueryKind.ArrayScalarExpression : expressionObjKind.Value);
@@ -1585,7 +1604,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             QueryUnderConstruction queryBeforeVisit = context.CurrentQuery;
             QueryUnderConstruction packagedQuery = new QueryUnderConstruction(context.GetGenFreshParameterFunc(), context.CurrentQuery);
-            packagedQuery.fromParameters.SetInputParameter(typeof(object), context.CurrentQuery.GetInputParameterInContext(shouldBeOnNewQuery).Name, context.InScope);
+            packagedQuery.FromParameters.SetInputParameter(typeof(object), context.CurrentQuery.GetInputParameterInContext(shouldBeOnNewQuery).Name, context.InScope);
             context.CurrentQuery = packagedQuery;
 
             if (shouldBeOnNewQuery) context.CurrentSubqueryBinding.ShouldBeOnNewQuery = false;
@@ -1663,9 +1682,108 @@ namespace Microsoft.Azure.Cosmos.Linq
                 Binding binding;
                 SqlQuery query = ExpressionToSql.CreateSubquery(lambda.Body, lambda.Parameters, context);
                 SqlCollection subqueryCollection = SqlSubqueryCollection.Create(query);
-                ParameterExpression parameterExpression = context.GenFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
+                ParameterExpression parameterExpression = context.GenerateFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
                 binding = new Binding(parameterExpression, subqueryCollection, isInCollection: false, isInputParameter: true);
-                context.CurrentQuery.fromParameters.Add(binding);
+                context.CurrentQuery.FromParameters.Add(binding);
+            }
+
+            return collection;
+        }
+
+        private static Collection VisitGroupBy(Type returnElementType, ReadOnlyCollection<Expression> arguments, TranslationContext context)
+        {
+            if (arguments.Count != 3)
+            {
+                throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.InvalidArgumentsCount, LinqMethods.GroupBy, 3, arguments.Count));
+            }
+
+            // bind the parameters in the value selector to the current input
+            foreach (ParameterExpression par in Utilities.GetLambda(arguments[2]).Parameters)
+            {
+                context.PushParameter(par, context.CurrentSubqueryBinding.ShouldBeOnNewQuery);
+            }
+
+            // First argument is input, second is key selector and third is value selector
+            LambdaExpression keySelectorLambda = Utilities.GetLambda(arguments[1]);
+
+            // Current GroupBy doesn't allow subquery, so we need to visit non subquery scalar lambda
+            SqlScalarExpression keySelectorFunc = ExpressionToSql.VisitNonSubqueryScalarLambda(keySelectorLambda, context);
+
+            SqlGroupByClause groupby = SqlGroupByClause.Create(keySelectorFunc);
+
+            context.CurrentQuery = context.CurrentQuery.AddGroupByClause(groupby, context);
+
+            // Create a GroupBy collection and bind the new GroupBy collection to the new parameters created from the key
+            Collection collection = ExpressionToSql.ConvertToCollection(keySelectorFunc);
+            collection.isOuter = true;
+            collection.Name = "GroupBy";
+
+            ParameterExpression parameterExpression = context.GenerateFreshParameter(returnElementType, keySelectorFunc.ToString(), includeSuffix: false);
+            Binding binding = new Binding(parameterExpression, collection.inner, isInCollection: false, isInputParameter: true);
+
+            context.CurrentQuery.GroupByParameter = new FromParameterBindings();
+            context.CurrentQuery.GroupByParameter.Add(binding);
+
+            // The alias for the key in the value selector lambda is the first arguemt lambda - we bound it to the parameter expression, which already has substitution
+            ParameterExpression valueSelectorKeyExpressionAlias = Utilities.GetLambda(arguments[2]).Parameters[0];
+            context.GroupByKeySubstitution.AddSubstitution(valueSelectorKeyExpressionAlias, parameterExpression/*Utilities.GetLambda(arguments[1]).Body*/);
+
+            // Translate the body of the value selector lambda
+            Expression valueSelectorExpression = Utilities.GetLambda(arguments[2]).Body;
+
+            // The value selector function needs to be either a MethodCall or an AnonymousType
+            switch (valueSelectorExpression.NodeType)
+            {
+                case ExpressionType.Constant:
+                {
+                    ConstantExpression constantExpression = (ConstantExpression)valueSelectorExpression;
+                    SqlScalarExpression selectExpression = ExpressionToSql.VisitConstant(constantExpression, context);
+
+                    SqlSelectSpec sqlSpec = SqlSelectValueSpec.Create(selectExpression);
+                    SqlSelectClause select = SqlSelectClause.Create(sqlSpec, null);
+                    context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
+                    break;
+                }
+                case ExpressionType.Parameter:
+                {
+                    ParameterExpression parameterValueExpression = (ParameterExpression)valueSelectorExpression;
+                    SqlScalarExpression selectExpression = ExpressionToSql.VisitParameter(parameterValueExpression, context);
+
+                    SqlSelectSpec sqlSpec = SqlSelectValueSpec.Create(selectExpression);
+                    SqlSelectClause select = SqlSelectClause.Create(sqlSpec, null);
+                    context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
+                    break;
+                }    
+                case ExpressionType.Call:
+                {
+                    // Single Value Selector
+                    MethodCallExpression methodCallExpression = (MethodCallExpression)valueSelectorExpression;
+                    switch (methodCallExpression.Method.Name)
+                    {
+                        case LinqMethods.Max:
+                        case LinqMethods.Min:
+                        case LinqMethods.Average:
+                        case LinqMethods.Count:
+                        case LinqMethods.Sum:
+                            ExpressionToSql.VisitMethodCall(methodCallExpression, context);
+                            break;
+                        default:
+                            throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.MethodNotSupported, methodCallExpression.Method.Name));
+                    }
+
+                    break;
+                }
+                case ExpressionType.New:
+                    // TODO: Multi Value Selector
+                    throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.ExpressionTypeIsNotSupported, ExpressionType.New));
+
+                default:
+                    throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.ExpressionTypeIsNotSupported, valueSelectorExpression.NodeType));
+            }
+
+            foreach (ParameterExpression par in Utilities.GetLambda(arguments[2]).Parameters)
+            {
+                context.PopParameter();
             }
 
             return collection;
@@ -1700,7 +1818,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     // it is necessary to trigger the binding because Skip is just a spec with no binding on its own. 
                     // This can be done by pushing and popping a temporary parameter. E.g. In SelectMany(f => f.Children.Skip(1)), 
                     // it's necessary to consider Skip as Skip(x => x, 1) to bind x to f.Children. Similarly for Top and Limit.
-                    ParameterExpression parameter = context.GenFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
+                    ParameterExpression parameter = context.GenerateFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
                     context.PushParameter(parameter, context.CurrentSubqueryBinding.ShouldBeOnNewQuery);
                     context.PopParameter();
 
@@ -1848,16 +1966,21 @@ namespace Microsoft.Azure.Cosmos.Linq
             SqlScalarExpression aggregateExpression;
             if (arguments.Count == 1)
             {
-                // Need to trigger parameter binding for cases where a aggregate function immediately follows a member access.
-                ParameterExpression parameter = context.GenFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
+                // Need to trigger parameter binding for cases where an aggregate function immediately follows a member access.
+                ParameterExpression parameter = context.GenerateFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
                 context.PushParameter(parameter, context.CurrentSubqueryBinding.ShouldBeOnNewQuery);
+
+                // If there is a groupby, since there is no argument to the aggregate, we consider it to be invoked on the source collection, and not the group by keys 
                 aggregateExpression = ExpressionToSql.VisitParameter(parameter, context);
                 context.PopParameter();
             }
             else if (arguments.Count == 2)
             {
                 LambdaExpression lambda = Utilities.GetLambda(arguments[1]);
-                aggregateExpression = ExpressionToSql.VisitScalarExpression(lambda, context);
+                    
+                aggregateExpression = context.CurrentQuery.GroupByParameter != null
+                    ? ExpressionToSql.VisitNonSubqueryScalarLambda(lambda, context)
+                    : ExpressionToSql.VisitScalarExpression(lambda, context);
             }
             else
             {
@@ -1884,7 +2007,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             // We consider Distinct as Distinct(v0 => v0)
             // It's necessary to visit this identity method to replace the parameters names
-            ParameterExpression parameter = context.GenFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
+            ParameterExpression parameter = context.GenerateFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
             LambdaExpression identityLambda = Expression.Lambda(parameter, parameter);
             SqlScalarExpression sqlfunc = ExpressionToSql.VisitNonSubqueryScalarLambda(identityLambda, context);
             SqlSelectSpec sqlSpec = SqlSelectValueSpec.Create(sqlfunc);

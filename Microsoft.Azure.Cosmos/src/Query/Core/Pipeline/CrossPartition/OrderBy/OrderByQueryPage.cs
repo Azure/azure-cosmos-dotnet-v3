@@ -30,6 +30,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
         public IEnumerator<CosmosElement> Enumerator { get; }
 
+        public override int ItemCount => this.Page.ItemCount;
+
         protected override ImmutableHashSet<string> DerivedClassBannedHeaders => bannedHeaders;
     }
 }
