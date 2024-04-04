@@ -7175,6 +7175,11 @@
           "Attributes": [],
           "MethodInfo": "System.String USSecWest;IsInitOnly:False;IsStatic:True;"
         },
+        "System.String USSecWestCentral": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String USSecWestCentral;IsInitOnly:False;IsStatic:True;"
+        },
         "System.String WestCentralUS": {
           "Type": "Field",
           "Attributes": [],
