@@ -46,7 +46,6 @@ namespace Microsoft.Azure.Cosmos
             foreach (Embedding item in embeddings)
             {
                 VectorEmbeddingPolicy.ValidateEmbeddingPath(item.Path);
-                VectorEmbeddingPolicy.ValidateEmbeddingDimensions(item.Dimensions);
             }
         }
 
@@ -62,22 +61,9 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentException("Argument {0} can't be null or empty.", nameof(path));
             }
 
-            if (path[0] != '/' || path.LastIndexOf('/') != 0)
+            if (path[0] != '/')
             {
                 throw new ArgumentException("The argument {0} is not a valid path.", path);
-            }
-        }
-
-        /// <summary>
-        /// Ensures that the dimensions specified in the vector embedding policy are valid.
-        /// </summary>
-        /// <param name="dimensions">A long integer containing the vector dimensions.</param>
-        private static void ValidateEmbeddingDimensions(
-            long dimensions)
-        {
-            if (dimensions < 1)
-            {
-                throw new ArgumentException("Argument {0} is not a valid value.", nameof(dimensions));
             }
         }
     }

@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets a long integer representing the dimensions of a vector. 
         /// </summary>
         [JsonProperty(PropertyName = "dimensions")]
-        public long Dimensions { get; set; }
+        public ulong Dimensions { get; set; }
 
         /// <summary>
         /// Gets or sets the <see cref="Cosmos.DistanceFunction"/> which is used to calculate the respective distance between the vectors. 
