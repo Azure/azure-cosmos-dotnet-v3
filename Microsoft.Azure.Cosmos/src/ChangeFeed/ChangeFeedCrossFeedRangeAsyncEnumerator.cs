@@ -5,14 +5,15 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
-    using System.Collections.Generic;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Serializer;
+    using Microsoft.Azure.Cosmos.Tracing;
 
-    internal sealed class ChangeFeedCrossFeedRangeAsyncEnumerator : IAsyncEnumerator<TryCatch<ChangeFeedPage>>
+    internal sealed class ChangeFeedCrossFeedRangeAsyncEnumerator : ITracingAsyncEnumerator<TryCatch<ChangeFeedPage>>
     {
         private readonly CrossPartitionChangeFeedAsyncEnumerator enumerator;
         private readonly JsonSerializationFormatOptions jsonSerializationFormatOptions;
@@ -29,9 +30,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public ValueTask DisposeAsync() => this.enumerator.DisposeAsync();
 
-        public async ValueTask<bool> MoveNextAsync()
+        public async ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
         {
-            if (!await this.enumerator.MoveNextAsync())
+            if (!await this.enumerator.MoveNextAsync(trace, cancellationToken))
             {
                 throw new InvalidOperationException("Change Feed should always be able to move next.");
             }

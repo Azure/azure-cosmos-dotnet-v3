@@ -28,10 +28,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                 targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
                 partitionKey: null,
+                containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
                 queryInfo: new QueryInfo() { },
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 maxConcurrency: 10,
-                requestCancellationToken: default,
                 requestContinuationToken: default); ;
             Assert.IsTrue(monadicCreatePipeline.Succeeded);
         }
