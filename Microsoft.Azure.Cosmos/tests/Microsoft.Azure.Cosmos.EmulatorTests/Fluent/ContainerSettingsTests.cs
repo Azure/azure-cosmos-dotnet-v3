@@ -539,6 +539,88 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Ignore("This test will be enabled once the vector similarity changes are made available into the public emulator.")]
+        public async Task TestVectorEmbeddingPolicy()
+        {
+            string vector1Path = "/vector1", vector2Path = "/vector2", vector3Path = "/vector3";
+            Database databaseForVectorEmbedding = await this.GetClient().CreateDatabaseAsync("vectorEmbeddingContainerTest",
+                cancellationToken: this.cancellationToken);
+
+            try
+            {
+                Collection<Embedding> embeddings = new Collection<Embedding>()
+                {
+                    new Embedding()
+                    {
+                        Path = vector1Path,
+                        DataType = VectorDataType.Int8,
+                        DistanceFunction = DistanceFunction.DotProduct,
+                        Dimensions = 1200,
+                    },
+                    new Embedding()
+                    {
+                        Path = vector2Path,
+                        DataType = VectorDataType.Uint8,
+                        DistanceFunction = DistanceFunction.Cosine,
+                        Dimensions = 3,
+                    },
+                    new Embedding()
+                    {
+                        Path = vector3Path,
+                        DataType = VectorDataType.Float32,
+                        DistanceFunction = DistanceFunction.Euclidean,
+                        Dimensions = 400,
+                    },
+                };
+
+                string containerName = "vectorEmbeddingContainerTest";
+                string partitionKeyPath = "/users";
+
+                ContainerResponse containerResponse =
+                    await databaseForVectorEmbedding.DefineContainer(containerName, partitionKeyPath)
+                        .WithVectorEmbeddingPolicy(embeddings)
+                        .Attach()
+                        .WithIndexingPolicy()
+                            .WithVectorIndex()
+                                .Path(vector1Path, VectorIndexType.Flat)
+                             .Attach()
+                            .WithVectorIndex()
+                                .Path(vector2Path, VectorIndexType.Flat)
+                             .Attach()
+                            .WithVectorIndex()
+                                .Path(vector3Path, VectorIndexType.Flat)
+                             .Attach()
+                        .Attach()
+                        .CreateAsync();
+
+                Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+                Assert.AreEqual(containerName, containerResponse.Resource.Id);
+                Assert.AreEqual(partitionKeyPath, containerResponse.Resource.PartitionKey.Paths.First());
+                ContainerProperties containerSettings = containerResponse.Resource;
+
+                // Validate Vector Embeddings.
+                Assert.IsNotNull(containerSettings.VectorEmbeddingPolicy);
+                Assert.IsNotNull(containerSettings.VectorEmbeddingPolicy.Embeddings);
+                Assert.AreEqual(embeddings.Count, containerSettings.VectorEmbeddingPolicy.Embeddings.Count());
+                Assert.IsTrue(embeddings.OrderBy(x => x.Path).SequenceEqual(containerSettings.VectorEmbeddingPolicy.Embeddings.OrderBy(x => x.Path)));
+
+                // Validate Vector Indexes.
+                Assert.IsNotNull(containerSettings.IndexingPolicy.VectorIndexes);
+                Assert.AreEqual(embeddings.Count, containerSettings.IndexingPolicy.VectorIndexes.Count());
+                Assert.AreEqual(vector1Path, containerSettings.IndexingPolicy.VectorIndexes[0].Path);
+                Assert.AreEqual(VectorIndexType.Flat, containerSettings.IndexingPolicy.VectorIndexes[0].Type);
+                Assert.AreEqual(vector2Path, containerSettings.IndexingPolicy.VectorIndexes[1].Path);
+                Assert.AreEqual(VectorIndexType.Flat, containerSettings.IndexingPolicy.VectorIndexes[1].Type);
+                Assert.AreEqual(vector3Path, containerSettings.IndexingPolicy.VectorIndexes[2].Path);
+                Assert.AreEqual(VectorIndexType.Flat, containerSettings.IndexingPolicy.VectorIndexes[2].Type);
+            }
+            finally
+            {
+                await databaseForVectorEmbedding.DeleteAsync();
+            }
+        }
+
+        [TestMethod]
         public async Task WithIndexingPolicy()
         {
             string containerName = Guid.NewGuid().ToString();
