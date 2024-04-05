@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             {
                 case FaultInjectionServerErrorType.Gone:
                     INameValueCollection goneHeaders = args.RequestHeaders;
-                    goneHeaders.Add(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.ServerGenerated410).ToString(CultureInfo.InvariantCulture));
+                    goneHeaders.Set(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.ServerGenerated410).ToString(CultureInfo.InvariantCulture));
                     storeResponse = new StoreResponse()
                     {
                         Status = 410,
@@ -150,8 +150,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
                 case FaultInjectionServerErrorType.TooManyRequests:
                     INameValueCollection tooManyRequestsHeaders = args.RequestHeaders;
-                    tooManyRequestsHeaders.Add(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, "500");
-                    tooManyRequestsHeaders.Add(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.RUBudgetExceeded).ToString(CultureInfo.InvariantCulture));
+                    tooManyRequestsHeaders.Set(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, "500");
+                    tooManyRequestsHeaders.Set(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.RUBudgetExceeded).ToString(CultureInfo.InvariantCulture));
 
                     storeResponse = new StoreResponse()
                     {
@@ -188,8 +188,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     const string badSesstionToken = "1:1#1#1=1#1=1";
 
                     INameValueCollection readSessionHeaders = args.RequestHeaders;
-                    readSessionHeaders.Add(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.ReadSessionNotAvailable).ToString(CultureInfo.InvariantCulture));
-                    readSessionHeaders.Add(HttpConstants.HttpHeaders.SessionToken, badSesstionToken);
+                    readSessionHeaders.Set(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.ReadSessionNotAvailable).ToString(CultureInfo.InvariantCulture));
+                    readSessionHeaders.Set(HttpConstants.HttpHeaders.SessionToken, badSesstionToken);
 
                     storeResponse = new StoreResponse()
                     {
@@ -202,7 +202,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
                 case FaultInjectionServerErrorType.PartitionIsMigrating:
                     INameValueCollection partitionMigrationHeaders = args.RequestHeaders;
-                    partitionMigrationHeaders.Add(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.CompletingPartitionMigration).ToString(CultureInfo.InvariantCulture));
+                    partitionMigrationHeaders.Set(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.CompletingPartitionMigration).ToString(CultureInfo.InvariantCulture));
 
                     storeResponse = new StoreResponse()
                     {
@@ -215,7 +215,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
                 case FaultInjectionServerErrorType.PartitionIsSplitting:
                     INameValueCollection partitionSplitting = args.RequestHeaders;
-                    partitionSplitting.Add(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.CompletingSplit).ToString(CultureInfo.InvariantCulture));
+                    partitionSplitting.Set(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.CompletingSplit).ToString(CultureInfo.InvariantCulture));
 
                     storeResponse = new StoreResponse()
                     {
