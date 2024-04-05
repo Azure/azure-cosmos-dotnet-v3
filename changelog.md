@@ -13,6 +13,30 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.40.0-preview.0"/> [3.40.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.40.0-preview.0) - 2024-04-05
+
+#### Fixed
+- [4334](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4334) ChangeFeedProcessor: Fixes when ChangeFeedMode is switched, an exception is thrown
+- [4352](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4352) Documentation: Fixes spelling in ReplicaValidationDesign
+
+#### Added
+- [4370](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4370) ChangeFeedProcessor: Adds AllVersionsAndDeletes support to ChangeFeedProcessor 
+- [4380](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4380) ChangeFeedProcessor: Refactors AVAD Metadata Contract for ChangeFeed and ChangeFeedProcessor
+
+### <a name="3.38.2"/> [3.38.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.38.1) - 2024-04-05
+
+#### Fixed
+- [4357](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4357) Distributed Tracing Documentation : Fixes the default value mentioned in code doc 
+
+#### Added
+- [4377](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4377) integrated cache: Adds BypassIntegratedCache for public release
+- [4281](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4281) FaultInjection: Adds Fault Injection Library
+- [4265](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4265) CosmosClientOptions: Adds Private Custom Account Endpoints
+- [4316](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4316) Distributed Tracing: Refactors code to rename net.peer.name attribute to server.address
+- [4317](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4317) Client Telemetry: Refactors code to stop throwing an exception
+- [4339](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4338) Diagnostics: Adds Client Configuration for Synchronization context cases
+- [4333](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4333) Distributed Tracing: Adds configuration to disable network level tracing in sdk permanently
+
 ### <a name="3.39.0-preview.1"/> [3.39.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.39.0-preview.1) - 2024-02-02
 ### <a name="3.38.1"/> [3.38.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.38.1) - 2024-02-02
 
