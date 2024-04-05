@@ -132,7 +132,6 @@ namespace Microsoft.Azure.Cosmos
         /// ]
         /// ]]>
         /// </example>
-        [JsonProperty(PropertyName = "vectorIndexes", NullValueHandling = NullValueHandling.Ignore)]
         internal Collection<VectorIndexPath> VectorIndexes
         {
             get => this.VectorIndexesInternal ??= new Collection<VectorIndexPath>();
@@ -148,6 +147,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets or Sets an internal placeholder collection to hold the vector indexes.
         /// </summary>
+        [JsonProperty(PropertyName = "vectorIndexes", NullValueHandling = NullValueHandling.Ignore)]
         internal Collection<VectorIndexPath> VectorIndexesInternal { get; set; }
 
         /// <summary>
