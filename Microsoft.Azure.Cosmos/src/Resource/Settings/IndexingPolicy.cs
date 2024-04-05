@@ -133,13 +133,22 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </example>
         [JsonProperty(PropertyName = "vectorIndexes", NullValueHandling = NullValueHandling.Ignore)]
-        internal Collection<VectorIndexPath> VectorIndexes { get; set; }
+        internal Collection<VectorIndexPath> VectorIndexes
+        {
+            get => this.VectorIndexesInternal ??= new Collection<VectorIndexPath>();
+            set => this.VectorIndexesInternal = value;
+        }
 
         /// <summary>
         /// Collection of spatial index definitions to be used
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.SpatialIndexes)]
         public Collection<SpatialPath> SpatialIndexes { get; internal set; } = new Collection<SpatialPath>();
+
+        /// <summary>
+        /// Gets or Sets an internal placeholder collection to hold the vector indexes.
+        /// </summary>
+        internal Collection<VectorIndexPath> VectorIndexesInternal { get; set; }
 
         /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 

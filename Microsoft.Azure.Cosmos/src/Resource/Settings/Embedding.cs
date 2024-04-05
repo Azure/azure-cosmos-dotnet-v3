@@ -49,6 +49,22 @@ namespace Microsoft.Azure.Cosmos
         [JsonExtensionData]
         internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
 
+        /// <summary>
+        /// Ensures that the paths specified in the vector embedding policy are valid.
+        /// </summary>
+        public void ValidateEmbeddingPath()
+        {
+            if (string.IsNullOrEmpty(this.Path))
+            {
+                throw new ArgumentException("Argument {0} can't be null or empty.", nameof(this.Path));
+            }
+
+            if (this.Path[0] != '/')
+            {
+                throw new ArgumentException("The argument {0} is not a valid path.", this.Path);
+            }
+        }
+
         /// <inheritdoc/>
         public bool Equals(Embedding that)
         {

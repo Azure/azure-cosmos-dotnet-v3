@@ -146,7 +146,6 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
         private void AddVectorIndexPath(VectorIndexPath vectorIndexPath)
         {
-            this.indexingPolicy.VectorIndexes ??= new ();
             this.indexingPolicy.VectorIndexes.Add(vectorIndexPath);
         }
 

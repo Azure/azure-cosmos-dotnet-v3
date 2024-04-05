@@ -46,25 +46,7 @@ namespace Microsoft.Azure.Cosmos
         {
             foreach (Embedding item in embeddings)
             {
-                VectorEmbeddingPolicy.ValidateEmbeddingPath(item.Path);
-            }
-        }
-
-        /// <summary>
-        /// Ensures that the paths specified in the vector embedding policy are valid.
-        /// </summary>
-        /// <param name="path">A string containing the vector embedding path.</param>
-        private static void ValidateEmbeddingPath(
-            string path)
-        {
-            if (string.IsNullOrEmpty(path))
-            {
-                throw new ArgumentException("Argument {0} can't be null or empty.", nameof(path));
-            }
-
-            if (path[0] != '/')
-            {
-                throw new ArgumentException("The argument {0} is not a valid path.", path);
+                item.ValidateEmbeddingPath();
             }
         }
     }
