@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Added
 - [4370](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4370) ChangeFeedProcessor: Adds AllVersionsAndDeletes support to ChangeFeedProcessor 
 - [4380](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4380) ChangeFeedProcessor: Refactors AVAD Metadata Contract for ChangeFeed and ChangeFeedProcessor
+  > Note: A Rename refactoring was performed in the effort to reduce redundancy and achieve clarity from a user perspective. The previous type ChangeFeedItemChange<T> was strategically renamed to ChangeFeedItem<T>. The refactoring affects both ChangeFeed (pull), and the new ChangeFeedProcessor (push), when in AllVersionsAndDeletes ChangeFeedMode. LatestVersion ChangeFeedMode is not affect and will continue to function as expected.
 
 ### <a name="3.39.0"/> [3.39.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.39.0) - 2024-04-05
 
