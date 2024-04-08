@@ -518,28 +518,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TestMeAsync()
         {
-            await Task.Delay(100);
+            CosmosClient client = TestCommon.CreateCosmosClient(x => x.AddCustomHandlers(new TestRequestHandler()));
 
-            //////CosmosClient client;
-            //////TestRequestHandler testRequestHandler = new TestRequestHandler()
-            //////{
-            //////    GetMessage = new Func<CosmosClient>(() => client)
-            //////};
+            TestRequestHandler testRequestHandler = client.ClientOptions.CustomHandlers
+                .Where(x => x.GetType() == typeof(TestRequestHandler))
+                .FirstOrDefault() as TestRequestHandler;
 
-            CosmosClient client = TestCommon.CreateCosmosClient(
-                x => x.AddCustomHandlers(
-                    new TestRequestHandler()
-                    {
-                        GetMessage = () => default
-                    }));
 
             string containerName = Guid.NewGuid().ToString();
             string partitionKeyPath1 = "/users";
 
             ContainerProperties settings = new ContainerProperties(containerName, partitionKeyPath1);
+            settings.ChangeFeedPolicy = new ChangeFeedPolicy() {  FullFidelityRetention = TimeSpan.FromMinutes(5) };
 
             Database database = client.GetDatabase(this.cosmosDatabase.Id);
             Container container = await database.CreateContainerIfNotExistsAsync(settings);
+
+            testRequestHandler.AddClient(client);
+            testRequestHandler.AddContainer(container);
 
             FeedIterator<dynamic> feedIterator = container.GetChangeFeedIterator<dynamic>(
                 ChangeFeedStartFrom.Beginning(

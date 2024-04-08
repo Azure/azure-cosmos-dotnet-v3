@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public class RequestHandlerHelper : RequestHandler
     {
@@ -32,23 +31,44 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
     public class TestRequestHandler : RequestHandler
     {
-        public Func<CosmosClient> GetMessage = null;
-        public override Task<ResponseMessage> SendAsync(RequestMessage request, CancellationToken cancellationToken)
+        public CosmosClient Client { get; private set; }
+        public Container Container { get; private set; }
+
+        public void AddClient(CosmosClient client)
+        {
+            this.Client = client;
+        }
+
+        public void AddContainer(Container container)
+        {
+            this.Container = container;
+        }
+
+        public override async Task<ResponseMessage> SendAsync(RequestMessage request, CancellationToken cancellationToken)
         {
             if (request.ResourceType == Documents.ResourceType.Document && request.OperationType == Documents.OperationType.ReadFeed)
             {
-                CosmosClient client = this.GetMessage?.Invoke();
+                Debug.WriteLine("*** hits custom handler ***");
 
-                return MockedFriendsProcessor.ProcessAllVersionsAndDeletesRequestAsync(
-                    cosmosClient: client,
-                    container: default,
+                IReadOnlyList<FeedRange> partitionKeyRangeCache = await this.Container.GetFeedRangesAsync();
+
+                ResponseMessage response = await base.SendAsync(request, cancellationToken);
+
+                // the partition is gone, meaning a split.
+                if (response.StatusCode == System.Net.HttpStatusCode.Gone)
+                {
+                }
+
+                return await MockedFriendsProcessor.ProcessAllVersionsAndDeletesRequestAsync(
+                    cosmosClient: this.Client,
+                    container: this.Container,
                     enableFFCFPartitionSplitArchivalCaching: true,
-                    lsn: default,
-                    partitionKeyRangeId: default,
+                    lsn: @"""101""",
+                    partitionKeyRangeId: "0",
                     cancellationToken: default);
             }
 
-            return base.SendAsync(request, cancellationToken);
+            return await base.SendAsync(request, cancellationToken);
         }
 
         public class MockedFriendsProcessor
