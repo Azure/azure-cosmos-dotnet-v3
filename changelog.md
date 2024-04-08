@@ -36,6 +36,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [4317](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4317) Client Telemetry: Refactors code to stop throwing an exception
 - [4339](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4338) Diagnostics: Adds Client Configuration for Synchronization context cases
 - [4333](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4333) Distributed Tracing: Adds configuration to disable network level tracing in sdk permanently
+- [4323](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4323) Query: Adds Support for LINQ Custom Serializer in Public Release
+- [4362](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4362) Query: Adds support for non streaming ORDER BY
+- [4074](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4074) Query: Adds translation support for single key single value select GROUP BY LINQ queries
+- [4361](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4361) Performance: Refactors query prefetch mechanism
 
 ### <a name="3.39.0-preview.1"/> [3.39.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.39.0-preview.1) - 2024-02-02
 ### <a name="3.38.1"/> [3.38.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.38.1) - 2024-02-02
