@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
+    using Newtonsoft.Json;
 
     //TODO: write unit test for this handler
     internal class TransportHandler : RequestHandler
@@ -30,6 +31,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         {
             try
             {
+                Debug.WriteLine("SendAsync");
                 ResponseMessage response = await this.ProcessMessageAsync(request, cancellationToken);
                 Debug.Assert(System.Diagnostics.Trace.CorrelationManager.ActivityId != Guid.Empty, "Trace activity id is missing");
 

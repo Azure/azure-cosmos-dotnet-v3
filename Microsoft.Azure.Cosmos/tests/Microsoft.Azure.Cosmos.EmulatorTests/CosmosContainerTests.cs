@@ -17,6 +17,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
+    using Microsoft.VisualStudio.TestPlatform.ObjectModel.Logging;
+    using System.Threading;
+    using Castle.DynamicProxy.Generators.Emitters.SimpleAST;
 
     [TestClass]
     public class CosmosContainerTests
@@ -510,6 +513,56 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             containerResponse = await containerResponse.Container.DeleteContainerAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task TestMeAsync()
+        {
+            await Task.Delay(100);
+
+            //////CosmosClient client;
+            //////TestRequestHandler testRequestHandler = new TestRequestHandler()
+            //////{
+            //////    GetMessage = new Func<CosmosClient>(() => client)
+            //////};
+
+            CosmosClient client = TestCommon.CreateCosmosClient(
+                x => x.AddCustomHandlers(
+                    new TestRequestHandler()
+                    {
+                        GetMessage = () => default
+                    }));
+
+            string containerName = Guid.NewGuid().ToString();
+            string partitionKeyPath1 = "/users";
+
+            ContainerProperties settings = new ContainerProperties(containerName, partitionKeyPath1);
+
+            Database database = client.GetDatabase(this.cosmosDatabase.Id);
+            Container container = await database.CreateContainerIfNotExistsAsync(settings);
+
+            FeedIterator<dynamic> feedIterator = container.GetChangeFeedIterator<dynamic>(
+                ChangeFeedStartFrom.Beginning(
+                new FeedRangePartitionKey(
+                    new PartitionKey(partitionKeyPath1))),
+                ChangeFeedMode.AllVersionsAndDeletes,
+                new ChangeFeedRequestOptions()
+                {
+                    PageSizeHint = 1,
+                });
+
+            string continuation = null;
+            while(feedIterator.HasMoreResults)
+            {
+                FeedResponse<dynamic> feedResponse = await feedIterator.ReadNextAsync(CancellationToken.None);
+
+                continuation = feedResponse.ContinuationToken;
+
+                if (feedResponse.StatusCode == HttpStatusCode.NotModified)
+                {
+                    break;
+                }
+            }
         }
 
         [TestMethod]
