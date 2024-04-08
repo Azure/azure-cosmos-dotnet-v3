@@ -30,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [4357](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4357) Distributed Tracing Documentation : Fixes the default value mentioned in code doc 
 
 #### Added
-- [4377](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4377) integrated cache: Adds BypassIntegratedCache for public release
+- [4377](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4377) Integrated cache: Adds BypassIntegratedCache for public release
 - [4265](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4265) CosmosClientOptions: Adds Private Custom Account Endpoints
 - [4316](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4316) Distributed Tracing: Refactors code to rename net.peer.name attribute to server.address
 - [4317](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4317) Client Telemetry: Refactors code to stop throwing an exception
