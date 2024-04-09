@@ -17,11 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Fixed
 - [4334](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4334) ChangeFeedProcessor: Fixes when ChangeFeedMode is switched, an exception is thrown
-- [4352](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4352) Documentation: Fixes spelling in ReplicaValidationDesign
 
 #### Added
 - [4370](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4370) ChangeFeedProcessor: Adds AllVersionsAndDeletes support to ChangeFeedProcessor 
-- [4380](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4380) ChangeFeedProcessor: Refactors AVAD Metadata Contract for ChangeFeed and ChangeFeedProcessor
+- [4380](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4380) ChangeFeedProcessor: Refactors AllVersionsAndDeletes Metadata Contract for ChangeFeed and ChangeFeedProcessor
   > Note: A Rename refactoring was performed in the effort to reduce redundancy and achieve clarity from a user perspective. The previous type `ChangeFeedItemChange<T>` was strategically renamed to `ChangeFeedItem<T>`. The refactoring affects both ChangeFeed (pull), and the new ChangeFeedProcessor (push), when in AllVersionsAndDeletes ChangeFeedMode. LatestVersion ChangeFeedMode is not affected and will continue to function as expected.
 
 ### <a name="3.39.0"/> [3.39.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.39.0) - 2024-04-05
@@ -40,7 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [4074](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4074) Query: Adds translation support for single key single value select GROUP BY LINQ queries
 - [4361](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4361) Performance: Refactors query prefetch mechanism
 - [4386](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4386) Regions: Adds new Regions
-  > Note: There is added support for the following regions: `USSec West Central`, `Taiwan North` and `Taiwan Northwest`.
+  > Note: There is added support for the following regions: `Taiwan North` and `Taiwan Northwest`.
   > This also includes a Direct Package version update to 3.33.0 in PR [#4353](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4353)
 
 
