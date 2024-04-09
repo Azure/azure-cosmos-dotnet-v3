@@ -41,7 +41,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [4361](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4361) Performance: Refactors query prefetch mechanism
 - [4386](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4386) Regions: Adds new Regions
   > Note: There is added support for the following regions: `USSec West Central`, `Taiwan North` and `Taiwan Northwest`.
-  > This also includes a Direct Package version update to 3.33.0 [4353](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4353)
+  > This also includes a Direct Package version update to 3.33.0 in PR [#4353](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4353)
+
+
 ### <a name="3.39.0-preview.1"/> [3.39.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.39.0-preview.1) - 2024-02-02
 ### <a name="3.38.1"/> [3.38.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.38.1) - 2024-02-02
 
