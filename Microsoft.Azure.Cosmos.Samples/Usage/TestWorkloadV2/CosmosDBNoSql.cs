@@ -41,8 +41,8 @@
             this.configuration = new Configuration();
             configurationRoot.Bind(this.configuration);
 
-            this.client = this.GetClientInstance(this.configuration.ConnectionStringInfo.WithCredential);
-            this.configuration.ConnectionStringInfo.ForLogging = this.client.Endpoint.ToString();
+            this.client = this.GetClientInstance(this.configuration.ConnectionString);
+            this.configuration.ConnectionStringForLogging = this.client.Endpoint.ToString();
 
             this.container = this.client.GetDatabase(this.configuration.DatabaseName).GetContainer(this.configuration.ContainerName);
             if (this.configuration.ShouldRecreateContainerOnStart)

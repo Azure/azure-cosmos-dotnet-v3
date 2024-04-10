@@ -65,8 +65,8 @@
                 throw new Exception($"Invalid Mongo flavor {this.configuration.MongoFlavor}");
             }
 
-            MongoClientSettings settings = MongoClientSettings.FromUrl(new MongoUrl(this.configuration.ConnectionStringInfo.WithCredential));
-            this.configuration.ConnectionStringInfo.ForLogging = settings.Server.Host;
+            MongoClientSettings settings = MongoClientSettings.FromUrl(new MongoUrl(this.configuration.ConnectionString));
+            this.configuration.ConnectionStringForLogging = settings.Server.Host;
 
             settings.MinConnectionPoolSize = this.configuration.MinConnectionPoolSize;
             settings.MaxConnectionPoolSize = this.configuration.MaxConnectionPoolSize;

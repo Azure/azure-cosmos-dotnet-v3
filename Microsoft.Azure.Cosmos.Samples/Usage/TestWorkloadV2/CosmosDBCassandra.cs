@@ -30,8 +30,8 @@
             this.configuration = new Configuration();
             configurationRoot.Bind(this.configuration);
 
-
-            this.session = CreateSession(this.configuration.ConnectionStringInfo, this.configuration.DatabaseName);
+            this.session = CreateSession(this.configuration.ConnectionString, this.configuration.DatabaseName, out string connectionStringForLogging);
+            this.configuration.ConnectionStringForLogging = connectionStringForLogging;
            
             if (this.configuration.ShouldRecreateContainerOnStart)
             {
@@ -65,17 +65,18 @@
         }
 
         private static ISession CreateSession(
-            CommonConnectionString connectionString,
-            string keyspaceName)
+            string connectionString,
+            string keyspaceName,
+            out string connectionStringForLogging)
         {
             SSLOptions options = new SSLOptions(SslProtocols.Tls12, true, ValidateServerCertificate);
 
-            CassandraConnectionStringBuilder connectionStringBuilder = new CassandraConnectionStringBuilder(connectionString.WithCredential);
+            CassandraConnectionStringBuilder connectionStringBuilder = new CassandraConnectionStringBuilder(connectionString);
             options.SetHostNameResolver((ipAddress) => connectionStringBuilder.ContactPoints[0]);
-            connectionString.ForLogging = connectionStringBuilder.ContactPoints[0];
+            connectionStringForLogging = connectionStringBuilder.ContactPoints[0];
 
             Cluster cluster = Cluster.Builder()
-                .WithConnectionString(connectionString.WithCredential)
+                .WithConnectionString(connectionString)
                 //.WithCredentials(endpoint.Split('.', 2)[0], authKey)
                 //.WithPort(10350)
                 //.AddContactPoint(endpoint)

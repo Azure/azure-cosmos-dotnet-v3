@@ -9,11 +9,11 @@
     
     internal class CommonConfiguration
     {
-        [JsonConverter(typeof(CommonConnectionStringJsonConvertor))]
-        public CommonConnectionString ConnectionStringInfo => this.ConnectionString;
-
         [JsonIgnore]
         public string ConnectionString { get; set; }
+
+        // Expect this to be filled by derived class before completing initialization
+        public string ConnectionStringForLogging { get; set; }
 
         public string DatabaseName { get; set; }
         public string ContainerName { get; set; }

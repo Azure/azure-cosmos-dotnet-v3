@@ -35,8 +35,6 @@
             finally
             {
                 await Program.driver.CleanupAsync();
-
-                Console.WriteLine("End of demo.");
             }
         }
 
@@ -50,6 +48,10 @@
                     .Build();
 
             (Program.configuration, Program.dataSource) = await Program.driver.InitializeAsync(configurationRoot);
+            if(Program.configuration.ConnectionStringForLogging == null)
+            {
+                throw new Exception("ConnectionStringForLogging is not set in the driver's InitializeAsync method.");
+            }
         }
 
         private static DateTime runStartTime;
