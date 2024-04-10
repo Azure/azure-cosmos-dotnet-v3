@@ -36,7 +36,10 @@
             this.configuration = new Configuration();
             configurationRoot.Bind(this.configuration);
 
-            this.dataSource = new NpgsqlDataSourceBuilder(this.configuration.ConnectionString).Build();
+            this.dataSource = new NpgsqlDataSourceBuilder(this.configuration.ConnectionStringInfo.WithCredential).Build();
+            
+            // todo: parse the string better to expose only the host
+            this.configuration.ConnectionStringInfo.ForLogging = this.dataSource.ConnectionString[..30];
 
             this.connections = new NpgsqlConnection[this.configuration.ConnectionCount];
 

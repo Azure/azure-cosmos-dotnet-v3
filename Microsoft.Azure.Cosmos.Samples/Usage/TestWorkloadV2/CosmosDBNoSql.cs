@@ -41,7 +41,9 @@
             this.configuration = new Configuration();
             configurationRoot.Bind(this.configuration);
 
-            this.client = this.GetClientInstance(this.configuration.ConnectionString);
+            this.client = this.GetClientInstance(this.configuration.ConnectionStringInfo.WithCredential);
+            this.configuration.ConnectionStringInfo.ForLogging = this.client.Endpoint.ToString();
+
             this.container = this.client.GetDatabase(this.configuration.DatabaseName).GetContainer(this.configuration.ContainerName);
             if (this.configuration.ShouldRecreateContainerOnStart)
             {
@@ -69,7 +71,7 @@
 
             // Find length and keep some bytes for the system generated properties
             (MemoryStream stream, _) = this.GetNextItem();
-            int currentLen = (int)stream.Length + 180;
+            int currentLen = (int)stream.Length + 205;
             string padding = this.configuration.ItemSize > currentLen ? new string('x', this.configuration.ItemSize - currentLen) : string.Empty;
             this.dataSource.InitializePadding(padding);
 

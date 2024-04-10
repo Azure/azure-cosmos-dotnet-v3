@@ -10,14 +10,16 @@
     using MongoDB.Driver;
     using System.Net;
     using System;
-    using System.IO;
-    using MongoDB.Bson.IO;
 
     internal class Mongo : IDriver
     {
         internal class Configuration : CommonConfiguration
         {
             public string MongoFlavor { get; set; }
+
+            public int MinConnectionPoolSize { get; set; }
+
+            public int MaxConnectionPoolSize { get; set; }
 
             // Applies only to CosmosDBRU flavor
             public int ThroughputToProvision { get; set; }
@@ -63,8 +65,13 @@
                 throw new Exception($"Invalid Mongo flavor {this.configuration.MongoFlavor}");
             }
 
-            MongoClientSettings settings = MongoClientSettings.FromUrl(new MongoUrl(this.configuration.ConnectionString));
+            MongoClientSettings settings = MongoClientSettings.FromUrl(new MongoUrl(this.configuration.ConnectionStringInfo.WithCredential));
+            this.configuration.ConnectionStringInfo.ForLogging = settings.Server.Host;
+
+            settings.MinConnectionPoolSize = this.configuration.MinConnectionPoolSize;
+            settings.MaxConnectionPoolSize = this.configuration.MaxConnectionPoolSize;
             settings.SslSettings = new SslSettings() { EnabledSslProtocols = SslProtocols.Tls12 };
+
             this.mongoClient = new MongoClient(settings);
             this.database = this.mongoClient.GetDatabase(this.configuration.DatabaseName);
             this.collection = this.database.GetCollection<MyDocument>(this.configuration.ContainerName);

@@ -1,8 +1,20 @@
 ﻿namespace TestWorkloadV2
 {
+    using System.Text.Json.Serialization;
+
+    [JsonDerivedType(typeof(Mongo.Configuration), "Mongo")]
+    [JsonDerivedType(typeof(CosmosDBNoSql.Configuration), "CosmosDBNoSql")]
+    [JsonDerivedType(typeof(CosmosDBCassandra.Configuration), "CosmosDBCassandra")]
+    [JsonDerivedType(typeof(Postgres.Configuration), "Postgres")]
+    
     internal class CommonConfiguration
     {
+        [JsonConverter(typeof(CommonConnectionStringJsonConvertor))]
+        public CommonConnectionString ConnectionStringInfo => this.ConnectionString;
+
+        [JsonIgnore]
         public string ConnectionString { get; set; }
+
         public string DatabaseName { get; set; }
         public string ContainerName { get; set; }
 
