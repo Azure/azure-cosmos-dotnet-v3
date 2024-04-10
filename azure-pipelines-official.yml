@@ -22,6 +22,7 @@ stages:
         BuildConfiguration: '${{ variables.BuildConfiguration }}'
         Arguments: '${{ variables.ReleaseArguments }}'
         VmImage: '${{ variables.VmImage }}'
+        MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
         
     - job:
       displayName: TelemetryToService ${{ variables.BuildConfiguration }}
