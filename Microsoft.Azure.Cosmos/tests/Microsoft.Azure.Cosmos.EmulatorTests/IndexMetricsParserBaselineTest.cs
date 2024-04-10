@@ -386,7 +386,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             Assert.AreEqual(indexMetricsNonODE, indexMetricsODE);
 
             // ----------------------------
-            // Test strean API
+            // Test stream API
             // ----------------------------
             // Execute without ODE
             string indexMetricsNonODEStreaming = RunStreamAPITest(input.Query, enableOptimisticDirectExecution: false);
@@ -428,7 +428,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                     Assert.IsNotNull(page.IndexMetrics, "Expected index metrics response for query");
 
                     indexMetrics = page.IndexMetrics;
-
                 }
 
                 roundTripCount++;
@@ -465,7 +464,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                     Assert.IsNotNull(page.IndexMetrics, "Expected index metrics response for query");
 
                     indexMetrics = page.IndexMetrics;
-
                 }
 
                 roundTripCount++;
