@@ -118,34 +118,59 @@ namespace Microsoft.Azure.Cosmos
                     request, 
                     cancellationToken, 
                     cancellationTokenSource);
-                Task<List<ResponseMessage>> hedgedRequests = this.SendWithHedgeAsync(
-                    client, 
-                    availableRegions, 
-                    1, 
-                    request, 
-                    sender, 
-                    cancellationToken, 
+                Task hedgeTimer = Task.Delay(this.Threshold, cancellationToken);
+
+                Task canStartHedge = Task.WhenAny(primaryRequest, hedgeTimer);
+                if (canStartHedge == hedgeTimer)
+                {
+                    Task<List<ResponseMessage>> hedgedRequests = this.SendWithHedgeAsync(
+                    client,
+                    availableRegions,
+                    1,
+                    request,
+                    sender,
+                    cancellationToken,
                     cancellationTokenSource);
 
-                Task result = await Task.WhenAny(primaryRequest, hedgedRequests);
-                if (result == primaryRequest)
-                {
-                    (bool nonTransient, ResponseMessage response) = await primaryRequest;
-                    if (nonTransient)
+                    Task result = await Task.WhenAny(primaryRequest, hedgedRequests);
+                    if (result == primaryRequest)
                     {
-                        return response;
+                        (bool isNonTransient, ResponseMessage primaryResponse) = await primaryRequest;
+                        if (isNonTransient)
+                        {
+                            return primaryResponse;
+                        }
+                    }
+
+                    List<ResponseMessage> responses = await hedgedRequests;
+                    if (responses.Any())
+                    {
+                        return responses[0];
+                    }
+                    else
+                    {
+                        return (await primaryRequest).Item2;
                     }
                 }
 
-                List<ResponseMessage> responses = await hedgedRequests;
-                if (responses.Any())
+                (bool nonTransient, ResponseMessage response) = await primaryRequest;
+                if (nonTransient)
                 {
-                    return responses[0];
+                    return response;
                 }
-                else
-                {
-                    return (await primaryRequest).Item2;
-                }
+                
+                //If the response from the primary request is transient, we can should try to hedge the request to a different region
+                List<ResponseMessage> hedgeResponses = await this.SendWithHedgeAsync(
+                    client,
+                    availableRegions,
+                    1,
+                    request,
+                    sender,
+                    cancellationToken,
+                    cancellationTokenSource);
+
+                return hedgeResponses[0];
+
             }
         }
 
