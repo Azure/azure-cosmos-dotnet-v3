@@ -73,7 +73,7 @@
             (MemoryStream stream, _) = this.GetNextItem();
             int currentLen = (int)stream.Length + 205;
             string padding = this.configuration.ItemSize > currentLen ? new string('x', this.configuration.ItemSize - currentLen) : string.Empty;
-            this.dataSource.InitializePadding(padding);
+            this.dataSource.InitializePaddingAndInitialItemId(padding);
 
             this.itemRequestOptions = null;
             if (this.configuration.OmitContentInWriteResponse)

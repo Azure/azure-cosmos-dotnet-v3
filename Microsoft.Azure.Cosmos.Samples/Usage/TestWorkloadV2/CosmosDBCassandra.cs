@@ -57,7 +57,7 @@
             }
 
             this.dataSource = new DataSource(this.configuration);
-            this.dataSource.InitializePadding(this.configuration.ItemSize > 400 ? new string('x', this.configuration.ItemSize - 400) : string.Empty);
+            this.dataSource.InitializePaddingAndInitialItemId(this.configuration.ItemSize > 400 ? new string('x', this.configuration.ItemSize - 400) : string.Empty);
 
             this.preparedStatement = this.session.Prepare("INSERT INTO " + this.configuration.ContainerName + "(pk, ck, mvpk, other) VALUES (?, ?, ?, ?)");
 

@@ -26,7 +26,7 @@
             {
                 Program.driver = new Mongo();
                 await Program.InitializeAsync(args);
-                await Program.CreateItemsConcurrentlyAsync();
+                await Program.PerformOperationsAsync();
             }
             catch (Exception ex)
             {
@@ -66,9 +66,10 @@
 
         private static readonly Stopwatch latencyStopwatch = new Stopwatch();
 
-        private static async Task CreateItemsConcurrentlyAsync()
+        private static async Task PerformOperationsAsync()
         {
-            Console.WriteLine($"Starting to make {configuration.TotalRequestCount} requests to create items of about {configuration.ItemSize} bytes each with partition key prefix {dataSource.PartitionKeyValuePrefix}");
+            Console.WriteLine("Configuration: " + JsonSerializer.Serialize(configuration));
+            Console.WriteLine($"Starting to make requests with partition key prefix {dataSource.PartitionKeyValuePrefix} and initial ItemId {dataSource.InitialItemId}");
 
             ConcurrentBag<TimeSpan> oddBucketLatencies = new ConcurrentBag<TimeSpan>();
             ConcurrentBag<TimeSpan> evenBucketLatencies = new ConcurrentBag<TimeSpan>();
@@ -239,7 +240,7 @@
             Console.WriteLine($"Run duration: {runStartTime} to {runEndTime} UTC");
             Console.WriteLine("Configuration: " + JsonSerializer.Serialize(configuration));
 
-            Console.WriteLine($"Partition key prefix: {dataSource.PartitionKeyValuePrefix}");
+            Console.WriteLine($"Partition key prefix: {dataSource.PartitionKeyValuePrefix} Initial ItemId: {dataSource.InitialItemId} ItemId: {dataSource.ItemId}");
             Console.WriteLine($"Successful requests: Total {nonFailedCountFinal}; post-warm up {nonFailedCountFinalForLatency} requests in {runtimeSeconds} seconds at {(runtimeSeconds == 0 ? -1 : nonFailedCountFinalForLatency / runtimeSeconds)} items/sec.");
             List<TimeSpan> latenciesList = latencies.ToList();
             latenciesList.Sort();

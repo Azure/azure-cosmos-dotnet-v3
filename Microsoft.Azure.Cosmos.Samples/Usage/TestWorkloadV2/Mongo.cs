@@ -54,7 +54,8 @@
         private DataSource dataSource;
         private InsertOneOptions insertOneOptions;
         private int isExceptionPrinted;
-
+        private Random random;
+ 
         public async Task<(CommonConfiguration, DataSource)> InitializeAsync(IConfigurationRoot configurationRoot)
         {
             this.configuration = new Configuration();
@@ -84,9 +85,18 @@
             int currentLen = tempDoc.ToBson().Length;
             int systemPropertiesLen = this.mongoFlavor == MongoFlavor.CosmosDBRU ? 100 : 0;
             string padding = this.configuration.ItemSize > currentLen ? new string('x', this.configuration.ItemSize - currentLen - systemPropertiesLen) : string.Empty;
-            this.dataSource.InitializePadding(padding);
+
+            MyDocument lastDoc = await this.collection.Find<MyDocument>(Builders<MyDocument>.Filter.Empty).SortByDescending(d => d.Id).Limit(1).FirstOrDefaultAsync();
+            int lastId = -1;
+            if (lastDoc != null)
+            {
+                int.TryParse(lastDoc.Id, out lastId);
+            }
+
+            this.dataSource.InitializePaddingAndInitialItemId(padding, lastId + 1);
 
             this.insertOneOptions = new InsertOneOptions();
+            this.random = new Random(Configuration.RandomSeed);
 
             if(this.configuration.ShouldRecreateContainerOnStart)
             {
@@ -106,8 +116,22 @@
         public Task MakeRequestAsync(CancellationToken cancellationToken, out object context)
         {
             context = null;
-            (MyDocument doc, _) = this.dataSource.GetNextItem();
-            return this.collection.InsertOneAsync(doc, this.insertOneOptions, cancellationToken);
+
+            if (this.configuration.RequestKind == RequestKind.Create)
+            {
+                (MyDocument doc, _) = this.dataSource.GetNextItem();
+                return this.collection.InsertOneAsync(doc, this.insertOneOptions, cancellationToken);
+            }
+            else if (this.configuration.RequestKind == RequestKind.PointRead)
+            {
+                int randomId = this.random.Next(this.dataSource.InitialItemId);
+                string id = this.dataSource.GetId(randomId);
+                return this.collection.FindAsync((MyDocument doc) => doc.Id == id);
+            }
+            else
+            { 
+                throw new NotSupportedException(); 
+            }
         }
 
         public ResponseAttributes HandleResponse(Task request, object context)

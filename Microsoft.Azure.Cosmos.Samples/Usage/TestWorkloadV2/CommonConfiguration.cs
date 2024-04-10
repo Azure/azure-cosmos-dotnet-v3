@@ -1,14 +1,22 @@
 ﻿namespace TestWorkloadV2
 {
+    using System;
     using System.Text.Json.Serialization;
+
+    enum RequestKind
+    {
+        Create,
+        PointRead,
+    }
 
     [JsonDerivedType(typeof(Mongo.Configuration), "Mongo")]
     [JsonDerivedType(typeof(CosmosDBNoSql.Configuration), "CosmosDBNoSql")]
     [JsonDerivedType(typeof(CosmosDBCassandra.Configuration), "CosmosDBCassandra")]
     [JsonDerivedType(typeof(Postgres.Configuration), "Postgres")]
-    
     internal class CommonConfiguration
     {
+        public static readonly int RandomSeed = DateTime.UtcNow.Millisecond;
+
         [JsonIgnore]
         public string ConnectionString { get; set; }
 
@@ -25,7 +33,8 @@
         public int ItemSize { get; set; }
         public int PartitionKeyCount { get; set; }
 
-
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        public RequestKind RequestKind {  get; set; }
         public int RequestsPerSecond { get; set; }
         public int MaxInFlightRequestCount { get; set; }
 

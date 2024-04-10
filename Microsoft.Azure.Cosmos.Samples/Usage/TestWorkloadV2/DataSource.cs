@@ -7,16 +7,19 @@
 
     internal class DataSource
     {
+        // private readonly List<string> additionalProperties = new List<string>();
+        private readonly int partitionKeyCount;
+        private string padding;
+        private int itemId;
+
         public readonly string PartitionKeyValuePrefix;
         public readonly string[] PartitionKeyStrings;
 
-        private readonly List<string> additionalProperties = new List<string>();
-        private readonly int partitionKeyCount;
-        private string padding;
+        public int InitialItemId { get; private set; }
 
-        private int itemIndex;
+        public int ItemId => this.itemId;
 
-        public delegate string PaddingCreator(DataSource dataSource);
+        private const string idFormatSpecifier = "D9";
 
         public DataSource(CommonConfiguration configuration)
         {
@@ -32,18 +35,25 @@
         }
 
         // Ugly as the caller has to remember to do this, but anyway looks optional
-        public void InitializePadding(string padding)
+        public void InitializePaddingAndInitialItemId(string padding, int? itemIndex = null)
         {
             this.padding = padding;
-            this.itemIndex = 0;
+            this.InitialItemId = itemIndex ?? 0;
+            this.itemId = this.InitialItemId;
+        }
+
+        public string GetId(int itemId)
+        {
+            return itemId.ToString(idFormatSpecifier);
         }
 
         public (MyDocument, int) GetNextItem()
         {
-            int incremented = Interlocked.Increment(ref this.itemIndex);
-            int currentPKIndex = incremented % this.partitionKeyCount;
+            int currentIndex = Interlocked.Add(ref this.itemId, 0);
+            int currentPKIndex = currentIndex % this.partitionKeyCount;
             string partitionKey = this.PartitionKeyStrings[currentPKIndex];
-            string id = Guid.NewGuid().ToString();
+            string id = this.ItemId.ToString(idFormatSpecifier);
+            Interlocked.Increment(ref this.itemId);
 
             return (new MyDocument()
             {
