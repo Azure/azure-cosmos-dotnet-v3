@@ -69,6 +69,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 // Safety check as diagnostic logs should not break the code.
                 if (Activity.Current?.TraceId != null)
                 {
+                    // This id would be useful to trace calls at backend services when distributed tracing feature is available there.
                     trace.AddDatum("DistributedTraceId", Activity.Current.TraceId);
                 }
             }
