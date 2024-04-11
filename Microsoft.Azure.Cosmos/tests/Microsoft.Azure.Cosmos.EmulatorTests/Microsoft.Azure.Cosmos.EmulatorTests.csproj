@@ -43,6 +43,7 @@
     <None Remove="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestMemberAccessWithNullableTypes.xml" />
     <None Remove="BaselineTest\TestBaseline\LinqTranslationWithCustomSerializerBaseline.TestMemberInitializerDataMember.xml" />
     <None Remove="BaselineTest\TestBaseline\LinqTranslationWithCustomSerializerBaseline.TestMemberInitializerDotNetCustomSerializer.xml" />
+    <None Remove="BaselineTest\TestBaseline\LinqTranslationWithCustomSerializerBaseline.TestMemberInitializerDotNetDefaultSerializer.xml" />
     <None Remove="BaselineTest\TestBaseline\LinqTranslationWithCustomSerializerBaseline.TestMemberInitializerNewtonsoft.xml" />
     <None Remove="BaselineTest\TestBaseline\LinqTranslationWithCustomSerializerBaseline.TestMemberInitializerNewtonsoftDotNet.xml" />
     <None Remove="BaselineTest\TestBaseline\LinqTranslationWithCustomSerializerBaseline.TestMemberInitializerNewtonsoftDataMember.xml" />
@@ -273,6 +274,9 @@
     </Content>
     <Content Include="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestMemberAccess.xml">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="BaselineTest\TestBaseline\LinqTranslationWithCustomSerializerBaseline.TestMemberInitializerDotNetDefaultSerializer.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="BaselineTest\TestBaseline\LinqTranslationWithCustomSerializerBaseline.TestMemberInitializerDataMember.xml">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// This class provides a default implementation of System.Text.Json Cosmos Linq Serializer.
     /// </summary>
-    public class CosmosDefaultSystemTextJsonSerializer : CosmosLinqSerializer
+    public class CosmosSystemTextJsonSerializer : CosmosLinqSerializer
     {
         /// <summary>
         /// A read-only instance of <see cref="JsonSerializerOptions"/>.
@@ -21,11 +21,11 @@ namespace Microsoft.Azure.Cosmos
         private readonly JsonSerializerOptions jsonSerializerOptions;
 
         /// <summary>
-        /// Creates an instance of <see cref="CosmosDefaultSystemTextJsonSerializer"/>
+        /// Creates an instance of <see cref="CosmosSystemTextJsonSerializer"/>
         /// with the default values for the Cosmos SDK
         /// </summary>
         /// <param name="jsonSerializerOptions">An instance of <see cref="JsonSerializerOptions"/> containing the json serialization options.</param>
-        public CosmosDefaultSystemTextJsonSerializer(
+        public CosmosSystemTextJsonSerializer(
             JsonSerializerOptions jsonSerializerOptions)
         {
             this.jsonSerializerOptions = jsonSerializerOptions;
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos
         /// }
         /// ]]>
         /// </code>
-        /// To handle such scenarios, please create a custom serializer which inherits from the <see cref="CosmosDefaultSystemTextJsonSerializer"/> and overrides the
+        /// To handle such scenarios, please create a custom serializer which inherits from the <see cref="CosmosSystemTextJsonSerializer"/> and overrides the
         /// SerializeMemberName to add any special handling.
         /// </summary>
         /// <param name="memberInfo">Any MemberInfo used in the query.</param>

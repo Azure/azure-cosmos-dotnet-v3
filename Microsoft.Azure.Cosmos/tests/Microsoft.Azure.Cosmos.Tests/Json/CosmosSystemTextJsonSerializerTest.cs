@@ -9,9 +9,9 @@
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public sealed class CosmosDefaultSystemTextJsonSerializerTest
+    public sealed class CosmosSystemTextJsonSerializerTest
     {
-        CosmosDefaultSystemTextJsonSerializer stjSerializer;
+        CosmosSystemTextJsonSerializer stjSerializer;
 
         [TestInitialize]
         public void SetUp()
