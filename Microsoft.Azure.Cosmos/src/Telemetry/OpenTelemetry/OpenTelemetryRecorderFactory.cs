@@ -57,7 +57,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         clientContext: clientContext,
                         config: requestOptions?.CosmosThresholdOptions ?? clientContext.ClientOptions?.CosmosClientTelemetryOptions.CosmosThresholdOptions);
                 }
-
+#if !INTERNAL
+                // If there are no listeners at operation level and no parent activity created.
+                // Then create a dummy activity as there should be a parent level activity always to send a traceid to the backend services through context propagation.
+                // The parent activity id logged in diagnostics, can be used for tracing purpose in backend.
+                if (Activity.Current is null)
+                {
+                    openTelemetryRecorder = OpenTelemetryCoreRecorder.CreateParentActivity(operationName);
+                }
+#endif
                 // Safety check as diagnostic logs should not break the code.
                 if (Activity.Current?.TraceId != null)
                 {
