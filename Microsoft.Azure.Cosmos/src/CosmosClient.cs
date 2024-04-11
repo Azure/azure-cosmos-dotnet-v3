@@ -1391,7 +1391,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="containers">A read-only list containing the database id
         /// and their respective container id.</param>
         /// <param name="cancellationToken">An instance of <see cref="CancellationToken"/>.</param>
-        internal async Task InitializeContainersAsync(
+        public async Task InitializeContainersAsync(
             IReadOnlyList<(string databaseId, string containerId)> containers,
             CancellationToken cancellationToken)
         {
