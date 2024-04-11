@@ -2,7 +2,6 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Linq;
     using System.Text;
     using System.Threading;
@@ -47,9 +46,9 @@
             Assert.IsNotNull(response.Diagnostics);
             ITrace trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
 #if PREVIEW
-            Assert.AreEqual(trace.Data.Count, 2, string.Join(",", trace.Data.Select(a => $"{a.Key}: {a.Value}")));  // Distributed Tracing Id
+            Assert.AreEqual(actual: trace.Data.Count, expected: 2, message: string.Join(",", trace.Data.Select(a => $"{a.Key}: {a.Value}")));  // Distributed Tracing Id
 #else
-            Assert.AreEqual(trace.Data.Count, 1, string.Join(",", trace.Data.Select(a => $"{a.Key}: {a.Value}")));
+            Assert.AreEqual(actual: trace.Data.Count, expected: 1, message: string.Join(",", trace.Data.Select(a => $"{a.Key}: {a.Value}")));
 #endif
             ClientConfigurationTraceDatum clientConfigurationTraceDatum = (ClientConfigurationTraceDatum)trace.Data["Client Configuration"];
             Assert.IsNotNull(clientConfigurationTraceDatum.UserAgentContainer.UserAgent);
