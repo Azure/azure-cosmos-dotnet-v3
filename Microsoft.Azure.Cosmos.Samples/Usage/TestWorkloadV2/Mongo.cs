@@ -17,10 +17,6 @@
         {
             public string MongoFlavor { get; set; }
 
-            public int MinConnectionPoolSize { get; set; }
-
-            public int MaxConnectionPoolSize { get; set; }
-
             // Applies only to CosmosDBRU flavor
             public int ThroughputToProvision { get; set; }
 
@@ -55,13 +51,13 @@
         private InsertOneOptions insertOneOptions;
         private int isExceptionPrinted;
         private Random random;
- 
+
         public async Task<(CommonConfiguration, DataSource)> InitializeAsync(IConfigurationRoot configurationRoot)
         {
             this.configuration = new Configuration();
             configurationRoot.Bind(this.configuration);
 
-           if(!Enum.TryParse<MongoFlavor>(this.configuration.MongoFlavor, out this.mongoFlavor))
+            if (!Enum.TryParse<MongoFlavor>(this.configuration.MongoFlavor, out this.mongoFlavor))
             {
                 throw new Exception($"Invalid Mongo flavor {this.configuration.MongoFlavor}");
             }
@@ -69,8 +65,10 @@
             MongoClientSettings settings = MongoClientSettings.FromUrl(new MongoUrl(this.configuration.ConnectionString));
             this.configuration.ConnectionStringForLogging = settings.Server.Host;
 
-            settings.MinConnectionPoolSize = this.configuration.MinConnectionPoolSize;
-            settings.MaxConnectionPoolSize = this.configuration.MaxConnectionPoolSize;
+            this.configuration.SetConnectionPoolAndMaxInflightRequestLimit();
+
+            settings.MinConnectionPoolSize = this.configuration.MinConnectionPoolSize.Value;
+            settings.MaxConnectionPoolSize = this.configuration.MaxConnectionPoolSize.Value;
             settings.SslSettings = new SslSettings() { EnabledSslProtocols = SslProtocols.Tls12 };
 
             this.mongoClient = new MongoClient(settings);
@@ -98,7 +96,7 @@
             this.insertOneOptions = new InsertOneOptions();
             this.random = new Random(Configuration.RandomSeed);
 
-            if(this.configuration.ShouldRecreateContainerOnStart)
+            if (this.configuration.ShouldRecreateContainerOnStart)
             {
                 await this.database.DropCollectionAsync(this.configuration.ContainerName);
 
@@ -117,12 +115,12 @@
         {
             context = null;
 
-            if (this.configuration.RequestKind == RequestKind.Create)
+            if (this.configuration.RequestType == RequestType.Create)
             {
                 (MyDocument doc, _) = this.dataSource.GetNextItem();
                 return this.collection.InsertOneAsync(doc, this.insertOneOptions, cancellationToken);
             }
-            else if (this.configuration.RequestKind == RequestKind.PointRead)
+            else if (this.configuration.RequestType == RequestType.PointRead)
             {
                 int randomId = this.random.Next(this.dataSource.InitialItemId);
                 string id = this.dataSource.GetId(randomId);

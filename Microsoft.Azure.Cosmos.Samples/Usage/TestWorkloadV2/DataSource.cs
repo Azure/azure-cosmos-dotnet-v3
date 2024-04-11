@@ -24,7 +24,12 @@
         public DataSource(CommonConfiguration configuration)
         {
             this.PartitionKeyValuePrefix = DateTime.UtcNow.ToString("MMddHHmm-");
-            this.partitionKeyCount = Math.Min(configuration.PartitionKeyCount, configuration.TotalRequestCount);
+            this.partitionKeyCount = configuration.PartitionKeyCount;
+            if(configuration.TotalRequestCount.HasValue)
+            {
+                this.partitionKeyCount = Math.Min(this.partitionKeyCount, configuration.TotalRequestCount.Value);
+            }
+
             this.PartitionKeyStrings = this.GetPartitionKeys(this.partitionKeyCount);
             // Setup properties - reduce some for standard properties like PK and Id we are adding
             //for (int i = 0; i < configuration.ItemPropertyCount - 10; i++)
@@ -47,6 +52,10 @@
             return itemId.ToString(idFormatSpecifier);
         }
 
+        /// <summary>
+        /// Get's next item to insert
+        /// </summary>
+        /// <returns>Next document and partition key index</returns>
         public (MyDocument, int) GetNextItem()
         {
             int currentIndex = Interlocked.Add(ref this.itemId, 0);

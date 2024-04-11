@@ -82,15 +82,12 @@
             int ticksPerRequest = configuration.RequestsPerSecond <= 0 ? 0 : (int)(ticksPerSecond / configuration.RequestsPerSecond);
             long usageTicks = 0;
 
-            if (configuration.MaxInFlightRequestCount == -1)
-            {
-                configuration.MaxInFlightRequestCount = int.MaxValue;
-            }
+            int totalRequestCount = configuration.TotalRequestCount ?? int.MaxValue;
 
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-            if (configuration.MaxRuntimeInSeconds > 0)
+            if (configuration.MaxRuntimeInSeconds.HasValue)
             {
-                cancellationTokenSource.CancelAfter(configuration.MaxRuntimeInSeconds * 1000);
+                cancellationTokenSource.CancelAfter(configuration.MaxRuntimeInSeconds.Value * 1000);
             }
 
             CancellationToken cancellationToken = cancellationTokenSource.Token;
@@ -104,7 +101,7 @@
                 int docCounter = 0;
                 bool isErrorPrinted = false;
 
-                while (!cancellationToken.IsCancellationRequested && docCounter < configuration.TotalRequestCount)
+                while (!cancellationToken.IsCancellationRequested && docCounter < totalRequestCount)
                 {
                     docCounter++;
 
@@ -161,7 +158,7 @@
 
                         task.Dispose();
 
-                        if (Interlocked.Increment(ref taskCompleteCounter) >= configuration.TotalRequestCount)
+                        if (Interlocked.Increment(ref taskCompleteCounter) >= totalRequestCount)
                         {
                             stopwatch.Stop();
                             latencyStopwatch.Stop();
@@ -174,9 +171,14 @@
 
             Console.CancelKeyPress += Console_CancelKeyPress;
 
-            while (!cancellationToken.IsCancellationRequested && taskCompleteCounter < configuration.TotalRequestCount)
+            while (!cancellationToken.IsCancellationRequested && taskCompleteCounter < totalRequestCount)
             {
-                Console.Write($"{DateTime.UtcNow.ToLongTimeString()}> In progress for {stopwatch.Elapsed}. Triggered: {taskTriggeredCounter} Processed: {taskCompleteCounter}, Pending: {configuration.TotalRequestCount - taskCompleteCounter}");
+                Console.Write($"{DateTime.UtcNow.ToLongTimeString()}> In progress for {stopwatch.Elapsed}. Triggered: {taskTriggeredCounter} Processed: {taskCompleteCounter}");
+                if (configuration.TotalRequestCount.HasValue)
+                {
+                    Console.Write(", Pending: {totalRequestCount - taskCompleteCounter}");
+                }
+
                 int nonFailedCount = 0;
                 foreach (KeyValuePair<HttpStatusCode, int> countForStatus in countsByStatus)
                 {
@@ -198,22 +200,23 @@
 
                 if (elapsedSeconds - lastLatencyEmittedSeconds > configuration.LatencyTracingIntervalInSeconds)
                 {
-                    List<TimeSpan> lastMinuteLatencies;
+                    List<TimeSpan> lastBucketLatencies;
                     if (Interlocked.Add(ref isOddBucketForLatencyTracing, 0) == 0)
                     {
                         oddBucketLatencies.Clear();
                         Interlocked.Increment(ref isOddBucketForLatencyTracing);
-                        lastMinuteLatencies = evenBucketLatencies.ToList();
+                        lastBucketLatencies = evenBucketLatencies.ToList();
                     }
                     else
                     {
                         evenBucketLatencies.Clear();
                         Interlocked.Decrement(ref isOddBucketForLatencyTracing);
-                        lastMinuteLatencies = oddBucketLatencies.ToList();
+                        lastBucketLatencies = oddBucketLatencies.ToList();
                     }
 
-                    lastMinuteLatencies.Sort();
-                    Console.Write($", P99 latency: {lastMinuteLatencies[(int)(lastMinuteLatencies.Count * 0.99)].TotalMilliseconds}");
+                    lastBucketLatencies.Sort();
+                    Console.Write($", Latency Avg: {Math.Round(lastBucketLatencies.Average(t => t.TotalMilliseconds), 1, MidpointRounding.AwayFromZero)}"
+                        + $" P99: {GetLatencyToDisplay(lastBucketLatencies, lastBucketLatencies.Count * 0.99)}");
                     lastLatencyEmittedSeconds = elapsedSeconds;
                 }
 
@@ -248,11 +251,13 @@
             if (nonWarmupRequestCount > 0)
             {
                 Console.WriteLine("Latencies:"
-                + $"   P90: {latenciesList[(int)(nonWarmupRequestCount * 0.90)].TotalMilliseconds}"
-                + $"   P95: {latenciesList[(int)(nonWarmupRequestCount * 0.95)].TotalMilliseconds}"
-                + $"   P99: {latenciesList[(int)(nonWarmupRequestCount * 0.99)].TotalMilliseconds}"
-                + $"   P99.9: {latenciesList[(int)(nonWarmupRequestCount * 0.999)].TotalMilliseconds}"
-                + $"   Max: {latenciesList[nonWarmupRequestCount - 1].TotalMilliseconds}");
+                + $"   Avg: {Math.Round(latenciesList.Average(t => t.TotalMilliseconds), 1, MidpointRounding.AwayFromZero)}"
+                + $"   P50: {GetLatencyToDisplay(latenciesList, nonWarmupRequestCount * 0.50)}"
+                + $"   P90: {GetLatencyToDisplay(latenciesList, nonWarmupRequestCount * 0.90)}"
+                + $"   P95: {GetLatencyToDisplay(latenciesList, nonWarmupRequestCount * 0.95)}"
+                + $"   P99: {GetLatencyToDisplay(latenciesList, nonWarmupRequestCount * 0.99)}"
+                + $"   P99.9: {GetLatencyToDisplay(latenciesList, nonWarmupRequestCount * 0.999)}"
+                + $"   Max: {GetLatencyToDisplay(latenciesList, nonWarmupRequestCount -1)}");
             }
 
             Console.WriteLine("Average RUs: " + (totalRequestCharge / (100.0 * nonFailedCountFinal)));
@@ -260,6 +265,11 @@
             Console.Write("Counts by StatusCode: ");
             Console.WriteLine(string.Join(", ", countsByStatus.Select(countForStatus => countForStatus.Key + ": " + countForStatus.Value)));
 
+        }
+
+        private static double GetLatencyToDisplay(List<TimeSpan> latencyList, double index)
+        {
+            return Math.Round(latencyList[(int)index].TotalMilliseconds, 1, MidpointRounding.AwayFromZero);
         }
     }
 }

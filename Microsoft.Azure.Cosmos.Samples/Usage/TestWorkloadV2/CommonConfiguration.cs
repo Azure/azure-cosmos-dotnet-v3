@@ -3,7 +3,7 @@
     using System;
     using System.Text.Json.Serialization;
 
-    enum RequestKind
+    enum RequestType
     {
         Create,
         PointRead,
@@ -29,20 +29,42 @@
         public bool ShouldRecreateContainerOnStart { get; set; }
 
 
-        public int TotalRequestCount { get; set; }
+        public int? TotalRequestCount { get; set; }
         public int ItemSize { get; set; }
         public int PartitionKeyCount { get; set; }
 
         [JsonConverter(typeof(JsonStringEnumConverter))]
-        public RequestKind RequestKind {  get; set; }
+        public RequestType RequestType {  get; set; }
         public int RequestsPerSecond { get; set; }
-        public int MaxInFlightRequestCount { get; set; }
+
+        public int? MinConnectionPoolSize { get; set; }
+        public int? MaxConnectionPoolSize { get; set; }
+        public int? MaxInFlightRequestCount { get; set; }
 
         public int WarmupSeconds { get; set; }
-        public int MaxRuntimeInSeconds { get; set; }
+        public int? MaxRuntimeInSeconds { get; set; }
         public int LatencyTracingIntervalInSeconds { get; set; }
         public int NumWorkers { get; set; }
 
         public bool ShouldDeleteContainerOnFinish { get; set; }
+
+
+        public void SetConnectionPoolAndMaxInflightRequestLimit()
+        {
+            if (!this.MinConnectionPoolSize.HasValue)
+            {
+                this.MinConnectionPoolSize = this.RequestsPerSecond / 100; // assume <10 msec per request avg. latency, todo: increase denominator for PointRead
+            }
+
+            if (!this.MaxConnectionPoolSize.HasValue)
+            {
+                this.MaxConnectionPoolSize = (int)(this.MinConnectionPoolSize * 1.5);
+            }
+
+            if (!this.MaxInFlightRequestCount.HasValue)
+            {
+                this.MaxInFlightRequestCount = (int)(this.MaxConnectionPoolSize * 3 / 2);
+            }
+        }
     }
 }
