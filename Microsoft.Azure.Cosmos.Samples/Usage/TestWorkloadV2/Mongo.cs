@@ -79,16 +79,27 @@
             // BsonSerializer.RegisterSerializer(typeof(ulong), new UInt64Serializer(BsonType.Decimal128));
 
             this.dataSource = new DataSource(this.configuration);
+
+            // setup padding
             (MyDocument tempDoc, _) = this.dataSource.GetNextItem();
             int currentLen = tempDoc.ToBson().Length;
             int systemPropertiesLen = this.mongoFlavor == MongoFlavor.CosmosDBRU ? 100 : 0;
             string padding = this.configuration.ItemSize > currentLen ? new string('x', this.configuration.ItemSize - currentLen - systemPropertiesLen) : string.Empty;
 
-            MyDocument lastDoc = await this.collection.Find<MyDocument>(Builders<MyDocument>.Filter.Empty).SortByDescending(d => d.Id).Limit(1).FirstOrDefaultAsync();
             int lastId = -1;
-            if (lastDoc != null)
+            if (this.configuration.ShouldRecreateContainerOnStart)
             {
-                int.TryParse(lastDoc.Id, out lastId);
+                await this.database.DropCollectionAsync(this.configuration.ContainerName);
+
+                await this.database.CreateCollectionAsync(this.configuration.ContainerName);
+            }
+            else
+            {
+                MyDocument lastDoc = await this.collection.Find<MyDocument>(Builders<MyDocument>.Filter.Empty).SortByDescending(d => d.Id).Limit(1).FirstOrDefaultAsync();
+                if (lastDoc != null)
+                {
+                    int.TryParse(lastDoc.Id, out lastId);
+                }
             }
 
             this.dataSource.InitializePaddingAndInitialItemId(padding, lastId + 1);
@@ -96,12 +107,7 @@
             this.insertOneOptions = new InsertOneOptions();
             this.random = new Random(Configuration.RandomSeed);
 
-            if (this.configuration.ShouldRecreateContainerOnStart)
-            {
-                await this.database.DropCollectionAsync(this.configuration.ContainerName);
 
-                await this.database.CreateCollectionAsync(this.configuration.ContainerName);
-            }
 
             return (this.configuration, this.dataSource);
         }

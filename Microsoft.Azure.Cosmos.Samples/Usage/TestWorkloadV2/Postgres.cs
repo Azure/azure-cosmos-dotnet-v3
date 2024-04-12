@@ -61,6 +61,7 @@
             // todo: parse the string better to expose only the host
             this.configuration.ConnectionStringForLogging = this.pgDataSource.ConnectionString[..20];
 
+            int lastId = -1;
             if (this.configuration.ShouldRecreateContainerOnStart)
             {
                 using (NpgsqlConnection conn = await this.pgDataSource.OpenConnectionAsync())
@@ -71,6 +72,20 @@
                     await cmd.ExecuteNonQueryAsync();
                 }
             }
+            else
+            {
+                using (NpgsqlConnection conn = await this.pgDataSource.OpenConnectionAsync())
+                {
+                    NpgsqlCommand cmd = new NpgsqlCommand($"SELECT max(id) FROM {this.configuration.ContainerName}", conn);
+                    NpgsqlDataReader dataReader = await cmd.ExecuteReaderAsync();
+                    if(await dataReader.ReadAsync())
+                    {
+                        string lastDocId = dataReader.GetString(0);
+                        int.TryParse(lastDocId, out lastId);
+                    }
+                }
+            }
+            
 
             this.dataSource = new DataSource(this.configuration);
 
@@ -78,7 +93,7 @@
             (MyDocument doc, _) = this.dataSource.GetNextItem();
             int currentLen = doc.Id.Length + doc.PK.Length + doc.Other.Length;
             string padding = this.configuration.ItemSize > currentLen ? new string('x', this.configuration.ItemSize - currentLen) : string.Empty;
-            this.dataSource.InitializePaddingAndInitialItemId(padding);
+            this.dataSource.InitializePaddingAndInitialItemId(padding, lastId + 1);
 
             this.random = new Random(CommonConfiguration.RandomSeed);
             this.insertStatement = $"INSERT INTO {this.configuration.ContainerName} (id, pk, other) VALUES (@id, @pk, @other)";
