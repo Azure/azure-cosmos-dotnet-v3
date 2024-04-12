@@ -1415,6 +1415,8 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Initializes the container by creating the Rntbd
         /// connection to all of the backend replica nodes.
+        ///
+        /// Disposes the client if the initialization fails.
         /// </summary>
         /// <param name="containers">A read-only list containing the database id
         /// and their respective container id.</param>
