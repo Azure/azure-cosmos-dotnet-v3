@@ -1394,9 +1394,9 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A task to await on.</returns>
         public async Task InitializeContainersAsync(
             IReadOnlyList<(string databaseId, string containerId)> containers,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken = default)
         {
-            List<Task> tasks = new ();
+            List<Task> tasks = new (containers.Count);
             foreach ((string databaseId, string containerId) in containers)
             {
                 ContainerInternal container = (ContainerInternal)this.GetContainer(
