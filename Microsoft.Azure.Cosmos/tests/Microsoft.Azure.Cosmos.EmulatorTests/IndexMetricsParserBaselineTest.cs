@@ -385,6 +385,18 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             // Make sure ODE and non-ODE is consistent
             Assert.AreEqual(indexMetricsNonODE, indexMetricsODE);
 
+            // ----------------------------
+            // Test stream API
+            // ----------------------------
+            // Execute without ODE
+            string indexMetricsNonODEStreaming = RunStreamAPITest(input.Query, enableOptimisticDirectExecution: false);
+
+            // Execute with ODE
+            string indexMetricsODEStreaming = RunStreamAPITest(input.Query, enableOptimisticDirectExecution: true);
+
+            // Make sure ODE and non-ODE is consistent
+            Assert.AreEqual(indexMetricsNonODEStreaming, indexMetricsODEStreaming);
+
             return new IndexMetricsParserTestOutput(indexMetricsNonODE);
         }
 
@@ -403,7 +415,42 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             {
                 FeedResponse<CosmosElement> page = itemQuery.ReadNextAsync().Result;
                 Assert.IsTrue(page.Headers.AllKeys().Length > 1);
+                if (roundTripCount > 0)
+                {
+                    if (page.IndexMetrics != null)
+                    {
+                        Assert.Fail("Expected only Index Metrics on first round trip. Current round trip %n", roundTripCount);
+                    }
+                }
+                else
+                {
+                    Assert.IsNotNull(page.Headers.Get(HttpConstants.HttpHeaders.IndexUtilization), "Expected index utilization headers for query");
+                    Assert.IsNotNull(page.IndexMetrics, "Expected index metrics response for query");
 
+                    indexMetrics = page.IndexMetrics;
+                }
+
+                roundTripCount++;
+            }
+
+            return indexMetrics;
+        }
+
+        private static string RunStreamAPITest(string query, bool enableOptimisticDirectExecution)
+        {
+            QueryRequestOptions requestOptions = new QueryRequestOptions() { PopulateIndexMetrics = true, EnableOptimisticDirectExecution = enableOptimisticDirectExecution };
+
+            using FeedIterator itemQuery = testContainer.GetItemQueryStreamIterator(
+                queryText: query,
+                requestOptions: requestOptions);
+
+            // Index Metrics is returned fully on the first page so no need to worry about result set
+            int roundTripCount = 0;
+            string indexMetrics = null;
+            while (itemQuery.HasMoreResults)
+            {
+                ResponseMessage page = itemQuery.ReadNextAsync().Result;
+                Assert.IsTrue(page.Headers.AllKeys().Length > 1);
                 if (roundTripCount > 0)
                 {
                     if (page.IndexMetrics != null)
