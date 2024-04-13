@@ -104,6 +104,95 @@
 
         [TestMethod]
         [Owner("akotalwar")]
+        public async Task QueryWithODEContinuationTokenShouldUseODEPipelineRegardlessOfODESettings()
+        {
+            OptimisticDirectExecutionTestInput input = CreateInput(
+                    description: @"Single Partition Key and Ode continuation token",
+                    query: "SELECT * FROM c",
+                    expectedOptimisticDirectExecution: true,
+                    partitionKeyPath: @"/pk",
+                    partitionKeyValue: "a",
+                    continuationToken: CosmosElement.Parse(
+                        "{\"OptimisticDirectExecutionToken\":{\"token\":\"{\\\"resourceId\\\":\\\"AQAAAMmFOw8LAAAAAAAAAA==\\\"," +
+                        "\\\"skipCount\\\":1}\", \"range\":{\"min\":\"\",\"max\":\"FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF\"}}}"));
+
+            foreach ((bool enableODE, bool clientForceDisableODEFromBackend) in new[] { (true, true), (true, false), (false, true), (false, false) })
+            {
+                int result = await this.GetPipelineAndDrainAsync(
+                            input,
+                            numItems: 100,
+                            isMultiPartition: false,
+                            expectedContinuationTokenCount: 9,
+                            requiresDist: false,
+                            enableOptimisticDirectExecution: enableODE,
+                            clientDisableOde: clientForceDisableODEFromBackend);
+                Assert.AreEqual(90, result);
+            }
+        }
+
+        [TestMethod]
+        [Owner("akotalwar")]
+        public async Task QueryWithoutODEContinuationTokenShouldHonorODESettings()
+        {
+            foreach ((bool enableODE, bool clientForceDisableODEFromBackend) in new[] { (true, true), (true, false), (false, true), (false, false) })
+            {
+                int result = await this.GetPipelineAndDrainAsync(
+                            CreateInput(
+                                description: @"Single Partition Key and Ode continuation token",
+                                query: "SELECT * FROM c",
+                                expectedOptimisticDirectExecution: enableODE && !clientForceDisableODEFromBackend,
+                                partitionKeyPath: @"/pk",
+                                partitionKeyValue: "a",
+                                continuationToken: null),
+                            numItems: 100,
+                            isMultiPartition: false,
+                            expectedContinuationTokenCount: 10,
+                            requiresDist: false,
+                            enableOptimisticDirectExecution: enableODE,
+                            clientDisableOde: clientForceDisableODEFromBackend);
+                Assert.AreEqual(100, result);
+            }
+        }
+
+        [TestMethod]
+        public async Task TestQueriesWhichNeverRequireDistribution4()
+        {
+            // requiresDist = false
+            int numItems = 100;
+            List<RequiresDistributionTestCase> singlePartitionContainerTestCases = new List<RequiresDistributionTestCase>()
+            {
+                new RequiresDistributionTestCase("SELECT * FROM r", 10, 100),
+                new RequiresDistributionTestCase("SELECT VALUE r.id FROM r", 0, 10),
+                new RequiresDistributionTestCase("SELECT * FROM r WHERE r.id > 5", 0,  0),
+                new RequiresDistributionTestCase("SELECT r.id FROM r JOIN id IN r.id",0, 0),
+                new RequiresDistributionTestCase("SELECT TOP 5 r.id FROM r ORDER BY r.id", 0, 5),
+                new RequiresDistributionTestCase("SELECT TOP 5 r.id FROM r WHERE r.id > 5 ORDER BY r.id", 0, 0),
+                new RequiresDistributionTestCase("SELECT * FROM r OFFSET 5 LIMIT 3", 1, 3),
+                new RequiresDistributionTestCase("SELECT * FROM r WHERE r.id > 5 OFFSET 5 LIMIT 3", 0, 0)
+            };
+
+            foreach (RequiresDistributionTestCase testCase in singlePartitionContainerTestCases)
+            {
+                OptimisticDirectExecutionTestInput input = CreateInput(
+                    description: @"Queries which will never require distribution",
+                    query: testCase.Query,
+                    expectedOptimisticDirectExecution: true,
+                    partitionKeyPath: @"/pk",
+                    partitionKeyValue: "a");
+
+                int result = await this.GetPipelineAndDrainAsync(
+                            input,
+                            numItems: numItems,
+                            isMultiPartition: false,
+                            expectedContinuationTokenCount: testCase.ExpectedContinuationTokenCount,
+                            requiresDist: false);
+
+                Assert.AreEqual(testCase.ExpectedDocumentCount, result);
+            }
+        }
+
+        [TestMethod]
+        [Owner("akotalwar")]
         public void NegativeOptimisticDirectExecutionOutput()
         {
             ParallelContinuationToken parallelContinuationToken = new ParallelContinuationToken(
@@ -151,7 +240,7 @@
         public void TestDefaultQueryRequestOptionsSettings()
         {
             QueryRequestOptions requestOptions = new QueryRequestOptions();
-            Assert.AreEqual(true, requestOptions.EnableOptimisticDirectExecution);
+            Assert.AreEqual(false, requestOptions.EnableOptimisticDirectExecution);
         }
 
         // test checks that the pipeline can take a query to the backend and returns its associated document(s).
@@ -750,16 +839,19 @@
             {
                 TryCatch<QueryPage> tryGetPage = queryPipelineStage.Current;
                 tryGetPage.ThrowIfFailed();
+                bool isODEContinuationToken = input.ContinuationToken != null &&
+                    OptimisticDirectExecutionContinuationToken.IsOptimisticDirectExecutionContinuationToken(input.ContinuationToken);
 
-                if (clientDisableOde || !enableOptimisticDirectExecution)
+                if (!isODEContinuationToken && (clientDisableOde || !enableOptimisticDirectExecution || requiresDist))
                 {
                     Assert.AreNotEqual(TestInjections.PipelineType.OptimisticDirectExecution, queryRequestOptions.TestSettings.Stats.PipelineType.Value);
                 }
-
-                if (!clientDisableOde && enableOptimisticDirectExecution && !requiresDist)
+                else
                 {
                     Assert.AreEqual(TestInjections.PipelineType.OptimisticDirectExecution, queryRequestOptions.TestSettings.Stats.PipelineType.Value);
                 }
+
+                Assert.AreEqual(input.ExpectedOptimisticDirectExecution, queryRequestOptions.TestSettings.Stats.PipelineType.Value == TestInjections.PipelineType.OptimisticDirectExecution);
 
                 documents.AddRange(tryGetPage.Result.Documents);
 
