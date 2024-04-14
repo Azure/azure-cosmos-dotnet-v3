@@ -837,10 +837,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     class SystemTextJsonLinqSerializer : CosmosLinqSerializer
     {
         private readonly JsonObjectSerializer systemTextJsonSerializer;
+        private readonly JsonSerializerOptions jsonSerializerOptions;
 
         public SystemTextJsonLinqSerializer(JsonSerializerOptions jsonSerializerOptions)
         {
             this.systemTextJsonSerializer = new JsonObjectSerializer(jsonSerializerOptions);
+            this.jsonSerializerOptions = jsonSerializerOptions;
         }
 
         public override T FromStream<T>(Stream stream)
@@ -882,12 +884,19 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             }
 
             JsonPropertyNameAttribute jsonPropertyNameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(true);
+            if (!string.IsNullOrEmpty(jsonPropertyNameAttribute?.Name))
+            {
+                return jsonPropertyNameAttribute.Name;
+            }
 
-            string memberName = !string.IsNullOrEmpty(jsonPropertyNameAttribute?.Name)
-                ? jsonPropertyNameAttribute.Name
-                : memberInfo.Name;
+            if (this.jsonSerializerOptions.PropertyNamingPolicy != null)
+            {
+                return this.jsonSerializerOptions.PropertyNamingPolicy.ConvertName(memberInfo.Name);
+            }
 
-            return memberName;
+            // Do any custom conversions here
+            
+            return memberInfo.Name;
         }
     }
 
