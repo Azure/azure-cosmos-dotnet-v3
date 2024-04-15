@@ -71,6 +71,10 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Convert a MemberInfo to a string for use in LINQ query translation.
+        /// </summary>
+        /// <param name="memberInfo">Any MemberInfo used in the query.</param>
+        /// <returns>A serialized representation of the member.</returns>
+        /// <remarks>
         /// Note that this is just a default implementation which handles the basic scenarios. Any <see cref="JsonSerializerOptions"/> passed in
         /// here are not going to be reflected in SerializeMemberName(). For example, if customers passed in a JsonSerializerOption such as below
         /// <code language="c#">
@@ -103,9 +107,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// To handle such scenarios, please create a custom serializer which inherits from the <see cref="CosmosSystemTextJsonSerializer"/> and overrides the
         /// SerializeMemberName to add any special handling.
-        /// </summary>
-        /// <param name="memberInfo">Any MemberInfo used in the query.</param>
-        /// <returns>A serialized representation of the member.</returns>
+        /// </remarks>
         public override string SerializeMemberName(MemberInfo memberInfo)
         {
             JsonExtensionDataAttribute jsonExtensionDataAttribute =
