@@ -29,10 +29,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         private static Cosmos.Database testDb;
         private static Container testContainer;
 
-        private static CosmosSerializer defaultCosmosSerializer;
-        private static CosmosClient defaultClient;
-        private static Cosmos.Database testDbDefault;
-        private static Container testContainerDefault;
+        private static CosmosSerializer stjCosmosSerializer;
+        private static CosmosClient stjClient;
+        private static Cosmos.Database testDbSTJ;
+        private static Container testContainerSTJ;
 
         [ClassInitialize]
         public async static Task Initialize(TestContext textContext)
@@ -64,19 +64,19 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             testDb = await client.CreateDatabaseAsync(dbName);
             testContainer = testDb.CreateContainerAsync(new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/Pk")).Result;
 
-            defaultCosmosSerializer = new CosmosSystemTextJsonSerializer(new JsonSerializerOptions());
+            stjCosmosSerializer = new CosmosSystemTextJsonSerializer(new JsonSerializerOptions());
 
-            defaultClient = TestCommon.CreateCosmosClient((cosmosClientBuilder)
-                => cosmosClientBuilder.WithCustomSerializer(customCosmosSerializer));
+            stjClient = TestCommon.CreateCosmosClient((cosmosClientBuilder)
+                => cosmosClientBuilder.WithCustomSerializer(stjCosmosSerializer));
 
             // Set a callback to get the handle of the last executed query to do the verification
             // This is neede because aggregate queries return type is a scalar so it can't be used 
             // to verify the translated LINQ directly as other queries type.
-            defaultClient.DocumentClient.OnExecuteScalarQueryCallback = q => lastExecutedScalarQuery = q;
+            stjClient.DocumentClient.OnExecuteScalarQueryCallback = q => lastExecutedScalarQuery = q;
 
             dbName = $"{nameof(LinqAggregateCustomSerializationBaseline)}-{Guid.NewGuid():N}";
-            testDbDefault = await defaultClient.CreateDatabaseAsync(dbName);
-            testContainerDefault = testDbDefault.CreateContainerAsync(new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/Pk")).Result;
+            testDbSTJ = await stjClient.CreateDatabaseAsync(dbName);
+            testContainerSTJ = testDbSTJ.CreateContainerAsync(new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/Pk")).Result;
         }
 
         [ClassCleanup]
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             {
                 LinqTestsCommon.GenerateSerializationTestCosmosData<DataObjectDotNet>(createDataObj, 5, testContainerLinq, new CosmosLinqSerializerOptions()),
                 LinqTestsCommon.GenerateSerializationTestCosmosData<DataObjectDotNet>(createDataObj, 5, testContainer, new CosmosLinqSerializerOptions()),
-                LinqTestsCommon.GenerateSerializationTestCosmosData<DataObjectDotNet>(createDataObj, 5, testContainerDefault, new CosmosLinqSerializerOptions())
+                LinqTestsCommon.GenerateSerializationTestCosmosData<DataObjectDotNet>(createDataObj, 5, testContainerSTJ, new CosmosLinqSerializerOptions())
             };
 
             Dictionary<string, int> serializerIndexes = new()
