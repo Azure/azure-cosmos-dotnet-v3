@@ -495,6 +495,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
 
             if (sqlQuery.GroupByClause != null)
             {
+                this.WriteDelimiter(string.Empty);
                 sqlQuery.GroupByClause.Accept(this);
                 this.writer.Write(" ");
             }

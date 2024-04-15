@@ -4235,6 +4235,18 @@
     "Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
+        "System.Nullable`1[System.Boolean] BypassIntegratedCache": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.Nullable`1[System.Boolean] BypassIntegratedCache;CanRead:True;CanWrite:True;System.Nullable`1[System.Boolean] get_BypassIntegratedCache();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_BypassIntegratedCache(System.Nullable`1[System.Boolean]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[System.Boolean] get_BypassIntegratedCache()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.Boolean] get_BypassIntegratedCache();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.Nullable`1[System.TimeSpan] get_MaxIntegratedCacheStaleness()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -4251,6 +4263,13 @@
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "[Void .ctor(), Void .ctor()]"
+        },
+        "Void set_BypassIntegratedCache(System.Nullable`1[System.Boolean])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_BypassIntegratedCache(System.Nullable`1[System.Boolean]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_MaxIntegratedCacheStaleness(System.Nullable`1[System.TimeSpan])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -7187,6 +7206,16 @@
           "Attributes": [],
           "MethodInfo": "System.String SwitzerlandWest;IsInitOnly:False;IsStatic:True;"
         },
+        "System.String TaiwanNorth": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String TaiwanNorth;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String TaiwanNorthwest": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String TaiwanNorthwest;IsInitOnly:False;IsStatic:True;"
+        },
         "System.String UAECentral": {
           "Type": "Field",
           "Attributes": [],
@@ -7251,6 +7280,11 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String USSecWest;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String USSecWestCentral": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String USSecWestCentral;IsInitOnly:False;IsStatic:True;"
         },
         "System.String WestCentralUS": {
           "Type": "Field",

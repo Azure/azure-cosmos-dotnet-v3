@@ -126,6 +126,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         new ReadFeedPage(
                             new MemoryStream(Encoding.UTF8.GetBytes("{\"Documents\": [], \"_count\": 0, \"_rid\": \"asdf\"}")),
                             requestCharge: 42,
+                            itemCount: 0,
                             activityId: Guid.NewGuid().ToString(),
                             additionalHeaders: null,
                             state: nonNullState));
@@ -168,12 +169,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                             documents: new List<CosmosElement>(),
                             requestCharge: 42,
                             activityId: Guid.NewGuid().ToString(),
-                            responseLengthInBytes: "[]".Length,
                             cosmosQueryExecutionInfo: default,
                             distributionPlanSpec: default,
                             disallowContinuationTokenMessage: default,
                             additionalHeaders: default,
-                            state: feedRangeState.State ?? StateForStartedButNoDocumentsReturned));
+                            state: feedRangeState.State ?? StateForStartedButNoDocumentsReturned,
+                            streaming: default));
             }
 
             Exception failure = await this.ShouldReturnFailure();
@@ -207,6 +208,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         new ChangeFeedSuccessPage(
                             content: new MemoryStream(Encoding.UTF8.GetBytes("{\"Documents\": [], \"_count\": 0, \"_rid\": \"asdf\"}")),
                             requestCharge: 42,
+                            itemCount: 0,
                             activityId: Guid.NewGuid().ToString(),
                             additionalHeaders: default,
                             state: feedRangeState.State));

@@ -10,13 +10,11 @@ namespace Microsoft.Azure.Cosmos.Contracts
     using System.Linq;
     using System.Reflection;
     using System.Runtime.InteropServices;
-    using System.Text;
     using System.Text.RegularExpressions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
 
     [TestCategory("Windows")]
     [TestClass]
@@ -79,6 +77,21 @@ namespace Microsoft.Azure.Cosmos.Contracts
             }
 
             CollectionAssert.AreEquivalent(locationNames, cosmosRegions);
+        }
+
+        [TestMethod]
+        public void RegionValueCheck()
+        {
+            string[] cosmosRegions = typeof(Regions)
+                            .GetMembers(BindingFlags.Static | BindingFlags.Public)
+                            .Select(e => e.Name)
+                            .ToArray();
+            foreach (string region in cosmosRegions)
+            {
+                string locationNameValue = typeof(LocationNames).GetField(region).GetValue(null).ToString();
+                string regionNameValue = typeof(Regions).GetField(region).GetValue(null).ToString();
+                Assert.AreEqual(locationNameValue, regionNameValue);
+            }
         }
 
         [TestMethod]

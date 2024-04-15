@@ -73,6 +73,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return (endpoint, authKey);
         }
 
+        internal static string GetMultiRegionConnectionString()
+        {
+            return Cosmos.ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", string.Empty);
+        }
+
         internal static CosmosClientBuilder GetDefaultConfiguration(
             bool useCustomSeralizer = true,
             bool validatePartitionKeyRangeCalls = false,
