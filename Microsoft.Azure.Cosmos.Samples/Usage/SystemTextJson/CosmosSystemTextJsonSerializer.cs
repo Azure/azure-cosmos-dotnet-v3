@@ -5,6 +5,7 @@
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using Azure.Core.Serialization;
+    using Microsoft.Azure.Cosmos;
 
     /// <summary>
     /// Uses <see cref="Azure.Core.Serialization.JsonObjectSerializer"/> which leverages System.Text.Json providing a simple API to interact with on the Azure SDKs.
