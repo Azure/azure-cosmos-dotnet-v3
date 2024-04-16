@@ -89,20 +89,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             // AllVersionsAndDeletes does not exist. There should not be any legacy lease documents that are
             // AllVersionsAndDeletes. If the ChangeFeedProcessor's mode is not legacy, an exception should thrown.
             // If the ChangeFeedProcessor mode is not the mode in the lease document, an exception should be thrown.
+            string documentServiceLeaseMode = string.IsNullOrEmpty(documentServiceLease.Mode)
+                        ? ChangeFeedMode.LatestVersion
+                        : documentServiceLease.Mode;
 
             bool shouldThrowException = this.VerifyChangeFeedProcessorMode(
-                changeFeedMode:
-                    string.IsNullOrEmpty(documentServiceLease.Mode)
-                        ? ChangeFeedMode.LatestVersion
-                        : changeFeedLeaseOptionsMode,
-                leaseChangeFeedMode: documentServiceLease.Mode,
+                changeFeedMode: changeFeedLeaseOptionsMode,
+                leaseChangeFeedMode: documentServiceLeaseMode,
                 normalizedProcessorChangeFeedMode: out string normalizedProcessorChangeFeedMode);
 
             // If shouldThrowException is true, throw the exception.
 
             if (shouldThrowException)
             {
-                throw new ArgumentException(message: $"Switching {nameof(ChangeFeedMode)} {documentServiceLease.Mode} to {normalizedProcessorChangeFeedMode} is not allowed.");
+                throw new ArgumentException(message: $"Switching {nameof(ChangeFeedMode)} {documentServiceLeaseMode} to {normalizedProcessorChangeFeedMode} is not allowed.");
             }
         }
 
