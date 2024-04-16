@@ -91,10 +91,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             // If the ChangeFeedProcessor mode is not the mode in the lease document, an exception should be thrown.
 
             bool shouldThrowException = this.VerifyChangeFeedProcessorMode(
-                changeFeedMode:
-                    string.IsNullOrEmpty(documentServiceLease.Mode)
-                        ? ChangeFeedMode.LatestVersion
-                        : changeFeedLeaseOptionsMode,
+                changeFeedMode: changeFeedLeaseOptionsMode,
                 leaseChangeFeedMode: documentServiceLease.Mode,
                 normalizedProcessorChangeFeedMode: out string normalizedProcessorChangeFeedMode);
 
@@ -111,6 +108,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             string leaseChangeFeedMode,
             out string normalizedProcessorChangeFeedMode)
         {
+            if (string.IsNullOrEmpty(leaseChangeFeedMode))
+            {
+                // Legacy container lease documents with no Mode defaults to IncrementalFeed and no exception needs to be thrown.
+
+                normalizedProcessorChangeFeedMode = HttpConstants.A_IMHeaderValues.IncrementalFeed;
+
+                return default;
+            }
+
             normalizedProcessorChangeFeedMode = changeFeedMode == ChangeFeedMode.AllVersionsAndDeletes
                 ? HttpConstants.A_IMHeaderValues.FullFidelityFeed
                 : HttpConstants.A_IMHeaderValues.IncrementalFeed;

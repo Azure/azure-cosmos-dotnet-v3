@@ -8,9 +8,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     [TestCategory("ChangeFeedProcessor")]
@@ -288,6 +291,83 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             {
                 Assert.Fail("An exception occurred when one was not expceted."); ;
             }
+        }
+
+        /// <summary>
+        /// This is based on an issue located at <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4423"/>.
+        /// </summary>
+        [TestMethod]
+        [Owner("philipthomas-MSFT")]
+        [Description("Scenario: For Legacy lease documents with no Mode property, When ChangeFeedMode on ChangeFeedProcessor " +
+            "does not switch, LatestVersion, no exception is expected. LatestVersion's WithStartFromBeginning can be set, or not set.")]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task WhenLegacyNoSwitchLatestVersionDoesNotExpectAnExceptionTestAsync(bool withStartFromBeginning)
+        {
+            ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.LatestVersion);
+            ManualResetEvent allDocsProcessed = new(false);
+
+            try
+            {
+                await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
+                    .BuildChangeFeedProcessorWithLatestVersionAsync(
+                        monitoredContainer: monitoredContainer,
+                        leaseContainer: this.LeaseContainer,
+                        allDocsProcessed: allDocsProcessed,
+                        withStartFromBeginning: withStartFromBeginning);
+
+                // Read lease documents, remove the Mode, and update the lease documents, so that it mimics a legacy lease document.
+
+                using FeedIterator iterator = await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
+                    .RevertLeaseDocumentsToLegacyWithNoMode(this.LeaseContainer);
+
+                await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
+                    .BuildChangeFeedProcessorWithLatestVersionAsync(
+                        monitoredContainer: monitoredContainer,
+                        leaseContainer: this.LeaseContainer,
+                        allDocsProcessed: allDocsProcessed,
+                        withStartFromBeginning: withStartFromBeginning);
+
+                Debug.WriteLine("No exceptions occurred.");
+            }
+            catch
+            {
+                Assert.Fail("An exception occurred when one was not expceted."); ;
+            }
+        }
+
+        private static async Task<FeedIterator> RevertLeaseDocumentsToLegacyWithNoMode(Container leaseContainer)
+        {
+            FeedIterator iterator = leaseContainer.GetItemQueryStreamIterator(
+                queryText: "SELECT * FROM c",
+                continuationToken: null);
+
+            List<JObject> leases = new List<JObject>();
+            while (iterator.HasMoreResults)
+            {
+                using (ResponseMessage responseMessage = await iterator.ReadNextAsync().ConfigureAwait(false))
+                {
+                    responseMessage.EnsureSuccessStatusCode();
+                    leases.AddRange(CosmosFeedResponseSerializer.FromFeedResponseStream<JObject>(
+                        serializerCore: CosmosContainerExtensions.DefaultJsonSerializer,
+                        streamWithServiceEnvelope: responseMessage.Content));
+                }
+            }
+
+            foreach (JObject lease in leases)
+            {
+                if (!lease.ContainsKey("Mode"))
+                {
+                    continue;
+                }
+
+                lease.Remove("Mode");
+
+                ItemResponse<JObject> response = await leaseContainer.UpsertItemAsync(item: lease);
+                Assert.AreEqual(expected: HttpStatusCode.OK, actual: response.StatusCode);
+            }
+
+            return iterator;
         }
 
         private static async Task BuildChangeFeedProcessorWithLatestVersionAsync(
