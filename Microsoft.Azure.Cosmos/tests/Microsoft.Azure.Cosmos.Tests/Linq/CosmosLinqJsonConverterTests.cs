@@ -198,7 +198,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             private readonly JsonObjectSerializer systemTextJsonSerializer;
 
-            public readonly System.Text.Json.JsonSerializerOptions jsonSerializerOptions = new()
+            private readonly System.Text.Json.JsonSerializerOptions jsonSerializerOptions = new()
             {
                 DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
                 PropertyNameCaseInsensitive = true,
@@ -259,7 +259,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     return this.jsonSerializerOptions.PropertyNamingPolicy.ConvertName(memberInfo.Name);
                 }
 
-                // Do any custom conversions here
+                // Do any additional handling of JsonSerializerOptions here.
 
                 return memberInfo.Name;
             }

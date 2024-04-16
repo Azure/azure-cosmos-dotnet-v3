@@ -894,8 +894,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 return this.jsonSerializerOptions.PropertyNamingPolicy.ConvertName(memberInfo.Name);
             }
 
-            // Do any custom conversions here
-            
+            // Do any additional handling of JsonSerializerOptions here.
+
             return memberInfo.Name;
         }
     }
