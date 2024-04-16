@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         {
             if (string.IsNullOrEmpty(leaseChangeFeedMode))
             {
-                // Legacy container lease documents with no Mode defaults to IncrementalFeed and no exception needs to be thrown.
+                // Legacy container lease documents with no Mode defaults to IncrementalFeed should not throw an exception.
 
                 normalizedProcessorChangeFeedMode = HttpConstants.A_IMHeaderValues.IncrementalFeed;
 
