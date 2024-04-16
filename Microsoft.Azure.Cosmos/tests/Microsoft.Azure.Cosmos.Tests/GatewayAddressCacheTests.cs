@@ -1408,13 +1408,19 @@ namespace Microsoft.Azure.Cosmos
                             serviceIdentity: this.serviceIdentity,
                             forceRefreshPartitionAddresses: false,
                             cancellationToken: CancellationToken.None)
-                         .ContinueWith(x => Interlocked.Increment(ref numberOfTasksCreated)));
+                         .ContinueWith(x =>
+                         {
+                            if(x.IsCompleted)
+                            {
+                                Interlocked.Increment(ref numberOfTasksCreated);
+                            }
+                         }));
                 }
 
                 // awaits for the parallel execution to finish.
                 await Task.WhenAll(openConnectionTasks);
 
-                // This assertion validates that the number of tasks created are same as the 500 * iterationIndex.
+                // This assertion validates that the number of tasks completed are same as the 500 * iterationIndex.
                 Assert.AreEqual(500 * iterationIndex, numberOfTasksCreated);
 
                 // Waits until a completion signal from the background task is received.
