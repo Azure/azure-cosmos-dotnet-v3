@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -112,7 +113,11 @@ namespace Microsoft.Azure.Cosmos
             {
                 IReadOnlyCollection<string> availableRegions = client.DocumentClient.GlobalEndpointManager.GetAvailableReadEndpointsByLocation().Keys;
 
+                //We only want to send hedge requests to regions that are in the client's preferred regions
+                IEnumerable<string> hedgeRegions = availableRegions.Intersect(client.ClientOptions.ApplicationPreferredRegions);
+
                 List<CosmosDiagnostics> allDiagnostics = new List<CosmosDiagnostics>();
+                request.Headers.Set("HedgeRequestContext", "Original");
                 Task<(bool, ResponseMessage)> primaryRequest = this.RequestSenderAndResultCheckAsync(
                     sender, 
                     request, 
@@ -120,12 +125,13 @@ namespace Microsoft.Azure.Cosmos
                     cancellationTokenSource);
                 Task hedgeTimer = Task.Delay(this.Threshold, cancellationToken);
 
-                Task canStartHedge = Task.WhenAny(primaryRequest, hedgeTimer);
+                Task canStartHedge = await Task.WhenAny(primaryRequest, hedgeTimer);
+
                 if (canStartHedge == hedgeTimer)
                 {
                     Task<List<ResponseMessage>> hedgedRequests = this.SendWithHedgeAsync(
                     client,
-                    availableRegions,
+                    hedgeRegions,
                     1,
                     request,
                     sender,
@@ -138,6 +144,8 @@ namespace Microsoft.Azure.Cosmos
                         (bool isNonTransient, ResponseMessage primaryResponse) = await primaryRequest;
                         if (isNonTransient)
                         {
+                            cancellationTokenSource.Cancel();
+                            ((CosmosTraceDiagnostics)primaryResponse.Diagnostics).Value.AddDatum("Hedge Context", "Original Request");
                             return primaryResponse;
                         }
                     }
@@ -145,45 +153,63 @@ namespace Microsoft.Azure.Cosmos
                     List<ResponseMessage> responses = await hedgedRequests;
                     if (responses.Any())
                     {
+                        cancellationTokenSource.Cancel();
+                        ((CosmosTraceDiagnostics)responses[0].Diagnostics).Value.AddDatum("Hedge Context", "Hedged Request");
                         return responses[0];
                     }
                     else
                     {
-                        return (await primaryRequest).Item2;
+                        cancellationTokenSource.Cancel();
+                        (_, ResponseMessage primaryResponse) = await primaryRequest;
+                        ((CosmosTraceDiagnostics)primaryResponse.Diagnostics).Value.AddDatum("Hedge Context", "Original Request");
+                        return primaryResponse;
                     }
                 }
 
                 (bool nonTransient, ResponseMessage response) = await primaryRequest;
                 if (nonTransient)
                 {
+                    cancellationTokenSource.Cancel();
                     return response;
                 }
-                
+
                 //If the response from the primary request is transient, we can should try to hedge the request to a different region
                 List<ResponseMessage> hedgeResponses = await this.SendWithHedgeAsync(
                     client,
-                    availableRegions,
+                    hedgeRegions,
                     1,
                     request,
                     sender,
                     cancellationToken,
                     cancellationTokenSource);
-
-                return hedgeResponses[0];
-
+                
+                cancellationTokenSource.Cancel();
+                if (hedgeResponses.Any())
+                {
+                    ((CosmosTraceDiagnostics)hedgeResponses[0].Diagnostics).Value.AddDatum("Hedge Context", "Hedged Request");
+                    return hedgeResponses[0];
+                }
+                else
+                {
+                    return response;
+                }
             }
         }
 
         private async Task<List<ResponseMessage>> SendWithHedgeAsync(
             CosmosClient client,
-            IReadOnlyCollection<string> availableRegions,
+            IEnumerable<string> hedgeRegions,
             int requestNumber,
             RequestMessage originalMessage,
             Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender,
             CancellationToken cancellationToken,
             CancellationTokenSource cancellationTokenSource)
         {
-            await Task.Delay(requestNumber == 1 ? this.Threshold : this.ThresholdStep, cancellationToken);
+            if (requestNumber != 1)
+            {
+                await Task.Delay(this.ThresholdStep, cancellationToken);
+            }
+
             List<ResponseMessage> parallelResponses = new List<ResponseMessage>();
             bool disableDiagnostics = originalMessage.RequestOptions != null && originalMessage.RequestOptions.DisablePointOperationDiagnostics;
             ITrace clonedTrace;
@@ -194,87 +220,90 @@ namespace Microsoft.Azure.Cosmos
             {
                 clonedTrace.AddDatum("Client Configuration", client.ClientConfigurationTraceDatum);
 
-                RequestMessage clonedRequest = originalMessage.Clone(clonedTrace);
-
-                if (clonedRequest.RequestOptions == null)
+                RequestMessage clonedRequest;
+                using (clonedRequest = originalMessage.Clone(clonedTrace))
                 {
-                    clonedRequest.RequestOptions = new RequestOptions()
+                    if (clonedRequest.RequestOptions == null)
                     {
-                        ExcludeRegions = availableRegions
-                        .Where(s => s != availableRegions.ElementAt(requestNumber)).ToList()
-                    };
-                }
-                else
-                {
-                    if (clonedRequest.RequestOptions.ExcludeRegions == null)
-                    {
-                        clonedRequest.RequestOptions.ExcludeRegions = availableRegions
-                            .Where(s => s != availableRegions.ElementAt(requestNumber)).ToList();
-                    }
-                    else
-                    {
-                        clonedRequest.RequestOptions.ExcludeRegions
-                            .AddRange(availableRegions.Where(s => s != availableRegions.ElementAt(requestNumber)));
-                    }
-                }
-
-                if (cancellationTokenSource.IsCancellationRequested)
-                {
-                    return parallelResponses;
-                }
-                else
-                {
-                    if (requestNumber == availableRegions.Count - 1)
-                    {
-                        (bool, ResponseMessage) finalResult = await this.RequestSenderAndResultCheckAsync(sender, clonedRequest, cancellationToken, cancellationTokenSource);
-                        parallelResponses.Add(finalResult.Item2);
-                    }
-                    else
-                    {
-                        Task<(bool, ResponseMessage)> currentHedge = this.RequestSenderAndResultCheckAsync(sender, clonedRequest, cancellationToken, cancellationTokenSource);
-                        Task<List<ResponseMessage>> nextHedge = this.SendWithHedgeAsync(client, availableRegions, requestNumber + 1, originalMessage, sender, cancellationToken, cancellationTokenSource);
-
-                        Task result = await Task.WhenAny(currentHedge, nextHedge);
-                        if (result == currentHedge)
+                        clonedRequest.RequestOptions = new RequestOptions()
                         {
-                            (bool, ResponseMessage) response = await currentHedge;
-                            if (response.Item1)
+                            ExcludeRegions = hedgeRegions
+                            .Where(s => s != hedgeRegions.ElementAt(requestNumber)).ToList()
+                        };
+                    }
+                    else
+                    {
+                        if (clonedRequest.RequestOptions.ExcludeRegions == null)
+                        {
+                            clonedRequest.RequestOptions.ExcludeRegions = hedgeRegions
+                                .Where(s => s != hedgeRegions.ElementAt(requestNumber)).ToList();
+                        }
+                        else
+                        {
+                            clonedRequest.RequestOptions.ExcludeRegions
+                                .AddRange(hedgeRegions.Where(s => s != hedgeRegions.ElementAt(requestNumber)));
+                        }
+                    }
+
+                    clonedRequest.Headers.Set("HedgeRequestContext", requestNumber.ToString());
+                    if (cancellationTokenSource.IsCancellationRequested)
+                    {
+                        return parallelResponses;
+                    }
+                    else
+                    {
+                        if (requestNumber == hedgeRegions.Count() - 1)
+                        {
+                            (bool, ResponseMessage) finalResult = await this.RequestSenderAndResultCheckAsync(sender, clonedRequest, cancellationToken, cancellationTokenSource);
+                            parallelResponses.Add(finalResult.Item2);
+                        }
+                        else
+                        {
+                            Task<(bool, ResponseMessage)> currentHedge = this.RequestSenderAndResultCheckAsync(sender, clonedRequest, cancellationToken, cancellationTokenSource);
+                            Task<List<ResponseMessage>> nextHedge = this.SendWithHedgeAsync(client, hedgeRegions, requestNumber + 1, originalMessage, sender, cancellationToken, cancellationTokenSource);
+
+                            Task result = await Task.WhenAny(currentHedge, nextHedge);
+                            if (result == currentHedge)
                             {
-                                parallelResponses.Insert(0, response.Item2);
-                                return parallelResponses;
+                                (bool, ResponseMessage) response = await currentHedge;
+                                if (response.Item1)
+                                {
+                                    parallelResponses.Insert(0, response.Item2);
+                                    return parallelResponses;
+                                }
+                                else
+                                {
+                                    List<ResponseMessage> nextResponses = await nextHedge;
+                                    if (nextResponses.Any())
+                                    {
+                                        nextResponses.AddRange(parallelResponses);
+                                        parallelResponses = nextResponses;
+                                        parallelResponses.Add(response.Item2);
+                                        return parallelResponses;
+                                    }
+
+                                    parallelResponses.Add(response.Item2);
+                                    return parallelResponses;
+                                }
                             }
                             else
                             {
                                 List<ResponseMessage> nextResponses = await nextHedge;
+
                                 if (nextResponses.Any())
                                 {
                                     nextResponses.AddRange(parallelResponses);
                                     parallelResponses = nextResponses;
-                                    parallelResponses.Add(response.Item2);
+
                                     return parallelResponses;
                                 }
 
-                                parallelResponses.Add(response.Item2);
                                 return parallelResponses;
                             }
-                        }
-                        else
-                        {
-                            List<ResponseMessage> nextResponses = await nextHedge;
-
-                            if (nextResponses.Any())
-                            {
-                                nextResponses.AddRange(parallelResponses);
-                                parallelResponses = nextResponses; 
-
-                                return parallelResponses;
-                            }
-
-                            return parallelResponses;
                         }
                     }
+                    return parallelResponses;
                 }
-                return parallelResponses;
             }
         }
 
