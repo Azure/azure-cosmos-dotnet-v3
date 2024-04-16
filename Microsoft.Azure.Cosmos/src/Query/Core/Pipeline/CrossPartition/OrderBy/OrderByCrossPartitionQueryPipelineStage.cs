@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             }
 
             TryCatch<bool> hasNext = await this.inner.TryAsync(pipelineStage => pipelineStage.MoveNextAsync(trace, cancellationToken));
-            return hasNext.Succeeded && hasNext.Result;
+            return hasNext.Failed || hasNext.Result;
         }
 
         public ValueTask DisposeAsync()
