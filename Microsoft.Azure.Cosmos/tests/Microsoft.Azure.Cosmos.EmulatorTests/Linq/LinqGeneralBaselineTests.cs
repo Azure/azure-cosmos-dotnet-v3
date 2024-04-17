@@ -847,6 +847,209 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
+        public void TestGroupByMultiValueTranslation()
+        {
+            List<LinqTestInput> inputs = new List<LinqTestInput>();
+            inputs.Add(new LinqTestInput("GroupBy Multi Value Select Constant", b => getQuery(b).GroupBy(k => k /*keySelector*/,
+                                                                                (key, values) => 
+                                                                                new {
+                                                                                    stringField = "abv",
+                                                                                    numField = 123
+                                                                                })));
+
+            inputs.Add(new LinqTestInput("GroupBy Multi Value Select Key", b => getQuery(b).GroupBy(k => k.Id /*keySelector*/,
+                                                                                (key, values) => new {
+                                                                                    Key = key,
+                                                                                    key
+                                                                                })));
+
+            inputs.Add(new LinqTestInput("GroupBy Multi Value Select Key and Constant", b => getQuery(b).GroupBy(k => k.Id /*keySelector*/,
+                                                                                (key, values) => new {
+                                                                                    KeyAlias = key,
+                                                                                    values = 123 /* intentionally have the same spelling as the IGrouping values */
+                                                                                })));
+
+            inputs.Add(new LinqTestInput("GroupBy Multi Value With Aggregate", b => getQuery(b).GroupBy(k => k.Id /*keySelector*/,
+                                                                                (key, values) => new {
+                                                                                    Min = values.Min(value => value.Int),
+                                                                                    Max = values.Max(value => value.Int),
+                                                                                    Avg = values.Average(value => value.Int),
+                                                                                    Count = values.Count()
+                                                                                })));
+
+            inputs.Add(new LinqTestInput("GroupBy Multi Value With Property Ref and Aggregate", b => getQuery(b).GroupBy(k => k.FamilyId /*keySelector*/,
+                                                                              (key, values) => new { 
+                                                                                  familyId = key, 
+                                                                                  familyIdCount = values.Count() 
+                                                                              })));
+
+            // Negative cases 
+
+            // The translation is correct (SELECT VALUE MIN(root) FROM root GROUP BY root["Number"]
+            // but the behavior between LINQ and SQL is different
+            // In Linq, it requires the object to have comparer traits, where as in CosmosDB, we will return null
+            inputs.Add(new LinqTestInput("GroupBy Multi Value With Aggregate On Root", b => getQuery(b).GroupBy(k => k.Id /*keySelector*/,
+                                                                                (key, values) => new {
+                                                                                    Min = values.Min(),
+                                                                                    Max = values.Max()
+                                                                                })));
+
+            // Non-aggregate method calls
+            inputs.Add(new LinqTestInput("GroupBy Multi Value With Non-Aggregate", b => getQuery(b).GroupBy(k => k.Id /*keySelector*/,
+                                                                                (key, values) => new {
+                                                                                    valueSelect = values.Select(value => value.Int),
+                                                                                    valueOrderBy = values.OrderBy(f => f.FamilyId)
+                                                                                })));
+            // Other methods followed by GroupBy
+
+            inputs.Add(new LinqTestInput("Select + GroupBy", b => getQuery(b)
+                .Select(x => x.Id)
+                .GroupBy(k => k /*keySelector*/, (key, values) => new {
+                    keyAlias = key,
+                    count = values.Count()
+                })));
+
+            inputs.Add(new LinqTestInput("Select + GroupBy 2", b => getQuery(b)
+                .Select(x => new { Id1 = x.Id, family1 = x.FamilyId, childrenN1 = x.Children })
+                .GroupBy(k => k.Id1 /*keySelector*/, (key, values) => new {
+                    keyAlias = key,
+                    count = values.Count()
+                })));
+
+            inputs.Add(new LinqTestInput("SelectMany + GroupBy", b => getQuery(b)
+                .SelectMany(x => x.Children)
+                .GroupBy(k => k /*keySelector*/, (key, values) => new {
+                    keyAlias = key,
+                    count = values.Count()
+                })));
+
+            inputs.Add(new LinqTestInput("Skip + GroupBy", b => getQuery(b)
+                .Skip(10)
+                .GroupBy(k => k.Id /*keySelector*/, (key, values) => new {
+                    keyAlias = key,
+                    count = values.Count()
+                })));
+
+            inputs.Add(new LinqTestInput("Take + GroupBy", b => getQuery(b)
+                .Take(10)
+                .GroupBy(k => k.Id /*keySelector*/, (key, values) => new {
+                    keyAlias = key,
+                    count = values.Count()
+                })));
+
+            inputs.Add(new LinqTestInput("Skip + Take + GroupBy", b => getQuery(b)
+                .Skip(10).Take(10)
+                .GroupBy(k => k.Id /*keySelector*/, (key, values) => new {
+                    keyAlias = key,
+                    count = values.Count()
+                })));
+
+            inputs.Add(new LinqTestInput("Filter + GroupBy", b => getQuery(b)
+                .Where(x => x.Id != "a")
+                .GroupBy(k => k.Id /*keySelector*/, (key, values) => new {
+                    keyAlias = key,
+                    count = values.Count()
+                })));
+
+            // should this become a subquery with order by then group by?
+            inputs.Add(new LinqTestInput("OrderBy + GroupBy", b => getQuery(b)
+                .OrderBy(x => x.Int)
+                .GroupBy(k => k.Id /*keySelector*/, (key, values) => new {
+                    keyAlias = key,
+                    count = values.Count()
+                })));
+
+            inputs.Add(new LinqTestInput("OrderBy Descending + GroupBy", b => getQuery(b)
+                .OrderByDescending(x => x.Id)
+                .GroupBy(k => k.Id /*keySelector*/, (key, values) => new {
+                    keyAlias = key,
+                    count = values.Count()
+                })));
+
+            inputs.Add(new LinqTestInput("Combination + GroupBy", b => getQuery(b)
+                .Where(x => x.Id != "a")
+                .OrderBy(x => x.Id)
+                .GroupBy(k => k.Id /*keySelector*/, (key, values) => new {
+                    keyAlias = key,
+                    count = values.Count()
+                })));
+
+            // GroupBy followed by other methods
+            inputs.Add(new LinqTestInput("GroupBy + Select", b => getQuery(b)
+                .GroupBy(k => k.Id /*keySelector*/, (key, values) => new {
+                    keyAlias = key,
+                    count = values.Count()})
+                .Select(x => x)));
+
+            inputs.Add(new LinqTestInput("GroupBy + Select 2", b => getQuery(b)
+                .GroupBy(k => k.Id /*keySelector*/, (key, values) => new {
+                    keyAlias = key,
+                    count = values.Count()})
+                .Select(x => x.keyAlias)));
+
+            //We should support skip take
+            inputs.Add(new LinqTestInput("GroupBy + Skip", b => getQuery(b)
+                .GroupBy(k => k.Id /*keySelector*/, (key, values) => new {
+                    keyAlias = key,
+                    count = values.Count()})
+                .Skip(10)));
+
+            inputs.Add(new LinqTestInput("GroupBy + Take", b => getQuery(b)
+                .GroupBy(k => k.Id /*keySelector*/, (key, values) => new {
+                    keyAlias = key,
+                    count = values.Count()})
+                .Take(10)));
+
+            inputs.Add(new LinqTestInput("GroupBy + Skip + Take", b => getQuery(b)
+                .GroupBy(k => k.Id /*keySelector*/, (key, values) => new {
+                    keyAlias = key,
+                    count = values.Count()})
+                .Skip(10).Take(10)));
+
+            inputs.Add(new LinqTestInput("GroupBy + Filter", b => getQuery(b)
+                .GroupBy(k => k.Id /*keySelector*/, (key, values) => new {
+                    keyAlias = key,
+                    count = values.Count()})
+                .Where(x => x.keyAlias == "a")));
+
+            inputs.Add(new LinqTestInput("GroupBy + OrderBy", b => getQuery(b)
+                .GroupBy(k => k.Id /*keySelector*/, (key, values) => new {
+                    keyAlias = key,
+                    count = values.Count()})
+                .OrderBy(x => x.keyAlias)));
+
+            inputs.Add(new LinqTestInput("GroupBy + OrderBy Descending", b => getQuery(b)
+                .GroupBy(k => k.Id /*keySelector*/, (key, values) => new {
+                    keyAlias = key,
+                    count = values.Count()})
+                .OrderByDescending(x => x.count)));
+
+            inputs.Add(new LinqTestInput("GroupBy + Combination", b => getQuery(b)
+                .GroupBy(k => k.Id /*keySelector*/, (key, values) => new {
+                    keyAlias = key,
+                    count = values.Count()})
+                .Where(x => x.keyAlias == "a").Skip(10).Take(10)));
+
+            inputs.Add(new LinqTestInput("GroupBy + GroupBy", b => getQuery(b)
+                .GroupBy(k => k.Id /*keySelector*/, (key, values) => new {
+                    keyAlias = key,
+                    count = values.Count()})
+                .GroupBy(k => k.count /*keySelector*/, (key, values) => key /*return the group by key */)));
+
+            inputs.Add(new LinqTestInput("GroupBy + GroupBy2", b => getQuery(b)
+                .GroupBy(k => k.Id /*keySelector*/, (key, values) => new {
+                    keyAlias = key,
+                    count = values.Count()
+                })
+                .GroupBy(k => k.count /*keySelector*/, (key, values) => new {
+                    keyAlias = key,
+                    stringField = "abc"
+                })));
+
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
         [Ignore]
         public void DebuggingTest()
         {
