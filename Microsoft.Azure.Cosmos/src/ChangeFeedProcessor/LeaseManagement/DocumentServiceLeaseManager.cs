@@ -85,43 +85,33 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
             DocumentServiceLease documentServiceLease = documentServiceLeases[0];
 
-            // Mode attribute exists on lease document, but it is not set. legacy is always LatestVersion because
-            // AllVersionsAndDeletes does not exist. There should not be any legacy lease documents that are
-            // AllVersionsAndDeletes. If the ChangeFeedProcessor's mode is not legacy, an exception should thrown.
-            // If the ChangeFeedProcessor mode is not the mode in the lease document, an exception should be thrown.
-
-            bool shouldThrowException = this.VerifyChangeFeedProcessorMode(
+            this.VerifyChangeFeedProcessorMode(
                 changeFeedMode: changeFeedLeaseOptionsMode,
-                leaseChangeFeedMode: documentServiceLease.Mode,
-                normalizedProcessorChangeFeedMode: out string normalizedProcessorChangeFeedMode);
-
-            // If shouldThrowException is true, throw the exception.
-
-            if (shouldThrowException)
-            {
-                throw new ArgumentException(message: $"Switching {nameof(ChangeFeedMode)} {documentServiceLease.Mode} to {normalizedProcessorChangeFeedMode} is not allowed.");
-            }
+                leaseChangeFeedMode: documentServiceLease.Mode);
         }
 
-        private bool VerifyChangeFeedProcessorMode(
+        /// <summary>
+        /// Mode attribute exists on lease document, but it is not set. Legacy is always LatestVersion/IncrementalFeed
+        /// because AllVersionsAndDeletes does not exist. There should not be any legacy lease documents that are
+        /// AllVersionsAndDeletes. If the ChangeFeedProcessor's mode is not legacy, an exception should thrown.
+        /// If the ChangeFeedProcessor mode is not the mode in the lease document, an exception should be thrown.
+        /// </summary>
+        /// <param name="changeFeedMode">The current change feed mode.</param>
+        /// <param name="leaseChangeFeedMode">The change feed mode on the lease document.</param>
+        private void VerifyChangeFeedProcessorMode(
             ChangeFeedMode changeFeedMode,
-            string leaseChangeFeedMode,
-            out string normalizedProcessorChangeFeedMode)
+            string leaseChangeFeedMode)
         {
-            if (string.IsNullOrEmpty(leaseChangeFeedMode))
-            {
-                // Legacy container lease documents with no Mode defaults to IncrementalFeed should not throw an exception.
+            leaseChangeFeedMode ??= HttpConstants.A_IMHeaderValues.IncrementalFeed;
 
-                normalizedProcessorChangeFeedMode = HttpConstants.A_IMHeaderValues.IncrementalFeed;
-
-                return default;
-            }
-
-            normalizedProcessorChangeFeedMode = changeFeedMode == ChangeFeedMode.AllVersionsAndDeletes
+            string normalizedProcessorChangeFeedMode = changeFeedMode == ChangeFeedMode.AllVersionsAndDeletes
                 ? HttpConstants.A_IMHeaderValues.FullFidelityFeed
                 : HttpConstants.A_IMHeaderValues.IncrementalFeed;
 
-            return string.Compare(leaseChangeFeedMode, normalizedProcessorChangeFeedMode, StringComparison.OrdinalIgnoreCase) != 0;
+            if (string.Compare(leaseChangeFeedMode, normalizedProcessorChangeFeedMode, StringComparison.OrdinalIgnoreCase) != 0)
+            {
+                throw new ArgumentException(message: $"Switching {nameof(ChangeFeedMode)} {leaseChangeFeedMode} to {normalizedProcessorChangeFeedMode} is not allowed.");
+            }
         }
     }
 }
