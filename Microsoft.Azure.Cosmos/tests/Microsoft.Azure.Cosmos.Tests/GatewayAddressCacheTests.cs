@@ -1410,7 +1410,7 @@ namespace Microsoft.Azure.Cosmos
                             cancellationToken: CancellationToken.None)
                          .ContinueWith(x =>
                          {
-                            if(x.IsCompleted)
+                            if(x.IsCompletedSuccessfully)
                             {
                                 Interlocked.Increment(ref numberOfTasksCreated);
                             }
