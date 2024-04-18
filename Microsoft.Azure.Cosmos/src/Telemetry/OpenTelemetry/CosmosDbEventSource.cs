@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
+    using System;
     using System.Diagnostics.Tracing;
     using global::Azure.Core.Diagnostics;
     using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
@@ -35,17 +36,30 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             Documents.OperationType operationType,
             OpenTelemetryAttributes response)
         {
-            if (!DiagnosticsFilterHelper.IsSuccessfulResponse(
-                        response.StatusCode, response.SubStatusCode) && CosmosDbEventSource.IsEnabled(EventLevel.Warning))
+            if (CosmosDbEventSource.IsEnabled(EventLevel.Warning))
             {
-                CosmosDbEventSource.Singleton.FailedRequest(response.Diagnostics.ToString());
-            } 
-            else if (DiagnosticsFilterHelper.IsLatencyThresholdCrossed(
-                    config: config,
-                    operationType: operationType,
-                    response: response) && CosmosDbEventSource.IsEnabled(EventLevel.Warning))
-            {
-                CosmosDbEventSource.Singleton.LatencyOverThreshold(response.Diagnostics.ToString());
+                if (!DiagnosticsFilterHelper.IsSuccessfulResponse(
+                                        response.StatusCode, response.SubStatusCode))
+                {
+                    CosmosDbEventSource.Singleton.FailedRequest(response.Diagnostics.ToString());
+                }
+                else if (DiagnosticsFilterHelper.IsLatencyThresholdCrossed(
+                        config: config,
+                        operationType: operationType,
+                        response: response))
+                {
+                    CosmosDbEventSource.Singleton.LatencyOverThreshold(response.Diagnostics.ToString());
+                }
+                else if (config.RequestChargeThreshold <= response.RequestCharge)
+                {
+                    CosmosDbEventSource.Singleton.RequestChargeOverThreshold(response.Diagnostics.ToString());
+                }
+                else if (config.PayloadSizeThresholdInBytes <= 
+                                    Math.Max(Convert.ToInt32(response.RequestContentLength), 
+                                             Convert.ToInt32(response.ResponseContentLength)))
+                {
+                    CosmosDbEventSource.Singleton.PayloadSizeOverThreshold(response.Diagnostics.ToString());
+                }
             }
         }
 
@@ -74,6 +88,18 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private void FailedRequest(string message)
         {
             this.WriteEvent(3, message);
+        }
+
+        [Event(4, Level = EventLevel.Warning)]
+        private void RequestChargeOverThreshold(string message)
+        {
+            this.WriteEvent(4, message);
+        }
+
+        [Event(5, Level = EventLevel.Warning)]
+        private void PayloadSizeOverThreshold(string message)
+        {
+            this.WriteEvent(5, message);
         }
     }
 }

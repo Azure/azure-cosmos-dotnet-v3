@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 
             foreach(OperationType operationType in values)
             {
-                TimeSpan defaultThreshold = DiagnosticsFilterHelper.DefaultThreshold(operationType, config);
+                TimeSpan defaultThreshold = DiagnosticsFilterHelper.DefaultLatencyThreshold(operationType, config);
 
                 if(DiagnosticsFilterHelper.IsPointOperation(operationType))
                     Assert.AreEqual(defaultThreshold, config.PointOperationLatencyThreshold);
