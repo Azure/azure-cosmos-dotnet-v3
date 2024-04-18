@@ -10,7 +10,8 @@ namespace Microsoft.Azure.Cosmos
     /// to be used by the CosmosClient for LINQ queries.
     /// </summary>
     /// <remarks>
-    /// https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos.Samples/Usage/SystemTextJson/CosmosSystemTextJsonSerializer.cs
+    /// Refer to the <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos.Samples/Usage/SystemTextJson/CosmosSystemTextJsonSerializer.cs">sample project</see> for a full implementation.
+
     /// </remarks>
     public abstract class CosmosLinqSerializer : CosmosSerializer
     {
