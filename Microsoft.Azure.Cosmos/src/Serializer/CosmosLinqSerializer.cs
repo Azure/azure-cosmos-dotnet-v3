@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     /// <remarks>
     /// Refer to the <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos.Samples/Usage/SystemTextJson/CosmosSystemTextJsonSerializer.cs">sample project</see> for a full implementation.
-
     /// </remarks>
     public abstract class CosmosLinqSerializer : CosmosSerializer
     {
