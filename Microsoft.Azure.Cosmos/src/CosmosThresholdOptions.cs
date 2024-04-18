@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos
         /// is significantly higher than expected.
         /// The default value for the payload size threshold is Int32.MaxValue 
         /// </summary>
-        /// <value> 2147483647 Bytes </value>
+        /// <value>2147483647 Bytes</value>
         public int PayloadSizeThresholdInBytes { get; set; } = Int32.MaxValue;
     }
 }

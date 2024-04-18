@@ -25,6 +25,37 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         }
 
         /// <summary>
+        /// Allow only Payload size(request/response) is more the configured threshold
+        /// </summary>
+        /// <returns>true or false</returns>
+        public static bool IsPayloadSizeThresholdCrossed(
+            CosmosThresholdOptions config,
+            OpenTelemetryAttributes response)
+        {
+            int requestContentLength = 0;
+            int responseContentLength = 0;
+            try
+            {
+                requestContentLength = Convert.ToInt32(response.RequestContentLength);
+            }
+            catch (Exception)
+            {
+                // Ignore, if this conversion fails for any reason.
+            }
+
+            try
+            {
+                responseContentLength = Convert.ToInt32(response.ResponseContentLength);
+            }
+            catch (Exception)
+            {
+                // Ignore, if this conversion fails for any reason.
+            }
+
+            return config.PayloadSizeThresholdInBytes <= Math.Max(requestContentLength, responseContentLength);
+        }
+
+        /// <summary>
         /// Check if response HTTP status code is returning successful
         /// </summary>
         /// <returns>true or false</returns>

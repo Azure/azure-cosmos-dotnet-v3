@@ -54,9 +54,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 {
                     CosmosDbEventSource.Singleton.RequestChargeOverThreshold(response.Diagnostics.ToString());
                 }
-                else if (config.PayloadSizeThresholdInBytes <= 
-                                    Math.Max(Convert.ToInt32(response.RequestContentLength), 
-                                             Convert.ToInt32(response.ResponseContentLength)))
+                else if (DiagnosticsFilterHelper.IsPayloadSizeThresholdCrossed(
+                        config: config,
+                        response: response))
                 {
                     CosmosDbEventSource.Singleton.PayloadSizeOverThreshold(response.Diagnostics.ToString());
                 }
