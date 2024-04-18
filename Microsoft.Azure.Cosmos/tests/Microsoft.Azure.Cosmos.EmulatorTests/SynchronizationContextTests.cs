@@ -85,6 +85,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Assert.IsNotNull(response);
                         string diagnostics = response.Diagnostics.ToString();
                         Assert.IsTrue(diagnostics.Contains("Synchronization Context"));
+                        Assert.IsTrue(diagnostics.Contains("Client Configuration"));
 
                         using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
 

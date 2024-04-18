@@ -744,6 +744,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             { "JOIN", "\nJOIN" },
             { "ORDER BY", "\nORDER BY" },
             { "OFFSET", "\nOFFSET" },
+            { "GROUP BY", "\nGROUP BY" },
             { " )", "\n)" }
         };
 
@@ -785,7 +786,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             const string oneTab = "    ";
             const string startCue = "SELECT";
             const string endCue = ")";
-
             string[] tokens = sb.ToString().Split('\n');
             bool firstSelect = true;
             sb.Length = 0;
@@ -874,6 +874,13 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 
         public override string SerializeMemberName(MemberInfo memberInfo)
         {
+            System.Text.Json.Serialization.JsonExtensionDataAttribute jsonExtensionDataAttribute =
+                memberInfo.GetCustomAttribute<System.Text.Json.Serialization.JsonExtensionDataAttribute>(true);
+            if (jsonExtensionDataAttribute != null)
+            {
+                return null;
+            }
+
             JsonPropertyNameAttribute jsonPropertyNameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(true);
 
             string memberName = !string.IsNullOrEmpty(jsonPropertyNameAttribute?.Name)

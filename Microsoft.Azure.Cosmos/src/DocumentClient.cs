@@ -117,7 +117,9 @@ namespace Microsoft.Azure.Cosmos
 
         //Fault Injection
         private readonly IChaosInterceptorFactory chaosInterceptorFactory;
-        private IChaosInterceptor chaosInterceptor;
+        private readonly IChaosInterceptor chaosInterceptor;
+
+        private bool isChaosInterceptorInititalized = false;
 
         //Auth
         internal readonly AuthorizationTokenProvider cosmosAuthorization;
@@ -490,6 +492,7 @@ namespace Microsoft.Azure.Cosmos
             this.IsLocalQuorumConsistency = isLocalQuorumConsistency;
             this.initTaskCache = new AsyncCacheNonBlocking<string, bool>(cancellationToken: this.cancellationTokenSource.Token);
             this.chaosInterceptorFactory = chaosInterceptorFactory;
+            this.chaosInterceptor = chaosInterceptorFactory?.CreateInterceptor(this);
 
             this.Initialize(
                 serviceEndpoint: serviceEndpoint,
@@ -1017,14 +1020,6 @@ namespace Microsoft.Azure.Cosmos
         // Always called from under the lock except when called from Intilialize method during construction.
         private async Task<bool> GetInitializationTaskAsync(IStoreClientFactory storeClientFactory)
         {
-            //Create the chaos interceptor if using fault injection
-            //Creating the chaos interceptor requires async calls, so we do it here instead of in the constructor
-            //This must also be done before creating the storeClientFactory for direct mode
-            if (this.chaosInterceptorFactory != null)
-            {
-                this.chaosInterceptor = await this.chaosInterceptorFactory.CreateInterceptorAsync(this);
-            }
-
             await this.InitializeGatewayConfigurationReaderAsync();
 
             if (this.desiredConsistencyLevel.HasValue)
@@ -1592,6 +1587,12 @@ namespace Microsoft.Azure.Cosmos
                     DefaultTrace.TraceWarning("EnsureValidClientAsync initializeTask failed {0}", e);
                     childTrace.AddDatum("initializeTask failed", e);
                     throw;
+                }
+
+                if (this.chaosInterceptorFactory != null && !this.isChaosInterceptorInititalized)
+                {
+                    this.isChaosInterceptorInititalized = true;
+                    await this.chaosInterceptorFactory.ConfigureChaosInterceptorAsync();
                 }
             }
         }
@@ -6653,9 +6654,16 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
+                // It is decided to switch this feature off completely for external users but keep it unchanged for internal users,
+                // due to the nature of information, we are collecting here. RNTBD is internal protocol and we do not expose it to the customers.
                 Documents.Telemetry.DistributedTracingOptions distributedTracingOptions = new ()
                 {
+#if INTERNAL
                     IsDistributedTracingEnabled = !this.cosmosClientTelemetryOptions.DisableDistributedTracing
+#else
+                    IsDistributedTracingEnabled = false
+#endif
+
                 };
 
                 StoreClientFactory newClientFactory = new StoreClientFactory(

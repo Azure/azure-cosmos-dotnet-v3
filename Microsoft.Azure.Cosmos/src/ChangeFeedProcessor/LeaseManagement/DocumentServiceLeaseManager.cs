@@ -4,6 +4,8 @@
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 {
+    using System;
+    using System.Collections.Generic;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Documents;
@@ -63,5 +65,53 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         /// <returns>Updated lease.</returns>
         /// <exception cref="LeaseLostException">Thrown if other host acquired the lease</exception>
         public abstract Task<DocumentServiceLease> UpdatePropertiesAsync(DocumentServiceLease leaseToUpdatePropertiesFrom);
+
+        /// <summary>
+        /// If the lease container's lease document is found, this method checks for lease 
+        /// document's ChangeFeedMode and if the new ChangeFeedMode is different
+        /// from the current ChangeFeedMode, an exception is thrown.
+        /// This is based on an issue located at <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4308"/>.
+        /// </summary>
+        public void ChangeFeedModeSwitchingCheck(
+            IReadOnlyList<DocumentServiceLease> documentServiceLeases, 
+            ChangeFeedMode changeFeedLeaseOptionsMode)
+        {
+            // No lease documents. Return.
+
+            if (documentServiceLeases.Count == 0)
+            {
+                return;
+            }
+
+            DocumentServiceLease documentServiceLease = documentServiceLeases[0];
+
+            this.VerifyChangeFeedProcessorMode(
+                changeFeedMode: changeFeedLeaseOptionsMode,
+                leaseChangeFeedMode: documentServiceLease.Mode);
+        }
+
+        /// <summary>
+        /// Mode attribute exists on lease document, but it is not set. Legacy is always LatestVersion/IncrementalFeed
+        /// because AllVersionsAndDeletes does not exist. There should not be any legacy lease documents that are
+        /// AllVersionsAndDeletes. If the ChangeFeedProcessor's mode is not legacy, an exception should thrown.
+        /// If the ChangeFeedProcessor mode is not the mode in the lease document, an exception should be thrown.
+        /// </summary>
+        /// <param name="changeFeedMode">The current change feed mode.</param>
+        /// <param name="leaseChangeFeedMode">The change feed mode on the lease document.</param>
+        private void VerifyChangeFeedProcessorMode(
+            ChangeFeedMode changeFeedMode,
+            string leaseChangeFeedMode)
+        {
+            leaseChangeFeedMode ??= HttpConstants.A_IMHeaderValues.IncrementalFeed;
+
+            string normalizedProcessorChangeFeedMode = changeFeedMode == ChangeFeedMode.AllVersionsAndDeletes
+                ? HttpConstants.A_IMHeaderValues.FullFidelityFeed
+                : HttpConstants.A_IMHeaderValues.IncrementalFeed;
+
+            if (string.Compare(leaseChangeFeedMode, normalizedProcessorChangeFeedMode, StringComparison.OrdinalIgnoreCase) != 0)
+            {
+                throw new ArgumentException(message: $"Switching {nameof(ChangeFeedMode)} {leaseChangeFeedMode} to {normalizedProcessorChangeFeedMode} is not allowed.");
+            }
+        }
     }
 }

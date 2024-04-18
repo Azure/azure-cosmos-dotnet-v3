@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     using Microsoft.Azure.Documents;
     using Antlr4.Runtime.Sharpen;
     using System.Collections.Generic;
+    using OpenTelemetry.Trace;
 
     // End-to-end testing for IndexMetrics handling and parsing.
     [Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestClass]
@@ -169,23 +170,309 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             this.ExecuteTestSuite(inputs);
         }
 
-        public override IndexMetricsParserTestOutput ExecuteTest(IndexMetricsParserTestInput input)
-        { 
-            QueryRequestOptions requestOptions = new QueryRequestOptions() { PopulateIndexMetrics = true };
+        [TestMethod]
+        public void IndexUtilizationClientSideExistenceTest()
+        {
+            List<IndexMetricsParserTestInput> inputs = new List<IndexMetricsParserTestInput>
+            {
+                new IndexMetricsParserTestInput
+                (
+                    description: "Simple 1",
+                    query: "SELECT * FROM c WHERE c.id = \"1\""
+                ),
 
-            FeedIterator<CosmosElement> itemQuery = testContainer.GetItemQueryIterator<CosmosElement>(
-                input.Query,
+                new IndexMetricsParserTestInput
+                (
+                    description: "Simple 2",
+                    query: "SELECT * FROM c WHERE c.id = \"1\" and c.name = \"Abc\""
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "Simple 3",
+                    query: "SELECT * FROM c WHERE c.id = \"1\" and c.name > \"Abc\""
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "Simple 4",
+                    query: "SELECT * FROM c WHERE c.id > \"1\" and c.name > \"Abc\""
+                ),
+
+                // Aggregate
+                new IndexMetricsParserTestInput
+                (
+                    description: "Aggregate 1",
+                    query: "SELECT COUNT(1) FROM c WHERE c.id = \"1\""
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "Aggregate 2",
+                    query: "SELECT COUNT(1) FROM c WHERE c.id = \"1\" and c.name = \"Abc\""
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "Aggregate 3",
+                    query: "SELECT COUNT(1) FROM c WHERE c.id = \"1\" and c.name > \"Abc\""
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "Aggregate 4",
+                    query: "SELECT COUNT(1) FROM c WHERE c.id > \"1\" and c.name > \"Abc\""
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "Aggregate Value 1",
+                    query: "SELECT VALUE COUNT(1) FROM c WHERE c.id = \"1\""
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "Aggregate Value 2",
+                    query: "SELECT VALUE COUNT(1) FROM c WHERE c.id = \"1\" and c.name = \"Abc\""
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "Aggregate Value 3",
+                    query: "SELECT VALUE COUNT(1) FROM c WHERE c.id = \"1\" and c.name > \"Abc\""
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "Aggregate Value 4",
+                    query: "SELECT VALUE COUNT(1) FROM c WHERE c.id > \"1\" and c.name > \"Abc\""
+                ),
+
+                // Order By
+                new IndexMetricsParserTestInput
+                (
+                    description: "OrderBy 1",
+                    query: "SELECT * FROM c WHERE c.id = \"1\" ORDER BY c.id ASC"
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "OrderBy 2",
+                    query: "SELECT * FROM c WHERE c.id = \"1\" and c.name = \"Abc\" ORDER BY c.id ASC"
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "OrderBy 3",
+                    query: "SELECT * FROM c WHERE c.id = \"1\" and c.name > \"Abc\" ORDER BY c.id ASC"
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "OrderBy 4",
+                    query: "SELECT * FROM c WHERE c.id > \"1\" and c.name > \"Abc\" ORDER BY c.id ASC"
+                ),
+
+                // Group By
+                new IndexMetricsParserTestInput
+                (
+                    description: "GroupBy 1",
+                    query: "SELECT COUNT(1) FROM c WHERE c.id = \"1\" GROUP BY c.id"
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "GroupBy 2",
+                    query: "SELECT COUNT(1) FROM c WHERE c.id = \"1\" and c.name = \"Abc\" GROUP BY c.id"
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "GroupBy 3",
+                    query: "SELECT COUNT(1) FROM c WHERE c.id = \"1\" and c.name > \"Abc\" GROUP BY c.id"
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "GroupBy 4",
+                    query: "SELECT COUNT(1) FROM c WHERE c.id > \"1\" and c.name > \"Abc\" GROUP BY c.id"
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "GroupBy 5",
+                    query: "SELECT COUNT(1) FROM c WHERE c.id = \"1\" GROUP BY c.id, c.name"
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "GroupBy 6",
+                    query: "SELECT COUNT(1) FROM c WHERE c.id = \"1\" and c.name = \"Abc\" GROUP BY c.id, c.name"
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "GroupBy 7",
+                    query: "SELECT COUNT(1) FROM c WHERE c.id = \"1\" and c.name > \"Abc\" GROUP BY c.id, c.name"
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "GroupBy 8",
+                    query: "SELECT COUNT(1) FROM c WHERE c.id > \"1\" and c.name > \"Abc\" GROUP BY c.id, c.name"
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "GroupBy Value 1",
+                    query: "SELECT VALUE COUNT(1) FROM c WHERE c.id = \"1\""
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "GroupBy Value 2",
+                    query: "SELECT VALUE COUNT(1) FROM c WHERE c.id = \"1\" and c.name = \"Abc\""
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "GroupBy Value 3",
+                    query: "SELECT VALUE COUNT(1) FROM c WHERE c.id = \"1\" and c.name > \"Abc\""
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "GroupBy Value 4",
+                    query: "SELECT VALUE COUNT(1) FROM c WHERE c.id > \"1\" and c.name > \"Abc\""
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "GroupBy Value 5",
+                    query: "SELECT VALUE COUNT(1) FROM c WHERE c.id = \"1\" GROUP BY c.id, c.name"
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "GroupBy Value 6",
+                    query: "SELECT VALUE COUNT(1) FROM c WHERE c.id = \"1\" and c.name = \"Abc\" GROUP BY c.id, c.name"
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "GroupBy Value 7",
+                    query: "SELECT VALUE COUNT(1) FROM c WHERE c.id = \"1\" and c.name > \"Abc\" GROUP BY c.id, c.name"
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                    description: "GroupBy Value 8",
+                    query: "SELECT VALUE COUNT(1) FROM c WHERE c.id > \"1\" and c.name > \"Abc\" GROUP BY c.id, c.name"
+                )
+            };
+
+            this.ExecuteTestSuite(inputs);
+        }
+
+        public override IndexMetricsParserTestOutput ExecuteTest(IndexMetricsParserTestInput input)
+        {
+            // Execute without ODE
+            string indexMetricsNonODE = RunTest(input.Query, enableOptimisticDirectExecution: false);
+
+            // Execute with ODE
+            string indexMetricsODE = RunTest(input.Query, enableOptimisticDirectExecution: true);
+
+            // Make sure ODE and non-ODE is consistent
+            Assert.AreEqual(indexMetricsNonODE, indexMetricsODE);
+
+            // ----------------------------
+            // Test stream API
+            // ----------------------------
+            // Execute without ODE
+            string indexMetricsNonODEStreaming = RunStreamAPITest(input.Query, enableOptimisticDirectExecution: false);
+
+            // Execute with ODE
+            string indexMetricsODEStreaming = RunStreamAPITest(input.Query, enableOptimisticDirectExecution: true);
+
+            // Make sure ODE and non-ODE is consistent
+            Assert.AreEqual(indexMetricsNonODEStreaming, indexMetricsODEStreaming);
+
+            return new IndexMetricsParserTestOutput(indexMetricsNonODE);
+        }
+
+        private static string RunTest(string query, bool enableOptimisticDirectExecution)
+        {
+            QueryRequestOptions requestOptions = new QueryRequestOptions() { PopulateIndexMetrics = true, EnableOptimisticDirectExecution = enableOptimisticDirectExecution };
+
+            using FeedIterator<CosmosElement> itemQuery = testContainer.GetItemQueryIterator<CosmosElement>(
+                query,
                 requestOptions: requestOptions);
 
             // Index Metrics is returned fully on the first page so no need to worry about result set
-            FeedResponse<CosmosElement> page = itemQuery.ReadNextAsync().Result;
-            Assert.IsTrue(page.Headers.AllKeys().Length > 1);
-            Assert.IsNotNull(page.Headers.Get(HttpConstants.HttpHeaders.IndexUtilization), "Expected index utilization headers for query");
-            Assert.IsNotNull(page.IndexMetrics, "Expected index metrics response for query");
+            int roundTripCount = 0;
+            string indexMetrics = null;
+            while (itemQuery.HasMoreResults)
+            {
+                FeedResponse<CosmosElement> page = itemQuery.ReadNextAsync().Result;
+                Assert.IsTrue(page.Headers.AllKeys().Length > 1);
+                if (roundTripCount > 0)
+                {
+                    if (page.IndexMetrics != null)
+                    {
+                        Assert.Fail("Expected only Index Metrics on first round trip. Current round trip %n", roundTripCount);
+                    }
+                }
+                else
+                {
+                    Assert.IsNotNull(page.Headers.Get(HttpConstants.HttpHeaders.IndexUtilization), "Expected index utilization headers for query");
+                    Assert.IsNotNull(page.IndexMetrics, "Expected index metrics response for query");
 
-            return new IndexMetricsParserTestOutput(page.IndexMetrics);            
+                    indexMetrics = page.IndexMetrics;
+                }
+
+                roundTripCount++;
+            }
+
+            return indexMetrics;
+        }
+
+        private static string RunStreamAPITest(string query, bool enableOptimisticDirectExecution)
+        {
+            QueryRequestOptions requestOptions = new QueryRequestOptions() { PopulateIndexMetrics = true, EnableOptimisticDirectExecution = enableOptimisticDirectExecution };
+
+            using FeedIterator itemQuery = testContainer.GetItemQueryStreamIterator(
+                queryText: query,
+                requestOptions: requestOptions);
+
+            // Index Metrics is returned fully on the first page so no need to worry about result set
+            int roundTripCount = 0;
+            string indexMetrics = null;
+            while (itemQuery.HasMoreResults)
+            {
+                ResponseMessage page = itemQuery.ReadNextAsync().Result;
+                Assert.IsTrue(page.Headers.AllKeys().Length > 1);
+                if (roundTripCount > 0)
+                {
+                    if (page.IndexMetrics != null)
+                    {
+                        Assert.Fail("Expected only Index Metrics on first round trip. Current round trip %n", roundTripCount);
+                    }
+                }
+                else
+                {
+                    Assert.IsNotNull(page.Headers.Get(HttpConstants.HttpHeaders.IndexUtilization), "Expected index utilization headers for query");
+                    Assert.IsNotNull(page.IndexMetrics, "Expected index metrics response for query");
+
+                    indexMetrics = page.IndexMetrics;
+                }
+
+                roundTripCount++;
+            }
+
+            return indexMetrics;
         }
     }
+
 
     public sealed class IndexMetricsParserTestInput : BaselineTestInput
     {
