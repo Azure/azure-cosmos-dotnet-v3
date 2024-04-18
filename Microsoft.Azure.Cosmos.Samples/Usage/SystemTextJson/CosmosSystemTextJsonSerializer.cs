@@ -10,10 +10,10 @@
     /// <summary>
     /// Uses <see cref="Azure.Core.Serialization.JsonObjectSerializer"/> which leverages System.Text.Json providing a simple API to interact with on the Azure SDKs.
     /// </summary>
-    // <SystemTextJsonSerializer>
     /// <remarks>
-    /// For item CRUD operations and non-LINQ queries, implementing CosmosSerializer is sufficient.  To support LINQ query translations as well, CosmosLinqSerializer must be implemented.
+    /// For item CRUD operations and non-LINQ queries, implementing CosmosSerializer is sufficient. To support LINQ query translations as well, CosmosLinqSerializer must be implemented.
     /// </remarks>
+    // <SystemTextJsonSerializer>
     public class CosmosSystemTextJsonSerializer : CosmosLinqSerializer
     {
         private readonly JsonObjectSerializer systemTextJsonSerializer;
