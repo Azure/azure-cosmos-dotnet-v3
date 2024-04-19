@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.Immutable;
     using System.Diagnostics;
     using System.Globalization;
     using System.IO;
@@ -328,7 +327,10 @@ namespace Microsoft.Azure.Cosmos
             if (this.Content != null)
             {
                 Stream cloneContent = new MemoryStream();
+                this.Content.Position = 0;
                 this.Content.CopyTo(cloneContent);
+                this.Content.Position = 0;
+                cloneContent.Position = 0;
                 clone.Content = cloneContent;
             }
 
