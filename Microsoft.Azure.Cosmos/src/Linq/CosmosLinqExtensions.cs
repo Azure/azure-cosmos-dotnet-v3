@@ -302,7 +302,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </example>
         public static IAsyncEnumerable<T> AsAsyncEnumerable<T>(this IQueryable<T> query)
         {
-            if (query is IAsyncEnumerable<T> asyncEnumerable)
+            if (query is CosmosLinqQuery<T> asyncEnumerable)
             {
                 return asyncEnumerable;
             }
