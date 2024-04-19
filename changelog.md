@@ -13,6 +13,42 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.40.0-preview.1"/> [3.40.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.40.0-preview.1) - 2024-04-17
+### <a name="3.39.1"/> [3.39.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.39.1) - 2024-04-17
+
+#### Fixed
+- [4426](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4426) ChangeFeedProcessor: Fixes ArgumentException when dealing with Legacy lease incremental documents that do not have a Mode property
+ 
+### <a name="3.40.0-preview.0"/> [3.40.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.40.0-preview.0) - 2024-04-05
+
+#### Fixed
+- [4334](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4334) ChangeFeedProcessor: Fixes when ChangeFeedMode is switched, an exception is thrown
+
+#### Added
+- [4370](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4370) ChangeFeedProcessor: Adds AllVersionsAndDeletes support to ChangeFeedProcessor 
+- [4380](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4380) ChangeFeedProcessor: Refactors AllVersionsAndDeletes Metadata Contract for ChangeFeed and ChangeFeedProcessor
+  > Note: A Rename refactoring was performed in the effort to reduce redundancy and achieve clarity from a user perspective. The previous type `ChangeFeedItemChange<T>` was strategically renamed to `ChangeFeedItem<T>`. The refactoring affects both ChangeFeed (pull), and the new ChangeFeedProcessor (push), when in AllVersionsAndDeletes ChangeFeedMode. LatestVersion ChangeFeedMode is not affected and will continue to function as expected.
+
+### <a name="3.39.0"/> [3.39.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.39.0) - 2024-04-05
+
+#### Fixed
+- [4357](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4357) Distributed Tracing Documentation : Fixes the default value mentioned in code doc 
+
+#### Added
+- [4377](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4377) Integrated cache: Adds BypassIntegratedCache for public release
+- [4265](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4265) CosmosClientOptions: Adds Private Custom Account Endpoints
+- [4316](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4316) Distributed Tracing: Refactors code to rename net.peer.name attribute to server.address. **Warning:** This is a breaking change, only `server.address` will be emitted starting with this version.
+- [4339](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4338) Diagnostics: Adds Client Configuration for Synchronization context cases
+- [4333](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4333) Distributed Tracing: Adds configuration to disable network level tracing in sdk permanently
+- [4323](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4323) Query: Adds Support for LINQ Custom Serializer in Public Release
+- [4362](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4362) Query: Adds support for non streaming ORDER BY
+- [4074](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4074) Query: Adds translation support for single key single value select GROUP BY LINQ queries
+- [4361](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4361) Performance: Refactors query prefetch mechanism
+- [4386](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4386) Regions: Adds new Regions
+  > Note: There is added support for the following regions: `Taiwan North` and `Taiwan Northwest`.
+  > This also includes a Direct Package version update to 3.33.0 in PR [#4353](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4353)
+
+
 ### <a name="3.39.0-preview.1"/> [3.39.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.39.0-preview.1) - 2024-02-02
 ### <a name="3.38.1"/> [3.38.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.38.1) - 2024-02-02
 
@@ -1318,6 +1354,7 @@ Below is a list of any know issues affecting the [recommended minimum version](#
 | Issue | Impact | Mitigation | Tracking link |
 | --- | --- | --- | --- |
 | `FeedIterator` enters an infinite loop after a physical partition split occurs in a container using hierarchical partition keys. | Queries using prefix partition keys.  | Rather than having the PK included in the query request options, filtering on top level hierarchical Pks should be done through where clauses. | [#4326](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4326) | 
+| Single partition queries (queries explicitly targetted to single partition or any queries on collection that had single physical partition) that resume using continuation token after partition split can observe failure on SDK v3.38 and beyond.  | Explicit query exeuction using continuation token will fail query execution if these conditions are met. | Turn off Optimistic Direct Execution during query execution either by setting EnableOptimisticDirectExecution to false in query request options or by setting environment variable AZURE_COSMOS_OPTIMISTIC_DIRECT_EXECUTION_ENABLED to false. | [#4432](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4432) | 
 
 ## Release & Retirement dates
 

@@ -334,7 +334,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                         monitoredContainer: this.monitoredContainer,
                         leaseContainer: this.leaseContainer,
                         leaseContainerPrefix: leasePrefix,
-                        instanceName: ChangeFeedEstimatorIterator.EstimatorDefaultHostName);
+                        instanceName: ChangeFeedEstimatorIterator.EstimatorDefaultHostName,
+                        changeFeedMode: ChangeFeedMode.LatestVersion);
 
                     this.documentServiceLeaseContainer = documentServiceLeaseStoreManager.LeaseContainer;
                 }

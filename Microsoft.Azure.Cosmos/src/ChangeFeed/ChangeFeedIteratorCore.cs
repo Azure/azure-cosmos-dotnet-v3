@@ -208,8 +208,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                             changeFeedRequestOptions?.PageSizeHint,
                             changeFeedRequestOptions?.JsonSerializationFormatOptions?.JsonSerializationFormat,
                             additionalHeaders,
-                            this.changeFeedQuerySpec),
-                        cancellationToken: default);
+                            this.changeFeedQuerySpec));
 
                     TryCatch<CrossPartitionChangeFeedAsyncEnumerator> monadicEnumerator = TryCatch<CrossPartitionChangeFeedAsyncEnumerator>.FromResult(enumerator);
                     return monadicEnumerator;
@@ -274,11 +273,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             }
 
             CrossPartitionChangeFeedAsyncEnumerator enumerator = monadicEnumerator.Result;
-            enumerator.SetCancellationToken(cancellationToken);
 
             try
             {
-                if (!await enumerator.MoveNextAsync(trace))
+                if (!await enumerator.MoveNextAsync(trace, cancellationToken))
                 {
                     throw new InvalidOperationException("ChangeFeed enumerator should always have a next continuation");
                 }

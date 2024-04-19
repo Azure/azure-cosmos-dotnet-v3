@@ -36,9 +36,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 partitionKey: null,
+                containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
                 maxConcurrency: 10,
                 prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
-                cancellationToken: default,
                 continuationToken: null);
             Assert.IsTrue(monadicCreate.Succeeded);
         }
@@ -54,9 +54,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 partitionKey: null,
+                containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
                 maxConcurrency: 10,
                 prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
-                cancellationToken: default,
                 continuationToken: CosmosObject.Create(new Dictionary<string, CosmosElement>()));
             Assert.IsTrue(monadicCreate.Failed);
             Assert.IsTrue(monadicCreate.InnerMostException is MalformedContinuationTokenException);
@@ -73,9 +73,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 partitionKey: null,
+                containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
                 maxConcurrency: 10,
                 prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
-                cancellationToken: default,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>()));
             Assert.IsTrue(monadicCreate.Failed);
             Assert.IsTrue(monadicCreate.InnerMostException is MalformedContinuationTokenException);
@@ -92,9 +92,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 partitionKey: null,
+                containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
                 maxConcurrency: 10,
                 prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
-                cancellationToken: default,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>() { CosmosString.Create("asdf") }));
             Assert.IsTrue(monadicCreate.Failed);
             Assert.IsTrue(monadicCreate.InnerMostException is MalformedContinuationTokenException);
@@ -115,9 +115,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 targetRanges: new List<FeedRangeEpk>() { new FeedRangeEpk(new Documents.Routing.Range<string>(min: "A", max: "B", isMinInclusive: true, isMaxInclusive: false)) },
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 partitionKey: null,
+                containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
                 maxConcurrency: 10,
                 prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
-                cancellationToken: default,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>() { ParallelContinuationToken.ToCosmosElement(token) }));
             Assert.IsTrue(monadicCreate.Succeeded);
         }
@@ -145,9 +145,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 },
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 partitionKey: null,
+                containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
                 maxConcurrency: 10,
                 prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
-                cancellationToken: default,
                 continuationToken: CosmosArray.Create(
                     new List<CosmosElement>()
                     {
@@ -186,9 +186,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                         cancellationToken: default),
                     queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                     partitionKey: null,
+                    containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
                     maxConcurrency: 10,
                     prefetchPolicy: aggressivePrefetch ? PrefetchPolicy.PrefetchAll : PrefetchPolicy.PrefetchSinglePage,
-                    cancellationToken: default,
                     continuationToken: continuationToken);
                 Assert.IsTrue(monadicQueryPipelineStage.Succeeded);
                 IQueryPipelineStage queryPipelineStage = monadicQueryPipelineStage.Result;
@@ -201,7 +201,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             IQueryPipelineStage queryPipelineStage = await CreatePipelineStateAsync(inMemoryCollection, continuationToken: null);
             List<CosmosElement> documents = new List<CosmosElement>();
             Random random = new Random();
-            while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton))
+            while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default))
             {
                 TryCatch<QueryPage> tryGetPage = queryPipelineStage.Current;
                 tryGetPage.ThrowIfFailed();

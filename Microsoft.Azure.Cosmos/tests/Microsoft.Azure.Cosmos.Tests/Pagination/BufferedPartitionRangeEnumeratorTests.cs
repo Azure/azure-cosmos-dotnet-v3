@@ -5,10 +5,8 @@
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using System;
     using System.Threading;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
-    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tests.Query.Pipeline;
 
@@ -134,8 +132,7 @@
                         (feedRangeState) => new ReadFeedPartitionRangeEnumerator(
                             inMemoryCollection,
                             feedRangeState: feedRangeState,
-                            readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
-                            cancellationToken: default),
+                            readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10)),
                         trace: NoOpTrace.Singleton);
 
                     HashSet<string> resourceIdentifiers = await this.DrainFullyAsync(enumerable);
@@ -158,18 +155,14 @@
                             feedRangeState: new FeedRangeState<ReadFeedState>(
                                 new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                                 ReadFeedState.Beginning()),
-                            readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
-                            cancellationToken: default),
-                        cancellationToken: default) :
+                            readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10))) :
                     new BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>(
                         new ReadFeedPartitionRangeEnumerator(
                             inMemoryCollection,
                             feedRangeState: new FeedRangeState<ReadFeedState>(
                                 new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                                 ReadFeedState.Beginning()),
-                            readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
-                            cancellationToken: default),
-                        cancellationToken: default);
+                            readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10)));
 
                 int count = 0;
 
@@ -179,7 +172,7 @@
                     await enumerator.PrefetchAsync(trace: NoOpTrace.Singleton, default);
                 }
 
-                while (await enumerator.MoveNextAsync(NoOpTrace.Singleton))
+                while (await enumerator.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default))
                 {
                     count += enumerator.Current.Result.GetRecords().Count;
                     if (exercisePrefetch)
@@ -209,18 +202,14 @@
                                 feedRangeState: new FeedRangeState<ReadFeedState>(
                                     new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                                     ReadFeedState.Beginning()),
-                                readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
-                                cancellationToken: default),
-                            cancellationToken: default) :
+                                readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10))) :
                         new BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>(
                             new ReadFeedPartitionRangeEnumerator(
                                 inMemoryCollection,
                                 feedRangeState: new FeedRangeState<ReadFeedState>(
                                     new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                                     ReadFeedState.Beginning()),
-                                readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
-                                cancellationToken: default),
-                            cancellationToken: default);
+                                readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10)));
 
                     if (exercisePrefetch)
                     {
@@ -228,7 +217,7 @@
                     }
 
                     int count = 0;
-                    while (await enumerator.MoveNextAsync(NoOpTrace.Singleton))
+                    while (await enumerator.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default))
                     {
                         count += enumerator.Current.Result.GetRecords().Count;
 
@@ -259,16 +248,12 @@
                             new ReadFeedPartitionRangeEnumerator(
                                 documentContainer,
                                 feedRangeState: feedRangeState,
-                                readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
-                                cancellationToken: default),
-                        cancellationToken: default) :
+                                readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10))) :
                         new BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>(
                             new ReadFeedPartitionRangeEnumerator(
                                 documentContainer,
                                 feedRangeState: feedRangeState,
-                                readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
-                                cancellationToken: default),
-                            cancellationToken: default);
+                                readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10)));
 
                     return enumerator;
                 };
@@ -295,18 +280,14 @@
                         feedRangeState: new FeedRangeState<ReadFeedState>(
                             new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                             state ?? ReadFeedState.Beginning()),
-                        readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
-                        cancellationToken: cancellationToken),
-                cancellationToken: cancellationToken) :
+                        readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10))) :
                 new BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>(
                     new ReadFeedPartitionRangeEnumerator(
                         inMemoryCollection,
                         feedRangeState: new FeedRangeState<ReadFeedState>(
                             new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                             state ?? ReadFeedState.Beginning()),
-                        readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
-                        cancellationToken: cancellationToken),
-                cancellationToken: cancellationToken);
+                        readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10)));
 
                 if (exercisePrefetch)
                 {
@@ -315,7 +296,8 @@
 
                 return new TracingAsyncEnumerator<TryCatch<ReadFeedPage>>(
                     enumerator: enumerator,
-                    trace: NoOpTrace.Singleton);
+                    trace: NoOpTrace.Singleton,
+                    cancellationToken: default);
             }
         }
     }

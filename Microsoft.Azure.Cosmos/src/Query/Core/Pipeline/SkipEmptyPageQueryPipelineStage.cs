@@ -6,13 +6,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.Immutable;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
+    using static IndexUtilizationHelper;
 
     internal sealed class SkipEmptyPageQueryPipelineStage : IQueryPipelineStage
     {
@@ -20,24 +20,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
         private readonly IQueryPipelineStage inputStage;
         private double cumulativeRequestCharge;
-        private long cumulativeResponseLengthInBytes;
         private IReadOnlyDictionary<string, string> cumulativeAdditionalHeaders;
-        private CancellationToken cancellationToken;
         private bool returnedFinalStats;
 
-        public SkipEmptyPageQueryPipelineStage(IQueryPipelineStage inputStage, CancellationToken cancellationToken)
+        public SkipEmptyPageQueryPipelineStage(IQueryPipelineStage inputStage)
         {
             this.inputStage = inputStage ?? throw new ArgumentNullException(nameof(inputStage));
-            this.cancellationToken = cancellationToken;
         }
 
         public TryCatch<QueryPage> Current { get; private set; }
 
         public ValueTask DisposeAsync() => this.inputStage.DisposeAsync();
 
-        public async ValueTask<bool> MoveNextAsync(ITrace trace)
+        public async ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
         {
-            this.cancellationToken.ThrowIfCancellationRequested();
+            cancellationToken.ThrowIfCancellationRequested();
 
             if (trace == null)
             {
@@ -46,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
             for (int documentCount = 0; documentCount == 0;)
             {
-                if (!await this.inputStage.MoveNextAsync(trace))
+                if (!await this.inputStage.MoveNextAsync(trace, cancellationToken))
                 {
                     if (!this.returnedFinalStats)
                     {
@@ -54,14 +51,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                             documents: EmptyPage,
                             requestCharge: this.cumulativeRequestCharge,
                             activityId: Guid.Empty.ToString(),
-                            responseLengthInBytes: this.cumulativeResponseLengthInBytes,
                             cosmosQueryExecutionInfo: default,
                             distributionPlanSpec: default,
                             disallowContinuationTokenMessage: default,
                             additionalHeaders: this.cumulativeAdditionalHeaders,
-                            state: default);
+                            state: default,
+                            streaming: null);
                         this.cumulativeRequestCharge = 0;
-                        this.cumulativeResponseLengthInBytes = 0;
                         this.cumulativeAdditionalHeaders = null;
                         this.returnedFinalStats = true;
                         this.Current = TryCatch<QueryPage>.FromResult(queryPage);
@@ -91,22 +87,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                             documents: EmptyPage,
                             requestCharge: sourcePage.RequestCharge + this.cumulativeRequestCharge,
                             activityId: sourcePage.ActivityId,
-                            responseLengthInBytes: sourcePage.ResponseLengthInBytes + this.cumulativeResponseLengthInBytes,
                             cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
                             distributionPlanSpec: default,
                             disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
-                            additionalHeaders: sourcePage.AdditionalHeaders,
-                            state: default);
+                            additionalHeaders: AccumulateIndexUtilization(
+                                cumulativeHeaders: this.cumulativeAdditionalHeaders,
+                                currentHeaders: sourcePage.AdditionalHeaders),
+                            state: default,
+                            streaming: sourcePage.Streaming);
                         this.cumulativeRequestCharge = 0;
-                        this.cumulativeResponseLengthInBytes = 0;
                         this.cumulativeAdditionalHeaders = null;
                         this.Current = TryCatch<QueryPage>.FromResult(queryPage);
                         return true;
                     }
 
                     this.cumulativeRequestCharge += sourcePage.RequestCharge;
-                    this.cumulativeResponseLengthInBytes += sourcePage.ResponseLengthInBytes;
-                    this.cumulativeAdditionalHeaders = sourcePage.AdditionalHeaders;
+                    this.cumulativeAdditionalHeaders = AccumulateIndexUtilization(
+                        cumulativeHeaders: this.cumulativeAdditionalHeaders,
+                        currentHeaders: sourcePage.AdditionalHeaders);
                 }
                 else
                 {
@@ -117,14 +115,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                             documents: sourcePage.Documents,
                             requestCharge: sourcePage.RequestCharge + this.cumulativeRequestCharge,
                             activityId: sourcePage.ActivityId,
-                            responseLengthInBytes: sourcePage.ResponseLengthInBytes + this.cumulativeResponseLengthInBytes,
                             cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
                             distributionPlanSpec: default,
                             disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
-                            additionalHeaders: sourcePage.AdditionalHeaders,
-                            state: sourcePage.State);
+                            additionalHeaders: AccumulateIndexUtilization(
+                                cumulativeHeaders: this.cumulativeAdditionalHeaders,
+                                currentHeaders: sourcePage.AdditionalHeaders),
+                            state: sourcePage.State,
+                            streaming: sourcePage.Streaming);
                         this.cumulativeRequestCharge = 0;
-                        this.cumulativeResponseLengthInBytes = 0;
                         this.cumulativeAdditionalHeaders = null;
                     }
                     else
@@ -137,11 +136,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             }
 
             return true;
-        }
-
-        public void SetCancellationToken(CancellationToken cancellationToken)
-        {
-            this.cancellationToken = cancellationToken;
         }
     }
 }

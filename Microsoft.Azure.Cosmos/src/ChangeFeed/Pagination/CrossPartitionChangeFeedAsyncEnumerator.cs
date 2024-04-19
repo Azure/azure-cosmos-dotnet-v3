@@ -12,32 +12,24 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Tracing;
 
-    internal sealed class CrossPartitionChangeFeedAsyncEnumerator : IAsyncEnumerator<TryCatch<CrossFeedRangePage<ChangeFeedPage, ChangeFeedState>>>
+    internal sealed class CrossPartitionChangeFeedAsyncEnumerator : ITracingAsyncEnumerator<TryCatch<CrossFeedRangePage<ChangeFeedPage, ChangeFeedState>>>
     {
         private readonly CrossPartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> crossPartitionEnumerator;
-        private CancellationToken cancellationToken;
         private TryCatch<CrossFeedRangePage<ChangeFeedPage, ChangeFeedState>>? bufferedException;
 
         private CrossPartitionChangeFeedAsyncEnumerator(
-            CrossPartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> crossPartitionEnumerator,
-            CancellationToken cancellationToken)
+            CrossPartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> crossPartitionEnumerator)
         {
             this.crossPartitionEnumerator = crossPartitionEnumerator ?? throw new ArgumentNullException(nameof(crossPartitionEnumerator));
-            this.cancellationToken = cancellationToken;
         }
 
         public TryCatch<CrossFeedRangePage<ChangeFeedPage, ChangeFeedState>> Current { get; private set; }
 
         public ValueTask DisposeAsync() => this.crossPartitionEnumerator.DisposeAsync();
 
-        public ValueTask<bool> MoveNextAsync()
+        public async ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
         {
-            return this.MoveNextAsync(NoOpTrace.Singleton);
-        }
-
-        public async ValueTask<bool> MoveNextAsync(ITrace trace)
-        {
-            this.cancellationToken.ThrowIfCancellationRequested();
+            cancellationToken.ThrowIfCancellationRequested();
 
             if (trace == null)
             {
@@ -53,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                     return true;
                 }
 
-                if (!await this.crossPartitionEnumerator.MoveNextAsync(changeFeedMoveNextTrace))
+                if (!await this.crossPartitionEnumerator.MoveNextAsync(changeFeedMoveNextTrace, cancellationToken))
                 {
                     throw new InvalidOperationException("ChangeFeed should always have a next page.");
                 }
@@ -80,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                             double totalRequestCharge = backendPage.RequestCharge;
                             do
                             {
-                                if (!await this.crossPartitionEnumerator.MoveNextAsync(drainNotModifedPages))
+                                if (!await this.crossPartitionEnumerator.MoveNextAsync(drainNotModifedPages, cancellationToken))
                                 {
                                     throw new InvalidOperationException("ChangeFeed should always have a next page.");
                                 }
@@ -108,6 +100,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                                 backendPage = new ChangeFeedSuccessPage(
                                     changeFeedSuccessPage.Content,
                                     totalRequestCharge,
+                                    changeFeedSuccessPage.ItemCount,
                                     changeFeedSuccessPage.ActivityId,
                                     changeFeedSuccessPage.AdditionalHeaders,
                                     changeFeedSuccessPage.State);
@@ -133,17 +126,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
             }
         }
 
-        public void SetCancellationToken(CancellationToken cancellationToken)
-        {
-            this.cancellationToken = cancellationToken;
-            this.crossPartitionEnumerator.SetCancellationToken(cancellationToken);
-        }
-
         public static CrossPartitionChangeFeedAsyncEnumerator Create(
             IDocumentContainer documentContainer,
             CrossFeedRangeState<ChangeFeedState> state,
-            ChangeFeedPaginationOptions changeFeedPaginationOptions,
-            CancellationToken cancellationToken)
+            ChangeFeedPaginationOptions changeFeedPaginationOptions)
         {
             changeFeedPaginationOptions ??= ChangeFeedPaginationOptions.Default;
 
@@ -156,17 +142,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                 documentContainer,
                 CrossPartitionChangeFeedAsyncEnumerator.MakeCreateFunction(
                     documentContainer,
-                    changeFeedPaginationOptions,
-                    cancellationToken),
+                    changeFeedPaginationOptions),
                 comparer: default /* this uses a regular queue instead of priority queue */,
                 maxConcurrency: default,
                 prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
-                cancellationToken: cancellationToken,
                 state: state);
 
             CrossPartitionChangeFeedAsyncEnumerator enumerator = new CrossPartitionChangeFeedAsyncEnumerator(
-                crossPartitionEnumerator,
-                cancellationToken);
+                crossPartitionEnumerator);
 
             return enumerator;
         }
@@ -181,11 +164,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
 
         private static CreatePartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> MakeCreateFunction(
             IChangeFeedDataSource changeFeedDataSource,
-            ChangeFeedPaginationOptions changeFeedPaginationOptions,
-            CancellationToken cancellationToken) => (FeedRangeState<ChangeFeedState> feedRangeState) => new ChangeFeedPartitionRangePageAsyncEnumerator(
+            ChangeFeedPaginationOptions changeFeedPaginationOptions) => (FeedRangeState<ChangeFeedState> feedRangeState) => new ChangeFeedPartitionRangePageAsyncEnumerator(
                 changeFeedDataSource,
                 feedRangeState,
-                changeFeedPaginationOptions,
-                cancellationToken);
+                changeFeedPaginationOptions);
     }
 }

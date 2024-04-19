@@ -989,16 +989,17 @@ OFFSET 0 LIMIT 0
 }]]></SqlObject>
     </Input>
     <Output>
-      <TextOutput><![CDATA[SELECT * FROM inputPathCollection["somePath"] AS some alias WHERE ("this path" < 42)GROUP BY "some"["random"]["path"][42]  ORDER BY "some"["random"]["path"][42] ASC OFFSET 0 LIMIT 0]]></TextOutput>
+      <TextOutput><![CDATA[SELECT * FROM inputPathCollection["somePath"] AS some alias WHERE ("this path" < 42) GROUP BY "some"["random"]["path"][42]  ORDER BY "some"["random"]["path"][42] ASC OFFSET 0 LIMIT 0]]></TextOutput>
       <PrettyPrint><![CDATA[
 SELECT * 
 FROM inputPathCollection["somePath"] AS some alias 
-WHERE ("this path" < 42)GROUP BY "some"["random"]["path"][42]  
+WHERE ("this path" < 42) 
+GROUP BY "some"["random"]["path"][42]  
 ORDER BY "some"["random"]["path"][42] ASC 
 OFFSET 0 LIMIT 0
 ]]></PrettyPrint>
       <HashCode>-245344741</HashCode>
-      <ObfusctedQuery><![CDATA[SELECT * FROM ident1__19["str1"] AS ident2__10 WHERE ("str2" < 42)GROUP BY "str3"["str4"]["str5"][42]  ORDER BY "str3"["str4"]["str5"][42] ASC OFFSET 0 LIMIT 0]]></ObfusctedQuery>
+      <ObfusctedQuery><![CDATA[SELECT * FROM ident1__19["str1"] AS ident2__10 WHERE ("str2" < 42) GROUP BY "str3"["str4"]["str5"][42]  ORDER BY "str3"["str4"]["str5"][42] ASC OFFSET 0 LIMIT 0]]></ObfusctedQuery>
     </Output>
   </Result>
   <Result>
@@ -1127,18 +1128,19 @@ OFFSET 0 LIMIT 0
 }]]></SqlObject>
     </Input>
     <Output>
-      <TextOutput><![CDATA[(SELECT * FROM inputPathCollection["somePath"] AS some alias WHERE ("this path" < 42)GROUP BY "some"["random"]["path"][42]  ORDER BY "some"["random"]["path"][42] ASC OFFSET 0 LIMIT 0)]]></TextOutput>
+      <TextOutput><![CDATA[(SELECT * FROM inputPathCollection["somePath"] AS some alias WHERE ("this path" < 42) GROUP BY "some"["random"]["path"][42]  ORDER BY "some"["random"]["path"][42] ASC OFFSET 0 LIMIT 0)]]></TextOutput>
       <PrettyPrint><![CDATA[
 (
     SELECT * 
     FROM inputPathCollection["somePath"] AS some alias 
-    WHERE ("this path" < 42)GROUP BY "some"["random"]["path"][42]  
+    WHERE ("this path" < 42) 
+    GROUP BY "some"["random"]["path"][42]  
     ORDER BY "some"["random"]["path"][42] ASC 
     OFFSET 0 LIMIT 0
 )
 ]]></PrettyPrint>
       <HashCode>51808704</HashCode>
-      <ObfusctedQuery><![CDATA[(SELECT * FROM ident1__19["str1"] AS ident2__10 WHERE ("str2" < 42)GROUP BY "str3"["str4"]["str5"][42]  ORDER BY "str3"["str4"]["str5"][42] ASC OFFSET 0 LIMIT 0)]]></ObfusctedQuery>
+      <ObfusctedQuery><![CDATA[(SELECT * FROM ident1__19["str1"] AS ident2__10 WHERE ("str2" < 42) GROUP BY "str3"["str4"]["str5"][42]  ORDER BY "str3"["str4"]["str5"][42] ASC OFFSET 0 LIMIT 0)]]></ObfusctedQuery>
     </Output>
   </Result>
   <Result>
@@ -1267,18 +1269,19 @@ OFFSET 0 LIMIT 0
 }]]></SqlObject>
     </Input>
     <Output>
-      <TextOutput><![CDATA[ARRAY(SELECT * FROM inputPathCollection["somePath"] AS some alias WHERE ("this path" < 42)GROUP BY "some"["random"]["path"][42]  ORDER BY "some"["random"]["path"][42] ASC OFFSET 0 LIMIT 0)]]></TextOutput>
+      <TextOutput><![CDATA[ARRAY(SELECT * FROM inputPathCollection["somePath"] AS some alias WHERE ("this path" < 42) GROUP BY "some"["random"]["path"][42]  ORDER BY "some"["random"]["path"][42] ASC OFFSET 0 LIMIT 0)]]></TextOutput>
       <PrettyPrint><![CDATA[
 ARRAY(
     SELECT * 
     FROM inputPathCollection["somePath"] AS some alias 
-    WHERE ("this path" < 42)GROUP BY "some"["random"]["path"][42]  
+    WHERE ("this path" < 42) 
+    GROUP BY "some"["random"]["path"][42]  
     ORDER BY "some"["random"]["path"][42] ASC 
     OFFSET 0 LIMIT 0
 )
 ]]></PrettyPrint>
       <HashCode>-1922520573</HashCode>
-      <ObfusctedQuery><![CDATA[ARRAY(SELECT * FROM ident1__19["str1"] AS ident2__10 WHERE ("str2" < 42)GROUP BY "str3"["str4"]["str5"][42]  ORDER BY "str3"["str4"]["str5"][42] ASC OFFSET 0 LIMIT 0)]]></ObfusctedQuery>
+      <ObfusctedQuery><![CDATA[ARRAY(SELECT * FROM ident1__19["str1"] AS ident2__10 WHERE ("str2" < 42) GROUP BY "str3"["str4"]["str5"][42]  ORDER BY "str3"["str4"]["str5"][42] ASC OFFSET 0 LIMIT 0)]]></ObfusctedQuery>
     </Output>
   </Result>
   <Result>
@@ -1407,18 +1410,19 @@ ARRAY(
 }]]></SqlObject>
     </Input>
     <Output>
-      <TextOutput><![CDATA[EXISTS(SELECT * FROM inputPathCollection["somePath"] AS some alias WHERE ("this path" < 42)GROUP BY "some"["random"]["path"][42]  ORDER BY "some"["random"]["path"][42] ASC OFFSET 0 LIMIT 0)]]></TextOutput>
+      <TextOutput><![CDATA[EXISTS(SELECT * FROM inputPathCollection["somePath"] AS some alias WHERE ("this path" < 42) GROUP BY "some"["random"]["path"][42]  ORDER BY "some"["random"]["path"][42] ASC OFFSET 0 LIMIT 0)]]></TextOutput>
       <PrettyPrint><![CDATA[
 EXISTS(
     SELECT * 
     FROM inputPathCollection["somePath"] AS some alias 
-    WHERE ("this path" < 42)GROUP BY "some"["random"]["path"][42]  
+    WHERE ("this path" < 42) 
+    GROUP BY "some"["random"]["path"][42]  
     ORDER BY "some"["random"]["path"][42] ASC 
     OFFSET 0 LIMIT 0
 )
 ]]></PrettyPrint>
       <HashCode>1317938775</HashCode>
-      <ObfusctedQuery><![CDATA[EXISTS(SELECT * FROM ident1__19["str1"] AS ident2__10 WHERE ("str2" < 42)GROUP BY "str3"["str4"]["str5"][42]  ORDER BY "str3"["str4"]["str5"][42] ASC OFFSET 0 LIMIT 0)]]></ObfusctedQuery>
+      <ObfusctedQuery><![CDATA[EXISTS(SELECT * FROM ident1__19["str1"] AS ident2__10 WHERE ("str2" < 42) GROUP BY "str3"["str4"]["str5"][42]  ORDER BY "str3"["str4"]["str5"][42] ASC OFFSET 0 LIMIT 0)]]></ObfusctedQuery>
     </Output>
   </Result>
 </Results>
