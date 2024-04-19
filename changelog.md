@@ -13,6 +13,12 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.40.0-preview.1"/> [3.40.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.40.0-preview.1) - 2024-04-17
+### <a name="3.39.1"/> [3.39.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.39.1) - 2024-04-17
+
+#### Fixed
+- [4426](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4426) ChangeFeedProcessor: Fixes ArgumentException when dealing with Legacy lease incremental documents that do not have a Mode property
+ 
 ### <a name="3.40.0-preview.0"/> [3.40.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.40.0-preview.0) - 2024-04-05
 
 #### Fixed
@@ -1348,6 +1354,7 @@ Below is a list of any know issues affecting the [recommended minimum version](#
 | Issue | Impact | Mitigation | Tracking link |
 | --- | --- | --- | --- |
 | `FeedIterator` enters an infinite loop after a physical partition split occurs in a container using hierarchical partition keys. | Queries using prefix partition keys.  | Rather than having the PK included in the query request options, filtering on top level hierarchical Pks should be done through where clauses. | [#4326](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4326) | 
+| Single partition queries (queries explicitly targetted to single partition or any queries on collection that had single physical partition) that resume using continuation token after partition split can observe failure on SDK v3.38 and beyond.  | Explicit query exeuction using continuation token will fail query execution if these conditions are met. | Turn off Optimistic Direct Execution during query execution either by setting EnableOptimisticDirectExecution to false in query request options or by setting environment variable AZURE_COSMOS_OPTIMISTIC_DIRECT_EXECUTION_ENABLED to false. | [#4432](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4432) | 
 
 ## Release & Retirement dates
 
