@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     {
         internal const string ClientDisableOptimisticDirectExecution = "clientDisableOptimisticDirectExecution";
         private const string InternalPartitionKeyDefinitionProperty = "x-ms-query-partitionkey-definition";
-        private const string QueryInspectionPattern = @"\s+(GROUP\s+BY\s+|COUNT\s*\(|MIN\s*\(|MAX\s*\(|AVG\s*\(|SUM\s*\(|DISTINCT\s+)";
+        private const string QueryInspectionPattern = @"\s*(GROUP\s+BY\s+|COUNT\s*\(|MIN\s*\(|MAX\s*\(|AVG\s*\(|SUM\s*\(|DISTINCT\s+)";
         private const string OptimisticDirectExecution = "OptimisticDirectExecution";
         private const string Passthrough = "Passthrough";
         private const string Specialized = "Specialized";
@@ -810,6 +810,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             if (targetRanges.Count == 1)
             {
                 return targetRanges.Single();
+            }
+
+            if (isODEContinuationToken)
+            {
+                throw new InvalidOperationException("Execution of this query cannot resume due to partition split. Please retry the query.");
             }
 
             return null;

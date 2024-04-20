@@ -279,51 +279,6 @@
         }
 
         [TestMethod]
-        public async Task TestOdeTokenWithSpecializedPipeline()
-        {
-            int numItems = 100;
-            ParallelContinuationToken parallelContinuationToken = new ParallelContinuationToken(
-                    token: Guid.NewGuid().ToString(),
-                    range: new Documents.Routing.Range<string>("A", "B", true, false));
-
-            OptimisticDirectExecutionContinuationToken optimisticDirectExecutionContinuationToken = new OptimisticDirectExecutionContinuationToken(parallelContinuationToken);
-            CosmosElement cosmosElementContinuationToken = OptimisticDirectExecutionContinuationToken.ToCosmosElement(optimisticDirectExecutionContinuationToken);
-
-            OptimisticDirectExecutionTestInput input = CreateInput(
-                    description: @"Single Partition Key and Value Field",
-                    query: "SELECT VALUE COUNT(1) FROM c",
-                    expectedOptimisticDirectExecution: false,
-                    partitionKeyPath: @"/pk",
-                    partitionKeyValue: "a",
-                    continuationToken: cosmosElementContinuationToken);
-
-            DocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems, multiPartition: false);
-            QueryRequestOptions queryRequestOptions = GetQueryRequestOptions(enableOptimisticDirectExecution: input.ExpectedOptimisticDirectExecution);
-            (CosmosQueryExecutionContextFactory.InputParameters inputParameters, CosmosQueryContextCore cosmosQueryContextCore) = CreateInputParamsAndQueryContext(input, queryRequestOptions);
-
-            IQueryPipelineStage queryPipelineStage = CosmosQueryExecutionContextFactory.Create(
-                      documentContainer,
-                      cosmosQueryContextCore,
-                      inputParameters,
-                      NoOpTrace.Singleton);
-
-            string expectedErrorMessage = "Execution of this query using the supplied continuation token requires EnableOptimisticDirectExecution to be set in QueryRequestOptions. " +
-                "If the error persists after that, contact system administrator.";
-
-            while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default))
-            {
-                if (queryPipelineStage.Current.Failed)
-                {
-                    Assert.IsTrue(queryPipelineStage.Current.InnerMostException.ToString().Contains(expectedErrorMessage));
-                    return;
-                }
-
-                Assert.IsFalse(true);
-                break;
-            }
-        }
-
-        [TestMethod]
         public async Task TestQueriesWhichNeverRequireDistribution()
         {
             // requiresDist = false
@@ -568,7 +523,7 @@
             OptimisticDirectExecutionTestInput input = CreateInput(
                     description: @"Single Partition Key and Value Field",
                     query: "SELECT AVG(c) FROM c",
-                    expectedOptimisticDirectExecution: false,
+                    expectedOptimisticDirectExecution: true,
                     partitionKeyPath: @"/pk",
                     partitionKeyValue: "a");
 
@@ -590,7 +545,7 @@
             OptimisticDirectExecutionTestInput input = CreateInput(
                     description: @"Single Partition Key and Value Field",
                     query: "SELECT * FROM c",
-                    expectedOptimisticDirectExecution: true,
+                    expectedOptimisticDirectExecution: false,
                     partitionKeyPath: @"/pk",
                     partitionKeyValue: "a");
 
@@ -605,6 +560,7 @@
 
             Assert.AreEqual(numItems, result);
 
+            input.ExpectedOptimisticDirectExecution = true;
             // Test with ClientDisableOde = false
             result = await this.GetPipelineAndDrainAsync(
                             input,
@@ -617,52 +573,6 @@
             Assert.AreEqual(numItems, result);
         }
 
-        [TestMethod]
-        public async Task TestOdeFlagsWithContinuationToken()
-        {
-            ParallelContinuationToken parallelContinuationToken = new ParallelContinuationToken(
-                    token: Guid.NewGuid().ToString(),
-                    range: new Range<string>("A", "B", true, false));
-
-            OptimisticDirectExecutionContinuationToken optimisticDirectExecutionContinuationToken = new OptimisticDirectExecutionContinuationToken(parallelContinuationToken);
-            CosmosElement cosmosElementContinuationToken = OptimisticDirectExecutionContinuationToken.ToCosmosElement(optimisticDirectExecutionContinuationToken);
-
-            OptimisticDirectExecutionTestInput input = CreateInput(
-                    description: @"Single Partition Key and Ode continuation token",
-                    query: "SELECT * FROM c",
-                    expectedOptimisticDirectExecution: true,
-                    partitionKeyPath: @"/pk",
-                    partitionKeyValue: "a",
-                    continuationToken: cosmosElementContinuationToken);
-
-            // All of these cases should throw the same exception message.
-            await this.ValidateErrorMessageWithModifiedOdeFlags(input, enableOde: true, clientDisableOde: true);
-            await this.ValidateErrorMessageWithModifiedOdeFlags(input, enableOde: false, clientDisableOde: true);
-            await this.ValidateErrorMessageWithModifiedOdeFlags(input, enableOde: false, clientDisableOde: false);
-        }
-
-        private async Task ValidateErrorMessageWithModifiedOdeFlags(OptimisticDirectExecutionTestInput input, bool enableOde, bool clientDisableOde)
-        {
-            string expectedErrorMessage = "Execution of this query using the supplied continuation token requires EnableOptimisticDirectExecution to be set in QueryRequestOptions. " +
-                "If the error persists after that, contact system administrator.";
-            try
-            {
-                int result = await this.GetPipelineAndDrainAsync(
-                                    input,
-                                    numItems: 100,
-                                    isMultiPartition: false,
-                                    expectedContinuationTokenCount: 10,
-                                    requiresDist: false,
-                                    enableOde,
-                                    clientDisableOde);
-
-                Assert.Fail("A MalformedContinuationTokenException was expected in this scenario");
-            }
-            catch (Exception ex)
-            {
-                Assert.IsTrue(ex.InnerException.Message.Contains(expectedErrorMessage));
-            }
-        }
 
         [TestMethod]
         public void TestTextDistributionPlanParsingFromStream()
@@ -842,7 +752,7 @@
                 bool isODEContinuationToken = input.ContinuationToken != null &&
                     OptimisticDirectExecutionContinuationToken.IsOptimisticDirectExecutionContinuationToken(input.ContinuationToken);
 
-                if (!isODEContinuationToken && (clientDisableOde || !enableOptimisticDirectExecution || requiresDist))
+                if (!isODEContinuationToken && (clientDisableOde || !enableOptimisticDirectExecution))
                 {
                     Assert.AreNotEqual(TestInjections.PipelineType.OptimisticDirectExecution, queryRequestOptions.TestSettings.Stats.PipelineType.Value);
                 }
