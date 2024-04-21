@@ -29,9 +29,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
             private ComputeDCountQueryPipelineStage(
                 IQueryPipelineStage source,
                 long count,
-                DCountInfo info,
-                CancellationToken cancellationToken)
-                : base(source, count, info, cancellationToken)
+                DCountInfo info)
+                : base(source, count, info)
             {
                 // all the work is done in the base constructor.
             }
@@ -39,11 +38,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
             public static TryCatch<IQueryPipelineStage> MonadicCreate(
                 DCountInfo info,
                 CosmosElement continuationToken,
-                CancellationToken cancellationToken,
                 MonadicCreatePipelineStage monadicCreatePipelineStage)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-
                 DCountContinuationToken dcountContinuationToken;
                 if (continuationToken != null)
                 {
@@ -68,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
                 }
                 else
                 {
-                    tryCreateSource = monadicCreatePipelineStage(dcountContinuationToken.SourceContinuationToken, cancellationToken);
+                    tryCreateSource = monadicCreatePipelineStage(dcountContinuationToken.SourceContinuationToken);
                 }
 
                 if (tryCreateSource.Failed)
@@ -79,15 +75,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
                 ComputeDCountQueryPipelineStage stage = new ComputeDCountQueryPipelineStage(
                     tryCreateSource.Result,
                     dcountContinuationToken.Count,
-                    info,
-                    cancellationToken);
+                    info);
 
                 return TryCatch<IQueryPipelineStage>.FromResult(stage);
             }
 
-            public override async ValueTask<bool> MoveNextAsync(ITrace trace)
+            public override async ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
             {
-                this.cancellationToken.ThrowIfCancellationRequested();
+                cancellationToken.ThrowIfCancellationRequested();
 
                 if (trace == null)
                 {
@@ -102,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
 
                 // Draining aggregates is broken down into two stages
                 QueryPage queryPage;
-                if (await this.inputStage.MoveNextAsync(trace))
+                if (await this.inputStage.MoveNextAsync(trace, cancellationToken))
                 {
                     // Stage 1:
                     // Drain the aggregates fully from all continuations and all partitions
@@ -115,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
                     }
 
                     QueryPage sourcePage = tryGetSourcePage.Result;
-                    this.cancellationToken.ThrowIfCancellationRequested();
+                    cancellationToken.ThrowIfCancellationRequested();
                     this.count += sourcePage.Documents.Count;
 
                     DCountContinuationToken dcountContinuationToken = new DCountContinuationToken(
@@ -126,11 +121,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
                         documents: EmptyResults,
                         requestCharge: sourcePage.RequestCharge,
                         activityId: sourcePage.ActivityId,
-                        responseLengthInBytes: sourcePage.ResponseLengthInBytes,
                         cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
+                        distributionPlanSpec: default,
                         disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
                         additionalHeaders: sourcePage.AdditionalHeaders,
-                        state: queryState);
+                        state: queryState,
+                        streaming: sourcePage.Streaming);
 
                     queryPage = emptyPage;
                 }
@@ -149,11 +145,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
                         documents: finalResult,
                         requestCharge: default,
                         activityId: default,
-                        responseLengthInBytes: default,
                         cosmosQueryExecutionInfo: default,
+                        distributionPlanSpec: default,
                         disallowContinuationTokenMessage: default,
                         additionalHeaders: default,
-                        state: default);
+                        state: default,
+                        streaming: default);
 
                     queryPage = finalPage;
                     this.returnedFinalPage = true;

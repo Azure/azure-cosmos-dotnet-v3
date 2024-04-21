@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
 
         public override SqlObject Visit(SqlAllScalarExpression sqlAllScalarExpression)
         {
-            return SqlExistsScalarExpression.Create(sqlAllScalarExpression.Subquery.Accept(this) as SqlQuery);
+            return SqlAllScalarExpression.Create(sqlAllScalarExpression.Subquery.Accept(this) as SqlQuery);
         }
 
         public override SqlObject Visit(SqlArrayCreateScalarExpression sqlArrayCreateScalarExpression)
@@ -113,6 +113,11 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         public override SqlObject Visit(SqlExistsScalarExpression sqlExistsScalarExpression)
         {
             return SqlExistsScalarExpression.Create(sqlExistsScalarExpression.Subquery.Accept(this) as SqlQuery);
+        }
+
+        public override SqlObject Visit(SqlFirstScalarExpression sqlFirstScalarExpression)
+        {
+            return SqlFirstScalarExpression.Create(sqlFirstScalarExpression.Subquery.Accept(this) as SqlQuery);
         }
 
         public override SqlObject Visit(SqlFromClause sqlFromClause)
@@ -187,6 +192,11 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             return SqlJoinCollectionExpression.Create(
                 sqlJoinCollectionExpression.Left.Accept(this) as SqlCollectionExpression,
                 sqlJoinCollectionExpression.Right.Accept(this) as SqlCollectionExpression);
+        }
+
+        public override SqlObject Visit(SqlLastScalarExpression sqlLastScalarExpression)
+        {
+            return SqlLastScalarExpression.Create(sqlLastScalarExpression.Subquery.Accept(this) as SqlQuery);
         }
 
         public override SqlObject Visit(SqlLikeScalarExpression sqlLikeScalarExpression)

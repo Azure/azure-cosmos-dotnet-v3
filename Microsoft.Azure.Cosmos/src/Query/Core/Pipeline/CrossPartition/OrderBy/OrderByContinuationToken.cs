@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
     using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
@@ -46,12 +45,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
     ///     2. All partitions, that have greater Range.Min than that of the target partition, have exhausted all values less than or equal to X 
     /// </para>    
     /// <para>
-    /// Given this background, below is an example of order by continuation token. The class members below explains the different 
+    /// Given this background, below is an example of orderby continuation token. The class members below explains the different 
     /// component/states of the continuation token.
     /// </para> 
     /// </summary>
     /// <example>
-    /// Order by continuation token example.
+    /// OrderBy continuation token example.
     /// <![CDATA[
     ///  {"compositeToken":{"token":"+RID:OpY0AN-mFAACAAAAAAAABA==#RT:1#TRC:1#RTD:qdTAEA==","range":{"min":"05C1D9CD673398","max":"05C1E399CD6732"}},"orderByItems"[{"item":2}],"rid":"OpY0AN-mFAACAAAAAAAABA==","skipCount":0,"filter":"r.key > 1"}
     /// ]]>
@@ -62,6 +61,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         {
             public const string CompositeToken = "compositeToken";
             public const string OrderByItems = "orderByItems";
+            public const string ResumeValues = "resumeValues";
             public const string Rid = "rid";
             public const string SkipCount = "skipCount";
             public const string Filter = "filter";
@@ -71,22 +71,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         /// Initializes a new instance of the OrderByContinuationToken struct.
         /// </summary>
         /// <param name="compositeContinuationToken">The composite continuation token (refer to property documentation).</param>
-        /// <param name="orderByItems">The order by items (refer to property documentation).</param>
+        /// <param name="orderByItems">The orderby items (refer to property documentation).</param>
+        /// <param name="resumeValues">OrderBy property values the query needs to resume from in the next round trip</param>
         /// <param name="rid">The rid (refer to property documentation).</param>
         /// <param name="skipCount">The skip count (refer to property documentation).</param>
         /// <param name="filter">The filter (refer to property documentation).</param>
         public OrderByContinuationToken(
             ParallelContinuationToken compositeContinuationToken,
             IReadOnlyList<OrderByItem> orderByItems,
+            IReadOnlyList<SqlQueryResumeValue> resumeValues,
             string rid,
             int skipCount,
             string filter)
         {
-            if (orderByItems.Count == 0)
-            {
-                throw new ArgumentException($"{nameof(orderByItems)} can not be empty.");
-            }
-
             if (string.IsNullOrWhiteSpace(rid))
             {
                 throw new ArgumentNullException($"{nameof(rid)} can not be null or empty or whitespace.");
@@ -99,7 +96,30 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             //// filter is allowed to be null.
             this.ParallelContinuationToken = compositeContinuationToken ?? throw new ArgumentNullException(nameof(compositeContinuationToken));
-            this.OrderByItems = orderByItems ?? throw new ArgumentNullException(nameof(orderByItems));
+
+            if (resumeValues != null)
+            {
+                if (resumeValues.Count == 0)
+                {
+                    throw new ArgumentException($"{nameof(resumeValues)} can not be empty.");
+                }
+
+                this.ResumeValues = resumeValues;
+            }
+            else if (orderByItems != null)
+            {
+                if (orderByItems.Count == 0)
+                {
+                    throw new ArgumentException($"{nameof(orderByItems)} can not be empty.");
+                }
+
+                this.OrderByItems = orderByItems;
+            }
+            else
+            {
+                throw new ArgumentException($"Either {nameof(orderByItems)} or {nameof(resumeValues)} needs to be provided.");
+            }
+
             this.Rid = rid;
             this.SkipCount = skipCount;
             this.Filter = filter;
@@ -131,10 +151,29 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         /// ]]>
         /// </example>
         /// <remarks>
-        /// Right now, we don't support orderBy by multiple fields, so orderByItems is an array of one element. 
+        /// This is an array to support multi item orderby.
         /// </remarks>>
         [JsonProperty(PropertyNames.OrderByItems)]
         public IReadOnlyList<OrderByItem> OrderByItems
+        {
+            get;
+        }
+
+        /// <summary>
+        /// Gets: Values in the top most OrderByQueryResult from the target partition.
+        /// resumeValues is used for filtering when we resume. 
+        /// </summary>
+        /// <example>
+        /// The below array has one value "2" which was the last orderby value returned. 
+        /// <![CDATA[
+        ///  "resumeValues":[2]
+        /// ]]>
+        /// </example>
+        /// <remarks>
+        /// This is an array to support multi item orderby.
+        /// </remarks>>
+        [JsonProperty(PropertyNames.ResumeValues)]
+        public IReadOnlyList<SqlQueryResumeValue> ResumeValues
         {
             get;
         }
@@ -169,7 +208,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         /// online to understand this better. 
         /// </para>
         /// <para>
-        /// This behavior has implications on how pagination work for CosmosDB queries, especially for order by queries across
+        /// This behavior has implications on how pagination work for CosmosDB queries, especially for orderby queries across
         /// multiple partition. 
         /// </para>
         /// <para>
@@ -215,26 +254,52 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         public static CosmosElement ToCosmosElement(OrderByContinuationToken orderByContinuationToken)
         {
             CosmosElement compositeContinuationToken = ParallelContinuationToken.ToCosmosElement(orderByContinuationToken.ParallelContinuationToken);
-            List<CosmosElement> orderByItemsRaw = new List<CosmosElement>();
-            foreach (OrderByItem orderByItem in orderByContinuationToken.OrderByItems)
+
+            List<CosmosElement> orderByItemsRaw;
+            List<CosmosElement> resumeValuesRaw;
+            if (orderByContinuationToken.OrderByItems != null)
             {
-                orderByItemsRaw.Add(OrderByItem.ToCosmosElement(orderByItem));
+                resumeValuesRaw = null;
+                orderByItemsRaw = new List<CosmosElement>(orderByContinuationToken.OrderByItems.Count);
+                foreach (OrderByItem orderByItem in orderByContinuationToken.OrderByItems)
+                {
+                    orderByItemsRaw.Add(OrderByItem.ToCosmosElement(orderByItem));
+                }
+            }
+            else if (orderByContinuationToken.ResumeValues != null)
+            {
+                orderByItemsRaw = null;
+                resumeValuesRaw = new List<CosmosElement>(orderByContinuationToken.ResumeValues.Count);
+                foreach (SqlQueryResumeValue resumeValue in orderByContinuationToken.ResumeValues)
+                {
+                    resumeValuesRaw.Add(SqlQueryResumeValue.ToCosmosElement(resumeValue));
+                }
+            }
+            else
+            {
+                throw new ArgumentException($"Either {nameof(orderByContinuationToken.ResumeValues)} or {nameof(orderByContinuationToken.OrderByItems)} needs to be specified.");
             }
 
-            CosmosArray orderByItems = CosmosArray.Create(orderByItemsRaw);
+            CosmosElement filter = orderByContinuationToken.Filter == null ? CosmosNull.Create() : CosmosString.Create(orderByContinuationToken.Filter);
 
-            CosmosElement filter = orderByContinuationToken.Filter == null ? CosmosNull.Create() : (CosmosElement)CosmosString.Create(orderByContinuationToken.Filter);
-
-            CosmosObject cosmosObject = CosmosObject.Create(
-                new Dictionary<string, CosmosElement>()
-                {
-                    { PropertyNames.CompositeToken, compositeContinuationToken },
-                    { PropertyNames.OrderByItems, orderByItems },
-                    { PropertyNames.Rid, CosmosString.Create(orderByContinuationToken.Rid) },
-                    { PropertyNames.SkipCount, CosmosNumber64.Create(orderByContinuationToken.SkipCount) },
-                    { PropertyNames.Filter, filter },
-                });
-
+            CosmosObject cosmosObject = (resumeValuesRaw == null)
+                ? CosmosObject.Create(
+                    new Dictionary<string, CosmosElement>()
+                    {
+                        { PropertyNames.CompositeToken, compositeContinuationToken },
+                        { PropertyNames.OrderByItems, CosmosArray.Create(orderByItemsRaw) },
+                        { PropertyNames.Rid, CosmosString.Create(orderByContinuationToken.Rid) },
+                        { PropertyNames.SkipCount, CosmosNumber64.Create(orderByContinuationToken.SkipCount) },
+                        { PropertyNames.Filter, filter },
+                    })
+                : CosmosObject.Create(
+                    new Dictionary<string, CosmosElement>()
+                    {
+                        { PropertyNames.CompositeToken, compositeContinuationToken },
+                        { PropertyNames.ResumeValues, CosmosArray.Create(resumeValuesRaw) },
+                        { PropertyNames.Rid, CosmosString.Create(orderByContinuationToken.Rid) },
+                        { PropertyNames.SkipCount, CosmosNumber64.Create(orderByContinuationToken.SkipCount) },
+                    });
             return cosmosObject;
         }
 
@@ -260,13 +325,28 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             ParallelContinuationToken compositeContinuationToken = tryCompositeContinuation.Result;
 
-            if (!cosmosObject.TryGetValue(PropertyNames.OrderByItems, out CosmosArray orderByItemsRaw))
+            // Try to get ResumeValues first, if it is not present then try to get orderby items
+            List<SqlQueryResumeValue> resumeValues;
+            List<OrderByItem> orderByItems;
+            if (cosmosObject.TryGetValue(PropertyNames.ResumeValues, out CosmosArray resumeValuesRaw))
+            {
+                orderByItems = null;
+                resumeValues = new List<SqlQueryResumeValue>(resumeValuesRaw.Count);
+                foreach (CosmosElement resumeValue in resumeValuesRaw)
+                {
+                    resumeValues.Add(SqlQueryResumeValue.FromCosmosElement(resumeValue));
+                }
+            }
+            else if (cosmosObject.TryGetValue(PropertyNames.OrderByItems, out CosmosArray orderByItemsRaw))
+            {
+                resumeValues = null;
+                orderByItems = orderByItemsRaw.Select(x => OrderByItem.FromCosmosElement(x)).ToList();
+            }
+            else 
             {
                 return TryCatch<OrderByContinuationToken>.FromException(
-                    new MalformedContinuationTokenException($"{nameof(OrderByContinuationToken)} is missing field: '{PropertyNames.OrderByItems}': {cosmosElement}"));
+                        new MalformedContinuationTokenException($"{nameof(OrderByContinuationToken)} is missing field: '{PropertyNames.OrderByItems}': {cosmosElement}"));
             }
-
-            List<OrderByItem> orderByItems = orderByItemsRaw.Select(x => OrderByItem.FromCosmosElement(x)).ToList();
 
             if (!cosmosObject.TryGetValue(PropertyNames.Rid, out CosmosString ridRaw))
             {
@@ -284,16 +364,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             int skipCount = (int)Number64.ToLong(skipCountRaw.GetValue());
 
-            if (!cosmosObject.TryGetValue(PropertyNames.Filter, out CosmosElement filterRaw))
-            {
-                return TryCatch<OrderByContinuationToken>.FromException(
-                    new MalformedContinuationTokenException($"{nameof(OrderByContinuationToken)} is missing field: '{PropertyNames.Filter}': {cosmosElement}"));
-            }
-
+            // filter will be present only when orderByItems is present. This property is not used for resumeValue base continuation
             string filter;
-            if (filterRaw is CosmosString filterStringRaw)
+            if (orderByItems != null)
             {
-                filter = filterStringRaw.Value;
+                if (!cosmosObject.TryGetValue(PropertyNames.Filter, out CosmosElement filterRaw))
+                {
+                    return TryCatch<OrderByContinuationToken>.FromException(
+                        new MalformedContinuationTokenException($"{nameof(OrderByContinuationToken)} is missing field: '{PropertyNames.Filter}': {cosmosElement}"));
+                }
+
+                if (filterRaw is CosmosString filterStringRaw)
+                {
+                    filter = filterStringRaw.Value;
+                }
+                else
+                {
+                    filter = null;
+                }
             }
             else
             {
@@ -303,6 +391,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
                 compositeContinuationToken,
                 orderByItems,
+                resumeValues,
                 rid,
                 skipCount,
                 filter);

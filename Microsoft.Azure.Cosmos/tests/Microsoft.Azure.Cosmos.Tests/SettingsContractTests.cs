@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void TriggerOperationMatchesDirect()
         {
-            this.AssertEnums<Cosmos.Scripts.TriggerOperation, Documents.TriggerOperation>();
+            this.AssertEnumsContains<Cosmos.Scripts.TriggerOperation, Documents.TriggerOperation>();
         }
 
         [TestMethod]
@@ -339,7 +339,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void ContainerPropertiesDeserializeWithAdditionalDataTest()
         {
-            string cosmosSerialized = "{\"indexingPolicy\":{\"automatic\":true,\"indexingMode\":\"Consistent\",\"additionalIndexPolicy\":\"indexpolicyvalue\",\"includedPaths\":[{\"path\":\"/included/path\",\"additionalIncludedPath\":\"includedPathValue\",\"indexes\":[]}],\"excludedPaths\":[{\"path\":\"/excluded/path\",\"additionalExcludedPath\":\"excludedPathValue\"}],\"compositeIndexes\":[[{\"path\":\"/composite/path\",\"additionalCompositeIndex\":\"compositeIndexValue\",\"order\":\"ascending\"}]],\"spatialIndexes\":[{\"path\":\"/spatial/path\",\"additionalSpatialIndexes\":\"spatialIndexValue\",\"types\":[]}]},\"geospatialConfig\":{\"type\":\"Geography\",\"additionalGeospatialConfig\":\"geospatialConfigValue\"},\"uniqueKeyPolicy\":{\"additionalUniqueKeyPolicy\":\"uniqueKeyPolicyValue\",\"uniqueKeys\":[{\"paths\":[\"/unique/key/path/1\",\"/unique/key/path/2\"]}]},\"conflictResolutionPolicy\":{\"mode\":\"LastWriterWins\",\"additionalConflictResolutionPolicy\":\"conflictResolutionValue\"},\"clientEncryptionPolicy\":{\"includedPaths\":[{\"path\":\"/path\",\"clientEncryptionKeyId\":\"clientEncryptionKeyId\",\"encryptionType\":\"Randomized\",\"additionalIncludedPath\":\"includedPathValue\",\"encryptionAlgorithm\":\"AEAD_AES_256_CBC_HMAC_SHA256\"}],\"policyFormatVersion\":1,\"additionalEncryptionPolicy\":\"clientEncryptionpolicyValue\"},\"id\":\"2a9f501b-6948-4795-8fd1-797defb5c466\",\"partitionKey\":{\"paths\":[],\"kind\":\"Hash\"}}";
+            string cosmosSerialized = "{\"indexingPolicy\":{\"automatic\":true,\"indexingMode\":\"Consistent\",\"additionalIndexPolicy\":\"indexpolicyvalue\",\"includedPaths\":[{\"path\":\"/included/path\",\"additionalIncludedPath\":\"includedPathValue\",\"indexes\":[]}],\"excludedPaths\":[{\"path\":\"/excluded/path\",\"additionalExcludedPath\":\"excludedPathValue\"}],\"compositeIndexes\":[[{\"path\":\"/composite/path\",\"additionalCompositeIndex\":\"compositeIndexValue\",\"order\":\"ascending\"}]],\"spatialIndexes\":[{\"path\":\"/spatial/path\",\"additionalSpatialIndexes\":\"spatialIndexValue\",\"types\":[]}],\"vectorIndexes\":[{\"path\":\"/vector1\",\"type\":\"flat\",\"additionalVectorIndex\":\"vectorIndexValue1\"},{\"path\":\"/vector2\",\"type\":\"quantizedFlat\",\"additionalVectorIndex\":\"vectorIndexValue2\"},{\"path\":\"/vector3\",\"type\":\"diskANN\"}]},\"computedProperties\":[{\"name\":\"lowerName\",\"query\":\"SELECT VALUE LOWER(c.name) FROM c\"},{\"name\":\"estimatedTax\",\"query\":\"SELECT VALUE c.salary * 0.2 FROM c\"}],\"geospatialConfig\":{\"type\":\"Geography\",\"additionalGeospatialConfig\":\"geospatialConfigValue\"},\"uniqueKeyPolicy\":{\"additionalUniqueKeyPolicy\":\"uniqueKeyPolicyValue\",\"uniqueKeys\":[{\"paths\":[\"/unique/key/path/1\",\"/unique/key/path/2\"]}]},\"conflictResolutionPolicy\":{\"mode\":\"LastWriterWins\",\"additionalConflictResolutionPolicy\":\"conflictResolutionValue\"},\"clientEncryptionPolicy\":{\"includedPaths\":[{\"path\":\"/path\",\"clientEncryptionKeyId\":\"clientEncryptionKeyId\",\"encryptionType\":\"Randomized\",\"additionalIncludedPath\":\"includedPathValue\",\"encryptionAlgorithm\":\"AEAD_AES_256_CBC_HMAC_SHA256\"}],\"policyFormatVersion\":1,\"additionalEncryptionPolicy\":\"clientEncryptionpolicyValue\"},\"id\":\"2a9f501b-6948-4795-8fd1-797defb5c466\",\"partitionKey\":{\"paths\":[],\"kind\":\"Hash\"},\"vectorEmbeddingPolicy\":{\"vectorEmbeddings\":[{\"path\":\"/vector1\",\"dataType\":\"float32\",\"dimensions\":1200,\"distanceFunction\":\"cosine\"},{\"path\":\"/vector2\",\"dataType\":\"int8\",\"dimensions\":3,\"distanceFunction\":\"dotproduct\"},{\"path\":\"/vector3\",\"dataType\":\"uint8\",\"dimensions\":400,\"distanceFunction\":\"euclidean\"}]}}";
             
             JObject complexObject = JObject.FromObject(new { id = 1, name = new { fname = "fname", lname = "lname" } });
 
@@ -351,43 +351,64 @@ namespace Microsoft.Azure.Cosmos.Tests
             // Serialized string
             cosmosSerialized = SettingsContractTests.CosmosSerialize(jobject);
 
-            ContainerProperties containerDeserSettings = SettingsContractTests.CosmosDeserialize<ContainerProperties>(cosmosSerialized);
+            ContainerProperties containerProperties = SettingsContractTests.CosmosDeserialize<ContainerProperties>(cosmosSerialized);
 
-            Assert.AreEqual("2a9f501b-6948-4795-8fd1-797defb5c466", containerDeserSettings.Id);
+            Assert.AreEqual("2a9f501b-6948-4795-8fd1-797defb5c466", containerProperties.Id);
 
-            Assert.AreEqual(2, containerDeserSettings.AdditionalProperties.Count);
-            Assert.AreEqual("policy value", (string)containerDeserSettings.AdditionalProperties["simple string"]);
-            Assert.AreEqual(complexObject.ToString(), JObject.FromObject(containerDeserSettings.AdditionalProperties["complex object"]).ToString());
+            Assert.AreEqual(2, containerProperties.AdditionalProperties.Count);
+            Assert.AreEqual("policy value", (string)containerProperties.AdditionalProperties["simple string"]);
+            Assert.AreEqual(complexObject.ToString(), JObject.FromObject(containerProperties.AdditionalProperties["complex object"]).ToString());
 
-            Assert.AreEqual(1, containerDeserSettings.IndexingPolicy.AdditionalProperties.Count);
-            Assert.AreEqual("indexpolicyvalue", containerDeserSettings.IndexingPolicy.AdditionalProperties["additionalIndexPolicy"]);
+            Assert.AreEqual(1, containerProperties.IndexingPolicy.AdditionalProperties.Count);
+            Assert.AreEqual("indexpolicyvalue", containerProperties.IndexingPolicy.AdditionalProperties["additionalIndexPolicy"]);
 
-            Assert.AreEqual(1, containerDeserSettings.IndexingPolicy.SpatialIndexes[0].AdditionalProperties.Count);
-            Assert.AreEqual("spatialIndexValue", containerDeserSettings.IndexingPolicy.SpatialIndexes[0].AdditionalProperties["additionalSpatialIndexes"]);
+            Assert.AreEqual(1, containerProperties.IndexingPolicy.SpatialIndexes[0].AdditionalProperties.Count);
+            Assert.AreEqual("spatialIndexValue", containerProperties.IndexingPolicy.SpatialIndexes[0].AdditionalProperties["additionalSpatialIndexes"]);
 
-            Assert.AreEqual(1, containerDeserSettings.IndexingPolicy.CompositeIndexes[0][0].AdditionalProperties.Count);
-            Assert.AreEqual("compositeIndexValue", containerDeserSettings.IndexingPolicy.CompositeIndexes[0][0].AdditionalProperties["additionalCompositeIndex"]);
+            Assert.AreEqual(1, containerProperties.IndexingPolicy.CompositeIndexes[0][0].AdditionalProperties.Count);
+            Assert.AreEqual("compositeIndexValue", containerProperties.IndexingPolicy.CompositeIndexes[0][0].AdditionalProperties["additionalCompositeIndex"]);
 
-            Assert.AreEqual(1, containerDeserSettings.IndexingPolicy.IncludedPaths[0].AdditionalProperties.Count);
-            Assert.AreEqual("includedPathValue", containerDeserSettings.IndexingPolicy.IncludedPaths[0].AdditionalProperties["additionalIncludedPath"]);
+            Assert.AreEqual(1, containerProperties.IndexingPolicy.VectorIndexes[0].AdditionalProperties.Count);
+            Assert.AreEqual("vectorIndexValue1", containerProperties.IndexingPolicy.VectorIndexes[0].AdditionalProperties["additionalVectorIndex"]);
 
-            Assert.AreEqual(1, containerDeserSettings.IndexingPolicy.ExcludedPaths[0].AdditionalProperties.Count);
-            Assert.AreEqual("excludedPathValue", containerDeserSettings.IndexingPolicy.ExcludedPaths[0].AdditionalProperties["additionalExcludedPath"]);
+            Assert.AreEqual(1, containerProperties.IndexingPolicy.VectorIndexes[1].AdditionalProperties.Count);
+            Assert.AreEqual("vectorIndexValue2", containerProperties.IndexingPolicy.VectorIndexes[1].AdditionalProperties["additionalVectorIndex"]);
 
-            Assert.AreEqual(1, containerDeserSettings.GeospatialConfig.AdditionalProperties.Count);
-            Assert.AreEqual("geospatialConfigValue", containerDeserSettings.GeospatialConfig.AdditionalProperties["additionalGeospatialConfig"]);
+            Assert.IsNull(containerProperties.IndexingPolicy.VectorIndexes[2].AdditionalProperties);
 
-            Assert.AreEqual(1, containerDeserSettings.UniqueKeyPolicy.AdditionalProperties.Count);
-            Assert.AreEqual("uniqueKeyPolicyValue", containerDeserSettings.UniqueKeyPolicy.AdditionalProperties["additionalUniqueKeyPolicy"]);
+            Assert.AreEqual(1, containerProperties.IndexingPolicy.IncludedPaths[0].AdditionalProperties.Count);
+            Assert.AreEqual("includedPathValue", containerProperties.IndexingPolicy.IncludedPaths[0].AdditionalProperties["additionalIncludedPath"]);
 
-            Assert.AreEqual(1, containerDeserSettings.ConflictResolutionPolicy.AdditionalProperties.Count);
-            Assert.AreEqual("conflictResolutionValue", containerDeserSettings.ConflictResolutionPolicy.AdditionalProperties["additionalConflictResolutionPolicy"]);
+            Assert.AreEqual(1, containerProperties.IndexingPolicy.ExcludedPaths[0].AdditionalProperties.Count);
+            Assert.AreEqual("excludedPathValue", containerProperties.IndexingPolicy.ExcludedPaths[0].AdditionalProperties["additionalExcludedPath"]);
 
-            Assert.AreEqual(1, containerDeserSettings.ClientEncryptionPolicy.AdditionalProperties.Count);
-            Assert.AreEqual("clientEncryptionpolicyValue", containerDeserSettings.ClientEncryptionPolicy.AdditionalProperties["additionalEncryptionPolicy"]);
+            Assert.AreEqual(1, containerProperties.GeospatialConfig.AdditionalProperties.Count);
+            Assert.AreEqual("geospatialConfigValue", containerProperties.GeospatialConfig.AdditionalProperties["additionalGeospatialConfig"]);
 
-            Assert.AreEqual(1, containerDeserSettings.ClientEncryptionPolicy.IncludedPaths.First().AdditionalProperties.Count);
-            Assert.AreEqual("includedPathValue", containerDeserSettings.ClientEncryptionPolicy.IncludedPaths.First().AdditionalProperties["additionalIncludedPath"]);
+            Assert.AreEqual(1, containerProperties.UniqueKeyPolicy.AdditionalProperties.Count);
+            Assert.AreEqual("uniqueKeyPolicyValue", containerProperties.UniqueKeyPolicy.AdditionalProperties["additionalUniqueKeyPolicy"]);
+
+            Assert.AreEqual(1, containerProperties.ConflictResolutionPolicy.AdditionalProperties.Count);
+            Assert.AreEqual("conflictResolutionValue", containerProperties.ConflictResolutionPolicy.AdditionalProperties["additionalConflictResolutionPolicy"]);
+
+            Assert.AreEqual(1, containerProperties.ClientEncryptionPolicy.AdditionalProperties.Count);
+            Assert.AreEqual("clientEncryptionpolicyValue", containerProperties.ClientEncryptionPolicy.AdditionalProperties["additionalEncryptionPolicy"]);
+
+            Assert.AreEqual(1, containerProperties.ClientEncryptionPolicy.IncludedPaths.First().AdditionalProperties.Count);
+            Assert.AreEqual("includedPathValue", containerProperties.ClientEncryptionPolicy.IncludedPaths.First().AdditionalProperties["additionalIncludedPath"]);
+
+            Assert.IsNotNull(containerProperties.VectorEmbeddingPolicy);
+            Assert.AreEqual(3, containerProperties.VectorEmbeddingPolicy.Embeddings.Count);
+            Assert.AreEqual("/vector1", containerProperties.VectorEmbeddingPolicy.Embeddings[0].Path);
+            Assert.AreEqual(VectorDataType.Float32, containerProperties.VectorEmbeddingPolicy.Embeddings[0].DataType);
+            Assert.AreEqual((ulong)1200, containerProperties.VectorEmbeddingPolicy.Embeddings[0].Dimensions);
+            Assert.AreEqual(DistanceFunction.Cosine, containerProperties.VectorEmbeddingPolicy.Embeddings[0].DistanceFunction);
+
+            Assert.AreEqual(2, containerProperties.ComputedProperties.Count);
+            Assert.AreEqual("lowerName", containerProperties.ComputedProperties[0].Name);
+            Assert.AreEqual("SELECT VALUE LOWER(c.name) FROM c", containerProperties.ComputedProperties[0].Query);
+            Assert.AreEqual("estimatedTax", containerProperties.ComputedProperties[1].Name);
+            Assert.AreEqual("SELECT VALUE c.salary * 0.2 FROM c", containerProperties.ComputedProperties[1].Query);
         }
 
         [TestMethod]
@@ -724,6 +745,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "TimeToLivePropertyPath",
                 "PartitionKeyPath",
                 "PartitionKeyDefinitionVersion",
+                "ComputedProperties",
                 "ConflictResolutionPolicy",
                 "ChangeFeedPolicy",
                 "ClientEncryptionPolicy",
@@ -741,7 +763,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "PartitionKeyDefinitionVersion",
                 "ConflictResolutionPolicy",
                 "ClientEncryptionPolicy",
-                "PartitionKeyPaths");
+                "PartitionKeyPaths",
+                "VectorEmbeddingPolicy");
 #endif
 
             // Two equivalent definitions 
@@ -761,6 +784,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(object.ReferenceEquals(cosmosContainerSettings.IndexingPolicy, cosmosContainerSettings.IndexingPolicy));
             Assert.IsNotNull(cosmosContainerSettings.IndexingPolicy.IncludedPaths);
             Assert.IsTrue(object.ReferenceEquals(cosmosContainerSettings.IndexingPolicy.IncludedPaths, cosmosContainerSettings.IndexingPolicy.IncludedPaths));
+
+            Assert.IsNotNull(cosmosContainerSettings.ComputedProperties);
+            Assert.AreEqual(0, cosmosContainerSettings.ComputedProperties.Count);
+            Assert.IsTrue(object.ReferenceEquals(cosmosContainerSettings.ComputedProperties, cosmosContainerSettings.ComputedProperties));
 
             Cosmos.IncludedPath ip = new Cosmos.IncludedPath();
             Assert.IsNotNull(ip.Indexes);
@@ -1043,6 +1070,48 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.ThrowsException<ArgumentOutOfRangeException>(() => new Cosmos.ChangeFeedPolicy() { FullFidelityRetention = TimeSpan.FromSeconds(-10) });
         }
 
+        [TestMethod]
+        public void VectorEmbeddingPolicySerialization()
+        {
+            ContainerProperties containerSettings = new ContainerProperties("TestContainer", "/pk");
+            string serialization = JsonConvert.SerializeObject(containerSettings);
+            Assert.IsFalse(serialization.Contains("vectorEmbeddingPolicy"), "Vector Embedding Policy should not be included by default");
+
+            Embedding embedding1 = new()
+            {
+                Path = "/vector1",
+                DataType = VectorDataType.Int8,
+                DistanceFunction = DistanceFunction.DotProduct,
+                Dimensions = 1200,
+            };
+
+            Embedding embedding2 = new()
+            {
+                Path = "/vector2",
+                DataType = VectorDataType.Uint8,
+                DistanceFunction = DistanceFunction.Cosine,
+                Dimensions = 3,
+            };
+
+            Collection<Embedding> embeddings = new ()
+            {
+                embedding1,
+                embedding2,
+            };
+
+            containerSettings.VectorEmbeddingPolicy = new VectorEmbeddingPolicy(embeddings);
+
+            string serializationWithValues = JsonConvert.SerializeObject(containerSettings);
+            Assert.IsTrue(serializationWithValues.Contains("vectorEmbeddingPolicy"), "Vector Embedding Policy should be included.");
+            Assert.IsTrue(serializationWithValues.Contains("distanceFunction"), "Vector Embedding Policy distance function should be included.");
+
+            JObject parsed = JObject.Parse(serializationWithValues);
+            JToken vectorEmbeddings = parsed["vectorEmbeddingPolicy"]["vectorEmbeddings"];
+            Assert.AreEqual(JTokenType.Array, vectorEmbeddings.Type, "Vector Embedding Policy serialized vectorEmbeddings should be an array.");
+            Assert.IsTrue(embedding1.Equals(vectorEmbeddings.Value<JArray>()[0].ToObject<Embedding>()));
+            Assert.IsTrue(embedding2.Equals(vectorEmbeddings.Value<JArray>()[1].ToObject<Embedding>()));
+        }
+
         private static T CosmosDeserialize<T>(string payload)
         {
             using (MemoryStream ms = new MemoryStream())
@@ -1135,6 +1204,17 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 Assert.AreEqual(Convert.ToInt32(documentssVersion), Convert.ToInt32(cosmosVersion));
             }
+        }
+
+        private void AssertEnumsContains<TFirstEnum, TSecondEnum>() where TFirstEnum : struct, IConvertible where TSecondEnum : struct, IConvertible
+        {
+            string[] allCosmosEntries = Enum.GetNames(typeof(TFirstEnum));
+            string[] allDocumentsEntries = Enum.GetNames(typeof(TSecondEnum));
+
+           foreach(string entry in allDocumentsEntries)
+           {
+                Assert.IsTrue(allCosmosEntries.Contains(entry));
+           }
         }
     }
 }

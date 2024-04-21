@@ -279,7 +279,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             string regionName,
             ResourceId containerResourceId)
         {
-            string basePhysicalUri = $"rntbd://cdb-ms-prod-{regionName}-fd4.documents.azure.com:14382/apps/9dc0394e-d25f-4c98-baa5-72f1c700bf3e/services/060067c7-a4e9-4465-a412-25cb0104cb58/partitions/2cda760c-f81f-4094-85d0-7bcfb2acc4e6/replicas/";
+            int initialPort = 14382;
+            int[] ports = new int[replicaIds.Count];
+            string basePhysicalUri = "rntbd://cdb-ms-prod-{0}-fd4.documents.azure.com:{1}/apps/9dc0394e-d25f-4c98-baa5-72f1c700bf3e/services/060067c7-a4e9-4465-a412-25cb0104cb58/partitions/2cda760c-f81f-4094-85d0-7bcfb2acc4e6/replicas/{2}";
+
+            for (int i=0; i< replicaIds.Count; i++)
+            {
+                ports[i] = initialPort++;
+            }
 
             // Use the partition key range id at the end of each replica id to avoid conflicts when setting up multiple partition key ranges
             List<Address> addresses = new List<Address>();
@@ -290,7 +297,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     IsPrimary = i == 0,
                     PartitionKeyRangeId = partitionKeyRangeId,
-                    PhysicalUri = basePhysicalUri + repliaId,
+                    PhysicalUri = string.Format(basePhysicalUri, regionName, ports[i], repliaId),
                     Protocol = "rntbd",
                     PartitionIndex = "7718513@164605136"
                 });

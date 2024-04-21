@@ -1,0 +1,38 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where -> Where with same predicate instance]]></Description>
+      <Expression><![CDATA[query.Where(DisplayClass.predicate).Where(DisplayClass.predicate)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE ((root["Int"] = 5) AND (root["Int"] = 5))]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where -> Select with same predicate instance]]></Description>
+      <Expression><![CDATA[query.Where(DisplayClass.predicate).Select(DisplayClass.predicate)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["Int"] = 5) 
+FROM root 
+WHERE (root["Int"] = 5)]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where -> Select -> Where with same predicate instance]]></Description>
+      <Expression><![CDATA[query.Where(DisplayClass.predicate2).Select(c => new AnonymousType(Int = 10, Result = c)).Where(DisplayClass.predicate2)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"Int": 10, "Result": root} 
+FROM root 
+WHERE ((ToString(root) = "a") AND (ToString({"Int": 10, "Result": root}) = "a"))]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

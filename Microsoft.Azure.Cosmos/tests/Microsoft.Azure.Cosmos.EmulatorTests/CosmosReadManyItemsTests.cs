@@ -5,16 +5,11 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
-    using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using System.Net;
-    using System.Net.Http;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Fluent;
-    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -22,16 +17,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public class CosmosReadManyItemsTests : BaseCosmosClientHelper
     {
         private Container Container = null;
-        private ContainerProperties containerSettings = null;
 
         [TestInitialize]
         public async Task TestInitialize()
         {
             await base.TestInit();
             string PartitionKey = "/pk";
-            this.containerSettings = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey);
+            ContainerProperties containerSettings = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey);
             ContainerResponse response = await this.database.CreateContainerAsync(
-                this.containerSettings,
+                containerSettings,
                 throughput: 20000,
                 cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
@@ -57,27 +51,58 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task ReadManyTypedTest()
+        [DataRow(true, DisplayName = "Validates Read Many scenario with advanced replica selection enabled.")]
+        [DataRow(false, DisplayName = "Validates Read Many scenario with advanced replica selection disabled.")]
+        public async Task ReadManyTypedTestWithAdvancedReplicaSelection(
+            bool advancedReplicaSelectionEnabled)
         {
-            List<(string, PartitionKey)> itemList = new List<(string, PartitionKey)>();
-            for (int i=0; i<10; i++)
+            CosmosClientOptions clientOptions = new ()
             {
-                itemList.Add((i.ToString(), new PartitionKey("pk" + i.ToString())));
-            }
+                EnableAdvancedReplicaSelectionForTcp = advancedReplicaSelectionEnabled,
+            };
 
-            FeedResponse<ToDoActivity> feedResponse= await this.Container.ReadManyItemsAsync<ToDoActivity>(itemList);
-            Assert.IsNotNull(feedResponse);
-            Assert.AreEqual(feedResponse.Count, 10);
-            Assert.IsTrue(feedResponse.Headers.RequestCharge > 0);
-            Assert.IsNotNull(feedResponse.Diagnostics);
-
-            int count = 0;
-            foreach (ToDoActivity item in feedResponse)
+            Database database = null;
+            CosmosClient cosmosClient = TestCommon.CreateCosmosClient(clientOptions);
+            try
             {
-                count++;
-                Assert.IsNotNull(item);
+                database = await cosmosClient.CreateDatabaseAsync("ReadManyTypedTestScenarioDb");
+                Container container = await database.CreateContainerAsync("ReadManyTypedTestContainer", "/pk");
+
+                // Create items with different pk values
+                for (int i = 0; i < 500; i++)
+                {
+                    ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
+                    item.pk = "pk" + i.ToString();
+                    item.id = i.ToString();
+                    ItemResponse<ToDoActivity> itemResponse = await container.CreateItemAsync(item);
+                    Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
+                }
+
+                List<(string, PartitionKey)> itemList = new List<(string, PartitionKey)>();
+                for (int i = 0; i < 20; i++)
+                {
+                    itemList.Add((i.ToString(), new PartitionKey("pk" + i.ToString())));
+                }
+
+                FeedResponse<ToDoActivity> feedResponse = await container.ReadManyItemsAsync<ToDoActivity>(itemList);
+                Assert.IsNotNull(feedResponse);
+                Assert.AreEqual(20, feedResponse.Count);
+                Assert.IsTrue(feedResponse.Headers.RequestCharge > 0);
+                Assert.IsNotNull(feedResponse.Diagnostics);
+
+                int count = 0;
+                foreach (ToDoActivity item in feedResponse)
+                {
+                    count++;
+                    Assert.IsNotNull(item);
+                }
+                Assert.AreEqual(20, count);
             }
-            Assert.AreEqual(count, 10);
+            finally
+            {
+                await database.DeleteAsync();
+                cosmosClient.Dispose();
+            }
         }
 
         [TestMethod]
@@ -95,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(responseMessage.Headers.RequestCharge > 0);
                 Assert.IsNotNull(responseMessage.Diagnostics);
 
-                ToDoActivity[] items = this.cosmosClient.ClientContext.SerializerCore.FromFeedStream<ToDoActivity>(
+                ToDoActivity[] items = this.GetClient().ClientContext.SerializerCore.FromFeedStream<ToDoActivity>(
                                         CosmosFeedResponseSerializer.GetStreamWithoutServiceEnvelope(responseMessage.Content));
                 Assert.AreEqual(items.Length, 5);
             }
@@ -122,23 +147,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ReadManyWithIdasPk()
         {
-            string PartitionKey = "/id";
-            ContainerProperties containerSettings = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey);
-            Container container = await this.database.CreateContainerAsync(containerSettings);
+            Container container = await this.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
 
             List<(string, PartitionKey)> itemList = new List<(string, PartitionKey)>();
-            for (int i = 0; i < 5; i++)
-            {
-                itemList.Add((i.ToString(), new PartitionKey(i.ToString())));
-            }
 
             // Create items with different pk values
             for (int i = 0; i < 5; i++)
             {
                 ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
-                item.id = i.ToString();
                 ItemResponse<ToDoActivity> itemResponse = await container.CreateItemAsync(item);
                 Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
+                
+                itemList.Add((item.id, new PartitionKey(item.id)));
+
+                ToDoActivity itemWithSingleQuotes = ToDoActivity.CreateRandomToDoActivity(id: item.id + "'singlequote");
+                ItemResponse<ToDoActivity> itemResponseWithSingleQuotes = await container.CreateItemAsync(itemWithSingleQuotes);
+                Assert.AreEqual(HttpStatusCode.Created, itemResponseWithSingleQuotes.StatusCode);
+
+                itemList.Add((itemWithSingleQuotes.id, new PartitionKey(itemWithSingleQuotes.id)));
             }
 
             using (ResponseMessage responseMessage = await container.ReadManyItemsStreamAsync(itemList))
@@ -147,14 +173,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(responseMessage.Headers.RequestCharge > 0);
                 Assert.IsNotNull(responseMessage.Diagnostics);
 
-                ToDoActivity[] items = this.cosmosClient.ClientContext.SerializerCore.FromFeedStream<ToDoActivity>(
+                ToDoActivity[] items = this.GetClient().ClientContext.SerializerCore.FromFeedStream<ToDoActivity>(
                                         CosmosFeedResponseSerializer.GetStreamWithoutServiceEnvelope(responseMessage.Content));
-                Assert.AreEqual(items.Length, 5);
+                Assert.AreEqual(items.Length, 10);
             }
 
             FeedResponse<ToDoActivity> feedResponse = await container.ReadManyItemsAsync<ToDoActivity>(itemList);
             Assert.IsNotNull(feedResponse);
-            Assert.AreEqual(feedResponse.Count, 5);
+            Assert.AreEqual(feedResponse.Count, 10);
             Assert.IsTrue(feedResponse.Headers.RequestCharge > 0);
             Assert.IsNotNull(feedResponse.Diagnostics);
         }
@@ -323,7 +349,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(responseMessage.Headers.RequestCharge > 0);
                 Assert.IsNotNull(responseMessage.Diagnostics);
 
-                ToDoActivity[] items = this.cosmosClient.ClientContext.SerializerCore.FromFeedStream<ToDoActivity>(
+                ToDoActivity[] items = this.GetClient().ClientContext.SerializerCore.FromFeedStream<ToDoActivity>(
                                         CosmosFeedResponseSerializer.GetStreamWithoutServiceEnvelope(responseMessage.Content));
                 Assert.AreEqual(items.Length, 2);
             }
@@ -332,7 +358,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ReadMany404ExceptionTest()
         {
-            Database database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            Database database = await this.GetClient().CreateDatabaseAsync(Guid.NewGuid().ToString());
             Container container = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/pk");
             for (int i = 0; i < 5; i++)
             {
@@ -483,7 +509,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CosmosClientBuilder builder = TestCommon.GetDefaultConfiguration();
             builder.AddCustomHandlers(requestHandlers);
-            CosmosClient client = builder.Build();
+            using CosmosClient client = builder.Build();
             Database database = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
             Container container = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/pk");
             for (int i = 0; i < 5; i++)
@@ -515,44 +541,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await database.DeleteAsync();
             client.Dispose();
-        }
-
-#if PREVIEW
-        [TestMethod]
-        public async Task ReadManyMultiplePK()
-        {
-            IReadOnlyList<string> pkPaths = new List<string> { "/pk", "/description" };
-            ContainerProperties containerSettings = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPaths: pkPaths);
-            Container container = await this.database.CreateContainerAsync(containerSettings);
-
-            for (int i = 0; i < 5; i++)
-            {
-                ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
-                item.pk = "pk" + i.ToString();
-                item.id = i.ToString();
-                item.description = "description" + i;
-                ItemResponse<ToDoActivity> itemResponse = await container.CreateItemAsync(item);
-                Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
-            }
-
-            List<(string, PartitionKey)> itemList = new List<(string, PartitionKey)>();
-            for (int i = 0; i < 5; i++)
-            {
-                PartitionKey partitionKey = new PartitionKeyBuilder()
-                                                        .Add("pk" + i)
-                                                        .Add("description" + i)
-                                                        .Build();
-
-                itemList.Add((i.ToString(), partitionKey));
-            }
-
-            FeedResponse<ToDoActivity> feedResponse = await container.ReadManyItemsAsync<ToDoActivity>(itemList);
-            Assert.IsNotNull(feedResponse);
-            Assert.AreEqual(feedResponse.Count, 5);
-            Assert.IsTrue(feedResponse.Headers.RequestCharge > 0);
-            Assert.IsNotNull(feedResponse.Diagnostics);
-        }
-#endif
+        }     
 
         private class NestedToDoActivity
         {

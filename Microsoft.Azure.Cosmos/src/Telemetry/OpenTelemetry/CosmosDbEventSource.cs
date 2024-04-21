@@ -31,11 +31,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         [NonEvent]
         public static void RecordDiagnosticsForRequests(
-            DistributedTracingOptions config,
+            CosmosThresholdOptions config,
             Documents.OperationType operationType,
             OpenTelemetryAttributes response)
         {
-            if (DiagnosticsFilterHelper.IsTracingNeeded(
+            if (!DiagnosticsFilterHelper.IsSuccessfulResponse(
+                        response.StatusCode, response.SubStatusCode) && CosmosDbEventSource.IsEnabled(EventLevel.Warning))
+            {
+                CosmosDbEventSource.Singleton.FailedRequest(response.Diagnostics.ToString());
+            } 
+            else if (DiagnosticsFilterHelper.IsLatencyThresholdCrossed(
                     config: config,
                     operationType: operationType,
                     response: response) && CosmosDbEventSource.IsEnabled(EventLevel.Warning))
@@ -63,6 +68,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private void LatencyOverThreshold(string message)
         {
             this.WriteEvent(2, message);
+        }
+
+        [Event(3, Level = EventLevel.Error)]
+        private void FailedRequest(string message)
+        {
+            this.WriteEvent(3, message);
         }
     }
 }

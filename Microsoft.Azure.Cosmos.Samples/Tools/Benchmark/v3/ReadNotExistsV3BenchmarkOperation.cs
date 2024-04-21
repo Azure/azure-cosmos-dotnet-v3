@@ -32,6 +32,8 @@ namespace CosmosBenchmark
             this.container = cosmosClient.GetContainer(this.databsaeName, this.containerName);
         }
 
+        public BenchmarkOperationType OperationType => BenchmarkOperationType.Read;
+
         public async Task<OperationResult> ExecuteOnceAsync()
         {
             using (ResponseMessage itemResponse = await this.container.ReadItemStreamAsync(
@@ -40,13 +42,14 @@ namespace CosmosBenchmark
             {
                 if (itemResponse.StatusCode != HttpStatusCode.NotFound)
                 {
-                    throw new Exception($"ReadItem failed wth {itemResponse.StatusCode}");
+                    throw new Exception($"ReadItem failed with {itemResponse.StatusCode}");
                 }
 
                 return new OperationResult()
                 {
                     DatabseName = databsaeName,
                     ContainerName = containerName,
+                    OperationType = this.OperationType,
                     RuCharges = itemResponse.Headers.RequestCharge,
                     CosmosDiagnostics = itemResponse.Diagnostics,
                     LazyDiagnostics = () => itemResponse.Diagnostics.ToString(),

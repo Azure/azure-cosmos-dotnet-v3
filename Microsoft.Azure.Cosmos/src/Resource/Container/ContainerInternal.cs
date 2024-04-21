@@ -65,15 +65,6 @@ namespace Microsoft.Azure.Cosmos
 
         public abstract Task<CollectionRoutingMap> GetRoutingMapAsync(CancellationToken cancellationToken);
 
-        public abstract Task<TryExecuteQueryResult> TryExecuteQueryAsync(
-            QueryFeatures supportedQueryFeatures,
-            QueryDefinition queryDefinition,
-            string continuationToken,
-            FeedRangeInternal feedRangeInternal,
-            QueryRequestOptions requestOptions,
-            GeospatialType geospatialType,
-            CancellationToken cancellationToken = default);
-
         public abstract FeedIterator GetStandByFeedIterator(
             string continuationToken = default,
             int? maxItemCount = default,
@@ -149,14 +140,17 @@ namespace Microsoft.Azure.Cosmos
 
 #if !PREVIEW
         public abstract Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
-               Cosmos.PartitionKey partitionKey,
-               RequestOptions requestOptions = null,
-               CancellationToken cancellationToken = default);
+            Cosmos.PartitionKey partitionKey,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default);
 
         public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
             CancellationToken cancellationToken = default);
 
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
+            string processorName,
+            ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate);
 #endif
 
         public abstract class TryExecuteQueryResult

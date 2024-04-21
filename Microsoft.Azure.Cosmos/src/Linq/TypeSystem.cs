@@ -10,10 +10,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Linq;
     using System.Reflection;
     using System.Runtime.CompilerServices;
-    using System.Runtime.Serialization;
-    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
 
     internal static class TypeSystem
     {
@@ -22,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             return GetElementType(type, new HashSet<Type>());
         }
 
-        public static string GetMemberName(this MemberInfo memberInfo, CosmosLinqSerializerOptions linqSerializerOptions = null)
+        public static string GetMemberName(this MemberInfo memberInfo, TranslationContext context)
         {
             //!HACK START
             if (memberInfo is PropertyInfo propertyInfo)
@@ -36,38 +33,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
             //!HACK END
             
-            string memberName = null;
-            // Json.Net honors JsonPropertyAttribute more than DataMemberAttribute
-            // So we check for JsonPropertyAttribute first.
-            JsonPropertyAttribute jsonPropertyAttribute = memberInfo.GetCustomAttribute<JsonPropertyAttribute>(true);
-            if (jsonPropertyAttribute != null && !string.IsNullOrEmpty(jsonPropertyAttribute.PropertyName))
-            {
-                memberName = jsonPropertyAttribute.PropertyName;
-            }
-            else
-            {
-                DataContractAttribute dataContractAttribute = memberInfo.DeclaringType.GetCustomAttribute<DataContractAttribute>(true);
-                if (dataContractAttribute != null)
-                {
-                    DataMemberAttribute dataMemberAttribute = memberInfo.GetCustomAttribute<DataMemberAttribute>(true);
-                    if (dataMemberAttribute != null && !string.IsNullOrEmpty(dataMemberAttribute.Name))
-                    {
-                        memberName = dataMemberAttribute.Name;
-                    }
-                }
-            }
-
-            if (memberName == null)
-            {
-                memberName = memberInfo.Name;
-            }
-
-            if (linqSerializerOptions != null)
-            {
-                memberName = CosmosSerializationUtil.GetStringWithPropertyNamingPolicy(linqSerializerOptions, memberName);
-            }
-
-            return memberName;
+            return context.CosmosLinqSerializer.SerializeMemberName(memberInfo);
         }
 
         private static Type GetElementType(Type type, HashSet<Type> visitedSet)

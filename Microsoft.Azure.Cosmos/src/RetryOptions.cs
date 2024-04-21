@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
         /// retry after the time has elapsed.
         /// </para>
         /// <para>
-        /// For more information, see <see href="https://docs.microsoft.com/en-us/azure/documentdb/documentdb-performance-tips#429">Handle rate limiting/request rate too large</see>.
+        /// For more information, see <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3#429">Handle rate limiting/request rate too large</see>.
         /// </para>
         /// </remarks>
         public int MaxRetryAttemptsOnThrottledRequests
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos
         /// If the cumulative wait time exceeds the this value, the client will stop retrying and return the error to the application.
         /// </para>
         /// <para>
-        /// For more information, see <see href="https://docs.microsoft.com/en-us/azure/documentdb/documentdb-performance-tips#429">Handle rate limiting/request rate too large</see>.
+        /// For more information, see <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3#429">Handle rate limiting/request rate too large</see>.
         /// </para>
         /// </remarks>
         public int MaxRetryWaitTimeInSeconds

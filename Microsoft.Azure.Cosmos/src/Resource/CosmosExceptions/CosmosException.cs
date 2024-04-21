@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Net;
     using System.Text;
-    using global::Azure.Core.Pipeline;
+    using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -289,9 +289,9 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="scope"></param>
         internal static void RecordOtelAttributes(CosmosException exception, DiagnosticScope scope)
         {
-            scope.AddAttribute(OpenTelemetryAttributeKeys.StatusCode, (int)exception.StatusCode);
-            scope.AddAttribute(OpenTelemetryAttributeKeys.SubStatusCode, (int)exception.SubStatusCode);
-            scope.AddAttribute(OpenTelemetryAttributeKeys.RequestCharge, exception.RequestCharge);
+            scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.StatusCode, (int)exception.StatusCode);
+            scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.SubStatusCode, (int)exception.SubStatusCode);
+            scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.RequestCharge, (int)exception.RequestCharge);
             scope.AddAttribute(OpenTelemetryAttributeKeys.Region, 
                 ClientTelemetryHelper.GetContactedRegions(exception.Diagnostics?.GetContactedRegions()));
             scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception.Message);

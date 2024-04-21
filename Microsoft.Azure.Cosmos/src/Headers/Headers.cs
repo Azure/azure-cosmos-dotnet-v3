@@ -171,6 +171,18 @@ namespace Microsoft.Azure.Cosmos
             set => this.CosmosMessageHeaders.PartitionKey = value;
         }
 
+        internal virtual string OptimisticDirectExecute
+        {
+            get => this.CosmosMessageHeaders.OptimisticDirectExecute;
+            set => this.CosmosMessageHeaders.OptimisticDirectExecute = value;
+        }
+
+        internal virtual string RequiresDistribution
+        {
+            get => this.CosmosMessageHeaders.RequiresDistribution;
+            set => this.CosmosMessageHeaders.RequiresDistribution = value;
+        }
+
         internal virtual string PartitionKeyRangeId
         {
             get => this.CosmosMessageHeaders.PartitionKeyRangeId;

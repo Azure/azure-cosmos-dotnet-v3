@@ -29,13 +29,12 @@ namespace Microsoft.Azure.Cosmos.Query
 
             MemoryStream memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(testResponse));
 
-            CosmosArray documents = CosmosQueryClientCore.ParseElementsFromRestStream(
+            CosmosQueryClientCore.ParseRestStream(
                 memoryStream,
                 Documents.ResourceType.Document,
-                new CosmosSerializationFormatOptions(
-                    "JsonText",
-                    (content) => JsonNavigator.Create(content),
-                    () => JsonWriter.Create(JsonSerializationFormat.Text)));
+                out CosmosArray documents,
+                out CosmosObject distributionPlan,
+                out bool? streaming);
 
             List<OrderByQueryResult> orderByQueryResults = documents.Select(x => new OrderByQueryResult(x)).ToList();
             Assert.AreEqual(14, orderByQueryResults.Count);

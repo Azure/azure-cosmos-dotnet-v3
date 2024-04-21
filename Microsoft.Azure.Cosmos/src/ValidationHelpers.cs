@@ -55,7 +55,6 @@ namespace Microsoft.Azure.Cosmos
         {
             if (isLocalQuorumConsistency && 
                     ValidationHelpers.IsLocalQuorumConsistency(
-                            backendConsistency: backendConsistency,
                             desiredConsistency: desiredConsistency,
                             operationType: operationType,
                             resourceType: resourceType))
@@ -109,21 +108,15 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Condition to check Quorum(i.e. Strong) read with either an eventual consistency account or a consistent prefix account.
         /// </summary>
-        /// <param name="backendConsistency"></param>
         /// <param name="desiredConsistency"></param>
         /// <param name="operationType"></param>
         /// <param name="resourceType"></param>
         /// <returns>true/false</returns>
-        private static bool IsLocalQuorumConsistency(Documents.ConsistencyLevel backendConsistency,
+        private static bool IsLocalQuorumConsistency(
                                 Documents.ConsistencyLevel desiredConsistency,
                                 OperationType? operationType,
                                 ResourceType? resourceType)
         {
-            if (backendConsistency != Documents.ConsistencyLevel.Eventual && backendConsistency != Documents.ConsistencyLevel.ConsistentPrefix)
-            {
-                return false;
-            }
-
             if (desiredConsistency != Documents.ConsistencyLevel.Strong)
             {
                 return false;

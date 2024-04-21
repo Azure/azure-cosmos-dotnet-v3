@@ -7,6 +7,7 @@
     {
         public string DatabseName { get; set; }
         public string ContainerName { get; set; }
+        public BenchmarkOperationType OperationType { get; set; }
         public double RuCharges { get; set; }
         public Func<string> LazyDiagnostics { get; set; }
         public CosmosDiagnostics CosmosDiagnostics { get; set; }

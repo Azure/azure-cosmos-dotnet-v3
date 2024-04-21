@@ -34,10 +34,9 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                     {
                         new FeedRangeState<ChangeFeedState>(FeedRangeEpk.FullRange, ChangeFeedState.Beginning())
                     }),
-                ChangeFeedPaginationOptions.Default,
-                cancellationToken: default);
+                ChangeFeedPaginationOptions.Default);
 
-            Assert.IsTrue(await enumerator.MoveNextAsync());
+            Assert.IsTrue(await enumerator.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default));
             Assert.IsTrue(enumerator.Current.Succeeded);
             Assert.IsTrue(enumerator.Current.Result.Page is ChangeFeedNotModifiedPage);
             Assert.IsNotNull(enumerator.Current.Result.State);
@@ -54,16 +53,15 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                     {
                         new FeedRangeState<ChangeFeedState>(FeedRangeEpk.FullRange, ChangeFeedState.Beginning())
                     }),
-                ChangeFeedPaginationOptions.Default,
-                cancellationToken: default);
+                ChangeFeedPaginationOptions.Default);
 
             // First page should be true and skip the 304 not modified
-            Assert.IsTrue(await enumerator.MoveNextAsync());
+            Assert.IsTrue(await enumerator.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default));
             Assert.IsTrue(enumerator.Current.Succeeded);
             Assert.IsTrue(enumerator.Current.Result.Page is ChangeFeedSuccessPage);
 
             // Second page should surface up the 304
-            Assert.IsTrue(await enumerator.MoveNextAsync());
+            Assert.IsTrue(await enumerator.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default));
             Assert.IsTrue(enumerator.Current.Succeeded);
             Assert.IsTrue(enumerator.Current.Result.Page is ChangeFeedNotModifiedPage);
         }
@@ -82,8 +80,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                     {
                         new FeedRangeState<ChangeFeedState>(FeedRangeEpk.FullRange, ChangeFeedState.Beginning())
                     }),
-                ChangeFeedPaginationOptions.Default,
-                cancellationToken: default);
+                ChangeFeedPaginationOptions.Default);
 
             (int globalCount, double _) = await (useContinuations
                 ? DrainWithUntilNotModifiedWithContinuationTokens(documentContainer, enumerator)
@@ -105,8 +102,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                     {
                         new FeedRangeState<ChangeFeedState>(FeedRangeEpk.FullRange, ChangeFeedState.Time(DateTime.UtcNow))
                     }),
-                ChangeFeedPaginationOptions.Default,
-                cancellationToken: default);
+                ChangeFeedPaginationOptions.Default);
 
             for (int i = 0; i < numItems; i++)
             {
@@ -143,8 +139,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                     {
                         new FeedRangeState<ChangeFeedState>(FeedRangeEpk.FullRange, ChangeFeedState.Now())
                     }),
-                ChangeFeedPaginationOptions.Default,
-                cancellationToken: default);
+                ChangeFeedPaginationOptions.Default);
 
             (int globalCount, double _) = await (useContinuations
                 ? DrainWithUntilNotModifiedWithContinuationTokens(documentContainer, enumerator)
@@ -221,8 +216,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             CrossPartitionChangeFeedAsyncEnumerator enumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
                 documentContainer.Object,
                 state,
-                ChangeFeedPaginationOptions.Default,
-                cancellationToken: default);
+                ChangeFeedPaginationOptions.Default);
 
             (int _, double requestCharge) = await DrainUntilNotModifedAsync(enumerator);
 
@@ -323,7 +317,13 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>())).ReturnsAsync(
                 (FeedRangeState<ChangeFeedState> state, ChangeFeedPaginationOptions options, ITrace trace, CancellationToken token)
-                    => TryCatch<ChangeFeedPage>.FromResult(new ChangeFeedSuccessPage(content: new MemoryStream(Encoding.UTF8.GetBytes("{\"Documents\": [], \"_count\": 0, \"_rid\": \"asdf\"}")), requestCharge: 5, activityId: string.Empty, additionalHeaders: default, state.State)));
+                    => TryCatch<ChangeFeedPage>.FromResult(new ChangeFeedSuccessPage(
+                        content: new MemoryStream(Encoding.UTF8.GetBytes("{\"Documents\": [], \"_count\": 0, \"_rid\": \"asdf\"}")),
+                        requestCharge: 5,
+                        itemCount: 0,
+                        activityId: string.Empty,
+                        additionalHeaders: default,
+                        state.State)));
 
             // Returns a 304 with 1RU charge on CC-FF
             documentContainer.Setup(c => c.MonadicChangeFeedAsync(
@@ -337,8 +337,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             CrossPartitionChangeFeedAsyncEnumerator enumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
                 documentContainer.Object,
                 state,
-                ChangeFeedPaginationOptions.Default,
-                cancellationToken: default);
+                ChangeFeedPaginationOptions.Default);
 
             (int _, double requestCharge) = await DrainUntilSuccessAsync(enumerator);
 
@@ -399,12 +398,11 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             CrossPartitionChangeFeedAsyncEnumerator enumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
                 documentContainer.Object,
                 state,
-                ChangeFeedPaginationOptions.Default,
-                cancellationToken: default);
+                ChangeFeedPaginationOptions.Default);
 
             try
             {
-                await enumerator.MoveNextAsync(NoOpTrace.Singleton);
+                await enumerator.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default);
                 Assert.Fail("Should have thrown");
             }
             catch (Exception caughtException)
@@ -415,7 +413,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             // Should be able to read MoveNextAsync again
             try
             {
-                await enumerator.MoveNextAsync(NoOpTrace.Singleton);
+                await enumerator.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default);
                 Assert.Fail("Should have thrown");
             }
             catch (Exception caughtException)
@@ -428,7 +426,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
         {
             int globalCount = 0;
             double requestCharge = 0;
-            while (await enumerator.MoveNextAsync())
+            while (await enumerator.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default))
             {
                 Assert.IsTrue(enumerator.Current.Succeeded);
                 requestCharge += enumerator.Current.Result.Page.RequestCharge;
@@ -447,7 +445,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
         {
             int globalCount = 0;
             double requestCharge = 0;
-            while (await enumerator.MoveNextAsync())
+            while (await enumerator.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default))
             {
                 Assert.IsTrue(enumerator.Current.Succeeded);
                 requestCharge += enumerator.Current.Result.Page.RequestCharge;
@@ -469,7 +467,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             List<CosmosElement> globalChanges = new List<CosmosElement>();
             while (true)
             {
-                if (!await enumerator.MoveNextAsync())
+                if (!await enumerator.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default))
                 {
                     throw new InvalidOperationException();
                 }
@@ -488,8 +486,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 enumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
                     documentContainer,
                     enumerator.Current.Result.State,
-                    ChangeFeedPaginationOptions.Default,
-                    cancellationToken: default);
+                    ChangeFeedPaginationOptions.Default);
             }
 
             return (globalChanges.Count, requestCharge);

@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 .Repeat(EmptyPagePipelineStage.PageType.Empty, 2000)
                 .Concat(Enumerable.Repeat(EmptyPagePipelineStage.PageType.Error, 1))
                 .ToList());
-            bool hasNext = await pipeline.MoveNextAsync(NoOpTrace.Singleton);
+            bool hasNext = await pipeline.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default);
             Assert.IsTrue(hasNext);
             TryCatch<QueryPage> result = pipeline.Current;
             Assert.IsFalse(result.Succeeded);
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 await using IQueryPipelineStage pipeline = CreatePipeline(testCase.Input);
                 for (int index = 0; index < testCase.Expected.Count; ++index)
                 {
-                    Assert.IsTrue(await pipeline.MoveNextAsync(NoOpTrace.Singleton));
+                    Assert.IsTrue(await pipeline.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default));
 
                     if (testCase.Expected[index])
                     {
@@ -112,11 +112,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         private static IQueryPipelineStage CreatePipeline(IReadOnlyList<EmptyPagePipelineStage.PageType> pages)
         {
             EmptyPagePipelineStage emptyPagePipelineStage = new EmptyPagePipelineStage(pages);
-            SkipEmptyPageQueryPipelineStage skipEmptyPageStage = new SkipEmptyPageQueryPipelineStage(
-                inputStage: emptyPagePipelineStage,
-                cancellationToken: default);
-
-            return new CatchAllQueryPipelineStage(inputStage: skipEmptyPageStage, cancellationToken: default);
+            SkipEmptyPageQueryPipelineStage skipEmptyPageStage = new SkipEmptyPageQueryPipelineStage(emptyPagePipelineStage);
+            return new CatchAllQueryPipelineStage(skipEmptyPageStage);
         }
 
         internal class EmptyPagePipelineStage : IQueryPipelineStage
@@ -127,21 +124,23 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                             documents: new List<CosmosElement>(),
                             requestCharge: 42,
                             activityId: Guid.NewGuid().ToString(),
-                            responseLengthInBytes: "[]".Length,
                             cosmosQueryExecutionInfo: default,
+                            distributionPlanSpec: default,
                             disallowContinuationTokenMessage: default,
                             additionalHeaders: default,
-                            state: new QueryState(CosmosString.Create("Empty"))));
+                            state: new QueryState(CosmosString.Create("Empty")),
+                            streaming: default));
 
             private static readonly TryCatch<QueryPage> NonEmpty = TryCatch<QueryPage>.FromResult(new QueryPage(
-                documents: new List<CosmosElement> { CosmosElement.Parse("42") },
+                            documents: new List<CosmosElement> { CosmosElement.Parse("42") },
                             requestCharge: 100,
                             activityId: Guid.NewGuid().ToString(),
-                            responseLengthInBytes: "[42]".Length,
                             cosmosQueryExecutionInfo: default,
+                            distributionPlanSpec: default,
                             disallowContinuationTokenMessage: default,
                             additionalHeaders: default,
-                            state: new QueryState(CosmosString.Create("NonEmpty"))));
+                            state: new QueryState(CosmosString.Create("NonEmpty")),
+                            streaming: default));
 
             private readonly IReadOnlyList<PageType> pages;
 
@@ -160,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 return new ValueTask();
             }
 
-            public ValueTask<bool> MoveNextAsync(ITrace trace)
+            public ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
             {
                 ++this.current;
                 if (this.current >= this.pages.Count)
@@ -186,10 +185,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 }
 
                 return new ValueTask<bool>(true);
-            }
-
-            public void SetCancellationToken(CancellationToken cancellationToken)
-            {
             }
         }
     }

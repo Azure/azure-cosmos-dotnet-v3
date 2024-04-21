@@ -1,0 +1,135 @@
+{
+  "timeStamp": "2022-07-12T10:37:40Z",
+  "clientId": "1d5a40cf-d1a3-4ac5-ad34-307ad9243985",
+  "machineId": "vmId:d0cb93eb-214b-4c2b-bd3d-cc93e90d9efd",
+  "processId": "dotnet",
+  "userAgent": "cosmos-netstandard-sdk/3.28.0|8|X64|Microsoft Windows 10.0.22000|.NET 6.0.6|L|F 00000010|",
+  "connectionMode": "DIRECT",
+  "globalDatabaseAccountName": "localhost",
+  "applicationRegion": "eastus",
+  "hostEnvInfo": "Linux|18.04-LTS|Standard_D2s_v3|AzurePublicCloud",
+  "preferredRegions": [ "region1", "region2" ],
+  "aggregationIntervalInSec": 1,
+  "acceleratedNetworking": false,
+  "systemInfo": [
+    {
+      "resource": "HostMachine",
+      "metricInfo": {
+        "metricsName": "CPU",
+        "unitName": "Percentage",
+        "mean": 38.55,
+        "count": 4,
+        "min": 10.96,
+        "max": 73.27,
+        "percentiles": {
+          "50": 33.11,
+          "90": 73.27,
+          "95": 73.27,
+          "99": 73.27,
+          "99.9": 73.27
+        }
+      }
+    },
+    {
+      "resource": "HostMachine",
+      "metricInfo": {
+        "metricsName": "MemoryRemaining",
+        "unitName": "MB",
+        "mean": 31904.0,
+        "count": 4,
+        "min": 31744.0,
+        "max": 31999.9990234375,
+        "percentiles": {
+          "50": 31999.9990234375,
+          "90": 31999.9990234375,
+          "95": 31999.9990234375,
+          "99": 31999.9990234375,
+          "99.9": 31999.9990234375
+        }
+      }
+    },
+    {
+      "resource": "HostMachine",
+      "metricInfo": {
+        "metricsName": "SystemPool_AvailableThreads",
+        "unitName": "ThreadCount",
+        "mean": 32704.0,
+        "count": 4,
+        "min": 32640.0,
+        "max": 32767.0,
+        "percentiles": {
+          "50": 32767.0,
+          "90": 32767.0,
+          "95": 32767.0,
+          "99": 32767.0,
+          "99.9": 32767.0
+        }
+      }
+    },
+    {
+      "resource": "HostMachine",
+      "metricInfo": {
+        "metricsName": "SystemPool_ThreadWaitInterval",
+        "unitName": "MilliSecond",
+        "mean": 0.1743,
+        "count": 3,
+        "min": 0.0488,
+        "max": 0.3359,
+        "percentiles": {
+          "50": 0.1391,
+          "90": 0.3359,
+          "95": 0.3359,
+          "99": 0.3359,
+          "99.9": 0.3359
+        }
+      }
+    },
+    {
+      "resource": "HostMachine",
+      "metricInfo": {
+        "metricsName": "SystemPool_IsThreadStarving_True",
+        "unitName": "Count",
+        "mean": 0.1,
+        "count": 2,
+        "min": 0.1,
+        "max": 0.1
+      }
+    },
+    {
+      "resource": "HostMachine",
+      "metricInfo": {
+        "metricsName": "RntbdOpenConnections",
+        "unitName": "Count",
+        "mean": 0.25,
+        "count": 4,
+        "min": 0.1,
+        "max": 1.0,
+        "percentiles": {
+          "50": 0.1,
+          "90": 1.0,
+          "95": 1.0,
+          "99": 1.0,
+          "99.9": 1.0
+        }
+      }
+    },
+    {
+      "resource": "HostMachine",
+      "metricInfo": {
+        "metricsName": "TcpNewChannelOpenLatency",
+        "unitName": "MilliSecond",
+        "mean": 0.25,
+        "count": 4,
+        "min": 0.1,
+        "max": 1.0,
+        "percentiles": {
+          "50": 0.1,
+          "90": 1.0,
+          "95": 1.0,
+          "99": 1.0,
+          "99.9": 1.0
+        }
+      }
+    }
+  ]
+}

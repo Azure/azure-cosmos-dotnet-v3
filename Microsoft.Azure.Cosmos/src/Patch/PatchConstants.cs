@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos
             public const string OperationType = "op";
             public const string Path = "path";
             public const string Value = "value";
+            public const string From = "from";
         }
 
         public static class PatchSpecAttributes
@@ -28,6 +29,7 @@ namespace Microsoft.Azure.Cosmos
             public const string Replace = "replace";
             public const string Set = "set";
             public const string Increment = "incr";
+            public const string Move = "move";
         }
 
         public static string ToEnumMemberString(this PatchOperationType patchOperationType)
@@ -44,6 +46,8 @@ namespace Microsoft.Azure.Cosmos
                     return PatchConstants.OperationTypeNames.Set;
                 case PatchOperationType.Increment:
                     return PatchConstants.OperationTypeNames.Increment;
+                case PatchOperationType.Move:
+                    return PatchConstants.OperationTypeNames.Move;
                 default:
                     throw new ArgumentException($"Unknown Patch operation type '{patchOperationType}'.");
             }

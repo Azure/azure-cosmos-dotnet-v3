@@ -27,16 +27,19 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         private readonly CosmosClient client;
         private readonly Cosmos.ConsistencyLevel? RequestedClientConsistencyLevel;
+        private readonly Cosmos.PriorityLevel? RequestedClientPriorityLevel;
 
         private bool? IsLocalQuorumConsistency;
         private Cosmos.ConsistencyLevel? AccountConsistencyLevel = null;
 
         public RequestInvokerHandler(
             CosmosClient client,
-            Cosmos.ConsistencyLevel? requestedClientConsistencyLevel)
+            Cosmos.ConsistencyLevel? requestedClientConsistencyLevel,
+            Cosmos.PriorityLevel? requestedClientPriorityLevel)
         {
             this.client = client;
             this.RequestedClientConsistencyLevel = requestedClientConsistencyLevel;       
+            this.RequestedClientPriorityLevel = requestedClientPriorityLevel;
         }
 
         public override async Task<ResponseMessage> SendAsync(
@@ -66,6 +69,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             await this.ValidateAndSetConsistencyLevelAsync(request);
+            this.SetPriorityLevel(request);
+
             (bool isError, ResponseMessage errorResponse) = await this.EnsureValidClientAsync(request, request.Trace);
             if (isError)
             {
@@ -161,6 +166,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                     if (feedRange != null)
                     {
+                        if (!request.OperationType.IsPointOperation()) 
+                        {
+                            feedRange = await RequestInvokerHandler.ResolveFeedRangeBasedOnPrefixContainerAsync(
+                                feedRange: feedRange,
+                                cosmosContainerCore: cosmosContainerCore,
+                                cancellationToken: cancellationToken);
+                        }
+                        
                         if (feedRange is FeedRangePartitionKey feedRangePartitionKey)
                         {
                             if (cosmosContainerCore == null && object.ReferenceEquals(feedRangePartitionKey.PartitionKey, Cosmos.PartitionKey.None))
@@ -423,6 +436,25 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
         }
 
+        /// <summary>
+        /// Set the PriorityLevel in the request headers
+        /// </summary>
+        /// <param name="requestMessage"></param>
+        private void SetPriorityLevel(RequestMessage requestMessage)
+        {
+            Cosmos.PriorityLevel? priorityLevel = this.RequestedClientPriorityLevel;
+            RequestOptions promotedRequestOptions = requestMessage.RequestOptions;
+            if (promotedRequestOptions?.PriorityLevel.HasValue == true)
+            {
+                priorityLevel = promotedRequestOptions.PriorityLevel.Value;
+            }
+
+            if (priorityLevel.HasValue)
+            {
+                requestMessage.Headers.Set(HttpConstants.HttpHeaders.PriorityLevel, priorityLevel.ToString());
+            }
+        }
+
         internal static bool ShouldSetNoContentResponseHeaders(RequestOptions requestOptions,
             CosmosClientOptions clientOptions,
             OperationType operationType,
@@ -479,6 +511,27 @@ namespace Microsoft.Azure.Cosmos.Handlers
             return clientOptions != null
                 && clientOptions.EnableContentResponseOnWrite.HasValue
                 && RequestInvokerHandler.IsItemNoRepsonseSet(clientOptions.EnableContentResponseOnWrite.Value, operationType);
+        }
+
+        internal static async Task<FeedRange> ResolveFeedRangeBasedOnPrefixContainerAsync(
+            FeedRange feedRange,
+            ContainerInternal cosmosContainerCore,
+            CancellationToken cancellationToken)
+        {
+            if (feedRange is FeedRangePartitionKey feedRangePartitionKey)
+            {
+                PartitionKeyDefinition partitionKeyDefinition = await cosmosContainerCore
+                    .GetPartitionKeyDefinitionAsync(cancellationToken)
+                    .ConfigureAwait(false);
+
+                if (partitionKeyDefinition != null && partitionKeyDefinition.Kind == PartitionKind.MultiHash
+                    && feedRangePartitionKey.PartitionKey.InternalKey?.Components?.Count < partitionKeyDefinition.Paths?.Count)
+                {
+                   feedRange = new FeedRangeEpk(feedRangePartitionKey.PartitionKey.InternalKey.GetEPKRangeForPrefixPartitionKey(partitionKeyDefinition));
+                }
+            }
+
+            return feedRange;
         }
     }
 }

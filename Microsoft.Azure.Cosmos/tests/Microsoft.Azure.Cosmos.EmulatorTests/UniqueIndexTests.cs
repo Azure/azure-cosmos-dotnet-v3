@@ -34,6 +34,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 using (await this.database.DeleteStreamAsync()) { }
             }
+
+            this.client.Dispose();
         }
 
         [TestMethod]

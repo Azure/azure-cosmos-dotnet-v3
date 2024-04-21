@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
     internal static partial class TraceWriter
     {
         internal static readonly string HourTimeFormatString = "HH:mm:ss:fff";
+        internal static readonly string DateTimeFormatString = "yyyy-MM-ddTHH:mm:ss.fffZ";
 
         private static class TraceTextWriter
         {

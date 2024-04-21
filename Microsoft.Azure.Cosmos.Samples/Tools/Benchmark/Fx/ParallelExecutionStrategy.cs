@@ -11,6 +11,7 @@ namespace CosmosBenchmark
     using System.Threading;
     using System.Threading.Tasks;
     using Newtonsoft.Json;
+    using OpenTelemetry.Metrics;
 
     internal class ParallelExecutionStrategy : IExecutionStrategy
     {
@@ -37,8 +38,10 @@ namespace CosmosBenchmark
                     (int)(serialExecutorIterationCount * warmupFraction),
                     isWarmup: true,
                     traceFailures: benchmarkConfig.TraceFailures,
-                    completionCallback: () => { });
+                    completionCallback: () => { }, 
+                    benchmarkConfig);
 
+            Utility.TeePrint("Starting execution {0} tasks", serialExecutorConcurrency);
             IExecutor[] executors = new IExecutor[serialExecutorConcurrency];
             for (int i = 0; i < serialExecutorConcurrency; i++)
             {
@@ -54,11 +57,12 @@ namespace CosmosBenchmark
                         iterationCount: serialExecutorIterationCount,
                         isWarmup: false,
                         traceFailures: benchmarkConfig.TraceFailures,
-                        completionCallback: () => Interlocked.Decrement(ref this.pendingExecutorCount));
+                        completionCallback: () => Interlocked.Decrement(ref this.pendingExecutorCount),
+                        benchmarkConfig);
             }
 
             return await this.LogOutputStats(
-                benchmarkConfig, 
+                benchmarkConfig,
                 executors);
         }
 
@@ -107,9 +111,8 @@ namespace CosmosBenchmark
 
             using (ConsoleColorContext ct = new ConsoleColorContext(ConsoleColor.Green))
             {
-                Console.WriteLine();
-                Console.WriteLine("Summary:");
-                Console.WriteLine("--------------------------------------------------------------------- ");
+                Utility.TeeTraceInformation("Summary:");
+                Utility.TeeTraceInformation("--------------------------------------------------------------------- ");
                 lastSummary.Print(lastSummary.failedOpsCount + lastSummary.successfulOpsCount);
 
                 // Skip first 5 and last 5 counters as outliers
@@ -122,7 +125,6 @@ namespace CosmosBenchmark
 
                 if (summaryCounters.Length > 10)
                 {
-                    Console.WriteLine();
                     Utility.TeeTraceInformation("After Excluding outliers");
 
                     runSummary.Top10PercentAverageRps = Math.Round(summaryCounters.Take((int)(0.1 * summaryCounters.Length)).Average(), 0);
@@ -154,7 +156,7 @@ namespace CosmosBenchmark
                     Utility.TeeTraceInformation("Please adjust ItemCount high to run of at-least 1M");
                 }
 
-                Console.WriteLine("--------------------------------------------------------------------- ");
+                Utility.TeeTraceInformation("--------------------------------------------------------------------- ");
 
                 return runSummary;
             }

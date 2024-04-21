@@ -136,9 +136,18 @@ namespace Microsoft.Azure.Cosmos.Routing
                 partitionKeyRange,
                 (_) => new PartitionKeyRangeFailoverInfo(failedLocation));
 
+            // For any single master write accounts, the next locations to fail over will be the read regions configured at the account level.
+            // For multi master write accounts, since all the regions are treated as write regions, the next locations to fail over
+            // will be the preferred read regions that are configured in the application preferred regions in the CosmosClientOptions.
+            bool isSingleMasterWriteAccount = !this.globalEndpointManager.CanUseMultipleWriteLocations(request);
+
+            ReadOnlyCollection<Uri> nextLocations = isSingleMasterWriteAccount
+                ? this.globalEndpointManager.AccountReadEndpoints
+                : this.globalEndpointManager.ReadEndpoints;
+
             // Will return true if it was able to update to a new region
             if (partionFailover.TryMoveNextLocation(
-                    locations: this.globalEndpointManager.ReadEndpoints,
+                    locations: nextLocations,
                     failedLocation: failedLocation))
             {
                 DefaultTrace.TraceInformation("Partition level override added to new location. PartitionKeyRange: {0}, failedLocation: {1}, new location: {2}",

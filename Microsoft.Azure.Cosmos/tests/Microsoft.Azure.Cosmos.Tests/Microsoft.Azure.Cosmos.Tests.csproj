@@ -9,7 +9,7 @@
     <IsPackable>false</IsPackable>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <RootNamespace>Microsoft.Azure.Cosmos.Tests</RootNamespace>
-	<LangVersion>$(LangVersion)</LangVersion>
+    <LangVersion>$(LangVersion)</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -31,9 +31,11 @@
     <None Remove="BaselineTest\TestBaseline\SqlObjectVisitorBaselineTests.SqlQueries.xml" />
     <None Remove="BaselineTest\TestBaseline\SqlObjectVisitorBaselineTests.SqlScalarExpression.xml" />
     <None Remove="BaselineTest\TestBaseline\SqlObjectVisitorBaselineTests.SqlUnaryScalarOperators.xml" />
+    <None Remove="BaselineTest\TestBaseline\SubpartitionTests.TestQueriesOnSplitContainer.xml" />
     <None Remove="BaselineTest\TestBaseline\TraceWriterBaselineTests.ScenariosAsync.xml" />
     <None Remove="BaselineTest\TestBaseline\TraceWriterBaselineTests.Serialization.xml" />
     <None Remove="BaselineTest\TestBaseline\TraceWriterBaselineTests.TraceData.xml" />
+    <None Remove="Telemetry\ClientTelemetryPayloadWithoutMetrics.json" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
@@ -78,7 +80,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="BaselineTest\TestBaseline\ClientDistributionPlanBaselineTests.TestClientDistributionPlanDeserialization.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="BaselineTest\TestBaseline\GroupByClauseSqlParserBaselineTests.Tests.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\ScalarExpressionSqlParserBaselineTests.StringLiteral.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="BaselineTest\TestBaseline\SelectClauseSqlParserBaselineTests.Tests.xml">
@@ -114,6 +122,9 @@
     <None Update="BaselineTest\TestBaseline\PartitionKeyHashBaselineTest.Strings.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+	<None Update="BaselineTest\TestBaseline\PartitionKeyHashBaselineTest.Lists.xml">
+       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	</None>
     <None Update="BaselineTest\TestBaseline\DistinctHashBaselineTests.WrappedElementsHash.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -174,12 +185,24 @@
     <None Update="BaselineTest\TestBaseline\ScalarExpressionSqlParserBaselineTests.ArrayCreate.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-	<None Update="BaselineTest\TestBaseline\ScalarExpressionSqlParserBaselineTests.All.xml">
-		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	</None>
-	<None Update="BaselineTest\TestBaseline\AggregateSubquerySqlParserBaselineTests.All.xml">
-		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	</None>
+    <None Update="BaselineTest\TestBaseline\ScalarExpressionSqlParserBaselineTests.All.xml">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\ScalarExpressionSqlParserBaselineTests.First.xml">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\ScalarExpressionSqlParserBaselineTests.Last.xml">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\AggregateSubquerySqlParserBaselineTests.All.xml">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\AggregateSubquerySqlParserBaselineTests.First.xml">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\AggregateSubquerySqlParserBaselineTests.Last.xml">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="BaselineTest\TestBaseline\QueryPlanBaselineTests.SystemFunctions.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -198,9 +221,9 @@
     <None Update="BaselineTest\TestBaseline\QueryPlanBaselineTests.GroupBy.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-	<None Update="BaselineTest\TestBaseline\QueryPlanBaselineTests.Like.xml">
+    <None Update="BaselineTest\TestBaseline\QueryPlanBaselineTests.Like.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>	
+    </None>    
     <None Update="BaselineTest\TestBaseline\QueryPlanBaselineTests.ManyRanges.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -247,6 +270,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Contracts\DotNetSDKAPI.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Contracts\DotNetSDKTelemetryAPI.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Routing\resources\BaselineTest.PartitionRoutingHelper.AddFormattedContinuationToHeader.json">
@@ -324,6 +350,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="BaselineTest\TestBaseline\SubpartitionTests.TestQueriesOnSplitContainer.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="BaselineTest\TestBaseline\TraceWriterBaselineTests.TraceData.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -361,6 +390,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="BaselineTest\TestBaseline\SqlObjectVisitorBaselineTests.SqlUnaryScalarOperators.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Telemetry\ClientTelemetryPayloadWithoutMetrics.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

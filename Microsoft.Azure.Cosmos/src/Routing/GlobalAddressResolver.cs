@@ -27,7 +27,6 @@ namespace Microsoft.Azure.Cosmos.Routing
     internal sealed class GlobalAddressResolver : IAddressResolverExtension, IDisposable
     {
         private const int MaxBackupReadRegions = 3;
-
         private readonly GlobalEndpointManager endpointManager;
         private readonly GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
         private readonly Protocol protocol;
@@ -39,6 +38,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly CosmosHttpClient httpClient;
         private readonly ConcurrentDictionary<Uri, EndpointCache> addressCacheByEndpoint;
         private readonly bool enableTcpConnectionEndpointRediscovery;
+        private readonly bool isReplicaAddressValidationEnabled;
         private IOpenConnectionsHandler openConnectionsHandler;
 
         public GlobalAddressResolver(
@@ -66,6 +66,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                 ? GlobalAddressResolver.MaxBackupReadRegions : 0;
 
             this.enableTcpConnectionEndpointRediscovery = connectionPolicy.EnableTcpConnectionEndpointRediscovery;
+
+            this.isReplicaAddressValidationEnabled = ConfigurationManager.IsReplicaAddressValidationEnabled(connectionPolicy);
 
             this.maxEndpoints = maxBackupReadEndpoints + 2; // for write and alternate write endpoint (during failover)
 
@@ -228,33 +230,16 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         public async Task UpdateAsync(
-            IReadOnlyList<AddressCacheToken> addressCacheTokens,
-            CancellationToken cancellationToken)
-        {
-            List<Task> tasks = new List<Task>();
-
-            foreach (AddressCacheToken cacheToken in addressCacheTokens)
-            {
-                if (this.addressCacheByEndpoint.TryGetValue(cacheToken.ServiceEndpoint, out EndpointCache endpointCache))
-                {
-                    tasks.Add(endpointCache.AddressCache.UpdateAsync(cacheToken.PartitionKeyRangeIdentity, cancellationToken));
-                }
-            }
-
-            await Task.WhenAll(tasks);
-        }
-
-        public Task UpdateAsync(
            ServerKey serverKey,
            CancellationToken cancellationToken)
         {
             foreach (KeyValuePair<Uri, EndpointCache> addressCache in this.addressCacheByEndpoint)
             {
-                // since we don't know which address cache contains the pkRanges mapped to this node, we do a tryRemove on all AddressCaches of all regions
-                addressCache.Value.AddressCache.TryRemoveAddresses(serverKey);
+                // since we don't know which address cache contains the pkRanges mapped to this node,
+                // we mark all transport uris that has the same server key to unhealthy status in the
+                // AddressCaches of all regions.
+                await addressCache.Value.AddressCache.MarkAddressesToUnhealthyAsync(serverKey);
             }
-
-            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -298,7 +283,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                         this.serviceConfigReader,
                         this.httpClient,
                         this.openConnectionsHandler,
-                        enableTcpConnectionEndpointRediscovery: this.enableTcpConnectionEndpointRediscovery);
+                        enableTcpConnectionEndpointRediscovery: this.enableTcpConnectionEndpointRediscovery,
+                        replicaAddressValidationEnabled: this.isReplicaAddressValidationEnabled);
 
                     string location = this.endpointManager.GetLocation(endpoint);
                     AddressResolver addressResolver = new AddressResolver(null, new NullRequestSigner(), location);

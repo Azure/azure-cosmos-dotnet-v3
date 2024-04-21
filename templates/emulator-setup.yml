@@ -1,30 +1,52 @@
 # File: templates/emulator-setup.yml
 
 steps:
-  - pwsh:  |
-        Write-Host "Downloading Cosmos Emulator - $env:EMULATORMSIURL" -ForegroundColor green 
-        Invoke-WebRequest "$env:EMULATORMSIURL" -OutFile "$env:temp\azure-cosmosdb-emulator.msi"
-        Write-Host "Finished Downloading Cosmos Emulator - $env:temp\azure-cosmosdb-emulator.msi" -ForegroundColor green 
-        dir "$env:temp" 
-        choco install lessmsi
-        choco upgrade lessmsi
-        mkdir "$env:temp\Azure Cosmos DB Emulator"
-        lessmsi x "$env:temp\azure-cosmosdb-emulator.msi" "$env:temp\Azure Cosmos DB Emulator\"
-        Write-Host "Starting Comsos DB Emulator" -ForegroundColor green 
-        Add-MpPreference -ExclusionPath "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator"
-        Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=100 /Consistency=Strong /enableRio /EnablePreview /EnableAadAuthentication /EnableSqlComputeEndpoint" -Verb RunAs
-        Import-Module "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\PSModules\Microsoft.Azure.CosmosDB.Emulator"
-        Get-Item env:* | Sort-Object -Property Name
-        for ($i=0; $i -lt 10; $i++) {
-          $status=Get-CosmosDbEmulatorStatus 
+  - pwsh: |
+      Write-Host "Downloading Cosmos Emulator - $env:EMULATORMSIURL" -ForegroundColor green 
+      Invoke-WebRequest "$env:EMULATORMSIURL" -OutFile "$env:temp\azure-cosmosdb-emulator.msi"
+      Write-Host "Finished Downloading Cosmos Emulator - $env:temp\azure-cosmosdb-emulator.msi" -ForegroundColor green 
+      dir "$env:temp" 
+      choco install lessmsi
+      choco upgrade lessmsi
+      mkdir "$env:temp\Azure Cosmos DB Emulator"
+      lessmsi x "$env:temp\azure-cosmosdb-emulator.msi" "$env:temp\Azure Cosmos DB Emulator\"
+      Add-MpPreference -ExclusionPath "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator"
+      Add-MpPreference -ExclusionPath "$env:localappdata\CosmosDBEmulator"
+    displayName: Downloading and Installing Cosmos DB Emulator
+    failOnStderr: true
+    errorActionPreference: stop
+  - pwsh: |
+      Write-Host "Starting Cosmos DB Emulator" -ForegroundColor green 
+      Import-Module "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\PSModules\Microsoft.Azure.CosmosDB.Emulator"
+      Get-Item env:* | Sort-Object -Property Name
+
+      for ($j=0; $j -lt 3; $j++) {
+        Write-Host "Attempt $j"
+        Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=50 /Consistency=Strong /EnablePreview /EnableSqlComputeEndpoint" -Verb RunAs
+        for ($i=0; $i -lt 5; $i++) {
+          $status = Get-CosmosDbEmulatorStatus
+          Write-Host "Cosmos DB Emulator Status: $status"
           if ($status -ne "Running") {
             sleep 30;
-            Write-Host "Cosmos DB Emulator Status: $status" -ForegroundColor yellow
-          } else {
+          }
+          else {
             break;
           }
         }
-      
-    displayName:  Install Public Cosmos DB Emulator
-    failOnStderr:  true
-    errorActionPreference:  stop
+        if ($status -ne "Running") {
+          Write-Host "Shutting down and restarting"
+          Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/Shutdown" -Verb RunAs
+          sleep 30;
+        }
+        else {
+          break;
+        }
+      }
+
+      if ($status -ne "Running") {
+        Write-Error "Emulator failed to start"
+      }
+
+    displayName: Waiting for Cosmos DB Emulator status
+    failOnStderr: true
+    errorActionPreference: stop
