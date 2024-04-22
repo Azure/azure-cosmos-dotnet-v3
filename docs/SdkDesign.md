@@ -151,11 +151,11 @@ If the retry period (30 seconds) is exhausted, it returns an HTTP 503 ServiceUna
 * HTTP 410 Substatus 1007 (partition is splitting) responses from the service  -> Refreshes partition map (rediscovers partitions) and retries.
 * HTTP 410 Substatus 1000 responses from the service, up to 3 times  -> Refreshes container map (for cases when the container was recreated with the same name) and retries.
 
-> There is no delay for the first retry. Further retries start with 1 second and using a backoff multiplier of 2 can go up to 15 seconds.
+> :information_source: There is no delay for the first retry. Further retries start with 1 second and using a backoff multiplier of 2 can go up to 15 seconds.
 
 * HTTP 449 responses from the service -> Retries using a random salted period.
 
-> There is no delay for the first retry. Further retries start with 10 milliseconds and using a backoff multiplier of 2 with a 5 millisecond salt can go up to 1 second.
+> :information_source: There is no delay for the first retry. Further retries start with 10 milliseconds and using a backoff multiplier of 2 with a 5 millisecond salt can go up to 1 second.
 
 ```mermaid
 flowchart
