@@ -27,6 +27,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         OrderBy = 1 << 7,
         Top = 1 << 8,
         NonValueAggregate = 1 << 9,
-        DCount = 1 << 10
+        DCount = 1 << 10,
+        NonStreamingOrderBy = 1 << 11,
     }
 }
