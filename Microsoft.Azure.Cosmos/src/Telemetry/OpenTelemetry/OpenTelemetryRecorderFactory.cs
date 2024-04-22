@@ -5,7 +5,9 @@
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
-    using global::Azure.Core.Pipeline;
+    using System.Diagnostics;
+    using global::Azure.Core;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
     /// This class is used to generate Activities with Azure.Cosmos.Operation Source Name
@@ -15,42 +17,63 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Singleton to make sure we only have one instance of the DiagnosticScopeFactory and pattern matching of listener happens only once
         /// </summary>
-        private static DiagnosticScopeFactory ScopeFactory { get; set; } 
-        
+        private static readonly Lazy<DiagnosticScopeFactory> LazyScopeFactory = new Lazy<DiagnosticScopeFactory>(
+            valueFactory: () => new DiagnosticScopeFactory(
+                           clientNamespace: $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}",
+                           resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
+                           isActivityEnabled: true,
+                           suppressNestedClientActivities: true, 
+                           isStable: false),
+            isThreadSafe: true);
+
         public static OpenTelemetryCoreRecorder CreateRecorder(string operationName,
             string containerName,
             string databaseName,
             Documents.OperationType operationType,
             RequestOptions requestOptions, 
+            ITrace trace,
             CosmosClientContext clientContext)
         {
-            if (clientContext is { ClientOptions.IsDistributedTracingEnabled: true })
+            OpenTelemetryCoreRecorder openTelemetryRecorder = default;
+            if (clientContext is { ClientOptions.CosmosClientTelemetryOptions.DisableDistributedTracing: false })
             {
-                OpenTelemetryRecorderFactory.ScopeFactory ??= new DiagnosticScopeFactory(clientNamespace: OpenTelemetryAttributeKeys.DiagnosticNamespace,
-                        resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
-                        isActivityEnabled: true);
-                
                 // If there is no source then it will return default otherwise a valid diagnostic scope
-                DiagnosticScope scope = OpenTelemetryRecorderFactory
-                    .ScopeFactory
-                    .CreateScope(name: $"{OpenTelemetryAttributeKeys.OperationPrefix}.{operationName}",
-                                 kind: clientContext.ClientOptions.ConnectionMode == ConnectionMode.Gateway ? DiagnosticScope.ActivityKind.Internal : DiagnosticScope.ActivityKind.Client);
+                DiagnosticScope scope = LazyScopeFactory.Value.CreateScope(name: $"{OpenTelemetryAttributeKeys.OperationPrefix}.{operationName}",
+                                 kind: clientContext.ClientOptions.ConnectionMode == ConnectionMode.Gateway ? ActivityKind.Internal : ActivityKind.Client);
 
-                // Record values only when we have a valid Diagnostic Scope
+                // Need a parent activity id associated with the operation which is logged in diagnostics and used for tracing purpose.
+                // If there are listeners at operation level then scope is enabled and it tries to create activity.
+                // However, if available listeners are not subscribed to operation level event then it will lead to scope being enabled but no activity is created.
                 if (scope.IsEnabled)
                 {
-                    return new OpenTelemetryCoreRecorder(
-                        scope: scope,
+                    scope.SetDisplayName($"{operationName} {containerName}");
+
+                    openTelemetryRecorder = OpenTelemetryCoreRecorder.CreateOperationLevelParentActivity(
+                        operationScope: scope,
                         operationName: operationName,
                         containerName: containerName,
                         databaseName: databaseName,
                         operationType: operationType,
                         clientContext: clientContext,
-                        config: requestOptions?.DistributedTracingOptions ?? clientContext.ClientOptions?.DistributedTracingOptions);
+                        config: requestOptions?.CosmosThresholdOptions ?? clientContext.ClientOptions?.CosmosClientTelemetryOptions.CosmosThresholdOptions);
+                }
+#if !INTERNAL
+                // If there are no listeners at operation level and no parent activity created.
+                // Then create a dummy activity as there should be a parent level activity always to send a traceid to the backend services through context propagation.
+                // The parent activity id logged in diagnostics, can be used for tracing purpose in backend.
+                if (Activity.Current is null)
+                {
+                    openTelemetryRecorder = OpenTelemetryCoreRecorder.CreateParentActivity(operationName);
+                }
+#endif
+                // Safety check as diagnostic logs should not break the code.
+                if (Activity.Current?.TraceId != null)
+                {
+                    // This id would be useful to trace calls at backend services when distributed tracing feature is available there.
+                    trace.AddDatum("DistributedTraceId", Activity.Current.TraceId);
                 }
             }
-
-            return default;
+            return openTelemetryRecorder;
         }
     }
 }

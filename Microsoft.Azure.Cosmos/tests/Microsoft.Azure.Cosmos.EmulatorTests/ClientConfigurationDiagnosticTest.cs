@@ -2,7 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
+    using System.Linq;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -45,7 +45,11 @@
             ItemResponse<ToDoActivity> response = await this.Container.CreateItemAsync(testItem, new Cosmos.PartitionKey(testItem.pk));
             Assert.IsNotNull(response.Diagnostics);
             ITrace trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
-            Assert.AreEqual(trace.Data.Count, 1);
+#if PREVIEW
+            Assert.AreEqual(actual: trace.Data.Count, expected: 2, message: string.Join(",", trace.Data.Select(a => $"{a.Key}: {a.Value}")));  // Distributed Tracing Id
+#else
+            Assert.AreEqual(actual: trace.Data.Count, expected: 1, message: string.Join(",", trace.Data.Select(a => $"{a.Key}: {a.Value}")));
+#endif
             ClientConfigurationTraceDatum clientConfigurationTraceDatum = (ClientConfigurationTraceDatum)trace.Data["Client Configuration"];
             Assert.IsNotNull(clientConfigurationTraceDatum.UserAgentContainer.UserAgent);
         }

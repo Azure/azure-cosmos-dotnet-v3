@@ -40,12 +40,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         internal CosmosClient Client;
         internal Cosmos.Database database;
 
-        public QueryTestsBase()
-        {
-            this.GatewayClient = TestCommon.CreateCosmosClient(true, builder => builder.AddCustomHandlers(this.GatewayRequestChargeHandler));
-            this.Client = TestCommon.CreateCosmosClient(false, builder => builder.AddCustomHandlers(this.DirectRequestChargeHandler));
-        }
-
         [FlagsAttribute]
         internal enum ConnectionModes
         {
@@ -63,17 +57,11 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             MultiPartition = 0x4,
         }
 
-        [ClassInitialize]
-        [ClassCleanup]
-        public static void ClassSetup(TestContext testContext = null)
-        {
-            CosmosClient client = TestCommon.CreateCosmosClient(false);
-            QueryTestsBase.CleanUp(client).Wait();
-        }
-
         [TestInitialize]
         public async Task Initialize()
         {
+            this.GatewayClient = TestCommon.CreateCosmosClient(true, builder => builder.AddCustomHandlers(this.GatewayRequestChargeHandler));
+            this.Client = TestCommon.CreateCosmosClient(false, builder => builder.AddCustomHandlers(this.DirectRequestChargeHandler));
             this.database = await this.Client.CreateDatabaseAsync(Guid.NewGuid().ToString() + "db");
         }
 
@@ -81,6 +69,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         public async Task Cleanup()
         {
             await this.database.DeleteStreamAsync();
+            this.Client.Dispose();
+            this.GatewayClient.Dispose();
         }
 
         private static string GetApiVersion()
@@ -359,6 +349,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             }
             finally
             {
+                this.Client.Dispose();
+                this.GatewayClient.Dispose();
                 this.Client = originalCosmosClient;
                 this.GatewayClient = originalGatewayClient;
                 this.database = originalDatabase;

@@ -20,6 +20,28 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     [TestCategory("ChangeFeed")]
     public class PartitionSynchronizerCoreTests
     {
+        private GlobalEndpointManager endpointManager;
+
+        [TestInitialize]
+        public void TestInitialize()
+        {
+            Mock<IDocumentClientInternal> mockDocumentClient = new();
+
+            mockDocumentClient
+                .Setup(client => client.ServiceEndpoint)
+                .Returns(new Uri("https://foo"));
+
+            this.endpointManager = new(
+                mockDocumentClient.Object,
+                new ConnectionPolicy());
+        }
+
+        [TestCleanup]
+        public void Cleanup()
+        {
+            this.endpointManager.Dispose();
+        }
+
         /// <summary>
         /// Verifies handling of Splits on PKRange based leases
         /// </summary>
@@ -39,7 +61,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<Routing.PartitionKeyRangeCache> pkRangeCache = new Mock<Routing.PartitionKeyRangeCache>(
                 Mock.Of<ICosmosAuthorizationTokenProvider>(),
                 Mock.Of<Documents.IStoreModel>(),
-                Mock.Of<Common.CollectionCache>());
+                Mock.Of<Common.CollectionCache>(),
+                this.endpointManager);
 
             List<Documents.PartitionKeyRange> resultingRanges = new List<Documents.PartitionKeyRange>()
             {
@@ -102,7 +125,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<Routing.PartitionKeyRangeCache> pkRangeCache = new Mock<Routing.PartitionKeyRangeCache>(
                 Mock.Of<ICosmosAuthorizationTokenProvider>(),
                 Mock.Of<Documents.IStoreModel>(),
-                Mock.Of<Common.CollectionCache>());
+                Mock.Of<Common.CollectionCache>(),
+                this.endpointManager);
 
             List<Documents.PartitionKeyRange> resultingRanges = new List<Documents.PartitionKeyRange>()
             {
@@ -170,7 +194,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<Routing.PartitionKeyRangeCache> pkRangeCache = new Mock<Routing.PartitionKeyRangeCache>(
                 Mock.Of<ICosmosAuthorizationTokenProvider>(),
                 Mock.Of<Documents.IStoreModel>(),
-                Mock.Of<Common.CollectionCache>());
+                Mock.Of<Common.CollectionCache>(),
+                this.endpointManager);
 
             List<Documents.PartitionKeyRange> resultingRanges = new List<Documents.PartitionKeyRange>()
             {
@@ -228,7 +253,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<Routing.PartitionKeyRangeCache> pkRangeCache = new Mock<Routing.PartitionKeyRangeCache>(
                 Mock.Of<ICosmosAuthorizationTokenProvider>(),
                 Mock.Of<Documents.IStoreModel>(),
-                Mock.Of<Common.CollectionCache>());
+                Mock.Of<Common.CollectionCache>(),
+                this.endpointManager);
 
             List<Documents.PartitionKeyRange> resultingRanges = new List<Documents.PartitionKeyRange>()
             {
@@ -276,7 +302,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<Routing.PartitionKeyRangeCache> pkRangeCache = new Mock<Routing.PartitionKeyRangeCache>(
                 Mock.Of<ICosmosAuthorizationTokenProvider>(),
                 Mock.Of<Documents.IStoreModel>(),
-                Mock.Of<Common.CollectionCache>());
+                Mock.Of<Common.CollectionCache>(),
+                this.endpointManager);
 
             List<Documents.PartitionKeyRange> resultingRanges = new List<Documents.PartitionKeyRange>()
             {
@@ -321,7 +348,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<Routing.PartitionKeyRangeCache> pkRangeCache = new Mock<Routing.PartitionKeyRangeCache>(
                 Mock.Of<ICosmosAuthorizationTokenProvider>(),
                 Mock.Of<Documents.IStoreModel>(),
-                Mock.Of<Common.CollectionCache>());
+                Mock.Of<Common.CollectionCache>(),
+                this.endpointManager);
 
             List<Documents.PartitionKeyRange> resultingRanges = new List<Documents.PartitionKeyRange>()
             {
@@ -372,7 +400,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<Routing.PartitionKeyRangeCache> pkRangeCache = new Mock<Routing.PartitionKeyRangeCache>(
                 Mock.Of<ICosmosAuthorizationTokenProvider>(),
                 Mock.Of<Documents.IStoreModel>(),
-                Mock.Of<Common.CollectionCache>());
+                Mock.Of<Common.CollectionCache>(),
+                this.endpointManager);
 
             List<Documents.PartitionKeyRange> resultingRanges = new List<Documents.PartitionKeyRange>()
             {

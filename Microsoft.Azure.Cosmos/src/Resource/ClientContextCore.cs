@@ -13,8 +13,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
@@ -68,7 +66,7 @@ namespace Microsoft.Azure.Cosmos
             HttpMessageHandler httpMessageHandler = CosmosHttpClientCore.CreateHttpClientHandler(
                 clientOptions.GatewayModeMaxConnectionLimit,
                 clientOptions.WebProxy,
-                clientOptions.ServerCertificateCustomValidationCallback);
+                clientOptions.GetServerCertificateCustomValidationCallback());
 
             DocumentClient documentClient = new DocumentClient(
                cosmosClient.Endpoint,
@@ -83,7 +81,9 @@ namespace Microsoft.Azure.Cosmos
                handler: httpMessageHandler,
                sessionContainer: clientOptions.SessionContainer,
                cosmosClientId: cosmosClient.Id,
-               remoteCertificateValidationCallback: ClientContextCore.SslCustomValidationCallBack(clientOptions.ServerCertificateCustomValidationCallback));
+               remoteCertificateValidationCallback: ClientContextCore.SslCustomValidationCallBack(clientOptions.GetServerCertificateCustomValidationCallback()),
+               cosmosClientTelemetryOptions: clientOptions.CosmosClientTelemetryOptions,
+               chaosInterceptorFactory: clientOptions.ChaosInterceptorFactory);
 
             return ClientContextCore.Create(
                 cosmosClient,
@@ -120,8 +120,9 @@ namespace Microsoft.Azure.Cosmos
                 ClientPipelineBuilder clientPipelineBuilder = new ClientPipelineBuilder(
                     cosmosClient,
                     clientOptions.ConsistencyLevel,
+                    clientOptions.PriorityLevel,
                     clientOptions.CustomHandlers,
-                    telemetry: documentClient.clientTelemetry);
+                    telemetryToServiceHelper: documentClient.telemetryToServiceHelper);
 
                 requestInvokerHandler = clientPipelineBuilder.Build();
             }
@@ -285,6 +286,7 @@ namespace Microsoft.Azure.Cosmos
 
                 using (ITrace trace = disableDiagnostics ? NoOpTrace.Singleton : (ITrace)Tracing.Trace.GetRootTrace(operationName, traceComponent, traceLevel))
                 {
+                    trace.AddDatum("Client Configuration", this.client.ClientConfigurationTraceDatum);
                     trace.AddDatum("Synchronization Context", syncContextVirtualAddress);
 
                     return await this.RunWithDiagnosticsHelperAsync(
@@ -496,6 +498,7 @@ namespace Microsoft.Azure.Cosmos
                                     databaseName: databaseName,
                                     operationType: operationType,
                                     requestOptions: requestOptions,
+                                    trace: trace,
                                     clientContext: this.isDisposed ? null : this))
             using (new ActivityScope(Guid.NewGuid()))
             {

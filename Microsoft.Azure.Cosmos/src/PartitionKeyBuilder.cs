@@ -11,12 +11,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Represents a partition key value list in the Azure Cosmos DB service.
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    sealed class PartitionKeyBuilder
+    public sealed class PartitionKeyBuilder
     {
         private readonly List<object> partitionKeyValues;
 

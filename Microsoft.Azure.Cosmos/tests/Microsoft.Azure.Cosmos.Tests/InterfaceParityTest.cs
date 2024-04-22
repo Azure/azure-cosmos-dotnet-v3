@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos
             string[] excludedMethods = new string[]
             {
                 "OpenAsync", // exposed public methods.
+                "TryGetCachedAccountProperties", // currently only internal
                 "get_PartitionResolvers", "get_ResourceTokens", // Obsolete getters.
                 "ToString", "Equals", "GetHashCode", "GetType", "get_httpClient"
             };

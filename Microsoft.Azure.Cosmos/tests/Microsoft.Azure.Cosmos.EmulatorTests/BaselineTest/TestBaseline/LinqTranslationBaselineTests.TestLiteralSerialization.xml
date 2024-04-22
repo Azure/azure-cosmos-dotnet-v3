@@ -435,7 +435,7 @@ FROM root]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {} 
+SELECT VALUE {"value": null} 
 FROM root]]></SqlQuery>
     </Output>
   </Result>

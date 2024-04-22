@@ -266,6 +266,11 @@ namespace Microsoft.Azure.Cosmos
         public const string USSecWest = "USSec West";
 
         /// <summary>
+        /// Name of the Azure USNat West Central region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string USSecWestCentral = "USSec West Central";
+
+        /// <summary>
         /// Name of the Azure Switzerland North region in the Azure Cosmos DB service.
         /// </summary>
         public const string SwitzerlandNorth = "Switzerland North";
@@ -349,5 +354,40 @@ namespace Microsoft.Azure.Cosmos
         /// Name of the Azure Poland Central region in the Azure Cosmos DB service.
         /// </summary>
         public const string PolandCentral = "Poland Central";
+
+        /// <summary>
+        /// Name of the Azure Malaysia South region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string MalaysiaSouth = "Malaysia South";
+
+        /// <summary>
+        /// Name of the Azure Italy North region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string ItalyNorth = "Italy North";
+
+        /// <summary>
+        /// Name of the Azure Israel Central region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string IsraelCentral = "Israel Central";
+
+        /// <summary>
+        /// Name of the Azure Mexico Central region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string MexicoCentral = "Mexico Central";
+
+        /// <summary>
+        /// Name of the Azure Spain Central region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string SpainCentral = "Spain Central";
+
+        /// <summary>
+        /// Name of the Azure Taiwan North region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string TaiwanNorth = "Taiwan North";
+
+        /// <summary>
+        /// Name of the Azure Taiwan Northwest region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string TaiwanNorthwest = "Taiwan Northwest";
     }
 }

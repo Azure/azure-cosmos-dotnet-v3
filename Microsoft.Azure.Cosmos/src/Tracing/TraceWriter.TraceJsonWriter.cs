@@ -46,8 +46,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                 if (isRootTrace)
                 {
-                    writer.WriteFieldName("start time");
-                    writer.WriteStringValue(trace.StartTime.ToString(TraceWriter.HourTimeFormatString));
+                    writer.WriteFieldName("start datetime");
+                    writer.WriteStringValue(trace.StartTime.ToString(TraceWriter.DateTimeFormatString));
                 }
                 writer.WriteFieldName("duration in milliseconds");
                 writer.WriteNumber64Value(trace.Duration.TotalMilliseconds);
@@ -430,6 +430,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteFieldName("BELatencyInMs");
                 this.WriteStringValueOrNull(storeResult.BackendRequestDurationInMs);
 
+                this.WriteJsonUriArray("ReplicaHealthStatuses", storeResult.ReplicaHealthStatuses);
+
                 this.VisitTransportRequestStats(storeResult.TransportRequestStats);
 
                 this.jsonWriter.WriteFieldName("TransportException");
@@ -462,6 +464,22 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     foreach (TransportAddressUri contactedReplica in uris)
                     {
                         this.WriteStringValueOrNull(contactedReplica?.ToString());
+                    }
+                }
+
+                this.jsonWriter.WriteArrayEnd();
+            }
+
+            private void WriteJsonUriArray(string propertyName, IEnumerable<string> replicaHealthStatuses)
+            {
+                this.jsonWriter.WriteFieldName(propertyName);
+                this.jsonWriter.WriteArrayStart();
+
+                if (replicaHealthStatuses != null)
+                {
+                    foreach (string replicaHealthStatus in replicaHealthStatuses)
+                    {
+                        this.WriteStringValueOrNull(replicaHealthStatus);
                     }
                 }
 

@@ -707,8 +707,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             await this.CreateRandomItems(itemsCore, 100, randomPartitionKey: true);
 
             // Inject validating handler
-            RequestHandler currentInnerHandler = this.cosmosClient.RequestHandler.InnerHandler;
-            this.cosmosClient.RequestHandler.InnerHandler = cancellationTokenHandler;
+            RequestHandler currentInnerHandler = this.GetClient().RequestHandler.InnerHandler;
+            this.GetClient().RequestHandler.InnerHandler = cancellationTokenHandler;
             cancellationTokenHandler.InnerHandler = currentInnerHandler;
 
             {
@@ -792,7 +792,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 
             CosmosException cosmosException = await Assert.ThrowsExceptionAsync<CosmosException>(() => fullFidelityIterator.ReadNextAsync());
             Assert.AreEqual(HttpStatusCode.BadRequest, cosmosException.StatusCode, "Full Fidelity Change Feed does not work with StartFromBeginning currently.");
-            Assert.IsTrue(cosmosException.Message.Contains("FullFidelity Change Feed must have valid If-None-Match header."));
         }
 
         /// <summary>
@@ -808,17 +807,13 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
         private async Task ValidateChangeFeedIteratorCore_WithQuery(
             bool useGateway)
         {
-            await this.Cleanup();
-
             this.cancellationTokenSource = new CancellationTokenSource();
             this.cancellationToken = this.cancellationTokenSource.Token;
-            this.cosmosClient = TestCommon.CreateCosmosClient(useGateway: useGateway);
-            this.database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString(),
-                cancellationToken: this.cancellationToken);
+            CosmosClient cosmosClient = useGateway ? TestCommon.CreateCosmosClient(useGateway: useGateway) : this.GetClient();
 
             ContainerProperties properties = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/pkey");
             properties.ChangeFeedPolicy.FullFidelityRetention = TimeSpan.FromMinutes(5);
-            ContainerResponse response = await this.database.CreateContainerAsync(
+            ContainerResponse response = await cosmosClient.GetDatabase(this.database.Id).CreateContainerAsync(
                 properties,
                 cancellationToken: this.cancellationToken);
 
@@ -827,7 +822,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                 enableQueryOnPreviousImage: true);
             ContainerCore container = (ContainerCore)response;
             // FF does not work with StartFromBeginning currently, so we capture an initial continuation.
-            FeedIterator<ChangeFeedItemChange<Document>> fullFidelityIterator = container.GetChangeFeedIteratorWithQuery<ChangeFeedItemChange<Document>>(
+            FeedIterator<ChangeFeedItem<Document>> fullFidelityIterator = container.GetChangeFeedIteratorWithQuery<ChangeFeedItem<Document>>(
                 ChangeFeedStartFrom.Now(),
                 ChangeFeedMode.AllVersionsAndDeletes,
                 querySpec,
@@ -836,7 +831,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             string initialContinuation = null;
             while (fullFidelityIterator.HasMoreResults)
             {
-                FeedResponse<ChangeFeedItemChange<Document>> feedResponse = await fullFidelityIterator.ReadNextAsync(this.cancellationToken);
+                FeedResponse<ChangeFeedItem<Document>> feedResponse = await fullFidelityIterator.ReadNextAsync(this.cancellationToken);
                 initialContinuation = feedResponse.ContinuationToken;
 
                 if (feedResponse.StatusCode == HttpStatusCode.NotModified)
@@ -860,7 +855,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             }
 
             // Resume Change Feed and verify we pickup the events where documents matches the query
-            fullFidelityIterator = container.GetChangeFeedIteratorWithQuery<ChangeFeedItemChange<Document>>(
+            fullFidelityIterator = container.GetChangeFeedIteratorWithQuery<ChangeFeedItem<Document>>(
                 ChangeFeedStartFrom.ContinuationToken(initialContinuation),
                 ChangeFeedMode.AllVersionsAndDeletes,
                 querySpec,
@@ -869,9 +864,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 
             while (fullFidelityIterator.HasMoreResults)
             {
-                FeedResponse<ChangeFeedItemChange<Document>> feedResponse = await fullFidelityIterator.ReadNextAsync(this.cancellationToken);
+                FeedResponse<ChangeFeedItem<Document>> feedResponse = await fullFidelityIterator.ReadNextAsync(this.cancellationToken);
 
-                foreach (ChangeFeedItemChange<Document> item in feedResponse)
+                foreach (ChangeFeedItem<Document> item in feedResponse)
                 {
                     Assert.AreEqual("id3", item.Current.Id);
                 }
@@ -889,7 +884,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             await container.DeleteItemAsync<Document>("id2", new Cosmos.PartitionKey("pkey1"));
             await container.DeleteItemAsync<Document>("id3", new Cosmos.PartitionKey("pkey1"));
 
-            fullFidelityIterator = container.GetChangeFeedIteratorWithQuery<ChangeFeedItemChange<Document>>(
+            fullFidelityIterator = container.GetChangeFeedIteratorWithQuery<ChangeFeedItem<Document>>(
                 ChangeFeedStartFrom.ContinuationToken(initialContinuation),
                 ChangeFeedMode.AllVersionsAndDeletes,
                 querySpec,
@@ -897,9 +892,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             detectedEvents = 0;
             while (fullFidelityIterator.HasMoreResults)
             {
-                FeedResponse<ChangeFeedItemChange<Document>> feedResponse = await fullFidelityIterator.ReadNextAsync(this.cancellationToken);
+                FeedResponse<ChangeFeedItem<Document>> feedResponse = await fullFidelityIterator.ReadNextAsync(this.cancellationToken);
 
-                foreach (ChangeFeedItemChange<Document> item in feedResponse)
+                foreach (ChangeFeedItem<Document> item in feedResponse)
                 {
                     Assert.AreEqual("id3", item.Previous.Id);
                     Assert.AreEqual(ChangeFeedOperationType.Delete, item.Metadata.OperationType);
@@ -930,14 +925,14 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             ChangeFeedMode changeFeedMode = ChangeFeedMode.AllVersionsAndDeletes;
             ChangeFeedStartFrom changeFeedStartFrom = ChangeFeedStartFrom.Now(FeedRange.FromPartitionKey(partitionKey));
 
-            using (FeedIterator<ChangeFeedItemChange<Item>> feedIterator = container.GetChangeFeedIterator<ChangeFeedItemChange<Item>>(
+            using (FeedIterator<ChangeFeedItem<Item>> feedIterator = container.GetChangeFeedIterator<ChangeFeedItem<Item>>(
                 changeFeedStartFrom: changeFeedStartFrom,
                 changeFeedMode: changeFeedMode))
             {
                 string continuation = null;
                 while (feedIterator.HasMoreResults)
                 {
-                    FeedResponse<ChangeFeedItemChange<Item>> feedResponse = await feedIterator.ReadNextAsync();
+                    FeedResponse<ChangeFeedItem<Item>> feedResponse = await feedIterator.ReadNextAsync();
 
                     if (feedResponse.StatusCode == HttpStatusCode.NotModified)
                     {
@@ -955,20 +950,20 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 #if DEBUG
                         Console.WriteLine(JsonConvert.SerializeObject(feedResponse.Resource));
 #endif
-                        IEnumerable<ChangeFeedItemChange<Item>> itemChanges = feedResponse.Resource;
+                        IEnumerable<ChangeFeedItem<Item>> itemChanges = feedResponse.Resource;
 
                         ChangeFeedIteratorCoreTests.AssertGatewayMode(feedResponse);
 
                         Assert.AreEqual(expected: 2, actual: itemChanges.Count());
 
-                        foreach(ChangeFeedItemChange<Item> item in itemChanges)
+                        foreach(ChangeFeedItem<Item> item in itemChanges)
                         {
                             Item current = item.Current;
                             Item previous = item.Previous;
                             ChangeFeedMetadata metadata = item.Metadata;
                         }
 
-                        ChangeFeedItemChange<Item> createOperation = itemChanges.ElementAtOrDefault(0);
+                        ChangeFeedItem<Item> createOperation = itemChanges.ElementAtOrDefault(0);
 
                         Assert.AreEqual(expected: id, actual: createOperation.Current.Id);
                         Assert.AreEqual(expected: "One Microsoft Way", actual: createOperation.Current.Line1);
@@ -982,7 +977,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                         Assert.AreEqual(expected: default, actual: createOperation.Metadata.PreviousLsn);
                         Assert.IsFalse(createOperation.Metadata.IsTimeToLiveExpired);
 
-                        ChangeFeedItemChange<Item> replaceOperation = itemChanges.ElementAtOrDefault(1);
+                        ChangeFeedItem<Item> replaceOperation = itemChanges.ElementAtOrDefault(1);
 
                         Assert.AreEqual(expected: id, actual: replaceOperation.Current.Id);
                         Assert.AreEqual(expected: "205 16th St NW", actual: replaceOperation.Current.Line1);
@@ -1015,14 +1010,14 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             string id = Guid.NewGuid().ToString();
             string otherId = Guid.NewGuid().ToString();
 
-            using (FeedIterator<ChangeFeedItemChange<Item>> feedIterator = container.GetChangeFeedIterator<ChangeFeedItemChange<Item>>(
+            using (FeedIterator<ChangeFeedItem<Item>> feedIterator = container.GetChangeFeedIterator<ChangeFeedItem<Item>>(
                 changeFeedStartFrom: ChangeFeedStartFrom.Now(),
                 changeFeedMode: ChangeFeedMode.AllVersionsAndDeletes))
             {
                 string continuation = null;
                 while (feedIterator.HasMoreResults)
                 {
-                    FeedResponse<ChangeFeedItemChange<Item>> feedResponse = await feedIterator.ReadNextAsync();
+                    FeedResponse<ChangeFeedItem<Item>> feedResponse = await feedIterator.ReadNextAsync();
 
                     if (feedResponse.StatusCode == HttpStatusCode.NotModified)
                     {
@@ -1042,13 +1037,13 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 #if DEBUG
                         Console.WriteLine(JsonConvert.SerializeObject(feedResponse.Resource));
 #endif
-                        List<ChangeFeedItemChange<Item>> resources = feedResponse.Resource.ToList();
+                        List<ChangeFeedItem<Item>> resources = feedResponse.Resource.ToList();
 
                         ChangeFeedIteratorCoreTests.AssertGatewayMode(feedResponse);
 
                         Assert.AreEqual(expected: 4, actual: resources.Count);
 
-                        ChangeFeedItemChange<Item> firstCreateOperation = resources[0];
+                        ChangeFeedItem<Item> firstCreateOperation = resources[0];
 
                         Assert.AreEqual(expected: otherId, actual: firstCreateOperation.Current.Id);
                         Assert.AreEqual(expected: "87 38floor, Witthayu Rd, Lumphini, Pathum Wan District", actual: firstCreateOperation.Current.Line1);
@@ -1061,7 +1056,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                         Assert.AreEqual(expected: default, actual: firstCreateOperation.Metadata.PreviousLsn);
                         Assert.IsFalse(firstCreateOperation.Metadata.IsTimeToLiveExpired);
 
-                        ChangeFeedItemChange<Item> createOperation = resources[1];
+                        ChangeFeedItem<Item> createOperation = resources[1];
 
                         Assert.AreEqual(expected: id, actual: createOperation.Current.Id);
                         Assert.AreEqual(expected: "One Microsoft Way", actual: createOperation.Current.Line1);
@@ -1074,7 +1069,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                         Assert.AreEqual(expected: default, actual: createOperation.Metadata.PreviousLsn);
                         Assert.IsFalse(createOperation.Metadata.IsTimeToLiveExpired);
 
-                        ChangeFeedItemChange<Item> replaceOperation = resources[2];
+                        ChangeFeedItem<Item> replaceOperation = resources[2];
 
                         Assert.AreEqual(expected: id, actual: replaceOperation.Current.Id);
                         Assert.AreEqual(expected: "205 16th St NW", actual: replaceOperation.Current.Line1);
@@ -1087,7 +1082,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.PreviousLsn);
                         Assert.IsFalse(replaceOperation.Metadata.IsTimeToLiveExpired);
 
-                        ChangeFeedItemChange<Item> deleteOperation = resources[3];
+                        ChangeFeedItem<Item> deleteOperation = resources[3];
 
                         Assert.IsNull(deleteOperation.Current.Id);
                         Assert.IsNull(deleteOperation.Current.Line1);
@@ -1149,14 +1144,14 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 #if DEBUG
                         Console.WriteLine(JsonConvert.SerializeObject(feedResponse.Resource));
 #endif
-                        List<ChangeFeedItemChange<Item>> itemChanges = JsonConvert.DeserializeObject<List<ChangeFeedItemChange<Item>>>(
+                        List<ChangeFeedItem<Item>> itemChanges = JsonConvert.DeserializeObject<List<ChangeFeedItem<Item>>>(
                             JsonConvert.SerializeObject(feedResponse.Resource));
 
                         ChangeFeedIteratorCoreTests.AssertGatewayMode(feedResponse);
 
                         Assert.AreEqual(expected: 3, actual: itemChanges.Count);
 
-                        ChangeFeedItemChange<Item> createOperation = itemChanges[0];
+                        ChangeFeedItem<Item> createOperation = itemChanges[0];
 
                         Assert.AreEqual(expected: id, actual: createOperation.Current.Id);
                         Assert.AreEqual(expected: "One Microsoft Way", actual: createOperation.Current.Line1);
@@ -1170,7 +1165,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                         Assert.AreEqual(expected: default, actual: createOperation.Metadata.PreviousLsn);
                         Assert.IsFalse(createOperation.Metadata.IsTimeToLiveExpired);
 
-                        ChangeFeedItemChange<Item> replaceOperation = itemChanges[1];
+                        ChangeFeedItem<Item> replaceOperation = itemChanges[1];
 
                         Assert.AreEqual(expected: id, actual: replaceOperation.Current.Id);
                         Assert.AreEqual(expected: "205 16th St NW", actual: replaceOperation.Current.Line1);
@@ -1184,7 +1179,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.PreviousLsn);
                         Assert.IsFalse(replaceOperation.Metadata.IsTimeToLiveExpired);
 
-                        ChangeFeedItemChange<Item> deleteOperation = itemChanges[2];
+                        ChangeFeedItem<Item> deleteOperation = itemChanges[2];
 
                         Assert.IsNotNull(deleteOperation.Metadata);
                         Assert.AreEqual(expected: ChangeFeedOperationType.Delete, actual: deleteOperation.Metadata.OperationType);

@@ -53,18 +53,16 @@
                 {
                     if (storeResponse.StoreResult.StatusCode == StatusCodes.Ok)
                     {
-                        backendAndClientMetrics.Add(Tuple.Create(retrieveCosmosElementTraces[k], backendMetrics[j], transitMetrics[i]));
+                        backendAndClientMetrics.Add(Tuple.Create(retrieveCosmosElementTraces[k], backendMetrics[j], node));
                         j++;
                         k++;
                     }
                     else
                     {
                         //We add null values to the tuple since status codes other than Ok will not have data for 'Query Metrics' and 'Get Cosmos Element Response'
-                        backendAndClientMetrics.Add(Tuple.Create<ITrace, ITrace, ITrace>(null, null, transitMetrics[i]));
+                        backendAndClientMetrics.Add(Tuple.Create<ITrace, ITrace, ITrace>(null, null, node));
                     }
                 }
-
-                i++;
             }
 
             Debug.Assert(i == transitMetrics.Count, "All 'transit metrics' must be grouped.");
@@ -76,7 +74,7 @@
             {
                 if (metrics.Item2 != null)
                 {
-                    Debug.Assert(metrics.Item1 == null, "'Get Cosmos Element Response' is null");
+                    Debug.Assert(metrics.Item1 != null, "'Get Cosmos Element Response' is null");
                     queryStatisticsDatumVisitor.AddGetCosmosElementResponseTime(metrics.Item1.Duration.TotalMilliseconds);
                     foreach (KeyValuePair<string, object> kvp in metrics.Item2.Data)
                     {

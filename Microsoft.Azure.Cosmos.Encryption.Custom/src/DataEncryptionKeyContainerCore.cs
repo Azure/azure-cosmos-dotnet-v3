@@ -335,6 +335,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 unwrapResult.DataEncryptionKey);
 
             return new MdeEncryptionAlgorithm(
+                unwrapResult.DataEncryptionKey,
                 plaintextDataEncryptionKey,
                 Data.Encryption.Cryptography.EncryptionType.Randomized);
         }
@@ -378,13 +379,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         internal async Task<InMemoryRawDek> FetchUnwrappedAsync(
             DataEncryptionKeyProperties dekProperties,
             CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            bool withRawKey = false)
         {
             try
             {
                 if (string.Equals(dekProperties.EncryptionAlgorithm, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized))
                 {
-                    DataEncryptionKey dek = this.InitMdeEncryptionAlgorithm(dekProperties);
+                    DataEncryptionKey dek = this.InitMdeEncryptionAlgorithm(dekProperties, withRawKey);
 
                     // TTL is not used since DEK is not cached.
                     return new InMemoryRawDek(dek, TimeSpan.FromMilliseconds(0));
@@ -564,7 +566,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return unwrapResult;
         }
 
-        internal DataEncryptionKey InitMdeEncryptionAlgorithm(DataEncryptionKeyProperties dekProperties)
+        internal DataEncryptionKey InitMdeEncryptionAlgorithm(DataEncryptionKeyProperties dekProperties, bool withRawKey = false)
         {
             if (this.DekProvider.MdeKeyWrapProvider == null)
             {
@@ -576,7 +578,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 dekProperties,
                 Data.Encryption.Cryptography.EncryptionType.Randomized,
                 this.DekProvider.MdeKeyWrapProvider.EncryptionKeyStoreProvider,
-                this.DekProvider.PdekCacheTimeToLive);
+                this.DekProvider.PdekCacheTimeToLive,
+                withRawKey);
         }
 
         private async Task<DataEncryptionKeyProperties> ReadResourceAsync(

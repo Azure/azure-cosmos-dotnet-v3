@@ -23,13 +23,9 @@ namespace Microsoft.Azure.Cosmos.Contracts
             }
             catch(ArgumentNullException)
             { }
-#if PREVIEW
+
             Assert.AreEqual(HttpConstants.Versions.v2020_07_15, HttpConstants.Versions.CurrentVersion);
             CollectionAssert.AreEqual(Encoding.UTF8.GetBytes(HttpConstants.Versions.v2020_07_15), HttpConstants.Versions.CurrentVersionUTF8);
-#else
-            Assert.AreEqual(HttpConstants.Versions.v2018_12_31, HttpConstants.Versions.CurrentVersion);
-            CollectionAssert.AreEqual(Encoding.UTF8.GetBytes(HttpConstants.Versions.v2018_12_31), HttpConstants.Versions.CurrentVersionUTF8);
-#endif
 
             ulong capabilitites = SDKSupportedCapabilitiesHelpers.GetSDKSupportedCapabilities();
             Assert.AreEqual(capabilitites & (ulong)SDKSupportedCapabilities.PartitionMerge, (ulong)SDKSupportedCapabilities.PartitionMerge);

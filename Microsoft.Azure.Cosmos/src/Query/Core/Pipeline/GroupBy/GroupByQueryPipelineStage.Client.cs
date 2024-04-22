@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.Immutable;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -22,23 +21,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
             public const string ContinuationTokenNotSupportedWithGroupBy = "Continuation token is not supported for queries with GROUP BY. Do not use FeedResponse.ResponseContinuation or remove the GROUP BY from the query.";
             private ClientGroupByQueryPipelineStage(
                 IQueryPipelineStage source,
-                CancellationToken cancellationToken,
                 GroupingTable groupingTable,
                 int pageSize)
-                : base(source, cancellationToken, groupingTable, pageSize)
+                : base(source, groupingTable, pageSize)
             {
             }
 
             public static TryCatch<IQueryPipelineStage> MonadicCreate(
                 CosmosElement requestContinuation,
-                CancellationToken cancellationToken,
                 MonadicCreatePipelineStage monadicCreatePipelineStage,
+                IReadOnlyList<AggregateOperator> aggregates,
                 IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
                 IReadOnlyList<string> orderedAliases,
                 bool hasSelectValue,
                 int pageSize)
             {
                 TryCatch<GroupingTable> tryCreateGroupingTable = GroupingTable.TryCreateFromContinuationToken(
+                    aggregates,
                     groupByAliasToAggregateType,
                     orderedAliases,
                     hasSelectValue,
@@ -49,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                     return TryCatch<IQueryPipelineStage>.FromException(tryCreateGroupingTable.Exception);
                 }
 
-                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(requestContinuation, cancellationToken);
+                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(requestContinuation);
                 if (tryCreateSource.Failed)
                 {
                     return tryCreateSource;
@@ -57,16 +56,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
 
                 IQueryPipelineStage stage = new ClientGroupByQueryPipelineStage(
                     tryCreateSource.Result,
-                    cancellationToken,
                     tryCreateGroupingTable.Result,
                     pageSize);
 
                 return TryCatch<IQueryPipelineStage>.FromResult(stage);
             }
 
-            public override async ValueTask<bool> MoveNextAsync(ITrace trace)
+            public override async ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
             {
-                this.cancellationToken.ThrowIfCancellationRequested();
+                cancellationToken.ThrowIfCancellationRequested();
 
                 if (trace == null)
                 {
@@ -82,12 +80,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                 // Draining GROUP BY is broken down into two stages:
 
                 double requestCharge = 0.0;
-                long responseLengthInBytes = 0;
                 IReadOnlyDictionary<string, string> addtionalHeaders = null;
 
-                while (await this.inputStage.MoveNextAsync(trace))
+                while (await this.inputStage.MoveNextAsync(trace, cancellationToken))
                 {
-                    this.cancellationToken.ThrowIfCancellationRequested();
+                    cancellationToken.ThrowIfCancellationRequested();
 
                     // Stage 1: 
                     // Drain the groupings fully from all continuation and all partitions
@@ -101,7 +98,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                     QueryPage sourcePage = tryGetSourcePage.Result;
 
                     requestCharge += sourcePage.RequestCharge;
-                    responseLengthInBytes += sourcePage.ResponseLengthInBytes;
                     addtionalHeaders = sourcePage.AdditionalHeaders;
                     this.AggregateGroupings(sourcePage.Documents);
                 }
@@ -118,11 +114,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                     documents: results,
                     requestCharge: requestCharge,
                     activityId: default,
-                    responseLengthInBytes: responseLengthInBytes,
                     cosmosQueryExecutionInfo: default,
+                    distributionPlanSpec: default,
                     disallowContinuationTokenMessage: ClientGroupByQueryPipelineStage.ContinuationTokenNotSupportedWithGroupBy,
                     additionalHeaders: addtionalHeaders,
-                    state: default);
+                    state: default,
+                    streaming: null);
 
                 this.Current = TryCatch<QueryPage>.FromResult(queryPage);
                 return true;

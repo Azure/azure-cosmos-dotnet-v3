@@ -22,7 +22,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using OpenTelemetry;
     using OpenTelemetry.Trace;
-
+    using AzureCore = global::Azure.Core;
+    
     internal enum DocumentClientType
     {
         Gateway,
@@ -521,20 +522,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 options.OfferThroughput);
         }
 
-        internal static void EnableClientTelemetryEnvironmentVariables()
-        {
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, "true");
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "1");
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, "http://dummy.telemetry.endpoint/");
-        }
-
-        internal static void DisableClientTelemetryEnvironmentVariables()
-        {
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, null);
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, null);
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, null);
-        }
-
         private static TracerProvider OTelTracerProvider;
         private static CustomListener TestListener;
         
@@ -542,10 +529,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
 
+            AzureCore.ActivityExtensions.ResetFeatureSwitch();
+            
             // Open Telemetry Listener
             Util.OTelTracerProvider = Sdk.CreateTracerProviderBuilder()
                 .AddCustomOtelExporter() // use any exporter here
-                .AddSource($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.*") // Right now, it will capture only "Azure.Cosmos.Operation"
+                .AddSource($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.*")
                 .Build();
 
             // Custom Listener
@@ -567,6 +556,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Util.TestListener = null;
 
             AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", false);
+
+            AzureCore.ActivityExtensions.ResetFeatureSwitch();
         }
 
         /// <summary>

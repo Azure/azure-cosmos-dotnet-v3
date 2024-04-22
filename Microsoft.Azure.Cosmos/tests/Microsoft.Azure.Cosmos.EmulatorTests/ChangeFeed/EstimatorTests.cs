@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         [TestMethod]
         public async Task StartAsync_ShouldThrowIfContainerDoesNotExist()
         {
-            ChangeFeedProcessor estimator = this.cosmosClient.GetContainer(this.database.Id, "DoesNotExist")
+            ChangeFeedProcessor estimator = this.GetClient().GetContainer(this.database.Id, "DoesNotExist")
                 .GetChangeFeedEstimatorBuilder("test", (long estimation, CancellationToken token) =>
                 {
                     return Task.CompletedTask;

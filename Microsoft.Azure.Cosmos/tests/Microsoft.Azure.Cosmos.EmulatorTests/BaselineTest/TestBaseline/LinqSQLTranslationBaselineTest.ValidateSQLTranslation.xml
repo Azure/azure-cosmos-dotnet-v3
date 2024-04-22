@@ -271,4 +271,15 @@ SELECT VALUE root["x"]
 FROM root]]></SqlQuery>
     </Output>
   </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select extension data]]></Description>
+      <Expression><![CDATA[query.Select(x => new complex() {NewtonsoftExtensionData = new Dictionary`2() {Void Add(System.String, System.Object)("test", Convert(1.5, Object))}, NetExtensionData = new Dictionary`2() {Void Add(System.String, System.Object)("OtherTest", Convert(1.5, Object))}})]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"dbl": 0, "str": null, "b": false, "dblArray": null, "inside": {"x": 0, "y": 0, "id": null, "pk": null}, "id": null, "pk": null, "NetExtensionData": {"OtherTest": 1.5}, "test": 1.5} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
 </Results>

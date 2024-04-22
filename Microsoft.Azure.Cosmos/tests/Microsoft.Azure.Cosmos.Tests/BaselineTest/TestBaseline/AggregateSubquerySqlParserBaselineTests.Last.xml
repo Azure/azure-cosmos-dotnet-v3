@@ -1,0 +1,92 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[LAST in an SqlSelectItem as an alias]]></Description>
+      <Query><![CDATA[SELECT 1 AS LAST]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT 1 AS LAST]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[LAST in an AliasedCollectionExpression as an alias]]></Description>
+      <Query><![CDATA[SELECT * FROM (SELECT VALUE 1) AS LAST]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * FROM (SELECT VALUE 1) AS LAST]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[LAST in an ArrayIteratorCollectionExpression]]></Description>
+      <Query><![CDATA[SELECT * FROM LAST IN (SELECT VALUE 1)]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * FROM LAST IN (SELECT VALUE 1)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[LAST in an InputPathCollection and IdentifierPathExpression]]></Description>
+      <Query><![CDATA[SELECT * FROM LAST.LAST]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * FROM LAST.LAST]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[LAST in a PropertyRefScalarExpression]]></Description>
+      <Query><![CDATA[SELECT LAST]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT LAST]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[LAST in a PropertyRefScalarExpression as child]]></Description>
+      <Query><![CDATA[SELECT c.LAST]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT c.LAST]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[LAST in a PropertyRefScalarExpression as parent and child]]></Description>
+      <Query><![CDATA[SELECT LAST.LAST]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT LAST.LAST]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[LAST in a function cLAST]]></Description>
+      <Query><![CDATA[SELECT LAST(1, 2)]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT LAST(1, 2)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[LAST in a UDF function cLAST]]></Description>
+      <Query><![CDATA[SELECT udf.LAST(1, 2)]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT udf.LAST(1, 2)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[LAST in every possible grammar rule at the same time]]></Description>
+      <Query><![CDATA[SELECT LAST(1, 2) AS LAST FROM LAST IN (SELECT LAST.LAST) WHERE LAST(     SELECT LAST     FROM (SELECT udf.LAST(1, 2)) AS LAST     WHERE LAST( SELECT VALUE 1) )]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT LAST(1, 2) AS LAST FROM LAST IN (SELECT LAST.LAST) WHERE LAST(SELECT LAST FROM (SELECT udf.LAST(1, 2)) AS LAST WHERE LAST(SELECT VALUE 1))]]></ParsedQuery>
+    </Output>
+  </Result>
+</Results>

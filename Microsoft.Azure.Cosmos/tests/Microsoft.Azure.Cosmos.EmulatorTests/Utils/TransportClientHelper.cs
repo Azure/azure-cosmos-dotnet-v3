@@ -83,9 +83,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                    if (enableDistributingTracing)
                    {
-                       builder.WithDistributedTracingOptions(new DistributedTracingOptions()
+                       builder.WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
                        {
-                           LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(.0001)
+                           DisableDistributedTracing = false,
+                           CosmosThresholdOptions = new CosmosThresholdOptions()
+                           {
+                               PointOperationLatencyThreshold = TimeSpan.Zero,
+                               NonPointOperationLatencyThreshold = TimeSpan.Zero
+                           }
                        });
                    }
 

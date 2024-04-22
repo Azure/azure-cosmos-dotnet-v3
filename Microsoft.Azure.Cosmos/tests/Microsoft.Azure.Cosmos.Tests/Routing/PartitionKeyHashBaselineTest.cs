@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Numerics;
     using System.Xml;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -126,6 +127,37 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             this.ExecuteTestSuite(inputs);
         }
 
+        [TestMethod]
+        public void Lists()
+        {
+            List<Input> inputs = new List<Input>()
+            {
+                new Input(
+                    description: "1 Path List",
+                    partitionKeyValue: CosmosArray.Create(new List<CosmosElement>()
+                    {
+                        CosmosString.Create("/path1")
+                    })),
+                new Input(
+                    description: "2 Path List",
+                    partitionKeyValue: CosmosArray.Create(new List<CosmosElement>()
+                    {
+                        CosmosString.Create("/path1"),
+                        CosmosString.Create("/path2")
+                    })),
+                new Input(
+                    description: "3 Path List",
+                    partitionKeyValue: CosmosArray.Create(new List<CosmosElement>()
+                    {
+                        CosmosString.Create("/path1"),
+                        CosmosString.Create("/path2"),
+                        CosmosString.Create("/path3")
+                    })),
+            };
+
+            this.ExecuteTestSuite(inputs);
+        }
+
         public override Output ExecuteTest(Input input)
         {
             CosmosElement value = input.PartitionKeyValue;
@@ -159,7 +191,38 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                     partitionKeyHashV1 = PartitionKeyHash.V1.Hash(Number64.ToDouble(cosmosNumber.Value));
                     partitionKeyHashV2 = PartitionKeyHash.V2.Hash(Number64.ToDouble(cosmosNumber.Value));
                     break;
+                case CosmosArray cosmosArray:
+                    IList<UInt128> partitionKeyHashValuesV1 = new List<UInt128>();
+                    IList<UInt128> partitionKeyHashValuesV2 = new List<UInt128>();
 
+                    foreach (CosmosElement element in cosmosArray)
+                    {
+                        PartitionKeyHash elementHashV1 = element switch
+                        {
+                            null => PartitionKeyHash.V2.HashUndefined(),
+                            CosmosString stringPartitionKey => PartitionKeyHash.V1.Hash(stringPartitionKey.Value),
+                            CosmosNumber numberPartitionKey => PartitionKeyHash.V1.Hash(Number64.ToDouble(numberPartitionKey.Value)),
+                            CosmosBoolean cosmosBoolean => PartitionKeyHash.V1.Hash(cosmosBoolean.Value),
+                            CosmosNull _ => PartitionKeyHash.V1.HashNull(),
+                            _ => throw new ArgumentOutOfRangeException(),
+                        };
+                        partitionKeyHashValuesV1.Add(elementHashV1.HashValues[0]);
+
+                        PartitionKeyHash elementHashV2 = element switch
+                        {
+                            null => PartitionKeyHash.V2.HashUndefined(),
+                            CosmosString stringPartitionKey => PartitionKeyHash.V2.Hash(stringPartitionKey.Value),
+                            CosmosNumber numberPartitionKey => PartitionKeyHash.V2.Hash(Number64.ToDouble(numberPartitionKey.Value)),
+                            CosmosBoolean cosmosBoolean => PartitionKeyHash.V2.Hash(cosmosBoolean.Value),
+                            CosmosNull _ => PartitionKeyHash.V2.HashNull(),
+                            _ => throw new ArgumentOutOfRangeException(),
+                        };
+                        partitionKeyHashValuesV2.Add(elementHashV2.HashValues[0]);
+                    }
+
+                    partitionKeyHashV1 = new PartitionKeyHash(partitionKeyHashValuesV1.ToArray());
+                    partitionKeyHashV2 = new PartitionKeyHash(partitionKeyHashValuesV2.ToArray());
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException($"Unknown {nameof(CosmosElement)} type: {value.GetType()}.");
             }

@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
     /// <summary>
     /// This is a thread safe AsyncCache that allows refreshing values in the background.
@@ -120,30 +119,11 @@ namespace Microsoft.Azure.Cosmos
                     throw;
                 }
 
-                try
-                {
-                    return await initialLazyValue.CreateAndWaitForBackgroundRefreshTaskAsync(
-                       createRefreshTask: singleValueInitFunc);
-                }
-                catch (Exception e)
-                {
-                    if (initialLazyValue.ShouldRemoveFromCacheThreadSafe())
-                    {
-                        DefaultTrace.TraceError(
-                            "AsyncCacheNonBlocking.GetAsync with ForceRefresh Failed. key: {0}, Exception: {1}",
-                            key,
-                            e);
-
-                        // In some scenarios when a background failure occurs like a 404
-                        // the initial cache value should be removed.
-                        if (this.removeFromCacheOnBackgroundRefreshException(e))
-                        {
-                            this.TryRemove(key);
-                        }
-                    }
-
-                    throw;
-                }
+                return await this.UpdateCacheAndGetValueFromBackgroundTaskAsync(
+                    key: key,
+                    initialValue: initialLazyValue,
+                    callbackDelegate: singleValueInitFunc,
+                    operationName: nameof(GetAsync));
             }
 
             // The AsyncLazyWithRefreshTask is lazy and won't create the task until GetValue is called.
@@ -197,6 +177,75 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Refreshes the async non blocking cache on-demand for the given <paramref name="key"/>
+        /// and caches the result for later usage. Note that this method doesn't control the number
+        /// of tasks created in parallel, and the concurrency needed to be controlled at the caller.
+        /// </summary>
+        /// <param name="key">The requested key to be refreshed.</param>
+        /// <param name="singleValueInitFunc">A func delegate to be invoked at a later point of time.</param>
+        public void Refresh(
+           TKey key,
+           Func<TValue, Task<TValue>> singleValueInitFunc)
+        {
+            if (this.values.TryGetValue(key, out AsyncLazyWithRefreshTask<TValue> initialLazyValue))
+            {
+                Task backgroundRefreshTask = this.GetAsync(
+                        key: key,
+                        singleValueInitFunc: singleValueInitFunc,
+                        forceRefresh: (_) => true);
+
+                Task continuationTask = backgroundRefreshTask
+                    .ContinueWith(
+                        task => DefaultTrace.TraceVerbose("Failed to refresh addresses in the background with exception: {0}", task.Exception),
+                        TaskContinuationOptions.OnlyOnFaulted);
+            }
+        }
+
+        /// <summary>
+        /// Creates a background task to invoke the callback delegate and updates the cache with the value returned from the delegate.
+        /// </summary>
+        /// <param name="key">The requested key to be updated.</param>
+        /// <param name="initialValue">An instance of <see cref="AsyncLazyWithRefreshTask{T}"/> containing the initial cached value.</param>
+        /// <param name="callbackDelegate">A func callback delegate to be invoked at a later point of time.</param>
+        /// <param name="operationName">A string indicating the operation on the cache.</param>
+        /// <returns>A <see cref="Task{TValue}"/> containing the updated, refreshed value.</returns>
+        private async Task<TValue> UpdateCacheAndGetValueFromBackgroundTaskAsync(
+            TKey key,
+            AsyncLazyWithRefreshTask<TValue> initialValue,
+            Func<TValue, Task<TValue>> callbackDelegate,
+            string operationName)
+        {
+            try
+            {
+                return await initialValue.CreateAndWaitForBackgroundRefreshTaskAsync(
+                   createRefreshTask: callbackDelegate);
+            }
+            catch (Exception ex)
+            {
+                if (initialValue.ShouldRemoveFromCacheThreadSafe())
+                {
+                    bool removed = false;
+
+                    // In some scenarios when a background failure occurs like a 404
+                    // the initial cache value should be removed.
+                    if (this.removeFromCacheOnBackgroundRefreshException(ex))
+                    {
+                        removed = this.TryRemove(key);
+                    }
+
+                    DefaultTrace.TraceError(
+                        "AsyncCacheNonBlocking Failed. key: {0}, operation: {1}, tryRemoved: {2}, Exception: {3}",
+                        key,
+                        operationName,
+                        removed,
+                        ex);
+                }
+
+                throw;
+            }
+        }
+
+        /// <summary>
         /// This is AsyncLazy that has an additional Task that can
         /// be used to update the value. This allows concurrent requests
         /// to use the stale value while the refresh is occurring. 
@@ -205,8 +254,8 @@ namespace Microsoft.Azure.Cosmos
         {
             private readonly CancellationToken cancellationToken;
             private readonly Func<T, Task<T>> createValueFunc;
-            private readonly object valueLock = new object();
-            private readonly object removedFromCacheLock = new object();
+            private readonly object valueLock = new ();
+            private readonly object removedFromCacheLock = new ();
 
             private bool removedFromCache = false;
             private Task<T> value;

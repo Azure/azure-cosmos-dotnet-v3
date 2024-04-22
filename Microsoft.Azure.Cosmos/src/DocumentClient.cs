@@ -20,7 +20,6 @@ namespace Microsoft.Azure.Cosmos
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
@@ -30,6 +29,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
+    using Microsoft.Azure.Documents.FaultInjection;
     using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
 
@@ -113,6 +113,14 @@ namespace Microsoft.Azure.Cosmos
         private const string DefaultInitTaskKey = "InitTaskKey";
 
         private readonly bool IsLocalQuorumConsistency = false;
+        private readonly bool isReplicaAddressValidationEnabled;
+
+        //Fault Injection
+        private readonly IChaosInterceptorFactory chaosInterceptorFactory;
+        private readonly IChaosInterceptor chaosInterceptor;
+
+        private bool isChaosInterceptorInititalized = false;
+
         //Auth
         internal readonly AuthorizationTokenProvider cosmosAuthorization;
 
@@ -140,7 +148,8 @@ namespace Microsoft.Azure.Cosmos
         private Documents.ConsistencyLevel? desiredConsistencyLevel;
 
         internal CosmosAccountServiceConfiguration accountServiceConfiguration { get; private set; }
-        internal ClientTelemetry clientTelemetry { get; set; }
+
+        internal TelemetryToServiceHelper telemetryToServiceHelper { get; set; }
 
         private ClientCollectionCache collectionCache;
 
@@ -166,6 +175,9 @@ namespace Microsoft.Azure.Cosmos
 
         //RemoteCertificateValidationCallback
         internal RemoteCertificateValidationCallback remoteCertificateValidationCallback;
+
+        //Distributed Tracing Flag
+        internal CosmosClientTelemetryOptions cosmosClientTelemetryOptions;
 
         //SessionContainer.
         internal ISessionContainer sessionContainer;
@@ -228,7 +240,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.Initialize(serviceEndpoint, connectionPolicy, desiredConsistencyLevel);
             this.initTaskCache = new AsyncCacheNonBlocking<string, bool>(cancellationToken: this.cancellationTokenSource.Token);
-
+            this.isReplicaAddressValidationEnabled = ConfigurationManager.IsReplicaAddressValidationEnabled(connectionPolicy);
         }
 
         /// <summary>
@@ -426,6 +438,8 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="isLocalQuorumConsistency">Flag to allow Quorum Read with Eventual Consistency Account</param>
         /// <param name="cosmosClientId"></param>
         /// <param name="remoteCertificateValidationCallback">This delegate responsible for validating the third party certificate. </param>
+        /// <param name="cosmosClientTelemetryOptions">This is distributed tracing flag</param>
+        /// <param name="chaosInterceptorFactory">This is the chaos interceptor used for fault injection</param>
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal.
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
@@ -452,7 +466,9 @@ namespace Microsoft.Azure.Cosmos
                               IStoreClientFactory storeClientFactory = null,
                               bool isLocalQuorumConsistency = false,
                               string cosmosClientId = null,
-                              RemoteCertificateValidationCallback remoteCertificateValidationCallback = null)
+                              RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
+                              CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null,
+                              IChaosInterceptorFactory chaosInterceptorFactory = null)
         {
             if (sendingRequestEventArgs != null)
             {
@@ -475,6 +491,8 @@ namespace Microsoft.Azure.Cosmos
             this.transportClientHandlerFactory = transportClientHandlerFactory;
             this.IsLocalQuorumConsistency = isLocalQuorumConsistency;
             this.initTaskCache = new AsyncCacheNonBlocking<string, bool>(cancellationToken: this.cancellationTokenSource.Token);
+            this.chaosInterceptorFactory = chaosInterceptorFactory;
+            this.chaosInterceptor = chaosInterceptorFactory?.CreateInterceptor(this);
 
             this.Initialize(
                 serviceEndpoint: serviceEndpoint,
@@ -485,7 +503,8 @@ namespace Microsoft.Azure.Cosmos
                 enableCpuMonitor: enableCpuMonitor,
                 storeClientFactory: storeClientFactory,
                 cosmosClientId: cosmosClientId,
-                remoteCertificateValidationCallback: remoteCertificateValidationCallback);
+                remoteCertificateValidationCallback: remoteCertificateValidationCallback,
+                cosmosClientTelemetryOptions: cosmosClientTelemetryOptions);
         }
 
         /// <summary>
@@ -556,11 +575,11 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Internal constructor purely for unit-testing
         /// </summary>
-        internal DocumentClient(Uri serviceEndpoint, string authKey)
+        internal DocumentClient(Uri serviceEndpoint, ConnectionPolicy connectionPolicy)
         {
             // do nothing 
             this.ServiceEndpoint = serviceEndpoint;
-            this.ConnectionPolicy = new ConnectionPolicy();
+            this.ConnectionPolicy = connectionPolicy ?? new ConnectionPolicy();
         }
 
         internal virtual async Task<ClientCollectionCache> GetCollectionCacheAsync(ITrace trace)
@@ -652,8 +671,8 @@ namespace Microsoft.Azure.Cosmos
                     storeModel: this.GatewayStoreModel, 
                     tokenProvider: this, 
                     retryPolicy: this.retryPolicy,
-                    clientTelemetry: this.clientTelemetry);
-                this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache);
+                    telemetryToServiceHelper: this.telemetryToServiceHelper);
+                this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager);
 
                 DefaultTrace.TraceWarning("{0} occurred while OpenAsync. Exception Message: {1}", ex.ToString(), ex.Message);
             }
@@ -668,7 +687,8 @@ namespace Microsoft.Azure.Cosmos
             IStoreClientFactory storeClientFactory = null,
             TokenCredential tokenCredential = null,
             string cosmosClientId = null,
-            RemoteCertificateValidationCallback remoteCertificateValidationCallback = null)
+            RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
+            CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null)
         {
             if (serviceEndpoint == null)
             {
@@ -677,6 +697,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.clientId = cosmosClientId;
             this.remoteCertificateValidationCallback = remoteCertificateValidationCallback;
+            this.cosmosClientTelemetryOptions = cosmosClientTelemetryOptions ?? new CosmosClientTelemetryOptions();
 
             this.queryPartitionProvider = new AsyncLazy<QueryPartitionProvider>(async () =>
             {
@@ -929,6 +950,15 @@ namespace Microsoft.Azure.Cosmos
             // Loading VM Information (non blocking call and initialization won't fail if this call fails)
             VmMetadataApiHandler.TryInitialize(this.httpClient);
 
+            // Starting ClientTelemetry Job
+            this.telemetryToServiceHelper = TelemetryToServiceHelper.CreateAndInitializeClientConfigAndTelemetryJob(this.clientId,
+                                                                 this.ConnectionPolicy,
+                                                                 this.cosmosAuthorization,
+                                                                 this.httpClient,
+                                                                 this.ServiceEndpoint,
+                                                                 this.GlobalEndpointManager,
+                                                                 this.cancellationTokenSource);
+
             if (sessionContainer != null)
             {
                 this.sessionContainer = sessionContainer;
@@ -950,12 +980,6 @@ namespace Microsoft.Azure.Cosmos
             // For gateway: GatewayProxy.
             // For direct: WFStoreProxy [set in OpenAsync()].
             this.eventSource = DocumentClientEventSource.Instance;
-
-            // Disable system usage for internal builds. Cosmos DB owns the VMs and already logs
-            // the system information so no need to track it.
-#if !INTERNAL
-            this.InitializeClientTelemetry();
-#endif
 
             this.initializeTaskFactory = (_) => TaskHelper.InlineIfPossible<bool>(
                     () => this.GetInitializationTaskAsync(storeClientFactory: storeClientFactory),
@@ -1018,8 +1042,8 @@ namespace Microsoft.Azure.Cosmos
                     storeModel: this.GatewayStoreModel, 
                     tokenProvider: this, 
                     retryPolicy: this.retryPolicy,
-                    clientTelemetry: this.clientTelemetry);
-            this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache);
+                    telemetryToServiceHelper: this.telemetryToServiceHelper);
+            this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager);
             this.ResetSessionTokenRetryPolicy = new ResetSessionTokenRetryPolicyFactory(this.sessionContainer, this.collectionCache, this.retryPolicy);
 
             gatewayStoreModel.SetCaches(this.partitionKeyRangeCache, this.collectionCache);
@@ -1034,36 +1058,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return true;
-        }
-
-        private void InitializeClientTelemetry()
-        {
-            if (this.ConnectionPolicy.EnableClientTelemetry)
-            {
-                try
-                {
-                    this.clientTelemetry = ClientTelemetry.CreateAndStartBackgroundTelemetry(
-                        clientId: this.clientId,
-                        httpClient: this.httpClient,
-                        userAgent: this.ConnectionPolicy.UserAgentContainer.BaseUserAgent,
-                        connectionMode: this.ConnectionPolicy.ConnectionMode,
-                        authorizationTokenProvider: this.cosmosAuthorization,
-                        diagnosticsHelper: DiagnosticsHandlerHelper.Instance,
-                        preferredRegions: this.ConnectionPolicy.PreferredLocations,
-                        globalEndpointManager: this.GlobalEndpointManager);
-
-                    DefaultTrace.TraceInformation("Client Telemetry Enabled.");
-                }
-                catch (Exception ex)
-                {
-                    DefaultTrace.TraceInformation($"Error While starting Telemetry Job : {ex.Message}. Hence disabling Client Telemetry");
-                    this.ConnectionPolicy.EnableClientTelemetry = false;
-                }
-            }
-            else
-            {
-                DefaultTrace.TraceInformation("Client Telemetry Disabled.");
-            }
         }
 
         private async Task InitializeCachesAsync(string databaseName, DocumentCollection collection, CancellationToken cancellationToken)
@@ -1252,6 +1246,23 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Returns the account properties available in the service configuration if the client was initialized.
+        /// </summary>
+        public bool TryGetCachedAccountProperties(out AccountProperties properties)
+        {
+            if (this.isSuccessfullyInitialized
+                && this.accountServiceConfiguration != null
+                && this.accountServiceConfiguration.AccountProperties != null)
+            {
+                properties = this.accountServiceConfiguration.AccountProperties;
+                return true;
+            }
+
+            properties = null;
+            return false;
+        }
+
+        /// <summary>
         /// Disposes the client for the Azure Cosmos DB service.
         /// </summary>
         /// <example>
@@ -1267,6 +1278,12 @@ namespace Microsoft.Azure.Cosmos
             if (this.isDisposed)
             {
                 return;
+            }
+
+            if (this.telemetryToServiceHelper != null)
+            {
+                this.telemetryToServiceHelper.Dispose();
+                this.telemetryToServiceHelper = null;
             }
 
             if (!this.cancellationTokenSource.IsCancellationRequested)
@@ -1334,11 +1351,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.initTaskCache.Dispose();
                 this.initTaskCache = null;
-            }
-
-            if (this.clientTelemetry != null)
-            {
-                this.clientTelemetry.Dispose();
             }
 
             DefaultTrace.TraceInformation("DocumentClient with id {0} disposed.", this.traceId);
@@ -1575,6 +1587,12 @@ namespace Microsoft.Azure.Cosmos
                     DefaultTrace.TraceWarning("EnsureValidClientAsync initializeTask failed {0}", e);
                     childTrace.AddDatum("initializeTask failed", e);
                     throw;
+                }
+
+                if (this.chaosInterceptorFactory != null && !this.isChaosInterceptorInititalized)
+                {
+                    this.isChaosInterceptorInititalized = true;
+                    await this.chaosInterceptorFactory.ConfigureChaosInterceptorAsync();
                 }
             }
         }
@@ -6636,6 +6654,18 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
+                // It is decided to switch this feature off completely for external users but keep it unchanged for internal users,
+                // due to the nature of information, we are collecting here. RNTBD is internal protocol and we do not expose it to the customers.
+                Documents.Telemetry.DistributedTracingOptions distributedTracingOptions = new ()
+                {
+#if INTERNAL
+                    IsDistributedTracingEnabled = !this.cosmosClientTelemetryOptions.DisableDistributedTracing
+#else
+                    IsDistributedTracingEnabled = false
+#endif
+
+                };
+
                 StoreClientFactory newClientFactory = new StoreClientFactory(
                     this.ConnectionPolicy.ConnectionProtocol,
                     (int)this.ConnectionPolicy.RequestTimeout.TotalSeconds,
@@ -6658,7 +6688,9 @@ namespace Microsoft.Azure.Cosmos
                     enableTcpConnectionEndpointRediscovery: this.ConnectionPolicy.EnableTcpConnectionEndpointRediscovery,
                     addressResolver: this.AddressResolver,
                     rntbdMaxConcurrentOpeningConnectionCount: this.rntbdMaxConcurrentOpeningConnectionCount,
-                    remoteCertificateValidationCallback: this.remoteCertificateValidationCallback );
+                    remoteCertificateValidationCallback: this.remoteCertificateValidationCallback,
+                    distributedTracingOptions: distributedTracingOptions,
+                    chaosInterceptor: this.chaosInterceptor);
 
                 if (this.transportClientHandlerFactory != null)
                 {
@@ -6686,7 +6718,8 @@ namespace Microsoft.Azure.Cosmos
                 this.ConnectionPolicy.EnableReadRequestsFallback ?? (this.accountServiceConfiguration.DefaultConsistencyLevel != Documents.ConsistencyLevel.BoundedStaleness),
                 !this.enableRntbdChannel,
                 this.UseMultipleWriteLocations && (this.accountServiceConfiguration.DefaultConsistencyLevel != Documents.ConsistencyLevel.Strong),
-                true);
+                true,
+                enableReplicaValidation: this.isReplicaAddressValidationEnabled);
 
             if (subscribeRntbdStatus)
             {
@@ -6907,6 +6940,11 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, options.ConsistencyLevel.ToString());
+            }
+
+            if (options.PriorityLevel.HasValue)
+            {
+                headers.Set(HttpConstants.HttpHeaders.PriorityLevel, options.PriorityLevel.ToString());
             }
 
             if (options.IndexingDirective.HasValue)

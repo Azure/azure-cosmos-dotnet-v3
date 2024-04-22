@@ -105,34 +105,34 @@ namespace CosmosCTL
             CounterOptions querySuccessMeter = new CounterOptions { Name = "#Query Successful Operations", Context = loggingContextIdentifier };
             CounterOptions queryFailureMeter = new CounterOptions { Name = "#Query Unsuccessful Operations", Context = loggingContextIdentifier };
 
-            TimerOptions readLatencyTimer = new TimerOptions
+            TimerOptions readLatencyTimer = new()
             {
                 Name = "Read latency",
                 MeasurementUnit = Unit.Requests,
                 DurationUnit = TimeUnit.Milliseconds,
                 RateUnit = TimeUnit.Seconds,
                 Context = loggingContextIdentifier,
-                Reservoir = () => new App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir()
+                Reservoir = () => ReservoirProvider.GetReservoir(config)
             };
 
-            TimerOptions writeLatencyTimer = new TimerOptions
+            TimerOptions writeLatencyTimer = new ()
             {
                 Name = "Write latency",
                 MeasurementUnit = Unit.Requests,
                 DurationUnit = TimeUnit.Milliseconds,
                 RateUnit = TimeUnit.Seconds,
                 Context = loggingContextIdentifier,
-                Reservoir = () => new App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir()
+                Reservoir = () => ReservoirProvider.GetReservoir(config)
             };
 
-            TimerOptions queryLatencyTimer = new TimerOptions
+            TimerOptions queryLatencyTimer = new ()
             {
                 Name = "Query latency",
                 MeasurementUnit = Unit.Requests,
                 DurationUnit = TimeUnit.Milliseconds,
                 RateUnit = TimeUnit.Seconds,
                 Context = loggingContextIdentifier,
-                Reservoir = () => new App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir()
+                Reservoir = () => ReservoirProvider.GetReservoir(config)
             };
 
             SemaphoreSlim concurrencyControlSemaphore = new SemaphoreSlim(config.Concurrency);
@@ -178,7 +178,7 @@ namespace CosmosCTL
                             operation: i,
                             partitionKeyAttributeName: config.CollectionPartitionKey,
                             containers: initializationResult.Containers,
-                            isContentResponseOnWriteEnabled: config.IsContentResponseOnWriteEnabled)),
+                            isContentResponseOnWriteEnabled: config.IsContentResponseOnWriteEnabled.Value)),
                         onSuccess: () =>
                         {
                             concurrencyControlSemaphore.Release();

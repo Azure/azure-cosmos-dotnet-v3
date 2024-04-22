@@ -38,11 +38,13 @@ namespace Microsoft.Azure.Cosmos.Json
             false, false, false, false, false, false, false, false,
             false, false, false, false, false, false, false, false,
 
-            // Encoded 0-byte system string (64 values)
+            // Encoded 0-byte system string (32 values)
             true, true, true, true, true, true, true, true,
             true, true, true, true, true, true, true, true,
             true, true, true, true, true, true, true, true,
             true, true, true, true, true, true, true, true,
+
+            // Encoded true-byte user string (32 values)
             true, true, true, true, true, true, true, true,
             true, true, true, true, true, true, true, true,
             true, true, true, true, true, true, true, true,
@@ -384,14 +386,29 @@ namespace Microsoft.Azure.Cosmos.Json
                 return false;
             }
 
-            // JsonBinaryEncoding.TypeMarker.IsTwoByteEncodedUserString(typeMarker) must be true
-            if (stringToken.Length < 2)
+            if (JsonBinaryEncoding.TypeMarker.IsOneByteEncodedUserString(typeMarker))
             {
-                userStringId = default;
-                return false;
-            }
+                if (stringToken.Length < 1)
+                {
+                    userStringId = default;
+                    return false;
+                }
 
-            userStringId = stringToken[1] + ((stringToken[0] - JsonBinaryEncoding.TypeMarker.UserString2ByteLengthMin) * 0xFF);
+                userStringId = typeMarker - JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin;
+            }
+            else //// JsonBinaryEncoding.TypeMarker.IsTwoByteEncodedUserString(typeMarker)
+            {
+                if (stringToken.Length < 2)
+                {
+                    userStringId = default;
+                    return false;
+                }
+
+                const byte OneByteCount = JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMax - JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin;
+                userStringId = OneByteCount
+                    + stringToken[1]
+                    + ((stringToken[0] - JsonBinaryEncoding.TypeMarker.UserString2ByteLengthMin) * 0xFF);
+            }
 
             return true;
         }

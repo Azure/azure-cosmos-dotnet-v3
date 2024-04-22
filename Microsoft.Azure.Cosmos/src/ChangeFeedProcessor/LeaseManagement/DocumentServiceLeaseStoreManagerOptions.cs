@@ -16,5 +16,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         {
             return this.ContainerNamePrefix + PartitionLeasePrefixSeparator;
         }
+
+        internal ChangeFeedMode Mode { get; set; }
     }
 }

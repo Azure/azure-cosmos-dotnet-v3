@@ -10,42 +10,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using System.Net;
     using System.Security.Cryptography;
-    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
     [TestClass]
-    public class CosmosDatabaseTests
+    public class CosmosDatabaseTests : BaseCosmosClientHelper
     {
-        protected CosmosClient cosmosClient = null;
-        protected CancellationTokenSource cancellationTokenSource = null;
-        protected CancellationToken cancellationToken;
-
         [TestInitialize]
-        public void TestInit()
+        public async Task TestInitialize()
         {
-            this.cancellationTokenSource = new CancellationTokenSource();
-            this.cancellationToken = this.cancellationTokenSource.Token;
-
-            this.cosmosClient = TestCommon.CreateCosmosClient();
+            await base.TestInit();
         }
 
         [TestCleanup]
-        public void TestCleanup()
+        public async Task TestCleanUp()
         {
-            if (this.cosmosClient == null)
-            {
-                return;
-            }
-
-            this.cancellationTokenSource?.Cancel();
-            this.cosmosClient.Dispose();
+            await base.TestCleanup();
         }
 
         [TestMethod]
@@ -121,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Id = Guid.NewGuid().ToString()
             };
 
-            using (ResponseMessage response = await this.cosmosClient.CreateDatabaseStreamAsync(databaseSettings))
+            using (ResponseMessage response = await this.GetClient().CreateDatabaseStreamAsync(databaseSettings))
             {
                 Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
                 Assert.IsNotNull(response.Headers);
@@ -129,14 +113,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             // Stream operations do not throw exceptions.
-            using (ResponseMessage response = await this.cosmosClient.CreateDatabaseStreamAsync(databaseSettings))
+            using (ResponseMessage response = await this.GetClient().CreateDatabaseStreamAsync(databaseSettings))
             {
                 Assert.AreEqual(HttpStatusCode.Conflict, response.StatusCode);
                 Assert.IsNotNull(response.Headers);
                 Assert.IsTrue(response.Headers.RequestCharge > 0);
             }
 
-            using (ResponseMessage response = await this.cosmosClient.GetDatabase(databaseSettings.Id).DeleteStreamAsync())
+            using (ResponseMessage response = await this.GetClient().GetDatabase(databaseSettings.Id).DeleteStreamAsync())
             {
                 Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
                 Assert.IsNotNull(response.Headers);
@@ -185,7 +169,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                DatabaseResponse response = await this.cosmosClient.GetDatabase(Guid.NewGuid().ToString()).DeleteAsync(cancellationToken: this.cancellationToken);
+                DatabaseResponse response = await this.GetClient().GetDatabase(Guid.NewGuid().ToString()).DeleteAsync(cancellationToken: this.cancellationToken);
                 Assert.Fail();
             }
             catch (CosmosException ex)
@@ -218,7 +202,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             RequestChargeHandlerHelper requestChargeHandler = new RequestChargeHandlerHelper();
             RequestHandlerHelper requestHandlerHelper = new RequestHandlerHelper();
 
-            CosmosClient client = TestCommon.CreateCosmosClient(x => x.AddCustomHandlers(requestChargeHandler, requestHandlerHelper));
+            using CosmosClient client = TestCommon.CreateCosmosClient(x => x.AddCustomHandlers(requestChargeHandler, requestHandlerHelper));
 
             // Create a new database
             requestChargeHandler.TotalRequestCharges = 0;
@@ -292,7 +276,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 (x) => toStreamCount++);
 
             //Create a new cosmos client with the mocked cosmos json serializer
-            CosmosClient client = TestCommon.CreateCosmosClient(
+            using CosmosClient client = TestCommon.CreateCosmosClient(
                 (cosmosClientBuilder) => cosmosClientBuilder.WithCustomSerializer(mockJsonSerializer));
 
             string databaseId = Guid.NewGuid().ToString();
@@ -372,7 +356,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     databaseIds.Add(createResponse.Resource.Id);
                 }
 
-                FeedIterator<DatabaseProperties> feedIterator = this.cosmosClient.GetDatabaseQueryIterator<DatabaseProperties>(
+                FeedIterator<DatabaseProperties> feedIterator = this.GetClient().GetDatabaseQueryIterator<DatabaseProperties>(
                     queryDefinition: null,
                     continuationToken: null,
                     requestOptions: new QueryRequestOptions() { MaxItemCount = 2 });
@@ -420,7 +404,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 cekProperties.EncryptionKeyWrapMetadata);
 
             // Use a different client instance to avoid (unintentional) cache impact
-            ClientEncryptionKeyProperties readProperties = await ((DatabaseInlineCore)this.cosmosClient.GetDatabase(response.Database.Id)).GetClientEncryptionKey(cekId).ReadAsync();
+            ClientEncryptionKeyProperties readProperties = await ((DatabaseInlineCore)this.GetClient().GetDatabase(response.Database.Id)).GetClientEncryptionKey(cekId).ReadAsync();
             Assert.AreEqual(cekProperties, readProperties);
 
             // Replace
@@ -438,7 +422,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Use a different client instance to avoid (unintentional) cache impact
             readProperties =
-                await ((DatabaseCore)(DatabaseInlineCore)this.cosmosClient.GetDatabase(response.Database.Id)).GetClientEncryptionKey(cekId).ReadAsync();
+                await ((DatabaseCore)(DatabaseInlineCore)this.GetClient().GetDatabase(response.Database.Id)).GetClientEncryptionKey(cekId).ReadAsync();
             Assert.AreEqual(cekProperties, readProperties);
 
             response = await response.Database.DeleteAsync(cancellationToken: this.cancellationToken);
@@ -558,15 +542,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string secondDb = "Bcdefgh";
                 string thirdDb = "Zoo";
 
-                DatabaseResponse createResponse2 = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(secondDb);
+                DatabaseResponse createResponse2 = await this.GetClient().CreateDatabaseIfNotExistsAsync(secondDb);
                 deleteList.Add(createResponse2.Database);
-                DatabaseResponse createResponse = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(firstDb);
+                DatabaseResponse createResponse = await this.GetClient().CreateDatabaseIfNotExistsAsync(firstDb);
                 deleteList.Add(createResponse.Database);
-                DatabaseResponse createResponse3 = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(thirdDb);
+                DatabaseResponse createResponse3 = await this.GetClient().CreateDatabaseIfNotExistsAsync(thirdDb);
                 deleteList.Add(createResponse3.Database);
 
                 using (FeedIterator<DatabaseProperties> feedIterator =
-                   this.cosmosClient.GetDatabaseQueryIterator<DatabaseProperties>(
+                   this.GetClient().GetDatabaseQueryIterator<DatabaseProperties>(
                        new QueryDefinition("select c.id From c where c.id = @id ")
                        .WithParameter("@id", createResponse.Database.Id),
                        requestOptions: new QueryRequestOptions() { MaxItemCount = 1 }))
@@ -579,7 +563,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 using (FeedIterator feedIterator =
-                    this.cosmosClient.GetDatabaseQueryStreamIterator(
+                    this.GetClient().GetDatabaseQueryStreamIterator(
                         "select value c.id From c "))
                 {
                     while (feedIterator.HasMoreResults)
@@ -603,7 +587,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 List<string> ids = new List<string>();
                 using (FeedIterator<string> feedIterator =
-                    this.cosmosClient.GetDatabaseQueryIterator<string>(
+                    this.GetClient().GetDatabaseQueryIterator<string>(
                         "select value c.id From c "))
                 {
                     while (feedIterator.HasMoreResults)
@@ -637,14 +621,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DatabaseResponse response = null;
             if (databaseExists)
             {
-                response = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(
+                response = await this.GetClient().CreateDatabaseIfNotExistsAsync(
                     databaseId,
                     throughput,
                     cancellationToken: this.cancellationToken);
             }
             else
             {
-                response = await this.cosmosClient.CreateDatabaseAsync(
+                response = await this.GetClient().CreateDatabaseAsync(
                     databaseId,
                     throughput,
                     cancellationToken: this.cancellationToken);
@@ -673,7 +657,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             DatabaseProperties databaseSettings = new DatabaseProperties() { Id = databaseId };
-            ResponseMessage response = await this.cosmosClient.CreateDatabaseStreamAsync(
+            ResponseMessage response = await this.GetClient().CreateDatabaseStreamAsync(
                 databaseSettings,
                 throughput: 400);
 
@@ -683,7 +667,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.IsTrue(response.StatusCode == HttpStatusCode.OK || (response.StatusCode == HttpStatusCode.Created && !databaseExists));
 
-            return this.cosmosClient.GetDatabase(databaseId);
+            return this.GetClient().GetDatabase(databaseId);
         }
 
         private void ValidateHeaders(DatabaseResponse cosmosDatabaseResponse)

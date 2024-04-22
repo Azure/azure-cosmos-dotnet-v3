@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             CosmosEncryptorTests.mockDataEncryptionKeyProvider = new Mock<DataEncryptionKeyProvider>();
             CosmosEncryptorTests.mockDataEncryptionKeyProvider
-                .Setup(m => m.FetchDataEncryptionKeyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .Setup(m => m.FetchDataEncryptionKeyWithoutRawKeyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync((string dekId, string algo, CancellationToken cancellationToken) =>
                     dekId == CosmosEncryptorTests.dekId ? CosmosEncryptorTests.mockDataEncryptionKey.Object : null);
 
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 Times.Once);
 
             CosmosEncryptorTests.mockDataEncryptionKeyProvider.Verify(
-                m => m.FetchDataEncryptionKeyAsync(
+                m => m.FetchDataEncryptionKeyWithoutRawKeyAsync(
                     CosmosEncryptorTests.dekId,
                     CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
                     It.IsAny<CancellationToken>()), Times.Exactly(2));

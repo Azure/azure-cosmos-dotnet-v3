@@ -31,6 +31,8 @@ namespace CosmosBenchmark
         public abstract bool IsPaginationEnabled { get; }
         public abstract bool IsQueryStream { get; }
 
+        public BenchmarkOperationType OperationType => BenchmarkOperationType.Query;
+
         protected string executionItemId = null;
         protected string executionPartitionKey = null;
 
@@ -106,6 +108,7 @@ namespace CosmosBenchmark
             {
                 DatabseName = databaseName,
                 ContainerName = containerName,
+                OperationType = this.OperationType,
                 RuCharges = totalCharge,
                 CosmosDiagnostics = lastDiagnostics,
                 LazyDiagnostics = () => lastDiagnostics?.ToString(),
@@ -291,7 +294,7 @@ namespace CosmosBenchmark
 
                     if (itemResponse.StatusCode != HttpStatusCode.Created)
                     {
-                        throw new Exception($"Create failed with statuscode: {itemResponse.StatusCode}");
+                        throw new Exception($"Create failed with status code: {itemResponse.StatusCode}");
                     }
                 }
             }

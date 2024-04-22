@@ -12,10 +12,11 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Tracing;
     using Newtonsoft.Json;
+    using Debug = System.Diagnostics.Debug;
 
     /// <summary>
     /// This is the entry point for LINQ query creation/execution, it generate query provider, implements IOrderedQueryable.
@@ -32,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         private readonly QueryRequestOptions cosmosQueryRequestOptions;
         private readonly bool allowSynchronousQueryExecution = false;
         private readonly string continuationToken;
-        private readonly CosmosLinqSerializerOptions linqSerializationOptions;
+        private readonly CosmosLinqSerializerOptionsInternal linqSerializationOptions;
 
         public CosmosLinqQuery(
            ContainerInternal container,
@@ -42,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Linq
            QueryRequestOptions cosmosQueryRequestOptions,
            Expression expression,
            bool allowSynchronousQueryExecution,
-           CosmosLinqSerializerOptions linqSerializationOptions = null)
+           CosmosLinqSerializerOptionsInternal linqSerializationOptions = null)
         {
             this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.responseFactory = responseFactory ?? throw new ArgumentNullException(nameof(responseFactory));
@@ -72,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Linq
           string continuationToken,
           QueryRequestOptions cosmosQueryRequestOptions,
           bool allowSynchronousQueryExecution,
-          CosmosLinqSerializerOptions linqSerializerOptions = null)
+          CosmosLinqSerializerOptionsInternal linqSerializerOptions = null)
             : this(
               container,
               responseFactory,
@@ -108,7 +109,12 @@ namespace Microsoft.Azure.Cosmos.Linq
                     " use GetItemQueryIterator to execute asynchronously");
             }
 
-            FeedIterator<T> localFeedIterator = this.CreateFeedIterator(false);
+            FeedIterator<T> localFeedIterator = this.CreateFeedIterator(false, out ScalarOperationKind scalarOperationKind);
+            Debug.Assert(
+                scalarOperationKind == ScalarOperationKind.None,
+                "CosmosLinqQuery Assert!",
+                $"Unexpected client operation. Expected 'None', Received '{scalarOperationKind}'");
+
             while (localFeedIterator.HasMoreResults)
             {
 #pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
@@ -133,7 +139,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public override string ToString()
         {
-            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.linqSerializationOptions);
+            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.linqSerializationOptions).SqlQuerySpec;
             if (querySpec != null)
             {
                 return JsonConvert.SerializeObject(querySpec);
@@ -144,20 +150,36 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public QueryDefinition ToQueryDefinition(IDictionary<object, string> parameters = null)
         {
-            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.linqSerializationOptions, parameters);
-            return QueryDefinition.CreateFromQuerySpec(querySpec);
+            LinqQueryOperation linqQueryOperation = DocumentQueryEvaluator.Evaluate(this.Expression, this.linqSerializationOptions, parameters);
+            ScalarOperationKind scalarOperationKind = linqQueryOperation.ScalarOperationKind;
+            Debug.Assert(
+                scalarOperationKind == ScalarOperationKind.None,
+                "CosmosLinqQuery Assert!",
+                $"Unexpected client operation. Expected 'None', Received '{scalarOperationKind}'");
+
+            return QueryDefinition.CreateFromQuerySpec(linqQueryOperation.SqlQuerySpec);
         }
 
         public FeedIterator<T> ToFeedIterator()
         {
-            return new FeedIteratorInlineCore<T>(this.CreateFeedIterator(true),
-                                                 this.container.ClientContext);
+            FeedIterator<T> iterator = this.CreateFeedIterator(true, out ScalarOperationKind scalarOperationKind);
+            Debug.Assert(
+                scalarOperationKind == ScalarOperationKind.None,
+                "CosmosLinqQuery Assert!",
+                $"Unexpected client operation. Expected 'None', Received '{scalarOperationKind}'");
+
+            return new FeedIteratorInlineCore<T>(iterator, this.container.ClientContext);
         }
 
         public FeedIterator ToStreamIterator()
         {
-            return new FeedIteratorInlineCore(this.CreateStreamIterator(true),
-                                              this.container.ClientContext);
+            FeedIterator iterator = this.CreateStreamIterator(true, out ScalarOperationKind scalarOperationKind);
+            Debug.Assert(
+                scalarOperationKind == ScalarOperationKind.None,
+                "CosmosLinqQuery Assert!",
+                $"Unexpected client operation. Expected 'None', Received '{scalarOperationKind}'");
+
+            return new FeedIteratorInlineCore(iterator, this.container.ClientContext);
         }
 
         public void Dispose()
@@ -180,15 +202,18 @@ namespace Microsoft.Azure.Cosmos.Linq
             List<T> result = new List<T>();
             Headers headers = new Headers();
 
-            FeedIterator<T> localFeedIterator = this.CreateFeedIterator(isContinuationExpected: false);
-            FeedIteratorInternal<T> localFeedIteratorInternal = (FeedIteratorInternal<T>)localFeedIterator;
+            FeedIteratorInlineCore<T> localFeedIterator = this.CreateFeedIterator(isContinuationExpected: false, scalarOperationKind: out ScalarOperationKind scalarOperationKind);
+            Debug.Assert(
+                scalarOperationKind == ScalarOperationKind.None,
+                "CosmosLinqQuery Assert!",
+                $"Unexpected client operation. Expected 'None', Received '{scalarOperationKind}'");
 
             ITrace rootTrace;
             using (rootTrace = Trace.GetRootTrace("Aggregate LINQ Operation"))
             {
                 while (localFeedIterator.HasMoreResults)
                 {
-                    FeedResponse<T> response = await localFeedIteratorInternal.ReadNextAsync(rootTrace, cancellationToken);
+                    FeedResponse<T> response = await localFeedIterator.ReadNextAsync(rootTrace, cancellationToken);
                     headers.RequestCharge += response.RequestCharge;
                     result.AddRange(response);
                 }
@@ -202,23 +227,57 @@ namespace Microsoft.Azure.Cosmos.Linq
                 null);
         }
 
-        private FeedIteratorInternal CreateStreamIterator(bool isContinuationExcpected)
+        internal T ExecuteScalar()
         {
-            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.linqSerializationOptions);
+            FeedIteratorInlineCore<T> localFeedIterator = this.CreateFeedIterator(isContinuationExpected: false, out ScalarOperationKind scalarOperationKind);
+            Headers headers = new Headers();
+
+            List<T> result = new List<T>();
+            ITrace rootTrace;
+            using (rootTrace = Trace.GetRootTrace("Scalar LINQ Operation"))
+            {
+                while (localFeedIterator.HasMoreResults)
+                {
+                    FeedResponse<T> response = localFeedIterator.ReadNextAsync(rootTrace, cancellationToken: default).GetAwaiter().GetResult();
+                    headers.RequestCharge += response.RequestCharge;
+                    result.AddRange(response);
+                }
+            }
+
+            switch (scalarOperationKind)
+            {
+                case ScalarOperationKind.FirstOrDefault:
+                    return result.FirstOrDefault();
+
+                // ExecuteScalar gets called when (sync) aggregates such as Max, Min, Sum are invoked on the IQueryable.
+                // Since query fully supprots these operations, there is no client operation involved.
+                // In these cases we return FirstOrDefault which handles empty/undefined/null result set from the backend.
+                case ScalarOperationKind.None:
+                    return result.SingleOrDefault();
+
+                default:
+                    throw new InvalidOperationException($"Unsupported scalar operation {scalarOperationKind}");
+            }
+        }
+
+        private FeedIteratorInternal CreateStreamIterator(bool isContinuationExcpected, out ScalarOperationKind scalarOperationKind)
+        {
+            LinqQueryOperation linqQueryOperation = DocumentQueryEvaluator.Evaluate(this.Expression, this.linqSerializationOptions);
+            scalarOperationKind = linqQueryOperation.ScalarOperationKind;
 
             return this.container.GetItemQueryStreamIteratorInternal(
-                sqlQuerySpec: querySpec,
+                sqlQuerySpec: linqQueryOperation.SqlQuerySpec,
                 isContinuationExcpected: isContinuationExcpected,
                 continuationToken: this.continuationToken,
                 feedRange: null,
                 requestOptions: this.cosmosQueryRequestOptions);
         }
 
-        private FeedIterator<T> CreateFeedIterator(bool isContinuationExpected)
+        private FeedIteratorInlineCore<T> CreateFeedIterator(bool isContinuationExpected, out ScalarOperationKind scalarOperationKind)
         {
-            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.linqSerializationOptions);
-
-            FeedIteratorInternal streamIterator = this.CreateStreamIterator(isContinuationExpected);
+            FeedIteratorInternal streamIterator = this.CreateStreamIterator(
+                isContinuationExpected,
+                out scalarOperationKind);
             return new FeedIteratorInlineCore<T>(new FeedIteratorCore<T>(
                 streamIterator,
                 this.responseFactory.CreateQueryFeedUserTypeResponse<T>),
