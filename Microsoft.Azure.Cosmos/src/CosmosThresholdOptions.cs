@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
 
     /// <summary>
-    /// This class describes the thresholds when more details diagnostics are emitted for an operation due to high latency,
+    /// This class describes the thresholds when more details diagnostics events are emitted, if subscribed, for an operation due to high latency,
     /// high RU consumption or high payload sizes.
     /// </summary>
     public class CosmosThresholdOptions
