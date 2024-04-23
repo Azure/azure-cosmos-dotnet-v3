@@ -394,8 +394,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 }
                 );
 
+            List<PartitionKeyRange> targetPartitionKeyRanges = new (){
+                new PartitionKeyRange()
+                {
+                    MinInclusive = "",
+                    MaxExclusive = "FF"
+                }
+            };
             CosmosQueryContextCore cosmosQueryContextCore = new CosmosQueryContextCore(
-                 client: new TestCosmosQueryClient(GetQueryPartitionProvider()),
+                 client: new TestCosmosQueryClient(GetQueryPartitionProvider(), targetPartitionKeyRanges),
                  resourceTypeEnum: Documents.ResourceType.Document,
                  operationType: Documents.OperationType.Query,
                  resourceType: typeof(QueryResponseCore),
