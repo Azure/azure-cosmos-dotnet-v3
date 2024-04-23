@@ -1042,8 +1042,91 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                                 new MatchObject{DataTags = doc.TagsField1, QueryTags = f[1], QueryOptions = TagsQueryOptions.Basic }
                             }
                         )
+                    )))),
+                // TagsMatchAnyMultipleLinqSelect
+                new LinqTestInput("TagsMatchAnySingleLinqQuery", b => getQuery(b).Where(doc => CosmosTags.MatchAny(
+                    filters.Select(f =>
+                        new MatchObjectList
+                        (
+                            new []
+                            {
+                                new MatchObject{DataTags = doc.TagsField, QueryTags = f.matchFilters1, QueryOptions = TagsQueryOptions.Basic, UdfName = "UdfName1"},
+                                new MatchObject{DataTags = doc.TagsField1, QueryTags = f.matchFilters2, QueryOptions = TagsQueryOptions.Basic }
+                            }
+                        )
+                    )))),
+                // TagsMatchAnySingleArrayConstructor
+                new LinqTestInput("TagsMatchAnySingleArrayConstructor", b => getQuery(b).Where(doc => CosmosTags.MatchAny(
+                    new MatchObjectList(
+                        new []
+                            {
+                                new MatchObject(doc.TagsField, matchFilter1[0], TagsQueryOptions.Basic, "UdfName1"),
+                                MatchObject.Create(doc.TagsField1, matchFilter1[1], TagsQueryOptions.Basic)
+                            }
+                        )))),
+                // TagsMatchAnyMultipleArrayConstructor
+                new LinqTestInput("TagsMatchAnyMultipleArrayConstructor", b => getQuery(b).Where(doc => CosmosTags.MatchAny(
+                    new MatchObjectList(
+                        new []
+                        {
+                            new MatchObject(doc.TagsField, matchFilter1[0], TagsQueryOptions.Basic, "UdfName1"),
+                            MatchObject.Create(doc.TagsField1, matchFilter1[1], TagsQueryOptions.Basic)
+                        }),
+                        new MatchObjectList(
+                        new []
+                        {
+                            new MatchObject(doc.TagsField, matchFilter2[0], TagsQueryOptions.Basic, "UdfName1"),
+                            MatchObject.Create(doc.TagsField1, matchFilter2[1], TagsQueryOptions.Basic)
+                        })
+                    ))),
+                // TagsMatchAnySingleLinqConstructor
+                new LinqTestInput("TagsMatchAnySingleLinqConstructor", b => getQuery(b).Where(doc => CosmosTags.MatchAny(
+                    matchFilters.Select(f =>
+                        new MatchObjectList
+                        (
+                            new []
+                            {
+                                new MatchObject(doc.TagsField, f[0], TagsQueryOptions.Basic, "UdfName1"),
+                                MatchObject.Create(doc.TagsField1, f[1], TagsQueryOptions.Basic)
+                            }
+                        )
+                    )))),
+                // TagsMatchAnyMultipleLinqConstructor
+                new LinqTestInput("TagsMatchAnySingleLinqQueryConstructor", b => getQuery(b).Where(doc => CosmosTags.MatchAny(
+                    queryFilters.Select(f =>
+                        new MatchObjectList
+                        (
+                            new []
+                            {
+                                new MatchObject(doc.TagsField, f[0], TagsQueryOptions.Basic, "UdfName1"),
+                                MatchObject.Create(doc.TagsField1, f[1], TagsQueryOptions.Basic)
+                            }
+                        )
+                   )))),
+                // TagsMatchAnyMultipleLinqSelectConstructor
+                new LinqTestInput("TagsMatchAnySingleLinqQuerySelectConstructor", b => getQuery(b).Where(doc => CosmosTags.MatchAny(
+                    queryFilters.Select(f =>
+                        new MatchObjectList
+                        (
+                            new []
+                            {
+                                new MatchObject(doc.TagsField, f[0], TagsQueryOptions.Basic, "UdfName1"),
+                                MatchObject.Create(doc.TagsField1, f[1], TagsQueryOptions.Basic)
+                            }
+                        )
+                    )))),
+                // TagsMatchAnyMultipleLinqSelectConstructor
+                new LinqTestInput("TagsMatchAnySingleLinqQuerySelectTupleConstructor", b => getQuery(b).Where(doc => CosmosTags.MatchAny(
+                    filters.Select(f =>
+                        new MatchObjectList
+                        (
+                            new []
+                            {
+                                new MatchObject(doc.TagsField, f.matchFilters1, TagsQueryOptions.Basic, "UdfName1"),
+                                MatchObject.Create(doc.TagsField1, f.matchFilters2, TagsQueryOptions.Basic)
+                            }
+                        )
                     ))))
-
             };
             this.ExecuteTestSuite(inputs);
         }
