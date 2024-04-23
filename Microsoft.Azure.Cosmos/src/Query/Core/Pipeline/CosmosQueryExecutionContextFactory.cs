@@ -758,13 +758,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             ITrace trace)
         {
             bool clientDisableOptimisticDirectExecution = await cosmosQueryContext.QueryClient.GetClientDisableOptimisticDirectExecutionAsync();
-            bool isODEContinuationToken = inputParameters.InitialUserContinuationToken != null &&
+            bool isOdeContinuationToken = inputParameters.InitialUserContinuationToken != null &&
                 OptimisticDirectExecutionContinuationToken.IsOptimisticDirectExecutionContinuationToken(inputParameters.InitialUserContinuationToken);
 
             // Use the Ode code path only if ClientDisableOptimisticDirectExecution is false and EnableOptimisticDirectExecution is true
             // But allow the query using ODE pipeline if it's earlier roundtrips are made using ODE continuation token.
             if ((clientDisableOptimisticDirectExecution || !inputParameters.EnableOptimisticDirectExecution) &&
-                !isODEContinuationToken)
+                !isOdeContinuationToken)
             {
                 return null;
             }
@@ -812,9 +812,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 return targetRanges.Single();
             }
 
-            if (isODEContinuationToken)
+            if (isOdeContinuationToken)
             {
-                throw new InvalidOperationException("Execution of this query cannot resume using ODE Continuation token due to partition split. Please restart the query without continuation token.");
+                throw new InvalidOperationException("Execution of this query cannot resume using Optimistic Direct Execution continuation token due to partition split. Please restart the query without the continuation token.");
             }
 
             return null;

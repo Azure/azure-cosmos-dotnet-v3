@@ -145,7 +145,7 @@
                 }
                 catch(InvalidOperationException ex)
                 {
-                    Assert.IsTrue(ex.ToString().Contains("Execution of this query cannot resume using ODE Continuation token due to partition split. Please restart the query without continuation token."));
+                    Assert.IsTrue(ex.ToString().Contains("Execution of this query cannot resume using Optimistic Direct Execution continuation token due to partition split. Please restart the query without the continuation token."));
                 }
             }
         }
