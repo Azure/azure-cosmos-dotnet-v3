@@ -9,8 +9,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
     using System.Linq;
     using System.Net;
     using System.Net.Sockets;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.FaultInjection.Tests.Utils;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
@@ -1107,6 +1109,95 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 disposedChannel = disposedChannel || channelStore.GetAllChannelIds().Contains(channelGuid);
             }
             Assert.IsTrue(disposedChannel);
+        }
+
+        [TestMethod]
+        [Owner("nalutripician")]
+        [Description("Tests ReadFeed FaultInjection")]
+        public void FaultInjectionServerErrorRule_ReadFeedTest()
+        {
+            if (!this.Timeout_FaultInjectionServerErrorRule_ReadFeedTest().Wait(Timeout))
+            {
+                Assert.Fail("Test timed out");
+            }
+        }
+
+        private async Task Timeout_FaultInjectionServerErrorRule_ReadFeedTest()
+        {
+            string readFeedId = "readFeadGoneRule-" + Guid.NewGuid().ToString();
+            FaultInjectionRule readFeedRule = new FaultInjectionRuleBuilder(
+                id: readFeedId,
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithOperationType(FaultInjectionOperationType.ReadFeed)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.Gone)
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(5))
+                .Build();
+
+            readFeedRule.Disable();
+
+            List<FaultInjectionRule> ruleList = new List<FaultInjectionRule> { readFeedRule };
+            FaultInjector faultInjector = new FaultInjector(ruleList);
+
+            await this.Initialize(faultInjector, false);
+
+            try
+            {
+                string changeFeedContainerName = "changeFeedContainer-" + Guid.NewGuid().ToString();
+                ContainerProperties containerProperties = new ContainerProperties
+                {
+                    Id = changeFeedContainerName,
+                    PartitionKeyPath = "/partitionKey"
+                };
+                if (this.database != null && this.container != null)
+                {
+                    Container? leaseContainer = await this.database.CreateContainerIfNotExistsAsync(containerProperties, 400);
+
+                    ChangeFeedProcessor changeFeedProcessor = this.container.GetChangeFeedProcessorBuilder<JObject>(
+                        processorName: "FaultInjectionTest",
+                        onChangesDelegate: HandleChangesAsync)
+                        .WithInstanceName("test")
+                        .WithLeaseContainer(leaseContainer)
+                        .Build();
+                    await changeFeedProcessor.StartAsync();
+                    await Task.Delay(1000);
+
+                    JObject createdItem = JObject.FromObject(new { id = Guid.NewGuid().ToString(), Pk = Guid.NewGuid().ToString() });
+
+                    ItemResponse<JObject>? itemResponse = this.container != null
+                        ? await this.container.CreateItemAsync<JObject>(createdItem)
+                        : null;
+                    Assert.IsNotNull(itemResponse);
+
+                    readFeedRule.Enable();
+
+                    await Task.Delay(5000);
+                }
+            }
+            finally
+            {
+                readFeedRule.Disable();
+            }
+        }
+
+        private static async Task HandleChangesAsync(
+            ChangeFeedProcessorContext context,
+            IReadOnlyCollection<JObject> changes,
+            CancellationToken cancellationToken)
+        {
+            if (context.Diagnostics.GetClientElapsedTime() > TimeSpan.FromSeconds(1))
+            {
+                Assert.Fail("Change Feed Processor took too long");
+            }
+
+            CosmosTraceDiagnostics? traceDiagnostic = context.Diagnostics as CosmosTraceDiagnostics;
+            Assert.IsNotNull(traceDiagnostic);
+            Assert.IsTrue(traceDiagnostic.Value.Data.TryGetValue("StatusCode", out object? statusCode));
+            Assert.AreEqual((int)StatusCodes.Gone, (int)statusCode);
+            await Task.Delay(1);
         }
 
         private async Task<CosmosDiagnostics> PerformDocumentOperation(Container testContainer, OperationType operationType, JObject item)
