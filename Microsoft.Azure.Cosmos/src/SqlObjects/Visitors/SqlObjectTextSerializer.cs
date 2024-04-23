@@ -629,6 +629,48 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             this.writer.Write(CosmosTags.Condition(tagsProp, tags, queryOptions, udfName));
         }
 
+        public override void Visit(SqlTagsMatchExpressionList sqlObject)
+        {
+            var matchesList = sqlObject.MatchesList;
+            if (matchesList == null || !matchesList.Any())
+            {
+                this.writer.Write("true");
+                return;
+            }
+            this.writer.Write("(");
+            for (int i = 0; i < matchesList.Count(); i++)
+            {
+                if (i > 0) this.writer.Write(" AND ");
+
+                var match = matchesList.ElementAt(i);
+                this.writer.Write("(");
+                Visit(match);
+                this.writer.Write(")");
+            }
+            this.writer.Write(")");
+        }
+
+        public override void Visit(SqlTagsMatchExpressionLists sqlObject)
+        {
+            var matchesList = sqlObject.MatchesList;
+            if (matchesList == null || !matchesList.Any())
+            {
+                this.writer.Write("true");
+                return;
+            }
+            this.writer.Write("(");
+            for (int i = 0; i < matchesList.Count(); i++)
+            {
+                if (i > 0) this.writer.Write(" OR ");
+                    
+                var matchList = matchesList.ElementAt(i);
+                this.writer.Write("(");
+                Visit(matchList);                
+                this.writer.Write(")");
+            }
+            this.writer.Write(")");
+        }
+
         public override void Visit(SqlTopSpec sqlTopSpec)
         {
             this.writer.Write("TOP ");

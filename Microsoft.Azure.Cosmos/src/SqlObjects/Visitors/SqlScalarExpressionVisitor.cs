@@ -32,6 +32,8 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         public abstract void Visit(SqlPropertyRefScalarExpression scalarExpression);
         public abstract void Visit(SqlSubqueryScalarExpression scalarExpression);
         public abstract void Visit(SqlTagsMatchExpression scalarExpression);
+        public abstract void Visit(SqlTagsMatchExpressionList scalarExpression);
+        public abstract void Visit(SqlTagsMatchExpressionLists scalarExpression);
         public abstract void Visit(SqlUnaryScalarExpression scalarExpression);
     }
 }

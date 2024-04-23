@@ -54,4 +54,69 @@ SELECT VALUE root["EnumerableField"][0]
 FROM root]]></SqlQuery>
     </Output>
   </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[TagsMatch]]></Description>
+      <Expression><![CDATA[query.Where(doc => Match(doc.TagsField, new [] {"ns:name=1"}, Default))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE ((NOT(IS_DEFINED(root["TagsField"]["tags"]["!ns:name"])) OR NOT(ARRAY_CONTAINS(root["TagsField"]["tag"], "!ns:name=")) AND NOT(ARRAY_CONTAINS(root["TagsField"]["tag"], "!ns:name=1"))) AND (NOT(IS_DEFINED(root["TagsField"]["tags"]["ns:name"])) OR ARRAY_CONTAINS(root["TagsField"]["tag"], "ns:name=") OR ARRAY_CONTAINS(root["TagsField"]["tag"], "ns:name=1")))]]></SqlQuery>
+      <ErrorMessage><![CDATA[CosmosTags.Match is only for linq expressions]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[TagsMatchAnySingleArray]]></Description>
+      <Expression><![CDATA[query.Where(doc => MatchAny(new [] {new MatchObjectList(new [] {new MatchObject() {DataTags = doc.TagsField, QueryTags = DisplayClass.matchFilter1.get_Item(0), QueryOptions = Basic, UdfName = "UdfName1"}, new MatchObject() {DataTags = doc.TagsField1, QueryTags = DisplayClass.matchFilter1.get_Item(1), QueryOptions = Basic}})}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE ((((((NOT(IS_DEFINED(root["TagsField"]["tags"]["ns:tagname"])) OR ARRAY_CONTAINS(root["TagsField"]["tag"], "ns:tagname=") OR ARRAY_CONTAINS(root["TagsField"]["tag"], "ns:tagname=tagvalue1") OR ARRAY_CONTAINS(root["TagsField"]["tag"], "ns:tagname=tagvalue2")))) AND (((NOT(IS_DEFINED(root["TagsField1"]["tags"]["ns:tagname1"])) OR ARRAY_CONTAINS(root["TagsField1"]["tag"], "ns:tagname1=") OR ARRAY_CONTAINS(root["TagsField1"]["tag"], "ns:tagname1=tag1value1") OR ARRAY_CONTAINS(root["TagsField1"]["tag"], "ns:tagname1=tag1value2")))))))]]></SqlQuery>
+      <ErrorMessage><![CDATA[CosmosTags.Match is only for linq expressions]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[TagsMatchAnyMultipleArray]]></Description>
+      <Expression><![CDATA[query.Where(doc => MatchAny(new [] {new MatchObjectList(new [] {new MatchObject() {DataTags = doc.TagsField, QueryTags = DisplayClass.matchFilter1.get_Item(0), QueryOptions = Basic, UdfName = "UdfName1"}, new MatchObject() {DataTags = doc.TagsField1, QueryTags = DisplayClass.matchFilter1.get_Item(1), QueryOptions = Basic}}), new MatchObjectList(new [] {new MatchObject() {DataTags = doc.TagsField, QueryTags = DisplayClass.matchFilter2.get_Item(0), QueryOptions = Basic, UdfName = "UdfName1"}, new MatchObject() {DataTags = doc.TagsField1, QueryTags = DisplayClass.matchFilter2.get_Item(1), QueryOptions = Basic}})}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE ((((((NOT(IS_DEFINED(root["TagsField"]["tags"]["ns:tagname"])) OR ARRAY_CONTAINS(root["TagsField"]["tag"], "ns:tagname=") OR ARRAY_CONTAINS(root["TagsField"]["tag"], "ns:tagname=tagvalue1") OR ARRAY_CONTAINS(root["TagsField"]["tag"], "ns:tagname=tagvalue2")))) AND (((NOT(IS_DEFINED(root["TagsField1"]["tags"]["ns:tagname1"])) OR ARRAY_CONTAINS(root["TagsField1"]["tag"], "ns:tagname1=") OR ARRAY_CONTAINS(root["TagsField1"]["tag"], "ns:tagname1=tag1value1") OR ARRAY_CONTAINS(root["TagsField1"]["tag"], "ns:tagname1=tag1value2")))))) OR (((((NOT(IS_DEFINED(root["TagsField"]["tags"]["ns:tagname"])) OR ARRAY_CONTAINS(root["TagsField"]["tag"], "ns:tagname=") OR ARRAY_CONTAINS(root["TagsField"]["tag"], "ns:tagname=tagvalue3") OR ARRAY_CONTAINS(root["TagsField"]["tag"], "ns:tagname=tagvalue4")))) AND (((NOT(IS_DEFINED(root["TagsField1"]["tags"]["ns:tagname1"])) OR ARRAY_CONTAINS(root["TagsField1"]["tag"], "ns:tagname1=") OR ARRAY_CONTAINS(root["TagsField1"]["tag"], "ns:tagname1=tag1value3") OR ARRAY_CONTAINS(root["TagsField1"]["tag"], "ns:tagname1=tag1value4")))))))]]></SqlQuery>
+      <ErrorMessage><![CDATA[CosmosTags.Match is only for linq expressions]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[TagsMatchAnySingleLinq]]></Description>
+      <Expression><![CDATA[query.Where(doc => MatchAny(DisplayClass.matchFilters.Select(f => new MatchObjectList(new [] {new MatchObject() {DataTags = doc.TagsField, QueryTags = f.get_Item(0), QueryOptions = Basic, UdfName = "UdfName1"}, new MatchObject() {DataTags = doc.TagsField1, QueryTags = f.get_Item(1), QueryOptions = Basic}}))))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE ((((((NOT(IS_DEFINED(root["TagsField"]["tags"]["ns:tagname"])) OR ARRAY_CONTAINS(root["TagsField"]["tag"], "ns:tagname=") OR ARRAY_CONTAINS(root["TagsField"]["tag"], "ns:tagname=tagvalue1") OR ARRAY_CONTAINS(root["TagsField"]["tag"], "ns:tagname=tagvalue2")))) AND (((NOT(IS_DEFINED(root["TagsField1"]["tags"]["ns:tagname1"])) OR ARRAY_CONTAINS(root["TagsField1"]["tag"], "ns:tagname1=") OR ARRAY_CONTAINS(root["TagsField1"]["tag"], "ns:tagname1=tag1value1") OR ARRAY_CONTAINS(root["TagsField1"]["tag"], "ns:tagname1=tag1value2")))))) OR (((((NOT(IS_DEFINED(root["TagsField"]["tags"]["ns:tagname"])) OR ARRAY_CONTAINS(root["TagsField"]["tag"], "ns:tagname=") OR ARRAY_CONTAINS(root["TagsField"]["tag"], "ns:tagname=tagvalue3") OR ARRAY_CONTAINS(root["TagsField"]["tag"], "ns:tagname=tagvalue4")))) AND (((NOT(IS_DEFINED(root["TagsField1"]["tags"]["ns:tagname1"])) OR ARRAY_CONTAINS(root["TagsField1"]["tag"], "ns:tagname1=") OR ARRAY_CONTAINS(root["TagsField1"]["tag"], "ns:tagname1=tag1value3") OR ARRAY_CONTAINS(root["TagsField1"]["tag"], "ns:tagname1=tag1value4")))))))]]></SqlQuery>
+      <ErrorMessage><![CDATA[CosmosTags.Match is only for linq expressions]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[TagsMatchAnySingleLinqQuery]]></Description>
+      <Expression><![CDATA[query.Where(doc => MatchAny(DisplayClass.queryFilters.Select(f => new MatchObjectList(new [] {new MatchObject() {DataTags = doc.TagsField, QueryTags = f[0], QueryOptions = Basic, UdfName = "UdfName1"}, new MatchObject() {DataTags = doc.TagsField1, QueryTags = f[1], QueryOptions = Basic}}))))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE ((((((NOT(IS_DEFINED(root["TagsField"]["tags"]["ns:tagname"])) OR ARRAY_CONTAINS(root["TagsField"]["tag"], "ns:tagname=") OR ARRAY_CONTAINS(root["TagsField"]["tag"], "ns:tagname=tagvalue1") OR ARRAY_CONTAINS(root["TagsField"]["tag"], "ns:tagname=tagvalue2")))) AND (((NOT(IS_DEFINED(root["TagsField1"]["tags"]["ns:tagname1"])) OR ARRAY_CONTAINS(root["TagsField1"]["tag"], "ns:tagname1=") OR ARRAY_CONTAINS(root["TagsField1"]["tag"], "ns:tagname1=tag1value1") OR ARRAY_CONTAINS(root["TagsField1"]["tag"], "ns:tagname1=tag1value2")))))) OR (((((NOT(IS_DEFINED(root["TagsField"]["tags"]["ns:tagname"])) OR ARRAY_CONTAINS(root["TagsField"]["tag"], "ns:tagname=") OR ARRAY_CONTAINS(root["TagsField"]["tag"], "ns:tagname=tagvalue3") OR ARRAY_CONTAINS(root["TagsField"]["tag"], "ns:tagname=tagvalue4")))) AND (((NOT(IS_DEFINED(root["TagsField1"]["tags"]["ns:tagname1"])) OR ARRAY_CONTAINS(root["TagsField1"]["tag"], "ns:tagname1=") OR ARRAY_CONTAINS(root["TagsField1"]["tag"], "ns:tagname1=tag1value3") OR ARRAY_CONTAINS(root["TagsField1"]["tag"], "ns:tagname1=tag1value4")))))))]]></SqlQuery>
+      <ErrorMessage><![CDATA[CosmosTags.Match is only for linq expressions]]></ErrorMessage>
+    </Output>
+  </Result>
 </Results>

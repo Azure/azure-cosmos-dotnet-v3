@@ -282,6 +282,84 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
         }
 
+        private static SqlScalarExpression GetDataTagsMatchObject(MemberAssignment dataTagsBinding, TranslationContext context)
+        {
+            var dataTagsExpressionBinding = dataTagsBinding;
+            var dataTagsExpression = ExtractExpression<MemberExpression>(dataTagsExpressionBinding.Expression);
+            return VisitMemberAccess(dataTagsExpression, context);
+        }
+        private static IEnumerable<string> GetQueryTagsMatchObject(MemberAssignment queryTagsBinding, ParameterExpression matchParam, IEnumerable<IEnumerable<string>> matchValue)
+        {
+            var queryLambda = Expression.Lambda(queryTagsBinding.Expression, matchParam);
+            var query = queryLambda.Compile().DynamicInvoke(matchValue);
+            var queryTags = (IEnumerable<string>)query;
+            return queryTags;
+        }
+        private static IEnumerable<string> GetQueryTagsMatchObject(MemberAssignment queryTagsBinding)
+        {
+            var queryTagsExpressionBinding = queryTagsBinding;
+            var queryTagsExpression = ExtractExpression<MethodCallExpression>(queryTagsExpressionBinding.Expression);
+            var queryLambda = Expression.Lambda(queryTagsExpression);
+            var query = queryLambda.Compile().DynamicInvoke();
+            var queryTags = (IEnumerable<string>)query;
+            return queryTags;
+        }
+        private static TagsQueryOptions GetQueryTagsOptionsObject(MemberAssignment queryOptionsBinding)
+        {
+            var queryTagsOptionsExpressionBinding = queryOptionsBinding;
+            var queryTagsOptionsExpression = ExtractExpression<ConstantExpression>(queryTagsOptionsExpressionBinding.Expression);
+            var queryTagsOptions = (TagsQueryOptions)queryTagsOptionsExpression.Value;
+            return queryTagsOptions;
+        }
+
+        private static string GetUdfNameObject(MemberAssignment udfNameBinding)
+        {
+            var udfNameExpressionBinding = udfNameBinding;
+            var udfNameExpression = ExtractExpression<ConstantExpression>(udfNameExpressionBinding.Expression);
+            var udfName = udfNameExpression.Value?.ToString() ?? string.Empty;
+            return udfName;
+        }
+
+        private static SqlTagsMatchExpressionList GetSqlTagsMatchExpressionList(NewArrayExpression matchListObjects, TranslationContext context, ParameterExpression matchParam = null, IEnumerable<IEnumerable<string>> matchValue = null)
+        {
+            var sqlMatchExpressions = new List<SqlTagsMatchExpression>();
+            foreach (var childExpression in matchListObjects.Expressions)
+            {
+                var matchObject = ExtractExpression<MemberInitExpression>(childExpression);
+                if (matchObject.Bindings.Count < 3)
+                    throw new DocumentQueryException("The MatchAny() takes an Array of MatchObjectLists with MatchObjects");
+
+                var dataTags = GetDataTagsMatchObject((MemberAssignment)matchObject.Bindings[0], context);
+                var queryTags = Enumerable.Empty<string>();
+                if (matchParam != null)
+                    queryTags = GetQueryTagsMatchObject((MemberAssignment)matchObject.Bindings[1], matchParam, matchValue);
+                else
+                    queryTags = GetQueryTagsMatchObject((MemberAssignment)matchObject.Bindings[1]);
+
+                var queryOptions = GetQueryTagsOptionsObject((MemberAssignment)matchObject.Bindings[2]);
+
+                var udfName = "UdfName";
+                if (matchObject.Bindings.Count == 4)
+                    udfName = GetUdfNameObject((MemberAssignment)matchObject.Bindings[3]);
+
+                var tagsMatchExpression = SqlTagsMatchExpression.Create(dataTags.ToString(), queryTags, queryOptions, udfName);
+                sqlMatchExpressions.Add(tagsMatchExpression);
+            }
+
+            return SqlTagsMatchExpressionList.Create(sqlMatchExpressions);
+        }
+
+        private static T ExtractExpression<T>(Expression expression)
+            where T : Expression
+        {
+            if (expression is T result)
+            {
+                return result;
+            }
+
+            throw new DocumentQueryException($"The Expression was not a {typeof(T).Name}");
+        }
+
         private static SqlScalarExpression VisitMethodCallScalar(MethodCallExpression methodCallExpression, TranslationContext context)
         {
             // Check if it is a UDF method call
@@ -347,6 +425,76 @@ namespace Microsoft.Azure.Cosmos.Linq
                 if (methodCallExpression.Arguments.Count == 4)
                     udfName = (string)((ConstantExpression)methodCallExpression.Arguments[3]).Value;
                 return SqlTagsMatchExpression.Create(memberExpression.ToString(), enumerableTags ?? Enumerable.Empty<string>(), queryOptions, udfName);
+            }
+            if (methodCallExpression.Method.DeclaringType == typeof(CosmosTags) && methodCallExpression.Method.Name == "MatchAny")
+            {
+                if (methodCallExpression.Arguments.Count != 1)
+                    throw new DocumentQueryException("The MatchAny() method requires a single argument. Either supply an Array or Lambda Select");
+
+                var arg0 = methodCallExpression.Arguments[0];
+                if (arg0 is MethodCallExpression lambdaMethodExpression)
+                {
+                    if (lambdaMethodExpression.Method.Name == "Select")
+                    {
+                        var selectManyValue =
+                            ExtractExpression<ConstantExpression>(lambdaMethodExpression.Arguments[0]);
+                        var lambda = ExtractExpression<LambdaExpression>(lambdaMethodExpression.Arguments[1]);
+
+                        if (selectManyValue.Value is IEnumerable<IEnumerable<IEnumerable<string>>>
+                            matchesObjectMultiple)
+                        {
+                            var lambdaParam = ExtractExpression<ParameterExpression>(lambda.Parameters[0]);
+                            var lambdaExpression = ExtractExpression<NewExpression>(lambda.Body);
+                            var matchListObjectExpression = ExtractExpression<NewExpression>(lambdaExpression);
+                            var matchListObjects =
+                                ExtractExpression<NewArrayExpression>(matchListObjectExpression.Arguments[0]);
+
+                            var results = new List<SqlTagsMatchExpressionList>();
+                            foreach (var matchObjects in matchesObjectMultiple)
+                            {
+                                var matchesList = GetSqlTagsMatchExpressionList(matchListObjects, context, lambdaParam,
+                                    matchObjects);
+                                results.Add(matchesList);
+                            }
+
+                            return SqlTagsMatchExpressionLists.Create(results);
+                        }
+
+                        throw new DocumentQueryException($"The MatchAny() Lambda Select [{selectManyValue.Value.GetType().Name}] must return an IEnumerable<IEnumerable<IEnumerable<string>>>");
+                    }
+                    throw new DocumentQueryException($"The MatchAny() Lambda was not valid Select");
+                }
+
+                if (arg0 is NewArrayExpression argNewArray)
+                {
+                    var results = new List<SqlTagsMatchExpressionList>();
+                    foreach (var matchObjectListExpression in argNewArray.Expressions)
+                    {
+                        if (matchObjectListExpression is NewExpression matchObjectList)
+                        {
+                            var matchObjectListArgs = matchObjectList.Arguments.FirstOrDefault();
+                            if (matchObjectListArgs == null)
+                                throw new DocumentQueryException("The MatchAny() takes an Array of MatchObjectLists");
+                            
+                            if (matchObjectListArgs is NewArrayExpression matchObjectListArgArray)
+                            {
+                                 var matchesList = GetSqlTagsMatchExpressionList(matchObjectListArgArray, context);
+                                 results.Add(matchesList);
+                            }
+                            else
+                            {
+                                throw new DocumentQueryException("The MatchAny() takes an Array of MatchObjectLists");
+                            }
+                        }
+                        else
+                        {
+                            throw new DocumentQueryException("The MatchAny() takes an Array of MatchObjectLists");
+                        }
+                    }
+                    return SqlTagsMatchExpressionLists.Create(results);
+                }
+
+                throw new NotSupportedException("The MatchAny parameter was not the correct Type");
             }
             else
             {

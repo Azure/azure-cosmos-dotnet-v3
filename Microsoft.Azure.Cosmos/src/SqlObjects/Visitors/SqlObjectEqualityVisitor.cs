@@ -936,6 +936,52 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             return true;
         }
 
+        public override bool Visit(SqlTagsMatchExpressionList first, SqlObject secondAsObject)
+        {
+            if (!(secondAsObject is SqlTagsMatchExpressionList second))
+            {
+                return false;
+            }
+
+            if (!Equals(first.MatchesList.Count(), second.MatchesList.Count()))
+            {
+                return false;
+            }
+
+            foreach (var firstMatch in first.MatchesList)
+            {
+                foreach (var secondMatch in second.MatchesList)
+                {
+                    if (!firstMatch.Equals(secondMatch))
+                        return false;
+                }                    
+            }
+
+            return true;
+        }
+
+        public override bool Visit(SqlTagsMatchExpressionLists first, SqlObject secondAsObject)
+        {
+            if (!(secondAsObject is SqlTagsMatchExpressionLists second))
+            {
+                return false;
+            }
+
+            if (!Equals(first.MatchesList.Count(), second.MatchesList.Count()))
+            {
+                return false;
+            }
+
+            foreach (var firstMatch in first.MatchesList)
+            {
+                var secondMatch = second.MatchesList.Any(x => Equals(firstMatch, x));
+                if (!secondMatch)
+                    return false;
+            }
+
+            return true;
+        }
+
         public override bool Visit(SqlTopSpec first, SqlObject secondAsObject)
         {
             if (!(secondAsObject is SqlTopSpec second))

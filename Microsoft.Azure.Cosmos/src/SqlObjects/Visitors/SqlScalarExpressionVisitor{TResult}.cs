@@ -33,6 +33,8 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         public abstract TResult Visit(SqlPropertyRefScalarExpression scalarExpression);
         public abstract TResult Visit(SqlSubqueryScalarExpression scalarExpression);
         public abstract TResult Visit(SqlTagsMatchExpression scalarExpression);
+        public abstract TResult Visit(SqlTagsMatchExpressionList scalarExpression);
+        public abstract TResult Visit(SqlTagsMatchExpressionLists scalarExpression);
         public abstract TResult Visit(SqlUnaryScalarExpression scalarExpression);
     }
 }

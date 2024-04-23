@@ -195,6 +195,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                     return false;
                 }
 
+                public override bool Visit(SqlTagsMatchExpressionList scalarExpression)
+                {
+                    return false;
+                }
+
+                public override bool Visit(SqlTagsMatchExpressionLists scalarExpression)
+                {
+                    return false;
+                }
+
                 public override bool Visit(SqlUnaryScalarExpression sqlUnaryScalarExpression)
                 {
                     return sqlUnaryScalarExpression.Expression.Accept(this);

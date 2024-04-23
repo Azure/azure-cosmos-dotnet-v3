@@ -408,6 +408,18 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             return sqlObject;
         }
 
+        public override SqlObject Visit(SqlTagsMatchExpressionList sqlObject)
+        {
+            // No idea what this obfuscator does
+            return sqlObject;
+        }
+
+        public override SqlObject Visit(SqlTagsMatchExpressionLists sqlObject)
+        {
+            // No idea what this obfuscator does
+            return sqlObject;
+        }
+
         public override SqlObject Visit(SqlTopSpec sqlTopSpec)
         {
             return SqlTopSpec.Create(SqlNumberLiteral.Create(0));
