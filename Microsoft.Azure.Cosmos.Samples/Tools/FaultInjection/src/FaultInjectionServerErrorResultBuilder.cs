@@ -42,7 +42,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// 
         /// Only used RESPONSE_DELAY and CONNECTION_DELAY.
         /// 
-        /// For RESPONSE_DELAY, it is the delay added before the response.
+        /// For SEND_Delay, it is the delay added before the request is sent.
+        /// For RESPONSE_DELAY, it is the delay added after the response is recieved.
         /// For CONNECTION_DELAY, it is the delay added before the connection is established.
         /// 
         /// </summary>
@@ -50,7 +51,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <returns>The current <see cref="FaultInjectionServerErrorResultBuilder"/>.</returns>
         public FaultInjectionServerErrorResultBuilder WithDelay(TimeSpan delay)
         {
-            if (this.serverErrorType == FaultInjectionServerErrorType.ResponseDelay 
+            if ( this.serverErrorType == FaultInjectionServerErrorType.SendDelay
+                || this.serverErrorType == FaultInjectionServerErrorType.ResponseDelay 
                 || this.serverErrorType == FaultInjectionServerErrorType.ConnectionDelay)
             {
                 this.delay = delay;
