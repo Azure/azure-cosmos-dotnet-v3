@@ -814,7 +814,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
             if (isODEContinuationToken)
             {
-                throw new InvalidOperationException("Execution of this query cannot resume due to partition split. Please retry the query.");
+                throw new InvalidOperationException("Execution of this query cannot resume using ODE Continuation token due to partition split. Please restart the query without continuation token.");
             }
 
             return null;

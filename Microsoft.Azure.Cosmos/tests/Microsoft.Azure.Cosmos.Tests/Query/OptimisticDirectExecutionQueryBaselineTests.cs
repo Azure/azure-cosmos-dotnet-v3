@@ -103,7 +103,6 @@
         }
 
         [TestMethod]
-        [Owner("akotalwar")]
         public async Task QueryWithODEContinuationTokenShouldUseODEPipelineRegardlessOfODESettings()
         {
             OptimisticDirectExecutionTestInput input = CreateInput(
@@ -146,13 +145,12 @@
                 }
                 catch(InvalidOperationException ex)
                 {
-                    Assert.IsTrue(ex.ToString().Contains("Execution of this query cannot resume due to partition split. Please retry the query."));
+                    Assert.IsTrue(ex.ToString().Contains("Execution of this query cannot resume using ODE Continuation token due to partition split. Please restart the query without continuation token."));
                 }
             }
         }
 
         [TestMethod]
-        [Owner("akotalwar")]
         public async Task QueryWithoutODEContinuationTokenShouldHonorODESettings()
         {
             foreach ((bool enableODE, bool clientForceDisableODEFromBackend) in new[] { (true, true), (true, false), (false, true), (false, false) })
