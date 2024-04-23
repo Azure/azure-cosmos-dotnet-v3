@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private readonly FaultInjectionConnectionType connectionType; 
         private readonly FaultInjectionConditionInternal condition;
         private readonly FaultInjectionServerErrorResultInternal result;
+        private readonly Random random = new Random();
 
         private long hitCount;
         private long evaluationCount;
@@ -69,6 +70,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             Interlocked.Increment(ref this.evaluationCount);
             bool withinHitLimit = this.hitLimit == 0 || evaluationCount <= this.hitLimit;
             if (!withinHitLimit)
+            {
+                return false;
+            }
+            else if (this.random.NextDouble() < this.result.GetApplicationPercentage())
             {
                 return false;
             }

@@ -1036,6 +1036,70 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
         [TestMethod]
         [Owner("nalutripician")]
+        [Description("Tests hit count limit")]
+        public void FaultInjectionServerErrorRule_ThresholdTest()
+        {
+            this.Timeout_FaultInjectionServerErrorRule_ThresholdTest().Wait();
+            //if (!this.Timeout_FaultInjectionServerErrorRule_ThresholdTest().Wait(Timeout))
+            //{
+            //    Assert.Fail("Test timed out");
+            //}
+        }
+
+        private async Task Timeout_FaultInjectionServerErrorRule_ThresholdTest()
+        {
+            string thresholdRuleId = "hitCountRule-" + Guid.NewGuid().ToString();
+            FaultInjectionRule thresholdRule = new FaultInjectionRuleBuilder(
+                id: thresholdRuleId,
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithOperationType(FaultInjectionOperationType.ReadItem)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.Gone)
+                        .WithApplicationPercentage(.5)
+                        .WithTimes(1)
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(5))
+                .Build();
+            thresholdRule.Disable();
+
+            try
+            {
+                FaultInjector faultInjector = new FaultInjector(new List<FaultInjectionRule> { thresholdRule });
+
+                await this.Initialize(faultInjector, true);
+
+                JObject createdItem = JObject.FromObject(new { id = Guid.NewGuid().ToString(), Pk = Guid.NewGuid().ToString() });
+
+                ItemResponse<JObject>? itemResponse = this.container != null
+                    ? await this.container.CreateItemAsync<JObject>(createdItem)
+                    : null;
+                Assert.IsNotNull(itemResponse);
+
+                CosmosDiagnostics? cosmosDiagnostics;
+
+                thresholdRule.Enable();
+
+                for (int i = 0; i < 100; i++)
+                {
+                    cosmosDiagnostics = this.container != null
+                        ? await this.PerformDocumentOperation(this.container, OperationType.Read, createdItem)
+                        : null;
+                    Assert.IsNotNull(cosmosDiagnostics);
+                }
+
+                Assert.IsTrue(thresholdRule.GetHitCount() >= 38, "This is Expected to fail 0.602% of the time");
+                Assert.IsTrue(thresholdRule.GetHitCount() <= 62, "This is Expected to fail 0.602% of the time");
+            }
+            finally
+            {
+                thresholdRule.Disable();
+            }
+        }
+
+        [TestMethod]
+        [Owner("nalutripician")]
         [Description("Tests fault injection connection error rules")]
         public void FaultInjectionConnectionErrorRule_Test()
         {

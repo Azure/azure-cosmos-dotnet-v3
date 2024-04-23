@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private TimeSpan delay;
         private bool suppressServiceRequest;
         private bool isDelaySet = false;
+        private double applicationPercentage = 1;
 
         /// <summary>
         /// Creates a <see cref="FaultInjectionServerErrorResult"/>.
@@ -65,6 +66,17 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             return this;
         }
 
+        public FaultInjectionServerErrorResultBuilder WithApplicationPercentage(double applicationPercentage)
+        {
+            if (applicationPercentage <= 0 || applicationPercentage > 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(applicationPercentage), "Argument 'thresholdPercentage' must be within the range (0, 1].");
+            }
+
+            this.applicationPercentage = applicationPercentage;
+            return this;
+        }
+
         /// <summary>
         /// Creates a new <see cref="FaultInjectionServerErrorResult"/>.
         /// </summary>
@@ -82,7 +94,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 this.serverErrorType,
                 this.times,
                 this.delay,
-                this.suppressServiceRequest);
+                this.suppressServiceRequest,
+                this.applicationPercentage);
         }
     }
 }

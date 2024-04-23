@@ -161,8 +161,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     result.GetTimes(),
                     result.GetDelay(),
                     result.GetSuppressServiceRequests(),
+                    result.GetApplicationPercentage(),
                     this.applicationContext));
-
         }
 
         private async Task<IFaultInjectionRuleInternal> GetEffectiveConnectionErrorRule(FaultInjectionRule rule)
