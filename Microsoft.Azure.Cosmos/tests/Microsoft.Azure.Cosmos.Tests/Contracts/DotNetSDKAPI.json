@@ -3686,29 +3686,29 @@
     "Microsoft.Azure.Cosmos.CosmosThresholdOptions;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "Double get_RequestChargeThreshold()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.Nullable`1[System.Double] get_RequestChargeThreshold()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Double get_RequestChargeThreshold();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.Nullable`1[System.Double] get_RequestChargeThreshold();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Double RequestChargeThreshold": {
+        "System.Nullable`1[System.Double] RequestChargeThreshold": {
           "Type": "Property",
           "Attributes": [],
-          "MethodInfo": "Double RequestChargeThreshold;CanRead:True;CanWrite:True;Double get_RequestChargeThreshold();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_RequestChargeThreshold(Double);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.Nullable`1[System.Double] RequestChargeThreshold;CanRead:True;CanWrite:True;System.Nullable`1[System.Double] get_RequestChargeThreshold();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_RequestChargeThreshold(System.Nullable`1[System.Double]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Int32 get_PayloadSizeThresholdInBytes()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.Nullable`1[System.Int32] get_PayloadSizeThresholdInBytes()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Int32 get_PayloadSizeThresholdInBytes();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.Nullable`1[System.Int32] get_PayloadSizeThresholdInBytes();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Int32 PayloadSizeThresholdInBytes": {
+        "System.Nullable`1[System.Int32] PayloadSizeThresholdInBytes": {
           "Type": "Property",
           "Attributes": [],
-          "MethodInfo": "Int32 PayloadSizeThresholdInBytes;CanRead:True;CanWrite:True;Int32 get_PayloadSizeThresholdInBytes();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_PayloadSizeThresholdInBytes(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.Nullable`1[System.Int32] PayloadSizeThresholdInBytes;CanRead:True;CanWrite:True;System.Nullable`1[System.Int32] get_PayloadSizeThresholdInBytes();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_PayloadSizeThresholdInBytes(System.Nullable`1[System.Int32]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.TimeSpan get_NonPointOperationLatencyThreshold()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -3746,12 +3746,12 @@
           ],
           "MethodInfo": "Void set_NonPointOperationLatencyThreshold(System.TimeSpan);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void set_PayloadSizeThresholdInBytes(Int32)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Void set_PayloadSizeThresholdInBytes(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Void set_PayloadSizeThresholdInBytes(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Void set_PayloadSizeThresholdInBytes(System.Nullable`1[System.Int32]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_PointOperationLatencyThreshold(System.TimeSpan)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -3760,12 +3760,12 @@
           ],
           "MethodInfo": "Void set_PointOperationLatencyThreshold(System.TimeSpan);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void set_RequestChargeThreshold(Double)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Void set_RequestChargeThreshold(System.Nullable`1[System.Double])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Void set_RequestChargeThreshold(Double);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Void set_RequestChargeThreshold(System.Nullable`1[System.Double]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
