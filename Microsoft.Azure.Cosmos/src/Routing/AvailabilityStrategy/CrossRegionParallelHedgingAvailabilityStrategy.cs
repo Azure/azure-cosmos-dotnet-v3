@@ -93,12 +93,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="request"></param>
         /// <param name="cancellationToken"></param>
         /// <returns>The response after executing cross region hedging</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif 
-        override async Task<ResponseMessage> ExecuteAvailablityStrategyAsync(
+        public override async Task<ResponseMessage> ExecuteAvailablityStrategyAsync(
             Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender,
             CosmosClient client,
             RequestMessage request,
@@ -154,7 +149,7 @@ namespace Microsoft.Azure.Cosmos
                     if (responses.Any() && responses[0] != null)
                     {
                         cancellationTokenSource.Cancel();
-                        ((CosmosTraceDiagnostics)responses[0].Diagnostics).Value.AddDatum("Hedge Context", $"Hedged Request");
+                        ((CosmosTraceDiagnostics)responses[0].Diagnostics).Value.AddDatum("Hedge Context", "Hedged Request");
                         return responses[0];
                     }
                     else

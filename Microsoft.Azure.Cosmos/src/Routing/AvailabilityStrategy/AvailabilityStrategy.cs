@@ -26,12 +26,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestMessage"></param>
         /// <param name="cancellationToken"></param>
         /// <returns>The response from the service after the availability strategy is executed</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        abstract Task<ResponseMessage> ExecuteAvailablityStrategyAsync(
+        public abstract Task<ResponseMessage> ExecuteAvailablityStrategyAsync(
             Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender,
             CosmosClient client,
             RequestMessage requestMessage,

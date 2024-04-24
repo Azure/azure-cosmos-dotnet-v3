@@ -326,11 +326,9 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.Content != null)
             {
-                Stream cloneContent = new MemoryStream();
+                Stream cloneContent = new MemoryStream((int)this.Content.Length);
                 this.Content.Position = 0;
                 this.Content.CopyTo(cloneContent);
-                this.Content.Position = 0;
-                cloneContent.Position = 0;
                 clone.Content = cloneContent;
             }
 

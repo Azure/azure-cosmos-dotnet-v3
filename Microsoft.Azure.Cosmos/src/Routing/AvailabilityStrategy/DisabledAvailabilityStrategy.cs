@@ -30,12 +30,13 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestMessage"></param>
         /// <param name="cancellationToken"></param>
         /// <returns>nothing, this will throw.</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        override Task<ResponseMessage> ExecuteAvailablityStrategyAsync(Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender, CosmosClient client, RequestMessage requestMessage, CancellationToken cancellationToken)
+        public override Task<ResponseMessage> ExecuteAvailablityStrategyAsync(
+            Func<RequestMessage,
+            CancellationToken,
+            Task<ResponseMessage>> sender,
+            CosmosClient client,
+            RequestMessage requestMessage,
+            CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }

@@ -421,6 +421,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 clone.Add(key, this.CosmosMessageHeaders[key]);
             }
+
             return new Headers(clone);
         }
 
