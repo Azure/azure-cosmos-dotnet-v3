@@ -41,7 +41,9 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="threshold"></param>
         /// <param name="thresholdStep"></param>
-        public CrossRegionParallelHedgingAvailabilityStrategy(TimeSpan threshold, TimeSpan? thresholdStep)
+        public CrossRegionParallelHedgingAvailabilityStrategy(
+            TimeSpan threshold,
+            TimeSpan? thresholdStep)
         {
             if (threshold <= TimeSpan.Zero)
             {
@@ -107,9 +109,6 @@ namespace Microsoft.Azure.Cosmos
             using (CancellationTokenSource cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
             {
                 IReadOnlyCollection<string> availableRegions = client.DocumentClient.GlobalEndpointManager.GetAvailableReadEndpointsByLocation().Keys;
-                
-                //We only want to send hedge requests to regions that are in the client's preferred regions
-                IEnumerable<string> hedgeRegions = availableRegions.Intersect(client.ClientOptions.ApplicationPreferredRegions);
 
                 List<CosmosDiagnostics> allDiagnostics = new List<CosmosDiagnostics>();
                 request.Headers.Set("HedgeRequestContext", "Original");
@@ -122,11 +121,11 @@ namespace Microsoft.Azure.Cosmos
 
                 Task canStartHedge = await Task.WhenAny(primaryRequest, hedgeTimer);
 
-                if (canStartHedge == hedgeTimer)
+                if (object.ReferenceEquals(canStartHedge, hedgeTimer))
                 {
                     Task<List<ResponseMessage>> hedgedRequests = this.SendWithHedgeAsync(
                     client,
-                    hedgeRegions,
+                    availableRegions,
                     1,
                     request,
                     sender,
@@ -171,7 +170,7 @@ namespace Microsoft.Azure.Cosmos
                 //If the response from the primary request is transient, we can should try to hedge the request to a different region
                 List<ResponseMessage> hedgeResponses = await this.SendWithHedgeAsync(
                     client,
-                    hedgeRegions,
+                    availableRegions,
                     1,
                     request,
                     sender,
@@ -272,7 +271,7 @@ namespace Microsoft.Azure.Cosmos
                             cancellationTokenSource);
 
                         Task result = await Task.WhenAny(currentHedge, nextHedge);
-                        if (result == currentHedge)
+                        if (object.ReferenceEquals(result, currentHedge))
                         {
                             (bool, ResponseMessage) response = await currentHedge;
                             if (response.Item1)
