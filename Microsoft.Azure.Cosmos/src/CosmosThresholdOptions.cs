@@ -38,8 +38,7 @@ namespace Microsoft.Azure.Cosmos
         /// Can be used to define a custom RU (request charge) threshold. When the threshold is exceeded more detailed
         /// diagnostics will be emitted (including the request diagnostics). There is some overhead of emitting the
         /// more detailed diagnostics - so recommendation is to choose a request charge threshold that reduces the noise
-        /// level and only emits detailed diagnostics when the request charge is significantly  higher thane expected.
-        /// The default value for the request charge threshold is 1000
+        /// level and only emits detailed diagnostics when the request charge is significantly higher than expected.
         /// </summary>
         public double? RequestChargeThreshold { get; set; } = null;
 
@@ -48,7 +47,8 @@ namespace Microsoft.Azure.Cosmos
         /// response payloads more detailed diagnostics will be emitted (including the request diagnostics).
         /// There is some overhead of emitting the more detailed diagnostics - so recommendation is to choose a
         /// payload size threshold that reduces the noise level and only emits detailed diagnostics when the payload size
-        /// is significantly higher than expected.        /// </summary>
+        /// is significantly higher than expected.
+        /// </summary>
         public int? PayloadSizeThresholdInBytes { get; set; } = null;
     }
 }
