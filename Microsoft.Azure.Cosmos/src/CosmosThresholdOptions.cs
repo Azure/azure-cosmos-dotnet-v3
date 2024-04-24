@@ -41,18 +41,14 @@ namespace Microsoft.Azure.Cosmos
         /// level and only emits detailed diagnostics when the request charge is significantly  higher thane expected.
         /// The default value for the request charge threshold is 1000
         /// </summary>
-        /// <value>1000 RU</value>
-        public double RequestChargeThreshold { get; set; } = 1000;
+        public double? RequestChargeThreshold { get; set; } = null;
 
         /// <summary>
         /// Can be used to define a payload size threshold. When the threshold is exceeded for either request or
         /// response payloads more detailed diagnostics will be emitted (including the request diagnostics).
         /// There is some overhead of emitting the more detailed diagnostics - so recommendation is to choose a
         /// payload size threshold that reduces the noise level and only emits detailed diagnostics when the payload size
-        /// is significantly higher than expected.
-        /// The default value for the payload size threshold is Int32.MaxValue 
-        /// </summary>
-        /// <value>2147483647 Bytes</value>
-        public int PayloadSizeThresholdInBytes { get; set; } = Int32.MaxValue;
+        /// is significantly higher than expected.        /// </summary>
+        public int? PayloadSizeThresholdInBytes { get; set; } = null;
     }
 }

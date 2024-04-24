@@ -50,11 +50,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 {
                     CosmosDbEventSource.Singleton.LatencyOverThreshold(response.Diagnostics.ToString());
                 }
-                else if (config.RequestChargeThreshold <= response.RequestCharge)
+                else if (config.RequestChargeThreshold is not null && 
+                    config.RequestChargeThreshold <= response.RequestCharge)
                 {
                     CosmosDbEventSource.Singleton.RequestChargeOverThreshold(response.Diagnostics.ToString());
                 }
-                else if (DiagnosticsFilterHelper.IsPayloadSizeThresholdCrossed(
+                else if (config.PayloadSizeThresholdInBytes is not null && 
+                    DiagnosticsFilterHelper.IsPayloadSizeThresholdCrossed(
                         config: config,
                         response: response))
                 {
