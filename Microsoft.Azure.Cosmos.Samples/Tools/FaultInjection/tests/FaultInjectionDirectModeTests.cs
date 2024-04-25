@@ -221,11 +221,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
             foreach (OperationType operationType in testScenarios)
             {
-                this.Timeout_FaultInjectionServerErrorRule_OperationTypeAddressTest(operationType).Wait();
-                //if (!this.Timeout_FaultInjectionServerErrorRule_OperationTypeAddressTest(operationType).Wait(Timeout))
-                //{
-                //    Assert.Fail("Test timed out");
-                //}
+                if (!this.Timeout_FaultInjectionServerErrorRule_OperationTypeAddressTest(operationType).Wait(Timeout))
+                {
+                    Assert.Fail("Test timed out");
+                }
             }
         }
 
