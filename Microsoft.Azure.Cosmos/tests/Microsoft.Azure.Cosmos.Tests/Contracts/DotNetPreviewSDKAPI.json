@@ -2,39 +2,39 @@
   "Subclasses": {
     "Microsoft.Azure.Cosmos.AvailabilityStrategy;System.Object;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {
-        "Microsoft.Azure.Cosmos.DisabledStrategy;Microsoft.Azure.Cosmos.AvailabilityStrategy;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+        "Microsoft.Azure.Cosmos.CrossRegionParallelHedgingAvailabilityStrategy;Microsoft.Azure.Cosmos.AvailabilityStrategy;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
           "Subclasses": {},
           "Members": {
-            "Void .ctor()": {
-              "Type": "Constructor",
-              "Attributes": [],
-              "MethodInfo": "[Void .ctor(), Void .ctor()]"
-            }
-          },
-          "NestedTypes": {}
-        },
-        "Microsoft.Azure.Cosmos.ParallelHedging;Microsoft.Azure.Cosmos.AvailabilityStrategy;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
-          "Subclasses": {},
-          "Members": {
-            "System.TimeSpan get_Step()": {
+            "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] ExecuteAvailablityStrategyAsync(System.Func`3[Microsoft.Azure.Cosmos.RequestMessage,System.Threading.CancellationToken,System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage]], Microsoft.Azure.Cosmos.CosmosClient, Microsoft.Azure.Cosmos.RequestMessage, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.CrossRegionParallelHedgingAvailabilityStrategy+<ExecuteAvailablityStrategyAsync>))]": {
               "Type": "Method",
-              "Attributes": [],
-              "MethodInfo": "System.TimeSpan get_Step();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+              "Attributes": [
+                "AsyncStateMachineAttribute"
+              ],
+              "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] ExecuteAvailablityStrategyAsync(System.Func`3[Microsoft.Azure.Cosmos.RequestMessage,System.Threading.CancellationToken,System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage]], Microsoft.Azure.Cosmos.CosmosClient, Microsoft.Azure.Cosmos.RequestMessage, System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
-            "System.TimeSpan get_Threshold()": {
+            "System.TimeSpan get_Threshold()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",
-              "Attributes": [],
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
               "MethodInfo": "System.TimeSpan get_Threshold();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
-            "System.TimeSpan Step": {
-              "Type": "Property",
-              "Attributes": [],
-              "MethodInfo": "System.TimeSpan Step;CanRead:True;CanWrite:False;System.TimeSpan get_Step();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            "System.TimeSpan get_ThresholdStep()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "System.TimeSpan get_ThresholdStep();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
             "System.TimeSpan Threshold": {
               "Type": "Property",
               "Attributes": [],
-              "MethodInfo": "System.TimeSpan Threshold;CanRead:True;CanWrite:False;System.TimeSpan get_Threshold();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+              "MethodInfo": "System.TimeSpan Threshold;CanRead:True;CanWrite:True;System.TimeSpan get_Threshold();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "System.TimeSpan ThresholdStep": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": "System.TimeSpan ThresholdStep;CanRead:True;CanWrite:True;System.TimeSpan get_ThresholdStep();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
             "Void .ctor(System.TimeSpan, System.Nullable`1[System.TimeSpan])": {
               "Type": "Constructor",
@@ -43,45 +43,34 @@
             }
           },
           "NestedTypes": {}
+        },
+        "Microsoft.Azure.Cosmos.DisabledAvailabilityStrategy;Microsoft.Azure.Cosmos.AvailabilityStrategy;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+          "Subclasses": {},
+          "Members": {
+            "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] ExecuteAvailablityStrategyAsync(System.Func`3[Microsoft.Azure.Cosmos.RequestMessage,System.Threading.CancellationToken,System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage]], Microsoft.Azure.Cosmos.CosmosClient, Microsoft.Azure.Cosmos.RequestMessage, System.Threading.CancellationToken)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] ExecuteAvailablityStrategyAsync(System.Func`3[Microsoft.Azure.Cosmos.RequestMessage,System.Threading.CancellationToken,System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage]], Microsoft.Azure.Cosmos.CosmosClient, Microsoft.Azure.Cosmos.RequestMessage, System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "Void .ctor()": {
+              "Type": "Constructor",
+              "Attributes": [],
+              "MethodInfo": "[Void .ctor(), Void .ctor()]"
+            }
+          },
+          "NestedTypes": {}
         }
       },
-      "Members": {},
-      "NestedTypes": {}
-    },
-    "Microsoft.Azure.Cosmos.AvailabilityStrategyOptions;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
-      "Subclasses": {},
       "Members": {
-        "Boolean Enabled": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": "Boolean Enabled;CanRead:True;CanWrite:False;Boolean get_Enabled();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Boolean get_Enabled()": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] ExecuteAvailablityStrategyAsync(System.Func`3[Microsoft.Azure.Cosmos.RequestMessage,System.Threading.CancellationToken,System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage]], Microsoft.Azure.Cosmos.CosmosClient, Microsoft.Azure.Cosmos.RequestMessage, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Boolean get_Enabled();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Microsoft.Azure.Cosmos.AvailabilityStrategy AvailabilityStrategy": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.AvailabilityStrategy AvailabilityStrategy;CanRead:True;CanWrite:False;Microsoft.Azure.Cosmos.AvailabilityStrategy get_AvailabilityStrategy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Microsoft.Azure.Cosmos.AvailabilityStrategy get_AvailabilityStrategy()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.AvailabilityStrategy get_AvailabilityStrategy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Void .ctor(Microsoft.Azure.Cosmos.AvailabilityStrategy)": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "[Void .ctor(Microsoft.Azure.Cosmos.AvailabilityStrategy), Void .ctor(Microsoft.Azure.Cosmos.AvailabilityStrategy)]"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] ExecuteAvailablityStrategyAsync(System.Func`3[Microsoft.Azure.Cosmos.RequestMessage,System.Threading.CancellationToken,System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage]], Microsoft.Azure.Cosmos.CosmosClient, Microsoft.Azure.Cosmos.RequestMessage, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.ChangeFeedItemChange`1;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:True;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.ChangeFeedItem`1;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:True;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.ChangeFeedMetadata get_Metadata()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -441,84 +430,78 @@
     "Microsoft.Azure.Cosmos.CosmosClientOptions;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "Microsoft.Azure.Cosmos.AvailabilityStrategyOptions AvailabilityStrategyOptions": {
+        "Microsoft.Azure.Cosmos.AvailabilityStrategy AvailabilityStrategy": {
           "Type": "Property",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.AvailabilityStrategyOptions AvailabilityStrategyOptions;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.AvailabilityStrategyOptions get_AvailabilityStrategyOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_AvailabilityStrategyOptions(Microsoft.Azure.Cosmos.AvailabilityStrategyOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.AvailabilityStrategy AvailabilityStrategy;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.AvailabilityStrategy get_AvailabilityStrategy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_AvailabilityStrategy(Microsoft.Azure.Cosmos.AvailabilityStrategy);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.AvailabilityStrategyOptions get_AvailabilityStrategyOptions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Microsoft.Azure.Cosmos.AvailabilityStrategy get_AvailabilityStrategy()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.AvailabilityStrategyOptions get_AvailabilityStrategyOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.AvailabilityStrategy get_AvailabilityStrategy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void set_AvailabilityStrategyOptions(Microsoft.Azure.Cosmos.AvailabilityStrategyOptions)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Void set_AvailabilityStrategy(Microsoft.Azure.Cosmos.AvailabilityStrategy)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Void set_AvailabilityStrategyOptions(Microsoft.Azure.Cosmos.AvailabilityStrategyOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Void set_AvailabilityStrategy(Microsoft.Azure.Cosmos.AvailabilityStrategy);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.CosmosLinqSerializer;Microsoft.Azure.Cosmos.CosmosSerializer;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.CrossRegionParallelHedgingAvailabilityStrategy;Microsoft.Azure.Cosmos.AvailabilityStrategy;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "System.String SerializeMemberName(System.Reflection.MemberInfo)": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] ExecuteAvailablityStrategyAsync(System.Func`3[Microsoft.Azure.Cosmos.RequestMessage,System.Threading.CancellationToken,System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage]], Microsoft.Azure.Cosmos.CosmosClient, Microsoft.Azure.Cosmos.RequestMessage, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.CrossRegionParallelHedgingAvailabilityStrategy+<ExecuteAvailablityStrategyAsync>))]": {
           "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.String SerializeMemberName(System.Reflection.MemberInfo);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        }
-      },
-      "NestedTypes": {}
-    },
-    "Microsoft.Azure.Cosmos.CosmosSerializer;System.Object;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
-      "Subclasses": {
-        "Microsoft.Azure.Cosmos.CosmosLinqSerializer;Microsoft.Azure.Cosmos.CosmosSerializer;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
-          "Subclasses": {},
-          "Members": {
-            "System.String SerializeMemberName(System.Reflection.MemberInfo)": {
-              "Type": "Method",
-              "Attributes": [],
-              "MethodInfo": "System.String SerializeMemberName(System.Reflection.MemberInfo);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-            }
-          },
-          "NestedTypes": {}
-        }
-      },
-      "Members": {},
-      "NestedTypes": {}
-    },
-    "Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
-      "Subclasses": {},
-      "Members": {
-        "System.Nullable`1[System.Boolean] BypassIntegratedCache": {
+          "Attributes": [
+            "AsyncStateMachineAttribute"
+          ],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] ExecuteAvailablityStrategyAsync(System.Func`3[Microsoft.Azure.Cosmos.RequestMessage,System.Threading.CancellationToken,System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage]], Microsoft.Azure.Cosmos.CosmosClient, Microsoft.Azure.Cosmos.RequestMessage, System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.TimeSpan get_Threshold()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.TimeSpan get_Threshold();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.TimeSpan get_ThresholdStep()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.TimeSpan get_ThresholdStep();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.TimeSpan Threshold": {
           "Type": "Property",
           "Attributes": [],
-          "MethodInfo": "System.Nullable`1[System.Boolean] BypassIntegratedCache;CanRead:True;CanWrite:True;System.Nullable`1[System.Boolean] get_BypassIntegratedCache();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_BypassIntegratedCache(System.Nullable`1[System.Boolean]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.TimeSpan Threshold;CanRead:True;CanWrite:True;System.TimeSpan get_Threshold();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Nullable`1[System.Boolean] get_BypassIntegratedCache()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.Nullable`1[System.Boolean] get_BypassIntegratedCache();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        "System.TimeSpan ThresholdStep": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.TimeSpan ThresholdStep;CanRead:True;CanWrite:True;System.TimeSpan get_ThresholdStep();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void set_BypassIntegratedCache(System.Nullable`1[System.Boolean])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_BypassIntegratedCache(System.Nullable`1[System.Boolean]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        "Void .ctor(System.TimeSpan, System.Nullable`1[System.TimeSpan])": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(System.TimeSpan, System.Nullable`1[System.TimeSpan]), Void .ctor(System.TimeSpan, System.Nullable`1[System.TimeSpan])]"
         }
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.DisabledStrategy;Microsoft.Azure.Cosmos.AvailabilityStrategy;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.DisabledAvailabilityStrategy;Microsoft.Azure.Cosmos.AvailabilityStrategy;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] ExecuteAvailablityStrategyAsync(System.Func`3[Microsoft.Azure.Cosmos.RequestMessage,System.Threading.CancellationToken,System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage]], Microsoft.Azure.Cosmos.CosmosClient, Microsoft.Azure.Cosmos.RequestMessage, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] ExecuteAvailablityStrategyAsync(System.Func`3[Microsoft.Azure.Cosmos.RequestMessage,System.Threading.CancellationToken,System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage]], Microsoft.Azure.Cosmos.CosmosClient, Microsoft.Azure.Cosmos.RequestMessage, System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Void .ctor()": {
           "Type": "Constructor",
           "Attributes": [],
@@ -600,98 +583,27 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.ParallelHedging;Microsoft.Azure.Cosmos.AvailabilityStrategy;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
-      "Subclasses": {},
-      "Members": {
-        "System.TimeSpan get_Step()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.TimeSpan get_Step();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.TimeSpan get_Threshold()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.TimeSpan get_Threshold();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.TimeSpan Step": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": "System.TimeSpan Step;CanRead:True;CanWrite:False;System.TimeSpan get_Step();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.TimeSpan Threshold": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": "System.TimeSpan Threshold;CanRead:True;CanWrite:False;System.TimeSpan get_Threshold();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Void .ctor(System.TimeSpan, System.Nullable`1[System.TimeSpan])": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "[Void .ctor(System.TimeSpan, System.Nullable`1[System.TimeSpan]), Void .ctor(System.TimeSpan, System.Nullable`1[System.TimeSpan])]"
-        }
-      },
-      "NestedTypes": {}
-    },
-    "Microsoft.Azure.Cosmos.PriorityLevel;System.Enum;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:True;IsClass:False;IsValueType:True;IsNested:False;IsGenericType:False;IsSerializable:True": {
-      "Subclasses": {},
-      "Members": {
-        "Int32 value__": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "Int32 value__;IsInitOnly:False;IsStatic:False;"
-        },
-        "Microsoft.Azure.Cosmos.PriorityLevel High": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.PriorityLevel High;IsInitOnly:False;IsStatic:True;"
-        },
-        "Microsoft.Azure.Cosmos.PriorityLevel Low": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.PriorityLevel Low;IsInitOnly:False;IsStatic:True;"
-        }
-      },
-      "NestedTypes": {}
-    },
     "Microsoft.Azure.Cosmos.RequestOptions;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "Microsoft.Azure.Cosmos.AvailabilityStrategyOptions AvailabilityStrategyOptions": {
+        "Microsoft.Azure.Cosmos.AvailabilityStrategy AvailabilityStrategy": {
           "Type": "Property",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.AvailabilityStrategyOptions AvailabilityStrategyOptions;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.AvailabilityStrategyOptions get_AvailabilityStrategyOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_AvailabilityStrategyOptions(Microsoft.Azure.Cosmos.AvailabilityStrategyOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.AvailabilityStrategy AvailabilityStrategy;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.AvailabilityStrategy get_AvailabilityStrategy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_AvailabilityStrategy(Microsoft.Azure.Cosmos.AvailabilityStrategy);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.AvailabilityStrategyOptions get_AvailabilityStrategyOptions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Microsoft.Azure.Cosmos.AvailabilityStrategy get_AvailabilityStrategy()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.AvailabilityStrategyOptions get_AvailabilityStrategyOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.AvailabilityStrategy get_AvailabilityStrategy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Nullable`1[Microsoft.Azure.Cosmos.PriorityLevel] get_PriorityLevel()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Void set_AvailabilityStrategy(Microsoft.Azure.Cosmos.AvailabilityStrategy)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.PriorityLevel] get_PriorityLevel();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.Nullable`1[Microsoft.Azure.Cosmos.PriorityLevel] PriorityLevel": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.PriorityLevel] PriorityLevel;CanRead:True;CanWrite:True;System.Nullable`1[Microsoft.Azure.Cosmos.PriorityLevel] get_PriorityLevel();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_PriorityLevel(System.Nullable`1[Microsoft.Azure.Cosmos.PriorityLevel]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Void set_AvailabilityStrategyOptions(Microsoft.Azure.Cosmos.AvailabilityStrategyOptions)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_AvailabilityStrategyOptions(Microsoft.Azure.Cosmos.AvailabilityStrategyOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Void set_PriorityLevel(System.Nullable`1[Microsoft.Azure.Cosmos.PriorityLevel])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_PriorityLevel(System.Nullable`1[Microsoft.Azure.Cosmos.PriorityLevel]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Void set_AvailabilityStrategy(Microsoft.Azure.Cosmos.AvailabilityStrategy);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
