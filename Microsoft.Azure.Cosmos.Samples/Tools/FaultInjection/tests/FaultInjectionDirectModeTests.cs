@@ -1162,8 +1162,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 ManualResetEvent changeFeedRan = new ManualResetEvent(false);
 
-                ChangeFeedProcessor changeFeedProcessor;
-                changeFeedProcessor = this.container.GetChangeFeedProcessorBuilder<JObject>(
+                ChangeFeedProcessor changeFeedProcessor = this.container.GetChangeFeedProcessorBuilder<JObject>(
                     "FaultInjectionTest",
                     (ChangeFeedProcessorContext context, IReadOnlyCollection<JObject> docs, CancellationToken token) =>
                     {
