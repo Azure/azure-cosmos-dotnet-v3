@@ -1116,11 +1116,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         [Description("Tests ReadFeed FaultInjection")]
         public void FaultInjectionServerErrorRule_ReadFeedTest()
         {
-            this.Timeout_FaultInjectionServerErrorRule_ReadFeedTest().Wait();
-            //if (!this.Timeout_FaultInjectionServerErrorRule_ReadFeedTest().Wait(Timeout))
-            //{
-            //    Assert.Fail("Test timed out");
-            //}
+            if (!this.Timeout_FaultInjectionServerErrorRule_ReadFeedTest().Wait(Timeout))
+            {
+                Assert.Fail("Test timed out");
+            }
         }
 
         private async Task Timeout_FaultInjectionServerErrorRule_ReadFeedTest()
