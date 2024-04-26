@@ -753,6 +753,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [TestCategory("MultiRegion")]
         public void RequestMessageCloneTests()
         {
             RequestMessage httpRequest = new RequestMessage(
