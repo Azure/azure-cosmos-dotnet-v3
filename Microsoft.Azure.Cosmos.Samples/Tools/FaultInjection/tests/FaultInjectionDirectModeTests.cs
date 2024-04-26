@@ -1037,16 +1037,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         [TestMethod]
         [Owner("nalutripician")]
         [Description("Tests hit count limit")]
-        public void FaultInjectionServerErrorRule_ThresholdTest()
-        {
-            this.Timeout_FaultInjectionServerErrorRule_ThresholdTest().Wait();
-            //if (!this.Timeout_FaultInjectionServerErrorRule_ThresholdTest().Wait(Timeout))
-            //{
-            //    Assert.Fail("Test timed out");
-            //}
-        }
-
-        private async Task Timeout_FaultInjectionServerErrorRule_ThresholdTest()
+        public async Task Timeout_FaultInjectionServerErrorRule_ThresholdTest()
         {
             string thresholdRuleId = "hitCountRule-" + Guid.NewGuid().ToString();
             FaultInjectionRule thresholdRule = new FaultInjectionRuleBuilder(
