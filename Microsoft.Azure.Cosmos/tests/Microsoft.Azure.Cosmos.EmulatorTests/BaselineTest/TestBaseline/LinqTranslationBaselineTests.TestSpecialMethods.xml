@@ -76,7 +76,7 @@ WHERE ((NOT(IS_DEFINED(root["TagsField"]["tags"]["!ns:name"])) OR NOT(ARRAY_CONT
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE ((((((NOT(IS_DEFINED(root["TagsField"]["tags"]["ns:tagname"])) OR ARRAY_CONTAINS(root["TagsField"]["tag"], "ns:tagname=") OR ARRAY_CONTAINS(root["TagsField"]["tag"], "ns:tagname=tagvalue1") OR ARRAY_CONTAINS(root["TagsField"]["tag"], "ns:tagname=tagvalue2")))) AND (((NOT(IS_DEFINED(root["TagsField1"]["tags"]["ns:tagname1"])) OR ARRAY_CONTAINS(root["TagsField1"]["tag"], "ns:tagname1=") OR ARRAY_CONTAINS(root["TagsField1"]["tag"], "ns:tagname1=tag1value1") OR ARRAY_CONTAINS(root["TagsField1"]["tag"], "ns:tagname1=tag1value2")))))))]]></SqlQuery>
+WHERE ((((NOT(IS_DEFINED(root["TagsField"]["tags"]["ns:tagname"])) OR ARRAY_CONTAINS(root["TagsField"]["tag"], "ns:tagname=") OR ARRAY_CONTAINS(root["TagsField"]["tag"], "ns:tagname=tagvalue1") OR ARRAY_CONTAINS(root["TagsField"]["tag"], "ns:tagname=tagvalue2")))) AND (((NOT(IS_DEFINED(root["TagsField1"]["tags"]["ns:tagname1"])) OR ARRAY_CONTAINS(root["TagsField1"]["tag"], "ns:tagname1=") OR ARRAY_CONTAINS(root["TagsField1"]["tag"], "ns:tagname1=tag1value1") OR ARRAY_CONTAINS(root["TagsField1"]["tag"], "ns:tagname1=tag1value2")))))]]></SqlQuery>
       <ErrorMessage><![CDATA[CosmosTags.MatchAny is only for linq expressions]]></ErrorMessage>
     </Output>
   </Result>
@@ -141,7 +141,7 @@ WHERE ((((((NOT(IS_DEFINED(root["TagsField"]["tags"]["ns:tagname"])) OR ARRAY_CO
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE ((((((NOT(IS_DEFINED(root["TagsField"]["tags"]["ns:tagname"])) OR ARRAY_CONTAINS(root["TagsField"]["tag"], "ns:tagname=") OR ARRAY_CONTAINS(root["TagsField"]["tag"], "ns:tagname=tagvalue1") OR ARRAY_CONTAINS(root["TagsField"]["tag"], "ns:tagname=tagvalue2")))) AND (((NOT(IS_DEFINED(root["TagsField1"]["tags"]["ns:tagname1"])) OR ARRAY_CONTAINS(root["TagsField1"]["tag"], "ns:tagname1=") OR ARRAY_CONTAINS(root["TagsField1"]["tag"], "ns:tagname1=tag1value1") OR ARRAY_CONTAINS(root["TagsField1"]["tag"], "ns:tagname1=tag1value2")))))))]]></SqlQuery>
+WHERE ((((NOT(IS_DEFINED(root["TagsField"]["tags"]["ns:tagname"])) OR ARRAY_CONTAINS(root["TagsField"]["tag"], "ns:tagname=") OR ARRAY_CONTAINS(root["TagsField"]["tag"], "ns:tagname=tagvalue1") OR ARRAY_CONTAINS(root["TagsField"]["tag"], "ns:tagname=tagvalue2")))) AND (((NOT(IS_DEFINED(root["TagsField1"]["tags"]["ns:tagname1"])) OR ARRAY_CONTAINS(root["TagsField1"]["tag"], "ns:tagname1=") OR ARRAY_CONTAINS(root["TagsField1"]["tag"], "ns:tagname1=tag1value1") OR ARRAY_CONTAINS(root["TagsField1"]["tag"], "ns:tagname1=tag1value2")))))]]></SqlQuery>
       <ErrorMessage><![CDATA[CosmosTags.MatchAny is only for linq expressions]]></ErrorMessage>
     </Output>
   </Result>

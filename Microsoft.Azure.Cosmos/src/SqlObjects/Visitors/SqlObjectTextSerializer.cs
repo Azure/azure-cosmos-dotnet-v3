@@ -631,18 +631,18 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
 
         public override void Visit(SqlTagsMatchExpressionList sqlObject)
         {
-            var matchesList = sqlObject.MatchesList;
+            var matchesList = sqlObject.MatchesList?.ToArray();
             if (matchesList == null || !matchesList.Any())
             {
                 this.writer.Write("true");
                 return;
             }
             this.writer.Write("(");
-            for (int i = 0; i < matchesList.Count(); i++)
+            for (int i = 0; i < matchesList.Length; i++)
             {
                 if (i > 0) this.writer.Write(" AND ");
 
-                var match = matchesList.ElementAt(i);
+                var match = matchesList[i];
                 this.writer.Write("(");
                 Visit(match);
                 this.writer.Write(")");
@@ -652,23 +652,31 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
 
         public override void Visit(SqlTagsMatchExpressionLists sqlObject)
         {
-            var matchesList = sqlObject.MatchesList;
+            var matchesList = sqlObject.MatchesList?.ToArray();
             if (matchesList == null || !matchesList.Any())
             {
                 this.writer.Write("true");
                 return;
             }
-            this.writer.Write("(");
-            for (int i = 0; i < matchesList.Count(); i++)
+
+            if (matchesList.Length == 1)
             {
-                if (i > 0) this.writer.Write(" OR ");
-                    
-                var matchList = matchesList.ElementAt(i);
+                Visit(matchesList[0]);                
+            }
+            else
+            {
                 this.writer.Write("(");
-                Visit(matchList);                
+                for (int i = 0; i < matchesList.Length; i++)
+                {
+                    if (i > 0) this.writer.Write(" OR ");
+                    
+                    var matchList = matchesList[i];
+                    this.writer.Write("(");
+                    Visit(matchList);                
+                    this.writer.Write(")");
+                }
                 this.writer.Write(")");
             }
-            this.writer.Write(")");
         }
 
         public override void Visit(SqlTopSpec sqlTopSpec)
