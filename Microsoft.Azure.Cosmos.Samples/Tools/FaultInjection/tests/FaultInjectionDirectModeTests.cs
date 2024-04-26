@@ -1112,17 +1112,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         }
 
         [TestMethod]
+        [Timeout(Timeout)]
         [Owner("nalutripician")]
         [Description("Tests ReadFeed FaultInjection")]
-        public void FaultInjectionServerErrorRule_ReadFeedTest()
-        {
-            if (!this.Timeout_FaultInjectionServerErrorRule_ReadFeedTest().Wait(Timeout))
-            {
-                Assert.Fail("Test timed out");
-            }
-        }
-
-        private async Task Timeout_FaultInjectionServerErrorRule_ReadFeedTest()
+        public async Task FaultInjectionServerErrorRule_ReadFeedTest()
         {
             string readFeedId = "readFeadRule-" + Guid.NewGuid().ToString();
             FaultInjectionRule readFeedRule = new FaultInjectionRuleBuilder(
