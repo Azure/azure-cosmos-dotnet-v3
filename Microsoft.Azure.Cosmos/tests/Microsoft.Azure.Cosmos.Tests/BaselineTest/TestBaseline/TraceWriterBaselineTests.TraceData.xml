@@ -316,6 +316,7 @@
       ],
       "StoreResponseStatistics": [
         {
+          "StartTimeUTC": "0001-01-01T00:00:00",
           "ResponseTimeUTC": "9999-12-31T23:59:59.9999999",
           "ResourceType": "Document",
           "OperationType": "Query",
@@ -512,6 +513,7 @@
       ],
       "StoreResponseStatistics": [
         {
+          "StartTimeUTC": null,
           "ResponseTimeUTC": "0001-01-01T00:00:00",
           "ResourceType": "Database",
           "OperationType": "Create",
