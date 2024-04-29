@@ -46,21 +46,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 else if (DiagnosticsFilterHelper.IsLatencyThresholdCrossed(
                         config: config,
                         operationType: operationType,
-                        response: response))
+                        response: response) || 
+                        (config.RequestChargeThreshold is not null &&
+                            config.RequestChargeThreshold <= response.RequestCharge) ||
+                        (config.PayloadSizeThresholdInBytes is not null &&
+                            DiagnosticsFilterHelper.IsPayloadSizeThresholdCrossed(
+                                config: config,
+                                response: response)))
                 {
-                    CosmosDbEventSource.Singleton.LatencyOverThreshold(response.Diagnostics.ToString());
-                }
-                else if (config.RequestChargeThreshold is not null && 
-                    config.RequestChargeThreshold <= response.RequestCharge)
-                {
-                    CosmosDbEventSource.Singleton.RequestChargeOverThreshold(response.Diagnostics.ToString());
-                }
-                else if (config.PayloadSizeThresholdInBytes is not null && 
-                    DiagnosticsFilterHelper.IsPayloadSizeThresholdCrossed(
-                        config: config,
-                        response: response))
-                {
-                    CosmosDbEventSource.Singleton.PayloadSizeOverThreshold(response.Diagnostics.ToString());
+                    CosmosDbEventSource.Singleton.ThresholdViolation(response.Diagnostics.ToString());
                 }
             }
         }
@@ -81,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         }
 
         [Event(2, Level = EventLevel.Warning)]
-        private void LatencyOverThreshold(string message)
+        private void ThresholdViolation(string message)
         {
             this.WriteEvent(2, message);
         }
@@ -90,18 +84,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private void FailedRequest(string message)
         {
             this.WriteEvent(3, message);
-        }
-
-        [Event(4, Level = EventLevel.Warning)]
-        private void RequestChargeOverThreshold(string message)
-        {
-            this.WriteEvent(4, message);
-        }
-
-        [Event(5, Level = EventLevel.Warning)]
-        private void PayloadSizeOverThreshold(string message)
-        {
-            this.WriteEvent(5, message);
         }
     }
 }
