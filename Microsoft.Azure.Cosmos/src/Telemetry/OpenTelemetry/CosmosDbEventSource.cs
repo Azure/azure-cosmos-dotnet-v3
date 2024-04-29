@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
-    using System;
     using System.Diagnostics.Tracing;
     using global::Azure.Core.Diagnostics;
     using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
@@ -16,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     internal sealed class CosmosDbEventSource : AzureEventSource
     {
         internal const string EventSourceName = "Azure-Cosmos-Operation-Request-Diagnostics";
-        
+
         private static CosmosDbEventSource Singleton { get; } = new CosmosDbEventSource();
 
         private CosmosDbEventSource()
@@ -44,9 +43,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     CosmosDbEventSource.Singleton.FailedRequest(response.Diagnostics.ToString());
                 }
                 else if (DiagnosticsFilterHelper.IsLatencyThresholdCrossed(
-                        config: config,
-                        operationType: operationType,
-                        response: response) || 
+                            config: config,
+                            operationType: operationType,
+                            response: response) ||
                         (config.RequestChargeThreshold is not null &&
                             config.RequestChargeThreshold <= response.RequestCharge) ||
                         (config.PayloadSizeThresholdInBytes is not null &&
