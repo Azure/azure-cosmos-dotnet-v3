@@ -1215,7 +1215,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.Gone)
-                        .WithApplicationPercentage(.5)
+                        .WithApplyPercentage(.5)
                         .WithTimes(1)
                         .Build())
                 .WithDuration(TimeSpan.FromMinutes(5))
