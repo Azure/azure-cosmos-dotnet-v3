@@ -171,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
                 DefaultTrace.TraceInformation(
                     "FaultInjection: FaultInjection Rule {0} Inserted {1} duration response delay for request {2}",
-                    serverResponseDelayRule.GetId(),
+                    serverSendDelayRule.GetId(),
                     delay,
                     args.CommonArguments.ActivityId);
 

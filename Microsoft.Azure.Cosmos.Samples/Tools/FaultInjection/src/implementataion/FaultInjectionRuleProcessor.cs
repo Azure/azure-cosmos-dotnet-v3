@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     result.GetTimes(),
                     result.GetDelay(),
                     result.GetSuppressServiceRequests(),
-                    result.GetApplicationPercentage(),
+                    result.GetApplyPercentage(),
                     this.applicationContext));
         }
 
