@@ -59,8 +59,13 @@
         {
             CosmosClientBuilder clientBuilder = new CosmosClientBuilder(
                 accountEndpoint: accountEndpointOverride 
-                ?? (multiRegion ? EndpointMultiRegion : Endpoint),
-                authKeyOrResourceToken: multiRegion ? AuthKeyMultiRegion : AuthKey);
+                ?? EndpointMultiRegion,
+                authKeyOrResourceToken: AuthKeyMultiRegion);
+            
+            if (!multiRegion)
+            {
+                return clientBuilder.WithApplicationPreferredRegions(new List<string> { "Central US" });
+            }
 
             return clientBuilder;
         }
