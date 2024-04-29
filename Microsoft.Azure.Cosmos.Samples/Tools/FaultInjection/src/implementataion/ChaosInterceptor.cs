@@ -162,12 +162,12 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <param name="args"></param>
         public async Task OnBeforeConnectionWriteAsync(ChannelCallArguments args)
         {
-            FaultInjectionServerErrorRule? serverResponseDelayRule = this.ruleStore?.FindRntbdServerResponseDelayRule(args);
+            FaultInjectionServerErrorRule? serverSendDelayRule = this.ruleStore?.FindRntbdServerSendDelayRule(args);
                        
-            if (serverResponseDelayRule != null)
+            if (serverSendDelayRule != null)
             {
-                this.applicationContext.AddRuleExecution(serverResponseDelayRule.GetId(), args.CommonArguments.ActivityId);
-                TimeSpan delay = serverResponseDelayRule.GetDelay();
+                this.applicationContext.AddRuleExecution(serverSendDelayRule.GetId(), args.CommonArguments.ActivityId);
+                TimeSpan delay = serverSendDelayRule.GetDelay();
 
                 DefaultTrace.TraceInformation(
                     "FaultInjection: FaultInjection Rule {0} Inserted {1} duration response delay for request {2}",
