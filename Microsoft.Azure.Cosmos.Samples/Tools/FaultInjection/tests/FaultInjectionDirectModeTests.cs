@@ -9,8 +9,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
     using System.Linq;
     using System.Net;
     using System.Net.Sockets;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.FaultInjection.Tests.Utils;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
@@ -49,6 +51,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 PartitionKeyPath = "/Pk"
             };
             this.container = await this.database.CreateContainerIfNotExistsAsync(containerProperties, 5000);
+            await Task.Delay(5000);
         }
 
         public async Task InitilizePreferredRegionsClient(FaultInjector faultInjector, List<string> preferredRegionList, bool multiRegion)
@@ -61,6 +64,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 Id = "test",
                 PartitionKeyPath = "/Pk"
             };
+            await Task.Delay(5000);
             this.container = await this.database.CreateContainerIfNotExistsAsync(containerProperties, 5000);
         }
 
@@ -566,7 +570,90 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
         [TestMethod]
         [Owner("nalutripician")]
-        [Description("Tests response delay")]
+        [Description("Tests send delay")]
+        public void FaultInjectionServerErrorRule_ServerSendDelay()
+        {
+            if (!this.Timeout_FaultInjectionServerErrorRule_ServerSendDelay().Wait(Timeout))
+            {
+                Assert.Fail("Test timed out");
+            }
+        }
+
+        private async Task Timeout_FaultInjectionServerErrorRule_ServerSendDelay()
+        {
+            string sendDelayRuleId = "sendDelayRule-" + Guid.NewGuid().ToString();
+            FaultInjectionRule delayRule = new FaultInjectionRuleBuilder(
+                id: sendDelayRuleId,
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithOperationType(FaultInjectionOperationType.CreateItem)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.SendDelay)
+                        .WithDelay(TimeSpan.FromSeconds(10))
+                        .WithTimes(1)
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(5))
+                .Build();
+
+            delayRule.Disable();
+
+            await this.Initialize(true);
+
+            try
+            {
+                FaultInjector faultInjector = new FaultInjector(new List<FaultInjectionRule> { delayRule });
+
+                CosmosClient testClient = new CosmosClient(
+                    accountEndpoint: TestCommon.EndpointMultiRegion,
+                    authKeyOrResourceToken: TestCommon.AuthKeyMultiRegion,
+                    clientOptions: faultInjector.GetFaultInjectionClientOptions(
+                        new CosmosClientOptions()
+                        {
+                            EnableContentResponseOnWrite = true,
+                            ConnectionMode = ConnectionMode.Direct,
+                            OpenTcpConnectionTimeout = TimeSpan.FromSeconds(1)
+                        }));
+
+                Container testContainer = testClient.GetContainer("testDb", "test");
+                delayRule.Enable();
+                ValueStopwatch stopwatch = ValueStopwatch.StartNew();
+                TimeSpan elapsed;
+
+                JObject createdItem = JObject.FromObject(new { id = Guid.NewGuid().ToString(), Pk = Guid.NewGuid().ToString() });
+                CosmosDiagnostics createDiagnostics = await this.PerformDocumentOperation(
+                    testContainer, 
+                    OperationType.Create, 
+                    createdItem);
+
+                elapsed = stopwatch.Elapsed;
+                stopwatch.Stop();
+                delayRule.Disable();
+
+                CosmosDiagnostics readDiagnostics = await this.PerformDocumentOperation(
+                    testContainer, 
+                    OperationType.Read, 
+                    createdItem);
+
+                Assert.IsTrue(readDiagnostics.ToString().Contains("404"));
+                Assert.IsTrue(elapsed.TotalSeconds >= 6);
+                this.ValidateHitCount(delayRule, 1);
+                this.ValidateFaultInjectionRuleApplication(
+                    createDiagnostics,
+                    (int)StatusCodes.RequestTimeout,
+                    (int)SubStatusCodes.Unknown,
+                    delayRule);
+                testClient.Dispose();
+            }
+            finally
+            {
+                delayRule.Disable();
+            }
+        }
+
+        [TestMethod]
+        [Owner("nalutripician")]
+        [Description("Tests send delay")]
         public void FaultInjectionServerErrorRule_ServerResponseDelay()
         {
             if (!this.Timeout_FaultInjectionServerErrorRule_ServerResponseDelay().Wait(Timeout))
@@ -576,6 +663,89 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         }
 
         private async Task Timeout_FaultInjectionServerErrorRule_ServerResponseDelay()
+        {
+            string responseDelayRuleId = "responseDelayRule-" + Guid.NewGuid().ToString();
+            FaultInjectionRule delayRule = new FaultInjectionRuleBuilder(
+                id: responseDelayRuleId,
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithOperationType(FaultInjectionOperationType.CreateItem)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
+                        .WithDelay(TimeSpan.FromSeconds(10))
+                        .WithTimes(1)
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(5))
+                .Build();
+
+            delayRule.Disable();
+
+            await this.Initialize(true);
+
+            try
+            {
+                FaultInjector faultInjector = new FaultInjector(new List<FaultInjectionRule> { delayRule });
+
+                CosmosClient testClient = new CosmosClient(
+                    accountEndpoint: TestCommon.EndpointMultiRegion,
+                    authKeyOrResourceToken: TestCommon.AuthKeyMultiRegion,
+                    clientOptions: faultInjector.GetFaultInjectionClientOptions(
+                        new CosmosClientOptions()
+                        {
+                            EnableContentResponseOnWrite = true,
+                            ConnectionMode = ConnectionMode.Direct,
+                            OpenTcpConnectionTimeout = TimeSpan.FromSeconds(1)
+                        }));
+
+                Container testContainer = testClient.GetContainer("testDb", "test");
+                delayRule.Enable();
+                ValueStopwatch stopwatch = ValueStopwatch.StartNew();
+                TimeSpan elapsed;
+
+                JObject createdItem = JObject.FromObject(new { id = Guid.NewGuid().ToString(), Pk = Guid.NewGuid().ToString() });
+                CosmosDiagnostics createDiagnostics = await this.PerformDocumentOperation(
+                    testContainer,
+                    OperationType.Create,
+                    createdItem);
+
+                elapsed = stopwatch.Elapsed;
+                stopwatch.Stop();
+                delayRule.Disable();
+
+                CosmosDiagnostics readDiagnostics = await this.PerformDocumentOperation(
+                    testContainer,
+                    OperationType.Read,
+                    createdItem);
+
+                Assert.IsTrue(readDiagnostics.ToString().Contains("200"));
+                Assert.IsTrue(elapsed.TotalSeconds >= 6);
+                this.ValidateHitCount(delayRule, 1);
+                this.ValidateFaultInjectionRuleApplication(
+                    createDiagnostics,
+                    (int)StatusCodes.RequestTimeout,
+                    (int)SubStatusCodes.Unknown,
+                    delayRule);
+                testClient.Dispose();
+            }
+            finally
+            {
+                delayRule.Disable();
+            }
+        }
+
+        [TestMethod]
+        [Owner("nalutripician")]
+        [Description("Tests response delay")]
+        public void FaultInjectionServerErrorRule_ServerTimeout()
+        {
+            if (!this.Timeout_FaultInjectionServerErrorRule_ServerTimeout().Wait(Timeout))
+            {
+                Assert.Fail("Test timed out");
+            }
+        }
+
+        private async Task Timeout_FaultInjectionServerErrorRule_ServerTimeout()
         {
             string timeoutRuleId = "timeoutRule-" + Guid.NewGuid().ToString();
             FaultInjectionRule timeoutRule = new FaultInjectionRuleBuilder(
@@ -644,7 +814,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         }
 
         [TestMethod]
-        [Ignore("Connection Timeouts are currently broken, next Direct release will fix issue")]
         [Owner("nalutripician")]
         [Description("Tests injection a connection timeout")]
         public void FaultInjectionServerErrorRule_ConnectionTimeout()
@@ -1108,6 +1277,93 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             }
             Assert.IsTrue(disposedChannel);
         }
+
+        [TestMethod]
+        [Timeout(Timeout)]
+        [Owner("nalutripician")]
+        [Description("Tests ReadFeed FaultInjection")]
+        public async Task FaultInjectionServerErrorRule_ReadFeedTest()
+        {
+            string readFeedId = "readFeadRule-" + Guid.NewGuid().ToString();
+            FaultInjectionRule readFeedRule = new FaultInjectionRuleBuilder(
+                id: readFeedId,
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithOperationType(FaultInjectionOperationType.ReadFeed)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(5))
+                .Build();
+
+            readFeedRule.Disable();
+
+            List<FaultInjectionRule> ruleList = new List<FaultInjectionRule> { readFeedRule };
+            FaultInjector faultInjector = new FaultInjector(ruleList);
+
+            await this.Initialize(faultInjector, false);
+
+            string changeFeedContainerName = "changeFeedContainer-" + Guid.NewGuid().ToString();
+            ContainerProperties containerProperties = new ContainerProperties
+            {
+                Id = changeFeedContainerName,
+                PartitionKeyPath = "/partitionKey"
+            };
+
+            if (this.database != null && this.container != null)
+            {
+                JObject createdItem = JObject.FromObject(new { id = Guid.NewGuid().ToString(), Pk = Guid.NewGuid().ToString() });
+                ItemResponse<JObject>? itemResponse = await this.container.CreateItemAsync<JObject>(createdItem);
+
+                readFeedRule.Enable();
+
+                Container? leaseContainer = await this.database.CreateContainerIfNotExistsAsync(containerProperties, 400);
+
+                ManualResetEvent changeFeedRan = new ManualResetEvent(false);
+
+                ChangeFeedProcessor changeFeedProcessor = this.container.GetChangeFeedProcessorBuilder<JObject>(
+                    "FaultInjectionTest",
+                    (ChangeFeedProcessorContext context, IReadOnlyCollection<JObject> docs, CancellationToken token) =>
+                    {
+                        Assert.Fail("Change Feed Should Fail");
+                        return Task.CompletedTask;
+                    })
+                    .WithInstanceName("test")
+                    .WithLeaseContainer(leaseContainer)
+                    .WithStartFromBeginning()
+                    .WithErrorNotification((string lease, Exception exception) =>
+                    {
+                        if (exception is CosmosException cosmosException)
+                        {
+                            Assert.AreEqual(HttpStatusCode.ServiceUnavailable, cosmosException.StatusCode);
+                        }
+                        else
+                        {
+                            Assert.Fail("Unexpected Exception");
+                        }
+
+                        changeFeedRan.Set();
+                        return Task.CompletedTask;
+                    })
+                    .Build();
+
+                await changeFeedProcessor.StartAsync();
+                await Task.Delay(1000);
+
+                try
+                {
+                    bool wasProcessed = changeFeedRan.WaitOne(60000);
+                    Assert.IsTrue(wasProcessed, "Timed out waiting for handler to execute");
+                }
+                finally
+                {
+                    await changeFeedProcessor.StopAsync();
+                    readFeedRule.Disable();
+                }
+            }
+        }
+           
 
         private async Task<CosmosDiagnostics> PerformDocumentOperation(Container testContainer, OperationType operationType, JObject item)
         {

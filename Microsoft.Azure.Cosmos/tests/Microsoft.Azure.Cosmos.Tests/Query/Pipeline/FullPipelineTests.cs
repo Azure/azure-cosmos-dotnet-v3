@@ -274,7 +274,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 10000 LIMIT 5000", expectedPageSize: 1000, expectedResults: 0, mockInMemoryContainer, documentContainer);
             await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 10 LIMIT 100", expectedPageSize: 110, expectedResults: 100, mockInMemoryContainer, documentContainer);
             await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 0 LIMIT 100", expectedPageSize: 100, expectedResults: 100, mockInMemoryContainer, documentContainer);
-            await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 100 LIMIT 0", expectedPageSize: 1000, expectedResults: 0, mockInMemoryContainer, documentContainer);
+            await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 100 LIMIT 0", expectedPageSize: 100, expectedResults: 0, mockInMemoryContainer, documentContainer);
 
             // OFFSET/LIMIT without ORDER BY
             await this.TestPageSizeAsync("SELECT c.pk FROM c OFFSET 10 LIMIT 100", expectedPageSize: 1000, expectedResults: 100, mockInMemoryContainer, documentContainer);
@@ -394,8 +394,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 }
                 );
 
+            List<PartitionKeyRange> targetPartitionKeyRanges = new (){
+                new PartitionKeyRange()
+                {
+                    MinInclusive = "",
+                    MaxExclusive = "FF"
+                }
+            };
             CosmosQueryContextCore cosmosQueryContextCore = new CosmosQueryContextCore(
-                 client: new TestCosmosQueryClient(GetQueryPartitionProvider()),
+                 client: new TestCosmosQueryClient(GetQueryPartitionProvider(), targetPartitionKeyRanges),
                  resourceTypeEnum: Documents.ResourceType.Document,
                  operationType: Documents.OperationType.Query,
                  resourceType: typeof(QueryResponseCore),
