@@ -318,6 +318,7 @@
         {
           "StartTimeUTC": "0001-01-01T00:00:00",
           "ResponseTimeUTC": "9999-12-31T23:59:59.9999999",
+          "LatencyInMs": 315537897600000,
           "ResourceType": "Document",
           "OperationType": "Query",
           "RequestSessionToken": "42",
@@ -515,6 +516,7 @@
         {
           "StartTimeUTC": null,
           "ResponseTimeUTC": "0001-01-01T00:00:00",
+          "LatencyInMs": null,
           "ResourceType": "Database",
           "OperationType": "Create",
           "LocationEndpoint": null,
