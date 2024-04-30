@@ -6,8 +6,6 @@
 
     internal static class TestCommon
     {
-        public const string Endpoint = "";
-        public const string AuthKey = "";
         public const string EndpointMultiRegion = "";
         public const string AuthKeyMultiRegion = "";
         
