@@ -136,12 +136,14 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         public StoreResponse GetInjectedServerError(ChannelCallArguments args, string ruleId)
         {
             StoreResponse storeResponse;
+            string lsn = args.RequestHeaders.Get(WFConstants.BackendHeaders.LSN) ?? "0";
 
             switch (this.serverErrorType)
             {
                 case FaultInjectionServerErrorType.Gone:
                     INameValueCollection goneHeaders = args.RequestHeaders;
                     goneHeaders.Set(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.ServerGenerated410).ToString(CultureInfo.InvariantCulture));
+                    goneHeaders.Set(WFConstants.BackendHeaders.LocalLSN, lsn);
                     storeResponse = new StoreResponse()
                     {
                         Status = 410,
@@ -152,10 +154,12 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     return storeResponse;
 
                 case FaultInjectionServerErrorType.RetryWith:
+                    INameValueCollection retryWithHeaders = args.RequestHeaders;
+                    retryWithHeaders.Set(WFConstants.BackendHeaders.LocalLSN, lsn);
                     storeResponse = new StoreResponse()
                     {
                         Status = 449,
-                        Headers = args.RequestHeaders,
+                        Headers = retryWithHeaders,
                         ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes($"Fault Injection Server Error: Retry With, rule: {ruleId}"))
                     };
                     
@@ -165,6 +169,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     INameValueCollection tooManyRequestsHeaders = args.RequestHeaders;
                     tooManyRequestsHeaders.Set(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, "500");
                     tooManyRequestsHeaders.Set(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.RUBudgetExceeded).ToString(CultureInfo.InvariantCulture));
+                    tooManyRequestsHeaders.Set(WFConstants.BackendHeaders.LocalLSN, lsn);
 
                     storeResponse = new StoreResponse()
                     {
@@ -176,21 +181,26 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     return storeResponse;
 
                 case FaultInjectionServerErrorType.Timeout:
+                    INameValueCollection timeoutHeaders = args.RequestHeaders;
+                    timeoutHeaders.Set(WFConstants.BackendHeaders.LocalLSN, lsn);
 
                     storeResponse = new StoreResponse()
                     {
                         Status = 408,
-                        Headers = args.RequestHeaders,
+                        Headers = timeoutHeaders,
                         ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes($"Fault Injection Server Error: Timeout, rule: {ruleId}"))
                     };
 
                     return storeResponse;
 
                 case FaultInjectionServerErrorType.InternalServerEror:
+                    INameValueCollection internalServerErrorHeaders = args.RequestHeaders;
+                    internalServerErrorHeaders.Set(WFConstants.BackendHeaders.LocalLSN, lsn);
+
                     storeResponse = new StoreResponse()
                     {
                         Status = 500,
-                        Headers = args.RequestHeaders,
+                        Headers = internalServerErrorHeaders,
                         ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes($"Fault Injection Server Error: Internal Server Error, rule: {ruleId}"))
                     };
                     
@@ -203,6 +213,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     INameValueCollection readSessionHeaders = args.RequestHeaders;
                     readSessionHeaders.Set(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.ReadSessionNotAvailable).ToString(CultureInfo.InvariantCulture));
                     readSessionHeaders.Set(HttpConstants.HttpHeaders.SessionToken, badSesstionToken);
+                    readSessionHeaders.Set(WFConstants.BackendHeaders.LocalLSN, lsn);
 
                     storeResponse = new StoreResponse()
                     {
@@ -216,6 +227,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 case FaultInjectionServerErrorType.PartitionIsMigrating:
                     INameValueCollection partitionMigrationHeaders = args.RequestHeaders;
                     partitionMigrationHeaders.Set(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.CompletingPartitionMigration).ToString(CultureInfo.InvariantCulture));
+                    partitionMigrationHeaders.Set(WFConstants.BackendHeaders.LocalLSN, lsn);
 
                     storeResponse = new StoreResponse()
                     {
@@ -229,6 +241,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 case FaultInjectionServerErrorType.PartitionIsSplitting:
                     INameValueCollection partitionSplitting = args.RequestHeaders;
                     partitionSplitting.Set(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.CompletingSplit).ToString(CultureInfo.InvariantCulture));
+                    partitionSplitting.Set(WFConstants.BackendHeaders.LocalLSN, lsn);
 
                     storeResponse = new StoreResponse()
                     {
@@ -239,10 +252,13 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
                     return storeResponse;
                 case FaultInjectionServerErrorType.ServiceUnavailable:
+                    INameValueCollection serviceUnavailableHeaders = args.RequestHeaders;
+                    serviceUnavailableHeaders.Set(WFConstants.BackendHeaders.LocalLSN, lsn);
+
                     storeResponse = new StoreResponse()
                     {
                         Status = 503,
-                        Headers = args.RequestHeaders,
+                        Headers = serviceUnavailableHeaders,
                         ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes($"Fault Injection Server Error: Service Unavailable, rule: {ruleId}"))
                     };
 
