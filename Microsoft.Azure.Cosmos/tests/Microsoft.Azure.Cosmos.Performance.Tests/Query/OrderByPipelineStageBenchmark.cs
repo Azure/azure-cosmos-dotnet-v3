@@ -44,16 +44,16 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Query
         [Benchmark(Baseline = true)]
         public Task StreamingOrderByPipelineStage()
         {
-            return CreateAndRunPipeline(StreamingContainer);
+            return CreateAndRunPipeline(StreamingContainer, nonStreamingOrderBy: false);
         }
 
         [Benchmark]
         public Task NonStreamingOrderByPipelineStage()
         {
-            return CreateAndRunPipeline(NonStreamingContainer);
+            return CreateAndRunPipeline(NonStreamingContainer, nonStreamingOrderBy: true);
         }
 
-        private static async Task CreateAndRunPipeline(IDocumentContainer documentContainer)
+        private static async Task CreateAndRunPipeline(IDocumentContainer documentContainer, bool nonStreamingOrderBy)
         {
             IReadOnlyList<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(
                 trace: NoOpTrace.Singleton,
@@ -67,6 +67,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Query
                     orderByColumns: OrderByColumns,
                     queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: EndUserPageSize),
                     maxConcurrency: MaxConcurrency,
+                    nonStreamingOrderBy: nonStreamingOrderBy,
                     continuationToken: null);
 
             IQueryPipelineStage pipeline = pipelineStage.Result;

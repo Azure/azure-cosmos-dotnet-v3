@@ -79,6 +79,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                         .Zip(queryInfo.OrderBy, (expression, sortOrder) => new OrderByColumn(expression, sortOrder)).ToList(),
                     queryPaginationOptions: queryPaginationOptions,
                     maxConcurrency: maxConcurrency,
+                    nonStreamingOrderBy: queryInfo.HasNonStreamingOrderBy,
                     continuationToken: continuationToken);
             }
             else

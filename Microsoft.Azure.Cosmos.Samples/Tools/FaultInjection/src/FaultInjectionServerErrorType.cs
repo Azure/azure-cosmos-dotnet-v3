@@ -50,8 +50,15 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
         /// <summary>
         /// Used to simulate a transient timeout/broken connection when over request timeout
+        /// In this case, the request will be sent to the server before the delay
         /// </summary>
         ResponseDelay,
+
+        /// <summary>
+        /// Used to simulate a transient timeout/broken connection when over request timeout
+        /// In this case, the delay will occur before the request is sent to the server
+        /// </summary>
+        SendDelay,
 
         /// <summary>
         ///  Used to simulate hight channel acquisiton. 

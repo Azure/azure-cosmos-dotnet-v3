@@ -6,8 +6,6 @@
 
     internal static class TestCommon
     {
-        public const string Endpoint = "";
-        public const string AuthKey = "";
         public const string EndpointMultiRegion = "";
         public const string AuthKeyMultiRegion = "";
         
@@ -59,8 +57,13 @@
         {
             CosmosClientBuilder clientBuilder = new CosmosClientBuilder(
                 accountEndpoint: accountEndpointOverride 
-                ?? (multiRegion ? EndpointMultiRegion : Endpoint),
-                authKeyOrResourceToken: multiRegion ? AuthKeyMultiRegion : AuthKey);
+                ?? EndpointMultiRegion,
+                authKeyOrResourceToken: AuthKeyMultiRegion);
+            
+            if (!multiRegion)
+            {
+                return clientBuilder.WithApplicationPreferredRegions(new List<string> { "Central US" });
+            }
 
             return clientBuilder;
         }
