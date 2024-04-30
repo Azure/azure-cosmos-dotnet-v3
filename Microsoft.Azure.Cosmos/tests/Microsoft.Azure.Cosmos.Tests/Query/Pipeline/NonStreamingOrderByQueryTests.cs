@@ -228,14 +228,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                         ranges: ranges,
                         queryText: testCase.QueryText,
                         orderByColumns: testCase.OrderByColumns,
-                        pageSize: pageSize);
+                        pageSize: pageSize,
+                        nonStreamingOrderBy: true);
 
                     IReadOnlyList<CosmosElement> streamingResult = await CreateAndRunPipelineStage(
                         documentContainer: documentContainer,
                         ranges: ranges,
                         queryText: testCase.QueryText,
                         orderByColumns: testCase.OrderByColumns,
-                        pageSize: pageSize);
+                        pageSize: pageSize,
+                        nonStreamingOrderBy: false);
 
                     if (!streamingResult.SequenceEqual(nonStreamingResult))
                     {
@@ -255,7 +257,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             IReadOnlyList<FeedRangeEpk> ranges,
             string queryText,
             IReadOnlyList<OrderByColumn> orderByColumns,
-            int pageSize)
+            int pageSize,
+            bool nonStreamingOrderBy)
         {
             TryCatch<IQueryPipelineStage> pipelineStage = OrderByCrossPartitionQueryPipelineStage.MonadicCreate(
                     documentContainer: documentContainer,
@@ -265,6 +268,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     orderByColumns: orderByColumns,
                     queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: pageSize),
                     maxConcurrency: MaxConcurrency,
+                    nonStreamingOrderBy: nonStreamingOrderBy,
                     continuationToken: null);
 
             Assert.IsTrue(pipelineStage.Succeeded);
@@ -311,7 +315,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                         ranges: ranges,
                         queryText: testCase.QueryText,
                         orderByColumns: testCase.OrderByColumns,
-                        pageSize: pageSize);
+                        pageSize: pageSize,
+                        nonStreamingOrderBy: true);
 
                     DebugTraceHelpers.TraceStreamingPipelineStarting();
                     IReadOnlyList<CosmosElement> streamingResult = await CreateAndRunPipelineStage(
@@ -319,7 +324,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                         ranges: ranges,
                         queryText: testCase.QueryText,
                         orderByColumns: testCase.OrderByColumns,
-                        pageSize: pageSize);
+                        pageSize: pageSize,
+                        nonStreamingOrderBy: false);
 
                     if (!streamingResult.SequenceEqual(nonStreamingResult))
                     {
