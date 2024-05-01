@@ -214,6 +214,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 FaultInjectionOperationType.DeleteItem => OperationType.Delete,
                 FaultInjectionOperationType.PatchItem => OperationType.Patch,
                 FaultInjectionOperationType.Batch => OperationType.Batch,
+                FaultInjectionOperationType.ReadFeed => OperationType.ReadFeed,
                 _ => throw new ArgumentException($"FaultInjectionOperationType: {faultInjectionOperationType} is not supported"),
             };
         }
