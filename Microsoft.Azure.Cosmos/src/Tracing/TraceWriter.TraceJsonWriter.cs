@@ -325,7 +325,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteFieldName("ResponseTimeUTC");
                 this.WriteDateTimeStringValue(storeResponseStatistics.RequestResponseTime);
 
-                this.jsonWriter.WriteFieldName("LatencyInMs");
+                this.jsonWriter.WriteFieldName("DurationInMs");
                 if (storeResponseStatistics.RequestStartTime.HasValue)
                 {
                     TimeSpan latency = storeResponseStatistics.RequestResponseTime - storeResponseStatistics.RequestStartTime.Value;
