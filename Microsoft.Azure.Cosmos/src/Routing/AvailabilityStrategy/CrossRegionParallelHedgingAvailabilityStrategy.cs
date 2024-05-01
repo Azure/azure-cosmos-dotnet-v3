@@ -7,8 +7,10 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Linq;
     using System.Net;
+    using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Documents;
@@ -105,91 +107,258 @@ namespace Microsoft.Azure.Cosmos
             {
                 return await sender(request, cancellationToken);
             }
-            
+
             using (CancellationTokenSource cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
             {
                 IReadOnlyCollection<string> availableRegions = client.DocumentClient.GlobalEndpointManager.GetAvailableReadEndpointsByLocation().Keys;
+                int i = 0;
+                List<Task<(bool, ResponseMessage)>> requestTasks = new List<Task<(bool, ResponseMessage)>>();
 
-                List<CosmosDiagnostics> allDiagnostics = new List<CosmosDiagnostics>();
-                request.Headers.Set("HedgeRequestContext", "Original");
                 Task<(bool, ResponseMessage)> primaryRequest = this.RequestSenderAndResultCheckAsync(
-                    sender, 
-                    request, 
-                    cancellationToken, 
-                    cancellationTokenSource);
-                Task hedgeTimer = Task.Delay(this.Threshold, cancellationToken);
-
-                Task canStartHedge = await Task.WhenAny(primaryRequest, hedgeTimer);
-
-                if (object.ReferenceEquals(canStartHedge, hedgeTimer))
-                {
-                    Task<List<ResponseMessage>> hedgedRequests = this.SendWithHedgeAsync(
-                    client,
-                    availableRegions,
-                    1,
-                    request,
                     sender,
+                    request,
                     cancellationToken,
                     cancellationTokenSource);
 
-                    Task result = await Task.WhenAny(primaryRequest, hedgedRequests);
-                    if (result == primaryRequest)
+                requestTasks.Add(primaryRequest);
+
+                Task<Task<(bool, ResponseMessage)>> allRequests = Task.WhenAny(requestTasks);
+
+                ResponseMessage responseMessage;
+                
+                //available regions or hedge regions?
+                //Send out hedged requests
+                foreach (string region in availableRegions)
+                {
+                    if (i == 0)
                     {
-                        (bool isNonTransient, ResponseMessage primaryResponse) = await primaryRequest;
+                        await Task.Delay(this.Threshold, cancellationToken);
+                        i++;
+                        continue;
+                    }
+
+                    await Task.Delay(this.ThresholdStep, cancellationToken);
+
+                    Task<(bool, ResponseMessage)> requestTask = this.CloneAndSendAsync(
+                        sender,
+                        request,
+                        i,
+                        availableRegions,
+                        cancellationToken,
+                        cancellationTokenSource);
+                    requestTasks.Add(requestTask);
+
+                    allRequests = Task.WhenAny(requestTasks);
+
+                    //After firing off hedged request, check to see if any previos requests have completed before starting the next one
+                    if (allRequests.IsCompleted)
+                    {
+                        Task<(bool, ResponseMessage)> completedTask = await allRequests;
+                        (bool isNonTransient, responseMessage) = await completedTask;
+
                         if (isNonTransient)
                         {
                             cancellationTokenSource.Cancel();
-                            ((CosmosTraceDiagnostics)primaryResponse.Diagnostics).Value.AddDatum("Hedge Context", "Original Request");
-                            return primaryResponse;
+                            ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value.AddDatum(
+                                "Hedge Context",
+                                object.ReferenceEquals(primaryRequest, completedTask) ? "Original Request" : "Hedged Request");
+                            return responseMessage;
                         }
+
+                        requestTasks.Remove(completedTask);
                     }
 
-                    List<ResponseMessage> responses = await hedgedRequests;
-                    if (responses.Any() && responses[0] != null)
-                    {
-                        cancellationTokenSource.Cancel();
-                        ((CosmosTraceDiagnostics)responses[0].Diagnostics).Value.AddDatum("Hedge Context", "Hedged Request");
-                        return responses[0];
-                    }
-                    else
-                    {
-                        cancellationTokenSource.Cancel();
-                        (_, ResponseMessage primaryResponse) = await primaryRequest;
-                        ((CosmosTraceDiagnostics)primaryResponse.Diagnostics).Value.AddDatum("Hedge Context", "Original Request");
-                        return primaryResponse;
-                    }
+                    i++;
                 }
-                
-                (bool nonTransient, ResponseMessage response) = await primaryRequest;
-                if (nonTransient)
+
+                //Wait for a good response from the hedged requests/primary request
+                while (requestTasks.Count > 1)
                 {
-                    cancellationTokenSource.Cancel();
-                    return response;
+                    if (allRequests.IsCompleted)
+                    {
+                        Task<(bool, ResponseMessage)> completedTask = await allRequests;
+                        (bool isNonTransient, responseMessage) = await completedTask;
+
+                        if (isNonTransient)
+                        {
+                            cancellationTokenSource.Cancel();
+                            ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value.AddDatum(
+                                "Hedge Context",
+                                object.ReferenceEquals(primaryRequest, completedTask) ? "Original Request" : "Hedged Request");
+                            return responseMessage;
+                        }
+
+                        requestTasks.Remove(completedTask);
+                        allRequests = Task.WhenAny(requestTasks);
+                    }
                 }
 
-                //If the response from the primary request is transient, we can should try to hedge the request to a different region
-                List<ResponseMessage> hedgeResponses = await this.SendWithHedgeAsync(
-                    client,
-                    availableRegions,
-                    1,
-                    request,
-                    sender,
-                    cancellationToken,
-                    cancellationTokenSource);
-                
+                //If all responses are transient, wait for the last one to finish and return no matter what
+                (bool _, ResponseMessage response) = await requestTasks[0];
                 cancellationTokenSource.Cancel();
-                if (hedgeResponses.Any() && !hedgeResponses[0].IsNull())
+                ((CosmosTraceDiagnostics)response.Diagnostics).Value.AddDatum(
+                    "Hedge Context",
+                    object.ReferenceEquals(primaryRequest, requestTasks[0]) ? "Hedged Request" : "Original Request");
+                return response;
+            }
+        }
+
+        private async Task<(bool, ResponseMessage)> CloneAndSendAsync(
+            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender,
+            RequestMessage request,
+            int requestNumber,
+            IReadOnlyCollection<string> regions,
+            CancellationToken cancellationToken,
+            CancellationTokenSource cancellationTokenSource)
+        {
+            RequestMessage clonedRequest;
+            using (clonedRequest = request.Clone(request.Trace.Parent))
+            {
+                //Set RequestOptions to exclude the region that was already tried
+                if (clonedRequest.RequestOptions == null)
                 {
-                    ((CosmosTraceDiagnostics)hedgeResponses[0].Diagnostics).Value.AddDatum("Hedge Context", "Hedged Request");
-                    return hedgeResponses[0];
+                    clonedRequest.RequestOptions = new RequestOptions()
+                    {
+                        ExcludeRegions = regions
+                        .Where(s => s != regions.ElementAt(requestNumber)).ToList()
+                    };
                 }
                 else
                 {
-                    ((CosmosTraceDiagnostics)response.Diagnostics).Value.AddDatum("Hedge Context", "Original Request");
-                    return response;
+                    if (clonedRequest.RequestOptions.ExcludeRegions == null)
+                    {
+                        clonedRequest.RequestOptions.ExcludeRegions = regions
+                            .Where(s => s != regions.ElementAt(requestNumber)).ToList();
+                    }
+                    else
+                    {
+                        clonedRequest.RequestOptions.ExcludeRegions
+                            .AddRange(regions.Where(s => s != regions.ElementAt(requestNumber)));
+                    }
                 }
+
+                return await this.RequestSenderAndResultCheckAsync(
+                    sender,
+                    clonedRequest,
+                    cancellationToken,
+                    cancellationTokenSource);
+
             }
         }
+
+        ///// <summary>
+        ///// Execute the parallel hedging availability strategy
+        ///// </summary>
+        ///// <param name="sender"></param>
+        ///// <param name="client"></param>
+        ///// <param name="request"></param>
+        ///// <param name="cancellationToken"></param>
+        ///// <returns>The response after executing cross region hedging</returns>
+        //public override async Task<ResponseMessage> ExecuteAvailablityStrategyAsync(
+        //    Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender,
+        //    CosmosClient client,
+        //    RequestMessage request,
+        //    CancellationToken cancellationToken)
+        //{
+        //    if (!this.ShouldHedge(request))
+        //    {
+        //        return await sender(request, cancellationToken);
+        //    }
+            
+        //    using (CancellationTokenSource cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
+        //    {
+        //        IReadOnlyCollection<string> availableRegions = client.DocumentClient.GlobalEndpointManager.GetAvailableReadEndpointsByLocation().Keys;
+
+        //        List<CosmosDiagnostics> allDiagnostics = new List<CosmosDiagnostics>();
+
+        //        Task<(bool, ResponseMessage)> primaryRequest = this.RequestSenderAndResultCheckAsync(
+        //            sender, 
+        //            request, 
+        //            cancellationToken, 
+        //            cancellationTokenSource);
+        //        Task hedgeTimer = Task.Delay(this.Threshold, cancellationToken);
+
+        //        Task canStartHedge = await Task.WhenAny(primaryRequest, hedgeTimer);
+
+        //        if (object.ReferenceEquals(canStartHedge, hedgeTimer))
+        //        {
+        //            Task<List<ResponseMessage>> hedgedRequests = this.SendWithHedgeAsync(
+        //            client,
+        //            availableRegions,
+        //            1,
+        //            request,
+        //            sender,
+        //            cancellationToken,
+        //            cancellationTokenSource);
+
+        //            Task result = await Task.WhenAny(primaryRequest, hedgedRequests);
+        //            //Primary request finishes first
+        //            if (result == primaryRequest)
+        //            {
+        //                (bool isNonTransient, ResponseMessage primaryResponse) = await primaryRequest;
+        //                //Primary request finishes first and is not transient
+        //                if (isNonTransient)
+        //                {
+        //                    cancellationTokenSource.Cancel();
+        //                    ((CosmosTraceDiagnostics)primaryResponse.Diagnostics).Value.AddDatum("Hedge Context", "Original Request");
+        //                    return primaryResponse;
+        //                }
+        //            }
+
+        //            //Hedge request finishes first or primary request is transient
+        //            List<ResponseMessage> responses = await hedgedRequests;
+                    
+        //            //Sucessfull response from hedge request
+        //            if (responses.Any() && responses[0] != null)
+        //            {
+        //                cancellationTokenSource.Cancel();
+        //                ((CosmosTraceDiagnostics)responses[0].Diagnostics).Value.AddDatum("Hedge Context", "Hedged Request");
+        //                return responses[0];
+        //            }
+        //            else
+        //            {
+        //                //No successful response from hedge request, return the response from the primary request
+        //                cancellationTokenSource.Cancel();
+        //                (_, ResponseMessage primaryResponse) = await primaryRequest;
+        //                ((CosmosTraceDiagnostics)primaryResponse.Diagnostics).Value.AddDatum("Hedge Context", "Original Request");
+        //                return primaryResponse;
+        //            }
+        //        }
+                
+        //        (bool nonTransient, ResponseMessage response) = await primaryRequest;
+
+        //        //Primary request fininshes before hedging threshold, but is transient
+        //        if (nonTransient)
+        //        {
+        //            cancellationTokenSource.Cancel();
+        //            return response;
+        //        }
+
+        //        //If the response from the primary request is transient, we can should try to hedge the request to a different region
+        //        List<ResponseMessage> hedgeResponses = await this.SendWithHedgeAsync(
+        //            client,
+        //            availableRegions,
+        //            1,
+        //            request,
+        //            sender,
+        //            cancellationToken,
+        //            cancellationTokenSource);
+                
+        //        cancellationTokenSource.Cancel();
+
+        //        //If no successful response from hedge request, return the response from the primary request
+        //        if (hedgeResponses.Any() && !hedgeResponses[0].IsNull())
+        //        {
+        //            ((CosmosTraceDiagnostics)hedgeResponses[0].Diagnostics).Value.AddDatum("Hedge Context", "Hedged Request");
+        //            return hedgeResponses[0];
+        //        }
+        //        else
+        //        {
+        //            ((CosmosTraceDiagnostics)response.Diagnostics).Value.AddDatum("Hedge Context", "Original Request");
+        //            return response;
+        //        }
+        //    }
+        //}
 
         private async Task<List<ResponseMessage>> SendWithHedgeAsync(
             CosmosClient client,
@@ -211,6 +380,7 @@ namespace Microsoft.Azure.Cosmos
             RequestMessage clonedRequest;
             using (clonedRequest = originalMessage.Clone(originalMessage.Trace.Parent))
             {
+                //Set RequestOptions to exclude the region that was already tried
                 if (clonedRequest.RequestOptions == null)
                 {
                     clonedRequest.RequestOptions = new RequestOptions()
@@ -233,8 +403,6 @@ namespace Microsoft.Azure.Cosmos
                     }
                 }
 
-                clonedRequest.Headers.Set("HedgeRequestContext", requestNumber.ToString());
-
                 if (cancellationTokenSource.IsCancellationRequested)
                 {
                     return parallelResponses;
@@ -243,12 +411,15 @@ namespace Microsoft.Azure.Cosmos
                 {
                     if (requestNumber == hedgeRegions.Count() - 1)
                     {
-                        (bool transient, ResponseMessage response) = await this.RequestSenderAndResultCheckAsync(
+                        //If this is the last region to hedge to, do not hedge further
+                        (bool isNonTransient, ResponseMessage response) = await this.RequestSenderAndResultCheckAsync(
                             sender,
                             clonedRequest,
                             cancellationToken,
                             cancellationTokenSource);
-                        if (transient && response != null)
+                        //If the response is non-transient, add response to the responses list
+                        //If the response is transient, the empty responses list should be returned
+                        if (isNonTransient && response != null)
                         {
                             parallelResponses.Add(response);
                         }
@@ -274,6 +445,7 @@ namespace Microsoft.Azure.Cosmos
                         if (object.ReferenceEquals(result, currentHedge))
                         {
                             (bool, ResponseMessage) response = await currentHedge;
+                            //If the response is non-transient, return the response
                             if (response.Item1)
                             {
                                 parallelResponses.Insert(0, response.Item2);
@@ -281,6 +453,8 @@ namespace Microsoft.Azure.Cosmos
                             }
                             else
                             {
+                                //If the response is transient,
+                                //return results from the next hedge
                                 List<ResponseMessage> nextResponses = await nextHedge;
                                 if (nextResponses.Any())
                                 {
@@ -290,20 +464,17 @@ namespace Microsoft.Azure.Cosmos
                                     return parallelResponses;
                                 }
 
-                                parallelResponses.Add(response.Item2);
-                                return parallelResponses;
+                                return await nextHedge;
                             }
                         }
                         else
                         {
                             List<ResponseMessage> nextResponses = await nextHedge;
 
+                            //If the next responses are not empty, return the next responses
                             if (nextResponses.Any())
                             {
-                                nextResponses.AddRange(parallelResponses);
-                                parallelResponses = nextResponses;
-
-                                return parallelResponses;
+                                return nextResponses;
                             }
 
                             return parallelResponses;
