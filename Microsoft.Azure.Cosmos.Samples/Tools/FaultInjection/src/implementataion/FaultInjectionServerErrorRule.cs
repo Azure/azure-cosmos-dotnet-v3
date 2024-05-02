@@ -19,7 +19,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private readonly FaultInjectionConnectionType connectionType; 
         private readonly FaultInjectionConditionInternal condition;
         private readonly FaultInjectionServerErrorResultInternal result;
-        private readonly Random random = new Random();
 
         private long hitCount;
         private long evaluationCount;
@@ -73,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             {
                 return false;
             }
-            else if (this.random.NextDouble() < this.result.GetApplicationPercentage())
+            else if (Random.Shared.NextDouble() < this.result.GetApplicationPercentage())
             {
                 return false;
             }
