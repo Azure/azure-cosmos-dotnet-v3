@@ -21,28 +21,59 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             OperationType operationType,
             OpenTelemetryAttributes response)
         {
-            return response.Diagnostics.GetClientElapsedTime() > DiagnosticsFilterHelper.DefaultThreshold(operationType, config);
+            return response.Diagnostics.GetClientElapsedTime() > DiagnosticsFilterHelper.DefaultLatencyThreshold(operationType, config);
+        }
+
+        /// <summary>
+        /// Allow only Payload size(request/response) is more the configured threshold
+        /// </summary>
+        /// <returns>true or false</returns>
+        public static bool IsPayloadSizeThresholdCrossed(
+            CosmosThresholdOptions config,
+            OpenTelemetryAttributes response)
+        {
+            int requestContentLength = 0;
+            int responseContentLength = 0;
+            try
+            {
+                requestContentLength = Convert.ToInt32(response.RequestContentLength);
+            }
+            catch (Exception)
+            {
+                // Ignore, if this conversion fails for any reason.
+            }
+
+            try
+            {
+                responseContentLength = Convert.ToInt32(response.ResponseContentLength);
+            }
+            catch (Exception)
+            {
+                // Ignore, if this conversion fails for any reason.
+            }
+
+            return config.PayloadSizeThresholdInBytes <= Math.Max(requestContentLength, responseContentLength);
         }
 
         /// <summary>
         /// Check if response HTTP status code is returning successful
         /// </summary>
         /// <returns>true or false</returns>
-        public static bool IsSuccessfulResponse(HttpStatusCode statusCode, int substatusCode)
+        public static bool IsSuccessfulResponse(HttpStatusCode statusCode, int subStatusCode)
         {
             return statusCode.IsSuccess()
-            || (statusCode == System.Net.HttpStatusCode.NotFound && substatusCode == 0)
-            || (statusCode == System.Net.HttpStatusCode.NotModified && substatusCode == 0)
-            || (statusCode == System.Net.HttpStatusCode.Conflict && substatusCode == 0)
-            || (statusCode == System.Net.HttpStatusCode.PreconditionFailed && substatusCode == 0);
+            || (statusCode == System.Net.HttpStatusCode.NotFound && subStatusCode == 0)
+            || (statusCode == System.Net.HttpStatusCode.NotModified && subStatusCode == 0)
+            || (statusCode == System.Net.HttpStatusCode.Conflict && subStatusCode == 0)
+            || (statusCode == System.Net.HttpStatusCode.PreconditionFailed && subStatusCode == 0);
         }
 
         /// <summary>
-        /// Get default threshold value based on operation type
+        /// Get default Latency threshold value based on operation type
         /// </summary>
         /// <param name="operationType"></param>
         /// <param name="config"></param>
-        internal static TimeSpan DefaultThreshold(OperationType operationType, CosmosThresholdOptions config)
+        internal static TimeSpan DefaultLatencyThreshold(OperationType operationType, CosmosThresholdOptions config)
         {
             config ??= DiagnosticsFilterHelper.defaultThresholdOptions;
             return DiagnosticsFilterHelper.IsPointOperation(operationType) ?
