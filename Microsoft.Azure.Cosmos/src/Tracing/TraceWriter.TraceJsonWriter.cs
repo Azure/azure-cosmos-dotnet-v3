@@ -319,9 +319,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
             {
                 this.jsonWriter.WriteObjectStart();
 
-                this.jsonWriter.WriteFieldName("StartTimeUTC");
-                this.WriteDateTimeStringValue(storeResponseStatistics.RequestStartTime);
-
                 this.jsonWriter.WriteFieldName("ResponseTimeUTC");
                 this.WriteDateTimeStringValue(storeResponseStatistics.RequestResponseTime);
 
@@ -592,15 +589,15 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 }
             }
 
-            private void WriteDateTimeStringValue(DateTime? value)
+            private void WriteDateTimeStringValue(DateTime value)
             {
-                if (value == null || !value.HasValue)
+                if (value == null)
                 {
                     this.jsonWriter.WriteNullValue();
                 }
                 else
                 {
-                    this.jsonWriter.WriteStringValue(value.Value.ToString("o", CultureInfo.InvariantCulture));
+                    this.jsonWriter.WriteStringValue(value.ToString("o", CultureInfo.InvariantCulture));
                 }
             }
 
