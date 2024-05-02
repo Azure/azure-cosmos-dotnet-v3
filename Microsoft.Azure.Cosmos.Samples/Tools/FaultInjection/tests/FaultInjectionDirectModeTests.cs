@@ -1205,7 +1205,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
         [TestMethod]
         [Owner("nalutripician")]
-        [Description("Tests hit count limit")]
+        [Description("Tests apply percent")]
         public async Task Timeout_FaultInjectionServerErrorRule_ThresholdTest()
         {
             string thresholdRuleId = "hitCountRule-" + Guid.NewGuid().ToString();
