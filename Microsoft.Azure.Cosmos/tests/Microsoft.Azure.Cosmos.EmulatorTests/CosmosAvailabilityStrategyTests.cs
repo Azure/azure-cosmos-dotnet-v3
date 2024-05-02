@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             .Build();
         private static readonly FaultInjectionCondition changeFeedCondtionStep = new FaultInjectionConditionBuilder()
             .WithRegion("North Central US")
-            .WithOperationType(FaultInjectionOperationType.All)
+            .WithOperationType(FaultInjectionOperationType.ReadFeed)
             .Build();
 
         private static readonly IFaultInjectionResult goneResult = FaultInjectionResultBuilder
