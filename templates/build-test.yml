@@ -12,6 +12,8 @@ parameters:
   EmulatorPipeline2CategoryListName: ' Others '
   EmulatorPipeline3CategoryListName: ' MultiRegion '
   MultiRegionConnectionString : ''
+  IncludeEncryption: true
+  IncludePerformance: true
 
 jobs:
 - job:
@@ -53,6 +55,7 @@ jobs:
       
 - job:
   displayName: PerformanceTests ${{ parameters.BuildConfiguration }}
+  condition: and(succeeded(), eq(${{ parameters.IncludePerformance }}, true))
   pool:
     vmImage: ${{ parameters.VmImage }}
 
@@ -150,7 +153,7 @@ jobs:
 - job:
   displayName: Encryption EmulatorTests ${{ parameters.BuildConfiguration }}
   timeoutInMinutes: 90
-  condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
+  condition: and(eq(${{ parameters.IncludeEncryption }}, true), and(succeeded(), eq('${{ parameters.OS }}', 'Windows')))
   pool:
     vmImage: ${{ parameters.VmImage }}
 
@@ -181,7 +184,7 @@ jobs:
 - job:
   displayName: Encryption.Custom EmulatorTests ${{ parameters.BuildConfiguration }}
   timeoutInMinutes: 90
-  condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
+  condition: and(eq(${{ parameters.IncludeEncryption }}, true), and(succeeded(), eq('${{ parameters.OS }}', 'Windows')))
   pool:
     vmImage: ${{ parameters.VmImage }}
 

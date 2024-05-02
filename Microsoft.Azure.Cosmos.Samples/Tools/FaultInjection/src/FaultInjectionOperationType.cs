@@ -49,6 +49,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         Batch,
 
         /// <summary>
+        /// Read Feed operations for ChangeFeed.
+        /// </summary>
+        ReadFeed,
+
+        /// <summary>
         /// All operation types. Default value.
         /// </summary>
         All,

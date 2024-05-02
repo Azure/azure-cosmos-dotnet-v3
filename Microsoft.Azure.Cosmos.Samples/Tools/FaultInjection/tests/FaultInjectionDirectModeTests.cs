@@ -9,8 +9,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
     using System.Linq;
     using System.Net;
     using System.Net.Sockets;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.FaultInjection.Tests.Utils;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
@@ -1275,6 +1277,93 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             }
             Assert.IsTrue(disposedChannel);
         }
+
+        [TestMethod]
+        [Timeout(Timeout)]
+        [Owner("nalutripician")]
+        [Description("Tests ReadFeed FaultInjection")]
+        public async Task FaultInjectionServerErrorRule_ReadFeedTest()
+        {
+            string readFeedId = "readFeadRule-" + Guid.NewGuid().ToString();
+            FaultInjectionRule readFeedRule = new FaultInjectionRuleBuilder(
+                id: readFeedId,
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithOperationType(FaultInjectionOperationType.ReadFeed)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(5))
+                .Build();
+
+            readFeedRule.Disable();
+
+            List<FaultInjectionRule> ruleList = new List<FaultInjectionRule> { readFeedRule };
+            FaultInjector faultInjector = new FaultInjector(ruleList);
+
+            await this.Initialize(faultInjector, false);
+
+            string changeFeedContainerName = "changeFeedContainer-" + Guid.NewGuid().ToString();
+            ContainerProperties containerProperties = new ContainerProperties
+            {
+                Id = changeFeedContainerName,
+                PartitionKeyPath = "/partitionKey"
+            };
+
+            if (this.database != null && this.container != null)
+            {
+                JObject createdItem = JObject.FromObject(new { id = Guid.NewGuid().ToString(), Pk = Guid.NewGuid().ToString() });
+                ItemResponse<JObject>? itemResponse = await this.container.CreateItemAsync<JObject>(createdItem);
+
+                readFeedRule.Enable();
+
+                Container? leaseContainer = await this.database.CreateContainerIfNotExistsAsync(containerProperties, 400);
+
+                ManualResetEvent changeFeedRan = new ManualResetEvent(false);
+
+                ChangeFeedProcessor changeFeedProcessor = this.container.GetChangeFeedProcessorBuilder<JObject>(
+                    "FaultInjectionTest",
+                    (ChangeFeedProcessorContext context, IReadOnlyCollection<JObject> docs, CancellationToken token) =>
+                    {
+                        Assert.Fail("Change Feed Should Fail");
+                        return Task.CompletedTask;
+                    })
+                    .WithInstanceName("test")
+                    .WithLeaseContainer(leaseContainer)
+                    .WithStartFromBeginning()
+                    .WithErrorNotification((string lease, Exception exception) =>
+                    {
+                        if (exception is CosmosException cosmosException)
+                        {
+                            Assert.AreEqual(HttpStatusCode.ServiceUnavailable, cosmosException.StatusCode);
+                        }
+                        else
+                        {
+                            Assert.Fail("Unexpected Exception");
+                        }
+
+                        changeFeedRan.Set();
+                        return Task.CompletedTask;
+                    })
+                    .Build();
+
+                await changeFeedProcessor.StartAsync();
+                await Task.Delay(1000);
+
+                try
+                {
+                    bool wasProcessed = changeFeedRan.WaitOne(60000);
+                    Assert.IsTrue(wasProcessed, "Timed out waiting for handler to execute");
+                }
+                finally
+                {
+                    await changeFeedProcessor.StopAsync();
+                    readFeedRule.Disable();
+                }
+            }
+        }
+           
 
         private async Task<CosmosDiagnostics> PerformDocumentOperation(Container testContainer, OperationType operationType, JObject item)
         {
