@@ -228,7 +228,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                     },
                 string.Empty);
 
-            this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null);
+            this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null, null);
             this.partitionKeyRangeCache.Setup(
                         m => m.TryLookupAsync(
                             It.IsAny<string>(),

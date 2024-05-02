@@ -8,10 +8,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Globalization;
     using System.Linq;
-    using System.Net;
-    using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
 
@@ -227,6 +224,31 @@ namespace Microsoft.Azure.Cosmos.Routing
                 && this.IsMetaData(request) 
                 && this.CanUseMultipleWriteLocations();
 
+        }
+
+        /// <summary>
+        /// Gets the default endpoint of the account
+        /// </summary>
+        /// <returns>the default endpoint.</returns>
+        public Uri GetDefaultEndpoint()
+        {
+            return this.defaultEndpoint;
+        }
+
+        /// <summary>
+        /// Gets the mapping of available write region names to the respective endpoints
+        /// </summary>
+        public ReadOnlyDictionary<string, Uri> GetAvailableWriteEndpointsByLocation()
+        {
+            return this.locationInfo.AvailableWriteEndpointByLocation;
+        }
+
+        /// <summary>
+        /// Gets the mapping of available read region names to the respective endpoints
+        /// </summary>
+        public ReadOnlyDictionary<string, Uri> GetAvailableReadEndpointsByLocation()
+        {
+            return this.locationInfo.AvailableReadEndpointByLocation;
         }
 
         public Uri GetHubUri()

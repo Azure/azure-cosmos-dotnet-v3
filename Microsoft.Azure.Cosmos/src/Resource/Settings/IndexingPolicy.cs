@@ -112,10 +112,43 @@ namespace Microsoft.Azure.Cosmos
         public Collection<Collection<CompositePath>> CompositeIndexes { get; internal set; } = new Collection<Collection<CompositePath>>();
 
         /// <summary>
+        /// Gets the vector indexes for additional indexes
+        /// </summary>
+        /// <example>
+        /// <![CDATA[
+        /// "vectorIndexes": [
+        ///  {
+        ///    "path": "/vector1",
+        ///    "type": "diskANN"
+        ///  },
+        ///  {
+        ///    "path": "/vector2",
+        ///    "type": "flat "
+        ///  },
+        ///  {
+        ///    "path": "/vector3",
+        ///    "type": "quantizedFlat"
+        ///  }
+        /// ]
+        /// ]]>
+        /// </example>
+        internal Collection<VectorIndexPath> VectorIndexes
+        {
+            get => this.VectorIndexesInternal ??= new Collection<VectorIndexPath>();
+            set => this.VectorIndexesInternal = value;
+        }
+
+        /// <summary>
         /// Collection of spatial index definitions to be used
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.SpatialIndexes)]
         public Collection<SpatialPath> SpatialIndexes { get; internal set; } = new Collection<SpatialPath>();
+
+        /// <summary>
+        /// Gets or Sets an internal placeholder collection to hold the vector indexes.
+        /// </summary>
+        [JsonProperty(PropertyName = "vectorIndexes", NullValueHandling = NullValueHandling.Ignore)]
+        internal Collection<VectorIndexPath> VectorIndexesInternal { get; set; }
 
         /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 

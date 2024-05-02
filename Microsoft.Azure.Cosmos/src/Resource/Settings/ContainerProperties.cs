@@ -78,6 +78,9 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = "clientEncryptionPolicy", NullValueHandling = NullValueHandling.Ignore)]
         private ClientEncryptionPolicy clientEncryptionPolicyInternal;
 
+        [JsonProperty(PropertyName = "vectorEmbeddingPolicy", NullValueHandling = NullValueHandling.Ignore)]
+        private VectorEmbeddingPolicy vectorEmbeddingPolicyInternal;
+
         [JsonProperty(PropertyName = "computedProperties", NullValueHandling = NullValueHandling.Ignore)]
         private Collection<ComputedProperty> computedProperties;
 
@@ -287,6 +290,27 @@ namespace Microsoft.Azure.Cosmos
 
                 this.indexingPolicyInternal = value;
             }
+        }
+
+        /// <summary>
+        /// Gets or sets the vector embedding policy containing paths for embeddings along with path-specific settings for the item
+        /// used in performing vector search on the items in a collection in the Azure CosmosDB database service.
+        /// </summary>
+        /// <value>
+        /// It is an optional property.
+        /// By default, VectorEmbeddingPolicy is set to null meaning the feature is turned off for the container.
+        /// </value>
+        /// <remarks>
+        /// <para>
+        /// The <see cref="Cosmos.VectorEmbeddingPolicy"/> will be applied to all the items in the container as the default policy.
+        /// </para>
+        /// </remarks>
+        [JsonIgnore]
+        internal VectorEmbeddingPolicy VectorEmbeddingPolicy
+        {
+            get => this.vectorEmbeddingPolicyInternal;
+
+            set => this.vectorEmbeddingPolicyInternal = value;
         }
 
         /// <summary>

@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <returns>A string describing the expression translation.</returns>
         internal static string TranslateExpression(
             Expression inputExpression,
-            CosmosLinqSerializerOptions linqSerializerOptions = null)
+            CosmosLinqSerializerOptionsInternal linqSerializerOptions = null)
         {
             TranslationContext context = new TranslationContext(linqSerializerOptions);
 
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         internal static string TranslateExpressionOld(
             Expression inputExpression,
-            CosmosLinqSerializerOptions linqSerializerOptions = null)
+            CosmosLinqSerializerOptionsInternal linqSerializerOptions = null)
         {
             TranslationContext context = new TranslationContext(linqSerializerOptions);
 
@@ -41,14 +41,13 @@ namespace Microsoft.Azure.Cosmos.Linq
             return scalarExpression.ToString();
         }
 
-        internal static SqlQuerySpec TranslateQuery(
+        internal static LinqQueryOperation TranslateQuery(
             Expression inputExpression,
-            CosmosLinqSerializerOptions linqSerializerOptions,
+            CosmosLinqSerializerOptionsInternal linqSerializerOptions,
             IDictionary<object, string> parameters)
         {
             inputExpression = ConstantEvaluator.PartialEval(inputExpression);
-            SqlQuery query = ExpressionToSql.TranslateQuery(inputExpression, parameters, linqSerializerOptions);
-            string queryText = null;
+            SqlQuery query = ExpressionToSql.TranslateQuery(inputExpression, parameters, linqSerializerOptions, out ScalarOperationKind clientOperation);
             SqlParameterCollection sqlParameters = new SqlParameterCollection();
             if (parameters != null && parameters.Count > 0)
             {
@@ -57,10 +56,11 @@ namespace Microsoft.Azure.Cosmos.Linq
                     sqlParameters.Add(new Microsoft.Azure.Cosmos.Query.Core.SqlParameter(keyValuePair.Value, keyValuePair.Key));
                 }
             }
-            queryText = query.ToString();
+
+            string queryText = query.ToString();
 
             SqlQuerySpec sqlQuerySpec = new SqlQuerySpec(queryText, sqlParameters);
-            return sqlQuerySpec;
+            return new LinqQueryOperation(sqlQuerySpec, clientOperation);
         }
     }
 }

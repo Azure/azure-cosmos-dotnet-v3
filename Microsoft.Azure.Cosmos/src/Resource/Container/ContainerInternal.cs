@@ -140,14 +140,17 @@ namespace Microsoft.Azure.Cosmos
 
 #if !PREVIEW
         public abstract Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
-               Cosmos.PartitionKey partitionKey,
-               RequestOptions requestOptions = null,
-               CancellationToken cancellationToken = default);
+            Cosmos.PartitionKey partitionKey,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default);
 
         public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
             CancellationToken cancellationToken = default);
 
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
+            string processorName,
+            ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate);
 #endif
 
         public abstract class TryExecuteQueryResult

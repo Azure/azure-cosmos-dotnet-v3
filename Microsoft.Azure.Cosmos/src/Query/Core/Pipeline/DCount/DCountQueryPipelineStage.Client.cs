@@ -25,9 +25,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
             private ClientDCountQueryPipelineStage(
                 IQueryPipelineStage source,
                 long count,
-                DCountInfo info,
-                CancellationToken cancellationToken)
-                : base(source, count, info, cancellationToken)
+                DCountInfo info)
+                : base(source, count, info)
             {
                 // all the work is done in the base constructor.
             }
@@ -35,7 +34,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
             public static TryCatch<IQueryPipelineStage> MonadicCreate(
                 DCountInfo info,
                 CosmosElement continuationToken,
-                CancellationToken cancellationToken,
                 MonadicCreatePipelineStage monadicCreatePipelineStage)
             {
                 if (monadicCreatePipelineStage == null)
@@ -43,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
                     throw new ArgumentNullException(nameof(monadicCreatePipelineStage));
                 }
 
-                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(continuationToken, cancellationToken);
+                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(continuationToken);
                 if (tryCreateSource.Failed)
                 {
                     return tryCreateSource;
@@ -52,15 +50,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
                 ClientDCountQueryPipelineStage stage = new ClientDCountQueryPipelineStage(
                     source: tryCreateSource.Result,
                     count: 0,
-                    info: info,
-                    cancellationToken: cancellationToken);
+                    info: info);
 
                 return TryCatch<IQueryPipelineStage>.FromResult(stage);
             }
 
-            public override async ValueTask<bool> MoveNextAsync(ITrace trace)
+            public override async ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
             {
-                this.cancellationToken.ThrowIfCancellationRequested();
+                cancellationToken.ThrowIfCancellationRequested();
 
                 if (trace == null)
                 {
@@ -73,9 +70,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
                 }
 
                 double requestCharge = 0;
-                long responseLengthBytes = 0;
                 IReadOnlyDictionary<string, string> additionalHeaders = null;
-                while (await this.inputStage.MoveNextAsync(trace))
+                while (await this.inputStage.MoveNextAsync(trace, cancellationToken))
                 {
                     TryCatch<QueryPage> tryGetPageFromSource = this.inputStage.Current;
                     if (tryGetPageFromSource.Failed)
@@ -87,10 +83,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
                     QueryPage sourcePage = tryGetPageFromSource.Result;
 
                     requestCharge += sourcePage.RequestCharge;
-                    responseLengthBytes += sourcePage.ResponseLengthInBytes;
                     additionalHeaders = sourcePage.AdditionalHeaders;
 
-                    this.cancellationToken.ThrowIfCancellationRequested();
+                    cancellationToken.ThrowIfCancellationRequested();
                     this.count += sourcePage.Documents.Count;
                 }
 
@@ -105,11 +100,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
                     documents: finalResult,
                     requestCharge: requestCharge,
                     activityId: default,
-                    responseLengthInBytes: responseLengthBytes,
                     cosmosQueryExecutionInfo: default,
+                    distributionPlanSpec: default,
                     disallowContinuationTokenMessage: default,
                     additionalHeaders: additionalHeaders,
-                    state: default);
+                    state: default,
+                    streaming: default);
 
                 this.Current = TryCatch<QueryPage>.FromResult(queryPage);
                 this.returnedFinalPage = true;

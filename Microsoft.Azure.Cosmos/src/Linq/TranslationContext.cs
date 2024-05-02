@@ -6,7 +6,9 @@ namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq.Expressions;
+    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using static Microsoft.Azure.Cosmos.Linq.ExpressionToSql;
     using static Microsoft.Azure.Cosmos.Linq.FromParameterBindings;
@@ -24,12 +26,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <summary>
         /// The LINQ serializer 
         /// </summary>
-        public readonly ICosmosLinqSerializer CosmosLinqSerializer;
-
-        /// <summary>
-        /// User-provided LINQ serializer options
-        /// </summary>
-        public CosmosLinqSerializerOptions LinqSerializerOptions;
+        public readonly ICosmosLinqSerializerInternal CosmosLinqSerializer;
 
         /// <summary>
         /// Set of parameters in scope at any point; used to generate fresh parameter names if necessary.
@@ -45,6 +42,16 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// Dictionary for parameter name and value
         /// </summary>
         public IDictionary<object, string> Parameters;
+
+        /// <summary>
+        /// Dictionary for group by key substitution.
+        /// </summary>
+        public ParameterSubstitution GroupByKeySubstitution;
+
+        /// <summary>
+        /// Boolean to indicate a GroupBy expression is the last expression to finished processing.
+        /// </summary>
+        public bool LastExpressionIsGroupBy;
 
         /// <summary>
         /// If the FROM clause uses a parameter name, it will be substituted for the parameter used in 
@@ -72,7 +79,13 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </summary>
         private Stack<SubqueryBinding> subqueryBindingStack;
 
-        public TranslationContext(CosmosLinqSerializerOptions linqSerializerOptions, IDictionary<object, string> parameters = null)
+        private static readonly ICosmosLinqSerializerInternal DefaultLinqSerializer = new DefaultCosmosLinqSerializer(new CosmosLinqSerializerOptions().PropertyNamingPolicy);
+
+        private static readonly MemberNames DefaultMemberNames = new MemberNames(new CosmosLinqSerializerOptions());
+
+        private ScalarOperationKind? clientOperation;
+
+        public TranslationContext(CosmosLinqSerializerOptionsInternal linqSerializerOptionsInternal, IDictionary<object, string> parameters = null)
         {
             this.InScope = new HashSet<ParameterExpression>();
             this.substitutions = new ParameterSubstitution();
@@ -81,25 +94,64 @@ namespace Microsoft.Azure.Cosmos.Linq
             this.collectionStack = new List<Collection>();
             this.CurrentQuery = new QueryUnderConstruction(this.GetGenFreshParameterFunc());
             this.subqueryBindingStack = new Stack<SubqueryBinding>();
-            this.LinqSerializerOptions = linqSerializerOptions;
             this.Parameters = parameters;
-            this.MemberNames = new MemberNames(linqSerializerOptions);
-            this.CosmosLinqSerializer = new DefaultCosmosLinqSerializer();
+            this.clientOperation = null;
+            this.LastExpressionIsGroupBy = false;
+
+            if (linqSerializerOptionsInternal?.CustomCosmosLinqSerializer != null)
+            {
+                this.CosmosLinqSerializer = new CustomCosmosLinqSerializer(linqSerializerOptionsInternal.CustomCosmosLinqSerializer);
+                this.MemberNames = new MemberNames(new CosmosLinqSerializerOptions());
+            }
+            else if (linqSerializerOptionsInternal?.CosmosLinqSerializerOptions != null)
+            {
+                CosmosLinqSerializerOptions linqSerializerOptions = linqSerializerOptionsInternal.CosmosLinqSerializerOptions;
+
+                this.CosmosLinqSerializer = new DefaultCosmosLinqSerializer(linqSerializerOptions.PropertyNamingPolicy);
+                this.MemberNames = new MemberNames(linqSerializerOptions);
+            }
+            else
+            {
+                this.CosmosLinqSerializer = TranslationContext.DefaultLinqSerializer;
+                this.MemberNames = TranslationContext.DefaultMemberNames;
+            }
+
+            this.GroupByKeySubstitution = new ParameterSubstitution();
+        }
+
+        public ScalarOperationKind ClientOperation => this.clientOperation ?? ScalarOperationKind.None;
+
+        public void SetClientOperation(ScalarOperationKind clientOperation)
+        {
+            // CosmosLinqQuery which is the only indirect sole consumer of this class can only see at most one scalar operation at the top level, since the return type of scalar operation is no longer IQueryable<T>.
+            // Furthermore, any nested scalar operations (on nested properties of type IEnumerable) are not handled in the same way as the top level operations.
+            // As a result clientOperation can only be set at most once.
+            Debug.Assert(this.clientOperation == null, "TranslationContext Assert!", "ClientOperation can be set at most once!");
+
+            this.clientOperation = clientOperation;
         }
 
         public Expression LookupSubstitution(ParameterExpression parameter)
         {
+            if (this.CurrentQuery.GroupByParameter != null)
+            {
+                Expression groupBySubstitutionExpression = this.GroupByKeySubstitution.Lookup(parameter);
+                if (groupBySubstitutionExpression != null)
+                {
+                    return groupBySubstitutionExpression;
+                }
+            }
             return this.substitutions.Lookup(parameter);
         }
 
-        public ParameterExpression GenFreshParameter(Type parameterType, string baseParameterName)
+        public ParameterExpression GenerateFreshParameter(Type parameterType, string baseParameterName, bool includeSuffix = true)
         {
-            return Utilities.NewParameter(baseParameterName, parameterType, this.InScope);
+            return Utilities.NewParameter(baseParameterName, parameterType, this.InScope, includeSuffix);
         }
 
         public Func<string, ParameterExpression> GetGenFreshParameterFunc()
         {
-            return (paramName) => this.GenFreshParameter(typeof(object), paramName);
+            return (paramName) => this.GenerateFreshParameter(typeof(object), paramName);
         }
 
         /// <summary>
@@ -180,12 +232,12 @@ namespace Microsoft.Azure.Cosmos.Linq
                 throw new ArgumentNullException("collection");
             }
 
-            this.collectionStack.Add(collection);
+            if (this.CurrentQuery.GroupByParameter == null) this.collectionStack.Add(collection);
         }
 
         public void PopCollection()
         {
-            this.collectionStack.RemoveAt(this.collectionStack.Count - 1);
+            if (this.CurrentQuery.GroupByParameter == null) this.collectionStack.RemoveAt(this.collectionStack.Count - 1);
         }
 
         /// <summary>
@@ -195,7 +247,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="name">Suggested name for the input parameter.</param>
         public ParameterExpression SetInputParameter(Type type, string name)
         {
-            return this.CurrentQuery.fromParameters.SetInputParameter(type, name, this.InScope);
+            return this.CurrentQuery.FromParameters.SetInputParameter(type, name, this.InScope);
         }
 
         /// <summary>
@@ -206,7 +258,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         public void SetFromParameter(ParameterExpression parameter, SqlCollection collection)
         {
             Binding binding = new Binding(parameter, collection, isInCollection: true);
-            this.CurrentQuery.fromParameters.Add(binding);
+            this.CurrentQuery.FromParameters.Add(binding);
         }
 
         /// <summary>

@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
     using System.Net;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -270,6 +271,55 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
         }
 
         [TestMethod]
+        public void ValidateSqlQuerySpecSerializerWithResumeFilter()
+        {
+            // Test serializing of different types
+            string queryText = "SELECT * FROM root r";
+            (SqlQueryResumeValue resumeValue, string resumeString)[] testValues = new (SqlQueryResumeValue resumeValue, string resumeString)[] {
+                (SqlQueryResumeValue.FromCosmosElement(CosmosUndefined.Create()), "[]"),
+                (SqlQueryResumeValue.FromCosmosElement(CosmosNull.Create()), "null"),
+                (SqlQueryResumeValue.FromCosmosElement(CosmosBoolean.Create(true)), "true"),
+                (SqlQueryResumeValue.FromCosmosElement(CosmosBoolean.Create(false)), "false"),
+                (SqlQueryResumeValue.FromCosmosElement(CosmosNumber64.Create(10)), "10"),
+                (SqlQueryResumeValue.FromCosmosElement(CosmosString.Create("testval")), "\"testval\""),
+                (SqlQueryResumeValue.FromCosmosElement(CosmosObject.Parse("{\"type\":\"array\",\"low\":10000,\"high\":20000}")), "{\"type\":\"array\",\"low\":10000,\"high\":20000}"),
+                (SqlQueryResumeValue.FromCosmosElement(CosmosObject.Parse("{\"type\":\"object\",\"low\":10000,\"high\":20000}")), "{\"type\":\"object\",\"low\":10000,\"high\":20000}"),
+                (SqlQueryResumeValue.FromOrderByValue(CosmosArray.Parse("[]")), "{\"type\":\"array\",\"low\":-6706074647855398782,\"high\":9031114912533472255}"),
+                (SqlQueryResumeValue.FromOrderByValue(CosmosObject.Parse("{}")), "{\"type\":\"object\",\"low\":1457042291250783704,\"high\":1493060239874959160}")
+            };
+
+            CosmosJsonDotNetSerializer userSerializer = new CosmosJsonDotNetSerializer();
+            CosmosJsonDotNetSerializer propertiesSerializer = new CosmosJsonDotNetSerializer();
+
+            CosmosSerializer sqlQuerySpecSerializer = CosmosSqlQuerySpecJsonConverter.CreateSqlQuerySpecSerializer(
+                userSerializer,
+                propertiesSerializer);
+
+            foreach ((SqlQueryResumeValue resumeValue, string resumeString) in testValues)
+            {
+                foreach(string rid in new string[] { "rid", null})
+                {
+                    SqlQuerySpec querySpec = new SqlQuerySpec(
+                        queryText,
+                        new SqlParameterCollection(),
+                        new SqlQueryResumeFilter(new List<SqlQueryResumeValue>() { resumeValue }, rid, true));
+
+                    Stream stream = sqlQuerySpecSerializer.ToStream(querySpec);
+                    using (StreamReader sr = new StreamReader(stream))
+                    {
+                        string result = sr.ReadToEnd();
+                        Assert.IsNotNull(result);
+
+                        string expectedValue = string.IsNullOrEmpty(rid)
+                            ? $"{{\"query\":\"{queryText}\",\"resumeFilter\":{{\"value\":[{resumeString}],\"exclude\":true}}}}"
+                            : $"{{\"query\":\"{queryText}\",\"resumeFilter\":{{\"value\":[{resumeString}],\"rid\":\"{rid}\",\"exclude\":true}}}}";
+                        Assert.AreEqual(expectedValue, result);
+                    }
+                }
+            }
+        }
+
+        [TestMethod]
         public void ValidateSqlQuerySpecSerializer()
         {
             List<SqlQuerySpec> sqlQuerySpecs = new List<SqlQuerySpec>
@@ -374,7 +424,6 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             ResponseMessage cosmosResponse = QueryResponse.CreateSuccess(
                 cosmosElements,
                 1,
-                Encoding.UTF8.GetByteCount(serializedItem),
                 new CosmosQueryResponseMessageHeaders(
                     continauationToken: null,
                     disallowContinuationTokenMessage: null,

@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -47,7 +48,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
             {
                 this.previousRequiresDistribution = false;
             }
-
         }
 
         public delegate Task<TryCatch<IQueryPipelineStage>> FallbackQueryPipelineStageFactory(CosmosElement continuationToken);
@@ -59,9 +59,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
             return this.inner.Failed ? default : this.inner.Result.DisposeAsync();
         }
 
-        public async ValueTask<bool> MoveNextAsync(ITrace trace)
+        public async ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
         {
-            TryCatch<bool> hasNext = await this.inner.TryAsync(pipelineStage => pipelineStage.MoveNextAsync(trace));
+            TryCatch<bool> hasNext = await this.inner.TryAsync(pipelineStage => pipelineStage.MoveNextAsync(trace, cancellationToken));
             bool success = hasNext.Succeeded && hasNext.Result;
             if (this.executionState == ExecutionState.OptimisticDirectExecution)
             {
@@ -83,14 +83,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
 
                         if (this.previousRequiresDistribution.HasValue && this.previousRequiresDistribution != requiresDistribution)
                         {
-                            // We should never enter this if statement as requiresDistribution flag can never switch mid execution.
+                            // We should never come here as requiresDistribution flag can never switch mid execution.
                             // Hence, this exception should never be thrown.
                             throw new InvalidOperationException($"Unexpected switch in {HttpConstants.HttpHeaders.RequiresDistribution} value. Previous value : {this.previousRequiresDistribution} Current value : {requiresDistribution}.");
                         }
 
                         if (requiresDistribution)
                         {
-                            success = await this.SwitchToFallbackPipelineAsync(continuationToken: null, trace);
+                            // This is where we will unwrap tne continuation token and extract the client distribution plan
+                            // Pipelines to handle client distribution would be generated here
+                            success = await this.SwitchToFallbackPipelineAsync(continuationToken: null, trace, cancellationToken);
                         }
 
                         this.previousRequiresDistribution = requiresDistribution;
@@ -98,16 +100,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                 }
                 else if (isPartitionSplitException)
                 {
-                    success = await this.SwitchToFallbackPipelineAsync(continuationToken: UnwrapContinuationToken(this.continuationToken), trace);
+                    success = await this.SwitchToFallbackPipelineAsync(continuationToken: UnwrapContinuationToken(this.continuationToken), trace, cancellationToken);
                 }
             }
 
             return success;
-        }
-
-        public void SetCancellationToken(CancellationToken cancellationToken)
-        {
-            this.inner.Try(pipelineStage => pipelineStage.SetCancellationToken(cancellationToken));
         }
 
         private static CosmosElement UnwrapContinuationToken(CosmosElement continuationToken)
@@ -121,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
             return CosmosArray.Create(backendContinuationToken);
         }
 
-        private async Task<bool> SwitchToFallbackPipelineAsync(CosmosElement continuationToken, ITrace trace)
+        private async Task<bool> SwitchToFallbackPipelineAsync(CosmosElement continuationToken, ITrace trace, CancellationToken cancellationToken)
         {
             Debug.Assert(this.executionState == ExecutionState.OptimisticDirectExecution, "OptimisticDirectExecuteQueryPipelineStage Assert!", "Only OptimisticDirectExecute pipeline can create this fallback pipeline");
             this.executionState = ExecutionState.SpecializedDocumentQueryExecution;
@@ -134,13 +131,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                 return false;
             }
 
-            return await this.inner.Result.MoveNextAsync(trace);
+            return await this.inner.Result.MoveNextAsync(trace, cancellationToken);
         }
 
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
             DocumentContainer documentContainer,
             CosmosQueryExecutionContextFactory.InputParameters inputParameters,
             FeedRangeEpk targetRange,
+            ContainerQueryProperties containerQueryProperties,
             FallbackQueryPipelineStageFactory fallbackQueryPipelineStageFactory,
             CancellationToken cancellationToken)
         {
@@ -151,6 +149,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                 targetRange: targetRange,
                 queryPaginationOptions: paginationOptions,
                 partitionKey: inputParameters.PartitionKey,
+                containerQueryProperties: containerQueryProperties,
                 continuationToken: inputParameters.InitialUserContinuationToken,
                 cancellationToken: cancellationToken);
 
@@ -165,6 +164,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
 
         private sealed class OptimisticDirectExecutionQueryPipelineImpl : IQueryPipelineStage
         {
+            private const int ClientQLCompatibilityLevel = 0;
             private readonly QueryPartitionRangePageAsyncEnumerator queryPartitionRangePageAsyncEnumerator;
 
             private OptimisticDirectExecutionQueryPipelineImpl(
@@ -180,19 +180,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                 return this.queryPartitionRangePageAsyncEnumerator.DisposeAsync();
             }
 
-            public void SetCancellationToken(CancellationToken cancellationToken)
-            {
-                this.queryPartitionRangePageAsyncEnumerator.SetCancellationToken(cancellationToken);
-            }
-
-            public async ValueTask<bool> MoveNextAsync(ITrace trace)
+            public async ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
             {
                 if (trace == null)
                 {
                     throw new ArgumentNullException(nameof(trace));
                 }
 
-                if (!await this.queryPartitionRangePageAsyncEnumerator.MoveNextAsync(trace))
+                if (!await this.queryPartitionRangePageAsyncEnumerator.MoveNextAsync(trace, cancellationToken))
                 {
                     this.Current = default;
                     return false;
@@ -228,11 +223,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                     backendQueryPage.Documents,
                     backendQueryPage.RequestCharge,
                     backendQueryPage.ActivityId,
-                    backendQueryPage.ResponseLengthInBytes,
                     backendQueryPage.CosmosQueryExecutionInfo,
+                    backendQueryPage.DistributionPlanSpec,
                     disallowContinuationTokenMessage: null,
                     backendQueryPage.AdditionalHeaders,
-                    queryState);
+                    queryState,
+                    backendQueryPage.Streaming);
 
                 this.Current = TryCatch<QueryPage>.FromResult(queryPage);
                 return true;
@@ -244,6 +240,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                 FeedRangeEpk targetRange,
                 Cosmos.PartitionKey? partitionKey,
                 QueryPaginationOptions queryPaginationOptions,
+                ContainerQueryProperties containerQueryProperties,
                 CosmosElement continuationToken,
                 CancellationToken cancellationToken)
             {
@@ -268,14 +265,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                     return TryCatch<IQueryPipelineStage>.FromException(monadicExtractState.Exception);
                 }
 
+                SqlQuerySpec updatedSqlQuerySpec = new SqlQuerySpec(sqlQuerySpec.QueryText, sqlQuerySpec.Parameters)
+                {
+                    ClientQLCompatibilityLevel = ClientQLCompatibilityLevel
+                };
+
                 FeedRangeState<QueryState> feedRangeState = monadicExtractState.Result;
                 QueryPartitionRangePageAsyncEnumerator partitionPageEnumerator = new QueryPartitionRangePageAsyncEnumerator(
                     documentContainer,
-                    sqlQuerySpec,
+                    updatedSqlQuerySpec,
                     feedRangeState,
                     partitionKey,
                     queryPaginationOptions,
-                    cancellationToken);
+                    containerQueryProperties);
 
                 OptimisticDirectExecutionQueryPipelineImpl stage = new OptimisticDirectExecutionQueryPipelineImpl(partitionPageEnumerator);
                 return TryCatch<IQueryPipelineStage>.FromResult(stage);

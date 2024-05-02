@@ -83,9 +83,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 QueryRequestOptions requestOptions = new QueryRequestOptions()
                 {
-#if PREVIEW
+                    // ODE set to false in this scenario as using ODE could cause the query plan to not get invoked.
                     EnableOptimisticDirectExecution = false
-#endif
                 };
 
                 using FeedIterator<JObject> iterator = gatewayQueryPlanContainer.GetItemQueryIterator<JObject>("select * From T order by T.status", requestOptions: requestOptions);

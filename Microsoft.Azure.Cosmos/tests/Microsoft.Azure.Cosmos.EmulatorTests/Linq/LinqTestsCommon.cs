@@ -10,12 +10,17 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Diagnostics;
+    using System.IO;
     using System.Linq;
     using System.Linq.Expressions;
+    using System.Reflection;
     using System.Runtime.CompilerServices;
     using System.Text;
+    using System.Text.Json.Serialization;
+    using System.Text.Json;
     using System.Text.RegularExpressions;
     using System.Xml;
+    using global::Azure.Core.Serialization;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -306,12 +311,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             }
 
             FeedOptions feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true };
-            QueryRequestOptions requestOptions = new QueryRequestOptions()
-            {
-#if PREVIEW
-                EnableOptimisticDirectExecution = false
-#endif
-            };
+            QueryRequestOptions requestOptions = new QueryRequestOptions() { EnableOptimisticDirectExecution = false };
 
             IOrderedQueryable<T> query = container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution: true, requestOptions: requestOptions);
 
@@ -333,13 +333,13 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="count">number of test data to be created</param>
         /// <param name="container">the target container</param>
         /// <param name="camelCaseSerialization">if theCosmosLinqSerializerOption of camelCaseSerialization should be applied</param>
-        /// <returns>a lambda that takes a boolean which indicate where the query should run against CosmosDB or against original data, and return a query results as IQueryable. Also the serialized payload.</returns>
-        public static Func<bool, IQueryable<T>> GenerateSerializationTestCosmosData<T>(Func<int, bool, T> func, int count, Container container, bool camelCaseSerialization = false)
+        /// <returns>a lambda that takes a boolean which indicate where the query should run against CosmosDB or against original data, and return a query results as IQueryable.</returns>
+        public static Func<bool, IQueryable<T>> GenerateSerializationTestCosmosData<T>(Func<int, bool, T> func, int count, Container container, CosmosLinqSerializerOptions linqSerializerOptions)
         {
             List<T> data = new List<T>();
             for (int i = 0; i < count; i++)
             {
-                data.Add(func(i, camelCaseSerialization));
+                data.Add(func(i, linqSerializerOptions.PropertyNamingPolicy == CosmosPropertyNamingPolicy.CamelCase));
             }
 
             foreach (T obj in data)
@@ -348,14 +348,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             }
 
             FeedOptions feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true };
-            QueryRequestOptions requestOptions = new QueryRequestOptions()
-            {
-#if PREVIEW
-                EnableOptimisticDirectExecution = false
-#endif
-            };
+            QueryRequestOptions requestOptions = new QueryRequestOptions() { EnableOptimisticDirectExecution = false };
 
-            CosmosLinqSerializerOptions linqSerializerOptions = new CosmosLinqSerializerOptions { PropertyNamingPolicy = camelCaseSerialization ? CosmosPropertyNamingPolicy.CamelCase : CosmosPropertyNamingPolicy.Default };
             IOrderedQueryable<T> query = container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution: true, requestOptions: requestOptions, linqSerializerOptions: linqSerializerOptions);
 
             IQueryable<T> getQuery(bool useQuery) => useQuery ? query : data.AsQueryable();
@@ -510,40 +504,21 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             return getQuery;
         }
 
-        public static Func<bool, IQueryable<Data>> GenerateSimpleCosmosData(
-         Cosmos.Database cosmosDatabase
-         )
+        public static Func<bool, IQueryable<Data>> GenerateSimpleCosmosData(Cosmos.Database cosmosDatabase, bool useRandomData = true)
         {
             const int DocumentCount = 10;
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/Pk" }), Kind = PartitionKind.Hash };
             Container container = cosmosDatabase.CreateContainerAsync(new ContainerProperties { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition }).Result;
 
-            int seed = DateTime.Now.Millisecond;
-            Random random = new Random(seed);
-            Debug.WriteLine("Random seed: {0}", seed);
-            List<Data> testData = new List<Data>();
-            for (int index = 0; index < DocumentCount; index++)
+            ILinqTestDataGenerator dataGenerator = useRandomData ? new LinqTestRandomDataGenerator(DocumentCount) : new LinqTestDataGenerator(DocumentCount);
+            List<Data> testData = new List<Data>(dataGenerator.GenerateData());
+            foreach (Data dataEntry in testData)
             {
-                Data dataEntry = new Data()
-                {
-                    Id = Guid.NewGuid().ToString(),
-                    Number = random.Next(-10000, 10000),
-                    Flag = index % 2 == 0,
-                    Multiples = new int[] { index, index * 2, index * 3, index * 4 },
-                    Pk = "Test"
-                };
-
                 Data response = container.CreateItemAsync<Data>(dataEntry, new Cosmos.PartitionKey(dataEntry.Pk)).Result;
-                testData.Add(dataEntry);
             }
 
             FeedOptions feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true };
-            QueryRequestOptions requestOptions = new QueryRequestOptions()
-            {
-#if PREVIEW
-                EnableOptimisticDirectExecution = false
-#endif
-            };
+            QueryRequestOptions requestOptions = new QueryRequestOptions() { EnableOptimisticDirectExecution = false };
 
             IOrderedQueryable<Data> query = container.GetItemLinqQueryable<Data>(allowSynchronousQueryExecution: true, requestOptions: requestOptions);
 
@@ -749,6 +724,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             { "JOIN", "\nJOIN" },
             { "ORDER BY", "\nORDER BY" },
             { "OFFSET", "\nOFFSET" },
+            { "GROUP BY", "\nGROUP BY" },
             { " )", "\n)" }
         };
 
@@ -790,7 +766,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             const string oneTab = "    ";
             const string startCue = "SELECT";
             const string endCue = ")";
-
             string[] tokens = sb.ToString().Split('\n');
             bool firstSelect = true;
             sb.Length = 0;
@@ -836,6 +811,111 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 xmlWriter.WriteCData(LinqTestOutput.FormatErrorMessage(this.ErrorMessage));
                 xmlWriter.WriteEndElement();
             }
+        }
+    }
+
+    class SystemTextJsonLinqSerializer : CosmosLinqSerializer
+    {
+        private readonly JsonObjectSerializer systemTextJsonSerializer;
+        private readonly JsonSerializerOptions jsonSerializerOptions;
+
+        public SystemTextJsonLinqSerializer(JsonSerializerOptions jsonSerializerOptions)
+        {
+            this.systemTextJsonSerializer = new JsonObjectSerializer(jsonSerializerOptions);
+            this.jsonSerializerOptions = jsonSerializerOptions;
+        }
+
+        public override T FromStream<T>(Stream stream)
+        {
+            if (stream == null)
+                throw new ArgumentNullException(nameof(stream));
+
+            using (stream)
+            {
+                if (stream.CanSeek && stream.Length == 0)
+                {
+                    return default;
+                }
+
+                if (typeof(Stream).IsAssignableFrom(typeof(T)))
+                {
+                    return (T)(object)stream;
+                }
+
+                return (T)this.systemTextJsonSerializer.Deserialize(stream, typeof(T), default);
+            }
+        }
+
+        public override Stream ToStream<T>(T input)
+        {
+            MemoryStream streamPayload = new MemoryStream();
+            this.systemTextJsonSerializer.Serialize(streamPayload, input, input.GetType(), default);
+            streamPayload.Position = 0;
+            return streamPayload;
+        }
+
+        public override string SerializeMemberName(MemberInfo memberInfo)
+        {
+            System.Text.Json.Serialization.JsonExtensionDataAttribute jsonExtensionDataAttribute =
+                memberInfo.GetCustomAttribute<System.Text.Json.Serialization.JsonExtensionDataAttribute>(true);
+            if (jsonExtensionDataAttribute != null)
+            {
+                return null;
+            }
+
+            JsonPropertyNameAttribute jsonPropertyNameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(true);
+            if (!string.IsNullOrEmpty(jsonPropertyNameAttribute?.Name))
+            {
+                return jsonPropertyNameAttribute.Name;
+            }
+
+            if (this.jsonSerializerOptions.PropertyNamingPolicy != null)
+            {
+                return this.jsonSerializerOptions.PropertyNamingPolicy.ConvertName(memberInfo.Name);
+            }
+
+            // Do any additional handling of JsonSerializerOptions here.
+
+            return memberInfo.Name;
+        }
+    }
+
+    class SystemTextJsonSerializer : CosmosSerializer
+    {
+        private readonly JsonObjectSerializer systemTextJsonSerializer;
+
+        public SystemTextJsonSerializer(JsonSerializerOptions jsonSerializerOptions)
+        {
+            this.systemTextJsonSerializer = new JsonObjectSerializer(jsonSerializerOptions);
+        }
+
+        public override T FromStream<T>(Stream stream)
+        {
+            if (stream == null)
+                throw new ArgumentNullException(nameof(stream));
+
+            using (stream)
+            {
+                if (stream.CanSeek && stream.Length == 0)
+                {
+                    return default;
+                }
+
+                if (typeof(Stream).IsAssignableFrom(typeof(T)))
+                {
+                    return (T)(object)stream;
+                }
+
+                return (T)this.systemTextJsonSerializer.Deserialize(stream, typeof(T), default);
+            }
+        }
+
+        public override Stream ToStream<T>(T input)
+        {
+            MemoryStream streamPayload = new MemoryStream();
+            this.systemTextJsonSerializer.Serialize(streamPayload, input, input.GetType(), default);
+            streamPayload.Position = 0;
+            return streamPayload;
         }
     }
 }

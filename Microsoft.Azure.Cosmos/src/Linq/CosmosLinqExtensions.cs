@@ -774,7 +774,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return ResponseHelperAsync(source.Sum());
             }
 
-            return ((CosmosLinqQueryProvider)source.Provider).ExecuteAggregateAsync<int?>(
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<int?>(
                 Expression.Call(
                     GetMethodInfoOf<IQueryable<int?>, int?>(Queryable.Sum),
                     source.Expression),

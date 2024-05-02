@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         public const string DbSystemName = "db.system";
         public const string DbName = "db.name";
         public const string DbOperation = "db.operation";
-        public const string NetPeerName = "net.peer.name";
+        public const string ServerAddress = "server.address";
 
         // Cosmos Db Specific
         public const string ClientId = "db.cosmosdb.client_id";
@@ -33,9 +33,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         public const string SubStatusCode = "db.cosmosdb.sub_status_code";
         public const string RequestCharge = "db.cosmosdb.request_charge";
         public const string Region = "db.cosmosdb.regions_contacted";
-        public const string RetryCount = "db.cosmosdb.retry_count";
         public const string ItemCount = "db.cosmosdb.item_count";
-        public const string RequestDiagnostics = "db.cosmosdb.request_diagnostics";
         public const string ActivityId = "db.cosmosdb.activity_id";
         public const string CorrelatedActivityId = "db.cosmosdb.correlated_activity_id";
 

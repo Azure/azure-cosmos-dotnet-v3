@@ -651,6 +651,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             containerProperties.Id = "TestContainer";
             containerProperties.PartitionKey = partitionKeyDefinition;
 
+            Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
+            mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
+
+            using GlobalEndpointManager endpointManager = new(mockDocumentClient.Object, new ConnectionPolicy());
 
             Mock<Common.CollectionCache> collectionCache = new Mock<Common.CollectionCache>(MockBehavior.Strict);
             collectionCache.Setup(c => c.ResolveCollectionAsync(It.IsAny<DocumentServiceRequest>(), default, trace))
@@ -661,7 +665,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 MockBehavior.Strict,
                 new Mock<ICosmosAuthorizationTokenProvider>().Object,
                 new Mock<IStoreModel>().Object,
-                collectionCache.Object);
+                collectionCache.Object,
+                endpointManager);
             partitionKeyRangeCache.Setup(c => c.TryLookupAsync(collectionRid, null, It.IsAny<DocumentServiceRequest>(), trace))
                 .ReturnsAsync(collectionRoutingMap);
 
