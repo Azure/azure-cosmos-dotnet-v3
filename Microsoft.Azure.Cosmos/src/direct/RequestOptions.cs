@@ -606,6 +606,11 @@ namespace Microsoft.Azure.Documents.Client
         internal bool IsClientEncrypted { get; set; }
 
         /// <summary>
+        ///  Gets or sets the <see cref="PopulateUserStrings"/> for document collection read requests.
+        /// </summary>
+        internal bool PopulateUserStrings { get; set; }
+
+        /// <summary>
         /// Gets or sets shared offer throughput on a collection.
         /// </summary>
         /// <remarks>

@@ -22,8 +22,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                            clientNamespace: $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}",
                            resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
                            isActivityEnabled: true,
-                           suppressNestedClientActivities: true, 
-                           isStable: false),
+                           suppressNestedClientActivities: true),
             isThreadSafe: true);
 
         public static OpenTelemetryCoreRecorder CreateRecorder(string operationName,
@@ -39,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 // If there is no source then it will return default otherwise a valid diagnostic scope
                 DiagnosticScope scope = LazyScopeFactory.Value.CreateScope(name: $"{OpenTelemetryAttributeKeys.OperationPrefix}.{operationName}",
-                                 kind: clientContext.ClientOptions.ConnectionMode == ConnectionMode.Gateway ? ActivityKind.Internal : ActivityKind.Client);
+                                 kind: clientContext.ClientOptions.ConnectionMode == ConnectionMode.Gateway ? DiagnosticScope.ActivityKind.Internal : DiagnosticScope.ActivityKind.Client);
 
                 // Need a parent activity id associated with the operation which is logged in diagnostics and used for tracing purpose.
                 // If there are listeners at operation level then scope is enabled and it tries to create activity.

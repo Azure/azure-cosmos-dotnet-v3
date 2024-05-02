@@ -32,6 +32,7 @@ namespace Microsoft.Azure.Documents
         private SubStatusCodes? substatus = null;
         private INameValueCollection responseHeaders;
         private string rawErrorMessage;
+        private Boolean rawErrorMessageOnly;
 
         internal DocumentClientException(Error errorResource,
             HttpResponseHeaders responseHeaders,
@@ -87,7 +88,8 @@ namespace Microsoft.Azure.Documents
             HttpStatusCode? statusCode,
             Uri requestUri = null,
             SubStatusCodes? substatusCode = null,
-            bool traceCallStack = true)
+            bool traceCallStack = true,
+            bool rawErrorMessageOnly = false)
             : base(DocumentClientException.MessageWithActivityId(message, responseHeaders), innerException)
         {
             this.responseHeaders = new StoreResponseNameValueCollection();
@@ -121,6 +123,7 @@ namespace Microsoft.Azure.Documents
             this.LSN = -1;
             this.PartitionKeyRangeId = null;
             this.rawErrorMessage = message;
+            this.rawErrorMessageOnly = rawErrorMessageOnly;
 
             if (this.StatusCode != HttpStatusCode.Gone)
             {
@@ -153,7 +156,8 @@ namespace Microsoft.Azure.Documents
             Exception innerException,
             INameValueCollection responseHeaders,
             HttpStatusCode? statusCode,
-            Uri requestUri = null)
+            Uri requestUri = null,
+            bool rawErrorMessageOnly = false)
             : base(DocumentClientException.MessageWithActivityId(message, responseHeaders), innerException)
         {
             this.StatusCode = statusCode;
@@ -184,6 +188,7 @@ namespace Microsoft.Azure.Documents
             this.LSN = -1;
             this.PartitionKeyRangeId = null;
             this.rawErrorMessage = message;
+            this.rawErrorMessageOnly = rawErrorMessageOnly;
 
             if (this.StatusCode != HttpStatusCode.Gone)
             {
@@ -372,6 +377,11 @@ namespace Microsoft.Azure.Documents
         {
             get
             {
+                if (this.rawErrorMessageOnly)
+                {
+                    return this.rawErrorMessage;
+                }
+                
                 string requestStatisticsMessage = this.RequestStatistics == null ? string.Empty : this.RequestStatistics.ToString();
                 if (this.RequestUri != null)
                 {

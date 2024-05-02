@@ -9,11 +9,12 @@ namespace Microsoft.Azure.Documents
     using System.Globalization;
     using System.Linq;
     using System.Net.Http.Headers;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents.Collections;
     using Newtonsoft.Json;
 
     internal static class Helpers
-    {        
+    {
         internal static int ValidateNonNegativeInteger(string name, int value)
         {
             if (value < 0)
@@ -137,7 +138,7 @@ namespace Microsoft.Azure.Documents
 
             if (httpHeaders == null) return headerValues;
 
-            foreach (KeyValuePair<string, IEnumerable<string> > pair in httpHeaders)
+            foreach (KeyValuePair<string, IEnumerable<string>> pair in httpHeaders)
             {
                 int pos = Array.FindIndex(keys, t => t.Equals(pair.Key, StringComparison.OrdinalIgnoreCase));
                 if (pos < 0)
@@ -277,6 +278,31 @@ namespace Microsoft.Azure.Documents
 
             // Generic is not valid.
             throw new ArgumentException(message: $"{typeof(T)} is not a valid generic.");
+        }
+
+        /// <summary>
+        /// Gets the environment variable value using the user provided key.On any ArguemtnException the default value is used.
+        /// </summary>
+        /// <param name="name">A string containing the environment variable name.</param>
+        /// <param name="defaultValue">A generic field containing the default value of the variable.</param>
+        /// <returns>The environment variable value as a generic field.</returns>
+        internal static T GetSafeEnvironmentVariable<T>(
+            string name,
+            T defaultValue) where T : struct
+        {
+            try
+            {
+                return GetEnvironmentVariable(name, defaultValue);
+            }
+            catch (ArgumentException argException)
+            {
+                DefaultTrace.TraceWarning(
+                    "The environment variable '{0}' has an invalid value - the default value '{1}' is used. Exception: {2}",
+                    name,
+                    defaultValue,
+                    argException.Message);
+                return defaultValue;
+            }
         }
     }
 }

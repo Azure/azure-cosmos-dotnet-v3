@@ -42,13 +42,29 @@ namespace Microsoft.Azure.Documents
 
         //Operation pause and cancel. These are FAKE status codes for QOS logging purpose only.
         OperationPaused = 1200,
-        OperationCancelled = 1201
+        OperationCancelled = 1201,
+
+        // Internal Status Codes for Migration errors
+        PartitionMigrationOperationException = 2001
     }
 
     internal enum SubStatusCodes
     {
         Unknown = 0,
         TooManyRequests = 429,
+
+        // 204 Head requests
+        // Difference from target lsn
+        MissedTargetLsn = 2001,
+        MissedTargetLsnOver100 = 2002,
+        MissedTargetLsnOver1000 = 2003,
+        MissedTargetLsnOver10000 = 2004,
+
+        // Difference from target global committed lsn
+        MissedTargetGlobalCommittedLsn = 2011,
+        MissedTargetGlobalCommittedLsnOver100 = 2012,
+        MissedTargetGlobalCommittedLsnOver1000 = 2013,
+        MissedTargetGlobalCommittedLsnOver10000 = 2014,
 
         // 400: Bad Request Substatus
         PartitionKeyMismatch = 1001,
@@ -120,6 +136,7 @@ namespace Microsoft.Azure.Documents
         AllocationFailed = 6006, // Allocation failed for federation
         OperationResultNull = 6007, // Null operation result
         OperationResultUnexpected = 6008, // Null operation result
+        FabricNodesHealthError = 6009, // Fabric Nodes Health Error
 
         //412: PreCondition Failed
         SplitIsDisabled = 2001,
@@ -139,6 +156,7 @@ namespace Microsoft.Azure.Documents
         CanNotAcquireInAccountRestoreInProgressLock = 2019,
         CollectionStateChanged = 2020,
         OfferScaledUpByUser = 2021,
+        AccountAlreadyinTargetGateway = 2100,
 
         //412: PreConditionFailed migration substatus codes
         PartitionMigrationCancelledForPendingUserOperation = 2006,
@@ -167,6 +185,16 @@ namespace Microsoft.Azure.Documents
         PartitionMigrationMasterServiceTopologyHasWriteRegionEmpty = 2041,
         PartitionMigrationWriteRegionServiceTopologyHasWriteRegionEmpty = 2042,
         PartitionMigrationIsDisabledOnFinalizingDecommissionFederation = 2043,
+        PartitionMigrationCanNotProceedForCreationFailedRegionalDatabaseAccount = 2044,
+        PartitionMigrationCanNotProceedForCreationFailedGlobalDatabaseAccount = 2045,
+        PartitionMigrationCanNotProceedForOfflineRegionalDatabaseAccount = 2046,
+        PartitionMigrationCanNotProceedForInitializingOrCreatingRegionalDatabaseAccount = 2047,
+        PartitionMigrationCanNotProceedForInitializingOrCreatingGlobalDatabaseAccount = 2048,
+        PartitionMigrationCanNotProceedForRestoringOrRestoreFailedRegionalDatabaseAccount = 2049,
+        PartitionMigrationCanNotProceedForRestoringOrRestoreFailedGlobalDatabaseAccount = 2050,
+        PartitionMigrationRequestValidationFailed = 2051,
+        PartitionMigrationSourceFederationEntityIsNull = 2052,
+        PartitionMigrationCanNotAcquireTargetFederationPartitionMigrationLock = 2053,
 
         // 500: InternalServerError
         ConfigurationNameNotEmpty = 3001,
@@ -174,6 +202,7 @@ namespace Microsoft.Azure.Documents
         InvalidAccountConfiguration = 3003,
         FederationDoesnotExistOrIsLocked = 3004,
         PartitionFailoverErrorCode = 3010,
+        OperationManagerDequeuePumpStopped = 3021,
 
         // 429: Request Rate Too Large
         PrepareTimeLimitExceeded = 3207,
@@ -182,6 +211,7 @@ namespace Microsoft.Azure.Documents
         RUBudgetExceeded = 3200,
         GatewayThrottled = 3201,
         StoredProcedureConcurrency = 3084,
+        ThottleDueToSplit = 3088,
 
         // Key Vault Access Client Error Code
         AadClientCredentialsGrantFailure = 4000, // Indicated access to AAD failed to get a token
@@ -255,6 +285,10 @@ namespace Microsoft.Azure.Documents
         // 200 OK.GW response to GET DocService request.
         LocationsModified = 5700, // Indicates locations derived from topology have been modified due to region being offlined.
 
+        // 2001: PartitionMigrationOperationError
+        PartitionMigrationWaitForFullSyncReceivedInternalServerErrorDuringCompleteMigrationFromBackend = 6001,
+        PartitionMigrationWaitForFullSyncReceivedInternalServerErrorDuringAbortMigrationFromBackend = 6002,
+
         // SDK Codes (Client)
         // IMPORTANT - keep these consistent with Java SDK as well
         TransportGenerated410 = 20001,
@@ -265,6 +299,17 @@ namespace Microsoft.Azure.Documents
         Channel_Closed = 20006,
         MalformedContinuationToken = 20007,
         // EndToEndOperationCancelled = 20008 - cancellation by e2e retry policy - currently only applicable in Java
+
+        // SubStatusCodes for Client generated 500 -currently only applicable in java
+        // MISSING_PARTITION_KEY_RANGE_ID_IN_CONTEXT = 20902;
+        // INVALID_REGIONS_IN_SESSION_TOKEN = 20903;
+        // NON_PARTITIONED_RESOURCES = 20904;
+        // PARTITION_KEY_IS_NULL = 20905;
+        // UNKNOWN_AUTHORIZATION_TOKEN_KIND = 20906;
+        // RECREATE_REQUEST_ON_HTTP_CLIENT = 20907;
+        // INVALID_BACKEND_RESPONSE = 20908;
+        // UNKNOWN_QUORUM_RESULT = 20909;
+        // INVALID_RESULT = 20910;
 
         //SDK Codes (Server)
         // IMPORTANT - keep these consistent with Java SDK as well

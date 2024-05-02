@@ -154,6 +154,10 @@ namespace Microsoft.Azure.Documents
             {
                 int hash = 0;
                 hash = (hash * 397) ^ this.Id.GetHashCode();
+                if (!string.IsNullOrEmpty(this.ResourceId))
+                {
+                    hash = (hash * 397) ^ this.ResourceId.GetHashCode();
+                }
                 hash = (hash * 397) ^ this.MinInclusive.GetHashCode();
                 hash = (hash * 397) ^ this.MaxExclusive.GetHashCode();
                 return hash;
@@ -172,6 +176,7 @@ namespace Microsoft.Azure.Documents
             }
 
             return this.Id == other.Id
+                && string.Equals(this.ResourceId, other.ResourceId, StringComparison.Ordinal)
                 && this.MinInclusive.Equals(other.MinInclusive)
                 && this.MaxExclusive.Equals(other.MaxExclusive)
                 && (this.ThroughputFraction == other.ThroughputFraction);

@@ -7,6 +7,19 @@ namespace Microsoft.Azure.Documents
 
     internal sealed class Address : Resource
     {
+        [JsonProperty(PropertyName = Constants.Properties.IsAuxiliary)]
+        public bool IsAuxiliary
+        {
+            get
+            {
+                return base.GetValue<bool>(Constants.Properties.IsAuxiliary);
+            }
+            internal set
+            {
+                base.SetValue(Constants.Properties.IsAuxiliary, value);
+            }
+        }
+
         [JsonProperty(PropertyName = Constants.Properties.IsPrimary)]
         public bool IsPrimary
         {

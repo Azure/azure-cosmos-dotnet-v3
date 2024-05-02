@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Documents.FaultInjection
 {
     using Microsoft.Azure.Documents.Rntbd;
     using System;
+    using System.Threading.Tasks;
 
     /// <summary>
     /// Interface for Chaos Interceptor
@@ -15,18 +16,18 @@ namespace Microsoft.Azure.Documents.FaultInjection
         /// Used to inject faults on request call
         /// </summary>
         /// <param name="args"></param>
-        /// <param name="faultyResponse"></param>
         /// <returns></returns>
-        public bool OnRequestCall(ChannelCallArguments args, out StoreResponse faultyResponse);
+        public Task<(bool, StoreResponse)> OnRequestCallAsync(ChannelCallArguments args);
 
         /// <summary>
         /// Used to inject faults on channel open
         /// </summary>
         /// <param name="activityId"></param>
+        /// <param name="connectionCorrelationId"></param>
         /// <param name="serverUri"></param>
         /// <param name="openingRequest"></param>
         /// <param name="channel"></param>
-        public void OnChannelOpen(Guid activityId, Uri serverUri, DocumentServiceRequest openingRequest, Channel channel);
+        public Task OnChannelOpenAsync(Guid activityId, Guid connectionCorrelationId, Uri serverUri, DocumentServiceRequest openingRequest, Channel channel);
 
         /// <summary>
         /// Used to update internal active channel store on channel close
@@ -38,13 +39,13 @@ namespace Microsoft.Azure.Documents.FaultInjection
         /// Used to inject faults before connection writes
         /// </summary>
         /// <param name="args"></param>
-        public void OnBeforeConnectionWrite(ChannelCallArguments args);
+        public Task OnBeforeConnectionWriteAsync(ChannelCallArguments args);
 
         /// <summary>
         /// Used to inject faults after connection writes
         /// </summary>
         /// <param name="args"></param>
-        public void OnAfterConnectionWrite(ChannelCallArguments args);
+        public Task OnAfterConnectionWriteAsync(ChannelCallArguments args);
 
         /// <summary>
         /// Gets the fault injection rule id for the given activity id

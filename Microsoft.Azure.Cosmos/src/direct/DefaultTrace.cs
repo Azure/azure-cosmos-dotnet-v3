@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.Core.Trace
         }
 
         /// <summary>
-        /// Removes the DefaultTraceListener which causes locking issues 
+        /// Removes the DefaultTraceListener which causes locking issues.
         /// </summary>
         public static void RemoveDefaultTraceListener()
         {

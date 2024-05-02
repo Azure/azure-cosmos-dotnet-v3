@@ -243,7 +243,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                     if (!DiagnosticsFilterHelper.IsSuccessfulResponse(this.response.StatusCode, this.response.SubStatusCode))
                     {
-                        this.scope.Failed($"{(int)this.response.StatusCode}/{this.response.SubStatusCode}");
+                        this.scope.Failed(new Exception($"{(int)this.response.StatusCode}/{this.response.SubStatusCode}"));
                     }
                 }
 

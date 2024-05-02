@@ -65,6 +65,7 @@ namespace Microsoft.Azure.Documents.Collections
         public string ContentSerializationFormat { get; set; }
         public string Continuation { get; set; }
         public string CorrelatedActivityId { get; set; }
+        public string CosmosGatewayTransactionId { get; set; }
         public string DisableRUPerMinuteUsage { get; set; }
         public string EffectivePartitionKey { get; set; }
         public string EmitVerboseTracesInQuery { get; set; }
@@ -135,6 +136,7 @@ namespace Microsoft.Azure.Documents.Collections
         public string PopulateCapacityType { get; set; }
         public string PopulateCollectionThroughputInfo { get; set; }
         public string PopulateCurrentPartitionThroughputInfo { get; set; }
+        public string PopulateDocumentRecordCount { get; set; }
         public string PopulateHighestTentativeWriteLLSN { get; set; }
         public string PopulateIndexMetrics { get; set; }
         public string PopulateIndexMetricsV2 { get; set; }
@@ -147,6 +149,7 @@ namespace Microsoft.Azure.Documents.Collections
         public string PopulateResourceCount { get; set; }
         public string PopulateUnflushedMergeEntryCount { get; set; }
         public string PopulateUniqueIndexReIndexProgress { get; set; }
+        public string PopulateUserStrings { get; set; }
         public string PostTriggerExclude { get; set; }
         public string PostTriggerInclude { get; set; }
         public string Prefer { get; set; }
@@ -188,6 +191,7 @@ namespace Microsoft.Azure.Documents.Collections
         public string ShouldReturnCurrentServerDateTime { get; set; }
         public string SkipAdjustThroughputFractionsForOfferReplace { get; set; }
         public string SkipRefreshDatabaseAccountConfigs { get; set; }
+        public string SkipThroughputCapValidation { get; set; }
         public string SourceCollectionIfMatch { get; set; }
         public string SqlQueryForPartitionKeyExtraction { get; set; }
         public string StartEpk { get; set; }
@@ -445,7 +449,12 @@ namespace Microsoft.Azure.Documents.Collections
                 requestNameValueCollection.EnableConflictResolutionPolicyUpdate = nameValueCollection[HttpConstants.HttpHeaders.EnableConflictResolutionPolicyUpdate];
                 requestNameValueCollection.ClientIpAddress = nameValueCollection[WFConstants.BackendHeaders.ClientIpAddress];
                 requestNameValueCollection.IsRequestNotAuthorized = nameValueCollection[WFConstants.BackendHeaders.IsRequestNotAuthorized];
+                requestNameValueCollection.AllowDocumentReadsInOfflineRegion = nameValueCollection[HttpConstants.HttpHeaders.AllowDocumentReadsInOfflineRegion];
                 requestNameValueCollection.PopulateCurrentPartitionThroughputInfo = nameValueCollection[WFConstants.BackendHeaders.PopulateCurrentPartitionThroughputInfo];
+                requestNameValueCollection.SkipThroughputCapValidation = nameValueCollection[WFConstants.BackendHeaders.SkipThroughputCapValidation];
+                requestNameValueCollection.PopulateDocumentRecordCount = nameValueCollection[WFConstants.BackendHeaders.PopulateDocumentRecordCount];
+                requestNameValueCollection.CosmosGatewayTransactionId = nameValueCollection[WFConstants.BackendHeaders.CosmosGatewayTransactionId];
+                requestNameValueCollection.PopulateUserStrings = nameValueCollection[WFConstants.BackendHeaders.PopulateUserStrings];
                 requestNameValueCollection.IfMatch = nameValueCollection[HttpConstants.HttpHeaders.IfMatch];
                 requestNameValueCollection.NoRetryOn449StatusCode = nameValueCollection[HttpConstants.HttpHeaders.NoRetryOn449StatusCode];
                 requestNameValueCollection.SkipAdjustThroughputFractionsForOfferReplace = nameValueCollection[HttpConstants.HttpHeaders.SkipAdjustThroughputFractionsForOfferReplace];
@@ -521,6 +530,7 @@ namespace Microsoft.Azure.Documents.Collections
             this.ContentSerializationFormat = null;
             this.Continuation = null;
             this.CorrelatedActivityId = null;
+            this.CosmosGatewayTransactionId = null;
             this.DisableRUPerMinuteUsage = null;
             this.EffectivePartitionKey = null;
             this.EmitVerboseTracesInQuery = null;
@@ -591,6 +601,7 @@ namespace Microsoft.Azure.Documents.Collections
             this.PopulateCapacityType = null;
             this.PopulateCollectionThroughputInfo = null;
             this.PopulateCurrentPartitionThroughputInfo = null;
+            this.PopulateDocumentRecordCount = null;
             this.PopulateHighestTentativeWriteLLSN = null;
             this.PopulateIndexMetrics = null;
             this.PopulateIndexMetricsV2 = null;
@@ -603,6 +614,7 @@ namespace Microsoft.Azure.Documents.Collections
             this.PopulateResourceCount = null;
             this.PopulateUnflushedMergeEntryCount = null;
             this.PopulateUniqueIndexReIndexProgress = null;
+            this.PopulateUserStrings = null;
             this.PostTriggerExclude = null;
             this.PostTriggerInclude = null;
             this.Prefer = null;
@@ -644,6 +656,7 @@ namespace Microsoft.Azure.Documents.Collections
             this.ShouldReturnCurrentServerDateTime = null;
             this.SkipAdjustThroughputFractionsForOfferReplace = null;
             this.SkipRefreshDatabaseAccountConfigs = null;
+            this.SkipThroughputCapValidation = null;
             this.SourceCollectionIfMatch = null;
             this.SqlQueryForPartitionKeyExtraction = null;
             this.StartEpk = null;
@@ -710,6 +723,7 @@ namespace Microsoft.Azure.Documents.Collections
                 ContentSerializationFormat = this.ContentSerializationFormat,
                 Continuation = this.Continuation,
                 CorrelatedActivityId = this.CorrelatedActivityId,
+                CosmosGatewayTransactionId = this.CosmosGatewayTransactionId,
                 DisableRUPerMinuteUsage = this.DisableRUPerMinuteUsage,
                 EffectivePartitionKey = this.EffectivePartitionKey,
                 EmitVerboseTracesInQuery = this.EmitVerboseTracesInQuery,
@@ -780,6 +794,7 @@ namespace Microsoft.Azure.Documents.Collections
                 PopulateCapacityType = this.PopulateCapacityType,
                 PopulateCollectionThroughputInfo = this.PopulateCollectionThroughputInfo,
                 PopulateCurrentPartitionThroughputInfo = this.PopulateCurrentPartitionThroughputInfo,
+                PopulateDocumentRecordCount = this.PopulateDocumentRecordCount,
                 PopulateHighestTentativeWriteLLSN = this.PopulateHighestTentativeWriteLLSN,
                 PopulateIndexMetrics = this.PopulateIndexMetrics,
                 PopulateIndexMetricsV2 = this.PopulateIndexMetricsV2,
@@ -792,6 +807,7 @@ namespace Microsoft.Azure.Documents.Collections
                 PopulateResourceCount = this.PopulateResourceCount,
                 PopulateUnflushedMergeEntryCount = this.PopulateUnflushedMergeEntryCount,
                 PopulateUniqueIndexReIndexProgress = this.PopulateUniqueIndexReIndexProgress,
+                PopulateUserStrings = this.PopulateUserStrings,
                 PostTriggerExclude = this.PostTriggerExclude,
                 PostTriggerInclude = this.PostTriggerInclude,
                 Prefer = this.Prefer,
@@ -833,6 +849,7 @@ namespace Microsoft.Azure.Documents.Collections
                 ShouldReturnCurrentServerDateTime = this.ShouldReturnCurrentServerDateTime,
                 SkipAdjustThroughputFractionsForOfferReplace = this.SkipAdjustThroughputFractionsForOfferReplace,
                 SkipRefreshDatabaseAccountConfigs = this.SkipRefreshDatabaseAccountConfigs,
+                SkipThroughputCapValidation = this.SkipThroughputCapValidation,
                 SourceCollectionIfMatch = this.SourceCollectionIfMatch,
                 SqlQueryForPartitionKeyExtraction = this.SqlQueryForPartitionKeyExtraction,
                 StartEpk = this.StartEpk,
@@ -1584,6 +1601,22 @@ namespace Microsoft.Azure.Documents.Collections
             {
                 yield return WFConstants.BackendHeaders.PopulateCurrentPartitionThroughputInfo;
             }
+            if (this.SkipThroughputCapValidation != null)
+            {
+                yield return WFConstants.BackendHeaders.SkipThroughputCapValidation;
+            }
+            if (this.PopulateDocumentRecordCount != null)
+            {
+                yield return WFConstants.BackendHeaders.PopulateDocumentRecordCount;
+            }
+            if (this.CosmosGatewayTransactionId != null)
+            {
+                yield return WFConstants.BackendHeaders.CosmosGatewayTransactionId;
+            }
+            if (this.PopulateUserStrings != null)
+            {
+                yield return WFConstants.BackendHeaders.PopulateUserStrings;
+            }
             if (this.IfMatch != null)
             {
                 yield return HttpConstants.HttpHeaders.IfMatch;
@@ -2333,6 +2366,22 @@ namespace Microsoft.Azure.Documents.Collections
                         if (this.PopulateCurrentPartitionThroughputInfo != null)
                         {
                             this.nameValueCollection.Add(WFConstants.BackendHeaders.PopulateCurrentPartitionThroughputInfo, this.PopulateCurrentPartitionThroughputInfo);
+                        }
+                        if (this.SkipThroughputCapValidation != null)
+                        {
+                            this.nameValueCollection.Add(WFConstants.BackendHeaders.SkipThroughputCapValidation, this.SkipThroughputCapValidation);
+                        }
+                        if (this.PopulateDocumentRecordCount != null)
+                        {
+                            this.nameValueCollection.Add(WFConstants.BackendHeaders.PopulateDocumentRecordCount, this.PopulateDocumentRecordCount);
+                        }
+                        if (this.CosmosGatewayTransactionId != null)
+                        {
+                            this.nameValueCollection.Add(WFConstants.BackendHeaders.CosmosGatewayTransactionId, this.CosmosGatewayTransactionId);
+                        }
+                        if (this.PopulateUserStrings != null)
+                        {
+                            this.nameValueCollection.Add(WFConstants.BackendHeaders.PopulateUserStrings, this.PopulateUserStrings);
                         }
                         if (this.IfMatch != null)
                         {
@@ -3289,6 +3338,10 @@ namespace Microsoft.Azure.Documents.Collections
                     {
                         return this.PopulateCapacityType;
                     }
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.CosmosGatewayTransactionId, key))
+                    {
+                        return this.CosmosGatewayTransactionId;
+                    }
                     if (string.Equals(HttpConstants.HttpHeaders.AllowTentativeWrites, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.AllowTentativeWrites;
@@ -3302,6 +3355,11 @@ namespace Microsoft.Azure.Documents.Collections
                     if (string.Equals(WFConstants.BackendHeaders.PopulateCapacityType, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.PopulateCapacityType;
+                    }
+
+                    if (string.Equals(WFConstants.BackendHeaders.CosmosGatewayTransactionId, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.CosmosGatewayTransactionId;
                     }
 
                     break;
@@ -3596,6 +3654,10 @@ namespace Microsoft.Azure.Documents.Collections
                     {
                         return this.OptimisticDirectExecute;
                     }
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.SkipThroughputCapValidation, key))
+                    {
+                        return this.SkipThroughputCapValidation;
+                    }
                     if (string.Equals(HttpConstants.HttpHeaders.ForceDatabaseAccountUpdate, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.ForceDatabaseAccountUpdate;
@@ -3604,6 +3666,11 @@ namespace Microsoft.Azure.Documents.Collections
                     if (string.Equals(HttpConstants.HttpHeaders.OptimisticDirectExecute, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.OptimisticDirectExecute;
+                    }
+
+                    if (string.Equals(WFConstants.BackendHeaders.SkipThroughputCapValidation, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.SkipThroughputCapValidation;
                     }
 
                     break;
@@ -3619,6 +3686,10 @@ namespace Microsoft.Azure.Documents.Collections
                     if (object.ReferenceEquals(HttpConstants.HttpHeaders.ChangeFeedWireFormatVersion, key))
                     {
                         return this.ChangeFeedWireFormatVersion;
+                    }
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.PopulateUserStrings, key))
+                    {
+                        return this.PopulateUserStrings;
                     }
                     if (object.ReferenceEquals(HttpConstants.HttpHeaders.EnableCrossPartitionQuery, key))
                     {
@@ -3637,6 +3708,11 @@ namespace Microsoft.Azure.Documents.Collections
                     if (string.Equals(HttpConstants.HttpHeaders.ChangeFeedWireFormatVersion, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.ChangeFeedWireFormatVersion;
+                    }
+
+                    if (string.Equals(WFConstants.BackendHeaders.PopulateUserStrings, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.PopulateUserStrings;
                     }
 
                     if (string.Equals(HttpConstants.HttpHeaders.EnableCrossPartitionQuery, key, StringComparison.OrdinalIgnoreCase))
@@ -3918,6 +3994,10 @@ namespace Microsoft.Azure.Documents.Collections
                     {
                         return this.RetriableWriteRequestStartTimestamp;
                     }
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.PopulateDocumentRecordCount, key))
+                    {
+                        return this.PopulateDocumentRecordCount;
+                    }
                     if (string.Equals(HttpConstants.HttpHeaders.EnableLowPrecisionOrderBy, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.EnableLowPrecisionOrderBy;
@@ -3926,6 +4006,11 @@ namespace Microsoft.Azure.Documents.Collections
                     if (string.Equals(WFConstants.BackendHeaders.RetriableWriteRequestStartTimestamp, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.RetriableWriteRequestStartTimestamp;
+                    }
+
+                    if (string.Equals(WFConstants.BackendHeaders.PopulateDocumentRecordCount, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.PopulateDocumentRecordCount;
                     }
 
                     break;
@@ -6049,6 +6134,16 @@ namespace Microsoft.Azure.Documents.Collections
                         this.PopulateCapacityType = value;
                         return;
                     }
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.CosmosGatewayTransactionId, key))
+                    {
+                        if (throwIfAlreadyExists && this.CosmosGatewayTransactionId != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.CosmosGatewayTransactionId = value;
+                        return;
+                    }
                     if (string.Equals(HttpConstants.HttpHeaders.AllowTentativeWrites, key, StringComparison.OrdinalIgnoreCase))
                     {
                         if (throwIfAlreadyExists && this.AllowTentativeWrites != null)
@@ -6077,6 +6172,16 @@ namespace Microsoft.Azure.Documents.Collections
                         }
 
                         this.PopulateCapacityType = value;
+                        return;
+                    }
+                    if (string.Equals(WFConstants.BackendHeaders.CosmosGatewayTransactionId, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.CosmosGatewayTransactionId != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.CosmosGatewayTransactionId = value;
                         return;
                     }
                     break;
@@ -6713,6 +6818,16 @@ namespace Microsoft.Azure.Documents.Collections
                         this.OptimisticDirectExecute = value;
                         return;
                     }
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.SkipThroughputCapValidation, key))
+                    {
+                        if (throwIfAlreadyExists && this.SkipThroughputCapValidation != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.SkipThroughputCapValidation = value;
+                        return;
+                    }
                     if (string.Equals(HttpConstants.HttpHeaders.ForceDatabaseAccountUpdate, key, StringComparison.OrdinalIgnoreCase))
                     {
                         if (throwIfAlreadyExists && this.ForceDatabaseAccountUpdate != null)
@@ -6731,6 +6846,16 @@ namespace Microsoft.Azure.Documents.Collections
                         }
 
                         this.OptimisticDirectExecute = value;
+                        return;
+                    }
+                    if (string.Equals(WFConstants.BackendHeaders.SkipThroughputCapValidation, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.SkipThroughputCapValidation != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.SkipThroughputCapValidation = value;
                         return;
                     }
                     break;
@@ -6763,6 +6888,16 @@ namespace Microsoft.Azure.Documents.Collections
                         }
 
                         this.ChangeFeedWireFormatVersion = value;
+                        return;
+                    }
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.PopulateUserStrings, key))
+                    {
+                        if (throwIfAlreadyExists && this.PopulateUserStrings != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.PopulateUserStrings = value;
                         return;
                     }
                     if (object.ReferenceEquals(HttpConstants.HttpHeaders.EnableCrossPartitionQuery, key))
@@ -6803,6 +6938,16 @@ namespace Microsoft.Azure.Documents.Collections
                         }
 
                         this.ChangeFeedWireFormatVersion = value;
+                        return;
+                    }
+                    if (string.Equals(WFConstants.BackendHeaders.PopulateUserStrings, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.PopulateUserStrings != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.PopulateUserStrings = value;
                         return;
                     }
                     if (string.Equals(HttpConstants.HttpHeaders.EnableCrossPartitionQuery, key, StringComparison.OrdinalIgnoreCase))
@@ -7403,6 +7548,16 @@ namespace Microsoft.Azure.Documents.Collections
                         this.RetriableWriteRequestStartTimestamp = value;
                         return;
                     }
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.PopulateDocumentRecordCount, key))
+                    {
+                        if (throwIfAlreadyExists && this.PopulateDocumentRecordCount != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.PopulateDocumentRecordCount = value;
+                        return;
+                    }
                     if (string.Equals(HttpConstants.HttpHeaders.EnableLowPrecisionOrderBy, key, StringComparison.OrdinalIgnoreCase))
                     {
                         if (throwIfAlreadyExists && this.EnableLowPrecisionOrderBy != null)
@@ -7421,6 +7576,16 @@ namespace Microsoft.Azure.Documents.Collections
                         }
 
                         this.RetriableWriteRequestStartTimestamp = value;
+                        return;
+                    }
+                    if (string.Equals(WFConstants.BackendHeaders.PopulateDocumentRecordCount, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.PopulateDocumentRecordCount != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.PopulateDocumentRecordCount = value;
                         return;
                     }
                     break;

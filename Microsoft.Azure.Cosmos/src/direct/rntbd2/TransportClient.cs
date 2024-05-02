@@ -196,7 +196,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                     GoneException goneExcepetion = TransportExceptions.GetGoneException(
                         physicalAddress.Uri, activityId, ex, transportRequestStats);
 #if NETSTANDARD2_0_OR_GREATER
-                    recorder?.Record(physicalAddress.Uri, documentClientException: goneExcepetion);
+                    recorder?.Record(physicalAddress.Uri, exception: goneExcepetion);
 #endif
                     throw goneExcepetion;
                 }
@@ -206,7 +206,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                     GoneException goneExcepetion = TransportExceptions.GetGoneException(
                         physicalAddress.Uri, activityId, ex, transportRequestStats);
 #if NETSTANDARD2_0_OR_GREATER
-                    recorder?.Record(physicalAddress.Uri, documentClientException: goneExcepetion);
+                    recorder?.Record(physicalAddress.Uri, exception: goneExcepetion);
 #endif
                     throw goneExcepetion;
                 }
@@ -216,7 +216,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                     RequestTimeoutException requestTimeoutException = TransportExceptions.GetRequestTimeoutException(
                         physicalAddress.Uri, activityId, ex, transportRequestStats);
 #if NETSTANDARD2_0_OR_GREATER
-                    recorder?.Record(physicalAddress.Uri, documentClientException: requestTimeoutException);
+                    recorder?.Record(physicalAddress.Uri, exception: requestTimeoutException);
 #endif
                     throw requestTimeoutException;
                 }
@@ -224,7 +224,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 ServiceUnavailableException serviceUnavailableException = TransportExceptions.GetServiceUnavailableException(
                     physicalAddress.Uri, activityId, ex, transportRequestStats);
 #if NETSTANDARD2_0_OR_GREATER
-                recorder?.Record(physicalAddress.Uri, documentClientException: serviceUnavailableException);
+                recorder?.Record(physicalAddress.Uri, exception: serviceUnavailableException);
 #endif
                 throw serviceUnavailableException;
 
@@ -238,7 +238,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 transportRequestStats.RecordState(TransportRequestStats.RequestStage.Failed);
                 ex.TransportRequestStats = transportRequestStats;
 #if NETSTANDARD2_0_OR_GREATER
-                recorder?.Record(physicalAddress.Uri, documentClientException: ex);
+                recorder?.Record(physicalAddress.Uri, exception: ex);
 #endif
                 throw;
             }
@@ -268,7 +268,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 #if NETSTANDARD2_0_OR_GREATER
             catch (DocumentClientException exception) 
             {
-                recorder?.Record(physicalAddress.Uri, documentClientException: exception);
+                recorder?.Record(physicalAddress.Uri, exception: exception);
                 throw;
             }
 

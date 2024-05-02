@@ -36,13 +36,13 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         // This channel factory delegate is meant for unit testing only and a default implementation is provided.
         // However it can be extended to support the main line code path if needed.
-        private readonly Func<Guid, Uri, ChannelProperties, bool, SemaphoreSlim, IChaosInterceptor, Action<Guid, Guid, Uri, Channel>, IChannel> channelFactory;
+        private readonly Func<Guid, Uri, ChannelProperties, bool, SemaphoreSlim, IChaosInterceptor, Func<Guid, Guid, Uri, Channel, Task>, IChannel> channelFactory;
 
         public LoadBalancingPartition(
             Uri serverUri,
             ChannelProperties channelProperties,
             bool localRegionRequest,
-            Func<Guid, Uri, ChannelProperties, bool, SemaphoreSlim, IChaosInterceptor, Action<Guid, Guid, Uri, Channel>, IChannel> channelFactory = null,
+            Func<Guid, Uri, ChannelProperties, bool, SemaphoreSlim, IChaosInterceptor, Func<Guid, Guid, Uri, Channel, Task>, IChannel> channelFactory = null,
             IChaosInterceptor chaosInterceptor = null)
         {
             Debug.Assert(serverUri != null);
@@ -188,9 +188,13 @@ namespace Microsoft.Azure.Documents.Rntbd
                                 channelsCreated = targetChannels - this.openChannels.Count;
                             }
 
-                           Action<Guid, Guid, Uri, Channel> onChannelOpen = 
-                                (Guid createId, Guid connectionCorrelationId, Uri serverUri, Channel createdChannel) 
-                                    => this.chaosInterceptor?.OnChannelOpen(createId, serverUri, request, createdChannel);
+                            Func<Guid, Guid, Uri, Channel, Task> onChannelOpen = async (Guid createId, Guid connectionCorrelationId, Uri serverUri, Channel createdChannel) =>
+                            {
+                                if (this.chaosInterceptor != null)
+                                {
+                                    await this.chaosInterceptor.OnChannelOpenAsync(createId, connectionCorrelationId, serverUri, request, createdChannel);
+                                }
+                            };
 
                             while (this.openChannels.Count < targetChannels)
                             {                              
@@ -318,7 +322,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         /// <returns>An instance of <see cref="IChannel"/>.</returns>
         private IChannel OpenChannelAndIncrementCapacity(
             Guid activityId,
-            Action<Guid, Guid, Uri, Channel> onChannelOpen = null)
+            Func<Guid, Guid, Uri, Channel, Task> onChannelOpen = null)
         {
             Debug.Assert(this.capacityLock.IsWriteLockHeld);
 
@@ -356,7 +360,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         /// <param name="localRegionRequest">A boolean flag indicating if the request is intendent for local region.</param>
         /// <param name="concurrentOpeningChannelSlim">An instance of <see cref="SemaphoreSlim"/>.</param>
         /// <param name="chaosInterceptor">The Interceptor for fault injection. Null if not using fault injection</param>
-        /// <param name="onChannelOpen">An action to be invoked when the channel is opened.</param>
+        /// <param name="onChannelOpen">An func to be invoked when the channel is opened.</param>
         /// <returns>An instance of <see cref="IChannel"/>.</returns>
         private static IChannel CreateAndInitializeChannel(
             Guid activityId,
@@ -365,7 +369,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             bool localRegionRequest,
             SemaphoreSlim concurrentOpeningChannelSlim,
             IChaosInterceptor chaosInterceptor = null,
-            Action<Guid, Guid, Uri, Channel> onChannelOpen = null)
+            Func<Guid, Guid, Uri, Channel, Task> onChannelOpen = null)
         {
             return new Channel(
                 activityId,

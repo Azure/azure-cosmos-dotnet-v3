@@ -23,6 +23,12 @@ namespace Microsoft.Azure.Documents
         {
 
         }
+        
+        public BadRequestException(string message, bool rawErrorMessageOnly)
+            : this(message, (Exception)null, null, rawErrorMessageOnly: rawErrorMessageOnly)
+        {
+
+        }
 
         public BadRequestException(string message, HttpResponseHeaders headers, Uri requestUri = null)
             : this(message, null, headers, requestUri)
@@ -48,8 +54,9 @@ namespace Microsoft.Azure.Documents
 
         }
 
-        public BadRequestException(string message, Exception innerException, HttpResponseHeaders headers, Uri requestUri = null)
-            : base(message, innerException, headers, HttpStatusCode.BadRequest, requestUri)
+        public BadRequestException(string message, Exception innerException, HttpResponseHeaders headers, Uri requestUri = null, 
+            bool rawErrorMessageOnly = false)
+            : base(message, innerException, headers, HttpStatusCode.BadRequest, requestUri, rawErrorMessageOnly: rawErrorMessageOnly)
         {
             SetDescription();
         }

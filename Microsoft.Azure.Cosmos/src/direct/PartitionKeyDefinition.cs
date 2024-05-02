@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Documents
                 return false;
             }
 
-            if (!pkd1.Paths.OrderBy(i => i).SequenceEqual(pkd2.Paths.OrderBy(i => i)))
+            if (!pkd1.Paths.SequenceEqual(pkd2.Paths))
             {
                 return false;
             }

@@ -15,6 +15,17 @@ namespace Microsoft.Azure.Documents
             string physicalUri,
             bool isPublic,
             bool isPrimary,
+            Protocol protocol,
+            bool isAuxiliary)
+            : this(physicalUri, isPublic, isPrimary, protocol)
+        {
+            this.IsAuxiliary = isAuxiliary;
+        }
+
+        public AddressInformation(
+            string physicalUri,
+            bool isPublic,
+            bool isPrimary,
             Protocol protocol)
         {
             this.IsPublic = isPublic;
@@ -26,6 +37,8 @@ namespace Microsoft.Azure.Documents
         public bool IsPublic { get; }
 
         public bool IsPrimary { get; }
+
+        public bool IsAuxiliary { get; }
 
         public Protocol Protocol { get; }
 
@@ -45,6 +58,12 @@ namespace Microsoft.Azure.Documents
                 return -1 * comp;
             }
 
+            comp = this.IsAuxiliary.CompareTo(other.IsAuxiliary);
+            if (comp != 0)
+            {
+                return comp;
+            }
+            
             comp = this.IsPublic.CompareTo(other.IsPublic);
             if (comp != 0)
             {

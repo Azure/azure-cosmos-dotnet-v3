@@ -287,6 +287,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             TransportSerialization.AddHighPriorityForcedBackup(requestHeaders, rntbdRequest);
             TransportSerialization.AddEnableConflictResolutionPolicyUpdate(requestHeaders, rntbdRequest);
             TransportSerialization.AddAllowDocumentReadsInOfflineRegion(requestHeaders, rntbdRequest);
+            TransportSerialization.AddCosmosGatewayTransactionId(requestHeaders, rntbdRequest);
 
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.Authorization, requestHeaders.Authorization, rntbdRequest.authorizationToken, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.SessionToken, requestHeaders.SessionToken, rntbdRequest.sessionToken, rntbdRequest);
@@ -375,6 +376,9 @@ namespace Microsoft.Azure.Documents.Rntbd
             TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.StartEpkHash, headerStringValue: null, rntbdRequest.startEpkHash, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.EndEpkHash, headerStringValue: null, rntbdRequest.endEpkHash, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.PopulateCurrentPartitionThroughputInfo, requestHeaders.PopulateCurrentPartitionThroughputInfo, rntbdRequest.populateCurrentPartitionThroughputInfo, rntbdRequest);
+            TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.PopulateDocumentRecordCount, requestHeaders.PopulateDocumentRecordCount, rntbdRequest.populateDocumentRecordCount, rntbdRequest);
+            TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.PopulateUserStrings, requestHeaders.PopulateUserStrings, rntbdRequest.populateUserStrings, rntbdRequest);
+            TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.SkipThroughputCapValidation, requestHeaders.SkipThroughputCapValidation, rntbdRequest.skipThroughputCapValidation, rntbdRequest);
 
             // will be null in case of direct, which is fine - BE will use the value from the connection context message.
             // When this is used in Gateway, the header value will be populated with the proxied HTTP request's header, and
@@ -533,7 +537,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             return new RntbdHeader(status, activityId);
         }
 
-        private static RntbdConstants.RntbdOperationType GetRntbdOperationType(OperationType operationType)
+        internal static RntbdConstants.RntbdOperationType GetRntbdOperationType(OperationType operationType)
         {
             switch (operationType)
             {
@@ -650,7 +654,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        private static RntbdConstants.RntbdResourceType GetRntbdResourceType(ResourceType resourceType)
+        internal static RntbdConstants.RntbdResourceType GetRntbdResourceType(ResourceType resourceType)
         {
             switch (resourceType)
             {
@@ -1731,6 +1735,23 @@ namespace Microsoft.Azure.Documents.Rntbd
                 }
 
                 rntbdRequest.correlatedActivityId.isPresent = true;
+            }
+        }
+
+        private static void AddCosmosGatewayTransactionId(RequestNameValueCollection requestHeaders, RntbdConstants.Request rntbdRequest)
+        {
+            string headerValue = requestHeaders.CosmosGatewayTransactionId;
+            if (!string.IsNullOrEmpty(headerValue))
+            {
+                if (!Guid.TryParse(headerValue, out rntbdRequest.cosmosGatewayTransactionId.value.valueGuid))
+                {
+                    throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture,
+                        RMResources.InvalidHeaderValue,
+                        headerValue,
+                        WFConstants.BackendHeaders.CosmosGatewayTransactionId));
+                }
+
+                rntbdRequest.cosmosGatewayTransactionId.isPresent = true;
             }
         }
 

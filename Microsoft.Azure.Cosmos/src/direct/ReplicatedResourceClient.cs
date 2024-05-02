@@ -28,6 +28,7 @@ namespace Microsoft.Azure.Documents
         private readonly Protocol protocol;
         private readonly TransportClient transportClient;
         private readonly IServiceConfigurationReader serviceConfigReader;
+        private readonly IServiceConfigurationReaderExtension serviceConfigurationReaderExtension;
         private readonly bool enableReadRequestsFallback;
         private readonly bool useMultipleWriteLocations;
         private readonly bool detectClientConnectivityIssues;
@@ -81,6 +82,7 @@ namespace Microsoft.Azure.Documents
             this.protocol = protocol;
             this.transportClient = transportClient;
             this.serviceConfigReader = serviceConfigReader;
+            this.serviceConfigurationReaderExtension = serviceConfigReader as IServiceConfigurationReaderExtension;
 
             this.consistencyReader = new ConsistencyReader(
                 this.addressSelector,
@@ -214,6 +216,19 @@ namespace Microsoft.Azure.Documents
             int retryTimeout = this.serviceConfigReader.DefaultConsistencyLevel == ConsistencyLevel.Strong ?
                 ReplicatedResourceClient.StrongGoneAndRetryWithRetryTimeoutInSeconds :
                 ReplicatedResourceClient.GoneAndRetryWithRetryTimeoutInSeconds;
+
+            if (this.serviceConfigurationReaderExtension != null)
+            {
+                IServiceRetryParams serviceRetryParams = this.serviceConfigurationReaderExtension.TryGetServiceRetryParams(request);
+                if (serviceRetryParams != null &&
+                    serviceRetryParams.TryGetRetryTimeoutInSeconds(out int retryTimeoutOverride) &&
+                    retryTimeoutOverride > 0 &&
+                    retryTimeoutOverride <= ReplicatedResourceClient.StrongGoneAndRetryWithRetryTimeoutInSeconds)
+                {
+                    retryTimeout = retryTimeoutOverride;
+                    DefaultTrace.TraceInformation("ReplicatedResourceClient: Override retryTimeout to {0}", retryTimeout);
+                }
+            }
 
             // Used on test hooks
             if (this.GoneAndRetryWithRetryTimeoutInSecondsOverride.HasValue)

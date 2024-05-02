@@ -505,6 +505,10 @@ namespace Microsoft.Azure.Documents
             EndEpkHash = 0x00D3,
             AllowDocumentReadsInOfflineRegion = 0x00D4,
             PopulateCurrentPartitionThroughputInfo = 0x00D5,
+            PopulateDocumentRecordCount = 0x00D6,
+            CosmosGatewayTransactionId = 0x00D7,
+            PopulateUserStrings = 0x00D8,
+            SkipThroughputCapValidation = 0x00D9,
         }
 
         public sealed class Request : RntbdTokenStream<RequestIdentifiers>
@@ -708,6 +712,10 @@ namespace Microsoft.Azure.Documents
             public RntbdToken endEpkHash;
             public RntbdToken allowDocumentReadsInOfflineRegion;
             public RntbdToken populateCurrentPartitionThroughputInfo;
+            public RntbdToken populateDocumentRecordCount;
+            public RntbdToken cosmosGatewayTransactionId;
+            public RntbdToken populateUserStrings;
+            public RntbdToken skipThroughputCapValidation;
 
             public Request()
             {
@@ -908,6 +916,10 @@ namespace Microsoft.Azure.Documents
                 this.endEpkHash = new RntbdToken(false, RntbdTokenTypes.Bytes, (ushort)RequestIdentifiers.EndEpkHash);
                 this.allowDocumentReadsInOfflineRegion = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.AllowDocumentReadsInOfflineRegion);
                 this.populateCurrentPartitionThroughputInfo = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.PopulateCurrentPartitionThroughputInfo);
+                this.populateDocumentRecordCount = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.PopulateDocumentRecordCount);
+                this.cosmosGatewayTransactionId = new RntbdToken(false, RntbdTokenTypes.Guid, (ushort)RequestIdentifiers.CosmosGatewayTransactionId);
+                this.populateUserStrings = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.PopulateUserStrings);
+                this.skipThroughputCapValidation = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.SkipThroughputCapValidation);
 
                 this.tokens = new RntbdToken[]
                 {
@@ -1125,6 +1137,10 @@ namespace Microsoft.Azure.Documents
                     this.endEpkHash,
                     this.allowDocumentReadsInOfflineRegion,
                     this.populateCurrentPartitionThroughputInfo,
+                    this.populateDocumentRecordCount,
+                    this.cosmosGatewayTransactionId,
+                    this.populateUserStrings,
+                    this.skipThroughputCapValidation,
                 };
             }
         }
@@ -1216,6 +1232,9 @@ namespace Microsoft.Azure.Documents
             MinGLSNForTombstoneOperations = 0x0069,
             HighestTentativeWriteLLSN = 0x0070,
             PartitionThroughputInfo = 0x0071,
+            DocumentRecordCount = 0x0072,
+            CosmosGatewayTransactionId = 0x0073,
+            UserStrings = 0x0074,
         }
 
         //
