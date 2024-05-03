@@ -2,6 +2,7 @@
 
 steps:
   - pwsh: |
+      $env:EMULATORMSIURL="https://msdata.visualstudio.com/_apis/resources/Containers/251298789/Drop?itemPath=Drop%2Fazure-cosmosdb-emulator-2.14.16-53468240.msi"
       Write-Host "Downloading Cosmos Emulator - $env:EMULATORMSIURL" -ForegroundColor green 
       Invoke-WebRequest "$env:EMULATORMSIURL" -OutFile "$env:temp\azure-cosmosdb-emulator.msi"
       Write-Host "Finished Downloading Cosmos Emulator - $env:temp\azure-cosmosdb-emulator.msi" -ForegroundColor green 
