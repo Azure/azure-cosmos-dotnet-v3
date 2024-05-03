@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         {
             if (applyPercentage <= 0 || applyPercentage > 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(applyPercentage), "Argument 'applyPercentage' must be within the range (0, 1].");
+                throw new ArgumentOutOfRangeException($"Argument '{nameof(applyPercentage)}' must be within the range (0, 1].");
             }
 
             this.applyPercentage = applyPercentage;
