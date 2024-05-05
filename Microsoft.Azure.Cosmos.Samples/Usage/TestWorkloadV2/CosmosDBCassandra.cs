@@ -15,8 +15,8 @@
     {
         internal class Configuration : CommonConfiguration
         {
-            public int ThroughputToProvision { get; set; }
-            public bool IsAutoScale { get; set; }
+            public int? ThroughputToProvision { get; set; }
+            public bool? IsAutoScale { get; set; }
         }
 
         private Configuration configuration;
@@ -39,8 +39,8 @@
             {
                 this.RecreateContainer(
                     this.configuration.ContainerName,
-                    this.configuration.ThroughputToProvision,
-                    this.configuration.IsAutoScale);
+                    this.configuration.ThroughputToProvision.Value,
+                    this.configuration.IsAutoScale.Value);
                 await Task.Delay(5000);
             }
 

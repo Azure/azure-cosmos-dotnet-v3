@@ -16,16 +16,16 @@
     {
         internal class Configuration : CommonConfiguration
         {
-            public int ThroughputToProvision { get; set; }
-            public bool IsSharedThroughput { get; set; }
-            public bool IsAutoScale { get; set; }
-            public bool ShouldContainerIndexAllProperties { get; set; }
+            public int? ThroughputToProvision { get; set; }
+            public bool? IsSharedThroughput { get; set; }
+            public bool? IsAutoScale { get; set; }
+            public bool? ShouldContainerIndexAllProperties { get; set; }
 
-            public int ItemPropertyCount { get; set; }
+            public int? ItemPropertyCount { get; set; }
 
-            public bool IsGatewayMode { get; set; }
-            public bool AllowBulkExecution { get; set; }
-            public bool OmitContentInWriteResponse { get; set; }
+            public bool? IsGatewayMode { get; set; }
+            public bool? AllowBulkExecution { get; set; }
+            public bool? OmitContentInWriteResponse { get; set; }
         }
 
         private Configuration configuration;
@@ -49,7 +49,11 @@
             this.container = this.client.GetDatabase(this.configuration.DatabaseName).GetContainer(this.configuration.ContainerName);
             if (this.configuration.ShouldRecreateContainerOnStart)
             {
-                this.container = await RecreateContainerAsync(this.client, this.configuration.DatabaseName, this.configuration.ContainerName, this.configuration.ShouldContainerIndexAllProperties, this.configuration.ThroughputToProvision, this.configuration.IsSharedThroughput, this.configuration.IsAutoScale);
+                this.container = await RecreateContainerAsync(this.client, this.configuration.DatabaseName, this.configuration.ContainerName, 
+                    this.configuration.ShouldContainerIndexAllProperties.Value, 
+                    this.configuration.ThroughputToProvision.Value, 
+                    this.configuration.IsSharedThroughput.Value, 
+                    this.configuration.IsAutoScale.Value);
                 await Task.Delay(5000);
             }
 
@@ -78,7 +82,7 @@
             this.dataSource.InitializePaddingAndInitialItemId(padding);
 
             this.itemRequestOptions = null;
-            if (this.configuration.OmitContentInWriteResponse)
+            if (this.configuration.OmitContentInWriteResponse ?? true)
             {
                 this.itemRequestOptions = new ItemRequestOptions()
                 {
@@ -138,8 +142,8 @@
         {
             return new CosmosClient(connectionString, new CosmosClientOptions()
             {
-                ConnectionMode = this.configuration.IsGatewayMode ? ConnectionMode.Gateway : ConnectionMode.Direct,
-                AllowBulkExecution = this.configuration.AllowBulkExecution,
+                ConnectionMode = this.configuration.IsGatewayMode.HasValue && this.configuration.IsGatewayMode.Value ? ConnectionMode.Gateway : ConnectionMode.Direct,
+                AllowBulkExecution = this.configuration.AllowBulkExecution ?? false,
                 MaxRetryAttemptsOnRateLimitedRequests = 0,
                 PortReuseMode = PortReuseMode.ReuseUnicastPort
             });
