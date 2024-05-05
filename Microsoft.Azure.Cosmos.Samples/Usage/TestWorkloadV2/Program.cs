@@ -79,7 +79,7 @@
 
             const int ticksPerMillisecond = 10000;
             const int ticksPerSecond = 1000 * ticksPerMillisecond;
-            int ticksPerRequest = configuration.RequestsPerSecond <= 0 ? 0 : (int)(ticksPerSecond / configuration.RequestsPerSecond);
+            int ticksPerRequest = configuration.RequestsPerSecond.HasValue ? (int)(ticksPerSecond / configuration.RequestsPerSecond) : 0;
             long usageTicks = 0;
 
             int totalRequestCount = configuration.TotalRequestCount ?? int.MaxValue;
@@ -117,9 +117,9 @@
                         await Task.Delay((int)((usageTicks - elapsedTicks - ticksPerSecond) / ticksPerMillisecond));
                     }
 
-                    if (taskTriggeredCounter - taskCompleteCounter > configuration.MaxInFlightRequestCount)
+                    while (taskTriggeredCounter - taskCompleteCounter > configuration.MaxInFlightRequestCount)
                     {
-                        await Task.Delay((int)((taskTriggeredCounter - taskCompleteCounter - configuration.MaxInFlightRequestCount) * ticksPerRequest / ticksPerMillisecond));
+                        // adding a delay > 0 msec introduces 15 msec delay due to system clock resolution which is too much; so we instead have a tight loop.
                     }
 
                     long requestStartTicks = stopwatch.ElapsedTicks;

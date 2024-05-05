@@ -52,11 +52,13 @@
         {
             this.configuration = new Configuration();
             configurationRoot.Bind(this.configuration);
+            string connectionString = configurationRoot.GetValue<string>(this.configuration.ConnectionStringRef);
 
-            this.configuration.SetConnectionPoolAndMaxInflightRequestLimit();
-            this.configuration.ConnectionString += $"Minimum Pool Size={this.configuration.MinConnectionPoolSize};Maximum Pool Size={this.configuration.MaxConnectionPoolSize};";
 
-            this.pgDataSource = new NpgsqlDataSourceBuilder(this.configuration.ConnectionString).Build();
+            this.configuration.SetConnectionPoolLimits();
+            connectionString += $"Minimum Pool Size={this.configuration.MinConnectionPoolSize};Maximum Pool Size={this.configuration.MaxConnectionPoolSize};";
+
+            this.pgDataSource = new NpgsqlDataSourceBuilder(connectionString).Build();
 
             // todo: parse the string better to expose only the host
             this.configuration.ConnectionStringForLogging = this.pgDataSource.ConnectionString[..20];

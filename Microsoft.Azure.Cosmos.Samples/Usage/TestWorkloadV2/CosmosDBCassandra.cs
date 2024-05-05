@@ -29,8 +29,10 @@
         {
             this.configuration = new Configuration();
             configurationRoot.Bind(this.configuration);
+            string connectionString = configurationRoot.GetValue<string>(this.configuration.ConnectionStringRef);
 
-            this.session = CreateSession(this.configuration.ConnectionString, this.configuration.DatabaseName, out string connectionStringForLogging);
+
+            this.session = CreateSession(connectionString, this.configuration.DatabaseName, out string connectionStringForLogging);
             this.configuration.ConnectionStringForLogging = connectionStringForLogging;
            
             if (this.configuration.ShouldRecreateContainerOnStart)

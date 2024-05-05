@@ -41,7 +41,9 @@
             this.configuration = new Configuration();
             configurationRoot.Bind(this.configuration);
 
-            this.client = this.GetClientInstance(this.configuration.ConnectionString);
+            string connectionString = configurationRoot.GetValue<string>(this.configuration.ConnectionStringRef);
+
+            this.client = this.GetClientInstance(connectionString);
             this.configuration.ConnectionStringForLogging = this.client.Endpoint.ToString();
 
             this.container = this.client.GetDatabase(this.configuration.DatabaseName).GetContainer(this.configuration.ContainerName);

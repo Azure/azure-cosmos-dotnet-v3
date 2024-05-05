@@ -56,16 +56,13 @@
         {
             this.configuration = new Configuration();
             configurationRoot.Bind(this.configuration);
+            string connectionString = configurationRoot.GetValue<string>(this.configuration.ConnectionStringRef);
 
-            if (!Enum.TryParse<MongoFlavor>(this.configuration.MongoFlavor, out this.mongoFlavor))
-            {
-                throw new Exception($"Invalid Mongo flavor {this.configuration.MongoFlavor}");
-            }
-
-            MongoClientSettings settings = MongoClientSettings.FromUrl(new MongoUrl(this.configuration.ConnectionString));
+            MongoClientSettings settings = MongoClientSettings.FromUrl(new MongoUrl(connectionString));
             this.configuration.ConnectionStringForLogging = settings.Server.Host;
 
-            this.configuration.SetConnectionPoolAndMaxInflightRequestLimit();
+
+            this.configuration.SetConnectionPoolLimits();
 
             settings.MinConnectionPoolSize = this.configuration.MinConnectionPoolSize.Value;
             settings.MaxConnectionPoolSize = this.configuration.MaxConnectionPoolSize.Value;
@@ -74,6 +71,22 @@
             this.mongoClient = new MongoClient(settings);
             this.database = this.mongoClient.GetDatabase(this.configuration.DatabaseName);
             this.collection = this.database.GetCollection<MyDocument>(this.configuration.ContainerName);
+
+
+            if (!string.IsNullOrEmpty(this.configuration.MongoFlavor))
+            {
+                if (!Enum.TryParse<MongoFlavor>(this.configuration.MongoFlavor, out this.mongoFlavor))
+                {
+                    throw new Exception($"Invalid Mongo flavor {this.configuration.MongoFlavor}");
+                }
+            }
+            else
+            {
+                this.mongoFlavor = settings.Server.Host.Contains("mongocluster.cosmos.azure.com") ? MongoFlavor.CosmosDBvCore 
+                    :  settings.Server.Host.Contains("mongo.cosmos") ? MongoFlavor.CosmosDBRU 
+                    : MongoFlavor.Native;
+                this.configuration.MongoFlavor = this.mongoFlavor.ToString();
+            }
 
             // todo?
             // BsonSerializer.RegisterSerializer(typeof(ulong), new UInt64Serializer(BsonType.Decimal128));
