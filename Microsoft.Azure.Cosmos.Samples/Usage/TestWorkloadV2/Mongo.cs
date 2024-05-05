@@ -94,7 +94,7 @@
             this.dataSource = new DataSource(this.configuration);
 
             // setup padding
-            (MyDocument tempDoc, _) = this.dataSource.GetNextItem();
+            (MyDocument tempDoc, _) = this.dataSource.GetNextItemToInsert();
             int currentLen = tempDoc.ToBson().Length;
             int systemPropertiesLen = this.mongoFlavor == MongoFlavor.CosmosDBRU ? 100 : 0;
             string padding = this.configuration.ItemSize > currentLen ? new string('x', this.configuration.ItemSize - currentLen - systemPropertiesLen) : string.Empty;
@@ -136,7 +136,7 @@
 
             if (this.configuration.RequestType == RequestType.Create)
             {
-                (MyDocument doc, _) = this.dataSource.GetNextItem();
+                (MyDocument doc, _) = this.dataSource.GetNextItemToInsert();
                 return this.collection.InsertOneAsync(doc, this.insertOneOptions, cancellationToken);
             }
             else if (this.configuration.RequestType == RequestType.PointRead)

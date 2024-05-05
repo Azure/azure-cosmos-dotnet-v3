@@ -154,7 +154,7 @@
         public Task MakeRequestAsync(CancellationToken cancellationToken, out object context)
         {
             context = null;
-            (MyDocument myDocument, _) = this.dataSource.GetNextItem();
+            (MyDocument myDocument, _) = this.dataSource.GetNextItemToInsert();
             IStatement boundStatement = this.preparedStatement.Bind(myDocument.PK, myDocument.Id, Guid.NewGuid().ToString(), myDocument.Other);
             return this.session.ExecuteAsync(boundStatement);
         }

@@ -46,6 +46,10 @@
 
         public bool ShouldDeleteContainerOnFinish { get; set; }
 
+        public int? WorkerCount { get; set; }
+
+        public int? WorkerIndex { get; set; }
+
 
         public void SetConnectionPoolLimits()
         {

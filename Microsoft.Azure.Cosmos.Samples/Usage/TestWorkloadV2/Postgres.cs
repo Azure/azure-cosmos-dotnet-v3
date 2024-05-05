@@ -92,7 +92,7 @@
             this.dataSource = new DataSource(this.configuration);
 
             // initialize padding
-            (MyDocument doc, _) = this.dataSource.GetNextItem();
+            (MyDocument doc, _) = this.dataSource.GetNextItemToInsert();
             int currentLen = doc.Id.Length + doc.PK.Length + doc.Other.Length;
             string padding = this.configuration.ItemSize > currentLen ? new string('x', this.configuration.ItemSize - currentLen) : string.Empty;
             this.dataSource.InitializePaddingAndInitialItemId(padding, lastId + 1);
@@ -109,7 +109,7 @@
             NpgsqlConnection conn = this.pgDataSource.OpenConnection();
             context = conn;
 
-            (MyDocument doc, _) = this.dataSource.GetNextItem();
+            (MyDocument doc, _) = this.dataSource.GetNextItemToInsert();
 
             NpgsqlCommand cmd = new NpgsqlCommand(this.insertStatement, conn);
             cmd.Parameters.AddWithValue("id", doc.Id);

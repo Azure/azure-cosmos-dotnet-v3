@@ -11,6 +11,8 @@
         private readonly int partitionKeyCount;
         private string padding;
         private int itemId;
+        private readonly int workerCount;
+        private readonly int workerIndex;
 
         public readonly string PartitionKeyValuePrefix;
         public readonly string[] PartitionKeyStrings;
@@ -37,6 +39,9 @@
             //    this.additionalProperties.Add(i.ToString());
             //}
             this.padding = string.Empty;
+
+            this.workerCount = configuration.WorkerCount ?? 1;
+            this.workerIndex = configuration.WorkerIndex ?? 0;
         }
 
         // Ugly as the caller has to remember to do this, but anyway looks optional
@@ -44,7 +49,16 @@
         {
             this.padding = padding;
             this.InitialItemId = itemIndex ?? 0;
-            this.itemId = this.InitialItemId;
+
+            int remainder = this.InitialItemId % this.workerCount;
+
+            this.itemId = this.InitialItemId + this.workerIndex - remainder;
+
+            // ensure we only go to higher values than what we had earlier
+            if (this.workerIndex < remainder)
+            {
+                this.itemId += this.workerCount;
+            }
         }
 
         public string GetId(int itemId)
@@ -56,13 +70,13 @@
         /// Get's next item to insert
         /// </summary>
         /// <returns>Next document and partition key index</returns>
-        public (MyDocument, int) GetNextItem()
+        public (MyDocument, int) GetNextItemToInsert()
         {
             int currentIndex = Interlocked.Add(ref this.itemId, 0);
             int currentPKIndex = currentIndex % this.partitionKeyCount;
             string partitionKey = this.PartitionKeyStrings[currentPKIndex];
-            string id = this.ItemId.ToString(idFormatSpecifier);
-            Interlocked.Increment(ref this.itemId);
+            string id = this.ItemId.ToString(idFormatSpecifier); // should match GetId()
+            Interlocked.Add(ref this.itemId, this.workerCount);
 
             return (new MyDocument()
             {

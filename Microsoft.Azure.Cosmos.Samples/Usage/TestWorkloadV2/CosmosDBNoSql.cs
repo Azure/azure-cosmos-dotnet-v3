@@ -241,7 +241,7 @@
 
         public (MemoryStream, PartitionKey) GetNextItem()
         {
-            (MyDocument myDocument, int currentPKIndex) = this.dataSource.GetNextItem();
+            (MyDocument myDocument, int currentPKIndex) = this.dataSource.GetNextItemToInsert();
             string value = JsonConvert.SerializeObject(myDocument, JsonSerializerSettings);
             return (new MemoryStream(Encoding.UTF8.GetBytes(value)), this.partitionKeys[currentPKIndex]);
         }
