@@ -44,7 +44,13 @@
 
             List<string> odeResults = new();
             {
-                FeedIterator<object> iterator = container.GetItemQueryIterator<object>(queryText);
+                FeedIterator<object> iterator = container.GetItemQueryIterator<object>(
+                    queryText,
+                    requestOptions: new QueryRequestOptions()
+                    {
+                        EnableOptimisticDirectExecution = true,
+                        PartitionKey = new PartitionKey(@"1936a1b9-2367-4be9-8207-64c57185be62|p1")
+                    });
                 while(iterator.HasMoreResults)
                 {
                     FeedResponse<object> feedResponse = await iterator.ReadNextAsync();
@@ -93,28 +99,39 @@
                 "1936a1b9-2367-4be9-8207-64c57185be62|p1",
                 "1936a1b9-2367-4be9-8207-64c57185be62|p2"
             };
+            //string documentFormat = @"
+            //        {{
+            //            ""otc"": 2517,
+            //            ""parentId"": ""ParentId824141248"",
+            //            ""props"": {{
+            //                ""attribute224733476"": ""value1273104614"",
+            //                ""attribute174153363"": 1341963442,
+            //                ""title"": ""{0}""
+            //            }},
+            //            ""orgId"": ""1936a1b9-2367-4be9-8207-64c57185be62"",
+            //            ""id"": ""{1}"",
+            //            ""size"": 546,
+            //            ""createdon"": 1714780451,
+            //            ""tst"": 638503772519228400,
+            //            ""isdel"": false,
+            //            ""partitionKey"": ""{2}"",
+            //            ""_etag"": ""\""00000000-0000-0000-9db5-324b220401da\"""",
+            //            ""ttl"": -1,
+            //            ""_rid"": ""sDJwAN9nF3YCAAAAAAAAAA=="",
+            //            ""_self"": ""dbs/sDJwAA==/colls/sDJwAN9nF3Y=/docs/sDJwAN9nF3YCAAAAAAAAAA==/"",
+            //            ""_attachments"": ""attachments/"",
+            //            ""_ts"": 1714780451
+            //        }}";
             string documentFormat = @"
                     {{
                         ""otc"": 2517,
-                        ""parentId"": ""ParentId824141248"",
                         ""props"": {{
-                            ""attribute224733476"": ""value1273104614"",
-                            ""attribute174153363"": 1341963442,
                             ""title"": ""{0}""
                         }},
                         ""orgId"": ""1936a1b9-2367-4be9-8207-64c57185be62"",
                         ""id"": ""{1}"",
-                        ""size"": 546,
-                        ""createdon"": 1714780451,
-                        ""tst"": 638503772519228400,
                         ""isdel"": false,
-                        ""partitionKey"": ""{2}"",
-                        ""_etag"": ""\""00000000-0000-0000-9db5-324b220401da\"""",
-                        ""ttl"": -1,
-                        ""_rid"": ""sDJwAN9nF3YCAAAAAAAAAA=="",
-                        ""_self"": ""dbs/sDJwAA==/colls/sDJwAN9nF3Y=/docs/sDJwAN9nF3YCAAAAAAAAAA==/"",
-                        ""_attachments"": ""attachments/"",
-                        ""_ts"": 1714780451
+                        ""partitionKey"": ""{2}""
                     }}";
             foreach (string logicalPartition in logicalPartitions)
             {
