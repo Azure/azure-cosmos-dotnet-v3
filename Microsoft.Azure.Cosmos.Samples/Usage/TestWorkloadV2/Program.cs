@@ -4,6 +4,7 @@
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Text.Json;
@@ -20,6 +21,12 @@
         private static DataSource dataSource;
 
         private static IDriver driver;
+
+        private static readonly JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions()
+        {
+            WriteIndented = true,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        };
 
         public static async Task Main(string[] args)
         {
@@ -217,7 +224,7 @@
 
                     lastBucketLatencies.Sort();
                     Console.Write($", Latency Avg: {Math.Round(lastBucketLatencies.Average(t => t.TotalMilliseconds), 1, MidpointRounding.AwayFromZero)}"
-                        + $" P99: {GetLatencyToDisplay(lastBucketLatencies, lastBucketLatencies.Count * 0.99)}");
+                        + $" P99: {GetRoundedLatency(lastBucketLatencies, lastBucketLatencies.Count * 0.99)}");
                     lastLatencyEmittedSeconds = elapsedSeconds;
                 }
 
@@ -233,6 +240,51 @@
             OnEnd();
         }
 
+        class RunResult
+        {
+            internal class LatencyValues
+            {
+                public decimal Avg { get; set; }
+                public decimal P50 { get; set; }
+                public decimal P90 { get; set; }
+                public decimal P95 { get; set; }
+
+                public decimal P99 { get; set; }
+                public decimal P999 { get; set; }
+
+                public decimal Max { get; set; }
+            }
+
+            public string MachineName => Environment.MachineName;
+
+            public DateTime RunStartTime => runStartTime;
+
+            public DateTime RunEndTime { get; set; }
+
+            public CommonConfiguration Configuration { get; set; }
+
+            public string PartitionKeyValuePrefix => dataSource.PartitionKeyValuePrefix;
+
+            public int InitialItemId => dataSource.InitialItemId;
+
+            public int ItemId => dataSource.ItemId;
+
+            public int NonFailedRequests { get; set; }
+
+            public int NonFailedRequestsAfterWarmup { get; set; }
+
+            public long RunDuration { get; set; }
+
+            public LatencyValues Latencies { get; set; }
+
+            public double AverageRUs { get; set; }
+
+            public Dictionary<HttpStatusCode, int> CountsByStatus { get; set; }
+
+            public long AchievedRequestsPerSecond { get; set; }
+        }
+
+
         private static void OnEnd()
         {
             long runtimeSeconds = latencyStopwatch.ElapsedMilliseconds / 1000;
@@ -240,46 +292,77 @@
             int nonFailedCountFinal = countsByStatus.Where(x => x.Key < HttpStatusCode.BadRequest).Sum(p => p.Value);
             int nonFailedCountFinalForLatency = nonFailedCountFinal - warmupNonFailedRequestCount;
 
-            Console.WriteLine();
-            Console.WriteLine($"Machine name: {Environment.MachineName}");
-            Console.WriteLine($"Run duration: {runStartTime} to {runEndTime} UTC");
-            WriteConfiguration();
-
-            Console.WriteLine($"Partition key prefix: {dataSource.PartitionKeyValuePrefix} Initial ItemId: {dataSource.InitialItemId} ItemId: {dataSource.ItemId}");
-            Console.WriteLine($"Successful requests: Total {nonFailedCountFinal}; post-warm up {nonFailedCountFinalForLatency} requests in {runtimeSeconds} seconds at {(runtimeSeconds == 0 ? -1 : nonFailedCountFinalForLatency / runtimeSeconds)} items/sec.");
+            RunResult.LatencyValues latencyValues = null;
             List<TimeSpan> latenciesList = latencies.ToList();
             latenciesList.Sort();
             int nonWarmupRequestCount = latenciesList.Count;
             if (nonWarmupRequestCount > 0)
             {
-                Console.WriteLine("Latencies:"
-                + $"   Avg: {Math.Round(latenciesList.Average(t => t.TotalMilliseconds), 1, MidpointRounding.AwayFromZero)}"
-                + $"   P50: {GetLatencyToDisplay(latenciesList, nonWarmupRequestCount * 0.50)}"
-                + $"   P90: {GetLatencyToDisplay(latenciesList, nonWarmupRequestCount * 0.90)}"
-                + $"   P95: {GetLatencyToDisplay(latenciesList, nonWarmupRequestCount * 0.95)}"
-                + $"   P99: {GetLatencyToDisplay(latenciesList, nonWarmupRequestCount * 0.99)}"
-                + $"   P99.9: {GetLatencyToDisplay(latenciesList, nonWarmupRequestCount * 0.999)}"
-                + $"   Max: {GetLatencyToDisplay(latenciesList, nonWarmupRequestCount - 1)}");
+                latencyValues = new()
+                {
+                    Avg = Math.Round((decimal)latenciesList.Average(t => t.TotalMilliseconds), 1, MidpointRounding.AwayFromZero),
+                    P50 = GetRoundedLatency(latenciesList, nonWarmupRequestCount * 0.50),
+                    P95 = GetRoundedLatency(latenciesList, nonWarmupRequestCount * 0.95),
+                    P99 = GetRoundedLatency(latenciesList, nonWarmupRequestCount * 0.99),
+                    P999 = GetRoundedLatency(latenciesList, nonWarmupRequestCount * 0.999),
+                    Max = GetRoundedLatency(latenciesList, nonWarmupRequestCount - 1)
+                };
             }
 
-            Console.WriteLine("Average RUs: " + (totalRequestCharge / (100.0 * nonFailedCountFinal)));
+            RunResult runResult = new()
+            {
+                RunEndTime = runEndTime,
+                Configuration = configuration,
+                NonFailedRequests = nonFailedCountFinal,
+                NonFailedRequestsAfterWarmup = nonFailedCountFinalForLatency,
+                RunDuration = runtimeSeconds,
+                AverageRUs = totalRequestCharge / (100.0 * nonFailedCountFinal),
+                CountsByStatus = countsByStatus.ToDictionary(x => x.Key, x => x.Value),
+                Latencies = latencyValues,
+                AchievedRequestsPerSecond = runtimeSeconds == 0 ? -1 : (nonFailedCountFinalForLatency / runtimeSeconds)
+            };
+
+            LogRunResultToConsole(runResult);
+            using (StreamWriter writer = new StreamWriter(String.Format("runresult-{0}.json", runStartTime.ToString("yyyyMMdd-HHmmss"))))
+            {
+                writer.Write(JsonSerializer.Serialize(runResult, jsonSerializerOptions));
+            }
+        }
+
+        private static decimal GetRoundedLatency(List<TimeSpan> latencyList, double index)
+        {
+            return Math.Round((decimal)latencyList[(int)index].TotalMilliseconds, 1, MidpointRounding.AwayFromZero);
+        }
+
+        private static void LogRunResultToConsole(RunResult runResult)
+        {
+            Console.WriteLine();
+            Console.WriteLine($"Machine name: {runResult.MachineName}");
+            Console.WriteLine($"Run duration: {runResult.RunStartTime} to {runResult.RunEndTime} UTC");
+            WriteConfiguration();
+
+            Console.WriteLine($"Partition key prefix: {runResult.PartitionKeyValuePrefix} Initial ItemId: {runResult.InitialItemId} ItemId: {runResult.ItemId}");
+            Console.WriteLine($"Successful requests: Total {runResult.NonFailedRequests}; post-warm up {runResult.NonFailedRequestsAfterWarmup} requests in {runResult.RunDuration} seconds at {runResult.AchievedRequestsPerSecond} items/sec.");
+            if (runResult.Latencies != null)
+            {
+                Console.WriteLine("Latencies:"
+                  + $"   Avg: {runResult.Latencies.Avg}"
+                  + $"   P50: {runResult.Latencies.P50}"
+                  + $"   P95: {runResult.Latencies.P95}"
+                  + $"   P99: {runResult.Latencies.P99}"
+                  + $"   P99.9: {runResult.Latencies.P999}"
+                  + $"   Max: {runResult.Latencies.Max}");
+            }
+
+            Console.WriteLine("Average RUs: " + runResult.AverageRUs);
 
             Console.Write("Counts by StatusCode: ");
-            Console.WriteLine(string.Join(", ", countsByStatus.Select(countForStatus => countForStatus.Key + ": " + countForStatus.Value)));
-
+            Console.WriteLine(string.Join(", ", runResult.CountsByStatus.Select(countForStatus => countForStatus.Key + ": " + countForStatus.Value)));
         }
 
         private static void WriteConfiguration()
         {
-            Console.WriteLine("Configuration: " + JsonSerializer.Serialize(configuration, new JsonSerializerOptions()
-            {
-                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-            }));
-        }
-
-        private static double GetLatencyToDisplay(List<TimeSpan> latencyList, double index)
-        {
-            return Math.Round(latencyList[(int)index].TotalMilliseconds, 1, MidpointRounding.AwayFromZero);
+            Console.WriteLine("Configuration: " + JsonSerializer.Serialize(configuration, jsonSerializerOptions));
         }
     }
 }
