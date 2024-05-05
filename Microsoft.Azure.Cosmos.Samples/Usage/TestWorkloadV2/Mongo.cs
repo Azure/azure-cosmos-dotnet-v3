@@ -18,13 +18,13 @@
             public string MongoFlavor { get; set; }
 
             // Applies only to CosmosDBRU flavor
-            public int ThroughputToProvision { get; set; }
+            public int? ThroughputToProvision { get; set; }
 
             // Applies only to CosmosDBRU flavor
-            public bool IsSharedThroughput { get; set; }
+            public bool? IsSharedThroughput { get; set; }
 
             // Applies only to CosmosDBRU flavor
-            public bool IsAutoScale { get; set; }
+            public bool? IsAutoScale { get; set; }
         }
 
         internal class GetLastRequestStatisticsCommand : Command<Dictionary<string, object>>

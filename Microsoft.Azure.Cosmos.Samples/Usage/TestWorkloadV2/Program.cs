@@ -7,6 +7,7 @@
     using System.Linq;
     using System.Net;
     using System.Text.Json;
+    using System.Text.Json.Serialization;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Extensions.Configuration;
@@ -68,7 +69,7 @@
 
         private static async Task PerformOperationsAsync()
         {
-            Console.WriteLine("Configuration: " + JsonSerializer.Serialize(configuration));
+            WriteConfiguration();
             Console.WriteLine($"Starting to make requests with partition key prefix {dataSource.PartitionKeyValuePrefix} and initial ItemId {dataSource.InitialItemId}");
 
             ConcurrentBag<TimeSpan> oddBucketLatencies = new ConcurrentBag<TimeSpan>();
@@ -240,8 +241,9 @@
             int nonFailedCountFinalForLatency = nonFailedCountFinal - warmupNonFailedRequestCount;
 
             Console.WriteLine();
+            Console.WriteLine($"Machine name: {Environment.MachineName}");
             Console.WriteLine($"Run duration: {runStartTime} to {runEndTime} UTC");
-            Console.WriteLine("Configuration: " + JsonSerializer.Serialize(configuration));
+            WriteConfiguration();
 
             Console.WriteLine($"Partition key prefix: {dataSource.PartitionKeyValuePrefix} Initial ItemId: {dataSource.InitialItemId} ItemId: {dataSource.ItemId}");
             Console.WriteLine($"Successful requests: Total {nonFailedCountFinal}; post-warm up {nonFailedCountFinalForLatency} requests in {runtimeSeconds} seconds at {(runtimeSeconds == 0 ? -1 : nonFailedCountFinalForLatency / runtimeSeconds)} items/sec.");
@@ -257,7 +259,7 @@
                 + $"   P95: {GetLatencyToDisplay(latenciesList, nonWarmupRequestCount * 0.95)}"
                 + $"   P99: {GetLatencyToDisplay(latenciesList, nonWarmupRequestCount * 0.99)}"
                 + $"   P99.9: {GetLatencyToDisplay(latenciesList, nonWarmupRequestCount * 0.999)}"
-                + $"   Max: {GetLatencyToDisplay(latenciesList, nonWarmupRequestCount -1)}");
+                + $"   Max: {GetLatencyToDisplay(latenciesList, nonWarmupRequestCount - 1)}");
             }
 
             Console.WriteLine("Average RUs: " + (totalRequestCharge / (100.0 * nonFailedCountFinal)));
@@ -265,6 +267,14 @@
             Console.Write("Counts by StatusCode: ");
             Console.WriteLine(string.Join(", ", countsByStatus.Select(countForStatus => countForStatus.Key + ": " + countForStatus.Value)));
 
+        }
+
+        private static void WriteConfiguration()
+        {
+            Console.WriteLine("Configuration: " + JsonSerializer.Serialize(configuration, new JsonSerializerOptions()
+            {
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            }));
         }
 
         private static double GetLatencyToDisplay(List<TimeSpan> latencyList, double index)
