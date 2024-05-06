@@ -265,9 +265,9 @@
 
             public string PartitionKeyValuePrefix => dataSource.PartitionKeyValuePrefix;
 
-            public int InitialItemId => dataSource.InitialItemId;
+            public long InitialItemId => dataSource.InitialItemId;
 
-            public int ItemId => dataSource.ItemId;
+            public long ItemId => dataSource.ItemId;
 
             public int NonFailedRequests { get; set; }
 

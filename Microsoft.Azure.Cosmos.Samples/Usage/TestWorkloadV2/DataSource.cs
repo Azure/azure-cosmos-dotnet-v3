@@ -1,7 +1,5 @@
 ﻿namespace TestWorkloadV2
 {
-    using Newtonsoft.Json;
-    using System.Collections.Generic;
     using System.Threading;
     using System;
 
@@ -10,18 +8,17 @@
         // private readonly List<string> additionalProperties = new List<string>();
         private readonly int partitionKeyCount;
         private string padding;
-        private int itemId;
-        private readonly int workerCount;
-        private readonly int workerIndex;
-
+        private long itemId;
+     
         public readonly string PartitionKeyValuePrefix;
         public readonly string[] PartitionKeyStrings;
 
-        public int InitialItemId { get; private set; }
+        public long InitialItemId { get; private set; }
 
-        public int ItemId => this.itemId;
+        public long ItemId => this.itemId;
 
-        private const string idFormatSpecifier = "D9";
+        public const string IdFormatSpecifier = "D10";
+        public const long WorkerIdMultiplier = 10000000000;
 
         public DataSource(CommonConfiguration configuration)
         {
@@ -39,31 +36,19 @@
             //    this.additionalProperties.Add(i.ToString());
             //}
             this.padding = string.Empty;
-
-            this.workerCount = configuration.WorkerCount ?? 1;
-            this.workerIndex = configuration.WorkerIndex ?? 0;
         }
 
         // Ugly as the caller has to remember to do this, but anyway looks optional
-        public void InitializePaddingAndInitialItemId(string padding, int? itemIndex = null)
+        public void InitializePaddingAndInitialItemId(string padding, long? itemIndex = null)
         {
             this.padding = padding;
             this.InitialItemId = itemIndex ?? 0;
-
-            int remainder = this.InitialItemId % this.workerCount;
-
-            this.itemId = this.InitialItemId + this.workerIndex - remainder;
-
-            // ensure we only go to higher values than what we had earlier
-            if (this.workerIndex < remainder)
-            {
-                this.itemId += this.workerCount;
-            }
+            this.itemId = this.InitialItemId;
         }
 
-        public string GetId(int itemId)
+        public string GetId(long itemId)
         {
-            return itemId.ToString(idFormatSpecifier);
+            return itemId.ToString(IdFormatSpecifier);
         }
 
         /// <summary>
@@ -72,11 +57,11 @@
         /// <returns>Next document and partition key index</returns>
         public (MyDocument, int) GetNextItemToInsert()
         {
-            int currentIndex = Interlocked.Add(ref this.itemId, 0);
-            int currentPKIndex = currentIndex % this.partitionKeyCount;
+            long currentIndex = Interlocked.Add(ref this.itemId, 0);
+            int currentPKIndex = (int)(currentIndex % this.partitionKeyCount);
             string partitionKey = this.PartitionKeyStrings[currentPKIndex];
-            string id = this.ItemId.ToString(idFormatSpecifier); // should match GetId()
-            Interlocked.Add(ref this.itemId, this.workerCount);
+            string id = this.ItemId.ToString(IdFormatSpecifier); // should match GetId()
+            Interlocked.Increment(ref this.itemId);
 
             return (new MyDocument()
             {

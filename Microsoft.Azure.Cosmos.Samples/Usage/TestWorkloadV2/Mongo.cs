@@ -99,30 +99,49 @@
             int systemPropertiesLen = this.mongoFlavor == MongoFlavor.CosmosDBRU ? 100 : 0;
             string padding = this.configuration.ItemSize > currentLen ? new string('x', this.configuration.ItemSize - currentLen - systemPropertiesLen) : string.Empty;
 
-            int lastId = -1;
+            int workerIndex = this.configuration.WorkerIndex ?? 0;
+            long lastId; 
             if (this.configuration.ShouldRecreateContainerOnStart)
             {
                 await this.database.DropCollectionAsync(this.configuration.ContainerName);
 
                 await this.database.CreateCollectionAsync(this.configuration.ContainerName);
+
+                lastId = workerIndex * DataSource.WorkerIdMultiplier;
             }
             else
             {
-                MyDocument lastDoc = await this.collection.Find<MyDocument>(Builders<MyDocument>.Filter.Empty).SortByDescending(d => d.Id).Limit(1).FirstOrDefaultAsync();
-                if (lastDoc != null)
-                {
-                    int.TryParse(lastDoc.Id, out lastId);
-                }
+                lastId = await this.BinarySearchExistingIdAsync(workerIndex * DataSource.WorkerIdMultiplier, (workerIndex + 1) * DataSource.WorkerIdMultiplier);
             }
 
-            this.dataSource.InitializePaddingAndInitialItemId(padding, lastId + 1);
+            this.dataSource.InitializePaddingAndInitialItemId(padding, lastId);
 
             this.insertOneOptions = new InsertOneOptions();
             this.random = new Random(Configuration.RandomSeed);
 
-
-
             return (this.configuration, this.dataSource);
+        }
+
+        private async Task<long> BinarySearchExistingIdAsync(long start, long end)
+        {
+            if(start == end) 
+            { 
+                return start; 
+            }
+
+            long mid = (start + end) / 2;
+            string midId = this.dataSource.GetId(mid);
+            IAsyncCursor<MyDocument> docsFound = await this.collection.FindAsync<MyDocument>(doc => doc.Id == midId);
+            if(!docsFound.Any())
+            {
+                end = mid;
+                return await this.BinarySearchExistingIdAsync(start, end);
+            }
+            else
+            {
+                start = mid + 1;
+                return await this.BinarySearchExistingIdAsync(start, end);
+            }
         }
 
         public Task CleanupAsync()
@@ -141,7 +160,7 @@
             }
             else if (this.configuration.RequestType == RequestType.PointRead)
             {
-                int randomId = this.random.Next(this.dataSource.InitialItemId);
+                long randomId = this.random.NextInt64(this.dataSource.InitialItemId);
                 string id = this.dataSource.GetId(randomId);
                 return this.collection.FindAsync((MyDocument doc) => doc.Id == id);
             }
