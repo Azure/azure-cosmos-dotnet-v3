@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos
 
                 requestTasks.Add(primaryRequest);
 
-                Task<Task<(bool, ResponseMessage)>> allRequests = Task.WhenAny(requestTasks);
+                Task<Task<(bool, ResponseMessage)>> allRequests;
 
                 ResponseMessage responseMessage;
                 
@@ -130,14 +130,12 @@ namespace Microsoft.Azure.Cosmos
                 //Send out hedged requests
                 foreach (string region in availableRegions)
                 {
+                    //Skip the first region as it is the primary request
                     if (i == 0)
                     {
-                        await Task.Delay(this.Threshold, cancellationToken);
                         i++;
                         continue;
                     }
-
-                    await Task.Delay(this.ThresholdStep, cancellationToken);
 
                     Task<(bool, ResponseMessage)> requestTask = this.CloneAndSendAsync(
                         sender,
@@ -171,6 +169,7 @@ namespace Microsoft.Azure.Cosmos
                     i++;
                 }
 
+                allRequests = Task.WhenAny(requestTasks);
                 //Wait for a good response from the hedged requests/primary request
                 while (requestTasks.Count > 1)
                 {
@@ -211,6 +210,9 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken,
             CancellationTokenSource cancellationTokenSource)
         {
+            TimeSpan awaitTime = this.Threshold + TimeSpan.FromMilliseconds((requestNumber - 1) * this.ThresholdStep.Milliseconds);
+            await Task.Delay(awaitTime, cancellationToken);
+
             RequestMessage clonedRequest;
             using (clonedRequest = request.Clone(request.Trace.Parent))
             {
