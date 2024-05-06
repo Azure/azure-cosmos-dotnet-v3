@@ -79,6 +79,8 @@
 
         private static int taskCompleteCounter = 0;
 
+        private static readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+
         private static async Task PerformOperationsAsync()
         {
             WriteConfiguration();
@@ -94,7 +96,6 @@
 
             int totalRequestCount = configuration.TotalRequestCount ?? int.MaxValue;
 
-            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             if (configuration.MaxRuntimeInSeconds.HasValue)
             {
                 cancellationTokenSource.CancelAfter(configuration.MaxRuntimeInSeconds.Value * 1000);
@@ -239,6 +240,7 @@
 
         private static void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
         {
+            cancellationTokenSource.Cancel();
             OnEnd();
         }
 
