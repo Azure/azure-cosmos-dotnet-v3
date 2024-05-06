@@ -7,6 +7,7 @@
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Runtime.CompilerServices;
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using System.Threading;
@@ -74,6 +75,10 @@
 
         private static readonly Stopwatch latencyStopwatch = new Stopwatch();
 
+        private static int taskTriggeredCounter = 0;
+
+        private static int taskCompleteCounter = 0;
+
         private static async Task PerformOperationsAsync()
         {
             WriteConfiguration();
@@ -81,9 +86,6 @@
 
             ConcurrentBag<TimeSpan> oddBucketLatencies = new ConcurrentBag<TimeSpan>();
             ConcurrentBag<TimeSpan> evenBucketLatencies = new ConcurrentBag<TimeSpan>();
-
-            int taskTriggeredCounter = 0;
-            int taskCompleteCounter = 0;
 
             const int ticksPerMillisecond = 10000;
             const int ticksPerSecond = 1000 * ticksPerMillisecond;
@@ -287,6 +289,11 @@
 
         private static void OnEnd()
         {
+            while(taskCompleteCounter != taskTriggeredCounter)
+            {
+                // wait for running requests to complete
+            }
+
             long runtimeSeconds = latencyStopwatch.ElapsedMilliseconds / 1000;
             DateTime runEndTime = DateTime.UtcNow;
             int nonFailedCountFinal = countsByStatus.Where(x => x.Key < HttpStatusCode.BadRequest).Sum(p => p.Value);
