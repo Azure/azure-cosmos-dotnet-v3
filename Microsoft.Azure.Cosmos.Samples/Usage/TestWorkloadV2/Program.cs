@@ -7,7 +7,6 @@
     using System.IO;
     using System.Linq;
     using System.Net;
-    using System.Runtime.CompilerServices;
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using System.Threading;
@@ -75,11 +74,9 @@
 
         private static readonly Stopwatch latencyStopwatch = new Stopwatch();
 
-        private static int taskTriggeredCounter = 0;
-
-        private static int taskCompleteCounter = 0;
-
         private static readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+
+        private static Task mainTask;
 
         private static async Task PerformOperationsAsync()
         {
@@ -88,6 +85,10 @@
 
             ConcurrentBag<TimeSpan> oddBucketLatencies = new ConcurrentBag<TimeSpan>();
             ConcurrentBag<TimeSpan> evenBucketLatencies = new ConcurrentBag<TimeSpan>();
+
+            int taskTriggeredCounter = 0;
+
+            int taskCompleteCounter = 0;
 
             const int ticksPerMillisecond = 10000;
             const int ticksPerSecond = 1000 * ticksPerMillisecond;
@@ -107,7 +108,7 @@
             int isOddBucketForLatencyTracing = 1;
             long lastLatencyEmittedSeconds = 0;
 
-            _ = Task.Run(async () =>
+            mainTask = Task.Run(async () =>
             {
                 int docCounter = 0;
                 bool isErrorPrinted = false;
@@ -244,57 +245,9 @@
             OnEnd();
         }
 
-        class RunResult
-        {
-            internal class LatencyValues
-            {
-                public decimal Avg { get; set; }
-                public decimal P50 { get; set; }
-                public decimal P90 { get; set; }
-                public decimal P95 { get; set; }
-
-                public decimal P99 { get; set; }
-                public decimal P999 { get; set; }
-
-                public decimal Max { get; set; }
-            }
-
-            public string MachineName => Environment.MachineName;
-
-            public DateTime RunStartTime => runStartTime;
-
-            public DateTime RunEndTime { get; set; }
-
-            public CommonConfiguration Configuration { get; set; }
-
-            public string PartitionKeyValuePrefix => dataSource.PartitionKeyValuePrefix;
-
-            public long InitialItemId => dataSource.InitialItemId;
-
-            public long ItemId => dataSource.ItemId;
-
-            public int NonFailedRequests { get; set; }
-
-            public int NonFailedRequestsAfterWarmup { get; set; }
-
-            public long RunDuration { get; set; }
-
-            public LatencyValues Latencies { get; set; }
-
-            public double AverageRUs { get; set; }
-
-            public Dictionary<HttpStatusCode, int> CountsByStatus { get; set; }
-
-            public long AchievedRequestsPerSecond { get; set; }
-        }
-
-
         private static void OnEnd()
         {
-            while(taskCompleteCounter != taskTriggeredCounter)
-            {
-                // wait for running requests to complete
-            }
+            while (!mainTask.IsCompleted) { }
 
             long runtimeSeconds = latencyStopwatch.ElapsedMilliseconds / 1000;
             DateTime runEndTime = DateTime.UtcNow;
@@ -320,8 +273,12 @@
 
             RunResult runResult = new()
             {
+                RunStartTime = runStartTime,
                 RunEndTime = runEndTime,
                 Configuration = configuration,
+                PartitionKeyValuePrefix = dataSource.PartitionKeyValuePrefix,
+                InitialItemId = dataSource.InitialItemId,
+                ItemId = dataSource.ItemId,
                 NonFailedRequests = nonFailedCountFinal,
                 NonFailedRequestsAfterWarmup = nonFailedCountFinalForLatency,
                 RunDuration = runtimeSeconds,
