@@ -135,7 +135,10 @@
                     }
 
                     long requestStartTicks = stopwatch.ElapsedTicks;
-                    _ = Program.driver.MakeRequestAsync(cancellationToken, out object context).ContinueWith((Task task) =>
+
+                    // While we could have passed cancellationToken below, we pass None to not fail in-progress requests
+                    // when the time ends or upon Ctrl+C.
+                    _ = Program.driver.MakeRequestAsync(CancellationToken.None, out object context).ContinueWith((Task task) =>
                     {
                         TimeSpan requestLatency = TimeSpan.FromTicks(stopwatch.ElapsedTicks - requestStartTicks);
                         ResponseAttributes responseAttributes = Program.driver.HandleResponse(task, context);
