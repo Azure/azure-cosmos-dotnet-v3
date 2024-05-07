@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 IReadOnlyCollection<string> availableRegions = client.DocumentClient.GlobalEndpointManager.GetAvailableReadEndpointsByLocation().Keys;
                 int i = 0;
-                List<Task<(bool, ResponseMessage)>> requestTasks = new List<Task<(bool, ResponseMessage)>>(availableRegions.Count);
+                List<Task<(bool, ResponseMessage)>> requestTasks = new List<Task<(bool, ResponseMessage)>>();
 
                 Task<(bool, ResponseMessage)> primaryRequest = this.RequestSenderAndResultCheckAsync(
                     sender,
