@@ -72,6 +72,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             {
                 return false;
             }
+            else if (Random.Shared.NextDouble() < this.result.GetApplicationPercentage())
+            {
+                return false;
+            }
             else
             {
                 Interlocked.Increment(ref this.hitCount);
