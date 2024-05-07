@@ -197,7 +197,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationTokenSource.Cancel();
                 ((CosmosTraceDiagnostics)response.Diagnostics).Value.AddDatum(
                     "Hedge Context",
-                    object.ReferenceEquals(primaryRequest, requestTasks[0]) ? "Hedged Request" : "Original Request");
+                    object.ReferenceEquals(primaryRequest, requestTasks[0]) ? "Original Request" : "Hedged Request");
                 return response;
             }
         }
