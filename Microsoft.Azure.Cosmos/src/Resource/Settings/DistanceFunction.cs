@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos
     /// Defines the distance function for a vector index specification in the Azure Cosmos DB service.
     /// </summary>
     /// <seealso cref="Embedding"/> for usage.
-    internal enum DistanceFunction
+    public enum DistanceFunction
     {
         /// <summary>
         /// Represents the euclidean distance function.
