@@ -334,6 +334,22 @@ namespace Microsoft.Azure.Cosmos.Routing
                 request.RequestContext.ExcludeRegions);
         }
 
+        public ReadOnlyCollection<Uri> GetApplicableEndpoints(IEnumerable<string> excludeRegions, bool isReadRequest)
+        {
+            ReadOnlyCollection<Uri> endpoints = isReadRequest ? this.ReadEndpoints : this.WriteEndpoints;
+
+            if (excludeRegions == null || excludeRegions.Count() == 0)
+            {
+                return endpoints;
+            }
+
+            return this.GetApplicableEndpoints(
+                endpoints,
+                isReadRequest ? this.locationInfo.AvailableReadEndpointByLocation : this.locationInfo.AvailableWriteEndpointByLocation,
+                this.defaultEndpoint,
+                excludeRegions);
+        }
+
         /// <summary>
         /// Gets applicable endpoints for a request, if there are no applicable endpoints, returns the fallback endpoint
         /// </summary>
@@ -346,7 +362,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             IReadOnlyList<Uri> endpoints,
             ReadOnlyDictionary<string, Uri> regionNameByEndpoint,
             Uri fallbackEndpoint,
-            IReadOnlyList<string> excludeRegions)
+            IEnumerable<string> excludeRegions)
         {
             List<Uri> applicableEndpoints = new List<Uri>(endpoints.Count);
             HashSet<Uri> excludeUris = new HashSet<Uri>();

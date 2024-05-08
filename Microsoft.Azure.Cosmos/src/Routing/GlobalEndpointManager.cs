@@ -453,6 +453,11 @@ namespace Microsoft.Azure.Cosmos.Routing
             return this.locationCache.GetApplicableEndpoints(request, isReadRequest);
         }
 
+        public ReadOnlyCollection<Uri> GetApplicableEndpoints(IEnumerable<string> excludeRegions, bool isReadRequest)
+        {
+            return this.locationCache.GetApplicableEndpoints(excludeRegions, isReadRequest);
+        }
+
         public bool TryGetLocationForGatewayDiagnostics(Uri endpoint, out string regionName)
         {
             return this.locationCache.TryGetLocationForGatewayDiagnostics(endpoint, out regionName);
