@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 //Wait for a good response from the hedged requests/primary request
-                while (requestTasks.Count > 1)
+                while (requestTasks.Any())
                 {
                     Task completedTask = await Task.WhenAny(requestTasks);
                     requestTasks.Remove(completedTask);
