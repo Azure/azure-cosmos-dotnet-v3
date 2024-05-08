@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using global::Azure.Core;
+    using Microsoft.Azure.Cosmos.Core;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Documents;
@@ -113,7 +114,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 IReadOnlyCollection<Uri> hedgeRegions = client.DocumentClient.GlobalEndpointManager
                     .GetApplicableEndpoints(
-                        request.RequestOptions.ExcludeRegions, 
+                        request.RequestOptions?.ExcludeRegions,
                         OperationTypeExtensions.IsReadOperation(request.OperationType));
 
                 List<Task> requestTasks = new List<Task>(hedgeRegions.Count + 1);
