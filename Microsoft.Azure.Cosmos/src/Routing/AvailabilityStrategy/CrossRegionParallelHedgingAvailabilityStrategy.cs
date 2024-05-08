@@ -214,14 +214,13 @@ namespace Microsoft.Azure.Cosmos
 
                 clonedRequest.RequestOptions.ExcludeRegions = null;
 
-                clonedRequest.DocumentServiceRequest.RequestContext.RouteToLocation(region);
+                clonedRequest.RouteToLocation(region);
 
                 return await this.RequestSenderAndResultCheckAsync(
                     sender,
                     clonedRequest,
                     cancellationToken,
                     cancellationTokenSource);
-
             }
         }
 
