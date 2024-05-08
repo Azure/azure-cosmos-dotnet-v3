@@ -310,7 +310,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
             else
             {
-                ReadOnlyCollection<Uri> endpoints = this.GetApplicableEndpoints(request, !request.OperationType.IsWriteOperation());
+                ReadOnlyCollection<Uri> endpoints = this.GetApplicableEndpoints(request.RequestContext.ExcludeRegions, !request.OperationType.IsWriteOperation());
                 locationEndpointToRoute = endpoints[locationIndex % endpoints.Count];
             }
 
@@ -318,11 +318,11 @@ namespace Microsoft.Azure.Cosmos.Routing
             return locationEndpointToRoute;
         }
 
-        public ReadOnlyCollection<Uri> GetApplicableEndpoints(DocumentServiceRequest request, bool isReadRequest)
+        public ReadOnlyCollection<Uri> GetApplicableEndpoints(IEnumerable<string> excludeRegions, bool isReadRequest)
         {
             ReadOnlyCollection<Uri> endpoints = isReadRequest ? this.ReadEndpoints : this.WriteEndpoints;
 
-            if (request.RequestContext.ExcludeRegions == null || request.RequestContext.ExcludeRegions.Count == 0)
+            if (excludeRegions == null || !excludeRegions.Any())
             {
                 return endpoints;
             }
@@ -331,7 +331,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 endpoints,
                 isReadRequest ? this.locationInfo.AvailableReadEndpointByLocation : this.locationInfo.AvailableWriteEndpointByLocation,
                 this.defaultEndpoint,
-                request.RequestContext.ExcludeRegions);
+                excludeRegions);
         }
 
         /// <summary>
@@ -346,7 +346,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             IReadOnlyList<Uri> endpoints,
             ReadOnlyDictionary<string, Uri> regionNameByEndpoint,
             Uri fallbackEndpoint,
-            IReadOnlyList<string> excludeRegions)
+            IEnumerable<string> excludeRegions)
         {
             List<Uri> applicableEndpoints = new List<Uri>(endpoints.Count);
             HashSet<Uri> excludeUris = new HashSet<Uri>();

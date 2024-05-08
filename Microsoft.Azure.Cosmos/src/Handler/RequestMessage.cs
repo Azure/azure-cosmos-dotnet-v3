@@ -307,6 +307,11 @@ namespace Microsoft.Azure.Cosmos
             }
             
             this.DocumentServiceRequest.RequestContext.ExcludeRegions = this.RequestOptions?.ExcludeRegions;
+            if (this.RequestOptions?.LocationEndpointToRoute != null)
+            {
+                // TODO: Validate this flow
+                this.DocumentServiceRequest.RequestContext.RouteToLocation(this.RequestOptions?.LocationEndpointToRoute); 
+            }
             this.OnBeforeRequestHandler(this.DocumentServiceRequest);
             return this.DocumentServiceRequest;
         }

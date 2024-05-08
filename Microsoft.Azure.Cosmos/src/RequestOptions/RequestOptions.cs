@@ -85,6 +85,8 @@ namespace Microsoft.Azure.Cosmos
 #endif
         AvailabilityStrategy AvailabilityStrategy { get; set; }
 
+        internal Uri LocationEndpointToRoute { get; set; }
+
         /// <summary>
         /// Gets or sets the boolean to use effective partition key routing in the cosmos db request.
         /// </summary>
