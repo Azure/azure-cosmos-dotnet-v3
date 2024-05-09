@@ -7,10 +7,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Linq.Dynamic;
     using System.Runtime.Serialization;
+    using System.Text;
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using System.Threading.Tasks;
@@ -35,7 +37,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         private const int RecordCount = 3;
         private const int MaxValue = 500;
         private const int MaxStringLength = 100;
-        private const int PropertyCount = 4;
 
         [ClassInitialize]
         public async static Task Initialize(TestContext textContext)
@@ -317,8 +318,13 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                             foreach (JToken docToken in info)
                             {
                                 string documentString = "{";
-                                for (int index = 0; index < PropertyCount; index++)
+                                for (int index = 0; index < docToken.Count(); index++)
                                 {
+                                    // If the property name starts with underscore(_), it is an internal property. Safe to skip.
+                                    if (docToken.ElementAt(index).Value<JProperty>().Name.First() == '_')
+                                    {
+                                        continue;
+                                    }
                                     documentString += index == 0 ? String.Empty : ", ";
                                     documentString += docToken.ElementAt(index).ToString();
                                 }
@@ -331,6 +337,21 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             }
 
             return JsonConvert.SerializeObject(insertedDataList.Select(item => item), new JsonSerializerSettings { Formatting = Newtonsoft.Json.Formatting.Indented });
+        }
+
+        public class DateOnlyJsonConverter : System.Text.Json.Serialization.JsonConverter<DateOnly>
+        {
+            private const string Format = "yyyy-MM-dd";
+
+            public override DateOnly Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                return DateOnly.ParseExact(reader.GetString(), Format, CultureInfo.InvariantCulture);
+            }
+
+            public override void Write(Utf8JsonWriter writer, DateOnly value, JsonSerializerOptions options)
+            {
+                writer.WriteStringValue(value.ToString(Format, CultureInfo.InvariantCulture));
+            }
         }
 
         private class DataObjectDotNet : LinqTestObject
@@ -354,6 +375,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]
             public DataType? DataTypeField { get; set; }
 
+            [System.Text.Json.Serialization.JsonConverter(typeof(DateOnlyJsonConverter))]
+            public DateOnly? DateOnlyField { get; set; }
+
             public DataObjectDotNet() { }
 
             public DataObjectDotNet(double numericField, string stringField, string id, string pk)
@@ -363,11 +387,35 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 this.IgnoreField = "Ignore";
                 this.id = id;
                 this.Pk = pk;
+                this.DateOnlyField = new DateOnly(2024, 5, 9);
             }
 
             public override string ToString()
             {
-                return $"{{NumericField:{this.NumericField},StringField:{this.StringField},id:{this.id},Pk:{this.Pk}}}";
+                StringBuilder stringBuilder = new StringBuilder()
+                    .Append("{")
+                    .Append("NumericField:").Append(this.NumericField)
+                    .Append(",StringField:").Append(this.StringField)
+                    .Append(",id:").Append(this.id)
+                    .Append(",Pk:").Append(this.Pk);
+
+                if (this.DateTimeField.HasValue)
+                {
+                    stringBuilder.Append(",DateTimeField:").Append(this.DateTimeField);
+                }
+
+                if (this.DataTypeField.HasValue)
+                {
+                    stringBuilder.Append(",DataTypeField:").Append(this.DataTypeField);
+                }
+
+                if (this.DateOnlyField.HasValue)
+                {
+                    stringBuilder.Append(",DateOnlyField:").Append(this.DateOnlyField.Value.ToString("yyyy-MM-dd"));
+                }
+
+                stringBuilder.Append("}");
+                return stringBuilder.ToString();
             }
         }
 

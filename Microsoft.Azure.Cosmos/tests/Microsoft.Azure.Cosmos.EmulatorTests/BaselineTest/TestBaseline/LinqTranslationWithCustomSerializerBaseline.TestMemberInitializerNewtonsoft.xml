@@ -10,12 +10,12 @@ SELECT VALUE root
 FROM root 
 WHERE (root["numberValueNewtonsoft"] = 1)]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\"}",
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\"}"
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}"
 ]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
@@ -31,12 +31,12 @@ SELECT VALUE root
 FROM root 
 WHERE (root = {"numberValueNewtonsoft": 1, "stringValueNewtonsoft": "1", "id": null, "pk": null, "dateTimeField": null, "dataTypeField": null})]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\"}",
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\"}"
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}"
 ]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
@@ -51,12 +51,12 @@ WHERE (root = {"numberValueNewtonsoft": 1, "stringValueNewtonsoft": "1", "id": n
 SELECT VALUE {"numberValueNewtonsoft": 1, "stringValueNewtonsoft": "1", "id": null, "pk": null, "dateTimeField": null, "dataTypeField": null} 
 FROM root]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\"}",
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\"}"
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}"
 ]]]></InputData>
       <Results><![CDATA[[
   "{NumericField:0,StringField:,id:,Pk:}",
@@ -78,12 +78,12 @@ FROM root]]></SqlQuery>
 SELECT VALUE ((root["numberValueNewtonsoft"] > 1) ? {"numberValueNewtonsoft": 1, "stringValueNewtonsoft": "1", "id": null, "pk": null, "dateTimeField": null, "dataTypeField": null} : {"numberValueNewtonsoft": 1, "stringValueNewtonsoft": "1", "id": null, "pk": null, "dateTimeField": null, "dataTypeField": null}) 
 FROM root]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\"}",
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\"}"
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}"
 ]]]></InputData>
       <Results><![CDATA[[
   "{NumericField:0,StringField:,id:,Pk:}",
@@ -106,12 +106,12 @@ SELECT VALUE "A"
 FROM root 
 WHERE (root = {"numberValueNewtonsoft": root["numberValueNewtonsoft"], "stringValueNewtonsoft": root["stringValueNewtonsoft"]})]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\"}",
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\"}"
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}"
 ]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
@@ -127,12 +127,12 @@ SELECT VALUE root
 FROM root 
 WHERE (root["dateTimeField"] != null)]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\"}",
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\"}"
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}"
 ]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
@@ -148,12 +148,12 @@ SELECT VALUE root
 FROM root 
 WHERE (root["dataTypeField"] != null)]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\"}",
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\"}"
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}"
 ]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
@@ -169,12 +169,12 @@ SELECT VALUE root
 FROM root 
 WHERE (root["dateTimeField"] = "1970-01-01T00:00:00Z")]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\"}",
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\"}"
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}"
 ]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
@@ -190,12 +190,12 @@ SELECT VALUE root
 FROM root 
 WHERE (root["dataTypeField"] = "Point")]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\"}",
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\"}"
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}"
 ]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
@@ -211,12 +211,12 @@ SELECT VALUE root
 FROM root 
 WHERE (root["stringValueNewtonsoft"] != null)]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\"}",
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\"}"
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}"
 ]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
@@ -232,12 +232,12 @@ SELECT VALUE root
 FROM root 
 WHERE (root["NumberValueNewtonsoft"] = 1)]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\"}",
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\"}"
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}"
 ]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
@@ -253,12 +253,12 @@ SELECT VALUE root
 FROM root 
 WHERE (root = {"NumberValueNewtonsoft": 1, "StringValueNewtonsoft": "1", "id": null, "Pk": null, "DateTimeField": null, "DataTypeField": null})]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\"}",
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\"}"
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}"
 ]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
@@ -273,12 +273,12 @@ WHERE (root = {"NumberValueNewtonsoft": 1, "StringValueNewtonsoft": "1", "id": n
 SELECT VALUE {"NumberValueNewtonsoft": 1, "StringValueNewtonsoft": "1", "id": null, "Pk": null, "DateTimeField": null, "DataTypeField": null} 
 FROM root]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\"}",
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\"}"
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}"
 ]]]></InputData>
       <Results><![CDATA[[
   "{NumericField:0,StringField:,id:,Pk:}",
@@ -300,12 +300,12 @@ FROM root]]></SqlQuery>
 SELECT VALUE ((root["NumberValueNewtonsoft"] > 1) ? {"NumberValueNewtonsoft": 1, "StringValueNewtonsoft": "1", "id": null, "Pk": null, "DateTimeField": null, "DataTypeField": null} : {"NumberValueNewtonsoft": 1, "StringValueNewtonsoft": "1", "id": null, "Pk": null, "DateTimeField": null, "DataTypeField": null}) 
 FROM root]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\"}",
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\"}"
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}"
 ]]]></InputData>
       <Results><![CDATA[[
   "{NumericField:0,StringField:,id:,Pk:}",
@@ -328,12 +328,12 @@ SELECT VALUE "A"
 FROM root 
 WHERE (root = {"NumberValueNewtonsoft": root["NumberValueNewtonsoft"], "StringValueNewtonsoft": root["StringValueNewtonsoft"]})]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\"}",
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\"}"
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}"
 ]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
@@ -349,12 +349,12 @@ SELECT VALUE root
 FROM root 
 WHERE (root["DateTimeField"] != null)]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\"}",
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\"}"
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}"
 ]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
@@ -370,12 +370,12 @@ SELECT VALUE root
 FROM root 
 WHERE (root["DataTypeField"] != null)]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\"}",
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\"}"
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}"
 ]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
@@ -391,12 +391,12 @@ SELECT VALUE root
 FROM root 
 WHERE (root["DateTimeField"] = "1970-01-01T00:00:00Z")]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\"}",
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\"}"
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}"
 ]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
@@ -412,12 +412,12 @@ SELECT VALUE root
 FROM root 
 WHERE (root["DataTypeField"] = "Point")]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\"}",
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\"}"
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}"
 ]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
@@ -433,12 +433,12 @@ SELECT VALUE root
 FROM root 
 WHERE (root["StringValueNewtonsoft"] != null)]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\"}",
-  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\"}",
-  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\"}",
-  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\"}"
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-True\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"IgnoreField\": \"ignore\", \"id\": \"0-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"IgnoreField\": \"ignore\", \"id\": \"1-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"IgnoreField\": \"ignore\", \"id\": \"2-False\", \"Pk\": \"Test\", \"DateTimeField\": null, \"DataTypeField\": null}"
 ]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
