@@ -334,19 +334,16 @@ namespace Microsoft.Azure.Cosmos.Routing
                 request.RequestContext.ExcludeRegions);
         }
 
-        public ReadOnlyCollection<Uri> GetApplicableEndpoints(IEnumerable<string> excludeRegions, bool isReadRequest)
+        public ReadOnlyCollection<string> GetApplicableRegions(IEnumerable<string> excludeRegions, bool isReadRequest)
         {
-            ReadOnlyCollection<Uri> endpoints = isReadRequest ? this.ReadEndpoints : this.WriteEndpoints;
+            ReadOnlyCollection<string> endpoints = isReadRequest 
+                ? this.locationInfo.AvailableReadLocations 
+                : this.locationInfo.AvailableReadLocations;
 
-            if (excludeRegions == null || excludeRegions.Count() == 0)
-            {
-                return endpoints;
-            }
-
-            return this.GetApplicableEndpoints(
+            return this.GetApplicableRegions(
                 endpoints,
                 isReadRequest ? this.locationInfo.AvailableReadEndpointByLocation : this.locationInfo.AvailableWriteEndpointByLocation,
-                this.defaultEndpoint,
+                this.locationInfo.PreferredLocations[0],
                 excludeRegions);
         }
 
@@ -390,6 +387,53 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
             return new ReadOnlyCollection<Uri>(applicableEndpoints);
+        }
+
+        /// <summary>
+        /// Gets applicable endpoints for a request, if there are no applicable endpoints, returns the fallback endpoint
+        /// </summary>
+        /// <param name="availableRegions"></param>
+        /// <param name="regionNameByEndpoint"></param>
+        /// <param name="fallbackRegion"></param>
+        /// <param name="excludeRegions"></param>
+        /// <returns>a list of applicable endpoints for a request</returns>
+        private ReadOnlyCollection<string> GetApplicableRegions(
+            IReadOnlyList<string> availableRegions,
+            ReadOnlyDictionary<string, Uri> regionNameByEndpoint,
+            string fallbackRegion,
+            IEnumerable<string> excludeRegions)
+        {
+            List<string> applicableRegions = new List<string>(availableRegions.Count);
+            HashSet<string> regions = new HashSet<string>();
+            HashSet<string> preferredLocationsHash = new HashSet<string>(this.locationInfo.PreferredLocations);
+
+            if (excludeRegions != null)
+            {
+                foreach (string region in excludeRegions)
+                {
+                    string normalizedRegionName = this.regionNameMapper.GetCosmosDBRegionName(region);
+                    if (regionNameByEndpoint.ContainsKey(normalizedRegionName))
+                    {
+                        regions.Add(normalizedRegionName);
+                    }
+                }
+            }
+
+            foreach (string availableRegion in availableRegions)
+            {
+                if (!regions.Contains(availableRegion) 
+                    && preferredLocationsHash.Contains(availableRegion))
+                {
+                    applicableRegions.Add(availableRegion);
+                }
+            }
+
+            if (applicableRegions.Count == 0)
+            {
+                applicableRegions.Add(fallbackRegion);
+            }
+
+            return new ReadOnlyCollection<string>(applicableRegions);
         }
 
         public bool ShouldRefreshEndpoints(out bool canRefreshInBackground)

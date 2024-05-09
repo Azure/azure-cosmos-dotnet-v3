@@ -453,9 +453,9 @@ namespace Microsoft.Azure.Cosmos.Routing
             return this.locationCache.GetApplicableEndpoints(request, isReadRequest);
         }
 
-        public ReadOnlyCollection<Uri> GetApplicableEndpoints(IEnumerable<string> excludeRegions, bool isReadRequest)
+        public ReadOnlyCollection<string> GetApplicableRegions(IEnumerable<string> excludeRegions, bool isReadRequest)
         {
-            return this.locationCache.GetApplicableEndpoints(excludeRegions, isReadRequest);
+            return this.locationCache.GetApplicableRegions(excludeRegions, isReadRequest);
         }
 
         public bool TryGetLocationForGatewayDiagnostics(Uri endpoint, out string regionName)
