@@ -115,8 +115,6 @@
             Console.WriteLine($"Created Completed activity with id {createCompletedActivity.Resource.Id} that cost {createCompletedActivity.RequestCharge}");
 
             // Execute queries materializing responses using System.Text.Json
-            // NOTE: GetItemLinqQueryable does not support System.Text.Json attributes. LINQ will not translate the name based on the attributes
-            // which can result in no or invalid results coming back. https://github.com/Azure/azure-cosmos-dotnet-v3/issues/3250
             using FeedIterator<ToDoActivity> iterator = container.GetItemQueryIterator<ToDoActivity>("select * from c where c.status = 'Completed'");
             while (iterator.HasMoreResults)
             {
@@ -177,19 +175,15 @@
     // <Model>
     public class ToDoActivity
     {
-        // Note: System.Text.Json attributes such as JsonPropertyName are currently applied on item CRUD operations and non-LINQ queries, but not on LINQ queries
         [JsonPropertyName("id")]
         public string Id { get; set; }
 
-        // Note: System.Text.Json attributes such as JsonPropertyName are currently applied on item CRUD operations and non-LINQ queries, but not on LINQ queries
         [JsonPropertyName("partitionKey")]
         public string PartitionKey { get; set; }
 
-        // Note: System.Text.Json attributes such as JsonPropertyName are currently applied on item CRUD operations and non-LINQ queries, but not on LINQ queries
         [JsonPropertyName("activityId")]
         public string ActivityId { get; set; }
 
-        // Note: System.Text.Json attributes such as JsonPropertyName are currently applied on item CRUD operations and non-LINQ queries, but not on LINQ queries
         [JsonPropertyName("status")]
         public string Status { get; set; }
     }
