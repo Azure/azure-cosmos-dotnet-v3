@@ -120,11 +120,17 @@ namespace Microsoft.Azure.Cosmos
 
             JsonPropertyNameAttribute jsonPropertyNameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(true);
 
-            string memberName = !string.IsNullOrEmpty(jsonPropertyNameAttribute?.Name)
-                ? jsonPropertyNameAttribute.Name
-                : memberInfo.Name;
+            if (!string.IsNullOrEmpty(jsonPropertyNameAttribute?.Name))
+            {
+                return jsonPropertyNameAttribute.Name;
+            }
 
-            return memberName;
+            if (this.jsonSerializerOptions.PropertyNamingPolicy != null)
+            {
+                return this.jsonSerializerOptions.PropertyNamingPolicy.ConvertName(memberInfo.Name);
+            }
+
+            return memberInfo.Name;
         }
     }
 }
