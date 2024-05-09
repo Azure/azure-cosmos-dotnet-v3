@@ -427,7 +427,7 @@ namespace Microsoft.Azure.Cosmos
         /// (Direct/TCP) Controls the amount of time allowed for trying to establish a connection.
         /// </summary>
         /// <value>
-        /// The default timeout is 5 seconds. Recommended values are greater than or equal to 5 seconds.
+        /// The default timeout is 5 seconds. For latency sensitive applications that prefer to retry faster, a recommended value of 1 second can be used.
         /// </value>
         /// <remarks>
         /// When the time elapses, the attempt is cancelled and an error is returned. Longer timeouts will delay retries and failures.
