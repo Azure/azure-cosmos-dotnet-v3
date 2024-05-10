@@ -75,38 +75,9 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="memberInfo">Any MemberInfo used in the query.</param>
         /// <returns>A serialized representation of the member.</returns>
         /// <remarks>
-        /// Note that this is just a default implementation which handles the basic scenarios. Any <see cref="JsonSerializerOptions"/> passed in
-        /// here are not going to be reflected in SerializeMemberName(). For example, if customers passed in a JsonSerializerOption such as below
-        /// <code language="c#">
-        /// <![CDATA[
-        /// JsonSerializerOptions options = new()
-        /// {
-        ///     PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-        /// }
-        /// ]]>
-        /// </code>
-        /// This would not be honored by SerializeMemberName() unless it included special handling for this, for example.
-        /// <code language="c#">
-        /// <![CDATA[
-        /// public override string SerializeMemberName(MemberInfo memberInfo)
-        /// {
-        ///     JsonExtensionDataAttribute jsonExtensionDataAttribute =
-        ///         memberInfo.GetCustomAttribute<JsonExtensionDataAttribute>(true);
-        ///     if (jsonExtensionDataAttribute != null)
-        ///     {
-        ///         return null;
-        ///     }
-        ///     JsonPropertyNameAttribute jsonPropertyNameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(true);
-        ///     if (!string.IsNullOrEmpty(jsonPropertyNameAttribute?.Name))
-        ///     {
-        ///         return jsonPropertyNameAttribute.Name;
-        ///     }
-        ///     return System.Text.Json.JsonNamingPolicy.CamelCase.ConvertName(memberInfo.Name);
-        /// }
-        /// ]]>
-        /// </code>
-        /// To handle such scenarios, please create a custom serializer which inherits from the <see cref="CosmosSystemTextJsonSerializer"/> and overrides the
-        /// SerializeMemberName to add any special handling.
+        /// Note that this is just a default implementation which handles the basic scenarios.To handle any special cases,
+        /// please create a custom serializer which inherits from the <see cref="CosmosSystemTextJsonSerializer"/> and overrides the
+        /// SerializeMemberName() method.
         /// </remarks>
         public override string SerializeMemberName(MemberInfo memberInfo)
         {
