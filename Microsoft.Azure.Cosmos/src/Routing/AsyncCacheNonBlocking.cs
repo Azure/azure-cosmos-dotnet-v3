@@ -253,11 +253,11 @@ namespace Microsoft.Azure.Cosmos
         private sealed class AsyncLazyWithRefreshTask<T>
         {
             private readonly CancellationToken cancellationToken;
-            private readonly Func<T, Task<T>> createValueFunc;
             private readonly object valueLock = new ();
             private readonly object removedFromCacheLock = new ();
 
             private bool removedFromCache = false;
+            private Func<T, Task<T>> createValueFunc;
             private Task<T> value;
             private Task<T> refreshInProgress;
 
@@ -304,6 +304,7 @@ namespace Microsoft.Azure.Cosmos
 
                     this.cancellationToken.ThrowIfCancellationRequested();
                     this.value = this.createValueFunc(default);
+                    this.createValueFunc = null;
                     return this.value;
                 }
             }
