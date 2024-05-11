@@ -357,7 +357,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (this.canUseMultipleWriteLocations)
                 {
-                    ReadOnlyCollection<Uri> endpoints = this.globalEndpointManager.GetApplicableEndpoints(request, this.isReadRequest);
+                    ReadOnlyCollection<Uri> endpoints = this.globalEndpointManager.GetApplicableEndpoints(request.RequestContext.ExcludeRegions, this.isReadRequest);
 
                     if (this.sessionTokenRetryCount > endpoints.Count)
                     {
