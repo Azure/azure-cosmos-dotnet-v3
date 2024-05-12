@@ -887,6 +887,29 @@ namespace Microsoft.Azure.Cosmos.Linq
             return result;
         }
 
+        private static SqlSelectItem[] CreateSelectItems(ReadOnlyCollection<Expression> arguments, ReadOnlyCollection<MemberInfo> members, TranslationContext context)
+        {
+            if (arguments.Count != members.Count)
+            {
+                throw new InvalidOperationException("Expected same number of arguments as members");
+            }
+
+            SqlSelectItem[] result = new SqlSelectItem[arguments.Count];
+            for (int i = 0; i < arguments.Count; i++)
+            {
+                Expression arg = arguments[i];
+                MemberInfo member = members[i];
+                SqlScalarExpression selectExpression = ExpressionToSql.VisitScalarExpression(arg, context);
+
+                string memberName = member.GetMemberName(context);
+                SqlIdentifier alias = SqlIdentifier.Create(memberName);
+                SqlSelectItem prop = SqlSelectItem.Create(selectExpression, alias);
+                result[i] = prop;
+            }
+
+            return result;
+        }
+
         private static SqlScalarExpression VisitNew(NewExpression inputExpression, TranslationContext context)
         {
             if (typeof(Geometry).IsAssignableFrom(inputExpression.Type))
@@ -1735,48 +1758,63 @@ namespace Microsoft.Azure.Cosmos.Linq
             switch (valueSelectorExpression.NodeType)
             {
                 case ExpressionType.Constant:
-                {
-                    ConstantExpression constantExpression = (ConstantExpression)valueSelectorExpression;
-                    SqlScalarExpression selectExpression = ExpressionToSql.VisitConstant(constantExpression, context);
-
-                    SqlSelectSpec sqlSpec = SqlSelectValueSpec.Create(selectExpression);
-                    SqlSelectClause select = SqlSelectClause.Create(sqlSpec, null);
-                    context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
-                    break;
-                }
-                case ExpressionType.Parameter:
-                {
-                    ParameterExpression parameterValueExpression = (ParameterExpression)valueSelectorExpression;
-                    SqlScalarExpression selectExpression = ExpressionToSql.VisitParameter(parameterValueExpression, context);
-
-                    SqlSelectSpec sqlSpec = SqlSelectValueSpec.Create(selectExpression);
-                    SqlSelectClause select = SqlSelectClause.Create(sqlSpec, null);
-                    context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
-                    break;
-                }    
-                case ExpressionType.Call:
-                {
-                    // Single Value Selector
-                    MethodCallExpression methodCallExpression = (MethodCallExpression)valueSelectorExpression;
-                    switch (methodCallExpression.Method.Name)
                     {
-                        case LinqMethods.Max:
-                        case LinqMethods.Min:
-                        case LinqMethods.Average:
-                        case LinqMethods.Count:
-                        case LinqMethods.Sum:
-                            ExpressionToSql.VisitMethodCall(methodCallExpression, context);
-                            break;
-                        default:
-                            throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.MethodNotSupported, methodCallExpression.Method.Name));
+                        ConstantExpression constantExpression = (ConstantExpression)valueSelectorExpression;
+                        SqlScalarExpression selectExpression = ExpressionToSql.VisitConstant(constantExpression, context);
+
+                        SqlSelectSpec sqlSpec = SqlSelectValueSpec.Create(selectExpression);
+                        SqlSelectClause select = SqlSelectClause.Create(sqlSpec, null);
+                        context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
+                        break;
                     }
+                case ExpressionType.Parameter:
+                    {
+                        ParameterExpression parameterValueExpression = (ParameterExpression)valueSelectorExpression;
+                        SqlScalarExpression selectExpression = ExpressionToSql.VisitParameter(parameterValueExpression, context);
 
-                    break;
-                }
+                        SqlSelectSpec sqlSpec = SqlSelectValueSpec.Create(selectExpression);
+                        SqlSelectClause select = SqlSelectClause.Create(sqlSpec, null);
+                        context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
+                        break;
+                    }
+                case ExpressionType.Call:
+                    {
+                        // Single Value Selector
+                        MethodCallExpression methodCallExpression = (MethodCallExpression)valueSelectorExpression;
+                        switch (methodCallExpression.Method.Name)
+                        {
+                            case LinqMethods.Max:
+                            case LinqMethods.Min:
+                            case LinqMethods.Average:
+                            case LinqMethods.Count:
+                            case LinqMethods.Sum:
+                                ExpressionToSql.VisitMethodCall(methodCallExpression, context);
+                                break;
+                            default:
+                                throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.MethodNotSupported, methodCallExpression.Method.Name));
+                        }
+
+                        break;
+                    }
                 case ExpressionType.New:
-                    // TODO: Multi Value Selector
-                    throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.ExpressionTypeIsNotSupported, ExpressionType.New));
+                    {
+                        // Add select item clause at the end of this method
+                        NewExpression newExpression = (NewExpression)valueSelectorExpression;
+                        // Get the list of items and the bindings
 
+                        if (newExpression.Members == null)
+                        {
+                            throw new DocumentQueryException(ClientResources.ConstructorInvocationNotSupported);
+                        }
+
+                        SqlSelectItem[] selectItems = ExpressionToSql.CreateSelectItems(newExpression.Arguments, newExpression.Members, context);
+
+                        SqlSelectListSpec sqlSpec = SqlSelectListSpec.Create(selectItems);
+                        SqlSelectClause select = SqlSelectClause.Create(sqlSpec, null);
+                        context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
+
+                        break;
+                    }
                 default:
                     throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.ExpressionTypeIsNotSupported, valueSelectorExpression.NodeType));
             }
