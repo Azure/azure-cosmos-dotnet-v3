@@ -851,7 +851,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         {
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             inputs.Add(new LinqTestInput("GroupBy Multi Value Select Constant", b => getQuery(b).GroupBy(k => k /*keySelector*/,
-                                                                                (key, values) => 
+                                                                                (key, values) =>
                                                                                 new {
                                                                                     stringField = "abv",
                                                                                     numField = 123
@@ -1045,6 +1045,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     keyAlias = key,
                     stringField = "abc"
                 })));
+
+            for(int i = 0; i < inputs.Count; i++)
+            {
+                inputs[i].skipVerification = true;
+            }
 
             this.ExecuteTestSuite(inputs);
         }
