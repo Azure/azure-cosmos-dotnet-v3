@@ -311,7 +311,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             }
 
             FeedOptions feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true };
-            QueryRequestOptions requestOptions = new QueryRequestOptions();
+            QueryRequestOptions requestOptions = new QueryRequestOptions() { EnableOptimisticDirectExecution = false };
 
             IOrderedQueryable<T> query = container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution: true, requestOptions: requestOptions);
 
@@ -348,7 +348,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             }
 
             FeedOptions feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true };
-            QueryRequestOptions requestOptions = new QueryRequestOptions();
+            QueryRequestOptions requestOptions = new QueryRequestOptions() { EnableOptimisticDirectExecution = false };
 
             IOrderedQueryable<T> query = container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution: true, requestOptions: requestOptions, linqSerializerOptions: linqSerializerOptions);
 
@@ -518,7 +518,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             }
 
             FeedOptions feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true };
-            QueryRequestOptions requestOptions = new QueryRequestOptions();
+            QueryRequestOptions requestOptions = new QueryRequestOptions() { EnableOptimisticDirectExecution = false };
 
             IOrderedQueryable<Data> query = container.GetItemLinqQueryable<Data>(allowSynchronousQueryExecution: true, requestOptions: requestOptions);
 
@@ -570,27 +570,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             {
                 if (ex is CosmosException cosmosException)
                 {
-                    // ODE scenario: The backend generates an error response message with significant variations when compared to the Service Interop which gets called in the Non ODE scenario. 
-                    // The objective is to standardize and normalize the backend response for consistency.
-                    Match match = Regex.Match(ex.Message, @"Reason:(.*?}]})", RegexOptions.IgnoreCase);
-                    Match requestURIMatch = Regex.Match(ex.Message, @"Request URI", RegexOptions.IgnoreCase);
-                    if (match.Success && requestURIMatch.Success)
-                    {
-                        string reason = match.Groups[1].Value;
-                        reason = reason.Replace("\\", "");
-
-                        string transformedString = "Status Code: " + reason;
-                        transformedString = transformedString.Replace(" (", "");
-                        transformedString = transformedString.Replace("{\"code\":\"", "");
-                        transformedString = transformedString.Replace("\",\"message\":\"Message: {\"errors\":[", ",{\"errors\":[");
-                        transformedString = transformedString.Replace("}]}", "}]},0x800A0B00");
-
-                        return transformedString;
-                    }
-                    else
-                    {
-                        message.Append($"Status Code: {cosmosException.StatusCode}");
-                    }
+                    message.Append($"Status Code: {cosmosException.StatusCode}");
                 }
                 else if (ex is DocumentClientException documentClientException)
                 {
@@ -837,10 +817,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     class SystemTextJsonLinqSerializer : CosmosLinqSerializer
     {
         private readonly JsonObjectSerializer systemTextJsonSerializer;
+        private readonly JsonSerializerOptions jsonSerializerOptions;
 
         public SystemTextJsonLinqSerializer(JsonSerializerOptions jsonSerializerOptions)
         {
             this.systemTextJsonSerializer = new JsonObjectSerializer(jsonSerializerOptions);
+            this.jsonSerializerOptions = jsonSerializerOptions;
         }
 
         public override T FromStream<T>(Stream stream)
@@ -882,12 +864,19 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             }
 
             JsonPropertyNameAttribute jsonPropertyNameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(true);
+            if (!string.IsNullOrEmpty(jsonPropertyNameAttribute?.Name))
+            {
+                return jsonPropertyNameAttribute.Name;
+            }
 
-            string memberName = !string.IsNullOrEmpty(jsonPropertyNameAttribute?.Name)
-                ? jsonPropertyNameAttribute.Name
-                : memberInfo.Name;
+            if (this.jsonSerializerOptions.PropertyNamingPolicy != null)
+            {
+                return this.jsonSerializerOptions.PropertyNamingPolicy.ConvertName(memberInfo.Name);
+            }
 
-            return memberName;
+            // Do any additional handling of JsonSerializerOptions here.
+
+            return memberInfo.Name;
         }
     }
 

@@ -6,11 +6,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     [TestCategory("ChangeFeedProcessor")]
@@ -107,8 +108,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     Assert.IsTrue(condition: createChange.Metadata.Lsn < replaceChange.Metadata.Lsn, message: "The create operation must happen before the replace operation.");
                     Assert.IsTrue(condition: createChange.Metadata.Lsn < replaceChange.Metadata.Lsn, message: "The replace operation must happen before the delete operation.");
 
-                    Debug.WriteLine("Assertions completed.");
-
                     return Task.CompletedTask;
                 })
                 .WithInstanceName(Guid.NewGuid().ToString())
@@ -116,9 +115,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 .WithErrorNotification((leaseToken, error) =>
                 {
                     exception = error.InnerException;
-
-                    Debug.WriteLine("WithErrorNotification");
-                    Debug.WriteLine(error.ToString());
 
                     return Task.CompletedTask;
                 })
@@ -176,11 +172,46 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                         leaseContainer: this.LeaseContainer,
                         allDocsProcessed: allDocsProcessed));
 
-            Debug.WriteLine(exception.ToString());
+            Assert.AreEqual(expected: "Switching ChangeFeedMode Incremental Feed to Full-Fidelity Feed is not allowed.", actual: exception.Message);
+        }
+
+
+        /// <summary>
+        /// This is based on an issue located at <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4308"/>.
+        /// </summary>
+        [TestMethod]
+        [Owner("philipthomas-MSFT")]
+        [Description("Scenario: For Legacy lease documents with no Mode property, When ChangeFeedMode on ChangeFeedProcessor, switches from LatestVersion to AllVersionsAndDeletes," +
+            "an exception is expected. LatestVersion's WithStartFromBeginning can be set, or not set.")]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task WhenLegacyLatestVersionSwitchToAllVersionsAndDeletesExpectsAexceptionTestAsync(bool withStartFromBeginning)
+        {
+            ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.LatestVersion);
+            ManualResetEvent allDocsProcessed = new(false);
+
+            await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
+                .BuildChangeFeedProcessorWithLatestVersionAsync(
+                    monitoredContainer: monitoredContainer,
+                    leaseContainer: this.LeaseContainer,
+                    allDocsProcessed: allDocsProcessed,
+                    withStartFromBeginning: withStartFromBeginning);
+
+            // Read lease documents, remove the Mode, and update the lease documents, so that it mimics a legacy lease document.
+
+            await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
+                .RevertLeaseDocumentsToLegacyWithNoMode(
+                    leaseContainer: this.LeaseContainer,
+                    leaseDocumentCount: 2);
+
+            ArgumentException exception = await Assert.ThrowsExceptionAsync<ArgumentException>(
+                () => GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
+                    .BuildChangeFeedProcessorWithAllVersionsAndDeletesAsync(
+                        monitoredContainer: monitoredContainer,
+                        leaseContainer: this.LeaseContainer,
+                        allDocsProcessed: allDocsProcessed));
 
             Assert.AreEqual(expected: "Switching ChangeFeedMode Incremental Feed to Full-Fidelity Feed is not allowed.", actual: exception.Message);
-
-            Debug.WriteLine("Assertions completed.");
         }
 
         /// <summary>
@@ -211,11 +242,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                         allDocsProcessed: allDocsProcessed,
                         withStartFromBeginning: withStartFromBeginning));
 
-            Debug.WriteLine(exception.ToString());
-
             Assert.AreEqual(expected: "Switching ChangeFeedMode Full-Fidelity Feed to Incremental Feed is not allowed.", actual: exception.Message);
-
-            Debug.WriteLine("Assertions completed.");
         }
 
         /// <summary>
@@ -243,8 +270,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                         monitoredContainer: monitoredContainer,
                         leaseContainer: this.LeaseContainer,
                         allDocsProcessed: allDocsProcessed);
-
-                Debug.WriteLine("No exceptions occurred.");
             }
             catch
             {
@@ -281,13 +306,85 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                         leaseContainer: this.LeaseContainer,
                         allDocsProcessed: allDocsProcessed,
                         withStartFromBeginning: withStartFromBeginning);
-
-                Debug.WriteLine("No exceptions occurred.");
             }
             catch
             {
                 Assert.Fail("An exception occurred when one was not expceted."); ;
             }
+        }
+
+        /// <summary>
+        /// This is based on an issue located at <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4423"/>.
+        /// </summary>
+        [TestMethod]
+        [Owner("philipthomas-MSFT")]
+        [Description("Scenario: For Legacy lease documents with no Mode property, When ChangeFeedMode on ChangeFeedProcessor " +
+            "does not switch, LatestVersion, no exception is expected. LatestVersion's WithStartFromBeginning can be set, or not set.")]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task WhenLegacyNoSwitchLatestVersionDoesNotExpectAnExceptionTestAsync(bool withStartFromBeginning)
+        {
+            ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.LatestVersion);
+            ManualResetEvent allDocsProcessed = new(false);
+
+            await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
+                .BuildChangeFeedProcessorWithLatestVersionAsync(
+                    monitoredContainer: monitoredContainer,
+                    leaseContainer: this.LeaseContainer,
+                    allDocsProcessed: allDocsProcessed,
+                    withStartFromBeginning: withStartFromBeginning);
+
+            // Read lease documents, remove the Mode, and update the lease documents, so that it mimics a legacy lease document.
+
+            await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
+                .RevertLeaseDocumentsToLegacyWithNoMode(
+                    leaseContainer: this.LeaseContainer,
+                    leaseDocumentCount: 2);
+
+            await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
+                .BuildChangeFeedProcessorWithLatestVersionAsync(
+                    monitoredContainer: monitoredContainer,
+                    leaseContainer: this.LeaseContainer,
+                    allDocsProcessed: allDocsProcessed,
+                    withStartFromBeginning: withStartFromBeginning);
+        }
+
+        private static async Task RevertLeaseDocumentsToLegacyWithNoMode(
+            Container leaseContainer,
+            int leaseDocumentCount)
+        {
+            FeedIterator iterator = leaseContainer.GetItemQueryStreamIterator(
+                queryText: "SELECT * FROM c",
+                continuationToken: null);
+
+            List<JObject> leases = new List<JObject>();
+            while (iterator.HasMoreResults)
+            {
+                using (ResponseMessage responseMessage = await iterator.ReadNextAsync().ConfigureAwait(false))
+                {
+                    responseMessage.EnsureSuccessStatusCode();
+                    leases.AddRange(CosmosFeedResponseSerializer.FromFeedResponseStream<JObject>(
+                        serializerCore: CosmosContainerExtensions.DefaultJsonSerializer,
+                        streamWithServiceEnvelope: responseMessage.Content));
+                }
+            }
+
+            int counter = 0;
+
+            foreach (JObject lease in leases)
+            {
+                if (!lease.ContainsKey("Mode"))
+                {
+                    continue;
+                }
+
+                counter++;
+                lease.Remove("Mode");
+
+                _ = await leaseContainer.UpsertItemAsync(item: lease);
+            }
+                
+            Assert.AreEqual(expected: leaseDocumentCount, actual: counter);
         }
 
         private static async Task BuildChangeFeedProcessorWithLatestVersionAsync(
@@ -307,9 +404,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 {
                     exception = error.InnerException;
 
-                    Debug.WriteLine("WithErrorNotification");
-                    Debug.WriteLine(error.ToString());
-
                     return Task.CompletedTask;
                 });
 
@@ -317,7 +411,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             {
                 processorBuilder.WithStartFromBeginning();
             }
-
 
             ChangeFeedProcessor processor = processorBuilder.Build();
             Interlocked.Exchange(ref latestVersionProcessorAtomic, processor);
@@ -349,9 +442,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 {
                     exception = error.InnerException;
 
-                    Debug.WriteLine("WithErrorNotification");
-                    Debug.WriteLine(error.ToString());
-
                     return Task.FromResult(exception);
                 });
 
@@ -376,8 +466,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
             if (changeFeedMode == ChangeFeedMode.AllVersionsAndDeletes)
             {
-                Debug.WriteLine($"{nameof(properties.ChangeFeedPolicy.FullFidelityRetention)} initialized.");
-
                 properties.ChangeFeedPolicy.FullFidelityRetention = TimeSpan.FromMinutes(5);
             }
 

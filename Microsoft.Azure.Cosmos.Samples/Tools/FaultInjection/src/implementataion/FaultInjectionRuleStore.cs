@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     internal class FaultInjectionRuleStore
     {
         private readonly ConcurrentDictionary<FaultInjectionServerErrorRule, byte> serverResponseDelayRuleSet = new ConcurrentDictionary<FaultInjectionServerErrorRule, byte>();
+        private readonly ConcurrentDictionary<FaultInjectionServerErrorRule, byte> serverSendDelayRuleSet = new ConcurrentDictionary<FaultInjectionServerErrorRule, byte>();
         private readonly ConcurrentDictionary<FaultInjectionServerErrorRule, byte> serverResponseErrorRuleSet = new ConcurrentDictionary<FaultInjectionServerErrorRule, byte>();
         private readonly ConcurrentDictionary<FaultInjectionServerErrorRule, byte> serverConnectionDelayRuleSet = new ConcurrentDictionary<FaultInjectionServerErrorRule, byte>();
         private readonly ConcurrentDictionary<FaultInjectionConnectionErrorRule, byte> connectionErrorRuleSet = new ConcurrentDictionary<FaultInjectionConnectionErrorRule, byte>();
@@ -79,6 +80,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     case FaultInjectionServerErrorType.ResponseDelay:
                         this.serverResponseDelayRuleSet.TryAdd(serverErrorRule, 0);
                         break;
+                    case FaultInjectionServerErrorType.SendDelay:
+                        this.serverSendDelayRuleSet.TryAdd(serverErrorRule, 0);
+                        break;
                     case FaultInjectionServerErrorType.ConnectionDelay:
                         this.serverConnectionDelayRuleSet.TryAdd(serverErrorRule, 0);
                         break;
@@ -120,6 +124,22 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
             return null;
         }
+
+        public FaultInjectionServerErrorRule? FindRntbdServerSendDelayRule(ChannelCallArguments args)
+        {
+            foreach (FaultInjectionServerErrorRule rule in this.serverSendDelayRuleSet.Keys)
+            {
+                if ((rule.GetConnectionType() == FaultInjectionConnectionType.Direct
+                    || rule.GetConnectionType() == FaultInjectionConnectionType.All)
+                    && rule.IsApplicable(args))
+                {
+                    return rule;
+                }
+            }
+
+            return null;
+        }
+
 
         public FaultInjectionServerErrorRule? FindRntbdServerConnectionDelayRule(
             Uri callUri, 

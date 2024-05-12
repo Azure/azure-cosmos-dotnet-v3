@@ -198,7 +198,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             private readonly JsonObjectSerializer systemTextJsonSerializer;
 
-            public static readonly System.Text.Json.JsonSerializerOptions JsonOptions = new()
+            private readonly System.Text.Json.JsonSerializerOptions jsonSerializerOptions = new()
             {
                 DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
                 PropertyNameCaseInsensitive = true,
@@ -209,7 +209,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             public TestCustomJsonLinqSerializer()
             {
-                this.systemTextJsonSerializer = new JsonObjectSerializer(JsonOptions);
+                this.systemTextJsonSerializer = new JsonObjectSerializer(this.jsonSerializerOptions);
             }
 
             public override T FromStream<T>(Stream stream)
@@ -249,12 +249,19 @@ namespace Microsoft.Azure.Cosmos.Linq
                 }
 
                 JsonPropertyNameAttribute jsonPropertyNameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(true);
+                if (!string.IsNullOrEmpty(jsonPropertyNameAttribute?.Name))
+                {
+                    return jsonPropertyNameAttribute.Name;
+                }
 
-                string memberName = jsonPropertyNameAttribute != null && !string.IsNullOrEmpty(jsonPropertyNameAttribute.Name)
-                    ? jsonPropertyNameAttribute.Name
-                    : memberInfo.Name;
+                if (this.jsonSerializerOptions.PropertyNamingPolicy != null)
+                {
+                    return this.jsonSerializerOptions.PropertyNamingPolicy.ConvertName(memberInfo.Name);
+                }
 
-                return memberName;
+                // Do any additional handling of JsonSerializerOptions here.
+
+                return memberInfo.Name;
             }
         }
 

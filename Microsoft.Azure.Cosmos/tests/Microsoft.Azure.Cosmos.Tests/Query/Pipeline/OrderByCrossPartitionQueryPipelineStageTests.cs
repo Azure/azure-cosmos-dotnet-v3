@@ -78,6 +78,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 },
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 maxConcurrency: 10,
+                nonStreamingOrderBy: false,
                 continuationToken: null);
             Assert.IsTrue(monadicCreate.Succeeded);
         }
@@ -98,6 +99,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 },
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 maxConcurrency: 10,
+                nonStreamingOrderBy: false,
                 continuationToken: CosmosObject.Create(new Dictionary<string, CosmosElement>()));
             Assert.IsTrue(monadicCreate.Failed);
             Assert.IsTrue(monadicCreate.InnerMostException is MalformedContinuationTokenException);
@@ -119,6 +121,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 },
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 maxConcurrency: 10,
+                nonStreamingOrderBy: false,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>()));
             Assert.IsTrue(monadicCreate.Failed);
             Assert.IsTrue(monadicCreate.InnerMostException is MalformedContinuationTokenException);
@@ -140,6 +143,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 },
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 maxConcurrency: 10,
+                nonStreamingOrderBy: false,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>() { CosmosString.Create("asdf") }));
             Assert.IsTrue(monadicCreate.Failed);
             Assert.IsTrue(monadicCreate.InnerMostException is MalformedContinuationTokenException);
@@ -176,6 +180,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     },
                     queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                     maxConcurrency: 10,
+                    nonStreamingOrderBy: false,
                     continuationToken: CosmosArray.Create(
                         new List<CosmosElement>()
                         {
@@ -220,6 +225,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                         },
                         queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                         maxConcurrency: 10,
+                        nonStreamingOrderBy: false,
                         continuationToken: CosmosArray.Create(
                             new List<CosmosElement>()
                             {
@@ -279,6 +285,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                         },
                         queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                         maxConcurrency: 10,
+                        nonStreamingOrderBy: false,
                         continuationToken: CosmosArray.Create(
                             new List<CosmosElement>()
                             {
@@ -321,6 +328,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     },
                     queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                     maxConcurrency: 10,
+                    nonStreamingOrderBy: false,
                     continuationToken: CosmosArray.Create(
                         new List<CosmosElement>()
                         {
@@ -362,6 +370,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                         },
                         queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                         maxConcurrency: 10,
+                        nonStreamingOrderBy: false,
                         continuationToken: CosmosArray.Create(
                             new List<CosmosElement>()
                             {
@@ -417,6 +426,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 },
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 1),
                 maxConcurrency: 0,
+                nonStreamingOrderBy: false,
                 continuationToken: CosmosElement.Parse(continuationToken));
             Assert.IsTrue(monadicCreate.Succeeded);
 
@@ -452,6 +462,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 },
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 maxConcurrency: 10,
+                nonStreamingOrderBy: false,
                 continuationToken: null);
             Assert.IsTrue(monadicCreate.Succeeded);
             IQueryPipelineStage queryPipelineStage = monadicCreate.Result;
@@ -501,6 +512,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 },
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 maxConcurrency: 10,
+                nonStreamingOrderBy: false,
                 continuationToken: null);
             Assert.IsTrue(monadicCreate.Succeeded);
             IQueryPipelineStage queryPipelineStage = monadicCreate.Result;
@@ -558,6 +570,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     },
                     queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                     maxConcurrency: 10,
+                    nonStreamingOrderBy: false,
                     continuationToken: continuationToken);
                 monadicQueryPipelineStage.ThrowIfFailed();
                 IQueryPipelineStage queryPipelineStage = monadicQueryPipelineStage.Result;
