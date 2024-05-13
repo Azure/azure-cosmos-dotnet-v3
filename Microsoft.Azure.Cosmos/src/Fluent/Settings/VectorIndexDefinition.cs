@@ -10,7 +10,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
     /// Vector index fluent definition.
     /// </summary>
     /// <seealso cref="VectorIndexPath"/>
-    public class VectorIndexDefinition<T>
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+    class VectorIndexDefinition<T>
     {
         private readonly VectorIndexPath vectorIndexPath = new ();
         private readonly T parent;
