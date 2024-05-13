@@ -11,13 +11,19 @@ namespace Microsoft.Azure.Cosmos.Fluent
     /// <summary>
     /// <see cref="VectorEmbeddingPolicy"/> fluent definition.
     /// </summary>
-    internal class VectorEmbeddingPolicyDefinition
+    public class VectorEmbeddingPolicyDefinition
     {
         private readonly ContainerBuilder parent;
         private readonly Action<VectorEmbeddingPolicy> attachCallback;
         private readonly Collection<Embedding> vectorEmbeddings;
 
-        internal VectorEmbeddingPolicyDefinition(
+        /// <summary>
+        /// Initializes a new instance of the <see cref="VectorEmbeddingPolicyDefinition"/> class.
+        /// </summary>
+        /// <param name="parent">The original instance of <see cref="ContainerBuilder"/>.</param>
+        /// <param name="embeddings">List of embeddings to include in the policy definition.</param>
+        /// <param name="attachCallback">A callback delegate to be used at a later point of time.</param>
+        public VectorEmbeddingPolicyDefinition(
             ContainerBuilder parent,
             Collection<Embedding> embeddings,
             Action<VectorEmbeddingPolicy> attachCallback)
