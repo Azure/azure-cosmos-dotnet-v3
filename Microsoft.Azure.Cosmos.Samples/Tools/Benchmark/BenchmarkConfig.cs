@@ -230,9 +230,10 @@ namespace CosmosBenchmark
                 },
             };
 
-            if(!string.IsNullOrEmpty(this.ApplicationPreferredRegions))
+            if (!string.IsNullOrEmpty(this.ApplicationPreferredRegions))
             {
-                clientOptions.ApplicationPreferredRegions = this.ApplicationPreferredRegions.Split(',');
+                clientOptions.ApplicationPreferredRegions = this.ApplicationPreferredRegions.Split(',')
+                    .Select(region => region.Trim()).ToArray();
             }
 
             if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))
