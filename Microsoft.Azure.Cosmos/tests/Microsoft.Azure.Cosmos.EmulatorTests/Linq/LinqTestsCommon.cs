@@ -35,9 +35,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="queryResults"></param>
         /// <param name="dataResults"></param>
         /// <returns></returns>
-        private static bool CompareListOfAnonymousType(List<object> queryResults, List<dynamic> dataResults)
+        private static bool CompareListOfAnonymousType(List<object> queryResults, List<dynamic> dataResults, bool ignoreOrderingForAnonymousTypeObject)
         {
-            return queryResults.SequenceEqual(dataResults);
+            if(!ignoreOrderingForAnonymousTypeObject)
+            {
+                return queryResults.SequenceEqual(dataResults);
+            }
+
+            return queryResults.OrderBy(x => x).ToList().SequenceEqual(dataResults.OrderBy(x => x).ToList());
         }
 
         /// <summary>
@@ -186,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// </summary>
         /// <param name="queryResultsList"></param>
         /// <param name="dataResultsList"></param>
-        private static void ValidateResults(List<object> queryResultsList, List<dynamic> dataResultsList)
+        private static void ValidateResults(List<object> queryResultsList, List<dynamic> dataResultsList, bool ignoreOrderingForAnonymousTypeObject)
         {
             bool resultMatched = true;
             string actualStr = null;
@@ -204,7 +209,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 }
                 else if (LinqTestsCommon.IsAnonymousType(firstElem.GetType()))
                 {
-                    resultMatched &= CompareListOfAnonymousType(queryResultsList, dataResultsList);
+                    resultMatched &= CompareListOfAnonymousType(queryResultsList, dataResultsList, ignoreOrderingForAnonymousTypeObject);
                 }
                 else if (LinqTestsCommon.IsNumber(firstElem))
                 {
@@ -548,7 +553,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 // we skip unordered query because the LINQ results vs actual query results are non-deterministic
                 if (!input.skipVerification)
                 {
-                    LinqTestsCommon.ValidateResults(queryResults, dataResults);
+                    LinqTestsCommon.ValidateResults(queryResults, dataResults, input.ignoreOrderingForAnonymousTypeObject);
                 }
 
                 string serializedResults = serializeResultsInBaseline ?
@@ -647,16 +652,20 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         //     - scenarios not supported in LINQ, e.g. sequence doesn't contain element.
         internal bool skipVerification;
 
+        internal bool ignoreOrderingForAnonymousTypeObject;
+
         internal LinqTestInput(
             string description, 
             Expression<Func<bool, IQueryable>> expr, 
             bool skipVerification = false, 
+            bool ignoreOrderingForAnonymousTypeObject = false,
             string expressionStr = null, 
             string inputData = null)
             : base(description)
         {
             this.Expression = expr ?? throw new ArgumentNullException($"{nameof(expr)} must not be null.");
             this.skipVerification = skipVerification;
+            this.ignoreOrderingForAnonymousTypeObject = ignoreOrderingForAnonymousTypeObject;
             this.expressionStr = expressionStr;
             this.inputData = inputData;
         }

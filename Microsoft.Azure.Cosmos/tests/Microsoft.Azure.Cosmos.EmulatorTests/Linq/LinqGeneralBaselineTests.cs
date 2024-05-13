@@ -1048,7 +1048,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             for(int i = 0; i < inputs.Count; i++)
             {
-                inputs[i].skipVerification = true;
+                inputs[i].ignoreOrderingForAnonymousTypeObject = true;
             }
 
             this.ExecuteTestSuite(inputs);
