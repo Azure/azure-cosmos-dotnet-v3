@@ -441,6 +441,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         "testId", 
                         new PartitionKey("pk"));
 
+                    Assert.IsTrue(rule.GetHitCount() > 0);
                     traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
                     Assert.IsNotNull(traceDiagnostic);
                     traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
@@ -470,6 +471,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         FeedResponse<AvailabilityStrategyTestObject> feedResponse = await queryIterator.ReadNextAsync();
 
+                        Assert.IsTrue(rule.GetHitCount() > 0);
                         traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
                         Assert.IsNotNull(traceDiagnostic);
                         traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
@@ -493,6 +495,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         FeedResponse<AvailabilityStrategyTestObject> feedResponse = await crossPartitionQueryIterator.ReadNextAsync();
 
+                        Assert.IsTrue(rule.GetHitCount() > 0);
                         traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
                         Assert.IsNotNull(traceDiagnostic);
                         traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
@@ -517,6 +520,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             ("testId4", new PartitionKey("pk4"))
                         });
 
+                    Assert.IsTrue(rule.GetHitCount() > 0);
                     traceDiagnostic = readManyResponse.Diagnostics as CosmosTraceDiagnostics;
                     Assert.IsNotNull(traceDiagnostic);
                     traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
@@ -549,6 +553,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     rule.Enable();
 
                     await Task.Delay(5000);
+
+                    Assert.IsTrue(rule.GetHitCount() > 0);
 
                     break;
 

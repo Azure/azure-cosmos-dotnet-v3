@@ -8,13 +8,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.Linq;
     using System.Net;
-    using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
-    using global::Azure.Core;
-    using Microsoft.Azure.Cosmos.Core;
     using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Documents;
 
     /// <summary>
