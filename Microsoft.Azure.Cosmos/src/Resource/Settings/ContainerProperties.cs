@@ -306,7 +306,12 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// </remarks>
         [JsonIgnore]
-        public VectorEmbeddingPolicy VectorEmbeddingPolicy
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        VectorEmbeddingPolicy VectorEmbeddingPolicy
         {
             get => this.vectorEmbeddingPolicyInternal;
 

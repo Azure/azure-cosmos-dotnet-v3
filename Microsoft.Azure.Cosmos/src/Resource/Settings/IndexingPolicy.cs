@@ -132,7 +132,12 @@ namespace Microsoft.Azure.Cosmos
         /// ]
         /// ]]>
         /// </example>
-        public Collection<VectorIndexPath> VectorIndexes
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        Collection<VectorIndexPath> VectorIndexes
         {
             get => this.VectorIndexesInternal ??= new Collection<VectorIndexPath>();
             set => this.VectorIndexesInternal = value;

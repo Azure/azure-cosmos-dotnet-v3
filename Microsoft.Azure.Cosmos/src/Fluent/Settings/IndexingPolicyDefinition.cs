@@ -117,7 +117,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Defines a <see cref="VectorIndexPath"/> in the current <see cref="Container"/>'s definition.
         /// </summary>
         /// <returns>An instance of <see cref="VectorIndexDefinition{T}"/>.</returns>
-        internal VectorIndexDefinition<IndexingPolicyDefinition<T>> WithVectorIndex()
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        VectorIndexDefinition<IndexingPolicyDefinition<T>> WithVectorIndex()
         {
             return new VectorIndexDefinition<IndexingPolicyDefinition<T>>(
                 this,
