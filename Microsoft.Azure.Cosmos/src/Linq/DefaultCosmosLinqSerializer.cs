@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Runtime.Serialization;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Serialization;
 
     internal class DefaultCosmosLinqSerializer : ICosmosLinqSerializerInternal
     {
@@ -67,7 +68,14 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public string SerializeScalarExpression(ConstantExpression inputExpression)
         {
-            return JsonConvert.SerializeObject(inputExpression.Value);
+            JsonSerializerSettings settings = this.PropertyNamingPolicy == CosmosPropertyNamingPolicy.CamelCase
+                ? new JsonSerializerSettings
+                {
+                    ContractResolver = new CamelCasePropertyNamesContractResolver()
+                }
+                : new JsonSerializerSettings();
+
+            return JsonConvert.SerializeObject(inputExpression.Value, settings);
         }
 
         public string SerializeMemberName(MemberInfo memberInfo)

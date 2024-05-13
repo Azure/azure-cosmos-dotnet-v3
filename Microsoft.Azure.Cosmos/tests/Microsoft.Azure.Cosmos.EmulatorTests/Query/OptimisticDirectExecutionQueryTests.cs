@@ -585,8 +585,9 @@
         [TestMethod]
         public async Task TestOdeEnvironmentVariable()
         {
+            bool defaultValue = false;
             QueryRequestOptions options = new QueryRequestOptions();
-            Assert.IsTrue(options.EnableOptimisticDirectExecution);
+            Assert.AreEqual(defaultValue, options.EnableOptimisticDirectExecution);
 
             foreach ((string name, string value, bool expectedValue) in new[]
                 {
@@ -599,10 +600,10 @@
                     ("AZURE_COSMOS_optimistic_direct_execution_enabled", "False", false),
                     ("azure_cosmos_optimistic_direct_execution_enabled", "FALSE", false),
                     ("Azure_Cosmos_Optimistic_Direct_Execution_Enabled", "false", false),
-                    ("Azure_Cosmos_Optimistic_Direct_Execution_Enabled", string.Empty, true),
-                    (nameof(QueryRequestOptions.EnableOptimisticDirectExecution), "false", true),
-                    (nameof(QueryRequestOptions.EnableOptimisticDirectExecution), null, true),
-                    ("enableode", "false", true)
+                    ("Azure_Cosmos_Optimistic_Direct_Execution_Enabled", string.Empty, defaultValue),
+                    (nameof(QueryRequestOptions.EnableOptimisticDirectExecution), "false", defaultValue),
+                    (nameof(QueryRequestOptions.EnableOptimisticDirectExecution), null, defaultValue),
+                    ("enableode", "false", defaultValue)
                 })
             {
                 try
