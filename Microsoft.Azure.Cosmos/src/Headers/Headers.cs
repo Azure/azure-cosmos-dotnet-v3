@@ -414,7 +414,7 @@ namespace Microsoft.Azure.Cosmos
         /// Clones the current <see cref="Headers"/>.
         /// </summary>
         /// <returns>a cloned copy of the current <see cref="Headers"/></returns>
-        public Headers Clone()
+        internal Headers Clone()
         {
             StoreRequestHeaders clone = new StoreRequestHeaders();
             foreach (string key in this.CosmosMessageHeaders.AllKeys())
