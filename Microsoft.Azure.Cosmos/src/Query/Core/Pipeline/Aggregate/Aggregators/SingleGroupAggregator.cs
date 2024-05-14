@@ -370,6 +370,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
                             tryCreateAggregator = CountAggregator.TryCreate(continuationToken);
                             break;
 
+                        case AggregateOperator.MakeList:
+                            tryCreateAggregator = MakeListAggregator.TryCreate(continuationToken);
+                            break;
+
+                        case AggregateOperator.MakeSet:
+                            tryCreateAggregator = MakeSetAggregator.TryCreate(continuationToken);
+                            break;
+
                         case AggregateOperator.Max:
                             tryCreateAggregator = MinMaxAggregator.TryCreateMaxAggregator(continuationToken);
                             break;
@@ -381,7 +389,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
                         case AggregateOperator.Sum:
                             tryCreateAggregator = SumAggregator.TryCreate(continuationToken);
                             break;
-
                         default:
                             throw new ArgumentException($"Unknown {nameof(AggregateOperator)}: {aggregateOperator}.");
                     }
