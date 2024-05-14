@@ -52,8 +52,6 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         public bool EnableOptimisticDirectExecution { get; set; } = ConfigurationManager.IsOptimisticDirectExecutionEnabled(defaultValue: false);
 
-        internal bool IsNonStreamingOrderByQueryFeatureDisabled { get; set; } = ConfigurationManager.IsNonStreamingOrderByQueryFeatureDisabled(defaultValue: false);
-
         /// <summary>
         /// Gets or sets the maximum number of items that can be buffered client side during 
         /// parallel query execution in the Azure Cosmos DB service. 
@@ -192,6 +190,8 @@ namespace Microsoft.Azure.Cosmos
         internal TestInjections TestSettings { get; set; }
 
         internal FeedRange FeedRange { get; set; }
+
+        internal bool IsNonStreamingOrderByQueryFeatureDisabled { get; set; } = ConfigurationManager.IsNonStreamingOrderByQueryFeatureDisabled(defaultValue: false);
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties

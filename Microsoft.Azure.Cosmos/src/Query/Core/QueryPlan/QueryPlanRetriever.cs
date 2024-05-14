@@ -31,32 +31,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             | QueryFeatures.DCount
             | QueryFeatures.NonStreamingOrderBy;
 
-        private static readonly QueryFeatures LegacySupportedQueryFeatures =
-            QueryFeatures.Aggregate
-            | QueryFeatures.Distinct
-            | QueryFeatures.GroupBy
-            | QueryFeatures.MultipleOrderBy
-            | QueryFeatures.MultipleAggregates
-            | QueryFeatures.OffsetAndLimit
-            | QueryFeatures.OrderBy
-            | QueryFeatures.Top
-            | QueryFeatures.NonValueAggregate
-            | QueryFeatures.DCount;
+        private static readonly QueryFeatures SupportedQueryFeaturesWithoutNonStreamingOrderBy =
+            SupportedQueryFeatures & (~QueryFeatures.NonStreamingOrderBy);
 
         private static readonly string SupportedQueryFeaturesString = SupportedQueryFeatures.ToString();
 
-        private static readonly string LegacySupportedQueryFeaturesString = LegacySupportedQueryFeatures.ToString();
+        private static readonly string SupportedQueryFeaturesWithoutNonStreamingOrderByString =
+            SupportedQueryFeaturesWithoutNonStreamingOrderBy.ToString();
 
         private static string GetSupportedQueryFeaturesString(bool isNonStreamingOrderByQueryFeatureDisabled)
         {
-            if (isNonStreamingOrderByQueryFeatureDisabled)
-            {
-                return LegacySupportedQueryFeaturesString;
-            }
-            else
-            {
-                return SupportedQueryFeaturesString;
-            }
+            return isNonStreamingOrderByQueryFeatureDisabled ?
+                SupportedQueryFeaturesWithoutNonStreamingOrderByString :
+                SupportedQueryFeaturesString;
         }
 
         public static async Task<PartitionedQueryExecutionInfo> GetQueryPlanWithServiceInteropAsync(

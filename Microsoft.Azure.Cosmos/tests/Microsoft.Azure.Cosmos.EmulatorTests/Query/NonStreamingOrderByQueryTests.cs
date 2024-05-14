@@ -177,7 +177,17 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
                     Assert.IsTrue(iterator.HasMoreResults);
                     ResponseMessage responseMessage = await iterator.ReadNextAsync();
-                    Assert.AreEqual(System.Net.HttpStatusCode.OK, responseMessage.StatusCode);
+
+                    if (responseMessage.StatusCode != System.Net.HttpStatusCode.OK)
+                    {
+                        Trace.WriteLine("Failed test case:");
+                        Trace.WriteLine($"EnvironmentVariable: {testCase.EnvironmentVariable}, RequestOption: {testCase.RequestOption}, ExpectNonStreamingOrderBy: {testCase.ExpectNonStreamingOrderBy}");
+                        Trace.WriteLine($"Unexpected response: {responseMessage.StatusCode}");
+                        Trace.WriteLine(responseMessage.Content.ReadAsString());
+                        Trace.Flush();
+                        Assert.Fail();
+                    }
+
                     Assert.AreEqual(validationCount, validator.InvocationCount);
                 }
             }
@@ -369,6 +379,20 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
         private sealed class MockCosmosQueryClient : CosmosQueryClientCore
         {
+            private static readonly QueryFeatures SupportedQueryFeaturesWithoutNonStreamingOrderBy =
+                QueryFeatures.Aggregate
+                | QueryFeatures.Distinct
+                | QueryFeatures.GroupBy
+                | QueryFeatures.MultipleOrderBy
+                | QueryFeatures.MultipleAggregates
+                | QueryFeatures.OffsetAndLimit
+                | QueryFeatures.OrderBy
+                | QueryFeatures.Top
+                | QueryFeatures.NonValueAggregate
+                | QueryFeatures.DCount;
+
+            private static readonly string SupportedQueryFeaturesString = SupportedQueryFeaturesWithoutNonStreamingOrderBy.ToString();
+
             private readonly bool bypassQueryParsing;
 
             private readonly SupportedQueryFeaturesValidator validator;
@@ -401,6 +425,13 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 CancellationToken cancellationToken)
             {
                 this.validator.Validate(supportedQueryFeatures);
+
+                if (this.validator.ExpectNonStreamingOrderBy)
+                {
+                    // older emulator in the github repo does not support non-streaming order by, and will send back 400
+                    supportedQueryFeatures = SupportedQueryFeaturesString;
+                }
+
                 return base.ExecuteQueryPlanRequestAsync(
                     resourceUri,
                     resourceType,
