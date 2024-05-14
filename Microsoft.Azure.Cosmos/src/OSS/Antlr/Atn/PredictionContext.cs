@@ -5,6 +5,7 @@
  * Use of this file is governed by the BSD 3-clause license that
  * can be found in the LICENSE.txt file in the project root.
  */
+using System;
 using System.Collections.Generic;
 using System.Text;
 using Antlr4.Runtime.Misc;
@@ -15,8 +16,6 @@ namespace Antlr4.Runtime.Atn
 	internal abstract class PredictionContext
 	{
 		public static readonly int EMPTY_RETURN_STATE = int.MaxValue;
-
-		public static readonly EmptyPredictionContext EMPTY = new EmptyPredictionContext();
 
 		private static readonly int INITIAL_HASH = 1;
 
@@ -63,7 +62,7 @@ namespace Antlr4.Runtime.Atn
 			if (outerContext == null)
 				outerContext = ParserRuleContext.EMPTY;
 			if (outerContext.Parent == null || outerContext == ParserRuleContext.EMPTY)
-				return PredictionContext.EMPTY;
+				return EmptyPredictionContext.Instance;
 			PredictionContext parent = PredictionContext.FromRuleContext(atn, outerContext.Parent);
 			ATNState state = atn.states[outerContext.invokingState];
 			RuleTransition transition = (RuleTransition)state.Transition(0);
@@ -83,7 +82,7 @@ namespace Antlr4.Runtime.Atn
 		{
 			get
 			{
-				return this == EMPTY;
+				return this == EmptyPredictionContext.Instance;
 			}
 		}
 
@@ -227,19 +226,23 @@ namespace Antlr4.Runtime.Atn
 		}
 
 		public static PredictionContext MergeArrays(
-	ArrayPredictionContext a,
-	ArrayPredictionContext b,
-	bool rootIsWildcard,
-	MergeCache mergeCache)
+            ArrayPredictionContext a,
+            ArrayPredictionContext b,
+            bool rootIsWildcard,
+            MergeCache mergeCache)
 		{
 			if (mergeCache != null)
 			{
 				PredictionContext previous = mergeCache.Get(a, b);
-				if (previous != null)
+				if (previous != null) {
+    				if ( ParserATNSimulator.trace_atn_sim ) Console.WriteLine("mergeArrays a="+a+",b="+b+" -> previous");
 					return previous;
+				}
 				previous = mergeCache.Get(b, a);
-				if (previous != null)
+				if (previous != null) {
+    				if ( ParserATNSimulator.trace_atn_sim ) Console.WriteLine("mergeArrays a="+a+",b="+b+" -> previous");
 					return previous;
+				}
 			}
 
 			// merge sorted payloads a + b => M
@@ -332,16 +335,20 @@ namespace Antlr4.Runtime.Atn
 			{
 				if (mergeCache != null)
 					mergeCache.Put(a, b, a);
+   				if ( ParserATNSimulator.trace_atn_sim ) Console.WriteLine("mergeArrays a="+a+",b="+b+" -> a");
 				return a;
 			}
 			if (M.Equals(b))
 			{
 				if (mergeCache != null)
 					mergeCache.Put(a, b, b);
+   				if ( ParserATNSimulator.trace_atn_sim ) Console.WriteLine("mergeArrays a="+a+",b="+b+" -> b");
 				return b;
 			}
 
 			CombineCommonParents(mergedParents);
+
+			if ( ParserATNSimulator.trace_atn_sim ) Console.WriteLine("mergeArrays a="+a+",b="+b+" -> "+M);
 
 			if (mergeCache != null)
 				mergeCache.Put(a, b, M);
@@ -375,14 +382,14 @@ namespace Antlr4.Runtime.Atn
 		{
 			if (rootIsWildcard)
 			{
-				if (a == PredictionContext.EMPTY)
-					return PredictionContext.EMPTY;  // * + b = *
-				if (b == PredictionContext.EMPTY)
-					return PredictionContext.EMPTY;  // a + * = *
+				if (a == EmptyPredictionContext.Instance)
+					return EmptyPredictionContext.Instance;  // * + b = *
+				if (b == EmptyPredictionContext.Instance)
+					return EmptyPredictionContext.Instance;  // a + * = *
 			}
 			else {
-				if (a == EMPTY && b == EMPTY) return EMPTY; // $ + $ = $
-				if (a == EMPTY)
+				if (a == EmptyPredictionContext.Instance && b == EmptyPredictionContext.Instance) return EmptyPredictionContext.Instance; // $ + $ = $
+				if (a == EmptyPredictionContext.Instance)
 				{ // $ + x = [$,x]
 					int[] payloads = { b.returnState, EMPTY_RETURN_STATE };
 					PredictionContext[] parents = { b.parent, null };
@@ -390,7 +397,7 @@ namespace Antlr4.Runtime.Atn
 						new ArrayPredictionContext(parents, payloads);
 					return joined;
 				}
-				if (b == EMPTY)
+				if (b == EmptyPredictionContext.Instance)
 				{ // x + $ = [$,x] ($ is always first if present)
 					int[] payloads = { a.returnState, EMPTY_RETURN_STATE };
 					PredictionContext[] parents = { a.parent, null };
@@ -455,7 +462,7 @@ namespace Antlr4.Runtime.Atn
 			PredictionContext updated;
 			if (parents.Length == 0)
 			{
-				updated = EMPTY;
+				updated = EmptyPredictionContext.Instance;
 			}
 			else if (parents.Length == 1)
 			{
@@ -481,7 +488,7 @@ namespace Antlr4.Runtime.Atn
 
 		public virtual string[] ToStrings(IRecognizer recognizer, int currentState)
 		{
-			return ToStrings(recognizer, PredictionContext.EMPTY, currentState);
+			return ToStrings(recognizer, EmptyPredictionContext.Instance, currentState);
 		}
 
 		public virtual string[] ToStrings(IRecognizer recognizer, PredictionContext stop, int currentState)
@@ -556,7 +563,7 @@ namespace Antlr4.Runtime.Atn
 			return result.ToArray();
 		}
 
-		internal sealed class IdentityHashMap : Dictionary<PredictionContext, PredictionContext>
+		public sealed class IdentityHashMap : Dictionary<PredictionContext, PredictionContext>
 		{
 			public IdentityHashMap()
 				: base(PredictionContext.IdentityEqualityComparator.Instance)
@@ -564,7 +571,7 @@ namespace Antlr4.Runtime.Atn
 			}
 		}
 
-		internal sealed class IdentityEqualityComparator : EqualityComparer<PredictionContext>
+		public sealed class IdentityEqualityComparator : EqualityComparer<PredictionContext>
 		{
 			public static readonly PredictionContext.IdentityEqualityComparator Instance = new PredictionContext.IdentityEqualityComparator();
 

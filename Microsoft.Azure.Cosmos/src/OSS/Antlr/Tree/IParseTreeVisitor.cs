@@ -19,11 +19,7 @@ namespace Antlr4.Runtime.Tree
     /// .
     /// </remarks>
     /// <author>Sam Harwell</author>
-#if COMPACT
-    internal interface IParseTreeVisitor<Result>
-#else
     internal interface IParseTreeVisitor<out Result>
-#endif
     {
         /// <summary>Visit a parse tree, and return a user-defined result of the operation.</summary>
         /// <remarks>Visit a parse tree, and return a user-defined result of the operation.</remarks>

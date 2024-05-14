@@ -177,6 +177,7 @@ namespace Antlr4.Runtime
             {
                 children = new List<IParseTree>();
             }
+
             children.Add(t);
         }
 
@@ -186,6 +187,7 @@ namespace Antlr4.Runtime
             {
                 children = new List<IParseTree>();
             }
+
             children.Add(ruleInvocation);
         }
 
@@ -239,6 +241,7 @@ namespace Antlr4.Runtime
             {
                 return default(T);
             }
+
             int j = -1;
             // what element have we found with ctxType?
             foreach (IParseTree o in children)
@@ -248,10 +251,11 @@ namespace Antlr4.Runtime
                     j++;
                     if (j == i)
                     {
-                        return (T)o;
+                        return (T) o;
                     }
                 }
             }
+
             return default(T);
         }
 
@@ -261,13 +265,14 @@ namespace Antlr4.Runtime
             {
                 return null;
             }
+
             int j = -1;
             // what token with ttype have we found?
             foreach (IParseTree o in children)
             {
                 if (o is ITerminalNode)
                 {
-                    ITerminalNode tnode = (ITerminalNode)o;
+                    ITerminalNode tnode = (ITerminalNode) o;
                     IToken symbol = tnode.Symbol;
                     if (symbol.Type == ttype)
                     {
@@ -279,25 +284,23 @@ namespace Antlr4.Runtime
                     }
                 }
             }
+
             return null;
         }
 
-#if (NET45PLUS && !DOTNETCORE)
-        public virtual IReadOnlyList<ITerminalNode> GetTokens(int ttype)
-#else
         public virtual ITerminalNode[] GetTokens(int ttype)
-#endif
         {
             if (children == null)
             {
                 return Collections.EmptyList<ITerminalNode>();
             }
+
             List<ITerminalNode> tokens = null;
             foreach (IParseTree o in children)
             {
                 if (o is ITerminalNode)
                 {
-                    ITerminalNode tnode = (ITerminalNode)o;
+                    ITerminalNode tnode = (ITerminalNode) o;
                     IToken symbol = tnode.Symbol;
                     if (symbol.Type == ttype)
                     {
@@ -305,19 +308,18 @@ namespace Antlr4.Runtime
                         {
                             tokens = new List<ITerminalNode>();
                         }
+
                         tokens.Add(tnode);
                     }
                 }
             }
+
             if (tokens == null)
             {
                 return Collections.EmptyList<ITerminalNode>();
             }
-#if (NET45PLUS && !DOTNETCORE)
-            return tokens;
-#else
+
             return tokens.ToArray();
-#endif
         }
 
         public virtual T GetRuleContext<T>(int i)
@@ -326,18 +328,14 @@ namespace Antlr4.Runtime
             return GetChild<T>(i);
         }
 
-#if (NET45PLUS && !DOTNETCORE)
-        public virtual IReadOnlyList<T> GetRuleContexts<T>()
-            where T : Antlr4.Runtime.ParserRuleContext
-#else
         public virtual T[] GetRuleContexts<T>()
             where T : Antlr4.Runtime.ParserRuleContext
-#endif
         {
             if (children == null)
             {
                 return Collections.EmptyList<T>();
             }
+
             List<T> contexts = null;
             foreach (IParseTree o in children)
             {
@@ -347,26 +345,22 @@ namespace Antlr4.Runtime
                     {
                         contexts = new List<T>();
                     }
-                    contexts.Add((T)o);
+
+                    contexts.Add((T) o);
                 }
             }
+
             if (contexts == null)
             {
                 return Collections.EmptyList<T>();
             }
-#if (NET45PLUS && !DOTNETCORE)
-            return contexts;
-#else
+
             return contexts.ToArray();
-#endif
         }
 
         public override int ChildCount
         {
-            get
-            {
-                return children != null ? children.Count : 0;
-            }
+            get { return children != null ? children.Count : 0; }
         }
 
         public override Interval SourceInterval
@@ -377,32 +371,21 @@ namespace Antlr4.Runtime
                 {
                     return Interval.Invalid;
                 }
+
                 return Interval.Of(_start.TokenIndex, _stop.TokenIndex);
             }
         }
 
         public virtual IToken Start
         {
-            get
-            {
-                return _start;
-            }
-            set
-            {
-                _start = value;
-            }
+            get { return _start; }
+            set { _start = value; }
         }
 
         public virtual IToken Stop
         {
-            get
-            {
-                return _stop;
-            }
-            set
-            {
-                _stop = value;
-            }
+            get { return _stop; }
+            set { _stop = value; }
         }
 
         /// <summary>Used for rule context info debugging during parse-time, not so much for ATN debugging</summary>

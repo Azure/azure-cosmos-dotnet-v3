@@ -18,7 +18,7 @@ namespace Antlr4.Runtime.Atn
 			if (returnState == EMPTY_RETURN_STATE && parent == null)
 			{
 				// someone can pass in the bits of an array ctx that mean $
-				return PredictionContext.EMPTY;
+				return EmptyPredictionContext.Instance;
 			}
 			return new SingletonPredictionContext(parent, returnState);
 		}
@@ -82,7 +82,7 @@ namespace Antlr4.Runtime.Atn
                 return false;
             }
 			Antlr4.Runtime.Atn.SingletonPredictionContext other = (Antlr4.Runtime.Atn.SingletonPredictionContext)o;
-            return returnState == other.returnState && parent.Equals(other.parent);
+            return returnState == other.returnState && (parent != null && parent.Equals(other.parent));
         }
 
 		public override string ToString()

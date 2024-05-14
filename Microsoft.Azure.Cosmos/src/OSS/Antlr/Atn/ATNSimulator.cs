@@ -78,13 +78,6 @@ namespace Antlr4.Runtime.Atn
 			throw new Exception("This ATN simulator does not support clearing the DFA.");
 		}
 
-        protected void ConsoleWriteLine(string format, params object[] arg)
-        {
-#if !PORTABLE
-            System.Console.WriteLine(format, arg);
-#endif
-        }
-
         public PredictionContextCache getSharedContextCache()
 		{
 			return sharedContextCache;

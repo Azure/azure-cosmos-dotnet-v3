@@ -74,7 +74,7 @@ namespace Antlr4.Runtime.Atn
 			{
 				decisions[decision].SLL_MaxLook = SLL_k;
 				decisions[decision].SLL_MaxLookEvent =
-						new LookaheadEventInfo(decision, null/*, alt*/, input, startIndex, sllStopIndex, false);
+						new LookaheadEventInfo(decision, null, alt, input, startIndex, sllStopIndex, false);
 			}
 
 			if (llStopIndex >= 0)
@@ -86,7 +86,7 @@ namespace Antlr4.Runtime.Atn
 				{
 					decisions[decision].LL_MaxLook = LL_k;
 					decisions[decision].LL_MaxLookEvent =
-							new LookaheadEventInfo(decision, null/*, alt*/, input, startIndex, llStopIndex, true);
+							new LookaheadEventInfo(decision, null, alt, input, startIndex, llStopIndex, true);
 				}
 			}
 
@@ -111,7 +111,7 @@ namespace Antlr4.Runtime.Atn
 			if (existingTargetState == ERROR)
 			{
 				decisions[currentDecision].errors.Add(
-						new ErrorInfo(currentDecision, null /*previousD.configs*/, input, startIndex, sllStopIndex)
+						new ErrorInfo(currentDecision, previousD.configSet, input, startIndex, sllStopIndex, false)
 				);
 			}
 		}
@@ -146,7 +146,7 @@ namespace Antlr4.Runtime.Atn
 			else { // no reach on current lookahead symbol. ERROR.
 				   // TODO: does not handle delayed errors per getSynValidOrSemInvalidAltThatFinishedDecisionEntryRule()
 				decisions[currentDecision].errors.Add(
-					new ErrorInfo(currentDecision, null /*closure*/, input, startIndex, llStopIndex)
+					new ErrorInfo(currentDecision, closure, input, startIndex, llStopIndex, true)
 				);
 			}
 		}
@@ -157,7 +157,7 @@ namespace Antlr4.Runtime.Atn
 			}
 			else { // no reach on current lookahead symbol. ERROR.
 				decisions[currentDecision].errors.Add(
-					new ErrorInfo(currentDecision, null /*closure*/, input, startIndex, sllStopIndex)
+					new ErrorInfo(currentDecision, closure, input, startIndex, sllStopIndex, false)
 				);
 			}
 		}
@@ -171,7 +171,7 @@ namespace Antlr4.Runtime.Atn
 			bool fullContext = llStopIndex >= 0;
 			int stopIndex = fullContext ? llStopIndex : sllStopIndex;
 			decisions[currentDecision].predicateEvals.Add(
-				new PredicateEvalInfo(null , currentDecision, input, startIndex, stopIndex, pred, result, alt/*, fullCtx*/)
+				new PredicateEvalInfo(currentDecision, input, startIndex, stopIndex, pred, result, alt, fullCtx)
 			);
 		}
 
@@ -196,14 +196,14 @@ namespace Antlr4.Runtime.Atn
 		if (prediction != conflictingAltResolvedBySLL)
 		{
 			decisions[currentDecision].contextSensitivities.Add(
-					new ContextSensitivityInfo(currentDecision, null /*configs*/, input, startIndex, stopIndex)
+					new ContextSensitivityInfo(currentDecision, configs, input, startIndex, stopIndex)
 			);
 		}
 			base.ReportContextSensitivity(dfa, prediction, configs, startIndex, stopIndex);
 	}
 
 	protected override void ReportAmbiguity(DFA dfa, DFAState D, int startIndex, int stopIndex, bool exact,
-		                                    BitSet ambigAlts, ATNConfigSet configSet)
+		                                    BitSet ambigAlts, ATNConfigSet configs)
 	{
 		int prediction;
 		if (ambigAlts != null)
@@ -211,22 +211,22 @@ namespace Antlr4.Runtime.Atn
 			prediction = ambigAlts.NextSetBit(0);
 		}
 		else {
-				prediction = configSet.GetAlts().NextSetBit(0);
+				prediction = configs.GetAlts().NextSetBit(0);
 		}
-			if (configSet.fullCtx && prediction != conflictingAltResolvedBySLL)
+			if (configs.fullCtx && prediction != conflictingAltResolvedBySLL)
 		{
 			// Even though this is an ambiguity we are reporting, we can
 			// still detect some context sensitivities.  Both SLL and LL
 			// are showing a conflict, hence an ambiguity, but if they resolve
 			// to different minimum alternatives we have also identified a
 			// context sensitivity.
-			decisions[currentDecision].contextSensitivities.Add( new ContextSensitivityInfo(currentDecision, null /*configs*/, input, startIndex, stopIndex) );
+			decisions[currentDecision].contextSensitivities.Add( new ContextSensitivityInfo(currentDecision, configs, input, startIndex, stopIndex) );
 		}
 		decisions[currentDecision].ambiguities.Add(
-			new AmbiguityInfo(currentDecision, null /*configs, ambigAlts*/,
-				              input, startIndex, stopIndex/*, configs.IsFullContext*/)
+			new AmbiguityInfo(currentDecision, configs, ambigAlts,
+				              input, startIndex, stopIndex, configs.fullCtx)
 		);
-		base.ReportAmbiguity(dfa, D, startIndex, stopIndex, exact, ambigAlts, configSet);
+		base.ReportAmbiguity(dfa, D, startIndex, stopIndex, exact, ambigAlts, configs);
 	}
 
 	// ---------------------------------------------------------------------

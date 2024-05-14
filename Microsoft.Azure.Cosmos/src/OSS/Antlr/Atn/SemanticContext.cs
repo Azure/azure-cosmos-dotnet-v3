@@ -15,8 +15,6 @@ namespace Antlr4.Runtime.Atn
 {
     internal abstract class SemanticContext
     {
-        public static readonly SemanticContext NONE = new SemanticContext.Predicate();
-
         public abstract bool Eval<Symbol, ATNInterpreter>(Recognizer<Symbol, ATNInterpreter> parser, RuleContext parserCallStack)
             where ATNInterpreter : ATNSimulator;
 
@@ -26,7 +24,17 @@ namespace Antlr4.Runtime.Atn
             return this;
         }
 
-        internal class Predicate : SemanticContext
+        internal class Empty : SemanticContext
+        {
+            public static readonly SemanticContext Instance = new Empty();
+
+            public override bool Eval<Symbol, ATNInterpreter>(Recognizer<Symbol, ATNInterpreter> parser, RuleContext parserCallStack)
+            {
+                return false;
+            }
+        }
+
+        public class Predicate : SemanticContext
         {
             public readonly int ruleIndex;
 
@@ -108,7 +116,7 @@ namespace Antlr4.Runtime.Atn
             {
                 if (parser.Precpred(parserCallStack, precedence))
                 {
-                    return SemanticContext.NONE;
+                    return SemanticContext.Empty.Instance;
                 }
                 else
                 {
@@ -246,7 +254,7 @@ namespace Antlr4.Runtime.Atn
                     }
                     else
                     {
-                        if (evaluated != NONE)
+                        if (evaluated != Empty.Instance)
                         {
                             // Reduce the result by skipping true elements
                             operands.Add(evaluated);
@@ -260,7 +268,7 @@ namespace Antlr4.Runtime.Atn
                 if (operands.Count == 0)
                 {
                     // all elements were true, so the AND context is true
-                    return NONE;
+                    return Empty.Instance;
                 }
                 SemanticContext result = operands[0];
                 for (int i = 1; i < operands.Count; i++)
@@ -357,10 +365,10 @@ namespace Antlr4.Runtime.Atn
                 {
                     SemanticContext evaluated = context.EvalPrecedence(parser, parserCallStack);
                     differs |= (evaluated != context);
-                    if (evaluated == NONE)
+                    if (evaluated == Empty.Instance)
                     {
                         // The OR context is true if any element is true
-                        return NONE;
+                        return Empty.Instance;
                     }
                     else
                     {
@@ -396,11 +404,11 @@ namespace Antlr4.Runtime.Atn
 
         public static SemanticContext AndOp(SemanticContext a, SemanticContext b)
         {
-            if (a == null || a == NONE)
+            if (a == null || a == Empty.Instance)
             {
                 return b;
             }
-            if (b == null || b == NONE)
+            if (b == null || b == Empty.Instance)
             {
                 return a;
             }
@@ -422,9 +430,9 @@ namespace Antlr4.Runtime.Atn
             {
                 return a;
             }
-            if (a == NONE || b == NONE)
+            if (a == Empty.Instance || b == Empty.Instance)
             {
-                return NONE;
+                return Empty.Instance;
             }
             SemanticContext.OR result = new SemanticContext.OR(a, b);
             if (result.opnds.Length == 1)
@@ -440,11 +448,7 @@ namespace Antlr4.Runtime.Atn
                 Collections.EmptyList<PrecedencePredicate>();
 
             List<PrecedencePredicate> result = collection.OfType<PrecedencePredicate>().ToList();
-#if NET40PLUS
             collection.ExceptWith(result);
-#else
-            collection.ExceptWith(result.Cast<SemanticContext>());
-#endif
             return result;
         }
     }

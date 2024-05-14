@@ -98,7 +98,7 @@ namespace Antlr4.Runtime.Atn
 		{
 			if (readOnly)
 				throw new Exception("This set is readonly");
-			if (config.semanticContext != SemanticContext.NONE)
+			if (config.semanticContext != SemanticContext.Empty.Instance)
 			{
 				hasSemanticContext = true;
 			}
@@ -174,7 +174,7 @@ namespace Antlr4.Runtime.Atn
 			List<SemanticContext> preds = new List<SemanticContext>();
 			foreach (ATNConfig c in configs)
 			{
-				if (c.semanticContext != SemanticContext.NONE)
+				if (c.semanticContext != SemanticContext.Empty.Instance)
 				{
 					preds.Add(c.semanticContext);
 				}
@@ -314,7 +314,7 @@ namespace Antlr4.Runtime.Atn
 			buf.Append(']');
 			if (hasSemanticContext)
 				buf.Append(",hasSemanticContext=")
-				   .Append(hasSemanticContext);
+				   .Append(hasSemanticContext.ToString().ToLower());
 			if (uniqueAlt != ATN.INVALID_ALT_NUMBER)
 				buf.Append(",uniqueAlt=")
 				   .Append(uniqueAlt);
@@ -337,7 +337,7 @@ namespace Antlr4.Runtime.Atn
 			this.configLookup = new LexerConfigHashSet();
 		}
 
-		internal class LexerConfigHashSet : ConfigHashSet
+		public class LexerConfigHashSet : ConfigHashSet
 		{
 			public LexerConfigHashSet()
 				: base(new ObjectEqualityComparator())

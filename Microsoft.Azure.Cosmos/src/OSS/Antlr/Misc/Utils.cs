@@ -8,28 +8,22 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using Antlr4.Runtime.Sharpen;
 
 namespace Antlr4.Runtime.Misc
 {
+    internal static class StaticUtils
+    {
+        public static string ToString<T>(this IEnumerable<T> list)
+        {
+            return "[" + Utils.Join(", ", list) + "]";
+        }
+    }
+
     internal class Utils
     {
         public static string Join<T>(string separator, IEnumerable<T> items)
         {
-#if NET40PLUS
             return string.Join(separator, items);
-#else
-            ArrayList<string> elements = new ArrayList<string>();
-            foreach (T item in items)
-            {
-                if (item == null)
-                    elements.Add("");
-                else
-                    elements.Add(item.ToString());
-            }
-
-            return string.Join(separator, elements.ToArray());
-#endif
         }
 
         public static int NumNonnull(object[] data)
