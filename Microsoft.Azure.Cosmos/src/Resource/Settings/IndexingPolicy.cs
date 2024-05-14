@@ -132,6 +132,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]
         /// ]]>
         /// </example>
+        [JsonIgnore]
 #if PREVIEW
         public
 #else
