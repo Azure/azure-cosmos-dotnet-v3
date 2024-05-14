@@ -623,9 +623,11 @@
           "Attributes": [],
           "MethodInfo": "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.VectorIndexPath] get_VectorIndexes();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.VectorIndexPath] VectorIndexes": {
+        "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.VectorIndexPath] VectorIndexes[Newtonsoft.Json.JsonIgnoreAttribute()]": {
           "Type": "Property",
-          "Attributes": [],
+          "Attributes": [
+            "JsonIgnoreAttribute"
+          ],
           "MethodInfo": "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.VectorIndexPath] VectorIndexes;CanRead:True;CanWrite:True;System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.VectorIndexPath] get_VectorIndexes();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_VectorIndexes(System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.VectorIndexPath]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_VectorIndexes(System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.VectorIndexPath])": {

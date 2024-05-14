@@ -138,7 +138,8 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        Collection<VectorIndexPath> VectorIndexes
+        // Remove this place holder for VectorIndexes once the new Cosmos.Direct version 3.34.2 is released and rename the VectorIndexesInternal to VectorIndexes.
+            Collection<VectorIndexPath> VectorIndexes
         {
             get => this.VectorIndexesInternal ??= new Collection<VectorIndexPath>();
             set => this.VectorIndexesInternal = value;
