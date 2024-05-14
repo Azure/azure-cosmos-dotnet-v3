@@ -83,6 +83,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         [TestMethod]
         public async Task QueryFeatureFlagTests()
         {
+            using EnvironmentVariable nonStreamingOrderByDisabled = new EnvironmentVariable(
+                ConfigurationManager.NonStreamingOrderByQueryFeatureDisabled);
+
             static async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> _)
             {
                 ContainerInlineCore containerCore = container as ContainerInlineCore;
@@ -330,6 +333,23 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 }
             }
 #pragma warning restore CS0162 // Unreachable code detected
+        }
+
+        private sealed class EnvironmentVariable : IDisposable
+        {
+            private readonly string name;
+            private readonly string value;
+
+            public EnvironmentVariable(string name)
+            {
+                this.name = name;
+                this.value = Environment.GetEnvironmentVariable(name);
+            }
+
+            public void Dispose()
+            {
+                Environment.SetEnvironmentVariable(this.name, this.value);
+            }
         }
 
         private sealed class SupportedQueryFeaturesValidator
