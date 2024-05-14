@@ -342,13 +342,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
         {
             Contract.Requires(context != null);
 
-            List<SqlScalarExpression> groupByColumns = new List<SqlScalarExpression>();
-            foreach (sqlParser.Scalar_expressionContext scalarExpressionContext in context.scalar_expression_list().scalar_expression())
-            {
-                groupByColumns.Add((SqlScalarExpression)this.Visit(scalarExpressionContext));
-            }
+            SqlSelectListSpec selectListSpec = (SqlSelectListSpec)this.Visit(context.select_list_spec());
 
-            return SqlGroupByClause.Create(groupByColumns.ToImmutableArray());
+            return SqlGroupByClause.Create(selectListSpec.Items);
         }
         #endregion
         #region ORDER BY

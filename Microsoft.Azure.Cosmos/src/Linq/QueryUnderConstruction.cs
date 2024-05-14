@@ -476,11 +476,11 @@ namespace Microsoft.Azure.Cosmos.Linq
             if (selectValueSpec != null)
             {
                 SqlScalarExpression replaced = selectValueSpec.Expression;
-                SqlScalarExpression[] substitutedItems = new SqlScalarExpression[groupByClause.Expressions.Length];
+                SqlSelectItem[] substitutedItems = new SqlSelectItem[groupByClause.Expressions.Length];
                 for (int i = 0; i < substitutedItems.Length; ++i)
                 {
                     SqlScalarExpression substituted = SqlExpressionManipulation.Substitute(replaced, inputParam, groupByClause.Expressions[i]);
-                    substitutedItems[i] = substituted;
+                    substitutedItems[i] = SqlSelectItem.Create(substituted);
                 }
                 SqlGroupByClause result = SqlGroupByClause.Create(substitutedItems);
                 return result;

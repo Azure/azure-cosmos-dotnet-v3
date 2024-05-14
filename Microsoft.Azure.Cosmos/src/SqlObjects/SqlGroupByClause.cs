@@ -16,9 +16,9 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
 #endif
     sealed class SqlGroupByClause : SqlObject
     {
-        private SqlGroupByClause(ImmutableArray<SqlScalarExpression> expressions)
+        private SqlGroupByClause(ImmutableArray<SqlSelectItem> expressions)
         {
-            foreach (SqlScalarExpression expression in expressions)
+            foreach (SqlSelectItem expression in expressions)
             {
                 if (expression == null)
                 {
@@ -27,13 +27,15 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             }
 
             this.Expressions = expressions;
+
         }
 
-        public ImmutableArray<SqlScalarExpression> Expressions { get; }
+        // Each key is a SqlSelectItem to capture the possible aliasing of keys
+        public ImmutableArray<SqlSelectItem> Expressions { get; }
 
-        public static SqlGroupByClause Create(params SqlScalarExpression[] expressions) => new SqlGroupByClause(expressions.ToImmutableArray());
+        public static SqlGroupByClause Create(params SqlSelectItem[] expressions) => new SqlGroupByClause(expressions.ToImmutableArray());
 
-        public static SqlGroupByClause Create(ImmutableArray<SqlScalarExpression> expressions) => new SqlGroupByClause(expressions);
+        public static SqlGroupByClause Create(ImmutableArray<SqlSelectItem> expressions) => new SqlGroupByClause(expressions);
 
         public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
 

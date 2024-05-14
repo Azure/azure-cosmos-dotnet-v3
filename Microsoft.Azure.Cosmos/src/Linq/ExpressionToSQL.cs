@@ -1709,7 +1709,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             // Current GroupBy doesn't allow subquery, so we need to visit non subquery scalar lambda
             SqlScalarExpression keySelectorFunc = ExpressionToSql.VisitNonSubqueryScalarLambda(keySelectorLambda, context);
 
-            SqlGroupByClause groupby = SqlGroupByClause.Create(keySelectorFunc);
+            SqlGroupByClause groupby = SqlGroupByClause.Create(SqlSelectItem.Create(keySelectorFunc));
 
             context.CurrentQuery = context.CurrentQuery.AddGroupByClause(groupby, context);
 
