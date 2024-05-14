@@ -28,9 +28,36 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             | QueryFeatures.OrderBy
             | QueryFeatures.Top
             | QueryFeatures.NonValueAggregate
+            | QueryFeatures.DCount
+            | QueryFeatures.NonStreamingOrderBy;
+
+        private static readonly QueryFeatures LegacySupportedQueryFeatures =
+            QueryFeatures.Aggregate
+            | QueryFeatures.Distinct
+            | QueryFeatures.GroupBy
+            | QueryFeatures.MultipleOrderBy
+            | QueryFeatures.MultipleAggregates
+            | QueryFeatures.OffsetAndLimit
+            | QueryFeatures.OrderBy
+            | QueryFeatures.Top
+            | QueryFeatures.NonValueAggregate
             | QueryFeatures.DCount;
 
         private static readonly string SupportedQueryFeaturesString = SupportedQueryFeatures.ToString();
+
+        private static readonly string LegacySupportedQueryFeaturesString = LegacySupportedQueryFeatures.ToString();
+
+        private static string GetSupportedQueryFeaturesString(bool isNonStreamingOrderByQueryFeatureDisabled)
+        {
+            if (isNonStreamingOrderByQueryFeatureDisabled)
+            {
+                return LegacySupportedQueryFeaturesString;
+            }
+            else
+            {
+                return SupportedQueryFeaturesString;
+            }
+        }
 
         public static async Task<PartitionedQueryExecutionInfo> GetQueryPlanWithServiceInteropAsync(
             CosmosQueryClient queryClient,
@@ -95,6 +122,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             SqlQuerySpec sqlQuerySpec,
             string resourceLink,
             PartitionKey? partitionKey,
+            bool isNonStreamingOrderByQueryFeatureDisabled,
             ITrace trace,
             CancellationToken cancellationToken = default)
         {
@@ -130,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                     OperationType.QueryPlan,
                     sqlQuerySpec,
                     partitionKey,
-                    QueryPlanRetriever.SupportedQueryFeaturesString,
+                    GetSupportedQueryFeaturesString(isNonStreamingOrderByQueryFeatureDisabled),
                     trace,
                     cancellationToken);
             }
