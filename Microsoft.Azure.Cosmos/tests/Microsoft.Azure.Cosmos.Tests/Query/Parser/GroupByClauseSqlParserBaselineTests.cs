@@ -20,6 +20,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Parser
                 CreateInput(description: "Case Insensitive", groupByClause: "GrOuP By 1"),
                 CreateInput(description: "multi group by", groupByClause: "GROUP BY 1, 2, 3"),
 
+                CreateInput(description: "single group by with alias", groupByClause: "FROM r GROUP BY r.id AS GroupByKey"),
+                CreateInput(description: "single group by with alias no AS", groupByClause: "FROM r GROUP BY r.id GroupByKey"),
+                CreateInput(description: "multi group by with alias", groupByClause: "FROM r GROUP BY r.id AS GroupByKey, r.name AS Name"),
+                CreateInput(description: "multi group by with alias no AS", groupByClause: "FROM r GROUP BY r.id GroupByKey, r.name Name"),
+
                 // Negative
                 CreateInput(description: "missing group by expression", groupByClause: "GROUP BY "),
                 CreateInput(description: "missing space", groupByClause: "GROUPBY 1"),
