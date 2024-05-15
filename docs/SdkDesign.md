@@ -53,7 +53,7 @@ Any failure response from the Transport that matches the [conditions for cross-r
 
 * HTTP connection failures or DNS resolution problems (HttpRequestException) - The account information is refreshed, the current region is marked unavailable to be used, and the request is retried on the next available region after account refresh if the account has multiple regions. In case no other regions are available, the SDK keeps retrying by refreshing the account information up to a [maximum of times](../Microsoft.Azure.Cosmos/src/ClientRetryPolicy.cs#L24).
 * HTTP 403 with Substatus 3 - The current region is no longer a Write region (write region failover), the account information is refreshed, and the request is retried on the new Write region.
-* HTTP 403 with Substatus 1008 - The current region is not available (adding or removing a region). The region is marked as unavailable and the request retried on the next available region.
+* HTTP 403 with Substatus 1008 - The current region is not available (adding or removing a region). The region is marked as unavailable for 5 minutes and the request retried on the next available region.
 * HTTP 404 with Substatus 1002 - Session consistency request where the region did not yet receive the requested Session Token, the request is retried on the primary (write) region for accounts with a single write region or on the next preferred region for accounts with multiple write regions.
 * HTTP 503 - The request could not succeed on the region due to repeated TCP connectivity issues, the request is retried on the next preferred region.
 
@@ -150,7 +150,12 @@ If the retry period (30 seconds) is exhausted, it returns an HTTP 503 ServiceUna
 * HTTP 410 Substatus 1008 (partition is migrating) responses from the service  -> Refreshes partition map (rediscovers partitions) and retries.
 * HTTP 410 Substatus 1007 (partition is splitting) responses from the service  -> Refreshes partition map (rediscovers partitions) and retries.
 * HTTP 410 Substatus 1000 responses from the service, up to 3 times  -> Refreshes container map (for cases when the container was recreated with the same name) and retries.
+
+> :information_source: There is no delay for the first retry. Further retries start with 1 second and using a backoff multiplier of 2 can go up to 15 seconds.
+
 * HTTP 449 responses from the service -> Retries using a random salted period.
+
+> :information_source: There is no delay for the first retry. Further retries start with 10 milliseconds and using a backoff multiplier of 2 with a 5 millisecond salt can go up to 1 second.
 
 ```mermaid
 flowchart

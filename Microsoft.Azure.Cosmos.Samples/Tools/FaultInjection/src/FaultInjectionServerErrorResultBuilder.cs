@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private TimeSpan delay;
         private bool suppressServiceRequest;
         private bool isDelaySet = false;
+        private double applyPercentage = 1;
 
         /// <summary>
         /// Creates a <see cref="FaultInjectionServerErrorResult"/>.
@@ -42,15 +43,17 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// 
         /// Only used RESPONSE_DELAY and CONNECTION_DELAY.
         /// 
-        /// For RESPONSE_DELAY, it is the delay added before the response.
-        /// For CONNECTION_DELAY, it is the delay added before the connection is established.
+        /// For <see cref="FaultInjectionServerErrorType.SendDelay"/>, it is the delay added before the request is sent.
+        /// For <see cref="FaultInjectionServerErrorType.ResponseDelay"/>, it is the delay added after the response is recieved.
+        /// For <see cref="FaultInjectionServerErrorType.ConnectionDelay"/>, it is the delay added before the connection is established.
         /// 
         /// </summary>
         /// <param name="delay">The duration of the delay.</param>
         /// <returns>The current <see cref="FaultInjectionServerErrorResultBuilder"/>.</returns>
         public FaultInjectionServerErrorResultBuilder WithDelay(TimeSpan delay)
         {
-            if (this.serverErrorType == FaultInjectionServerErrorType.ResponseDelay 
+            if ( this.serverErrorType == FaultInjectionServerErrorType.SendDelay
+                || this.serverErrorType == FaultInjectionServerErrorType.ResponseDelay 
                 || this.serverErrorType == FaultInjectionServerErrorType.ConnectionDelay)
             {
                 this.delay = delay;
@@ -62,6 +65,17 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         public FaultInjectionServerErrorResultBuilder WithSuppressServiceRequest(bool suppressServiceRequest)
         {
             this.suppressServiceRequest = suppressServiceRequest;
+            return this;
+        }
+
+        public FaultInjectionServerErrorResultBuilder WithApplyPercentage(double applyPercentage)
+        {
+            if (applyPercentage <= 0 || applyPercentage > 1)
+            {
+                throw new ArgumentOutOfRangeException($"Argument '{nameof(applyPercentage)}' must be within the range (0, 1].");
+            }
+
+            this.applyPercentage = applyPercentage;
             return this;
         }
 
@@ -82,7 +96,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 this.serverErrorType,
                 this.times,
                 this.delay,
-                this.suppressServiceRequest);
+                this.suppressServiceRequest,
+                this.applyPercentage);
         }
     }
 }

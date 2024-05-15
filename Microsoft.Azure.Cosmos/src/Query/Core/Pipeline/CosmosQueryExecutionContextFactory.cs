@@ -408,6 +408,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     inputParameters.ExecutionEnvironment,
                     inputParameters.ReturnResultsInDeterministicOrder,
                     inputParameters.EnableOptimisticDirectExecution,
+                    inputParameters.IsNonStreamingOrderByQueryFeatureDisabled,
                     inputParameters.TestInjections);
             }
 
@@ -593,6 +594,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     inputParameters.SqlQuerySpec,
                     cosmosQueryContext.ResourceLink,
                     inputParameters.PartitionKey,
+                    inputParameters.IsNonStreamingOrderByQueryFeatureDisabled,
                     trace,
                     cancellationToken);
             }
@@ -758,19 +760,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             ITrace trace)
         {
             bool clientDisableOptimisticDirectExecution = await cosmosQueryContext.QueryClient.GetClientDisableOptimisticDirectExecutionAsync();
+            bool isOdeContinuationToken = inputParameters.InitialUserContinuationToken != null &&
+                OptimisticDirectExecutionContinuationToken.IsOptimisticDirectExecutionContinuationToken(inputParameters.InitialUserContinuationToken);
 
             // Use the Ode code path only if ClientDisableOptimisticDirectExecution is false and EnableOptimisticDirectExecution is true
-            if (clientDisableOptimisticDirectExecution || !inputParameters.EnableOptimisticDirectExecution)
+            // But allow the query using ODE pipeline if it's earlier roundtrips are made using ODE continuation token.
+            if ((clientDisableOptimisticDirectExecution || !inputParameters.EnableOptimisticDirectExecution) &&
+                !isOdeContinuationToken)
             {
-                if (inputParameters.InitialUserContinuationToken != null
-                          && OptimisticDirectExecutionContinuationToken.IsOptimisticDirectExecutionContinuationToken(inputParameters.InitialUserContinuationToken))
-                {
-                    string errorMessage = "Execution of this query using the supplied continuation token requires EnableOptimisticDirectExecution to be set in QueryRequestOptions. " +
-                        "If the error persists after that, contact system administrator.";
-
-                    throw new MalformedContinuationTokenException($"{errorMessage} Continuation Token: {inputParameters.InitialUserContinuationToken}");
-                }
-
                 return null;
             }
 
@@ -817,6 +814,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 return targetRanges.Single();
             }
 
+            if (isOdeContinuationToken)
+            {
+                throw new InvalidOperationException("Execution of this query cannot resume using Optimistic Direct Execution continuation token due to partition split. Please restart the query without the continuation token.");
+            }
+
             return null;
         }
 
@@ -841,6 +843,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 ExecutionEnvironment? executionEnvironment,
                 bool? returnResultsInDeterministicOrder,
                 bool enableOptimisticDirectExecution,
+                bool isNonStreamingOrderByQueryFeatureDisabled,
                 TestInjections testInjections)
             {
                 this.SqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
@@ -874,6 +877,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 this.ExecutionEnvironment = executionEnvironment.GetValueOrDefault(InputParameters.DefaultExecutionEnvironment);
                 this.ReturnResultsInDeterministicOrder = returnResultsInDeterministicOrder.GetValueOrDefault(InputParameters.DefaultReturnResultsInDeterministicOrder);
                 this.EnableOptimisticDirectExecution = enableOptimisticDirectExecution;
+                this.IsNonStreamingOrderByQueryFeatureDisabled = isNonStreamingOrderByQueryFeatureDisabled;
                 this.TestInjections = testInjections;
             }
 
@@ -890,6 +894,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             public bool ReturnResultsInDeterministicOrder { get; }
             public TestInjections TestInjections { get; }
             public bool EnableOptimisticDirectExecution { get; }
+            public bool IsNonStreamingOrderByQueryFeatureDisabled { get; }
 
             public InputParameters WithContinuationToken(CosmosElement token)
             {
@@ -906,6 +911,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     this.ExecutionEnvironment,
                     this.ReturnResultsInDeterministicOrder,
                     this.EnableOptimisticDirectExecution,
+                    this.IsNonStreamingOrderByQueryFeatureDisabled,
                     this.TestInjections);
             }
         }
