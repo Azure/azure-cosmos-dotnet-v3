@@ -400,9 +400,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNotNull(containerProperties.VectorEmbeddingPolicy);
             Assert.AreEqual(3, containerProperties.VectorEmbeddingPolicy.Embeddings.Count);
             Assert.AreEqual("/vector1", containerProperties.VectorEmbeddingPolicy.Embeddings[0].Path);
-            Assert.AreEqual(VectorDataType.Float32, containerProperties.VectorEmbeddingPolicy.Embeddings[0].DataType);
+            Assert.AreEqual(Cosmos.VectorDataType.Float32, containerProperties.VectorEmbeddingPolicy.Embeddings[0].DataType);
             Assert.AreEqual((ulong)1200, containerProperties.VectorEmbeddingPolicy.Embeddings[0].Dimensions);
-            Assert.AreEqual(DistanceFunction.Cosine, containerProperties.VectorEmbeddingPolicy.Embeddings[0].DistanceFunction);
+            Assert.AreEqual(Cosmos.DistanceFunction.Cosine, containerProperties.VectorEmbeddingPolicy.Embeddings[0].DistanceFunction);
 
             Assert.AreEqual(2, containerProperties.ComputedProperties.Count);
             Assert.AreEqual("lowerName", containerProperties.ComputedProperties[0].Name);
@@ -805,11 +805,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task ContainerSettingsIndexTest()
         {
-#if PREVIEW
             string containerJsonString = "{\"indexingPolicy\":{\"automatic\":true,\"indexingMode\":\"Consistent\",\"includedPaths\":[{\"path\":\"/*\",\"indexes\":[{\"dataType\":\"Number\",\"precision\":-1,\"kind\":\"Range\"},{\"dataType\":\"String\",\"precision\":-1,\"kind\":\"Range\"}]}],\"excludedPaths\":[{\"path\":\"/\\\"_etag\\\"/?\"}],\"compositeIndexes\":[],\"spatialIndexes\":[],\"vectorIndexes\":[]},\"id\":\"MigrationTest\",\"partitionKey\":{\"paths\":[\"/id\"],\"kind\":\"Hash\"}}";
-#else
-            string containerJsonString = "{\"indexingPolicy\":{\"automatic\":true,\"indexingMode\":\"Consistent\",\"includedPaths\":[{\"path\":\"/*\",\"indexes\":[{\"dataType\":\"Number\",\"precision\":-1,\"kind\":\"Range\"},{\"dataType\":\"String\",\"precision\":-1,\"kind\":\"Range\"}]}],\"excludedPaths\":[{\"path\":\"/\\\"_etag\\\"/?\"}],\"compositeIndexes\":[],\"spatialIndexes\":[]},\"id\":\"MigrationTest\",\"partitionKey\":{\"paths\":[\"/id\"],\"kind\":\"Hash\"}}";
-#endif
 
             CosmosJsonDotNetSerializer serializerCore = new CosmosJsonDotNetSerializer();
             ContainerProperties containerProperties = null;
@@ -1082,29 +1078,29 @@ namespace Microsoft.Azure.Cosmos.Tests
             string serialization = JsonConvert.SerializeObject(containerSettings);
             Assert.IsFalse(serialization.Contains("vectorEmbeddingPolicy"), "Vector Embedding Policy should not be included by default");
 
-            Embedding embedding1 = new()
+            Cosmos.Embedding embedding1 = new()
             {
                 Path = "/vector1",
-                DataType = VectorDataType.Int8,
-                DistanceFunction = DistanceFunction.DotProduct,
+                DataType = Cosmos.VectorDataType.Int8,
+                DistanceFunction = Cosmos.DistanceFunction.DotProduct,
                 Dimensions = 1200,
             };
 
-            Embedding embedding2 = new()
+            Cosmos.Embedding embedding2 = new()
             {
                 Path = "/vector2",
-                DataType = VectorDataType.Uint8,
-                DistanceFunction = DistanceFunction.Cosine,
+                DataType = Cosmos.VectorDataType.Uint8,
+                DistanceFunction = Cosmos.DistanceFunction.Cosine,
                 Dimensions = 3,
             };
 
-            Collection<Embedding> embeddings = new ()
+            Collection<Cosmos.Embedding> embeddings = new ()
             {
                 embedding1,
                 embedding2,
             };
 
-            containerSettings.VectorEmbeddingPolicy = new VectorEmbeddingPolicy(embeddings);
+            containerSettings.VectorEmbeddingPolicy = new Cosmos.VectorEmbeddingPolicy(embeddings);
 
             string serializationWithValues = JsonConvert.SerializeObject(containerSettings);
             Assert.IsTrue(serializationWithValues.Contains("vectorEmbeddingPolicy"), "Vector Embedding Policy should be included.");
@@ -1113,8 +1109,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             JObject parsed = JObject.Parse(serializationWithValues);
             JToken vectorEmbeddings = parsed["vectorEmbeddingPolicy"]["vectorEmbeddings"];
             Assert.AreEqual(JTokenType.Array, vectorEmbeddings.Type, "Vector Embedding Policy serialized vectorEmbeddings should be an array.");
-            Assert.IsTrue(embedding1.Equals(vectorEmbeddings.Value<JArray>()[0].ToObject<Embedding>()));
-            Assert.IsTrue(embedding2.Equals(vectorEmbeddings.Value<JArray>()[1].ToObject<Embedding>()));
+            Assert.IsTrue(embedding1.Equals(vectorEmbeddings.Value<JArray>()[0].ToObject<Cosmos.Embedding>()));
+            Assert.IsTrue(embedding2.Equals(vectorEmbeddings.Value<JArray>()[1].ToObject<Cosmos.Embedding>()));
         }
 
         private static T CosmosDeserialize<T>(string payload)

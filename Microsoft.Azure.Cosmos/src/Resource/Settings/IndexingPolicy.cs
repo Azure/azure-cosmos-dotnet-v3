@@ -112,6 +112,12 @@ namespace Microsoft.Azure.Cosmos
         public Collection<Collection<CompositePath>> CompositeIndexes { get; internal set; } = new Collection<Collection<CompositePath>>();
 
         /// <summary>
+        /// Collection of spatial index definitions to be used
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.SpatialIndexes)]
+        public Collection<SpatialPath> SpatialIndexes { get; internal set; } = new Collection<SpatialPath>();
+
+        /// <summary>
         /// Gets the vector indexes for additional indexes
         /// </summary>
         /// <example>
@@ -132,30 +138,14 @@ namespace Microsoft.Azure.Cosmos
         /// ]
         /// ]]>
         /// </example>
-        [JsonIgnore]
+        [JsonProperty(PropertyName = "vectorIndexes", NullValueHandling = NullValueHandling.Ignore)]
 #if PREVIEW
+        
         public
 #else
         internal
 #endif
-        // Remove this place holder for VectorIndexes once the new Cosmos.Direct version 3.34.2 is released and rename the VectorIndexesInternal to VectorIndexes.
-            Collection<VectorIndexPath> VectorIndexes
-        {
-            get => this.VectorIndexesInternal ??= new Collection<VectorIndexPath>();
-            set => this.VectorIndexesInternal = value;
-        }
-
-        /// <summary>
-        /// Collection of spatial index definitions to be used
-        /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.SpatialIndexes)]
-        public Collection<SpatialPath> SpatialIndexes { get; internal set; } = new Collection<SpatialPath>();
-
-        /// <summary>
-        /// Gets or Sets an internal placeholder collection to hold the vector indexes.
-        /// </summary>
-        [JsonProperty(PropertyName = "vectorIndexes", NullValueHandling = NullValueHandling.Ignore)]
-        internal Collection<VectorIndexPath> VectorIndexesInternal { get; set; }
+        Collection<VectorIndexPath> VectorIndexes { get; set; } = new Collection<VectorIndexPath>();
 
         /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 
