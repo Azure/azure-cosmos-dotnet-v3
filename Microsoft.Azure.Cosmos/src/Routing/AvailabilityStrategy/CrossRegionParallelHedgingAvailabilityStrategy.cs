@@ -19,12 +19,7 @@ namespace Microsoft.Azure.Cosmos
     /// if the first parallel request or the original has not returned after the step time, 
     /// additional parallel requests will be sent out there is a response or all regions are exausted.
     /// </summary>
-#if PREVIEW
-    public 
-#else
-    internal
-#endif
-    class CrossRegionParallelHedgingAvailabilityStrategy : AvailabilityStrategy
+    internal class CrossRegionParallelHedgingAvailabilityStrategy : AvailabilityStrategy
     {
         /// <summary>
         /// Latency threshold which activates the first region hedging 
