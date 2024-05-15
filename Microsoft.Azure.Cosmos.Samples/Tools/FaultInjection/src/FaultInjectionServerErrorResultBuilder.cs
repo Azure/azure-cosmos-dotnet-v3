@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <summary>
         /// Sets the injected delay time for the server error. 
         /// 
-        /// Only used RESPONSE_DELAY and CONNECTION_DELAY.
+        /// Only used ResponseDelay, SendDelay, and ResponseDelay
         /// 
         /// For <see cref="FaultInjectionServerErrorType.SendDelay"/>, it is the delay added before the request is sent.
         /// For <see cref="FaultInjectionServerErrorType.ResponseDelay"/>, it is the delay added after the response is recieved.

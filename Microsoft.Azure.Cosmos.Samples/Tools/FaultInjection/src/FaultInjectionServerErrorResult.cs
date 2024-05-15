@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <param name="serverErrorType">Specifies the server error type.</param>
         /// <param name="times">Specifies the number of times a rule can be applied on a single operation.</param>
         /// <param name="delay">Specifies the injected delay for the server error.</param>
+        /// <param name="suppressServiceRequests">Specifies whether service requests should be suppressed.</param>
         /// <param name="applyPercentage" Specifies the percentage of how many times the rule will be applied.</param>
         public FaultInjectionServerErrorResult(
             FaultInjectionServerErrorType serverErrorType, 

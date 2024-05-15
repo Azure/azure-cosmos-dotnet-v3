@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         Timeout,
 
         /// <summary>
-        /// 410-1008: Partition is splitting
+        /// 410-1007: Partition is splitting
         /// </summary>
         PartitionIsSplitting,
 
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
         /// <summary>
         ///  Used to simulate hight channel acquisiton. 
-        ///  When over a connection timeouts can simulate connectionTimeoutException
+        ///  When over a connection timeout can simulate connectionTimeoutException
         /// </summary>
         ConnectionDelay,
 
