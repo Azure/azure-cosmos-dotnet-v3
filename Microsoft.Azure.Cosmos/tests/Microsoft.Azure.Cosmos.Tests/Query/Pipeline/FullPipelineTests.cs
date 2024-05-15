@@ -343,6 +343,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 executionEnvironment: null,
                 returnResultsInDeterministicOrder: null,
                 enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
+                isNonStreamingOrderByQueryFeatureDisabled: queryRequestOptions.IsNonStreamingOrderByQueryFeatureDisabled,
                 testInjections: queryRequestOptions.TestSettings);
 
             string databaseId = "db1234";
