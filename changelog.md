@@ -13,11 +13,11 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-### <a name="3.40.0-preview.2"/> [3.40.0-preview.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.40.0-preview.2) - 2024-04-05
-### <a name="3.39.2"/> [3.39.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.39.2) - 2024-04-05
+### <a name="3.40.0-preview.2"/> [3.40.0-preview.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.40.0-preview.2) - 2024-05-16
+### <a name="3.39.2"/> [3.39.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.39.2) - 2024-05-16
 
 #### Fixed
-- [4413](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4413) Query: Fixes Persisted continuationToken issue (partition splits) by turning off ODE by default
+- [4413](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4413) Query: Fixes Persisted continuationToken issue (partition splits) by turning off Optimistic Direct Execution by default
 
 
 ### <a name="3.40.0-preview.1"/> [3.40.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.40.0-preview.1) - 2024-04-17
