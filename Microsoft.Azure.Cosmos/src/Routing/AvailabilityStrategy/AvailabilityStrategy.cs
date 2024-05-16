@@ -27,9 +27,6 @@ namespace Microsoft.Azure.Cosmos
             RequestMessage requestMessage,
             CancellationToken cancellationToken);
 
-        internal virtual bool Enabled()
-        {
-            throw new NotImplementedException();
-        }
+        internal abstract bool Enabled();
     }
 }
