@@ -21,6 +21,11 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CrossRegionParallelHedgingAvailabilityStrategy : AvailabilityStrategy
     {
+        private const string HedgeRegions = "Hedge Regions";
+        private const string HedgeContext = "Hedge Context";
+        private const string HedgeContextOriginalRequest = "Original Request";
+        private const string HedgeContextHedgedRequest = "Hedged Request";
+
         /// <summary>
         /// Latency threshold which activates the first region hedging 
         /// </summary>
@@ -160,11 +165,13 @@ namespace Microsoft.Azure.Cosmos
                     {
                         cancellationTokenSource.Cancel();
                         ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value.AddDatum(
-                            "Hedge Regions",
+                            HedgeRegions,
                             HedgeRegionsToString(responseMessage.Diagnostics.GetContactedRegions()));
                         ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value.AddDatum(
-                            "Hedge Context",
-                            object.ReferenceEquals(primaryRequest, completedTask) ? "Original Request" : "Hedged Request");
+                            HedgeContext,
+                            object.ReferenceEquals(primaryRequest, completedTask)
+                                ? HedgeContextOriginalRequest
+                                : HedgeContextHedgedRequest);
                         return responseMessage;
                     }
                 }
@@ -179,11 +186,13 @@ namespace Microsoft.Azure.Cosmos
                     {
                         cancellationTokenSource.Cancel();
                         ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value.AddDatum(
-                            "Hedge Regions",
+                            HedgeRegions,
                             HedgeRegionsToString(responseMessage.Diagnostics.GetContactedRegions()));
                         ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value.AddDatum(
-                            "Hedge Context",
-                            object.ReferenceEquals(primaryRequest, completedTask) ? "Original Request" : "Hedged Request");
+                            HedgeContext,
+                            object.ReferenceEquals(primaryRequest, completedTask)
+                            ? HedgeContextOriginalRequest
+                            : HedgeContextHedgedRequest);
                         return responseMessage;
                     }
                     requestTasks.Remove(completedTask);
