@@ -1183,6 +1183,58 @@
                 indexV2Policy);
         }
 
+        [TestMethod]
+        public async Task TestBadOrderByQueriesAsync()
+        {
+            const string NoCompositeIndex = "The order by query does not have a corresponding composite index that it can be served from.";
+            const string OrderByOverCorrelatedPath = "Order-by over correlated collections is not supported.";
+
+            static async Task ImplementationAsync(
+                Container container,
+                IReadOnlyList<CosmosObject> documents)
+            {
+                IReadOnlyList<(string query, string error)> queries = new List<(string query, string error)>
+                {
+                    ("SELECT * FROM c ORDER BY c.id, c.name", NoCompositeIndex),
+                    ("SELECT * FROM c ORDER BY c.id DESC, c._ts DESC", NoCompositeIndex),
+                    (
+                        @"SELECT DISTINCT VALUE v2 
+                        FROM root 
+                        JOIN (
+                            SELECT DISTINCT VALUE v0 
+                            FROM root 
+                            JOIN v0 IN root.Parents) AS v2 
+                        WHERE (LENGTH(v2.FamilyName) > 10) 
+                        ORDER BY v2 ASC",
+                        OrderByOverCorrelatedPath
+                    ),
+                };
+
+                foreach (bool enableOptmisticDirectExecution in new []{ false, true })
+                {
+                    QueryRequestOptions options = new QueryRequestOptions()
+                    {
+                        EnableOptimisticDirectExecution = enableOptmisticDirectExecution,
+                    };
+
+                    foreach ((string query, string error) in queries)
+                    {
+                        using FeedIterator feedIterator = container.GetItemQueryStreamIterator(query, continuationToken: null, options);
+                        ResponseMessage response = await feedIterator.ReadNextAsync();
+                        Assert.AreEqual(System.Net.HttpStatusCode.BadRequest, response.StatusCode); 
+                        Assert.IsNotNull(response.CosmosException);
+                        Assert.IsTrue(response.CosmosException.Message.Contains(error));
+                    }
+                }
+            }
+
+            await this.CreateIngestQueryDeleteAsync(
+                ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                new List<string>(),
+                ImplementationAsync);
+        }
+
         private sealed class MixedTypedDocument
         {
             public CosmosElement MixedTypeField { get; set; }
