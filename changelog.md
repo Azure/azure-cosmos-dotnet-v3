@@ -22,19 +22,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Fixed
 - [4397](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4397) Query: Fixes ResponseMessage not parsing the IndexMetrics as text in latest sdk (#4397)
-- [4419](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4419) Query: Fixes bug in OrderByCrossPartitionQueryPipelineStage to ensure that errors in inner pipeline creation are bubbled up (#4419)
 - [4426](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4426) ChangeFeedProcessor: Fixes a bug properly when dealing with Legacy lease incremental documents that do not have a Mode property (#4426)
-- [4413](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4413) Query: Fixes Persisted continuationToken issue by turning off ODE by default (#4413)
 - [4459](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4459) Query: Fixes non streaming order by to use flag from query plan (#4459)
 - [4253](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4253) Query: Fixes LINQ Serialization CamelCase Naming Policy (#4253)
 - [4493](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4493) Query: Fixes non streaming OrderByCrossPartitionQueryPipelineStage to remove state and handle splits (#4493)
 
 #### Added
 - [4446](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4446) Query: Adds a new capability for non streaming order by in QueryFeatures (#4446)
-- [4447](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4447) FaultInjection: Adds SendDelay ServerErrorType (#4447)
-- [4448](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4448) FaultInjection: Adds ReadFeed Operation Type (#4448)
 - [4433](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4433) Distributed Tracing: Adds Request charge and Payload size Threshold options (#4433)
-- [4450](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4450) FaultInjection: Adds ApplyPercentage for ServerErrorRule (#4450)
 - [4462](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4462) Diagnostics: Adds DurationInMs to StoreResult (#4462)
 - [4492](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4492) Query: Adds an environment config to suppress sending NonStreamingOrderBy in the list of query features sent to the gateway (#4492)
 
