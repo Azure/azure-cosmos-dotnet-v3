@@ -440,7 +440,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         }
 
         [TestMethod]
-        public async Task TestDrainFully_StartFromBeginingAsync_NoDocuments()
+        [DataRow(false, DisplayName = "NonStreaming: false")]
+        [DataRow(true, DisplayName = "NonStreaming: true")]
+        public async Task TestDrainFully_StartFromBeginingAsync_NoDocuments(bool nonStreamingOrderBy)
         {
             int numItems = 0;
             IDocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems);
@@ -462,7 +464,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 },
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 maxConcurrency: 10,
-                nonStreamingOrderBy: false,
+                nonStreamingOrderBy: nonStreamingOrderBy,
                 continuationToken: null);
             Assert.IsTrue(monadicCreate.Succeeded);
             IQueryPipelineStage queryPipelineStage = monadicCreate.Result;
@@ -479,9 +481,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 QueryPage queryPage = tryGetQueryPage.Result;
                 documents.AddRange(queryPage.Documents);
 
-                if (queryPage.RequestCharge > 0)
+                if (!nonStreamingOrderBy)
                 {
-                    // some empty pages may be emitted
                     Assert.AreEqual(42, queryPage.RequestCharge);
                 }
             }
@@ -541,17 +542,21 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         }
 
         [TestMethod]
-        [DataRow(false, false, false, DisplayName = "Use State: false, Allow Splits: false, Allow Merges: false")]
-        [DataRow(false, false, true, DisplayName = "Use State: false, Allow Splits: false, Allow Merges: true")]
-        [DataRow(false, true, false, DisplayName = "Use State: false, Allow Splits: true, Allow Merges: false")]
-        [DataRow(false, true, true, DisplayName = "Use State: false, Allow Splits: true, Allow Merges: true")]
-        [DataRow(true, false, false, DisplayName = "Use State: true, Allow Splits: false, Allow Merges: false")]
-        [DataRow(true, false, true, DisplayName = "Use State: true, Allow Splits: false, Allow Merges: true")]
-        [DataRow(true, true, false, DisplayName = "Use State: true, Allow Splits: true, Allow Merges: false")]
-        [DataRow(true, true, true, DisplayName = "Use State: true, Allow Splits: true, Allow Merges: true")]
-        public async Task TestDrainWithStateSplitsAndMergeAsync(bool useState, bool allowSplits, bool allowMerges)
+        [DataRow(false, false, false, false, DisplayName = "NonStreaming: false, Use State: false, Allow Splits: false, Allow Merges: false")]
+        [DataRow(false, false, false, true, DisplayName = "NonStreaming: false, Use State: false, Allow Splits: false, Allow Merges: true")]
+        [DataRow(false, false, true, false, DisplayName = "NonStreaming: false, Use State: false, Allow Splits: true, Allow Merges: false")]
+        [DataRow(false, false, true, true, DisplayName = "NonStreaming: false, Use State: false, Allow Splits: true, Allow Merges: true")]
+        [DataRow(false, true, false, false, DisplayName = "NonStreaming: false, Use State: true, Allow Splits: false, Allow Merges: false")]
+        [DataRow(false, true, false, true, DisplayName = "NonStreaming: false, Use State: true, Allow Splits: false, Allow Merges: true")]
+        [DataRow(false, true, true, false, DisplayName = "NonStreaming: false, Use State: true, Allow Splits: true, Allow Merges: false")]
+        [DataRow(false, true, true, true, DisplayName = "NonStreaming: false, Use State: true, Allow Splits: true, Allow Merges: true")]
+        [DataRow(true, false, false, false, DisplayName = "NonStreaming: true, Use State: false, Allow Splits: false, Allow Merges: false")]
+        [DataRow(true, false, false, true, DisplayName = "NonStreaming: true, Use State: false, Allow Splits: false, Allow Merges: true")]
+        [DataRow(true, false, true, false, DisplayName = "NonStreaming: true, Use State: false, Allow Splits: true, Allow Merges: false")]
+        [DataRow(true, false, true, true, DisplayName = "NonStreaming: true, Use State: false, Allow Splits: true, Allow Merges: true")]
+        public async Task TestDrainWithStateSplitsAndMergeAsync(bool nonStreamingOrderBy, bool useState, bool allowSplits, bool allowMerges)
         {
-            static async Task<IQueryPipelineStage> CreatePipelineStateAsync(IDocumentContainer documentContainer, CosmosElement continuationToken)
+            static async Task<IQueryPipelineStage> CreatePipelineStateAsync(IDocumentContainer documentContainer, CosmosElement continuationToken, bool nonStreamingOrderBy)
             {
                 TryCatch<IQueryPipelineStage> monadicQueryPipelineStage = OrderByCrossPartitionQueryPipelineStage.MonadicCreate(
                     documentContainer: documentContainer,
@@ -570,7 +575,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     },
                     queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                     maxConcurrency: 10,
-                    nonStreamingOrderBy: false,
+                    nonStreamingOrderBy: nonStreamingOrderBy,
                     continuationToken: continuationToken);
                 monadicQueryPipelineStage.ThrowIfFailed();
                 IQueryPipelineStage queryPipelineStage = monadicQueryPipelineStage.Result;
@@ -578,9 +583,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 return queryPipelineStage;
             }
 
+            bool verbose = false;
             int numItems = 1000;
             IDocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(numItems);
-            IQueryPipelineStage queryPipelineStage = await CreatePipelineStateAsync(inMemoryCollection, continuationToken: null);
+            IQueryPipelineStage queryPipelineStage = await CreatePipelineStateAsync(inMemoryCollection, continuationToken: null, nonStreamingOrderBy);
             List<CosmosElement> documents = new List<CosmosElement>();
             Random random = new Random();
             while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default))
@@ -615,7 +621,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                         break;
                     }
 
-                    queryPipelineStage = await CreatePipelineStateAsync(inMemoryCollection, queryState.Value);
+                    queryPipelineStage = await CreatePipelineStateAsync(inMemoryCollection, queryState.Value, nonStreamingOrderBy);
                 }
 
                 if (random.Next() % 2 == 0)
@@ -629,6 +635,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                             cancellationToken: default);
                         FeedRangeInternal randomRangeToSplit = ranges[random.Next(0, ranges.Count)];
                         await inMemoryCollection.SplitAsync(randomRangeToSplit, cancellationToken: default);
+
+                        if (verbose)
+                        {
+                            System.Diagnostics.Trace.WriteLine($"Split range: {randomRangeToSplit.ToJsonString()}");
+                        }
                     }
 
                     if (allowMerges && (random.Next() % 2 == 0))
@@ -644,6 +655,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                             int indexToMerge = random.Next(0, ranges.Count);
                             int adjacentIndex = indexToMerge == (ranges.Count - 1) ? indexToMerge - 1 : indexToMerge + 1;
                             await inMemoryCollection.MergeAsync(ranges[indexToMerge], ranges[adjacentIndex], cancellationToken: default);
+                        }
+
+                        if (verbose)
+                        {
+                            string mergedRanges = string.Join(", ", ranges.Select(range => range.ToJsonString()));
+                            System.Diagnostics.Trace.WriteLine($"Merged ranges: {mergedRanges}");
                         }
                     }
                 }

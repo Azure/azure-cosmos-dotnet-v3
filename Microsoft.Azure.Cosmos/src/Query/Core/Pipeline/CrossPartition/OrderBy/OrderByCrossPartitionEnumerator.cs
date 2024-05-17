@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Pagination
+namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 {
     using System;
     using System.Collections;
@@ -10,9 +10,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Collections;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
     using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class OrderByCrossPartitionEnumerator : IEnumerator<OrderByQueryResult>
@@ -25,21 +25,21 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         object IEnumerator.Current => this.Current;
 
-        public OrderByCrossPartitionEnumerator(PriorityQueue<IEnumerator<OrderByQueryResult>> queue)
+        private OrderByCrossPartitionEnumerator(PriorityQueue<IEnumerator<OrderByQueryResult>> queue)
         {
             this.queue = queue ?? throw new ArgumentNullException(nameof(queue));
         }
 
-        public static async Task<(IEnumerator<OrderByQueryResult> orderbyQueryResultEnumerator, double totalRequestCharge)> CreateAsync(
-            IEnumerable<OrderByQueryPartitionRangePageAsyncEnumerator> enumerators,
+        public static async Task<BufferedOrderByResults> CreateAsync(
+            ITracingAsyncEnumerator<TryCatch<OrderByQueryPage>> enumerator,
             IComparer<OrderByQueryResult> comparer,
             int levelSize,
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            if (enumerators == null)
+            if (enumerator == null)
             {
-                throw new ArgumentNullException(nameof(enumerators));
+                throw new ArgumentNullException(nameof(enumerator));
             }
 
             if (comparer == null)
@@ -47,47 +47,64 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 throw new ArgumentNullException(nameof(comparer));
             }
 
+            QueryPageParameters queryPageParameters = null;
             double totalRequestCharge = 0;
+            int bufferedItemCount = 0;
             EnumeratorComparer enumeratorComparer = new EnumeratorComparer(comparer);
             PriorityQueue<IEnumerator<OrderByQueryResult>> queue = new PriorityQueue<IEnumerator<OrderByQueryResult>>(enumeratorComparer);
-            foreach (ITracingAsyncEnumerator<TryCatch<OrderByQueryPage>> enumerator in enumerators)
+            while (await enumerator.MoveNextAsync(trace, cancellationToken))
             {
-                while (await enumerator.MoveNextAsync(trace, cancellationToken))
+                TryCatch<OrderByQueryPage> currentPage = enumerator.Current;
+                if (currentPage.Failed)
                 {
-                    TryCatch<OrderByQueryPage> currentPage = enumerator.Current;
-                    if (currentPage.Failed)
+                    throw currentPage.Exception;
+                }
+
+                if (queryPageParameters == null)
+                {
+                    queryPageParameters = new QueryPageParameters(
+                        activityId: currentPage.Result.ActivityId,
+                        cosmosQueryExecutionInfo: currentPage.Result.Page.CosmosQueryExecutionInfo,
+                        distributionPlanSpec: currentPage.Result.Page.DistributionPlanSpec,
+                        additionalHeaders: currentPage.Result.AdditionalHeaders);
+                }
+
+                totalRequestCharge += currentPage.Result.RequestCharge;
+                IReadOnlyList<CosmosElement> page = currentPage.Result.Page.Documents;
+                bufferedItemCount += page.Count;
+
+                if (page.Count > 0)
+                {
+                    PageEnumerator pageEnumerator = new PageEnumerator(page);
+                    pageEnumerator.MoveNext();
+
+                    queue.Enqueue(pageEnumerator);
+
+                    if (queue.Count >= levelSize)
                     {
-                        throw currentPage.Exception;
-                    }
+                        OrderByCrossPartitionEnumerator newEnumerator = new OrderByCrossPartitionEnumerator(queue);
+                        newEnumerator.MoveNext();
 
-                    totalRequestCharge += currentPage.Result.RequestCharge;
-                    IReadOnlyList<CosmosElement> page = currentPage.Result.Page.Documents;
-
-                    if (page.Count > 0)
-                    {
-                        PageEnumerator pageEnumerator = new PageEnumerator(page);
-                        pageEnumerator.MoveNext();
-
-                        queue.Enqueue(pageEnumerator);
-
-                        if (queue.Count >= levelSize)
-                        {
-                            OrderByCrossPartitionEnumerator newEnumerator = new OrderByCrossPartitionEnumerator(queue);
-                            newEnumerator.MoveNext();
-
-                            queue = new PriorityQueue<IEnumerator<OrderByQueryResult>>(enumeratorComparer);
-                            queue.Enqueue(newEnumerator);
-                        }
+                        queue = new PriorityQueue<IEnumerator<OrderByQueryResult>>(enumeratorComparer);
+                        queue.Enqueue(newEnumerator);
                     }
                 }
             }
 
             if (queue.Count == 0)
             {
-                return (EmptyEnumerator.Instance, totalRequestCharge);
+                return new BufferedOrderByResults(
+                    EmptyEnumerator.Instance,
+                    itemCount: 0,
+                    totalRequestCharge,
+                    queryPageParameters);
             }
 
-            return (new OrderByCrossPartitionEnumerator(queue), totalRequestCharge);
+            return new BufferedOrderByResults(
+                new OrderByCrossPartitionEnumerator(queue),
+                bufferedItemCount,
+                totalRequestCharge,
+                queryPageParameters);
         }
 
         public bool MoveNext()
