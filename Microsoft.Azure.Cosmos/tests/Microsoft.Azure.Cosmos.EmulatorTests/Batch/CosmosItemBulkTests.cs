@@ -39,6 +39,29 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestCleanup]
         public async Task Cleanup()
         {
+            using (FeedIterator<DatabaseProperties> feedIterator = this.client.GetDatabaseQueryIterator<DatabaseProperties>())
+            {
+                while (feedIterator.HasMoreResults)
+                {
+                    FeedResponse<DatabaseProperties> response = await feedIterator.ReadNextAsync();
+                    foreach (DatabaseProperties database in response)
+                    {
+                        Console.WriteLine($"DatabaseId -> {database.Id}");
+                        using (FeedIterator<ContainerProperties> containerFeedIterator = this.client.GetDatabase(database.Id).GetContainerQueryIterator<ContainerProperties>())
+                        {
+                            while (feedIterator.HasMoreResults)
+                            {
+                                FeedResponse<ContainerProperties> containerResponse = await containerFeedIterator.ReadNextAsync();
+                                foreach (ContainerProperties containerProperties in containerResponse)
+                                {
+                                    Console.WriteLine($"ContainerName -> {containerProperties.Id}");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             await this.database.DeleteAsync();
             this.client?.Dispose();
         }
