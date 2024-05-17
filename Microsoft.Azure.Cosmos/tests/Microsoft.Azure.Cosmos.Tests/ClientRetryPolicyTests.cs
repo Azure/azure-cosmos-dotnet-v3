@@ -125,51 +125,51 @@
         }
 
         [TestMethod]
-        public Task ClientRetryPolicy_Retry_SingleMaster_Read_PreferredLocations()
+        public async Task ClientRetryPolicy_Retry_SingleMaster_Read_PreferredLocations()
         {
-            return this.ValidateConnectTimeoutTriggersClientRetryPolicy(isReadRequest: true, useMultipleWriteLocations: false, usesPreferredLocations: true, shouldHaveRetried: true);
+            await this.ValidateConnectTimeoutTriggersClientRetryPolicy(isReadRequest: true, useMultipleWriteLocations: false, usesPreferredLocations: true, shouldHaveRetried: true);
         }
 
         [TestMethod]
-        public Task ClientRetryPolicy_Retry_MultiMaster_Read_PreferredLocations()
+        public async Task ClientRetryPolicy_Retry_MultiMaster_Read_PreferredLocations()
         {
-            return this.ValidateConnectTimeoutTriggersClientRetryPolicy(isReadRequest: true, useMultipleWriteLocations: true, usesPreferredLocations: true, shouldHaveRetried: true);
+            await this.ValidateConnectTimeoutTriggersClientRetryPolicy(isReadRequest: true, useMultipleWriteLocations: true, usesPreferredLocations: true, shouldHaveRetried: true);
         }
 
         [TestMethod]
-        public Task ClientRetryPolicy_Retry_MultiMaster_Write_PreferredLocations()
+        public async Task ClientRetryPolicy_Retry_MultiMaster_Write_PreferredLocations()
         {
-            return this.ValidateConnectTimeoutTriggersClientRetryPolicy(isReadRequest: false, useMultipleWriteLocations: true, usesPreferredLocations: true, shouldHaveRetried: true);
+            await this.ValidateConnectTimeoutTriggersClientRetryPolicy(isReadRequest: false, useMultipleWriteLocations: true, usesPreferredLocations: true, shouldHaveRetried: true);
         }
 
         [TestMethod]
-        public Task ClientRetryPolicy_NoRetry_SingleMaster_Write_PreferredLocations()
+        public async Task ClientRetryPolicy_NoRetry_SingleMaster_Write_PreferredLocations()
         {
-            return this.ValidateConnectTimeoutTriggersClientRetryPolicy(isReadRequest: false, useMultipleWriteLocations: false, usesPreferredLocations: true, shouldHaveRetried: false);
+            await this.ValidateConnectTimeoutTriggersClientRetryPolicy(isReadRequest: false, useMultipleWriteLocations: false, usesPreferredLocations: true, shouldHaveRetried: false);
         }
 
         [TestMethod]
-        public Task ClientRetryPolicy_NoRetry_SingleMaster_Read_NoPreferredLocations()
+        public async Task ClientRetryPolicy_NoRetry_SingleMaster_Read_NoPreferredLocations()
         {
-            return this.ValidateConnectTimeoutTriggersClientRetryPolicy(isReadRequest: true, useMultipleWriteLocations: false, usesPreferredLocations: false, shouldHaveRetried: false);
+            await this.ValidateConnectTimeoutTriggersClientRetryPolicy(isReadRequest: true, useMultipleWriteLocations: false, usesPreferredLocations: false, shouldHaveRetried: false);
         }
 
         [TestMethod]
-        public Task ClientRetryPolicy_NoRetry_SingleMaster_Write_NoPreferredLocations()
+        public async Task ClientRetryPolicy_NoRetry_SingleMaster_Write_NoPreferredLocations()
         {
-            return this.ValidateConnectTimeoutTriggersClientRetryPolicy(isReadRequest: false, useMultipleWriteLocations: false, usesPreferredLocations: false, shouldHaveRetried: false);
+            await this.ValidateConnectTimeoutTriggersClientRetryPolicy(isReadRequest: false, useMultipleWriteLocations: false, usesPreferredLocations: false, shouldHaveRetried: false);
         }
 
         [TestMethod]
-        public Task ClientRetryPolicy_NoRetry_MultiMaster_Read_NoPreferredLocations()
+        public async Task ClientRetryPolicy_NoRetry_MultiMaster_Read_NoPreferredLocations()
         {
-            return this.ValidateConnectTimeoutTriggersClientRetryPolicy(isReadRequest: true, useMultipleWriteLocations: true, usesPreferredLocations: false, false);
+            await this.ValidateConnectTimeoutTriggersClientRetryPolicy(isReadRequest: true, useMultipleWriteLocations: true, usesPreferredLocations: false, false);
         }
 
         [TestMethod]
-        public Task ClientRetryPolicy_NoRetry_MultiMaster_Write_NoPreferredLocations()
+        public async Task ClientRetryPolicy_NoRetry_MultiMaster_Write_NoPreferredLocations()
         {
-            return this.ValidateConnectTimeoutTriggersClientRetryPolicy(isReadRequest: false, useMultipleWriteLocations: true, usesPreferredLocations: false, false);
+            await this.ValidateConnectTimeoutTriggersClientRetryPolicy(isReadRequest: false, useMultipleWriteLocations: true, usesPreferredLocations: false, false);
         }
 
         private async Task ValidateConnectTimeoutTriggersClientRetryPolicy(
