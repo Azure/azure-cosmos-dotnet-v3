@@ -29,6 +29,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
             this.client = TestCommon.CreateCosmosClient(clientOptions);
 
+            Console.WriteLine($"{nameof(TestInitialize)} Started");
+            await this.DumpContainerNames();
+
             DatabaseResponse response = await this.client.CreateDatabaseIfNotExistsAsync(Guid.NewGuid().ToString());
             this.database = response.Database;
 
@@ -38,6 +41,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestCleanup]
         public async Task Cleanup()
+        {
+            Console.WriteLine($"{nameof(Cleanup)} Started");
+            await this.DumpContainerNames();
+
+            await this.database.DeleteAsync();
+            this.client?.Dispose();
+        }
+
+        private async Task DumpContainerNames()
         {
             using (FeedIterator<DatabaseProperties> feedIterator = this.client.GetDatabaseQueryIterator<DatabaseProperties>())
             {
@@ -61,9 +73,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
                 }
             }
-
-            await this.database.DeleteAsync();
-            this.client?.Dispose();
         }
 
         [TestMethod]
