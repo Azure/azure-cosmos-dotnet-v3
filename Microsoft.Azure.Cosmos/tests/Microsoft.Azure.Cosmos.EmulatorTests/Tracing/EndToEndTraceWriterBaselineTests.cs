@@ -484,7 +484,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
         public async Task QueryAsync()
         {
             List<Input> inputs = new List<Input>();
-            QueryRequestOptions requestOptions = new QueryRequestOptions() { IsNonStreamingOrderByQueryFeatureDisabled = true };
+            QueryRequestOptions requestOptions = new QueryRequestOptions();
 
             int startLineNumber;
             int endLineNumber;
