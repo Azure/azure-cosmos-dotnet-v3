@@ -1003,8 +1003,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosHttpClient httpClient = cosmosClient.DocumentClient.httpClient;
             SocketsHttpHandler socketsHttpHandler = (SocketsHttpHandler)httpClient.HttpMessageHandler;
 
-            RemoteCertificateValidationCallback? httpClientRemoreCertValidationCallback = socketsHttpHandler.SslOptions.RemoteCertificateValidationCallback;
-            Assert.IsNotNull(httpClientRemoreCertValidationCallback);
+            Assert.IsNotNull(socketsHttpHandler.SslOptions.RemoteCertificateValidationCallback);
         }
 
         private class TestWebProxy : IWebProxy

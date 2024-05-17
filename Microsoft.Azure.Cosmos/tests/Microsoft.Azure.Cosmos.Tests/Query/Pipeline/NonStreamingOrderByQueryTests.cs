@@ -726,7 +726,17 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         private static class DebugTraceHelpers
         {
-            private const bool Enabled = false;
+            private static readonly bool Enabled;
+
+            static DebugTraceHelpers()
+            {
+                DebugTraceHelpers.Enabled = false;
+                if (Debugger.IsAttached)
+                {
+                    // Hack to workaround the non-reachable warning
+                    DebugTraceHelpers.Enabled = true;
+                }
+            }
 
             [Conditional("DEBUG")]
             public static void TraceSplit(FeedRangeInternal feedRange)
