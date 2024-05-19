@@ -59,9 +59,9 @@
   </Result>
   <Result>
     <Input>
-      <Description>SELECT with ORDER BY without ODE</Description>
+      <Description>SELECT ORDER BY with ODE</Description>
       <Query><![CDATA[SELECT c.id, c.value2, c.intVal FROM c ORDER BY c.intVal]]></Query>
-      <ODE>False</ODE>
+      <ODE>True</ODE>
     </Input>
     <Output>
       <Documents><![CDATA[{"id":"2","value2":"97","intVal":-47},
@@ -88,9 +88,9 @@
   </Result>
   <Result>
     <Input>
-      <Description>SELECT with ORDER BY without ODE</Description>
+      <Description>SELECT ORDER BY without ODE</Description>
       <Query><![CDATA[SELECT c.id, c.value2, c.intVal FROM c ORDER BY c.intVal]]></Query>
-      <ODE>True</ODE>
+      <ODE>False</ODE>
     </Input>
     <Output>
       <Documents><![CDATA[{"id":"2","value2":"97","intVal":-47},

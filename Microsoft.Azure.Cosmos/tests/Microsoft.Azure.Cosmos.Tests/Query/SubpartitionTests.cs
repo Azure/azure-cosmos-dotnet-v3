@@ -37,8 +37,8 @@
                 {
                     new SubpartitionTestInput(description: "SELECT", query: @"SELECT c.id, c.value2 FROM c", ode: true),
                     new SubpartitionTestInput(description: "SELECT without ODE", query: @"SELECT c.id, c.value2 FROM c", ode: false),
-                    new SubpartitionTestInput(description: "SELECT with ORDER BY without ODE", query: @"SELECT c.id, c.value2, c.intVal FROM c ORDER BY c.intVal", ode: false, sortResults: false),
-                    new SubpartitionTestInput(description: "SELECT with ORDER BY without ODE", query: @"SELECT c.id, c.value2, c.intVal FROM c ORDER BY c.intVal", ode: true, sortResults: false),
+                    new SubpartitionTestInput(description: "SELECT ORDER BY with ODE", query: @"SELECT c.id, c.value2, c.intVal FROM c ORDER BY c.intVal", ode: true, sortResults: false),
+                    new SubpartitionTestInput(description: "SELECT ORDER BY without ODE", query: @"SELECT c.id, c.value2, c.intVal FROM c ORDER BY c.intVal", ode: false, sortResults: false),
                 };
 
             this.ExecuteTestSuite(inputs);
