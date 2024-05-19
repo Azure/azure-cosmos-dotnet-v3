@@ -35,9 +35,12 @@
         {
             List<SubpartitionTestInput> inputs = new List<SubpartitionTestInput>
                 {
-                    new SubpartitionTestInput("SELECT", query: @"SELECT c.id, c.value2 FROM c", ode: true),
-                    new SubpartitionTestInput("SELECT without ODE", query: @"SELECT c.id, c.value2 FROM c", ode: false),
+                    new SubpartitionTestInput(description: "SELECT", query: @"SELECT c.id, c.value2 FROM c", ode: true),
+                    new SubpartitionTestInput(description: "SELECT without ODE", query: @"SELECT c.id, c.value2 FROM c", ode: false),
+                    new SubpartitionTestInput(description: "SELECT with ORDER BY without ODE", query: @"SELECT c.id, c.value2, c.intVal FROM c ORDER BY c.intVal", ode: false, sortResults: false),
+                    new SubpartitionTestInput(description: "SELECT with ORDER BY without ODE", query: @"SELECT c.id, c.value2, c.intVal FROM c ORDER BY c.intVal", ode: true, sortResults: false),
                 };
+
             this.ExecuteTestSuite(inputs);
         }
 
@@ -65,16 +68,19 @@
 
         public override SubpartitionTestOutput ExecuteTest(SubpartitionTestInput input)
         {
-            IMonadicDocumentContainer monadicDocumentContainer = CreateSplitDocumentContainerAsync(DocumentCount).Result;
+            QueryRequestOptions queryRequestOptions = new QueryRequestOptions()
+            {
+                PartitionKey = new PartitionKeyBuilder().Add(SplitPartitionKey.ToString()).Build()
+            };
+
+            IMonadicDocumentContainer monadicDocumentContainer = CreateSplitDocumentContainerAsync(DocumentCount, queryRequestOptions).Result;
             DocumentContainer documentContainer = new DocumentContainer(monadicDocumentContainer);
+            TryCatch _ = monadicDocumentContainer.MonadicRefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default).Result;
+            List<FeedRangeEpk> containerRanges = documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default).Result;
 
             List<CosmosElement> documents = new List<CosmosElement>();
-            QueryRequestOptions queryRequestOptions = new QueryRequestOptions()
-                {
-                    PartitionKey = new PartitionKeyBuilder().Add(SplitPartitionKey.ToString()).Build()
-                };
             (CosmosQueryExecutionContextFactory.InputParameters inputParameters, CosmosQueryContextCore cosmosQueryContextCore) =
-                CreateInputParamsAndQueryContext(input, queryRequestOptions);
+                CreateInputParamsAndQueryContext(input, queryRequestOptions, containerRanges);
             IQueryPipelineStage queryPipelineStage = CosmosQueryExecutionContextFactory.Create(
                         documentContainer,
                         cosmosQueryContextCore,
@@ -92,10 +98,10 @@
                 documents.AddRange(tryGetPage.Result.Documents);
             }
 
-            return new SubpartitionTestOutput(documents);
+            return new SubpartitionTestOutput(documents, input.SortResults);
         }
 
-        private static Tuple<CosmosQueryExecutionContextFactory.InputParameters, CosmosQueryContextCore> CreateInputParamsAndQueryContext(SubpartitionTestInput input, QueryRequestOptions queryRequestOptions)
+        private static Tuple<CosmosQueryExecutionContextFactory.InputParameters, CosmosQueryContextCore> CreateInputParamsAndQueryContext(SubpartitionTestInput input, QueryRequestOptions queryRequestOptions, IReadOnlyList<FeedRangeEpk> containerRanges)
         {
             string query = input.Query;
             CosmosElement continuationToken = null;
@@ -133,10 +139,20 @@
                 enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
                 testInjections: queryRequestOptions.TestSettings);
 
+            List<PartitionKeyRange> targetPkRanges = new();
+            foreach (FeedRangeEpk feedRangeEpk in containerRanges)
+            {
+                targetPkRanges.Add(new PartitionKeyRange
+                {
+                    MinInclusive = feedRangeEpk.Range.Min,
+                    MaxExclusive = feedRangeEpk.Range.Max,
+                });
+            }
+
             string databaseId = "db1234";
             string resourceLink = $"dbs/{databaseId}/colls";
             CosmosQueryContextCore cosmosQueryContextCore = new CosmosQueryContextCore(
-                client: new TestCosmosQueryClient(queryPartitionProvider),
+                client: new TestCosmosQueryClient(queryPartitionProvider, targetPkRanges),
                 resourceTypeEnum: Documents.ResourceType.Document,
                 operationType: Documents.OperationType.Query,
                 resourceType: typeof(QueryResponseCore),
@@ -214,20 +230,20 @@
             return partitionKeyDefinition;
         }
 
-        private static async Task<IDocumentContainer> CreateSplitDocumentContainerAsync(int numItems)
+        private static async Task<IDocumentContainer> CreateSplitDocumentContainerAsync(int numItems, QueryRequestOptions queryRequestOptions)
         {
             PartitionKeyDefinition partitionKeyDefinition = CreatePartitionKeyDefinition();
-            InMemoryContainer inMemoryContainer = await CreateSplitInMemoryDocumentContainerAsync(numItems, partitionKeyDefinition);
+            InMemoryContainer inMemoryContainer = await CreateSplitInMemoryDocumentContainerAsync(numItems, partitionKeyDefinition, queryRequestOptions);
             DocumentContainer documentContainer = new DocumentContainer(inMemoryContainer);
             return documentContainer;
         }
 
-        private static async Task<InMemoryContainer> CreateSplitInMemoryDocumentContainerAsync(int numItems, PartitionKeyDefinition partitionKeyDefinition)
+        private static async Task<InMemoryContainer> CreateSplitInMemoryDocumentContainerAsync(int numItems, PartitionKeyDefinition partitionKeyDefinition, QueryRequestOptions queryRequestOptions = null)
         {
-            InMemoryContainer inMemoryContainer = new InMemoryContainer(partitionKeyDefinition, createSplitForMultiHashAtSecondlevel: true, resolvePartitionsBasedOnPrefix: true);
+            InMemoryContainer inMemoryContainer = new InMemoryContainer(partitionKeyDefinition, createSplitForMultiHashAtSecondlevel: true, resolvePartitionsBasedOnPrefix: true, queryRequestOptions: queryRequestOptions);
             for (int i = 0; i < numItems; i++)
             {
-                CosmosObject item = CosmosObject.Parse($"{{\"id\" : \"{i % 5}\", \"value1\" : \"{Guid.NewGuid()}\", \"value2\" : \"{i}\" }}");
+                CosmosObject item = CosmosObject.Parse($"{{\"id\" : \"{i % 5}\", \"value1\" : \"{Guid.NewGuid()}\", \"value2\" : \"{i}\", \"intVal\" : {(numItems/2) - i} }}");
                 while (true)
                 {
                     TryCatch<Record> monadicCreateRecord = await inMemoryContainer.MonadicCreateItemAsync(item, cancellationToken: default);
@@ -242,13 +258,16 @@
 
             return inMemoryContainer;
         }
+
         internal class TestCosmosQueryClient : CosmosQueryClient
         {
             private readonly QueryPartitionProvider queryPartitionProvider;
+            private readonly IReadOnlyList<PartitionKeyRange> targetPartitionKeyRanges;
 
-            public TestCosmosQueryClient(QueryPartitionProvider queryPartitionProvider)
+            public TestCosmosQueryClient(QueryPartitionProvider queryPartitionProvider, IEnumerable<PartitionKeyRange> targetPartitionKeyRanges)
             {
                 this.queryPartitionProvider = queryPartitionProvider;
+                this.targetPartitionKeyRanges = targetPartitionKeyRanges.ToList();
             }
 
             public override Action<IQueryable> OnExecuteScalarQueryCallback => throw new NotImplementedException();
@@ -321,14 +340,7 @@
 
             public override Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(string resourceLink, string collectionResourceId, IReadOnlyList<Documents.Routing.Range<string>> providedRanges, bool forceRefresh, ITrace trace)
             {
-                return Task.FromResult(new List<PartitionKeyRange>
-                    {
-                        new PartitionKeyRange()
-                        {
-                            MinInclusive = Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
-                            MaxExclusive = Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey
-                        }
-                    });
+                return Task.FromResult(this.targetPartitionKeyRanges.ToList());
             }
 
             public override Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(string collectionResourceId, Documents.Routing.Range<string> range, bool forceRefresh = false)
@@ -350,16 +362,19 @@
 
     public class SubpartitionTestInput : BaselineTestInput
     {
-        public SubpartitionTestInput(string description, string query, bool ode)
+        public SubpartitionTestInput(string description, string query, bool ode, bool sortResults = true)
             :base(description)
         {
             this.Query = query;
             this.ODE = ode;
+            this.SortResults = sortResults;
         }
 
         internal string Query { get; }
 
         internal bool ODE { get; }
+
+        internal bool SortResults { get; }
 
         public override void SerializeAsXml(XmlWriter xmlWriter)
         {
@@ -374,17 +389,25 @@
     public class SubpartitionTestOutput : BaselineTestOutput
     {
         private readonly List<CosmosElement> documents;
+        private readonly bool sortResults;
 
-        internal SubpartitionTestOutput(IReadOnlyList<CosmosElement> documents)
+        internal SubpartitionTestOutput(IReadOnlyList<CosmosElement> documents, bool sortResults)
         {
             this.documents = documents.ToList();
+            this.sortResults = sortResults;
         }
 
         public override void SerializeAsXml(XmlWriter xmlWriter)
         {
             xmlWriter.WriteStartElement("Documents");
-            string content = string.Join($",{Environment.NewLine}",
-                this.documents.Select(doc => doc.ToString()).OrderBy(serializedDoc => serializedDoc));
+
+            IEnumerable<string> lines = this.documents.Select(doc => doc.ToString());
+            if(this.sortResults)
+            {
+                lines = lines.OrderBy(serializedDoc => serializedDoc);
+            }
+
+            string content = string.Join($",{Environment.NewLine}", lines);
             xmlWriter.WriteCData(content);
             xmlWriter.WriteEndElement();
         }

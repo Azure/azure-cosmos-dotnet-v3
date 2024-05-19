@@ -270,7 +270,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
             else
             {
-                bool singleLogicalPartitionKeyQuery = inputParameters.PartitionKey.HasValue
+                bool singleLogicalPartitionKeyQuery = (inputParameters.PartitionKey.HasValue && targetRanges.Count == 1)
                     || ((partitionedQueryExecutionInfo.QueryRanges.Count == 1)
                     && partitionedQueryExecutionInfo.QueryRanges[0].IsSingleValue);
                 bool serverStreamingQuery = !partitionedQueryExecutionInfo.QueryInfo.HasAggregates
