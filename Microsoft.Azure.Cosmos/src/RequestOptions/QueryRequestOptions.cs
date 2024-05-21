@@ -191,6 +191,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal FeedRange FeedRange { get; set; }
 
+        internal bool IsNonStreamingOrderByQueryFeatureDisabled { get; set; } = ConfigurationManager.IsNonStreamingOrderByQueryFeatureDisabled(defaultValue: false);
+
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
