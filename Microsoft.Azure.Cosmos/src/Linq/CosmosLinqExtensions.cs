@@ -26,11 +26,11 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// There's no implementation provided in the client library.
         /// </summary>
         /// <param name="obj">The root object</param>
-        /// <returns>Returns true if the type of the specified expression is an array; otherwise, false.</returns>
+        /// <returns>Returns the integer identifier corresponding to a specific item within a physical partition.</returns>
         /// <example>
         /// <code>
         /// <![CDATA[
-        /// var documentIdQuery = documents.Where(root => DocumentId(root));
+        /// var documentIdQuery = documents.Where(root => root.DocumentId());
         /// ]]>
         /// </code>
         /// </example>
