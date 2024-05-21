@@ -248,6 +248,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                    inputParameters.InitialFeedRange,
                    trace);
 
+            Debug.Assert(targetRanges != null, $"{nameof(CosmosQueryExecutionContextFactory)} Assert!", "targetRanges != null");
+
             TryCatch<IQueryPipelineStage> tryCreatePipelineStage;
             Documents.PartitionKeyRange targetRange = await TryGetTargetRangeOptimisticDirectExecutionAsync(
                 inputParameters,
@@ -270,7 +272,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
             else
             {
-                bool singleLogicalPartitionKeyQuery = inputParameters.PartitionKey.HasValue
+                bool singleLogicalPartitionKeyQuery = (inputParameters.PartitionKey.HasValue && targetRanges.Count == 1)
                     || ((partitionedQueryExecutionInfo.QueryRanges.Count == 1)
                     && partitionedQueryExecutionInfo.QueryRanges[0].IsSingleValue);
                 bool serverStreamingQuery = !partitionedQueryExecutionInfo.QueryInfo.HasAggregates
