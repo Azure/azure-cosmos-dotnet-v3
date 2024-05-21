@@ -302,6 +302,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             {
                 new LinqTestInput("In Select clause", b => getQuery(b).Select(doc => doc.DocumentId())),
                 new LinqTestInput("In Filter clause", b => getQuery(b).Where(doc => doc.DocumentId() > 123)),
+                new LinqTestInput("With non root term", b => getQuery(b).Where(doc => doc.BooleanField.DocumentId() > 123)),
 
                 // Negative case
                 new LinqTestInput("In Order by clause", b => getQuery(b).OrderBy(doc => doc.DocumentId())),

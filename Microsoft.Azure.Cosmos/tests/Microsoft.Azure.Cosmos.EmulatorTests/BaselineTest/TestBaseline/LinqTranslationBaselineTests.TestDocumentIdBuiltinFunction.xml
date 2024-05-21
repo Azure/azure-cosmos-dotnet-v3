@@ -24,6 +24,18 @@ WHERE (DOCUMENTID(root) > 123)]]></SqlQuery>
   </Result>
   <Result>
     <Input>
+      <Description><![CDATA[With non root term]]></Description>
+      <Expression><![CDATA[query.Where(doc => (Convert(doc.BooleanField, Object).DocumentId() > 123))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (DOCUMENTID(root["BooleanField"]) > 123)]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
       <Description><![CDATA[In Order by clause]]></Description>
       <Expression><![CDATA[query.OrderBy(doc => doc.DocumentId())]]></Expression>
     </Input>
