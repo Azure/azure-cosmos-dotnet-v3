@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             retryHandler.InnerHandler = testHandler;
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null);
+            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null, requestedClientPriorityLevel: null);
             invoker.InnerHandler = retryHandler;
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Delete, RetryHandlerTests.TestUri);
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             retryHandler.InnerHandler = testHandler;
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null);
+            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null, requestedClientPriorityLevel: null);
             invoker.InnerHandler = retryHandler;
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Delete, RetryHandlerTests.TestUri);
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             retryHandler.InnerHandler = testHandler;
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null);
+            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null, requestedClientPriorityLevel: null);
             invoker.InnerHandler = retryHandler;
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"));
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
@@ -135,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             retryHandler.InnerHandler = testHandler;
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null);
+            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null, requestedClientPriorityLevel: null);
             invoker.InnerHandler = retryHandler;
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"));
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
@@ -189,7 +189,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             RetryHandler retryHandler = new RetryHandler(client);
             retryHandler.InnerHandler = testHandler;
 
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null);
+            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null, requestedClientPriorityLevel: null);
             invoker.InnerHandler = retryHandler;
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Delete, RetryHandlerTests.TestUri);
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
@@ -217,7 +217,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             retryHandler.InnerHandler = testHandler;
             RequestInvokerHandler invoker = new RequestInvokerHandler(
                 client, 
-                requestedClientConsistencyLevel: null)
+                requestedClientConsistencyLevel: null,
+                requestedClientPriorityLevel: null)
             {
                 InnerHandler = retryHandler
             };
@@ -249,7 +250,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             retryHandler.InnerHandler = testHandler;
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null);
+            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null, requestedClientPriorityLevel: null);
             invoker.InnerHandler = retryHandler;
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new Uri("https://dummy.documents.azure.com:443/dbs"));
             

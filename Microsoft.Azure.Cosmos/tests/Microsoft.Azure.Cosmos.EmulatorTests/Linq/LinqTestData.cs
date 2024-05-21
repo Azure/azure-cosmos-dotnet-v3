@@ -5,9 +5,10 @@
 //-----------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 {
-    using Newtonsoft.Json;
     using System;
     using System.Collections.Generic;
+    using System.Linq;
+    using Newtonsoft.Json;
 
     #region Family classes
 
@@ -95,6 +96,48 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         public bool Flag { get; set; }
 
         public int[] Multiples { get; set; }
+
+        public override bool Equals(object obj)
+        {
+            Data other = obj as Data;
+
+            if(other == null)
+            {
+                return false;
+            }
+
+            bool equals = this.Id == other.Id &&
+                this.Number == other.Number &&
+                this.Pk == other.Pk &&
+                this.Flag == other.Flag &&
+                (this.Multiples?.Length == other.Multiples?.Length);
+
+            if (equals &&
+                this.Multiples != null)
+            {
+                equals &= this.Multiples.SequenceEqual(other.Multiples);
+            }
+
+            return equals;
+        }
+
+        public override int GetHashCode()
+        {
+            int hashCode = this.Id.GetHashCode() ^
+                this.Number.GetHashCode() ^
+                this.Pk.GetHashCode() ^
+                this.Flag.GetHashCode();
+
+            if (this.Multiples != null)
+            {
+                foreach (int value in this.Multiples)
+                {
+                    hashCode ^= value.GetHashCode();
+                }
+            }
+
+            return hashCode;
+        }
     }
 
     #endregion

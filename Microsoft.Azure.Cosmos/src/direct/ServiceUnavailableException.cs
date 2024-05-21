@@ -36,8 +36,14 @@ namespace Microsoft.Azure.Documents
             : this(message, null, null, SubStatusCodes.Unknown)
         {
         }
-        public ServiceUnavailableException(string message, SubStatusCodes subStatusCode, Uri requestUri = null)
-            : this(message, null, null, subStatusCode, requestUri)
+        
+        public ServiceUnavailableException(string message, bool rawErrorMessageOnly)
+            : this(message, null, null, SubStatusCodes.Unknown, rawErrorMessageOnly: rawErrorMessageOnly)
+        {
+        }
+        
+        public ServiceUnavailableException(string message, SubStatusCodes subStatusCode, Uri requestUri = null, bool rawErrorMessageOnly = false)
+            : this(message, null, null, subStatusCode, requestUri, rawErrorMessageOnly: rawErrorMessageOnly)
         {
         }
 
@@ -65,8 +71,9 @@ namespace Microsoft.Azure.Documents
             Exception innerException,
             HttpResponseHeaders headers,
             SubStatusCodes? subStatusCode,            
-            Uri requestUri = null)
-            : base(message, innerException, headers, HttpStatusCode.ServiceUnavailable, requestUri, subStatusCode)
+            Uri requestUri = null,
+            bool rawErrorMessageOnly = false)
+            : base(message, innerException, headers, HttpStatusCode.ServiceUnavailable, requestUri, subStatusCode, rawErrorMessageOnly: rawErrorMessageOnly)
         {
             SetDescription();
         }

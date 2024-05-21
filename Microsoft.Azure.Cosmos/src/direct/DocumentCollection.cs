@@ -321,10 +321,6 @@ namespace Microsoft.Azure.Documents
             }
             set
             {
-                if(value == null)
-                {
-                    throw new ArgumentNullException(string.Format(CultureInfo.CurrentCulture, RMResources.PropertyCannotBeNull, "UniqueIndexNameEncodingMode"));
-                }
                 this.uniqueIndexNameEncodingMode = value;
                 this.SetValue(Constants.Properties.UniqueIndexNameEncodingMode, value);
             }

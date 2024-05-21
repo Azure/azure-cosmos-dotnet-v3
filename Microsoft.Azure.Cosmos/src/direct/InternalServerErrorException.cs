@@ -30,8 +30,8 @@ namespace Microsoft.Azure.Documents
 
         }
 
-        public InternalServerErrorException(string message, Uri requestUri = null)
-            : this(message, null, null, requestUri)
+        public InternalServerErrorException(string message, Uri requestUri = null, bool rawErrorMessageOnly = false)
+            : this(message, null, null, requestUri, rawErrorMessageOnly: rawErrorMessageOnly)
         {
 
         }
@@ -63,8 +63,9 @@ namespace Microsoft.Azure.Documents
         public InternalServerErrorException(string message,
             Exception innerException,
             HttpResponseHeaders headers,
-            Uri requestUri = null)
-            : base(message, innerException, headers, HttpStatusCode.InternalServerError, requestUri)
+            Uri requestUri = null,
+            bool rawErrorMessageOnly = false)
+            : base(message, innerException, headers, HttpStatusCode.InternalServerError, requestUri, rawErrorMessageOnly: rawErrorMessageOnly)
         {
             SetDescription();
         }

@@ -10,13 +10,11 @@ namespace Microsoft.Azure.Cosmos.Contracts
     using System.Linq;
     using System.Reflection;
     using System.Runtime.InteropServices;
-    using System.Text;
     using System.Text.RegularExpressions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
 
     [TestCategory("Windows")]
     [TestClass]
@@ -82,6 +80,21 @@ namespace Microsoft.Azure.Cosmos.Contracts
         }
 
         [TestMethod]
+        public void RegionValueCheck()
+        {
+            string[] cosmosRegions = typeof(Regions)
+                            .GetMembers(BindingFlags.Static | BindingFlags.Public)
+                            .Select(e => e.Name)
+                            .ToArray();
+            foreach (string region in cosmosRegions)
+            {
+                string locationNameValue = typeof(LocationNames).GetField(region).GetValue(null).ToString();
+                string regionNameValue = typeof(Regions).GetField(region).GetValue(null).ToString();
+                Assert.AreEqual(locationNameValue, regionNameValue);
+            }
+        }
+
+        [TestMethod]
         public void RMContractTest()
         {
             Trace.TraceInformation($"{Documents.RMResources.PartitionKeyAndEffectivePartitionKeyBothSpecified} " +
@@ -109,11 +122,12 @@ namespace Microsoft.Azure.Cosmos.Contracts
                 { "System.Configuration.ConfigurationManager", new Version(6, 0, 0) },
                 { "System.Memory", new Version(4, 5, 4) },
                 { "System.Buffers", new Version(4, 5, 1) },
-                { "System.Runtime.CompilerServices.Unsafe", new Version(4, 6, 0) },
+                { "System.Runtime.CompilerServices.Unsafe", new Version(6, 0, 0) },
                 { "System.Threading.Tasks.Extensions", new Version(4, 5, 4) },
                 { "System.ValueTuple", new Version(4, 5, 0) },
                 { "Microsoft.Bcl.HashCode", new Version(1, 1, 0) },
                 { "Azure.Core", new Version(1, 19, 0) },
+                { "System.Diagnostics.DiagnosticSource", new Version(6, 0, 1) },
             };
 
             Assert.AreEqual(projectDependencies.Count, baselineDependencies.Count);

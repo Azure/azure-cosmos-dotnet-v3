@@ -332,12 +332,16 @@ namespace Microsoft.Azure.Documents.Rntbd
                 try
                 {
                     try
-                    {
-                        this.chaosInterceptor?.OnBeforeConnectionWrite(args);
-                        if (this.chaosInterceptor != null && this.chaosInterceptor.OnRequestCall(args, out StoreResponse faultyResponse))
+                    {     
+                        if (this.chaosInterceptor != null)
                         {
-                            transportRequestStats.RecordState(TransportRequestStats.RequestStage.Sent);
-                            return faultyResponse;
+                            await this.chaosInterceptor.OnBeforeConnectionWriteAsync(args);
+                            (bool isFaulted, StoreResponse faultyResponse) = await this.chaosInterceptor.OnRequestCallAsync(args);
+                            if (isFaulted)
+                            {
+                                transportRequestStats.RecordState(TransportRequestStats.RequestStage.Sent);
+                                return faultyResponse;
+                            }                         
                         }                       
 
                         await this.connection.WriteRequestAsync(
@@ -345,7 +349,12 @@ namespace Microsoft.Azure.Documents.Rntbd
                             args.PreparedCall.SerializedRequest,
                             transportRequestStats);
                         transportRequestStats.RecordState(TransportRequestStats.RequestStage.Sent);
-                        this.chaosInterceptor?.OnAfterConnectionWrite(args);
+                        
+                        if (this.chaosInterceptor != null)
+                        {
+                            await this.chaosInterceptor.OnAfterConnectionWriteAsync(args);
+                        }
+                        
 
                     }
                     catch (Exception e)

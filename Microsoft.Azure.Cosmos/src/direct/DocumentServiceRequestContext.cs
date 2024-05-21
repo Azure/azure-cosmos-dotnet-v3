@@ -107,6 +107,11 @@ namespace Microsoft.Azure.Documents
         public bool IsRetry { get; set; }
 
         /// <summary>
+        /// Indicates if this request is being retried on a different region due to Per partition failover.
+        /// </summary>
+        public bool IsPartitionFailoverRetry { get; set; }
+
+        /// <summary>
         /// A list of regions to exclude routing to, used for per-request level routing exclusion
         /// </summary>
         public List<string> ExcludeRegions { get; set; }

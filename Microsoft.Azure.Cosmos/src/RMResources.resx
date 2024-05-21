@@ -1247,6 +1247,9 @@ If you would like to serve this query through continuation tokens, then please r
   <data name="FailoverDisabled" xml:space="preserve">
     <value>Cannot perform failover as it is disabled for the account.</value>
   </data>
+  <data name="FailoverPriorityChangeDisabled" xml:space="preserve">
+    <value>Cannot Perform failover priority change as it is disabled for the account.</value>
+  </data>
   <data name="UnsupportedPartitionDefinitionKindForPartialKeyOperations" xml:space="preserve">
     <value>This partition key definition kind is not supported for partial partition key operations</value>
   </data>
@@ -1400,5 +1403,20 @@ If you would like to serve this query through continuation tokens, then please r
   </data>
   <data name="InvalidFederationDocumentFormat" xml:space="preserve">
     <value>The federation document for the federation {0} is in an invalid format.</value>
+  </data>
+  <data name="PerRegionPerPartitionAutoscaleNotSupportedForServerless" xml:space="preserve">
+    <value>PerRegionPerPartitionAutoscale is not supported for serverless accounts</value>
+  </data>
+  <data name="PartitionMigrationOperationError" xml:space="preserve">
+    <value>Encountered an error in the partition migration operation</value>
+  </data>
+  <data name="PerRegionPerPartitionAutoscaleNotSupported" xml:space="preserve">
+    <value>PerRegionPerPartitionAutoscale is not supported on account {0}</value>
+  </data>
+  <data name="InvalidResultAtCmkFastScanner" xml:space="preserve">
+    <value>Found document with an ID greater than {0} bytes. More info: https://learn.microsoft.com/en-us/azure/cosmos-db/how-to-setup-customer-managed-keys-existing-accounts</value>
+  </data>
+  <data name="UnexpectedResultAtCmkFastScanner" xml:space="preserve">
+    <value>Unexpected error on document scan for CMK Migration. Please retry the operation. More info: https://learn.microsoft.com/en-us/azure/cosmos-db/how-to-setup-customer-managed-keys-existing-accounts</value>
   </data>
 </root>

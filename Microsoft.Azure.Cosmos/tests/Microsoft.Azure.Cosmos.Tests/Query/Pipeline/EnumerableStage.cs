@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         public IAsyncEnumerator<TryCatch<QueryPage>> GetAsyncEnumerator(CancellationToken cancellationToken = default)
         {
-            return new TracingAsyncEnumerator<TryCatch<QueryPage>>(this.stage, this.trace);
+            return new TracingAsyncEnumerator<TryCatch<QueryPage>>(this.stage, this.trace, cancellationToken);
         }
     }
 }

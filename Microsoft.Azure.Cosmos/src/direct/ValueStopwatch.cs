@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Documents
         ///     * We have never started
         ///   - state > 0
         ///     * IsRunning == true
-        ///   - state < 0
+        ///   - state less than 0
         ///     * IsRunning == false
         ///     * We have been started and stopped
         ///     * ElapsedTicks == Math.Abs(state)

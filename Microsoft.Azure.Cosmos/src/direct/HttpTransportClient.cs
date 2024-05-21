@@ -490,6 +490,11 @@ namespace Microsoft.Azure.Documents
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.HighPriorityForcedBackup, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.EnableConflictResolutionPolicyUpdate, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.AllowDocumentReadsInOfflineRegion, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, WFConstants.BackendHeaders.PopulateUserStrings, request);
+
+            // Set the CollectionOperation TransactionId if present
+            // Currently only being done for SharedThroughputTransactionHandler in the collection create path
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, WFConstants.BackendHeaders.CosmosGatewayTransactionId, request.Headers[WFConstants.BackendHeaders.CosmosGatewayTransactionId]);
 
             Stream clonedStream = null;
             if (request.Body != null)
@@ -614,6 +619,12 @@ namespace Microsoft.Azure.Documents
                 case OperationType.GetFederationConfigurations:
                 case OperationType.GetStorageServiceConfigurations:
                 case OperationType.XPDatabaseAccountMetaData:
+                    // IfModifiedSince and A_IM is already added above
+                    HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.ETag, request);
+                    HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IfMatch, request);
+                    HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IfNoneMatch, request);
+                    HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IfUnmodifiedSince, request);
+
                     httpRequestMessage.RequestUri = physicalAddress;
                     httpRequestMessage.Method = HttpMethod.Post;
                     Debug.Assert(clonedStream != null);

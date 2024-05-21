@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Documents
 #endif
     class Snapshot : Resource
     {
-        private new static DateTime UnixStartTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+        private static new DateTime UnixStartTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 
         private SnapshotContent snapshotContent;
 

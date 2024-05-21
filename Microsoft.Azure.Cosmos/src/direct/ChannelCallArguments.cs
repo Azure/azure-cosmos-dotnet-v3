@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         private readonly ResourceType resourceType;
         private readonly string resolvedCollectionRid;
         private readonly INameValueCollection requestHeaders;
+        private readonly Uri locationEndpointToRouteTo;
 
         public ChannelCallArguments (Guid activityId)
         {
@@ -23,11 +24,12 @@ namespace Microsoft.Azure.Documents.Rntbd
         }
 
         public ChannelCallArguments(
-            Guid activityId, 
-            OperationType operationType, 
-            ResourceType resourceType, 
-            string resolvedCollectionRid, 
-            INameValueCollection requestHeaders)
+            Guid activityId,
+            OperationType operationType,
+            ResourceType resourceType,
+            string resolvedCollectionRid,
+            INameValueCollection requestHeaders,
+            Uri locationEndpointToRouteTo)
         {
             this.commonArguments = new ChannelCommonArguments(
                 activityId, TransportErrorCode.RequestTimeout,
@@ -36,6 +38,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.resourceType = resourceType;
             this.resolvedCollectionRid = resolvedCollectionRid;
             this.requestHeaders = requestHeaders;
+            this.locationEndpointToRouteTo = locationEndpointToRouteTo;
         }
 
         public ChannelCommonArguments CommonArguments { get { return this.commonArguments; } }
@@ -49,6 +52,8 @@ namespace Microsoft.Azure.Documents.Rntbd
         public string ResolvedCollectionRid { get { return this.resolvedCollectionRid; } }
 
         public INameValueCollection RequestHeaders { get { return this.requestHeaders; } }
+
+        public Uri LocationEndpointToRouteTo { get { return this.locationEndpointToRouteTo; } }
 
         /// <inheritdoc />
         public void Dispose()

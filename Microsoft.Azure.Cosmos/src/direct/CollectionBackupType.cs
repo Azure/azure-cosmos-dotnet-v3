@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Documents
     internal enum CollectionBackupType
     {
         /// <summary>
-        /// CollectionBackupType is defiined with a create collection operation.
+        /// CollectionBackupType is defined with a create collection operation.
         /// </summary>
         /// <remarks>
         /// With Invalid CollectionBackupType, we will reject the logstore collection creation.

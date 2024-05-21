@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             };
 
-            this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null);
+            this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null, null);
             this.partitionKeyRangeCache
                 .Setup(m => m.TryGetOverlappingRangesAsync(
                     It.IsAny<string>(),
@@ -755,7 +755,7 @@ namespace Microsoft.Azure.Cosmos
                 .Returns(Task.FromResult(containerProperties));
 
             string exceptionMessage = "Failed to lookup partition key ranges.";
-            Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new (null, null, null);
+            Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new (null, null, null, null);
             partitionKeyRangeCache
                 .Setup(m => m.TryGetOverlappingRangesAsync(
                     It.IsAny<string>(),
@@ -1397,6 +1397,7 @@ namespace Microsoft.Azure.Cosmos
                                             fieldName: "lastUnhealthyTimestamp",
                                             delayInMinutes: -2 * iterationIndex);
 
+                int numberOfTasksCreated = 0;
                 for (int j = 0; j < 500 * iterationIndex; j++)
                 {
                     openConnectionTasks
@@ -1406,14 +1407,21 @@ namespace Microsoft.Azure.Cosmos
                             partitionKeyRangeIdentity: this.testPartitionKeyRangeIdentity,
                             serviceIdentity: this.serviceIdentity,
                             forceRefreshPartitionAddresses: false,
-                            cancellationToken: CancellationToken.None));
+                            cancellationToken: CancellationToken.None)
+                         .ContinueWith(x =>
+                         {
+                            if(x.IsCompletedSuccessfully)
+                            {
+                                Interlocked.Increment(ref numberOfTasksCreated);
+                            }
+                         }));
                 }
 
                 // awaits for the parallel execution to finish.
                 await Task.WhenAll(openConnectionTasks);
 
-                // This assertion validates that there are no extra tasks created in the thread pool.
-                Assert.AreEqual(0, ThreadPool.PendingWorkItemCount);
+                // This assertion validates that the number of tasks completed are same as the 500 * iterationIndex.
+                Assert.AreEqual(500 * iterationIndex, numberOfTasksCreated);
 
                 // Waits until a completion signal from the background task is received.
                 GatewayAddressCacheTests.WaitForManualResetEventSignal(

@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             ChannelProperties channelProperties,
             bool localRegionRequest, SemaphoreSlim openingSlim, 
             IChaosInterceptor chaosInterceptor = null, 
-            Action<Guid, Guid, Uri, Channel> onChannelOpen = null)
+            Func<Guid, Guid, Uri, Channel, Task> onChannelOpen = null)
         {
             Debug.Assert(channelProperties != null);
             this.dispatcher = new Dispatcher(serverUri,
@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private Guid ConnectionCorrelationId { get => this.dispatcher.ConnectionCorrelationId; }
 
-        private void Initialize(Guid activityId, Action<Guid, Guid, Uri, Channel> onChannelOpen = null)
+        private void Initialize(Guid activityId, Func<Guid, Guid, Uri, Channel, Task> onChannelOpen = null)
         {
             this.ThrowIfDisposed();
             this.stateLock.EnterWriteLock();
@@ -196,7 +196,13 @@ namespace Microsoft.Azure.Documents.Rntbd
             // - Timeouts only apply to the call (send+recv), not to everything preceding it.
             using ChannelCallArguments callArguments = this.chaosInterceptor == null
                 ? new ChannelCallArguments(activityId) 
-                : new ChannelCallArguments(activityId, request.OperationType, request.ResourceType, request.RequestContext.ResolvedCollectionRid, request.Headers);
+                : new ChannelCallArguments(
+                    activityId, 
+                    request.OperationType, 
+                    request.ResourceType, 
+                    request.RequestContext.ResolvedCollectionRid, 
+                    request.Headers, 
+                    request.RequestContext.LocationEndpointToRoute);
             try
             {
                 callArguments.PreparedCall = this.dispatcher.PrepareCall(
@@ -362,13 +368,16 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        private async Task InitializeAsync(Guid activityId, Action<Guid, Guid, Uri, Channel> onChannelOpen = null)
+        private async Task InitializeAsync(Guid activityId, Func<Guid, Guid, Uri, Channel, Task> onChannelOpen = null)
         {
             bool slimAcquired = false;
             try
             {
-                onChannelOpen?.Invoke(activityId, this.ConnectionCorrelationId, this.serverUri, this);
-               
+                if (this.chaosInterceptor != null)
+                {
+                    await onChannelOpen?.Invoke(activityId, this.ConnectionCorrelationId, this.serverUri, this);
+                }
+
                 this.openArguments.CommonArguments.SetTimeoutCode(TransportErrorCode.ChannelWaitingToOpenTimeout);
                 slimAcquired = await this.openingSlim.WaitAsync(this.openArguments.OpenTimeout).ConfigureAwait(false);
                 if (!slimAcquired)

@@ -2716,6 +2716,39 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Encountered an error in the partition migration operation.
+        /// </summary>
+        internal static string PartitionMigrationOperationError
+        {
+            get
+            {
+                return ResourceManager.GetString("PartitionMigrationOperationError", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to PerRegionPerPartitionAutoscale is not supported on account {0}.
+        /// </summary>
+        internal static string PerRegionPerPartitionAutoscaleNotSupported
+        {
+            get
+            {
+                return ResourceManager.GetString("PerRegionPerPartitionAutoscaleNotSupported", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to PerRegionPerPartitionAutoscale is not supported for serverless accounts.
+        /// </summary>
+        internal static string PerRegionPerPartitionAutoscaleNotSupportedForServerless
+        {
+            get
+            {
+                return ResourceManager.GetString("PerRegionPerPartitionAutoscaleNotSupportedForServerless", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Property &apos;{0}&apos; integer value must be greater than zero..
         /// </summary>
         internal static string PositiveInteger
@@ -4233,6 +4266,17 @@ namespace Microsoft.Azure.Documents
                 return ResourceManager.GetString("FailoverDisabled", resourceCulture);
             }
         }
+		
+		/// <summary>
+        ///   Looks up a localized string similar to Cannot perform failover priority change as it is disabled for the account.
+        /// </summary>
+        internal static string FailoverPriorityChangeDisabled
+        {
+            get
+            {
+                return ResourceManager.GetString("FailoverPriorityChangeDisabled", resourceCulture);
+            }
+        }
 
 
         /// <summary>
@@ -4336,7 +4380,6 @@ namespace Microsoft.Azure.Documents
         }
 
         ///   Looks up a localized string similar to Could not resolve DataTransfer state store account for region [{0}]..
-        /// </summary>
         internal static string DataTransferStateStoreNotResolved
         {
             get
@@ -4771,6 +4814,28 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return ResourceManager.GetString("DataMaskingPolicyNotSupported", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to UnexpectedResultAtCmkFastScanner for unexpected errors in cmk migation fast scanner.
+        /// </summary>
+        internal static string UnexpectedResultAtCmkFastScanner
+        {
+            get
+            {
+                return ResourceManager.GetString("UnexpectedResultAtCmkFastScanner", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to InvalidResultAtCmkFastScanner if a document with big id is found in cmk migation fast scanner.
+        /// </summary>
+        internal static string InvalidResultAtCmkFastScanner
+        {
+            get
+            {
+                return ResourceManager.GetString("InvalidResultAtCmkFastScanner", resourceCulture);
             }
         }
     }

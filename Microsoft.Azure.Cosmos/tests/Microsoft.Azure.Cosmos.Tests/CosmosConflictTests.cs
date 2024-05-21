@@ -18,7 +18,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json.Linq;
-    using Microsoft.Azure.Cosmos.Tracing;
 
     [TestClass]
     public class CosmosConflictTests
@@ -47,6 +46,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     Content = new MemoryStream(Encoding.UTF8.GetBytes(@"{ ""Conflicts"": [{ ""id"": ""Test""}]}"))
                 };
+                responseMessage.Headers.Add(HttpConstants.HttpHeaders.ItemCount, "1");
                 return Task.FromResult(responseMessage);
             });
 

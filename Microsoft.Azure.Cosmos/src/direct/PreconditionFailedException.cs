@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Documents
     using Newtonsoft.Json;
 
     [Serializable]
-    internal sealed class PreconditionFailedException : DocumentClientException
+    internal class PreconditionFailedException : DocumentClientException
     {
         public PreconditionFailedException()
             : this(RMResources.PreconditionFailed)

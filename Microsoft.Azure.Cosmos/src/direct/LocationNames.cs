@@ -272,7 +272,7 @@ namespace Microsoft.Azure.Documents
         /// <summary>
         /// Name of the Azure USSec West Central region in the Azure Cosmos DB service.
         /// </summary>
-        internal const string USSecWestCentral = "USSec West Central";
+        public const string USSecWestCentral = "USSec West Central";
 
         /// <summary>
         /// Name of the Azure Switzerland North region in the Azure Cosmos DB service.
@@ -387,12 +387,12 @@ namespace Microsoft.Azure.Documents
         /// <summary>
         /// Name of the Azure Taiwan North region in the Azure Cosmos DB service.
         /// </summary>
-        internal const string TaiwanNorth = "Taiwan North";
+        public const string TaiwanNorth = "Taiwan North";
 
         /// <summary>
         /// Name of the Azure Taiwan Northwest region in the Azure Cosmos DB service.
         /// </summary>
-        internal const string TaiwanNorthwest = "Taiwan Northwest";
+        public const string TaiwanNorthwest = "Taiwan Northwest";
 
         /// <summary>
         /// Name of the Azure Austria East region in the Azure Cosmos DB service.
@@ -403,8 +403,46 @@ namespace Microsoft.Azure.Documents
         /// Name of the Azure New Zealand North region in the Azure Cosmos DB service.
         /// </summary>
         internal const string NewZealandNorth = "New Zealand North";
+
+        /// <summary>
+        /// Name of the Azure Bleu France Central region in the Azure Cosmos DB service.
+        /// </summary>
+        internal const string BleuFranceCentral = "Bleu France Central";
+
+        /// <summary>
+        /// Name of the Azure Bleu France South region in the Azure Cosmos DB service.
+        /// </summary>
+        internal const string BleuFranceSouth = "Bleu France South";
+
+        /// <summary>
+        /// Name of the Azure East US STG region in the Azure Cosmos DB service.
+        /// </summary>
+        internal const string EastUSSTG = "East US STG";
+
+        /// <summary>
+        /// Name of the Azure South Central US STG region in the Azure Cosmos DB service.
+        /// </summary>
+        internal const string SouthCentralUSSTG = "South Central US STG";
+
+        /// <summary>
+        /// Name of the Azure Indonesia Central region in the Azure Cosmos DB service.
+        /// </summary>
+        internal const string IndonesiaCentral = "Indonesia Central";
+
+        /// <summary>
+        /// Name of the Azure Southeast US region in the Azure Cosmos DB service.
+        /// </summary>
+        internal const string SoutheastUS = "Southeast US";
+
+        /// <summary>
+        /// Name of the Azure Malaysia West region in the Azure Cosmos DB service.
+        /// </summary>
+        internal const string MalaysiaWest = "Malaysia West";
     }
 }
+
+
+
 
 
 

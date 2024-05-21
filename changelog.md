@@ -13,6 +13,93 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.40.0-preview.1"/> [3.40.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.40.0-preview.1) - 2024-04-17
+### <a name="3.39.1"/> [3.39.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.39.1) - 2024-04-17
+
+#### Fixed
+- [4426](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4426) ChangeFeedProcessor: Fixes ArgumentException when dealing with Legacy lease incremental documents that do not have a Mode property
+ 
+### <a name="3.40.0-preview.0"/> [3.40.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.40.0-preview.0) - 2024-04-05
+
+#### Fixed
+- [4334](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4334) ChangeFeedProcessor: Fixes when ChangeFeedMode is switched, an exception is thrown
+
+#### Added
+- [4370](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4370) ChangeFeedProcessor: Adds AllVersionsAndDeletes support to ChangeFeedProcessor 
+- [4380](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4380) ChangeFeedProcessor: Refactors AllVersionsAndDeletes Metadata Contract for ChangeFeed and ChangeFeedProcessor
+  > Note: A Rename refactoring was performed in the effort to reduce redundancy and achieve clarity from a user perspective. The previous type `ChangeFeedItemChange<T>` was strategically renamed to `ChangeFeedItem<T>`. The refactoring affects both ChangeFeed (pull), and the new ChangeFeedProcessor (push), when in AllVersionsAndDeletes ChangeFeedMode. LatestVersion ChangeFeedMode is not affected and will continue to function as expected.
+
+### <a name="3.39.0"/> [3.39.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.39.0) - 2024-04-05
+
+#### Fixed
+- [4357](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4357) Distributed Tracing Documentation : Fixes the default value mentioned in code doc 
+
+#### Added
+- [4377](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4377) Integrated cache: Adds BypassIntegratedCache for public release
+- [4265](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4265) CosmosClientOptions: Adds Private Custom Account Endpoints
+- [4316](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4316) Distributed Tracing: Refactors code to rename net.peer.name attribute to server.address. **Warning:** This is a breaking change, only `server.address` will be emitted starting with this version.
+- [4339](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4338) Diagnostics: Adds Client Configuration for Synchronization context cases
+- [4333](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4333) Distributed Tracing: Adds configuration to disable network level tracing in sdk permanently
+- [4323](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4323) Query: Adds Support for LINQ Custom Serializer in Public Release
+- [4362](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4362) Query: Adds support for non streaming ORDER BY
+- [4074](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4074) Query: Adds translation support for single key single value select GROUP BY LINQ queries
+- [4361](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4361) Performance: Refactors query prefetch mechanism
+- [4386](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4386) Regions: Adds new Regions
+  > Note: There is added support for the following regions: `Taiwan North` and `Taiwan Northwest`.
+  > This also includes a Direct Package version update to 3.33.0 in PR [#4353](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4353)
+
+
+### <a name="3.39.0-preview.1"/> [3.39.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.39.0-preview.1) - 2024-02-02
+### <a name="3.38.1"/> [3.38.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.38.1) - 2024-02-02
+
+#### Fixed
+- [4294](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4294) DisableServerCertificateValidation: Fixes Default HttpClient to honor DisableServerCertificateValidation (#4294)
+
+#### Added
+- [4299](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4299) Query: Adds environment variable for overriding EnableOptimisticDirectExecution default (#4299)
+  > Note: This change provides another way to manage the upgrade to `3.38`. It provides an option to avoid potential disruption due to the breaking change (see the note below) if only config deployment is preferred, instead of any explicit code modification.
+  > With this change, users can set the environment variable AZURE_COSMOS_OPTIMISTIC_DIRECT_EXECUTION_ENABLED to false in their production environments while upgrading from previous minor version (`3.37` or below) to `3.38.1` (or above).
+  > This will signal the SDK to disable Optimistic Direct Execution by default.
+  > Once the environment is fully upgraded to the target version, the environment variable can be removed (or set to true) to enable ODE.
+  > It is recommended that the environment variable is used only to manage the upgrade and removed once the deployment is complete.
+  > Please note that environment variable acts as the override only for choosing the default value. If the code explicitly modifies the setting, that value will be honored during actual operations.
+
+### <a name="3.39.0-preview.0"/> [3.39.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.39.0-preview.0) - 2024-01-31
+
+#### Added
+- [4138](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4138) Query: Adds support for LINQ Custom Serializer (#4138)
+
+### <a name="3.38.0"/> [3.38.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.38.0) - 2024-01-31
+  > :warning: Note: Starting with version `3.38.0`, the .NET SDK enables the ODE feature by default. This can potentially cause a new type of continuation token to be generated. Such a token is not recognized by the older SDKs by design and this could result in a Malformed Continuation Token Exception.
+  > If you have a scenario where tokens generated from the newer SDKs are used by an older SDK, we recommend a 2 step approach to upgrade:
+  > - Upgrade to the new SDK and disable ODE, both together as part of a single deployment. Wait for all nodes to upgrade.
+  >    - In order to disable ODE, set EnableOptimisticDirectExecution to false in the QueryRequestOptions.
+  > - Enable ODE as part of second deployment for all nodes.
+
+#### Fixed
+- [4205](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4205) ClientRetryPolicy: Fixes Metadata Requests Retry Policy (#4205)
+- [4220](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4220) Change Feed Processor: Fixes disposal of unused CancellationTokenSource (#4220)
+- [4229](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4229) GatewayClientStore: Fixes an issue with dealing with invalid JSON HTTP responses (#4229)
+- [4260](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4260) Query: Fixes LINQ Translation of SqlNullLiteral Values (#4260)
+- [4276](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4276) Change Feed Processor: Fixes LeaseLostException on Notifications API for Renewer (#4276)
+- [4241](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4241) GlobalEndpointManager: Fixes Unobserved and Unhandled Exception from Getting Thrown (#4241)
+
+#### Added
+- [4122](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4122) Query: Adds Optimistic Direct Execution configuration override support on the Client (#4122)
+- [4240](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4240) BulkMode: Adds PartitionKeyRangeId in Bulk Mode and TransactionalBatch Response Headers (#4240)
+- [4252](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4252) Query: Adds Request Charge to Query Metrics (#4252)
+- [4225](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4225) Query: Refactors Optimistic Direct Execution to be turned on by default on .NET SDK (#4225). **WARNING:** This is breaking change for GA. For more details, please take a look at the `3.38.0` Note section.
+- [4251](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4251) Emulator : Adds support for flag in connection string to ignore SSL check (#4251)
+- [4279](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4279) Region Availability: Adds Spain Central and Mexico Central Regions For Public Usage (#4279)
+- [4286](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4286) Query: Adds LINQ Support for FirstOrDefault (#4286)
+- [4262](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4262) PriorityBasedExecution: Adds PriorityLevel in CosmosClientOptions (#4262)
+
+### <a name="3.37.1-preview"/> [3.37.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.37.1-preview) - 2024-1-2
+### <a name="3.37.1"/> [3.37.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.37.1) - 2024-1-2
+
+#### Fixed
+- [4226](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4226) GlobalEndpointManager: Fixes Memory Leak (#4226)
+
 ### <a name="3.37.0-preview"/> [3.37.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.37.0-preview) - 2023-11-17
 ### <a name="3.37.0"/> [3.37.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.37.0) - 2023-11-17
 
@@ -1266,6 +1353,8 @@ Below is a list of any know issues affecting the [recommended minimum version](#
 
 | Issue | Impact | Mitigation | Tracking link |
 | --- | --- | --- | --- |
+| `FeedIterator` enters an infinite loop after a physical partition split occurs in a container using hierarchical partition keys. | Queries using prefix partition keys.  | Rather than having the PK included in the query request options, filtering on top level hierarchical Pks should be done through where clauses. | [#4326](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4326) | 
+| Single partition queries (queries explicitly targetted to single partition or any queries on collection that had single physical partition) that resume using continuation token after partition split can observe failure on SDK v3.38 and beyond.  | Explicit query exeuction using continuation token will fail query execution if these conditions are met. | Turn off Optimistic Direct Execution during query execution either by setting EnableOptimisticDirectExecution to false in query request options or by setting environment variable AZURE_COSMOS_OPTIMISTIC_DIRECT_EXECUTION_ENABLED to false. | [#4432](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4432) | 
 
 ## Release & Retirement dates
 

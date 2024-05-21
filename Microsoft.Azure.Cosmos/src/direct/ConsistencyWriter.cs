@@ -45,6 +45,11 @@ For globally strong write:
         private const int maxShortBarrierRetriesForMultiRegion = 4;
         private const int shortbarrierRetryIntervalInMsForMultiRegion = 10;
 
+        private static readonly TimeSpan shortDelayBetweenWriteBarrierCallsForMultipleRegions = TimeSpan.FromMilliseconds(10);
+        private static readonly TimeSpan defaultDelayBetweenWriteBarrierCalls = TimeSpan.FromMilliseconds(30);
+        private static readonly TimeSpan[] defaultBarrierRequestDelays = GetDefaultBarrierRequestDelays();
+        private static readonly TimeSpan totalAllowedBarrierRequestDelay = GetTotalAllowedBarrierRequestDelay();
+
         private readonly StoreReader storeReader;
         private readonly TransportClient transportClient;
         private readonly AddressSelector addressSelector;
@@ -81,6 +86,36 @@ For globally strong write:
         {
             get;
             private set;
+        }
+
+        private static TimeSpan[] GetDefaultBarrierRequestDelays()
+        {
+            TimeSpan[] delays = new TimeSpan[maxShortBarrierRetriesForMultiRegion + maxNumberOfWriteBarrierReadRetries];
+
+            for (int i = 0; i < maxShortBarrierRetriesForMultiRegion; i++)
+            {
+                delays[i] = shortDelayBetweenWriteBarrierCallsForMultipleRegions;
+            }
+
+            for (int i = maxShortBarrierRetriesForMultiRegion
+                ; i < maxShortBarrierRetriesForMultiRegion + maxNumberOfWriteBarrierReadRetries
+                ; i++)
+            {
+                delays[i] = defaultDelayBetweenWriteBarrierCalls;
+            }
+
+            return delays;
+        }
+
+        private static TimeSpan GetTotalAllowedBarrierRequestDelay()
+        {
+            TimeSpan totalAllowedDelay = TimeSpan.Zero;
+            foreach (TimeSpan current in GetDefaultBarrierRequestDelays())
+            {
+                totalAllowedDelay += current;
+            }
+
+            return totalAllowedDelay;
         }
 
         public async Task<StoreResponse> WriteAsync(
@@ -294,7 +329,23 @@ For globally strong write:
             return false;
         }
 
-        private async Task<bool> WaitForWriteBarrierAsync(DocumentServiceRequest barrierRequest, long selectedGlobalCommittedLsn)
+        private Task<bool> WaitForWriteBarrierAsync(
+            DocumentServiceRequest barrierRequest,
+            long selectedGlobalCommittedLsn)
+        {
+            if (BarrierRequestHelper.IsOldBarrierRequestHandlingEnabled)
+            {
+                return this.WaitForWriteBarrierOldAsync(barrierRequest, selectedGlobalCommittedLsn);
+            }
+
+            return this.WaitForWriteBarrierNewAsync(barrierRequest, selectedGlobalCommittedLsn);
+        }
+
+        // NOTE this is only temporarily kept to have a feature flag
+        // (Env variable 'AZURE_COSMOS_OLD_BARRIER_REQUESTS_HANDLING_ENABLED' allowing to fall back
+        // This old implementation will be removed (and the environment
+        // variable not been used anymore) after some bake time.
+        private async Task<bool> WaitForWriteBarrierOldAsync(DocumentServiceRequest barrierRequest, long selectedGlobalCommittedLsn)
         {
             int writeBarrierRetryCount = ConsistencyWriter.maxNumberOfWriteBarrierReadRetries;
 
@@ -328,7 +379,7 @@ For globally strong write:
                 if (writeBarrierRetryCount == 0)
                 {
                     DefaultTrace.TraceInformation("ConsistencyWriter: WaitForWriteBarrierAsync - Last barrier multi-region strong. Responses: {0}",
-                        string.Join("; ", responses));
+                        string.Join("; ", responses.Select(r => r.Target)));
                 }
                 else
                 {
@@ -340,6 +391,83 @@ For globally strong write:
                     {
                         await Task.Delay(ConsistencyWriter.shortbarrierRetryIntervalInMsForMultiRegion);
                     }
+                }
+            }
+
+            DefaultTrace.TraceInformation("ConsistencyWriter: Highest global committed lsn received for write barrier call is {0}", maxGlobalCommittedLsnReceived);
+
+            return false;
+        }
+
+        private async Task<bool> WaitForWriteBarrierNewAsync(
+            DocumentServiceRequest barrierRequest,
+            long selectedGlobalCommittedLsn)
+        {
+            TimeSpan remainingDelay = totalAllowedBarrierRequestDelay;
+
+            int writeBarrierRetryCount = 0;
+            long maxGlobalCommittedLsnReceived = 0;
+            while (writeBarrierRetryCount < defaultBarrierRequestDelays.Length && remainingDelay >= TimeSpan.Zero) // Retry loop
+            {
+                barrierRequest.RequestContext.TimeoutHelper.ThrowTimeoutIfElapsed();
+
+                ValueStopwatch barrierRequestStopWatch = ValueStopwatch.StartNew();
+                IList<ReferenceCountedDisposable<StoreResult>> responses = await this.storeReader.ReadMultipleReplicaAsync(
+                    barrierRequest,
+                    includePrimary: true,
+                    replicaCountToRead: 1, // any replica with correct globalCommittedLsn is good enough
+                    requiresValidLsn: false,
+                    useSessionToken: false,
+                    readMode: ReadMode.Strong,
+                    checkMinLSN: false,
+                    forceReadAll: false);
+                barrierRequestStopWatch.Stop();
+
+                TimeSpan previousBarrierRequestLatency = barrierRequestStopWatch.Elapsed;
+                long maxGlobalCommittedLsn = 0;
+                if (responses != null)
+                {
+                    foreach (ReferenceCountedDisposable<StoreResult> response in responses)
+                    {
+                        if (response.Target.GlobalCommittedLSN >= selectedGlobalCommittedLsn)
+                        {
+                            return true;
+                        }
+
+                        if (response.Target.GlobalCommittedLSN >= maxGlobalCommittedLsn)
+                        {
+                            maxGlobalCommittedLsn = response.Target.GlobalCommittedLSN;
+                        }
+                     }
+                }
+
+                //get max global committed lsn from current batch of responses, then update if greater than max of all batches.
+                maxGlobalCommittedLsnReceived = Math.Max(maxGlobalCommittedLsnReceived, maxGlobalCommittedLsn);
+
+                //only refresh on first barrier call, set to false for subsequent attempts.
+                barrierRequest.RequestContext.ForceRefreshAddressCache = false;
+
+                bool shouldDelay = BarrierRequestHelper.ShouldDelayBetweenHeadRequests(
+                    previousBarrierRequestLatency,
+                    responses,
+                    defaultBarrierRequestDelays[writeBarrierRetryCount],
+                    out TimeSpan delay);
+
+                writeBarrierRetryCount++;
+                if (writeBarrierRetryCount >= defaultBarrierRequestDelays.Length || remainingDelay < delay)
+                {
+                    //trace on last retry.
+                    DefaultTrace.TraceInformation("ConsistencyWriter: WaitForWriteBarrierAsync - Last barrier multi-region strong. Target GCLSN: {0}, Max. GCLSN received: {1}, Responses: {2}",
+                        selectedGlobalCommittedLsn,
+                        maxGlobalCommittedLsn,
+                        string.Join("; ", responses.Select(r => r.Target)));
+
+                    break;
+                }
+                else if (shouldDelay)
+                {
+                    await Task.Delay(delay);
+                    remainingDelay -= delay;
                 }
             }
 

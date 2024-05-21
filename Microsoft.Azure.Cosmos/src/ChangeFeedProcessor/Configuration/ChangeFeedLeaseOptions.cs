@@ -44,5 +44,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Configuration
         /// instances pointing at the same feed while using the same auxiliary collection.
         /// </summary>
         public string LeasePrefix { get; set; }
+
+        /// <summary>
+        /// Gets or sets the <see cref="ChangeFeedMode"/>.
+        /// </summary>
+        public ChangeFeedMode Mode { get; set; }
     }
 }

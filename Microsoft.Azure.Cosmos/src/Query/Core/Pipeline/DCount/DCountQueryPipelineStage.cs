@@ -35,14 +35,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
         /// <param name="source">The source component that will supply the local aggregates from multiple continuations and partitions.</param>
         /// <param name="count">The actual dcount that will be reported.</param>
         /// <param name="info">Metadata about the original dcount query that is elided in the rewritten query</param>
-        /// <param name="cancellationToken">The cancellation token for cooperative yeilding.</param>
         /// <remarks>This constructor is private since there is some async initialization that needs to happen in CreateAsync().</remarks>
         public DCountQueryPipelineStage(
             IQueryPipelineStage source,
             long count,
-            DCountInfo info,
-            CancellationToken cancellationToken)
-            : base(source, cancellationToken)
+            DCountInfo info)
+            : base(source)
         {
             this.count = count;
             this.info = info;
@@ -52,18 +50,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
             ExecutionEnvironment executionEnvironment,
             DCountInfo info,
             CosmosElement continuationToken,
-            CancellationToken cancellationToken,
             MonadicCreatePipelineStage monadicCreatePipelineStage) => executionEnvironment switch
             {
                 ExecutionEnvironment.Client => ClientDCountQueryPipelineStage.MonadicCreate(
                     info,
                     continuationToken,
-                    cancellationToken,
                     monadicCreatePipelineStage),
                 ExecutionEnvironment.Compute => ComputeDCountQueryPipelineStage.MonadicCreate(
                     info,
                     continuationToken,
-                    cancellationToken,
                     monadicCreatePipelineStage),
                 _ => throw new ArgumentException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}."),
             };
