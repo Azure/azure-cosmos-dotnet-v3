@@ -37,12 +37,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <returns></returns>
         private static bool CompareListOfAnonymousType(List<object> queryResults, List<dynamic> dataResults, bool ignoreOrderingForAnonymousTypeObject)
         {
-            if(!ignoreOrderingForAnonymousTypeObject)
-            {
-                return queryResults.SequenceEqual(dataResults);
-            }
-
-            return queryResults.OrderBy(x => x).ToList().SequenceEqual(dataResults.OrderBy(x => x).ToList());
+            return ignoreOrderingForAnonymousTypeObject 
+                ? queryResults.OrderBy(x => x).ToList().SequenceEqual(dataResults.OrderBy(x => x).ToList())
+                : queryResults.SequenceEqual(dataResults);
         }
 
         /// <summary>
@@ -652,7 +649,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         //     - scenarios not supported in LINQ, e.g. sequence doesn't contain element.
         internal bool skipVerification;
 
-        internal bool ignoreOrderingForAnonymousTypeObject;
+        internal readonly bool ignoreOrderingForAnonymousTypeObject;
 
         internal LinqTestInput(
             string description, 
