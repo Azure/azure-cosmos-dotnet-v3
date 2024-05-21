@@ -292,6 +292,25 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
+        public void TestDocumentIdBuiltinFunction()
+        {
+            List<DataObject> data = new List<DataObject>();
+            IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true);
+            Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? query : data.AsQueryable();
+
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                new LinqTestInput("In Select clause", b => getQuery(b).Select(doc => doc.DocumentId())),
+                new LinqTestInput("In Filter clause", b => getQuery(b).Where(doc => doc.DocumentId() > 123)),
+
+                // Negative case
+                new LinqTestInput("In Order by clause", b => getQuery(b).OrderBy(doc => doc.DocumentId())),
+            };
+
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
         public void TestRegexMatchFunction()
         {
             // Similar to the type checking function, RegexMatch are not supported client side.

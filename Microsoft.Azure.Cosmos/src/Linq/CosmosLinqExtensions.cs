@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// ]]>
         /// </code>
         /// </example>
-        public static bool DocumentId(this object obj)
+        public static int DocumentId(this object obj)
         {
             throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented);
         }
