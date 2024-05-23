@@ -13,7 +13,7 @@ jobs:
         value: 'cosmosdotnetsdkctl.azurecr.io'
 
     pool:
-      vmImage: $(VmImage)
+      name: 'OneES'
 
     steps:
     - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
