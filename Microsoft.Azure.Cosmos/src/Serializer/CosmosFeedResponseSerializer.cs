@@ -59,6 +59,10 @@ namespace Microsoft.Azure.Cosmos
                     memoryStreamWithEnvelope.Position = 0;
                 }
 
+                string result = StreamToString(memoryStreamWithEnvelope);
+                Console.WriteLine("STREAM : " + result);
+                memoryStreamWithEnvelope.Position = 0;
+
                 if (memoryStreamWithEnvelope.TryGetBuffer(out ArraySegment<byte> buffer))
                 {
                     content = buffer;
@@ -82,6 +86,17 @@ namespace Microsoft.Azure.Cosmos
 
                 MemoryStream arrayOnlyStream = new MemoryStream(resultAsArray.Array, resultAsArray.Offset, resultAsArray.Count, writable: false, publiclyVisible: true);
                 return arrayOnlyStream;
+            }
+        }
+
+        private static string StreamToString(Stream stream)
+        {
+            stream.Position = 0;
+            //using (
+            StreamReader reader = new StreamReader(stream, Encoding.UTF8);
+            //)
+            {
+                return reader.ReadToEnd();
             }
         }
 

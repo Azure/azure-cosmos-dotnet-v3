@@ -93,6 +93,18 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.Trace = trace ?? throw new ArgumentNullException(nameof(trace));
             }
+
+            if (requestMessage != null)
+            {
+                Console.WriteLine($"Request Method:{requestMessage.Method}{Environment.NewLine}\tOperation: {requestMessage.OperationType}{Environment.NewLine}\tResource: {requestMessage.ResourceType}{Environment.NewLine}\tPartitionKey: {requestMessage.Headers.CosmosMessageHeaders.PartitionKey}{Environment.NewLine}\tSupportedSerializationFormats:{requestMessage.Headers.CosmosMessageHeaders.SupportedSerializationFormats}{Environment.NewLine}");
+            }
+            else
+            {
+                Console.WriteLine("Empty Request");
+            }
+
+            Console.WriteLine($@"Response:{statusCode}");
+            Console.WriteLine();
         }
 
         /// <summary>

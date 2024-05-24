@@ -892,6 +892,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 StreamReader sr = new StreamReader(response.Content);
                 string result = await sr.ReadToEndAsync();
+                Console.WriteLine("STREAM : " + result);
+                Console.WriteLine();
+                Console.WriteLine();
+                Console.WriteLine();
                 ICollection<T> responseResults;
                 responseResults = JsonConvert.DeserializeObject<CosmosFeedResponseUtil<T>>(result).Data;
 
