@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Globalization;
     using System.IO;
     using System.Linq;
@@ -15,6 +16,7 @@
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
+    using static System.Net.Mime.MediaTypeNames;
 
     [TestClass]
     [TestCategory("Query")]
@@ -126,6 +128,34 @@
                                 {
                                     Assert.AreEqual(Number64.ToDouble(expectedNumber.Value), Number64.ToDouble(actualNumber.Value), .01);
                                 }
+                                else if (argument.AggregateOperator.Equals("MAKELIST") || argument.AggregateOperator.Equals("MAKESET"))
+                                {
+                                    if ((expected is CosmosArray expectedArray) && (actual is CosmosArray actualArray))
+                                    {
+                                        CosmosElement[] normalizedExpected = expectedArray.ToArray();
+                                        Array.Sort(normalizedExpected);
+                                        CosmosElement[] normalizedActual = actualArray.ToArray();
+                                        Array.Sort(normalizedActual);
+
+                                        Assert.IsTrue(normalizedExpected.Length == normalizedActual.Length, message);
+
+                                        bool expectedEqualsActual = true;
+                                        for( int i = 0; i < normalizedExpected.Length; i++ )
+                                        {
+                                            if (normalizedActual[i].CompareTo(normalizedExpected[i]) != 0)
+                                            {
+                                                expectedEqualsActual = false;
+                                                break;
+                                            }
+                                        }
+
+                                        Assert.IsTrue(expectedEqualsActual, message);
+                                    }
+                                    else
+                                    {
+                                        Assert.AreEqual(expected, actual, message);
+                                    }
+                                }
                                 else
                                 {
                                     Assert.AreEqual(expected, actual, message);
@@ -179,6 +209,38 @@
                             {
                                 Assert.AreEqual(0, items.Count, message);
                             }
+                            else if (argument.AggregateOperator.Equals("MAKELIST") || argument.AggregateOperator.Equals("MAKESET"))
+                            {
+                                Assert.AreEqual(1, items.Count, message);
+                                CosmosElement expected = argument.ExpectedValue;
+                                CosmosElement actual = items.Single();
+
+                                if ((expected is CosmosArray expectedArray) && (actual is CosmosArray actualArray))
+                                {
+                                    CosmosElement[] normalizedExpected = expectedArray.ToArray();
+                                    Array.Sort(normalizedExpected);
+                                    CosmosElement[] normalizedActual = actualArray.ToArray();
+                                    Array.Sort(normalizedActual);
+
+                                    Assert.IsTrue(normalizedExpected.Length == normalizedActual.Length, message);
+
+                                    bool expectedEqualsActual = true;
+                                    for (int i = 0; i < normalizedExpected.Length; i++)
+                                    {
+                                        if (normalizedActual[i].CompareTo(normalizedExpected[i]) != 0)
+                                        {
+                                            expectedEqualsActual = false;
+                                            break;
+                                        }
+                                    }
+
+                                    Assert.IsTrue(expectedEqualsActual, message);
+                                }
+                                else
+                                {
+                                    Assert.AreEqual(expected, actual, message);
+                                }
+                            }
                             else
                             {
                                 Assert.AreEqual(1, items.Count, message);
@@ -223,6 +285,21 @@
                     return Number64.ToDouble(number.Value);
                 });
             double count = documentsWherePkIsANumber.Count();
+
+            IReadOnlyList<CosmosElement> makeListResult = inputDocuments
+                .Select(doc =>
+                {
+                    if (!doc.TryGetValue(aggregateTestArgs.PartitionKey, out CosmosElement cosmosElement))
+                    {
+                        Assert.Fail("Failed to get partition key from document");
+                    }
+
+                    return cosmosElement;
+                })
+                .ToList();
+
+            IReadOnlyList<CosmosElement> makeSetResult = makeListResult.Distinct().ToList();
+
             AggregateQueryArguments[] aggregateQueryArgumentsList = new AggregateQueryArguments[]
             {
                     new AggregateQueryArguments(
@@ -236,6 +313,14 @@
                     new AggregateQueryArguments(
                         aggregateOperator: "COUNT",
                         expectedValue: CosmosNumber64.Create(inputDocuments.Count()),
+                        predicate: "true"),
+                    new AggregateQueryArguments(
+                        aggregateOperator: "MAKELIST",
+                        expectedValue: CosmosArray.Create(makeListResult), // construct cosmos array from linq result
+                        predicate: "true"),
+                    new AggregateQueryArguments(
+                        aggregateOperator: "MAKESET",
+                        expectedValue: CosmosArray.Create(makeSetResult), // construct cosmos array from linq result
                         predicate: "true"),
                     new AggregateQueryArguments(
                         aggregateOperator: "MAX",
@@ -392,6 +477,32 @@
                         Assert.Fail($"Something went wrong with query: {query}, ex: {ex}");
                     }
                 }
+
+                string[] arrayAggregateQueries = new string[]
+                {
+                    $"SELECT VALUE MAKELIST(c.{uniqueField}) FROM c WHERE c.{uniqueField} = {valueOfInterest}",
+                    $"SELECT VALUE MAKESET(c.{uniqueField}) FROM c WHERE c.{uniqueField} = {valueOfInterest}",
+                };
+
+                foreach (string query in arrayAggregateQueries)
+                {
+                    try
+                    {
+                        List<CosmosElement> items = await QueryTestsBase.RunQueryAsync(
+                            container,
+                            query,
+                            new QueryRequestOptions()
+                            {
+                                MaxConcurrency = 10,
+                            });
+
+                        Assert.IsTrue((items.Single() is CosmosArray result) && result.Equals(CosmosArray.Create(CosmosNumber64.Create(valueOfInterest))));
+                    }
+                    catch (Exception ex)
+                    {
+                        Assert.Fail($"Something went wrong with query: {query}, ex: {ex}");
+                    }
+                }
             }
         }
 
@@ -527,7 +638,7 @@
                 args.UndefinedKey
             };
 
-            string[] aggregateOperators = new string[] { "AVG", "MIN", "MAX", "SUM", "COUNT" };
+            string[] aggregateOperators = new string[] { "AVG", "MIN", "MAKELIST", "MAKESET", "MAX", "SUM", "COUNT" };
             string[] typeCheckFunctions = new string[] { "IS_ARRAY", "IS_BOOL", "IS_NULL", "IS_NUMBER", "IS_OBJECT", "IS_STRING", "IS_DEFINED", "IS_PRIMITIVE" };
             List<string> queries = new List<string>();
             foreach (string aggregateOperator in aggregateOperators)
@@ -609,10 +720,19 @@
                     {
                         Assert.AreEqual(1, items.Count);
                         CosmosElement aggregateResult = items.First();
-
                         if(aggregateResult is not CosmosUndefined)
                         {
-                            writer.WriteCData(items.Single().ToString());
+                            if ((formattedQuery.Contains("MAKELIST") || formattedQuery.Contains("MAKESET"))
+                                && (aggregateResult is CosmosArray aggregateResultArray))
+                            {
+                                CosmosElement[] normalizedAggregateResult = aggregateResultArray.ToArray();
+                                Array.Sort(normalizedAggregateResult);
+                                writer.WriteCData(CosmosArray.Create(normalizedAggregateResult).ToString());
+                            }
+                            else
+                            {
+                                writer.WriteCData(items.Single().ToString());
+                            }
                         }
                     }
 
