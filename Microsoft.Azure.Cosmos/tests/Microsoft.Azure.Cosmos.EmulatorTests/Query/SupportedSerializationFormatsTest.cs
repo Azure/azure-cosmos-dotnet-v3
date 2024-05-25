@@ -1,10 +1,10 @@
-﻿namespace Microsoft.Azure.Cosmos.Query
+﻿namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 {
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.EmulatorTests.Query;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
@@ -44,7 +44,7 @@
                 {
                     (
                         partitionKey: null,
-                        documents: new[] { "document_0", "document_1", "document_2", "document_3", "document_4", "document_5", "document_6", "document_7", "document_8", "document_9" }
+                        documents: new[] { "document_0", "document_1", "document_2", "document_3", "document_4","document_5", "document_6", "document_7", "document_8", "document_9" }
                     ),
                     (
                         partitionKey: new Cosmos.PartitionKey("0"),
@@ -94,6 +94,7 @@
                     }
                 };
 
+                // GetItemQueryIterator
                 foreach (QueryRequestOptions requestOptions in queryRequestOptionsList)
                 {
                     QueryDefinition queryDefinition = query != null ? new QueryDefinition(query) : null;
@@ -118,6 +119,42 @@
                         CollectionAssert.AreEquivalent(expectedResults, actualResults);
                     }
                 }
+
+                // GetItemQueryStreamIterator
+                foreach (QueryRequestOptions requestOptions in queryRequestOptionsList)
+                {
+                    QueryDefinition queryDefinition = query != null ? new QueryDefinition(query) : null;
+                    foreach ((Cosmos.PartitionKey? partitionKey, string[] expectedResults) in partitionKeyAndExpectedResults)
+                    {
+                        requestOptions.PartitionKey = partitionKey;
+
+                        List<CosmosElement> queryResults = new List<CosmosElement>();
+                        using (FeedIterator feedIterator = container.GetItemQueryStreamIterator(queryDefinition, requestOptions: requestOptions))
+                        {
+                            while (feedIterator.HasMoreResults)
+                            {
+                                ResponseMessage response = await feedIterator.ReadNextAsync();
+                                queryResults.AddRange(Deserialize(response.Content));
+                            }
+                        }
+
+                        string[] actualResults = queryResults
+                            .Select(doc => ((CosmosString)((CosmosObject)doc)["name"]).Value.ToString())
+                            .ToArray();
+
+                        CollectionAssert.AreEquivalent(expectedResults, actualResults);
+                    }
+                }
+            }
+        }
+
+        private static IEnumerable<CosmosElement> Deserialize(Stream content)
+        {
+            string contentAsString = new StreamReader(content).ReadToEnd();
+            CosmosObject obj = CosmosObject.Parse(contentAsString);
+            foreach (CosmosElement element in (CosmosArray)obj["Documents"])
+            {
+                yield return element;
             }
         }
     }
