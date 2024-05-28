@@ -32,8 +32,9 @@ namespace Microsoft.Azure.Cosmos.Query
 
     internal abstract class DocumentQueryExecutionContextBase : IDocumentQueryExecutionContext
     {
-        public static readonly string DefaultSupportedSerializationFormats = string.Join(",", SupportedSerializationFormats.JsonText, SupportedSerializationFormats.CosmosBinary);
-        
+        // ISSUE-TODO-adityasa-2024/5/27 - Re-enable binary format. Currently encryption codepath is not able to handle binary response.
+        public static readonly string DefaultSupportedSerializationFormats = string.Join(",", SupportedSerializationFormats.JsonText);
+
         public readonly struct InitParams
         {
             public IDocumentQueryClient Client { get; }
