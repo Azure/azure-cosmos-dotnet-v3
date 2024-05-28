@@ -582,7 +582,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             TestDoc expectedDoc = new TestDoc(testDoc);
 
 #if SDKPROJECTREF
-            TODO: Re-enable when new SDK is referenced
             await MdeEncryptionTests.ValidateQueryResultsAsync(
                 MdeEncryptionTests.encryptionContainer,
                 query: null,
