@@ -241,7 +241,7 @@ namespace Microsoft.Azure.Cosmos
             // All query APIs (GetItemQueryIterator, GetItemLinqQueryable and GetItemQueryStreamIterator) turn into ReadFeed operation if query text is null.
             // In such a case, query pipelines are still involved (including QueryRequestOptions). In general backend only honors SupportedSerializationFormats
             //  for OperationType Query but has a bug where it returns a binary response for ReadFeed API when partition key is also specified in the request.
-            if (request.OperationType == OperationType.Query)
+            if (request.OperationType == OperationType.Query || request.OperationType == OperationType.ReadFeed)
             {
                 request.Headers.CosmosMessageHeaders.SupportedSerializationFormats = this.SupportedSerializationFormats?.ToString() ?? DocumentQueryExecutionContextBase.DefaultSupportedSerializationFormats;
             }

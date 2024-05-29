@@ -78,5 +78,5 @@ namespace Microsoft.Azure.Cosmos
                 return readFeedResponse;
             }
         }
-    } 
+    }
 }
