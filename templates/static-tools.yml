@@ -8,7 +8,7 @@ jobs:
 - job:
   displayName: Static Analysis
   pool:
-    vmImage: '${{ parameters.VmImage }}'
+    name: 'OneES'
 
   steps:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
