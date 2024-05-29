@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
+    using Microsoft.Azure.Cosmos.Resource;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -340,7 +341,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                 headers[kvp.Key] = kvp.Value;
             }
 
-            return new ResponseMessage(
+            ResponseMessage response = new (
                 statusCode: System.Net.HttpStatusCode.OK,
                 requestMessage: default,
                 headers: headers,
@@ -349,6 +350,13 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
             {
                 Content = page.Content,
             };
+
+            if (page.Content != null)
+            {
+                await RewriteResponseUtils.RewriteStreamAsTextAsync(response, this.queryRequestOptions, trace);
+            }
+
+            return response;
         }
 
         public override CosmosElement GetCosmosElementContinuationToken()

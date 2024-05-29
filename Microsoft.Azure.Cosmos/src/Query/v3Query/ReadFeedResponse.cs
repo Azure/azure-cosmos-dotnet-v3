@@ -5,7 +5,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System.Collections.Generic;
     using System.Net;
-    using Microsoft.Azure.Cosmos.Resource;
 
     internal class ReadFeedResponse<T> : FeedResponse<T>
     {
@@ -56,11 +55,6 @@ namespace Microsoft.Azure.Cosmos
                 if (responseMessage.StatusCode != HttpStatusCode.NotModified)
                 {
                     responseMessage.EnsureSuccessStatusCode();
-                }
-
-                if (responseMessage.Content != null)
-                {
-                    _ = RewriteResponseUtils.RewriteStreamAsTextAsync(responseMessage, new QueryRequestOptions(), responseMessage.Trace);
                 }
 
                 IReadOnlyCollection<TInput> resources = CosmosFeedResponseSerializer.FromFeedResponseStream<TInput>(
