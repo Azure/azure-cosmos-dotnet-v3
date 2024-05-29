@@ -581,10 +581,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             TestDoc expectedDoc = new TestDoc(testDoc);
 
+#if SDKPROJECTREF
             await MdeEncryptionTests.ValidateQueryResultsAsync(
                 MdeEncryptionTests.encryptionContainer,
                 query: null,
                 expectedDocList: new List<TestDoc> { expectedDoc });
+#endif
 
             expectedDoc = new TestDoc(testDoc);
             await MdeEncryptionTests.ValidateQueryResultsAsync(
