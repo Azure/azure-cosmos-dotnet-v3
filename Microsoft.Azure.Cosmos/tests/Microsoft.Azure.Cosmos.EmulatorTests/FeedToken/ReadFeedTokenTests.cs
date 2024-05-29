@@ -534,7 +534,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                     using (ResponseMessage responseMessage = await feedIterator.ReadNextAsync(rootTrace, this.cancellationToken))
                     {
                         responseMessage.EnsureSuccessStatusCode();
-                        childCount++;
+                        childCount += 2;
                     }
                 }
             }
