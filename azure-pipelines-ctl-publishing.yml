@@ -11,7 +11,6 @@ jobs:
 
     pool:
       name: 'OneES'
-      vmImage: 'dotnet-ubuntu-latest'
 
     steps:
     - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
