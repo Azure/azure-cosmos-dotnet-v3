@@ -7,12 +7,11 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.IO;
     using System.Net;
-    using System.Runtime.InteropServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Resource;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using static Microsoft.Azure.Documents.RuntimeConstants;
@@ -73,7 +72,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override async Task<ResponseMessage> ReadNextAsync(
-            ITrace trace, 
+            ITrace trace,
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -124,7 +123,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (responseMessage.Content != null)
             {
-                await RewriteStreamAsTextAsync(responseMessage, this.requestOptions, trace);
+                await RewriteResponseUtils.RewriteStreamAsTextAsync(responseMessage, this.requestOptions, trace);
             }
 
             return responseMessage;
@@ -134,70 +133,7 @@ namespace Microsoft.Azure.Cosmos
         {
             throw new NotImplementedException();
         }
-
-        private static async Task RewriteStreamAsTextAsync(ResponseMessage responseMessage, QueryRequestOptions requestOptions, ITrace trace)
-        {
-            using (ITrace rewriteTrace = trace.StartChild("Rewrite Stream as Text", TraceComponent.Json, TraceLevel.Info))
-            {
-                // Rewrite the payload to be in the specified format.
-                // If it's already in the correct format, then the following will be a memcpy.
-                MemoryStream memoryStream;
-                if (responseMessage.Content is MemoryStream responseContentAsMemoryStream)
-                {
-                    memoryStream = responseContentAsMemoryStream;
-                }
-                else
-                {
-                    memoryStream = new MemoryStream();
-                    await responseMessage.Content.CopyToAsync(memoryStream);
-                }
-
-                ReadOnlyMemory<byte> buffer;
-                if (memoryStream.TryGetBuffer(out ArraySegment<byte> segment))
-                {
-                    buffer = segment.Array.AsMemory().Slice(start: segment.Offset, length: segment.Count);
-                }
-                else
-                {
-                    buffer = memoryStream.ToArray();
-                }
-
-                IJsonNavigator jsonNavigator = JsonNavigator.Create(buffer);
-                if (jsonNavigator.SerializationFormat == JsonSerializationFormat.Text)
-                {
-                    // Exit to avoid the memory allocation.
-                    return;
-                }
-
-                IJsonWriter jsonWriter;
-                if (requestOptions?.CosmosSerializationFormatOptions != null)
-                {
-                    jsonWriter = requestOptions.CosmosSerializationFormatOptions.CreateCustomWriterCallback();
-                }
-                else
-                {
-                    jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
-                }
-
-                jsonNavigator.WriteNode(jsonNavigator.GetRootNode(), jsonWriter);
-
-                ReadOnlyMemory<byte> result = jsonWriter.GetResult();
-                MemoryStream rewrittenMemoryStream;
-                if (MemoryMarshal.TryGetArray(result, out ArraySegment<byte> rewrittenSegment))
-                {
-                    rewrittenMemoryStream = new MemoryStream(rewrittenSegment.Array, index: rewrittenSegment.Offset, count: rewrittenSegment.Count, writable: false, publiclyVisible: true);
-                }
-                else
-                {
-                    byte[] toArray = result.ToArray();
-                    rewrittenMemoryStream = new MemoryStream(toArray, index: 0, count: toArray.Length, writable: false, publiclyVisible: true);
-                }
-
-                responseMessage.Content = rewrittenMemoryStream;
-            }
-        }
     }
-
     /// <summary>
     /// Cosmos feed iterator that keeps track of the continuation token when retrieving results form a query.
     /// </summary>
