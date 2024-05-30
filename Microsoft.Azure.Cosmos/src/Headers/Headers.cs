@@ -457,5 +457,14 @@ namespace Microsoft.Azure.Cosmos
 
             return null;
         }
+
+        /// <summary>
+        /// Gets the feed range details.
+        /// </summary>
+        public virtual (string Min, string Max, string CollectionRid) FeedRangeDetails
+        {
+            get;
+            internal set;
+        }
     }
 }

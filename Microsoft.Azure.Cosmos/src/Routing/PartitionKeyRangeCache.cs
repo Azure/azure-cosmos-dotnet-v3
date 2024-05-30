@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Linq;
     using System.Net;
     using System.Text;
-    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
@@ -79,6 +78,16 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 return routingMap.GetOverlappingRanges(range);
             }
+        }
+
+        public virtual async Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
+            string collectionRid,
+            Range<string> range,
+            long lsn,
+            ITrace trace,
+            bool forceRefresh = false)
+        {
+            return await Task.FromResult(default(IReadOnlyList<PartitionKeyRange>));
         }
 
         public virtual async Task<PartitionKeyRange> TryGetPartitionKeyRangeByIdAsync(

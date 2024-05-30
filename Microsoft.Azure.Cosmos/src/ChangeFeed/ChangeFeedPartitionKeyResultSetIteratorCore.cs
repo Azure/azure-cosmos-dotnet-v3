@@ -59,13 +59,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 container: container,
                 mode: mode,
                 changeFeedStartFrom: startFrom,
-                options: requestOptions);
+                options: requestOptions,
+                feedRangeEpk: lease?.FeedRange is FeedRangeEpk epk ? epk : default);
         }
 
         private readonly CosmosClientContext clientContext;
 
         private readonly ChangeFeedRequestOptions changeFeedOptions;
         private readonly ChangeFeedMode mode;
+        private readonly FeedRangeEpk feedRangeEpk;
 
         private ChangeFeedStartFrom changeFeedStartFrom;
         private bool hasMoreResultsInternal;
@@ -74,13 +76,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             ContainerInternal container,
             ChangeFeedMode mode,
             ChangeFeedStartFrom changeFeedStartFrom,
-            ChangeFeedRequestOptions options)
+            ChangeFeedRequestOptions options,
+            FeedRangeEpk feedRangeEpk)
         {
             this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.mode = mode;
             this.changeFeedStartFrom = changeFeedStartFrom ?? throw new ArgumentNullException(nameof(changeFeedStartFrom));
             this.clientContext = this.container.ClientContext;
             this.changeFeedOptions = options;
+            this.feedRangeEpk = feedRangeEpk;
         }
 
         public override bool HasMoreResults => this.hasMoreResultsInternal;
@@ -144,6 +148,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             this.hasMoreResultsInternal = responseMessage.IsSuccessStatusCode;
             responseMessage.Headers.ContinuationToken = etag;
             this.changeFeedStartFrom = new ChangeFeedStartFromContinuationAndFeedRange(etag, (FeedRangeInternal)this.changeFeedStartFrom.FeedRange);
+
+            // Set the FeedRangeMinMax response header.
+
+            if (this.feedRangeEpk != null)
+            {
+                responseMessage.Headers.FeedRangeDetails = (this.feedRangeEpk.Range.Min, this.feedRangeEpk.Range.Max, responseMessage.RequestMessage.DocumentServiceRequest.ResourceId);
+            }
 
             return responseMessage;
         }

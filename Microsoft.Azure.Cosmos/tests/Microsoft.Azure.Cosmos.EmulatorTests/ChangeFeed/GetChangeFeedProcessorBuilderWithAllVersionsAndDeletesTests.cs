@@ -12,7 +12,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
     using System.Threading.Tasks;
     using Antlr4.Runtime.Sharpen;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
     using Newtonsoft.Json.Linq;
 
     [TestClass]
@@ -31,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             await base.TestCleanup();
         }
 
-        private static readonly Dictionary<long, FeedRange> Bookmarks = new();
+        private static readonly Dictionary<long, Documents.Routing.Range<string>> Bookmarks = new();
 
         [TestMethod]
         [Owner("philipthomas-MSFT")]
@@ -44,14 +46,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             Exception exception = default;
 
             ChangeFeedProcessor processor = monitoredContainer
-                .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: "processor", onChangesDelegate: (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItem<dynamic>> docs, CancellationToken token) =>
+                .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: "processor", onChangesDelegate: async (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItem<dynamic>> docs, CancellationToken token) =>
                 {
-                    // Get the current feed range using 'context.Headers.PartitionKeyRangeId'.
+                    // Note(philipthomas): Get the current PartitionKeyRange using 'context.Headers.PartitionKeyRangeId'.
 
-                    FeedRange currentFeedRange = GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests.GetFeedRangeByPartitionKeyRangeId(
-                        context: context,
-                        container: monitoredContainer,
-                        cancellationToken: this.cancellationToken);
+                    (string Min, string Max, string CollectionRid) = context.Headers.FeedRangeDetails;
+
+                    Debug.WriteLine($"{nameof(Min)}-> {Min}");
+                    Debug.WriteLine($"{nameof(Max)}-> {Max}");
+                    Debug.WriteLine($"{nameof(CollectionRid)}-> {CollectionRid}");
 
                     string id = default;
                     string pk = default;
@@ -76,28 +79,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                         long previousLsn = change.Metadata.PreviousLsn;
                         DateTime m = change.Metadata.ConflictResolutionTimestamp;
                         long lsn = change.Metadata.Lsn;
-
-                        // Does the 'change.Metadata.Lsn' belong to the current feed range. If it does,
-                        // this means that it has been processed?
-
-                        if (!GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests.Bookmarks.TryGetValue(lsn, out FeedRange feedRange))
-                        {
-                            bool hasLsnProcessed = GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests.HasLsnProcessed(
-                                container: monitoredContainer,
-                                lsn: lsn,
-                                feedRange: currentFeedRange);
-
-                            if (hasLsnProcessed)
-                            {
-                                // Bookmark the lsn and feedRange.
-
-                                GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests.Bookmarks.Add(
-                                    key: lsn,
-                                    value: currentFeedRange);
-                            }
-                        }
-
                         bool isTimeToLiveExpired = change.Metadata.IsTimeToLiveExpired;
+
+                        Routing.PartitionKeyRangeCache partitionKeyRangeCache = await monitoredContainer.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
+
+                        IReadOnlyList<Documents.PartitionKeyRange> overlappingRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
+                            collectionRid: CollectionRid,
+                            range: new Documents.Routing.Range<string>(
+                                min: Min,
+                                max: Max,
+                                isMinInclusive: false,
+                                isMaxInclusive: false),
+                            lsn: lsn,
+                            trace: NoOpTrace.Singleton,
+                            forceRefresh: false);
+
+                        Debug.WriteLine($"{nameof(overlappingRanges)}-> {Newtonsoft.Json.JsonConvert.SerializeObject(overlappingRanges)}");
                     }
 
                     Assert.IsNotNull(context.LeaseToken);
@@ -140,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     Assert.IsTrue(condition: createChange.Metadata.Lsn < replaceChange.Metadata.Lsn, message: "The create operation must happen before the replace operation.");
                     Assert.IsTrue(condition: createChange.Metadata.Lsn < replaceChange.Metadata.Lsn, message: "The replace operation must happen before the delete operation.");
 
-                    return Task.CompletedTask;
+                    return; // Task.CompletedTask;
                 })
                 .WithInstanceName(Guid.NewGuid().ToString())
                 .WithLeaseContainer(this.LeaseContainer)
@@ -174,63 +171,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             {
                 Assert.Fail(exception.ToString());
             }
-        }
-
-        private static bool HasLsnProcessed(
-            long lsn, 
-            FeedRange feedRange, 
-            ContainerInternal container)
-        {
-            if (feedRange is null)
-            {
-                throw new ArgumentNullException(nameof(feedRange));
-            }
-
-            if (container is null)
-            {
-                throw new ArgumentNullException(nameof(container));
-            }
-
-            Debug.WriteLine($"{nameof(lsn)}: {lsn}");
-            Debug.WriteLine($"{nameof(feedRange)}: {feedRange}");
-
-            return default;
-        }
-
-        private static FeedRange GetFeedRangeByPartitionKeyRangeId(
-            ChangeFeedProcessorContext context, 
-            ContainerInternal container,
-            CancellationToken cancellationToken)
-        {
-            if (context is null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
-
-            if (container is null)
-            {
-                throw new ArgumentNullException(nameof(container));
-            }
-
-            Task<IReadOnlyList<FeedRange>> feedRangesTask = container.GetFeedRangesAsync(cancellationToken);
-            IReadOnlyList<FeedRange> feedRanges = feedRangesTask.Result;
-
-            foreach (FeedRange feedRange in feedRanges)
-            {
-                Task<IEnumerable<string>> pkRangeIdsTask = container.GetPartitionKeyRangesAsync(
-                    feedRange: feedRange,
-                    cancellationToken: cancellationToken);
-                IEnumerable<string> pkRangeIds = pkRangeIdsTask.Result;
-
-                if (pkRangeIds.Contains(context.Headers.PartitionKeyRangeId))
-                {
-                    Debug.WriteLine(feedRange.ToJsonString());
-
-                    return feedRange;
-                }
-            }
-
-            return default;
         }
 
         /// <summary>
