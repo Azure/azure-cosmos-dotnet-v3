@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (responseMessage.Content != null)
             {
-                await RewriteResponseUtils.RewriteStreamAsTextAsync(responseMessage, this.requestOptions, trace);
+                await ResponseRewriter.RewriteStreamAsTextAsync(responseMessage, this.requestOptions, trace);
             }
 
             return responseMessage;

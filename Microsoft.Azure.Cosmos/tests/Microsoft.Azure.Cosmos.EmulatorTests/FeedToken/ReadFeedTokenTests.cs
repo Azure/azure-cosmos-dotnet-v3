@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
     using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
-    using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -539,9 +538,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                 }
             }
 
-            string trace = TraceWriter.TraceToText(rootTrace);
-
-            Console.WriteLine(trace);
+            Console.WriteLine(TraceWriter.TraceToText(rootTrace));
 
             Assert.AreEqual(childCount, rootTrace.Children.Count);
         }

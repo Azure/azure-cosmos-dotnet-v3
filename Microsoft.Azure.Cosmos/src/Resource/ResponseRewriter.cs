@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Resource
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Tracing;
 
-    internal class RewriteResponseUtils
+    internal class ResponseRewriter
     {
         public static Task RewriteStreamAsTextAsync(ResponseMessage responseMessage, QueryRequestOptions requestOptions, ITrace trace)
         {

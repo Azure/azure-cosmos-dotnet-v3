@@ -353,7 +353,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
 
             if (page.Content != null)
             {
-                await RewriteResponseUtils.RewriteStreamAsTextAsync(response, this.queryRequestOptions, trace);
+                await ResponseRewriter.RewriteStreamAsTextAsync(response, this.queryRequestOptions, trace);
             }
 
             return response;
