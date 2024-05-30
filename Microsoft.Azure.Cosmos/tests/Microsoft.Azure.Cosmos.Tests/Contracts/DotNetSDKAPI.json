@@ -7058,6 +7058,11 @@
           "Attributes": [],
           "MethodInfo": "System.String MexicoCentral;IsInitOnly:False;IsStatic:True;"
         },
+        "System.String NewZealandNorth": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String NewZealandNorth;IsInitOnly:False;IsStatic:True;"
+        },
         "System.String NorthCentralUS": {
           "Type": "Field",
           "Attributes": [],
