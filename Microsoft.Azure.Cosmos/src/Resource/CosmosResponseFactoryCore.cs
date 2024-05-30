@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using Microsoft.Azure.Cosmos.Resource;
     using Microsoft.Azure.Cosmos.Scripts;
 
     internal sealed class CosmosResponseFactoryCore : CosmosResponseFactoryInternal
@@ -280,6 +281,11 @@ namespace Microsoft.Azure.Cosmos
             {
                 responseMessage.Content.Dispose();
                 return default;
+            }
+
+            if (responseMessage.Content != null)
+            {
+                _ = ResponseRewriter.RewriteStreamAsTextAsync(responseMessage, new QueryRequestOptions(), responseMessage.Trace);
             }
 
             return this.serializerCore.FromStream<T>(responseMessage.Content);

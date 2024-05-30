@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -292,6 +293,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     else if (operationType == OperationType.Patch)
                     {
                         request.Headers.ContentType = RuntimeConstants.MediaTypes.JsonPatch;
+                    }
+                    else if (operationType == OperationType.Read) 
+                    {
+                        request.Headers.CosmosMessageHeaders.SupportedSerializationFormats = DocumentQueryExecutionContextBase.DefaultSupportedSerializationFormats;
+                        request.Headers.CosmosMessageHeaders.ContentSerializationFormat = ContentSerializationFormat.CosmosBinary.ToString();
                     }
 
                     if (ChangeFeedHelper.IsChangeFeedWithQueryRequest(operationType, streamPayload != null))
