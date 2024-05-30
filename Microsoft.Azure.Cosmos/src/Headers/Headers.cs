@@ -461,7 +461,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the feed range details.
         /// </summary>
-        public virtual (string Min, string Max, string CollectionRid) FeedRangeDetails
+        public virtual ChangeFeed.FeedRangeDetail FeedRangeDetails
         {
             get;
             internal set;

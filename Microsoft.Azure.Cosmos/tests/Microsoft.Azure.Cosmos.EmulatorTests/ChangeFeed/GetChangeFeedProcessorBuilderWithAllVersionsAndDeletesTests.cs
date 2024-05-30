@@ -10,11 +10,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Antlr4.Runtime.Sharpen;
+    using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
     using Newtonsoft.Json.Linq;
 
     [TestClass]
@@ -48,13 +47,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             ChangeFeedProcessor processor = monitoredContainer
                 .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: "processor", onChangesDelegate: async (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItem<dynamic>> docs, CancellationToken token) =>
                 {
-                    // Note(philipthomas): Get the current PartitionKeyRange using 'context.Headers.PartitionKeyRangeId'.
+                    // Note(philipthomas): Get the current feed range minInclusive, maxExclusive and resourceId using 'context.Headers.FeedRangeDetails'.
 
-                    (string Min, string Max, string CollectionRid) = context.Headers.FeedRangeDetails;
+                    FeedRangeDetail feedRangeDetail = context.Headers.FeedRangeDetails;
 
-                    Debug.WriteLine($"{nameof(Min)}-> {Min}");
-                    Debug.WriteLine($"{nameof(Max)}-> {Max}");
-                    Debug.WriteLine($"{nameof(CollectionRid)}-> {CollectionRid}");
+                    Debug.WriteLine($"{nameof(feedRangeDetail.MinInclusive)}-> {feedRangeDetail.MinInclusive}");
+                    Debug.WriteLine($"{nameof(feedRangeDetail.MaxExclusive)}-> {feedRangeDetail.MaxExclusive}");
+                    Debug.WriteLine($"{nameof(feedRangeDetail.CollectionRid)}-> {feedRangeDetail.CollectionRid}");
 
                     string id = default;
                     string pk = default;
@@ -84,10 +83,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                         Routing.PartitionKeyRangeCache partitionKeyRangeCache = await monitoredContainer.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
 
                         IReadOnlyList<Documents.PartitionKeyRange> overlappingRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
-                            collectionRid: CollectionRid,
+                            collectionRid:  feedRangeDetail.CollectionRid,
                             range: new Documents.Routing.Range<string>(
-                                min: Min,
-                                max: Max,
+                                min: feedRangeDetail.MinInclusive,
+                                max: feedRangeDetail.MaxExclusive,
                                 isMinInclusive: false,
                                 isMaxInclusive: false),
                             lsn: lsn,

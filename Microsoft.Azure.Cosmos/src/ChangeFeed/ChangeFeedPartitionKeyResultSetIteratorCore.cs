@@ -153,7 +153,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             if (this.feedRangeEpk != null)
             {
-                responseMessage.Headers.FeedRangeDetails = (this.feedRangeEpk.Range.Min, this.feedRangeEpk.Range.Max, responseMessage.RequestMessage.DocumentServiceRequest.ResourceId);
+                responseMessage.Headers.FeedRangeDetails = FeedRangeDetail.Create(
+                    minInclusive: this.feedRangeEpk.Range.Min,
+                    maxExclusive: this.feedRangeEpk.Range.Max,
+                    collectionRid: responseMessage.RequestMessage.DocumentServiceRequest.ResourceId);
             }
 
             return responseMessage;
