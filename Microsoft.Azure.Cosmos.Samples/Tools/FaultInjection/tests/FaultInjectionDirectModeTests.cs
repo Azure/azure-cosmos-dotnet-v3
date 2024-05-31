@@ -1206,7 +1206,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         [TestMethod]
         [Owner("nalutripician")]
         [Description("Tests apply percent")]
-        public async Task Timeout_FaultInjectionServerErrorRule_ThresholdTest()
+        public async Task Timeout_FaultInjectionServerErrorRule_InjectionRateTest()
         {
             string thresholdRuleId = "hitCountRule-" + Guid.NewGuid().ToString();
             FaultInjectionRule thresholdRule = new FaultInjectionRuleBuilder(
@@ -1217,7 +1217,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.Gone)
-                        .WithApplyPercentage(.5)
+                        .WithInjectionRate(.5)
                         .WithTimes(1)
                         .Build())
                 .WithDuration(TimeSpan.FromMinutes(5))
