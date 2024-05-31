@@ -19,9 +19,9 @@ namespace Microsoft.Azure.Cosmos.Linq
             FunctionsDefinitions = new Dictionary<string, BuiltinFunctionVisitor>
             {
                 [nameof(CosmosLinqExtensions.DocumentId)] = new SqlBuiltinFunctionVisitor(
-                    "DOCUMENTID",
-                    true,
-                    new List<Type[]>()
+                    sqlName: "DOCUMENTID",
+                    isStatic: true,
+                    argumentLists: new List<Type[]>()
                     {
                         new Type[]{typeof(object)},
                     })
