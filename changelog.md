@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### <a name="3.40.1"/> [3.40.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.40.1) - 2024-05-31
 
 #### Added
+- [4520](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4520) Region Availability: Adds New Zealand North region for Public Usage. (#4520)
 - [4488](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4488) Add test (#4488)
 
 #### Fixed
