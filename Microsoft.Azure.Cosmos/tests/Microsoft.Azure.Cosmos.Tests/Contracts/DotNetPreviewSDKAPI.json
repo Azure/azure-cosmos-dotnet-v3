@@ -89,7 +89,7 @@
           "Attributes": [
             "JsonPropertyAttribute"
           ],
-          "MethodInfo": "Boolean IsTimeToLiveExpired;CanRead:True;CanWrite:False;Boolean get_IsTimeToLiveExpired();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Boolean IsTimeToLiveExpired;CanRead:True;CanWrite:True;Boolean get_IsTimeToLiveExpired();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Int64 get_Lsn()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
