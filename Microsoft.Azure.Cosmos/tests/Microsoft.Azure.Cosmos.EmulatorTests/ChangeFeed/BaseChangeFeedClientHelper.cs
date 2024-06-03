@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
     public class BaseChangeFeedClientHelper : BaseCosmosClientHelper
     {
-        public static int ChangeFeedSetupTime = 5000;
+        public static int ChangeFeedSetupTime = 1000;
         public static int ChangeFeedCleanupTime = 5000;
 
         public Container LeaseContainer = null;
