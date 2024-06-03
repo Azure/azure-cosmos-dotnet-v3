@@ -132,7 +132,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
         /// <summary>
         /// I am writing this differently because I am finding that TTL on CFP always purge at random times. Sometimes it is almost instant, sometimes
-        /// it was north of 5 minutes. So I can't just give it a cap to check for 'x' number of seconds or minutes.
+        /// it was north of 5 minutes. So I can't just give it a cap to check for 'x' number of seconds or minutes. I am giving the test category as 
+        /// LongRunning so it will not be ran during the pipeline until I create a pipeline specifcally for LongRunning.
         /// </summary>
         /// <param name="stopwatch"></param>
         /// <param name="processor"></param>
