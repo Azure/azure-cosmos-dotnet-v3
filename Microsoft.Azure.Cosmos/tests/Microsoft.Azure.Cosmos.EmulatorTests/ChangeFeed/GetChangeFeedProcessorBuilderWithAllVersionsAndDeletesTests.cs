@@ -6,11 +6,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
     [TestClass]
@@ -27,6 +29,127 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         public async Task Cleanup()
         {
             await base.TestCleanup();
+        }
+
+        [TestMethod]
+        [TestCategory("LongRunning")]
+        [Owner("philipthomas-MSFT")]
+        [Description("Scenario: When a document is created with ttl set, there should be 1 create and 1 delete that will appear for that " +
+            "document when using ChangeFeedProcessor with AllVersionsAndDeletes set as the ChangeFeedMode.")]
+        public async Task WhenADocumentIsCreatedWithTtlSetThenTheDocumentIsDeletedTestsAsync()
+        {
+            ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes);
+            Exception exception = default;
+            int ttlInSeconds = 5;
+            Stopwatch stopwatch = new();
+
+            ChangeFeedProcessor processor = monitoredContainer
+                .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: "processor", onChangesDelegate: (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItem<dynamic>> docs, CancellationToken token) =>
+                {
+                    // NOTE(philipthomas-MSFT): Please allow these Debug lines because TTL on items will purge at random times so I am using this to test when ran locally using emulator.
+
+                    Debug.WriteLine($"@ {DateTime.Now}, {nameof(stopwatch)} -> CFP AVAD took '{stopwatch.ElapsedMilliseconds}' to read document CRUD in feed.");
+                    Debug.WriteLine($"@ {DateTime.Now}, {nameof(docs)} -> {JsonConvert.SerializeObject(docs)}");
+
+                    foreach (ChangeFeedItem<dynamic> change in docs)
+                    {
+                        if (change.Metadata.OperationType == ChangeFeedOperationType.Create)
+                        {
+                            // current
+                            Assert.AreEqual(expected: "1", actual: change.Current.id.ToString());
+                            Assert.AreEqual(expected: "1", actual: change.Current.pk.ToString());
+                            Assert.AreEqual(expected: "Testing TTL on CFP.", actual: change.Current.description.ToString());
+                            Assert.AreEqual(expected: ttlInSeconds, actual: change.Current.ttl.ToObject<int>());
+
+                            // metadata
+                            Assert.IsTrue(DateTime.TryParse(s: change.Metadata.ConflictResolutionTimestamp.ToString(), out _), message: "Invalid csrt must be a datetime value.");
+                            Assert.IsTrue(long.TryParse(change.Metadata.Lsn.ToString(), out _), message: "Invalid lsn must be a long value.");
+                            Assert.AreEqual(expected: false, actual: change.Metadata.IsTimeToLiveExpired);
+
+                            // previous
+                            Assert.IsNull(change.Previous);
+                        }
+                        else if (change.Metadata.OperationType == ChangeFeedOperationType.Delete)
+                        {
+                            // stop after reading delete since it is the last document in feed.
+                            stopwatch.Stop();
+
+                            // current
+                            Assert.IsNull(change.Current.id);
+
+                            // metadata
+                            Assert.IsTrue(DateTime.TryParse(s: change.Metadata.ConflictResolutionTimestamp.ToString(), out _), message: "Invalid csrt must be a datetime value.");
+                            Assert.IsTrue(long.TryParse(change.Metadata.Lsn.ToString(), out _), message: "Invalid lsn must be a long value.");
+                            Assert.AreEqual(expected: true, actual: change.Metadata.IsTimeToLiveExpired);
+
+                            // previous
+                            Assert.AreEqual(expected: "1", actual: change.Current.id.ToString());
+                            Assert.AreEqual(expected: "1", actual: change.Current.pk.ToString());
+                            Assert.AreEqual(expected: "Testing TTL on CFP.", actual: change.Current.description.ToString());
+                            Assert.AreEqual(expected: ttlInSeconds, actual: change.Current.ttl.ToObject<int>());
+                        }
+                        else
+                        {
+                            Assert.Fail("Invalid operation.");
+                        }
+                    }
+
+                    return Task.CompletedTask;
+                })
+                .WithInstanceName(Guid.NewGuid().ToString())
+                .WithLeaseContainer(this.LeaseContainer)
+                .WithErrorNotification((leaseToken, error) =>
+                {
+                    exception = error.InnerException;
+
+                    return Task.CompletedTask;
+                })
+                .Build();
+
+            stopwatch.Start();
+
+            // NOTE(philipthomas-MSFT): Please allow these Debug lines because TTL on items will purge at random times so I am using this to test when ran locally using emulator.
+
+            Debug.WriteLine($"@ {DateTime.Now}, CFProcessor starting...");
+
+            await processor.StartAsync();
+            await Task.Delay(GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests.ChangeFeedSetupTime);
+            await monitoredContainer.CreateItemAsync<dynamic>(new { id = "1", pk = "1", description = "Testing TTL on CFP.", ttl = ttlInSeconds }, partitionKey: new PartitionKey("1"));
+
+            // NOTE(philipthomas-MSFT): Please allow these Debug lines because TTL on items will purge at random times so I am using this to test when ran locally using emulator.
+
+            Debug.WriteLine($"@ {DateTime.Now}, Document created.");
+
+            await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests.CheckIfAllDocumentsAreProcessed(
+                stopwatch: stopwatch,
+                processor: processor);
+
+            if (exception != default)
+            {
+                Assert.Fail(exception.ToString());
+            }
+        }
+
+        /// <summary>
+        /// I am writing this differently because I am finding that TTL on CFP always purge at random times. Sometimes it is almost instant, sometimes
+        /// it was north of 5 minutes. So I can't just give it a cap to check for 'x' number of seconds or minutes.
+        /// </summary>
+        /// <param name="stopwatch"></param>
+        /// <param name="processor"></param>
+        /// <returns></returns>
+        private static async Task CheckIfAllDocumentsAreProcessed(
+            Stopwatch stopwatch, 
+            ChangeFeedProcessor processor)
+        {
+            do
+            {
+                if (!stopwatch.IsRunning)
+                {
+                    await processor.StopAsync();
+
+                    break;
+                }
+            } while (stopwatch.IsRunning);
         }
 
         [TestMethod]
@@ -467,6 +590,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             if (changeFeedMode == ChangeFeedMode.AllVersionsAndDeletes)
             {
                 properties.ChangeFeedPolicy.FullFidelityRetention = TimeSpan.FromMinutes(5);
+                properties.DefaultTimeToLive = -1;
             }
 
             ContainerResponse response = await this.database.CreateContainerAsync(properties,
