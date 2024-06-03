@@ -389,7 +389,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             INameValueCollection headers = new RequestNameValueCollection();
 
             headers.Add(HttpConstants.HttpHeaders.SupportedSerializationFormats, supportedSerializationFormats);
-            DocumentServiceResponse response;                   
+            DocumentServiceResponse response;
             if(sqlQuerySpec!=null)
             {
                 response = this.QueryRequest(client, collection.ResourceId, sqlQuerySpec, headers);
@@ -440,34 +440,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 expectedFormat: SupportedSerializationFormats.JsonText,
                 supportedSerializationFormats: "jsontext",
                 sqlQuerySpec: sqlQuerySpec);
-            /*
             this.SupportedSerializationFormatsPositiveCases(client, collection,
                 expectedFormat: SupportedSerializationFormats.CosmosBinary,
                 supportedSerializationFormats: "COSMOSBINARY",
                 sqlQuerySpec: sqlQuerySpec);
-            */
             this.SupportedSerializationFormatsPositiveCases(client, collection,
-                expectedFormat: SupportedSerializationFormats.JsonText,
+                expectedFormat: SupportedSerializationFormats.CosmosBinary,
                 supportedSerializationFormats: "JsonText, CosmosBinary",
                 sqlQuerySpec: sqlQuerySpec);
-            /*
             this.SupportedSerializationFormatsPositiveCases(client, collection,
                 expectedFormat: SupportedSerializationFormats.CosmosBinary,
                 supportedSerializationFormats: "CosmosBinary, HybridRow",
                 sqlQuerySpec: sqlQuerySpec);
-            */
-            this.SupportedSerializationFormatsPositiveCases(client, collection,
-                expectedFormat: SupportedSerializationFormats.JsonText,
-                supportedSerializationFormats: "JsonText, CosmosBinary, HybridRow",
-                sqlQuerySpec: sqlQuerySpec);
-            /*
             this.SupportedSerializationFormatsPositiveCases(client, collection,
                 expectedFormat: SupportedSerializationFormats.CosmosBinary,
                 supportedSerializationFormats: "JsonText, CosmosBinary, HybridRow",
                 sqlQuerySpec: sqlQuerySpec);
-            */
             this.SupportedSerializationFormatsPositiveCases(client, collection,
-                expectedFormat: SupportedSerializationFormats.JsonText,
+                expectedFormat: SupportedSerializationFormats.CosmosBinary,
+                supportedSerializationFormats: "JsonText, CosmosBinary, HybridRow",
+                sqlQuerySpec: sqlQuerySpec);
+            this.SupportedSerializationFormatsPositiveCases(client, collection,
+                expectedFormat: SupportedSerializationFormats.CosmosBinary,
                 supportedSerializationFormats: "JsonText, CosmosBinary, HybridRow",
                 sqlQuerySpec: sqlQuerySpec);
         }
