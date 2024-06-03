@@ -13,6 +13,33 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.41.0-preview.0"/> [3.41.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.41.0-preview.0) - 2024-05-17
+
+#### Added
+- [4486](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4486) ContainerProperties: Enables Vector Embedding and Indexing Policy for Preview (#4486)
+
+### <a name="3.40.0"/> [3.40.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.40.0) - 2024-05-17
+
+#### Fixed
+- [4397](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4397) Query: Fixes ResponseMessage not parsing the IndexMetrics as text in latest sdk (#4397)
+- [4426](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4426) ChangeFeedProcessor: Fixes a bug properly when dealing with Legacy lease incremental documents that do not have a Mode property (#4426)
+- [4459](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4459) Query: Fixes non streaming order by to use flag from query plan (#4459)
+- [4253](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4253) Query: Fixes LINQ Serialization CamelCase Naming Policy (#4253)
+- [4493](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4493) Query: Fixes non streaming OrderByCrossPartitionQueryPipelineStage to remove state and handle splits (#4493)
+
+#### Added
+- [4446](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4446) Query: Adds a new capability for non streaming order by in QueryFeatures (#4446)
+- [4433](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4433) Distributed Tracing: Adds Request charge and Payload size Threshold options (#4433)
+- [4462](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4462) Diagnostics: Adds DurationInMs to StoreResult (#4462)
+- [4492](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4492) Query: Adds an environment config to suppress sending NonStreamingOrderBy in the list of query features sent to the gateway (#4492)
+
+### <a name="3.40.0-preview.2"/> [3.40.0-preview.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.40.0-preview.2) - 2024-05-16
+### <a name="3.39.2"/> [3.39.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.39.2) - 2024-05-16
+
+#### Fixed
+- [4413](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4413) Query: Fixes Persisted continuationToken issue (partition splits) by turning off Optimistic Direct Execution by default
+- [4419](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4419)Query: Fixes bug in OrderByCrossPartitionQueryPipelineStage to ensure that errors in inner pipeline creation are bubbled up
+
 ### <a name="3.40.0-preview.1"/> [3.40.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.40.0-preview.1) - 2024-04-17
 ### <a name="3.39.1"/> [3.39.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.39.1) - 2024-04-17
 
@@ -75,6 +102,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   > - Upgrade to the new SDK and disable ODE, both together as part of a single deployment. Wait for all nodes to upgrade.
   >    - In order to disable ODE, set EnableOptimisticDirectExecution to false in the QueryRequestOptions.
   > - Enable ODE as part of second deployment for all nodes.
+
+  > Note: This version has a known issue [4413](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4413) which was later addressed in [3.39.2](#3.39.2)
 
 #### Fixed
 - [4205](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4205) ClientRetryPolicy: Fixes Metadata Requests Retry Policy (#4205)

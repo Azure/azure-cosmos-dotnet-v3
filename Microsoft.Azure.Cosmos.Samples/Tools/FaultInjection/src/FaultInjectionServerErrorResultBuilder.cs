@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private TimeSpan delay;
         private bool suppressServiceRequest;
         private bool isDelaySet = false;
-        private double applyPercentage = 1;
+        private double injectionRate = 1;
 
         /// <summary>
         /// Creates a <see cref="FaultInjectionServerErrorResult"/>.
@@ -68,14 +68,14 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             return this;
         }
 
-        public FaultInjectionServerErrorResultBuilder WithApplyPercentage(double applyPercentage)
+        public FaultInjectionServerErrorResultBuilder WithInjectionRate(double injectionRate)
         {
-            if (applyPercentage <= 0 || applyPercentage > 1)
+            if (injectionRate <= 0 || injectionRate > 1)
             {
-                throw new ArgumentOutOfRangeException($"Argument '{nameof(applyPercentage)}' must be within the range (0, 1].");
+                throw new ArgumentOutOfRangeException($"Argument '{nameof(injectionRate)}' must be within the range (0, 1].");
             }
 
-            this.applyPercentage = applyPercentage;
+            this.injectionRate = injectionRate;
             return this;
         }
 
@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 this.times,
                 this.delay,
                 this.suppressServiceRequest,
-                this.applyPercentage);
+                this.injectionRate);
         }
     }
 }

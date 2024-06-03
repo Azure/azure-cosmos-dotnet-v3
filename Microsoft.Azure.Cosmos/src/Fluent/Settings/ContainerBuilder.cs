@@ -122,7 +122,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <param name="embeddings">List of vector embeddings to include in the policy definition.</param>
         /// <returns>An instance of <see cref="VectorEmbeddingPolicyDefinition"/>.</returns>
-        internal VectorEmbeddingPolicyDefinition WithVectorEmbeddingPolicy(
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        VectorEmbeddingPolicyDefinition WithVectorEmbeddingPolicy(
             Collection<Embedding> embeddings)
         {
             return new VectorEmbeddingPolicyDefinition(
