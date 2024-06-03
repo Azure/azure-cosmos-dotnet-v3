@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Linq;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -537,22 +538,129 @@
                 }
             }
 
-            // Test that continuation token is blocked
+            List<(string, List<CosmosElement>)> queryAndExpectedResultsListArrayAggregates = new List<(string, List<CosmosElement>)>()
             {
-                try
+                (
+                    "SELECT c.name AS NameGroup, MAKELIST(c.age) AS list_age FROM c GROUP BY c.name",
+                    documents
+                        .GroupBy(document => document["name"])
+                        .Select(grouping => CosmosObject.Create(
+                            new Dictionary<string, CosmosElement>()
+                            {
+                                { "NameGroup", grouping.Key },
+                                { "list_age", CosmosArray.Create(
+                                    grouping.Select(document => document["age"])
+                                )}
+                            }))
+                        .ToList<CosmosElement>()
+                ),
+                (
+                    "SELECT c.name AS NameGroup, MAKESET(c.age) AS list_age FROM c GROUP BY c.name",
+                    documents
+                        .GroupBy(document => document["name"])
+                        .Select(grouping => CosmosObject.Create(
+                            new Dictionary<string, CosmosElement>()
+                            {
+                                { "NameGroup", grouping.Key },
+                                { "list_age", CosmosArray.Create(
+                                    grouping.Select(document => document["age"]).Distinct()
+                                )}
+                            }))
+                        .ToList<CosmosElement>()
+                )
+            };
+
+            foreach ((string query, List<CosmosElement> expectedResults) in queryAndExpectedResultsListArrayAggregates)
+            {
+                foreach (int maxItemCount in new int[] { 1, 5, 10 })
                 {
-                    List<JToken> actual = await QueryTestsBase.QueryWithContinuationTokensAsync<JToken>(
+                    List<CosmosElement> actualWithoutContinuationTokens = await QueryTestsBase.QueryWithoutContinuationTokensAsync<CosmosElement>(
                         container,
-                        "SELECT c.age FROM c GROUP BY c.age",
+                        query,
                         new QueryRequestOptions()
                         {
                             MaxConcurrency = 2,
-                            MaxItemCount = 1
+                            MaxItemCount = maxItemCount,
+                            MaxBufferedItemCount = 100,
                         });
-                    Assert.Fail("Expected an error when trying to drain a GROUP BY query with continuation tokens.");
+
+                    this.NormalizeGroupByArrayAggregateResults(actualWithoutContinuationTokens);
+                    HashSet<CosmosElement> actualWithoutContinuationTokensSet = new HashSet<CosmosElement>(actualWithoutContinuationTokens);
+
+                    List<CosmosElement> actualWithTryGetContinuationTokens = await QueryTestsBase.QueryWithCosmosElementContinuationTokenAsync<CosmosElement>(
+                        container,
+                        query,
+                        new QueryRequestOptions()
+                        {
+                            MaxConcurrency = 2,
+                            MaxItemCount = maxItemCount,
+                            MaxBufferedItemCount = 100,
+                        });
+
+                    this.NormalizeGroupByArrayAggregateResults(actualWithTryGetContinuationTokens);
+                    HashSet<CosmosElement> actualWithTryGetContinuationTokensSet = new HashSet<CosmosElement>(actualWithTryGetContinuationTokens);
+
+                    Assert.IsTrue(
+                       actualWithoutContinuationTokensSet.SetEquals(actualWithTryGetContinuationTokensSet),
+                       $"Results did not match for query: {query} with maxItemCount: {maxItemCount}" +
+                       $"ActualWithoutContinuationTokens: {JsonConvert.SerializeObject(actualWithoutContinuationTokensSet)}" +
+                       $"ActualWithTryGetContinuationTokens: {JsonConvert.SerializeObject(actualWithTryGetContinuationTokensSet)}");
+
+                    this.NormalizeGroupByArrayAggregateResults(expectedResults);
+                    HashSet<CosmosElement> expectedSet = new HashSet<CosmosElement>(expectedResults);
+
+                    Assert.IsTrue(
+                       actualWithoutContinuationTokensSet.SetEquals(expectedSet),
+                       $"Results did not match for query: {query} with maxItemCount: {maxItemCount}" +
+                       $"Actual {JsonConvert.SerializeObject(actualWithoutContinuationTokensSet)}" +
+                       $"Expected: {JsonConvert.SerializeObject(expectedSet)}");
                 }
-                catch (Exception)
+            }
+        
+            // Test that continuation token is blocked
+
+            try
+            {
+                List<JToken> actual = await QueryTestsBase.QueryWithContinuationTokensAsync<JToken>(
+                    container,
+                    "SELECT c.age FROM c GROUP BY c.age",
+                    new QueryRequestOptions()
+                    {
+                        MaxConcurrency = 2,
+                        MaxItemCount = 1
+                    });
+                Assert.Fail("Expected an error when trying to drain a GROUP BY query with continuation tokens.");
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        private void NormalizeGroupByArrayAggregateResults(
+            List<CosmosElement> results)
+        {
+            for (int i = 0; i < results.Count; i++)
+            {
+                if (results[i] is CosmosObject cosmosObject)
                 {
+                    IDictionary<string, CosmosElement> myDict = new Dictionary<string, CosmosElement>();
+
+                    foreach (KeyValuePair<string, CosmosElement> kvp in cosmosObject)
+                    {
+                        if (kvp.Value is CosmosArray cosmosArray)
+                        {
+                            CosmosElement[] normalizedArray = cosmosArray.ToArray();
+                            Array.Sort(normalizedArray);
+                            myDict.Add(kvp.Key, CosmosArray.Create(normalizedArray));
+                        }
+                        else
+                        {
+                            myDict.Add(kvp.Key, kvp.Value);
+                        }
+                    }
+
+                    IReadOnlyDictionary<string, CosmosElement> newDict = new ReadOnlyDictionary<string, CosmosElement>(myDict);
+                    results[i] = CosmosObject.Create(newDict);
                 }
             }
         }
