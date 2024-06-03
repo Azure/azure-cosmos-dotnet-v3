@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Globalization;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -44,11 +45,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
             CosmosElement[] cosmosElementArray = new CosmosElement[this.globalList.Count];
             this.globalList.CopyTo(cosmosElementArray);
             return CosmosArray.Create(cosmosElementArray);
-        }
-
-        public string GetContinuationToken()
-        {
-            return this.globalList.ToString();
         }
 
         public static TryCatch<IAggregator> TryCreate(CosmosElement continuationToken)
