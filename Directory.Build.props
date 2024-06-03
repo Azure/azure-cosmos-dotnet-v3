@@ -15,4 +15,3 @@
 	</PropertyGroup>
 	<Import Project="$(AboveDirBuildProps)" Condition=" '$(AboveDirBuildProps)' != '' " />
 </Project>
-
