@@ -15,13 +15,106 @@
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
-    using static System.Net.Mime.MediaTypeNames;
 
     [TestClass]
     [TestCategory("Query")]
     public sealed class AggregateCrossPartitionQueryTests : QueryTestsBase
     {
+
+        [TestMethod]
+        public async Task TestArrayAggregatesContinuationToken()
+        {
+
+            int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            uint numberOfDocuments = 17000;
+
+            Random rand = new Random(seed);
+            List<Person> people = new List<Person>();
+
+            for (int i = 0; i < numberOfDocuments; i++)
+            {
+                // Generate random people
+                Person person = PersonGenerator.GetRandomPerson(rand);
+                for (int j = 0; j < rand.Next(0, 4); j++)
+                {
+                    // Force an exact duplicate
+                    people.Add(person);
+                }
+            }
+
+            List<string> documents = new List<string>();
+            // Shuffle them so they end up in different pages
+            people = people.OrderBy((person) => Guid.NewGuid()).ToList();
+            foreach (Person person in people)
+            {
+                documents.Add(JsonConvert.SerializeObject(person));
+            }
+
+            await this.CreateIngestQueryDeleteAsync(
+                ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.MultiPartition,
+                documents,
+                ImplementationAsync,
+                "/id");
+
+            async static Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
+            {
+                foreach (string[] queriesToCompare in new string[][]
+                {
+                //new string[]{ "SELECT VALUE c.age FROM c ORDER BY c.age", "SELECT VALUE MakeList(c.age) FROM c GROUP BY c.name" },
+                new string[]{ "SELECT VALUE c.age FROM c ORDER BY c.age", "SELECT VALUE MakeList(c.age) FROM c" },
+                new string[]{ "SELECT DISTINCT VALUE c.age FROM c ORDER BY c.age", "SELECT VALUE MakeSet(c.age) FROM c" },
+                })
+                {
+                    string queryWithoutAggregate = queriesToCompare[0];
+                    List<CosmosElement> expectedDocuments = await QueryTestsBase.RunQueryCombinationsAsync(
+                        container,
+                        queryWithoutAggregate,
+                        new QueryRequestOptions()
+                        {
+                            MaxConcurrency = 10,
+                            MaxItemCount = 100,
+                        },
+                        QueryDrainingMode.ContinuationToken | QueryDrainingMode.HoldState);
+
+                    CosmosElement[] normalizedExpectedResult = expectedDocuments.ToArray();
+                    Array.Sort(normalizedExpectedResult);
+
+                    CosmosArray normalizedExpectedCosmosArray = CosmosArray.Create(expectedDocuments);
+
+                    foreach (int pageSize in new int[] { 1, 10, 100 })
+                    {
+                        string queryWithAggregate = queriesToCompare[1];
+                        List<CosmosElement> actualDocuments = await QueryTestsBase.RunQueryCombinationsAsync(
+                            container,
+                            queryWithAggregate,
+                            new QueryRequestOptions()
+                            {
+                                MaxConcurrency = 10,
+                                MaxItemCount = pageSize
+                            },
+                           QueryDrainingMode.ContinuationToken | QueryDrainingMode.HoldState | QueryDrainingMode.CosmosElementContinuationToken);
+
+                        CosmosElement aggregateResult = actualDocuments.First();
+                        CosmosArray normalizedActualCosmosArray = null;
+                        if(aggregateResult is CosmosArray actualCosmosArray)
+                        {
+                            CosmosElement[] normalizedActualArray = actualCosmosArray.ToArray();
+                            Array.Sort(normalizedActualArray);
+                            normalizedActualCosmosArray = CosmosArray.Create(normalizedActualArray);
+                        }
+
+                        Assert.AreEqual(
+                            expected: normalizedExpectedCosmosArray,
+                            actual: normalizedActualCosmosArray,
+                            message: $"Documents didn't match for {queryWithAggregate} on a Partitioned container");
+                    }
+                }
+            }
+        }
+
         [TestMethod]
         public async Task TestAggregateFunctionsAsync()
         {
