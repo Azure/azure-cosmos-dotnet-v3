@@ -229,6 +229,9 @@
     <Content Include="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestDateTimeJsonConverterTimezones.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+	<Content Include="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestDocumentIdBuiltinFunction.xml">
+		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	</Content>
     <Content Include="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestMemberAccessWithNullableTypes.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
