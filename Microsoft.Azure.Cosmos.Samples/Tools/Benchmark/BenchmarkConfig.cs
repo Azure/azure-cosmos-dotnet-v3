@@ -141,6 +141,9 @@ namespace CosmosBenchmark
         [Option(Required = false, HelpText = "Enable Client Telemetry Feature in SDK. Make sure you enable it from the portal also.")]
         public bool EnableTelemetry { get; set; } = false;
 
+        [Option(Required = false, HelpText = "List of comma separated preferred regions.")]
+        public string ApplicationPreferredRegions { get; set; } = null;
+
         internal int GetTaskCount(int containerThroughput)
         {
             int taskCount = this.DegreeOfParallelism;
@@ -224,8 +227,14 @@ namespace CosmosBenchmark
                 {
                     DisableSendingMetricsToService = !this.EnableTelemetry,
                     DisableDistributedTracing = !this.EnableDistributedTracing
-                }
+                },
             };
+
+            if (!string.IsNullOrEmpty(this.ApplicationPreferredRegions))
+            {
+                clientOptions.ApplicationPreferredRegions = this.ApplicationPreferredRegions.Split(',')
+                    .Select(region => region.Trim()).ToArray();
+            }
 
             if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))
             {
