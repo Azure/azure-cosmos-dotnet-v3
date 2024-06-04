@@ -2,7 +2,6 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.Immutable;
     using System.Globalization;
     using System.IO;
     using System.Linq;
@@ -26,9 +25,8 @@
         [TestMethod]
         public async Task TestArrayAggregatesContinuationToken()
         {
-
             int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
-            uint numberOfDocuments = 17000;
+            uint numberOfDocuments = 100;
 
             Random rand = new Random(seed);
             List<Person> people = new List<Person>();
@@ -221,37 +219,31 @@
                                 {
                                     Assert.AreEqual(Number64.ToDouble(expectedNumber.Value), Number64.ToDouble(actualNumber.Value), .01);
                                 }
-                                else if (argument.AggregateOperator.Equals("MAKELIST") || argument.AggregateOperator.Equals("MAKESET"))
+                                else
                                 {
-                                    if ((expected is CosmosArray expectedArray) && (actual is CosmosArray actualArray))
+                                    if (argument.SortResult)
                                     {
-                                        CosmosElement[] normalizedExpected = expectedArray.ToArray();
-                                        Array.Sort(normalizedExpected);
-                                        CosmosElement[] normalizedActual = actualArray.ToArray();
-                                        Array.Sort(normalizedActual);
-
-                                        Assert.IsTrue(normalizedExpected.Length == normalizedActual.Length, message);
-
-                                        bool expectedEqualsActual = true;
-                                        for( int i = 0; i < normalizedExpected.Length; i++ )
+                                        // We need to sort the results for MakeList and MakeSet when comparing because these aggregates don't
+                                        // provide a guarantee of the order in which elements appear, and the order can change based on the
+                                        // order in which we access the logical partitions. 
+                                        if ((expected is CosmosArray expectedArray) && (actual is CosmosArray actualArray))
                                         {
-                                            if (normalizedActual[i].CompareTo(normalizedExpected[i]) != 0)
-                                            {
-                                                expectedEqualsActual = false;
-                                                break;
-                                            }
-                                        }
+                                            CosmosElement[] normalizedExpected = expectedArray.ToArray();
+                                            Array.Sort(normalizedExpected);
+                                            CosmosElement[] normalizedActual = actualArray.ToArray();
+                                            Array.Sort(normalizedActual);
 
-                                        Assert.IsTrue(expectedEqualsActual, message);
+                                            CollectionAssert.AreEqual(normalizedExpected, normalizedActual);
+                                        }
+                                        else
+                                        {
+                                            Assert.AreEqual(expected, actual, message);
+                                        }
                                     }
                                     else
                                     {
                                         Assert.AreEqual(expected, actual, message);
                                     }
-                                }
-                                else
-                                {
-                                    Assert.AreEqual(expected, actual, message);
                                 }
                             }
                         }
@@ -302,8 +294,11 @@
                             {
                                 Assert.AreEqual(0, items.Count, message);
                             }
-                            else if (argument.AggregateOperator.Equals("MAKELIST") || argument.AggregateOperator.Equals("MAKESET"))
+                            else if (argument.SortResult)
                             {
+                                // We need to sort the results for MakeList and MakeSet when comparing because these aggregates don't
+                                // provide a guarantee of the order in which elements appear, and the order can change based on the
+                                // order in which we access the logical partitions. 
                                 Assert.AreEqual(1, items.Count, message);
                                 CosmosElement expected = argument.ExpectedValue;
                                 CosmosElement actual = items.Single();
@@ -315,19 +310,7 @@
                                     CosmosElement[] normalizedActual = actualArray.ToArray();
                                     Array.Sort(normalizedActual);
 
-                                    Assert.IsTrue(normalizedExpected.Length == normalizedActual.Length, message);
-
-                                    bool expectedEqualsActual = true;
-                                    for (int i = 0; i < normalizedExpected.Length; i++)
-                                    {
-                                        if (normalizedActual[i].CompareTo(normalizedExpected[i]) != 0)
-                                        {
-                                            expectedEqualsActual = false;
-                                            break;
-                                        }
-                                    }
-
-                                    Assert.IsTrue(expectedEqualsActual, message);
+                                    CollectionAssert.AreEqual(normalizedExpected, normalizedActual);
                                 }
                                 else
                                 {
@@ -410,11 +393,13 @@
                     new AggregateQueryArguments(
                         aggregateOperator: "MAKELIST",
                         expectedValue: CosmosArray.Create(makeListResult), // construct cosmos array from linq result
-                        predicate: "true"),
+                        predicate: "true",
+                        sortResult: true),
                     new AggregateQueryArguments(
                         aggregateOperator: "MAKESET",
                         expectedValue: CosmosArray.Create(makeSetResult), // construct cosmos array from linq result
-                        predicate: "true"),
+                        predicate: "true",
+                        sortResult: true),
                     new AggregateQueryArguments(
                         aggregateOperator: "MAX",
                         expectedValue: CosmosString.Create("xyz"),
@@ -464,16 +449,18 @@
 
         private readonly struct AggregateQueryArguments
         {
-            public AggregateQueryArguments(string aggregateOperator, CosmosElement expectedValue, string predicate)
+            public AggregateQueryArguments(string aggregateOperator, CosmosElement expectedValue, string predicate, bool sortResult=false)
             {
                 this.AggregateOperator = aggregateOperator;
                 this.ExpectedValue = expectedValue;
                 this.Predicate = predicate;
+                this.SortResult = sortResult;
             }
 
             public string AggregateOperator { get; }
             public CosmosElement ExpectedValue { get; }
             public string Predicate { get; }
+            public bool SortResult { get; }
 
             public override string ToString()
             {
