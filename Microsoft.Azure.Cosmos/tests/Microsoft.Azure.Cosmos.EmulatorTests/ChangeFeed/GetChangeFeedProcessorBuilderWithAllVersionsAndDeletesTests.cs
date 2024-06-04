@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
+    using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -46,10 +47,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             ChangeFeedProcessor processor = monitoredContainer
                 .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: "processor", onChangesDelegate: (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItem<dynamic>> docs, CancellationToken token) =>
                 {
-                    // NOTE(philipthomas-MSFT): Please allow these Debug lines because TTL on items will purge at random times so I am using this to test when ran locally using emulator.
+                    // NOTE(philipthomas-MSFT): Please allow these Logger.LogLine because TTL on items will purge at random times so I am using this to test when ran locally using emulator.
 
-                    Debug.WriteLine($"@ {DateTime.Now}, {nameof(stopwatch)} -> CFP AVAD took '{stopwatch.ElapsedMilliseconds}' to read document CRUD in feed.");
-                    Debug.WriteLine($"@ {DateTime.Now}, {nameof(docs)} -> {JsonConvert.SerializeObject(docs)}");
+                    Logger.LogLine($"@ {DateTime.Now}, {nameof(stopwatch)} -> CFP AVAD took '{stopwatch.ElapsedMilliseconds}' to read document CRUD in feed.");
+                    Logger.LogLine($"@ {DateTime.Now}, {nameof(docs)} -> {JsonConvert.SerializeObject(docs)}");
 
                     foreach (ChangeFeedItem<dynamic> change in docs)
                     {
@@ -79,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
                             // metadata
                             Assert.IsTrue(DateTime.TryParse(s: change.Metadata.ConflictResolutionTimestamp.ToString(), out _), message: "Invalid csrt must be a datetime value.");
-                            Assert.IsTrue(change.Metadata.Lsn. > 0, message: "Invalid lsn must be a long value.");
+                            Assert.IsTrue(change.Metadata.Lsn > 0, message: "Invalid lsn must be a long value.");
                             Assert.IsTrue(change.Metadata.IsTimeToLiveExpired);
 
                             // previous
@@ -108,17 +109,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
             stopwatch.Start();
 
-            // NOTE(philipthomas-MSFT): Please allow these Debug lines because TTL on items will purge at random times so I am using this to test when ran locally using emulator.
+            // NOTE(philipthomas-MSFT): Please allow these Logger.LogLine because TTL on items will purge at random times so I am using this to test when ran locally using emulator.
 
-            Debug.WriteLine($"@ {DateTime.Now}, CFProcessor starting...");
+            Logger.LogLine($"@ {DateTime.Now}, CFProcessor starting...");
 
             await processor.StartAsync();
             await Task.Delay(GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests.ChangeFeedSetupTime);
             await monitoredContainer.CreateItemAsync<dynamic>(new { id = "1", pk = "1", description = "Testing TTL on CFP.", ttl = ttlInSeconds }, partitionKey: new PartitionKey("1"));
 
-            // NOTE(philipthomas-MSFT): Please allow these Debug lines because TTL on items will purge at random times so I am using this to test when ran locally using emulator.
+            // NOTE(philipthomas-MSFT): Please allow these Logger.LogLine because TTL on items will purge at random times so I am using this to test when ran locally using emulator.
 
-            Debug.WriteLine($"@ {DateTime.Now}, Document created.");
+            Logger.LogLine($"@ {DateTime.Now}, Document created.");
 
             await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests.CheckIfAllDocumentsAreProcessed(
                 stopwatch: stopwatch,
