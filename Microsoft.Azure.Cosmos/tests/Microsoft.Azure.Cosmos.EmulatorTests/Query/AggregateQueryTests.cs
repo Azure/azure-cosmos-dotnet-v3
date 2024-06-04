@@ -392,12 +392,12 @@
                         predicate: "true"),
                     new AggregateQueryArguments(
                         aggregateOperator: "MAKELIST",
-                        expectedValue: CosmosArray.Create(makeListResult), // construct cosmos array from linq result
+                        expectedValue: CosmosArray.Create(makeListResult),
                         predicate: "true",
                         sortResult: true),
                     new AggregateQueryArguments(
                         aggregateOperator: "MAKESET",
-                        expectedValue: CosmosArray.Create(makeSetResult), // construct cosmos array from linq result
+                        expectedValue: CosmosArray.Create(makeSetResult),
                         predicate: "true",
                         sortResult: true),
                     new AggregateQueryArguments(
