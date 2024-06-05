@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
@@ -35,12 +36,17 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </summary>
         Default = Basic | DocumentNotTags,
     }
-
+    
     /// <summary>
     /// Tag matching for LINQ
     /// </summary>
     public static class CosmosTags
     {
+        /// <summary>
+        /// The default UdfNane "TagsMatch"
+        /// </summary>
+        public const string UdfNameDefault = "TagsMatch";
+    
         /// <summary>
         /// Tag matching for LINQ
         /// </summary>
@@ -58,7 +64,25 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="queryOptions">Tag query options for performance </param>
         /// <param name="udfName">The name of the tag matching UDF when TagsQueryOptions.DocumentRequiredTags is specified</param>
         /// <returns>throws Exception</returns>
-        public static bool Match(object dataTags, object queryTags, TagsQueryOptions queryOptions, string udfName = "TagsMatch") => throw new Exception("CosmosTags.Match is only for linq expressions");
+        public static bool Match(object dataTags, object queryTags, TagsQueryOptions queryOptions, string udfName = UdfNameDefault) => throw new Exception("CosmosTags.Match is only for linq expressions");
+
+        /// <summary>
+        /// Matches any of the Filters using OR.
+        /// Each FilterList is evaluated using AND
+        /// </summary>
+        /// <param name="filters">List of MatchObjectList</param>
+        /// <returns>True if any Filter matches</returns>
+        /// <exception cref="Exception">Used in LINQ</exception>
+        public static bool MatchAny(IEnumerable<MatchObjectList> filters) => throw new Exception("CosmosTags.MatchAny is only for linq expressions");
+
+        /// <summary>
+        /// Matches any of the Filters using OR.
+        /// Each FilterList is evaluated using AND
+        /// </summary>
+        /// <param name="filters">List of MatchObjectList</param>
+        /// <returns>True if any Filter matches</returns>
+        /// <exception cref="Exception">Used in LINQ</exception>
+        public static bool MatchAny(params MatchObjectList[] filters) => throw new Exception("CosmosTags.MatchAny is only for linq expressions");
 
         /// <summary>
         /// Creates and SQL WHERE condition string from a tag match expression.
@@ -68,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="queryOptions"></param>
         /// <param name="udfName">The name of the tag matching UDF when TagsQueryOptions.DocumentRequiredTags is specified</param>
         /// <returns>The tag expression as an SQL condition</returns>
-        public static string Condition(string tagsProp, IEnumerable<string> tags, TagsQueryOptions queryOptions, string udfName = "TagsMatch")
+        public static string Condition(string tagsProp, IEnumerable<string> tags, TagsQueryOptions queryOptions, string udfName = UdfNameDefault)
         {
             const char nullOperator = '\0';
             const char requiredOperator = '*';
@@ -246,5 +270,113 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             return sb.ToString();
         }
+    }
+    
+    /// <summary>
+    /// List of MatchObjects
+    /// </summary>
+    public class MatchObjectList : IEnumerable<MatchObject>
+    {
+        private readonly IEnumerable<MatchObject> matchObjects;
+
+        /// <summary>
+        /// Creates a new MatchObjectList
+        /// </summary>
+        public MatchObjectList() => matchObjects = Enumerable.Empty<MatchObject>();
+
+        /// <summary>
+        /// Creates a new MatchObjectList from an existing list
+        /// </summary>
+        /// <param name="matchObjects"></param>
+        public MatchObjectList(IEnumerable<MatchObject> matchObjects) => this.matchObjects = matchObjects;
+
+        /// <summary>
+        /// Get the Enumerator
+        /// </summary>
+        /// <returns>The Enumerator</returns>
+        public IEnumerator<MatchObject> GetEnumerator() => matchObjects.GetEnumerator();
+
+        /// <summary>
+        /// Get the Enumerator
+        /// </summary>
+        /// <returns>The Enumerator</returns>
+        IEnumerator IEnumerable.GetEnumerator() => matchObjects.GetEnumerator();
+    }
+    
+    /// <summary>
+    /// Used for TagMatchAny
+    /// </summary>
+    public class MatchObject
+    {
+        /// <summary>
+        /// Creates a new MatchObject
+        /// </summary>
+        /// <param name="dataTags"></param>
+        /// <param name="queryTags"></param>
+        /// <param name="tagsQueryOptions"></param>
+        /// <returns>new MatchObject</returns>
+        public static MatchObject Create(object dataTags, IEnumerable<string> queryTags, TagsQueryOptions tagsQueryOptions)
+            => Create(dataTags, queryTags, tagsQueryOptions, CosmosTags.UdfNameDefault);
+
+        /// <summary>
+        /// Creates a new MatchObject
+        /// </summary>
+        /// <param name="dataTags"></param>
+        /// <param name="queryTags"></param>
+        /// <param name="tagsQueryOptions"></param>
+        /// <param name="udfName"></param>
+        /// <returns>new MatchObject</returns>
+        public static MatchObject Create(object dataTags, IEnumerable<string> queryTags, TagsQueryOptions tagsQueryOptions, string udfName = CosmosTags.UdfNameDefault)
+            => new (dataTags, queryTags, tagsQueryOptions, udfName);
+
+        /// <summary>
+        /// Creates a new MatchObject
+        /// </summary>
+        public MatchObject()
+        {
+        }
+
+        /// <summary>
+        /// Creates a new MatchObject
+        /// </summary>
+        /// <param name="dataTags"></param>
+        /// <param name="queryTags"></param>
+        /// <param name="tagsQueryOptions"></param>
+        public MatchObject(object dataTags, IEnumerable<string> queryTags, TagsQueryOptions tagsQueryOptions)
+            : this(dataTags, queryTags, tagsQueryOptions, CosmosTags.UdfNameDefault)
+        {
+        }
+
+        /// <summary>
+        /// Creates a new MatchObject
+        /// </summary>
+        /// <param name="dataTags"></param>
+        /// <param name="queryTags"></param>
+        /// <param name="tagsQueryOptions"></param>
+        /// <param name="udfName"></param>
+        public MatchObject(object dataTags, IEnumerable<string> queryTags, TagsQueryOptions tagsQueryOptions, string udfName)
+        {
+            DataTags = dataTags;
+            QueryTags = queryTags;
+            QueryOptions = tagsQueryOptions;
+            UdfName = udfName;
+        }
+        
+        /// <summary>
+        /// The expression for the tags on the document
+        /// </summary>
+        public object DataTags { get; set; }
+        /// <summary>
+        /// The list of tags used to filter as string[]
+        /// </summary>
+        public IEnumerable<string> QueryTags { get; set; }
+        /// <summary>
+        /// The TagsQueryOptions 
+        /// </summary>
+        public TagsQueryOptions QueryOptions { get; set; }
+        /// <summary>
+        /// Optionally the name of the UdfName to use
+        /// </summary>
+        public string UdfName { get; set; }
     }
 }
