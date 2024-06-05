@@ -720,41 +720,46 @@
 
             string[] aggregateOperators = new string[] { "AVG", "MIN", "MAKELIST", "MAKESET", "MAX", "SUM", "COUNT" };
             string[] typeCheckFunctions = new string[] { "IS_ARRAY", "IS_BOOL", "IS_NULL", "IS_NUMBER", "IS_OBJECT", "IS_STRING", "IS_DEFINED", "IS_PRIMITIVE" };
-            List<string> queries = new List<string>();
+            List<(string, bool)> queries = new List<(string, bool)>();
             foreach (string aggregateOperator in aggregateOperators)
             {
+                bool ignoreResultOrder = aggregateOperator.Equals("MAKELIST") || aggregateOperator.Equals("MAKESET");
                 foreach (string typeCheckFunction in typeCheckFunctions)
                 {
                     queries.Add(
-                    $@"
+                    ($@"
                         SELECT VALUE {aggregateOperator} (c.{field}) 
                         FROM c 
                         WHERE {typeCheckFunction}(c.{field})
-                    ");
+                    ", 
+                    ignoreResultOrder));
                 }
 
                 foreach (string typeOnlyPartitionKey in typeOnlyPartitionKeys)
                 {
                     queries.Add(
-                    $@"
+                    ($@"
                         SELECT VALUE {aggregateOperator} (c.{field}) 
                         FROM c 
                         WHERE c.{partitionKey} = ""{typeOnlyPartitionKey}""
-                    ");
+                    ",
+                    ignoreResultOrder));
                 }
             };
 
             // mixing primitive and non primitives
             foreach (string minmaxop in new string[] { "MIN", "MAX" })
             {
+                bool ignoreResultOrder = false;
                 foreach (string key in new string[] { args.OneObjectKey, args.OneArrayKey })
                 {
                     queries.Add(
-                    $@"
+                    ($@"
                         SELECT VALUE {minmaxop} (c.{field}) 
                         FROM c 
                         WHERE c.{partitionKey} IN (""{key}"", ""{args.DoubleOnlyKey}"")
-                    ");
+                    ",
+                    ignoreResultOrder));
                 }
             }
 
@@ -773,7 +778,7 @@
             {
                 writer.WriteStartDocument();
                 writer.WriteStartElement("Results");
-                foreach (string query in queries)
+                foreach ( (string query, bool ignoreResultOrder) in queries)
                 {
                     string formattedQuery = string.Join(
                         Environment.NewLine,
@@ -802,8 +807,7 @@
                         CosmosElement aggregateResult = items.First();
                         if(aggregateResult is not CosmosUndefined)
                         {
-                            if ((formattedQuery.Contains("MAKELIST") || formattedQuery.Contains("MAKESET"))
-                                && (aggregateResult is CosmosArray aggregateResultArray))
+                            if (ignoreResultOrder && (aggregateResult is CosmosArray aggregateResultArray))
                             {
                                 CosmosElement[] normalizedAggregateResult = aggregateResultArray.ToArray();
                                 Array.Sort(normalizedAggregateResult);
