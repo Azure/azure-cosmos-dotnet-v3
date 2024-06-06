@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Net;
     using System.Text;
     using System.Threading;
@@ -85,46 +84,42 @@ namespace Microsoft.Azure.Cosmos
                                   CancellationToken cancellationToken)
         {
             SemaphoreSlim semaphore = new SemaphoreSlim(this.maxConcurrency, this.maxConcurrency);
-
-            List<(KeyValuePair<PartitionKeyRange, List<(string, PartitionKey)>> entry, int startIndex)> rangeEntries =
-                new List<(KeyValuePair<PartitionKeyRange, List<(string, PartitionKey)>> entry, int startIndex)>();
+            List<Task<List<ResponseMessage>>> tasks = new List<Task<List<ResponseMessage>>>();
 
             foreach (KeyValuePair<PartitionKeyRange, List<(string, PartitionKey)>> entry in partitionKeyRangeItemMap)
             {
                 // Fit MaxItemsPerQuery items in a single query to BE
                 for (int startIndex = 0; startIndex < entry.Value.Count; startIndex += this.maxItemsPerQuery)
                 {
-                    rangeEntries.Add((entry, startIndex));
+                    // Only allow 'maxConcurrency' number of queries at a time
+                    await semaphore.WaitAsync();
+
+                    ITrace childTrace = trace.StartChild("Execute query for a partitionkeyrange", TraceComponent.Query, TraceLevel.Info);
+                    int indexCopy = startIndex;
+                    tasks.Add(Task.Run(async () =>
+                    {
+                        try
+                        {
+                            QueryDefinition queryDefinition = ((this.partitionKeySelectors.Count == 1) && (this.partitionKeySelectors[0] == "[\"id\"]")) ?
+                                               this.CreateReadManyQueryDefinitionForId(entry.Value, indexCopy) :
+                                               this.CreateReadManyQueryDefinitionForOther(entry.Value, indexCopy);
+
+                            return await this.GenerateStreamResponsesForPartitionAsync(queryDefinition,
+                                                                       entry.Key,
+                                                                       readManyRequestOptions,
+                                                                       childTrace,
+                                                                       cancellationToken);
+                        }
+                        finally
+                        {
+                            semaphore.Release();
+                            childTrace.Dispose();
+                        }
+                    }));
                 }
             }
-
-            IEnumerable<Task<List<ResponseMessage>>> tasks = rangeEntries.Select(async (entry, startIndex) =>
-            {
-                // Only allow 'maxConcurrency' number of queries at a time
-                await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
-
-                ITrace childTrace = trace.StartChild("Execute query for a partitionkeyrange", TraceComponent.Query, TraceLevel.Info);
-
-                try
-                {
-                    QueryDefinition queryDefinition = ((this.partitionKeySelectors.Count == 1) && (this.partitionKeySelectors[0] == "[\"id\"]")) ?
-                        this.CreateReadManyQueryDefinitionForId(entry.entry.Value, startIndex) :
-                        this.CreateReadManyQueryDefinitionForOther(entry.entry.Value, startIndex);
-
-                    return await this.GenerateStreamResponsesForPartitionAsync(queryDefinition,
-                        entry.entry.Key,
-                        readManyRequestOptions,
-                        childTrace,
-                        cancellationToken).ConfigureAwait(false);
-                }
-                finally
-                {
-                    semaphore.Release();
-                    childTrace.Dispose();
-                }
-            });
-
-            return await Task.WhenAll(tasks).ConfigureAwait(false);
+            
+            return await Task.WhenAll(tasks);
         }
 
         private async Task<IDictionary<PartitionKeyRange, List<(string, PartitionKey)>>> CreatePartitionKeyRangeItemListMapAsync(
