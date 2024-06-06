@@ -862,7 +862,6 @@ namespace Microsoft.Azure.Cosmos
         public const string KoreaSouth = "Korea South";
         public const string MalaysiaSouth = "Malaysia South";
         public const string MexicoCentral = "Mexico Central";
-        public const string NewZealandNorth = "New Zealand North";
         public const string NorthCentralUS = "North Central US";
         public const string NorthEurope = "North Europe";
         public const string NorwayEast = "Norway East";
@@ -1259,7 +1258,6 @@ namespace Microsoft.Azure.Cosmos.Linq
         public static Task<Response<Nullable<float>>> AverageAsync(this IQueryable<Nullable<float>> source, CancellationToken cancellationToken=default(CancellationToken));
         public static Task<Response<float>> AverageAsync(this IQueryable<float> source, CancellationToken cancellationToken=default(CancellationToken));
         public static Task<Response<int>> CountAsync<TSource>(this IQueryable<TSource> source, CancellationToken cancellationToken=default(CancellationToken));
-        public static int DocumentId(this object obj);
         public static bool IsArray(this object obj);
         public static bool IsBool(this object obj);
         public static bool IsDefined(this object obj);
