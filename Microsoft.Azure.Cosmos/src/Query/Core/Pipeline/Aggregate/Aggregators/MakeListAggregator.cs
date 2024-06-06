@@ -36,11 +36,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
             }
 
             this.globalList.AddRange(cosmosArray.ToList<CosmosElement>());
-
-            //foreach (CosmosElement listItem in cosmosArray)
-            //{
-            //    this.globalList.Add(listItem);
-            //}
         }
 
         public CosmosElement GetResult()
