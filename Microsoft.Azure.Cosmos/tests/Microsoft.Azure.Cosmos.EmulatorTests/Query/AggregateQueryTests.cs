@@ -718,7 +718,7 @@
                 args.UndefinedKey
             };
 
-            string[] aggregateOperators = new string[] { "AVG", "MIN", "MAKELIST", "MAKESET", "MAX", "SUM", "COUNT" };
+            string[] aggregateOperators = new string[] { "AVG", "MAKELIST", "MAKESET", "MAX", "MIN", "SUM", "COUNT" };
             string[] typeCheckFunctions = new string[] { "IS_ARRAY", "IS_BOOL", "IS_NULL", "IS_NUMBER", "IS_OBJECT", "IS_STRING", "IS_DEFINED", "IS_PRIMITIVE" };
             List<(string, bool)> queries = new List<(string, bool)>();
             foreach (string aggregateOperator in aggregateOperators)
@@ -826,6 +826,17 @@
                 writer.WriteEndElement();
                 writer.WriteEndDocument();
             }
+
+            //string randomStr = new Random().NextDouble().ToString();
+            //string filenameOutput = $"AggregateQueryTests.AggregateMixedTypes_OUTPUT{randomStr}.xml";
+
+            //// Set a variable to the Documents path.
+            //string docPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+
+            //// Write the text to a new file named "WriteFile.txt".
+            //File.WriteAllText(Path.Combine(docPath, filenameOutput), builder.ToString());
+
+
 
             Regex r = new Regex(">\\s+");
             string normalizedBaseline = r.Replace(File.ReadAllText(baselinePath), ">");
