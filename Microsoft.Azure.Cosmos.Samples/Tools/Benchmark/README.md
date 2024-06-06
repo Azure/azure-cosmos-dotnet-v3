@@ -121,6 +121,7 @@ Copyright (C) 2019 CosmosBenchmark
   --resultskey                      Key to publish results to
   --resultsdatabase                 Database to publish results to
   --resultscontainer                Container to publish results to
+  --applicationpreferredregions     List of comma seperated preferred regions
   --help                            Display this help screen.
   --version                         Display version information.
 ```

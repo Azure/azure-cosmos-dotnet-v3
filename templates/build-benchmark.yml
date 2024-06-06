@@ -10,7 +10,7 @@ jobs:
 - job:
   displayName: CosmosBenchmark ${{ parameters.BuildConfiguration }} 
   pool:
-    vmImage: ${{ parameters.VmImage }}
+    name: 'OneES'
 
   steps:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
@@ -35,7 +35,7 @@ jobs:
 - job:
   displayName: Preview CosmosBenchmark ${{ parameters.BuildConfiguration }} 
   pool:
-    vmImage: ${{ parameters.VmImage }}
+    name: 'OneES'
 
   steps:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
