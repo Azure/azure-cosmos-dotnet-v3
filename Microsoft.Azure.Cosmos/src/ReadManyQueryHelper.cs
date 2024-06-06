@@ -91,35 +91,44 @@ namespace Microsoft.Azure.Cosmos
                 // Fit MaxItemsPerQuery items in a single query to BE
                 for (int startIndex = 0; startIndex < entry.Value.Count; startIndex += this.maxItemsPerQuery)
                 {
-                    // Only allow 'maxConcurrency' number of queries at a time
-                    await semaphore.WaitAsync();
-
-                    ITrace childTrace = trace.StartChild("Execute query for a partitionkeyrange", TraceComponent.Query, TraceLevel.Info);
-                    int indexCopy = startIndex;
-                    tasks.Add(Task.Run(async () =>
-                    {
-                        try
-                        {
-                            QueryDefinition queryDefinition = ((this.partitionKeySelectors.Count == 1) && (this.partitionKeySelectors[0] == "[\"id\"]")) ?
-                                               this.CreateReadManyQueryDefinitionForId(entry.Value, indexCopy) :
-                                               this.CreateReadManyQueryDefinitionForOther(entry.Value, indexCopy);
-
-                            return await this.GenerateStreamResponsesForPartitionAsync(queryDefinition,
-                                                                       entry.Key,
-                                                                       readManyRequestOptions,
-                                                                       childTrace,
-                                                                       cancellationToken);
-                        }
-                        finally
-                        {
-                            semaphore.Release();
-                            childTrace.Dispose();
-                        }
-                    }));
+                    tasks.Add(this.GenerateStreamResponsesForPartitionAsync(entry, startIndex, readManyRequestOptions, trace, semaphore, cancellationToken));
                 }
             }
             
             return await Task.WhenAll(tasks);
+        }
+
+        private async Task<List<ResponseMessage>> GenerateStreamResponsesForPartitionAsync(
+            KeyValuePair<PartitionKeyRange, List<(string, PartitionKey)>> entry,
+            int startIndex,
+            ReadManyRequestOptions readManyRequestOptions,
+            ITrace trace, SemaphoreSlim semaphore,
+            CancellationToken cancellationToken)
+        {
+            // Only allow 'maxConcurrency' number of queries at a time
+            await semaphore.WaitAsync(cancellationToken);
+
+            ITrace childTrace = null;
+
+            try
+            {
+                QueryDefinition queryDefinition = ((this.partitionKeySelectors.Count == 1) && (this.partitionKeySelectors[0] == "[\"id\"]")) ?
+                    this.CreateReadManyQueryDefinitionForId(entry.Value, startIndex) :
+                    this.CreateReadManyQueryDefinitionForOther(entry.Value, startIndex);
+
+                childTrace = trace.StartChild("Execute query for a partitionkeyrange", TraceComponent.Query, TraceLevel.Info);
+
+                return await this.GenerateStreamResponsesForPartitionAsync(queryDefinition,
+                    entry.Key,
+                    readManyRequestOptions,
+                    childTrace,
+                    cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                semaphore.Release();
+                childTrace?.Dispose();
+            }
         }
 
         private async Task<IDictionary<PartitionKeyRange, List<(string, PartitionKey)>>> CreatePartitionKeyRangeItemListMapAsync(
