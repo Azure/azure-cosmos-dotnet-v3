@@ -33,6 +33,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         }
 
         [TestMethod]
+        [Timeout(300000)]
         [TestCategory("LongRunning")]
         [Owner("philipthomas-MSFT")]
         [Description("Scenario: When a document is created with ttl set, there should be 1 create and 1 delete that will appear for that " +
@@ -43,6 +44,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             Exception exception = default;
             int ttlInSeconds = 5;
             Stopwatch stopwatch = new();
+            ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
 
             ChangeFeedProcessor processor = monitoredContainer
                 .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: "processor", onChangesDelegate: (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItem<dynamic>> docs, CancellationToken token) =>
@@ -72,9 +74,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                         }
                         else if (change.Metadata.OperationType == ChangeFeedOperationType.Delete)
                         {
-                            // stop after reading delete since it is the last document in feed.
-                            stopwatch.Stop();
-
                             // current
                             Assert.IsNull(change.Current.id);
 
@@ -84,10 +83,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                             Assert.IsTrue(change.Metadata.IsTimeToLiveExpired);
 
                             // previous
-                            Assert.AreEqual(expected: "1", actual: change.Current.id.ToString());
-                            Assert.AreEqual(expected: "1", actual: change.Current.pk.ToString());
-                            Assert.AreEqual(expected: "Testing TTL on CFP.", actual: change.Current.description.ToString());
-                            Assert.AreEqual(expected: ttlInSeconds, actual: change.Current.ttl.ToObject<int>());
+                            Assert.AreEqual(expected: "1", actual: change.Previous.id.ToString());
+                            Assert.AreEqual(expected: "1", actual: change.Previous.pk.ToString());
+                            Assert.AreEqual(expected: "Testing TTL on CFP.", actual: change.Previous.description.ToString());
+                            Assert.AreEqual(expected: ttlInSeconds, actual: change.Previous.ttl.ToObject<int>());
+
+                            // stop after reading delete since it is the last document in feed.
+                            stopwatch.Stop();
+                            allDocsProcessed.Set();
                         }
                         else
                         {
@@ -121,37 +124,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
             Logger.LogLine($"@ {DateTime.Now}, Document created.");
 
-            await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests.CheckIfAllDocumentsAreProcessed(
-                stopwatch: stopwatch,
-                processor: processor);
+            allDocsProcessed.WaitOne();
 
             if (exception != default)
             {
                 Assert.Fail(exception.ToString());
             }
-        }
-
-        /// <summary>
-        /// I am writing this differently because I am finding that TTL on CFP always purge at random times. Sometimes it is almost instant, sometimes
-        /// it was north of 5 minutes. So I can't just give it a cap to check for 'x' number of seconds or minutes. I am giving the test category as 
-        /// LongRunning so it will not be ran during the pipeline until I create a pipeline specifcally for LongRunning.
-        /// </summary>
-        /// <param name="stopwatch"></param>
-        /// <param name="processor"></param>
-        /// <returns></returns>
-        private static async Task CheckIfAllDocumentsAreProcessed(
-            Stopwatch stopwatch, 
-            ChangeFeedProcessor processor)
-        {
-            do
-            {
-                if (!stopwatch.IsRunning)
-                {
-                    await processor.StopAsync();
-
-                    break;
-                }
-            } while (stopwatch.IsRunning);
         }
 
         [TestMethod]
