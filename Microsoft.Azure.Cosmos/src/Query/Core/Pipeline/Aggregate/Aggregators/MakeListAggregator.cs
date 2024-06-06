@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Globalization;
+    using System.Linq;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
@@ -34,10 +35,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
                 throw new ArgumentException($"{nameof(localList)} must be an array.");
             }
 
-            foreach (CosmosElement listItem in cosmosArray)
-            {
-                this.globalList.Add(listItem);
-            }
+            this.globalList.AddRange(cosmosArray.ToList<CosmosElement>());
+
+            //foreach (CosmosElement listItem in cosmosArray)
+            //{
+            //    this.globalList.Add(listItem);
+            //}
         }
 
         public CosmosElement GetResult()
@@ -65,8 +68,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
                 partialList = CosmosArray.Empty;
             }
 
-            return TryCatch<IAggregator>.FromResult(
-                new MakeListAggregator(initialList: partialList));
+            return TryCatch<IAggregator>.FromResult(new MakeListAggregator(initialList: partialList));
         }
 
         public CosmosElement GetCosmosElementContinuationToken()
