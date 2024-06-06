@@ -221,7 +221,7 @@
                                 }
                                 else
                                 {
-                                    if (argument.SortResult)
+                                    if (argument.IgnoreResultOrder)
                                     {
                                         // We need to sort the results for MakeList and MakeSet when comparing because these aggregates don't
                                         // provide a guarantee of the order in which elements appear, and the order can change based on the
@@ -294,7 +294,7 @@
                             {
                                 Assert.AreEqual(0, items.Count, message);
                             }
-                            else if (argument.SortResult)
+                            else if (argument.IgnoreResultOrder)
                             {
                                 // We need to sort the results for MakeList and MakeSet when comparing because these aggregates don't
                                 // provide a guarantee of the order in which elements appear, and the order can change based on the
@@ -394,12 +394,12 @@
                         aggregateOperator: "MAKELIST",
                         expectedValue: CosmosArray.Create(makeListResult),
                         predicate: "true",
-                        sortResult: true),
+                        ignoreResultOrder: true),
                     new AggregateQueryArguments(
                         aggregateOperator: "MAKESET",
                         expectedValue: CosmosArray.Create(makeSetResult),
                         predicate: "true",
-                        sortResult: true),
+                        ignoreResultOrder: true),
                     new AggregateQueryArguments(
                         aggregateOperator: "MAX",
                         expectedValue: CosmosString.Create("xyz"),
@@ -449,18 +449,18 @@
 
         private readonly struct AggregateQueryArguments
         {
-            public AggregateQueryArguments(string aggregateOperator, CosmosElement expectedValue, string predicate, bool sortResult=false)
+            public AggregateQueryArguments(string aggregateOperator, CosmosElement expectedValue, string predicate, bool ignoreResultOrder=false)
             {
                 this.AggregateOperator = aggregateOperator;
                 this.ExpectedValue = expectedValue;
                 this.Predicate = predicate;
-                this.SortResult = sortResult;
+                this.IgnoreResultOrder = ignoreResultOrder;
             }
 
             public string AggregateOperator { get; }
             public CosmosElement ExpectedValue { get; }
             public string Predicate { get; }
-            public bool SortResult { get; }
+            public bool IgnoreResultOrder { get; }
 
             public override string ToString()
             {
