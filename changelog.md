@@ -19,9 +19,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Added
 - [4489](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4489) Query: Adds DOCUMENTID extension method for LINQ
 
-### <a name="3.41.0-preview.1"/> [3.41.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.41.0-preview.1) - 2024-06-06
-### <a name="3.40.1"/> [3.40.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.40.1) - 2024-06-06
-
 #### Fixed
 - [4507](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4507) Query : Fixes ORDER BY query issue when partial partition key is specified with hierarchical partition (#4507)
 
