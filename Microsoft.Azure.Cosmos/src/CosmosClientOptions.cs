@@ -8,12 +8,16 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Data.Common;
+    using System.Globalization;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Net.Security;
     using System.Security.Cryptography.X509Certificates;
+    using System.Text;
+    using System.Text.RegularExpressions;
     using Microsoft.Azure.Cosmos.Fluent;
+    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Newtonsoft.Json;
@@ -99,17 +103,18 @@ namespace Microsoft.Azure.Cosmos
             get => this.applicationName;
             set
             {
+                string s = StripNonAsciiCharacters(value);
                 try
                 {
                     HttpRequestMessage dummyMessage = new HttpRequestMessage();
-                    dummyMessage.Headers.Add(HttpConstants.HttpHeaders.UserAgent, value);
+                    dummyMessage.Headers.Add(HttpConstants.HttpHeaders.UserAgent, s);
                 }
                 catch (FormatException fme)
                 {
-                    throw new ArgumentException($"Application name '{value}' is invalid.", fme);
+                    throw new ArgumentException($"Application name '{s}' is invalid.", fme);
                 }
 
-                this.applicationName = value;
+                this.applicationName = s;
             }
         }
 
@@ -1102,6 +1107,35 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return regionConfig + "N";
+        }
+
+        private static readonly ReadOnlyCollection<char> IllegalChars = new ReadOnlyCollection<char>(
+            new char[]{ '<', '>', '\"', '\'', '{', '}', '\\', '[', ']', ';', ':', '@', '=', '(', ')', ',' });
+        private static string StripNonAsciiCharacters(string input)
+        {
+            string normalizedString = input.Normalize(NormalizationForm.FormD);
+            StringBuilder stringBuilder = new StringBuilder(capacity: normalizedString.Length);
+
+            for (int i = 0; i < normalizedString.Length; i++)
+            {
+                char c = normalizedString[i];
+                UnicodeCategory unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
+                
+                if (unicodeCategory == UnicodeCategory.SpaceSeparator)
+                {
+                    stringBuilder = stringBuilder.Append("_");
+                }
+                else if (unicodeCategory != UnicodeCategory.NonSpacingMark
+                    && !IllegalChars.Contains(c)
+                    && unicodeCategory != UnicodeCategory.OtherLetter)
+                {
+                    stringBuilder.Append(c);
+                }
+            }
+
+            return stringBuilder
+                .ToString()
+                .Normalize(NormalizationForm.FormC);
         }
 
         /// <summary>

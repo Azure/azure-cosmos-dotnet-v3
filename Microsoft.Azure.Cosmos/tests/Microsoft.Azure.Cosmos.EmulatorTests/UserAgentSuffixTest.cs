@@ -46,7 +46,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.cosmosClient.Dispose();
         }
 
+        /// <summary>
+        /// Tests that the user agent suffix can be used without special characters.
+        /// </summary>
+        /// <returns></returns>
         [TestMethod]
+        [Owner("nalutripician")]
         public async Task UserAgentSuffixWithoutSpecialCharacter()
         {
             (string endpoint, string key) = TestCommon.GetAccountInfo();
@@ -66,6 +71,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Owner("nalutripician")]
+        /// <summary>
+        /// Tests that the user agent suffix can contain special characters.
+        /// User Agent Names should support any ascii character except for control characters.
+        /// </summary>
         public async Task UserAgentSuffixWithSpecialCharacter()
         {
             (string endpoint, string key) = TestCommon.GetAccountInfo();
@@ -83,5 +93,54 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.Resource.Id);
             Assert.AreEqual(this.containerName, response.Resource.Id);
         }
+
+        [TestMethod]
+        [Owner("nalutripician")]
+        /// <summary>
+        /// Tests that the user agent suffix can contain special characters.
+        /// User Agent Names should support any unicode character except for control characters.
+        /// </summary>
+        public async Task UserAgentSuffixWithUnicodeCharacter()
+        {
+            (string endpoint, string key) = TestCommon.GetAccountInfo();
+            CosmosClient clientWithUserAgentSuffix = new CosmosClientBuilder(endpoint, key)
+                .WithApplicationName("UnicodeChar鱀InUserAgent")
+                .Build();
+
+            ContainerResponse response = await clientWithUserAgentSuffix
+                .GetDatabase(this.databaseName)
+                .GetContainer(this.containerName)
+                .ReadContainerAsync();
+
+            Assert.IsNotNull(response);
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.IsNotNull(response.Resource.Id);
+            Assert.AreEqual(this.containerName, response.Resource.Id);
+        }
+
+        [TestMethod]
+        [Owner("nalutripician")]
+        /// <summary>
+        /// Tests that the user agent suffix can contain special characters.
+        /// User Agent Names should support any ascii character except for control characters.
+        /// </summary>
+        public async Task UserAgentSuffixWithWhitespaceAndAsciiCharacter()
+        {
+            (string endpoint, string key) = TestCommon.GetAccountInfo();
+            CosmosClient clientWithUserAgentSuffix = new CosmosClientBuilder(endpoint, key)
+                .WithApplicationName("UserAgent with space<>\"{}\\[];:@=(),$%_^()*&")
+                .Build();
+
+            ContainerResponse response = await clientWithUserAgentSuffix
+                .GetDatabase(this.databaseName)
+                .GetContainer(this.containerName)
+                .ReadContainerAsync();
+
+            Assert.IsNotNull(response);
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.IsNotNull(response.Resource.Id);
+            Assert.AreEqual(this.containerName, response.Resource.Id);
+        }
+
     }
 }
