@@ -2,8 +2,13 @@
 	<PropertyGroup>
 		<ClientOfficialVersion>3.40.1</ClientOfficialVersion>
 		<ClientPreviewVersion>3.41.0</ClientPreviewVersion>
-		<ClientPreviewSuffixVersion>preview.1</ClientPreviewSuffixVersion>
+<<<<<<< HEAD
+		<ClientPreviewSuffixVersion>preview.0</ClientPreviewSuffixVersion>
 		<DirectVersion>3.34.2</DirectVersion>
+=======
+		<ClientPreviewSuffixVersion>preview.1</ClientPreviewSuffixVersion>
+		<DirectVersion>3.34.4</DirectVersion>
+>>>>>>> f1590f84a (3.40.1: Adds new SDK versions and contract files (#4532))
 		<EncryptionOfficialVersion>2.0.4</EncryptionOfficialVersion>
 		<EncryptionPreviewVersion>2.1.0</EncryptionPreviewVersion>
 		<EncryptionPreviewSuffixVersion>preview4</EncryptionPreviewSuffixVersion>
