@@ -13,8 +13,11 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-### <a name="3.41.0-preview.2"/> [3.41.0-preview.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.41.0-preview.2) - 2024-06-07
-### <a name="3.40.2"/> [3.40.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.40.2) - 2024-06-07
+### <a name="3.42.0-preview.0"/> [3.42.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.42.0-preview.0) - 2024-06-07
+### <a name="3.41.0"/> [3.41.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.41.0) - 2024-06-07
+
+#### Added
+- [4489](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4489) Query: Adds DOCUMENTID extension method for LINQ
 
 ### <a name="3.41.0-preview.1"/> [3.41.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.41.0-preview.1) - 2024-06-06
 ### <a name="3.40.1"/> [3.40.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.40.1) - 2024-06-06
