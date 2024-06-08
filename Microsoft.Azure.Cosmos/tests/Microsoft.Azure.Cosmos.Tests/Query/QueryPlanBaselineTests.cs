@@ -1381,9 +1381,9 @@
                     }
                 });
 
-            string queryText = @"SELECT TOP 10 c.title AS Title, VectorDistance(c.Embedding, @vectorEmbedding, true) AS SimilarityScore
+            string queryText = @"SELECT TOP 10 c.title AS Title, VectorDistance(c.embedding, @vectorEmbedding, true) AS SimilarityScore
                                  FROM c
-                                 ORDER BY VectorDistance(c.Embedding, @vectorEmbedding, true)";
+                                 ORDER BY VectorDistance(c.embedding, @vectorEmbedding, true)";
 
             SqlQuerySpec sqlQuerySpec = new SqlQuerySpec(
                 queryText,
