@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
+    using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Fluent;
@@ -69,6 +70,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         public void SetClient(CosmosClient client)
         {
+            Trace.TraceInformation($"Cosmos endpoint: {client.Endpoint}");
+
             this.cosmosClient?.Dispose();
             this.cosmosClient = client;
         }

@@ -91,6 +91,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 },
                 ExceptionIntercepter = (request, exception) =>
                 {
+                    System.Diagnostics.Trace.TraceError($"{request.RequestUri} -> {telemetryServiceEndpoint.AbsoluteUri}");
+
                     if (request.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint.AbsoluteUri))
                     {
                         this.isClientTelemetryAPICallFailed = true;
@@ -130,6 +132,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 },
                 ExceptionIntercepter = (request, exception) =>
                 {
+                    System.Diagnostics.Trace.TraceError($"{request.RequestUri} -> {telemetryServiceEndpoint.AbsoluteUri}");
+
                     if (request.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint.AbsoluteUri))
                     {
                         this.isClientTelemetryAPICallFailed = true;
