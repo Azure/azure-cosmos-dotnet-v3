@@ -177,6 +177,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             System.Diagnostics.Trace.TraceError(indent + key.Name);
 
+            string[] valueNames = key.GetValueNames();
+            foreach (string valueName in valueNames)
+            {
+                object value = key.GetValue(valueName);
+                System.Diagnostics.Trace.TraceError(indent + "  " + valueName + " = " + value);
+            }
+
             foreach (string subKeyName in key.GetSubKeyNames())
             {
                 using (RegistryKey subKey = key.OpenSubKey(subKeyName))
