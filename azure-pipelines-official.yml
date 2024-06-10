@@ -3,15 +3,16 @@ trigger: none
 pr: none
 
 variables:
-  ReleaseArguments: ' --filter "TestCategory=ClientTelemetryRelease" --verbosity normal ' 
   BuildConfiguration: Release
   Packaging.EnableSBOMSigning: true
   VmImage: windows-latest # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops 
 
 stages:
-- stage:
+- stage: 
   displayName: TelemetryToService 
   jobs:
+    - template:  emulator-setup.yml
+    
     - job:
       displayName: TelemetryToService ${{ variables.BuildConfiguration }}
       timeoutInMinutes: 120
@@ -21,9 +22,6 @@ stages:
       steps:
       - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
         clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
-
-
-      - template:  emulator-setup.yml
 
       # Add this Command to Include the .NET 6 SDK
       - task: UseDotNet@2
