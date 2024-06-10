@@ -11,8 +11,8 @@ stages:
 - stage: 
   displayName: TelemetryToService 
   jobs:
-    - template:  emulator-setup.yml
-    
+    - template: templates/emulator-setup.yml
+
     - job:
       displayName: TelemetryToService ${{ variables.BuildConfiguration }}
       timeoutInMinutes: 120
