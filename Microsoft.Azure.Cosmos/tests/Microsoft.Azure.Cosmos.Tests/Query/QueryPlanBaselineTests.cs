@@ -1362,7 +1362,6 @@
                 MakeVectorTest("Dot Product", Cosmos.DistanceFunction.DotProduct),
             };
 
-
             this.ExecuteTestSuite(testCases);
         }
 
