@@ -10,20 +10,8 @@ variables:
 
 stages:
 - stage:
-  displayName: Gate 
+  displayName: TelemetryToService 
   jobs:
-    - template:  templates/static-tools.yml
-      parameters:
-        BuildConfiguration: '${{ variables.BuildConfiguration }}'
-        VmImage: '${{ variables.VmImage }}'
-
-    - template:  templates/build-test.yml
-      parameters:
-        BuildConfiguration: '${{ variables.BuildConfiguration }}'
-        Arguments: '${{ variables.ReleaseArguments }}'
-        VmImage: '${{ variables.VmImage }}'
-        MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
-        
     - job:
       displayName: TelemetryToService ${{ variables.BuildConfiguration }}
       timeoutInMinutes: 120
@@ -33,6 +21,9 @@ stages:
       steps:
       - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
         clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
+
+
+      - template:  emulator-setup.yml
 
       # Add this Command to Include the .NET 6 SDK
       - task: UseDotNet@2
