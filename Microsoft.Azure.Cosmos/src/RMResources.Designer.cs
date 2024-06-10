@@ -11,6 +11,7 @@
 namespace Microsoft.Azure.Documents
 {
     using System;
+    using Microsoft.Azure.Cosmos;
 
 
     /// <summary>
@@ -20,7 +21,7 @@ namespace Microsoft.Azure.Documents
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "15.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class RMResources
@@ -46,9 +47,11 @@ namespace Microsoft.Azure.Documents
                 if (object.ReferenceEquals(resourceMan, null))
                 {
 #if COSMOSCLIENT
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Azure.Documents.RMResources", typeof(RMResources).Assembly);
+                    var assembly = typeof(RMResources).Assembly;
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Azure.Cosmos.RMResources", assembly);
 #else
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Azure.Documents.RMResources", typeof(RMResources).GetAssembly());
+                    var assembly = typeof(RMResources).Assembly;
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Azure.Cosmos.RMResources", assembly);
 #endif
                     resourceMan = temp;
                 }

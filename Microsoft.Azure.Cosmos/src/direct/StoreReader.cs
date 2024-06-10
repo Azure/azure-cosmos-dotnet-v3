@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Documents
             bool useSessionToken,
             ReadMode readMode,
             bool checkMinLSN = false,
-            bool forceReadAll = false)
+            bool forceReadAll = false) 
         {
             entity.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
 

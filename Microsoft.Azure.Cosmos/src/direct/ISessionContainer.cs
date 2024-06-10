@@ -52,5 +52,7 @@ namespace Microsoft.Azure.Documents
         /// <param name="collectionFullname"></param>
         /// <param name="responseHeaders"></param>
         void SetSessionToken(string collectionRid, string collectionFullname, INameValueCollection responseHeaders);
+
+        GclsnStore GetGclsnStore();
     }
 }

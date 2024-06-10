@@ -34,5 +34,9 @@ namespace Microsoft.Azure.Documents
         {
         }
 
+        public GclsnStore GetGclsnStore()
+        {
+            throw new System.NotImplementedException();
+        }
     }
 }

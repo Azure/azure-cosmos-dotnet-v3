@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Common
     {
         private static readonly string sessionTokenSeparator = ":";
         private volatile SessionContainerState state;
+        private GclsnStore gclsnStore = new();
 
         public SessionContainer(string hostName)
         {
@@ -469,6 +470,11 @@ namespace Microsoft.Azure.Cosmos.Common
             }
 
             return false;
+        }
+
+        public GclsnStore GetGclsnStore()
+        {
+            return this.gclsnStore;
         }
 
         private sealed class SessionContainerState

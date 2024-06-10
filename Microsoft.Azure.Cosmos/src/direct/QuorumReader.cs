@@ -66,17 +66,20 @@ namespace Microsoft.Azure.Documents
         private readonly StoreReader storeReader;
         private readonly IServiceConfigurationReader serviceConfigReader;
         private readonly IAuthorizationTokenProvider authorizationTokenProvider;
+        private readonly ISessionContainer sessionContainer;
 
         public QuorumReader(
             TransportClient transportClient,
             AddressSelector addressSelector,
             StoreReader storeReader,
             IServiceConfigurationReader serviceConfigReader,
-            IAuthorizationTokenProvider authorizationTokenProvider)
+            IAuthorizationTokenProvider authorizationTokenProvider,
+            ISessionContainer sessionContainer)
         {
             this.storeReader = storeReader;
             this.serviceConfigReader = serviceConfigReader;
             this.authorizationTokenProvider = authorizationTokenProvider;
+            this.sessionContainer = sessionContainer;   
         }
 
         public async Task<StoreResponse> ReadStrongAsync(
@@ -671,9 +674,13 @@ namespace Microsoft.Azure.Documents
             long maxGlobalCommittedLsn = 0;
             bool hasConvergedOnLSN = false;
             int readBarrierRetryCount = 0;
+            GclsnStore gclsnStore = this.sessionContainer.GetGclsnStore();
+            PartitionGclsnTracker gclsnTracker = gclsnStore.GetPartitionGclsnTracker(barrierRequest.RequestContext.ResolvedPartitionKeyRange);
+
             while(readBarrierRetryCount < defaultBarrierRequestDelays.Length && remainingDelay >= TimeSpan.Zero) // Retry loop
             {
                 barrierRequest.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
+
                 ValueStopwatch barrierRequestStopWatch = ValueStopwatch.StartNew();
                 using StoreResultList disposableResponses = new(await this.storeReader.ReadMultipleReplicaAsync(
                     barrierRequest,
@@ -688,6 +695,12 @@ namespace Microsoft.Azure.Documents
                 IList<ReferenceCountedDisposable<StoreResult>> responses = disposableResponses.Value;
                 TimeSpan previousBarrierRequestLatency = barrierRequestStopWatch.Elapsed;
 
+                // PartitionKeyRange could have changed from split/merge. Update the GCLSN tracker.
+                if (barrierRequest.PartitionKeyRangeIdentity != null && barrierRequest.RequestContext.ResolvedPartitionKeyRange != gclsnTracker.partitionKeyRangeId)
+                {
+                    gclsnTracker = gclsnStore.GetPartitionGclsnTracker(barrierRequest.RequestContext.ResolvedPartitionKeyRange);
+                }
+
                 int readBarrierLsnReachedCount = 0;
                 long maxGlobalCommittedLsnInResponses = 0;
                 foreach(ReferenceCountedDisposable<StoreResult> response in responses)
@@ -698,6 +711,9 @@ namespace Microsoft.Azure.Documents
                         readBarrierLsnReachedCount++;
                     }
                 }
+
+                // Update the cached GCLSN value for the partition key range.
+                gclsnTracker.SetGclsn(maxGlobalCommittedLsnInResponses);
 
                 if (!hasConvergedOnLSN && readBarrierLsnReachedCount >= readQuorum)
                 {

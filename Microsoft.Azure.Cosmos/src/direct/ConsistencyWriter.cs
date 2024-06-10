@@ -280,6 +280,10 @@ For globally strong write:
                     request.RequestContext.ForceRefreshAddressCache = false;
 
                     DefaultTrace.TraceInformation("ConsistencyWriter: globalCommittedLsn {0}, lsn {1}", globalCommittedLsn, lsn);
+
+                    // Always update the cached GCLSN value for the partition key range.
+                    this.sessionContainer.GetGclsnStore().SetGclsn(request.RequestContext.ResolvedPartitionKeyRange, globalCommittedLsn);
+
                     //barrier only if necessary, i.e. when write region completes write, but read regions have not.
                     if (globalCommittedLsn < lsn)
                     {
@@ -407,9 +411,13 @@ For globally strong write:
 
             int writeBarrierRetryCount = 0;
             long maxGlobalCommittedLsnReceived = 0;
+            GclsnStore gclsnStore = this.sessionContainer.GetGclsnStore();
+            PartitionGclsnTracker gclsnTracker = gclsnStore.GetPartitionGclsnTracker(barrierRequest.RequestContext.ResolvedPartitionKeyRange);
+
             while (writeBarrierRetryCount < defaultBarrierRequestDelays.Length && remainingDelay >= TimeSpan.Zero) // Retry loop
             {
                 barrierRequest.RequestContext.TimeoutHelper.ThrowTimeoutIfElapsed();
+                long cachedGclsnValue = gclsnTracker.GetGclsn();
 
                 ValueStopwatch barrierRequestStopWatch = ValueStopwatch.StartNew();
                 IList<ReferenceCountedDisposable<StoreResult>> responses = await this.storeReader.ReadMultipleReplicaAsync(
@@ -423,12 +431,21 @@ For globally strong write:
                     forceReadAll: false);
                 barrierRequestStopWatch.Stop();
 
+                // PartitionKeyRange could have changed from split/merge. Update the GCLSN tracker.
+                if (barrierRequest.RequestContext.ResolvedPartitionKeyRange != gclsnTracker.partitionKeyRangeId)
+                {
+                    gclsnTracker = gclsnStore.GetPartitionGclsnTracker(barrierRequest.RequestContext.ResolvedPartitionKeyRange);
+                }
+
                 TimeSpan previousBarrierRequestLatency = barrierRequestStopWatch.Elapsed;
                 long maxGlobalCommittedLsn = 0;
                 if (responses != null)
                 {
                     foreach (ReferenceCountedDisposable<StoreResult> response in responses)
                     {
+                        // Update the cached GCLSN value for the partition key range.
+                        gclsnTracker.SetGclsn(selectedGlobalCommittedLsn);
+
                         if (response.Target.GlobalCommittedLSN >= selectedGlobalCommittedLsn)
                         {
                             return true;
@@ -453,13 +470,19 @@ For globally strong write:
                     defaultBarrierRequestDelays[writeBarrierRetryCount],
                     out TimeSpan delay);
 
+                /*if(cachedGclsnValue > maxGlobalCommittedLsn)
+                {
+                    Console.WriteLine($"Failed: cachedGclsnValue: {cachedGclsnValue}, selectedGlobalCommittedLsn: {maxGlobalCommittedLsn}");
+                }*/
+
                 writeBarrierRetryCount++;
                 if (writeBarrierRetryCount >= defaultBarrierRequestDelays.Length || remainingDelay < delay)
                 {
                     //trace on last retry.
-                    DefaultTrace.TraceInformation("ConsistencyWriter: WaitForWriteBarrierAsync - Last barrier multi-region strong. Target GCLSN: {0}, Max. GCLSN received: {1}, Responses: {2}",
+                    DefaultTrace.TraceInformation("ConsistencyWriter: WaitForWriteBarrierAsync - Last barrier multi-region strong. Target GCLSN: {0}, Max. GCLSN received: {1}, Cached: {2}, Responses: {3}",
                         selectedGlobalCommittedLsn,
                         maxGlobalCommittedLsn,
+                        cachedGclsnValue,
                         string.Join("; ", responses.Select(r => r.Target)));
 
                     break;
