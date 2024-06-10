@@ -385,7 +385,19 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 It.IsAny<bool>(),
                 It.IsAny<Cosmos.GeospatialType>(),
                 It.IsAny<CancellationToken>()))
-                .Returns((SqlQuerySpec sqlQuerySpec, ResourceType resourceType, PartitionKeyDefinition partitionKeyDefinition, bool requireFormattableOrderByQuery, bool isContinuationExpected, bool allowNonValueAggregateQuery, bool hasLogicalPartitionKey, bool allowDCount, bool useSystemPrefix, Cosmos.GeospatialType geospatialType, CancellationToken cancellationToken) =>
+                .Returns((
+                SqlQuerySpec sqlQuerySpec,
+                ResourceType resourceType,
+                PartitionKeyDefinition partitionKeyDefinition,
+                VectorEmbeddingPolicy vectorEmbeddingPolicy,
+                bool requireFormattableOrderByQuery,
+                bool isContinuationExpected,
+                bool allowNonValueAggregateQuery,
+                bool hasLogicalPartitionKey,
+                bool allowDCount,
+                bool useSystemPrefix,
+                Cosmos.GeospatialType geospatialType,
+                CancellationToken cancellationToken) =>
                 {
                     CosmosSerializerCore serializerCore = new();
                     using StreamReader streamReader = new(serializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, Documents.ResourceType.Document));
