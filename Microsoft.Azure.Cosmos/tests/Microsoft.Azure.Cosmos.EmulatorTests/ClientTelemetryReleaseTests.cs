@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Microsoft.Win32;
 
     /// <summary>
     /// In Release pipeline, no need to mock Client Telemetry Service Call and Test will talk to the real database account.
@@ -48,6 +49,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public override void TestInitialize()
         {
+            ClientTelemetryReleaseTests.PrintRegistry();
             base.TestInitialize();
         }
 
@@ -153,5 +155,39 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             await base.CreateItemWithSubStatusCodeTest(mode);
         }
+
+#pragma warning disable CA1416
+        public static void PrintRegistry(string registryPath = @"SYSTEM\CurrentControlSet\Control\SecurityProviders")
+        {
+            using (RegistryKey key = Registry.LocalMachine.OpenSubKey(registryPath))
+            {
+                if (key != null)
+                {
+                    PrintRegistry(key, string.Empty);
+                }
+                else
+                {
+                    System.Diagnostics.Trace.TraceError($"Cannot find registry path: {registryPath}");
+                }
+            }
+
+        }
+
+        public static void PrintRegistry(RegistryKey key, string indent)
+        {
+            System.Diagnostics.Trace.TraceError(indent + key.Name);
+
+            foreach (string subKeyName in key.GetSubKeyNames())
+            {
+                using (RegistryKey subKey = key.OpenSubKey(subKeyName))
+                {
+                    if (subKey != null)
+                    {
+                        PrintRegistry(subKey, indent + "  ");
+                    }
+                }
+            }
+        }
+#pragma warning restore CA1416
     }
 }
