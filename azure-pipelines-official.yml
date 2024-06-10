@@ -15,7 +15,8 @@ stages:
       displayName: TelemetryToService ${{ variables.BuildConfiguration }}
       timeoutInMinutes: 120
       pool:
-        name: 'OneES'
+        vmImage: $(VmImage)
+        #name: 'OneES'
       
       steps:
       - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
