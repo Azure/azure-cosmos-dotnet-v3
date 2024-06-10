@@ -124,7 +124,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
             Logger.LogLine($"@ {DateTime.Now}, Document created.");
 
-            allDocsProcessed.WaitOne();
+            bool receivedDelete = allDocsProcessed.WaitOne(60000);
+            Assert.IsTrue(receivedDelete, "Timed out waiting for docs to process");
 
             if (exception != default)
             {
