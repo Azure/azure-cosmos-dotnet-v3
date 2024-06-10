@@ -11,8 +11,6 @@ stages:
 - stage: 
   displayName: TelemetryToService 
   jobs:
-    - template: templates/emulator-setup.yml
-
     - job:
       displayName: TelemetryToService ${{ variables.BuildConfiguration }}
       timeoutInMinutes: 120
@@ -29,6 +27,8 @@ stages:
         inputs:
           packageType: 'sdk'
           version: '6.x'
+
+      - template: templates/emulator-setup.yml
 
       - task: DotNetCoreCLI@2
         displayName: Integration Test With Client Telemetry Service
