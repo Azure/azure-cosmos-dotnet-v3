@@ -389,6 +389,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
                         case AggregateOperator.Sum:
                             tryCreateAggregator = SumAggregator.TryCreate(continuationToken);
                             break;
+
                         default:
                             throw new ArgumentException($"Unknown {nameof(AggregateOperator)}: {aggregateOperator}.");
                     }

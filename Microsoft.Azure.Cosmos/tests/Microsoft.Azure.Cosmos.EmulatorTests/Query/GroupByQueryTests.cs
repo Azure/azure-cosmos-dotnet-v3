@@ -500,26 +500,23 @@
             {
                 foreach (int maxItemCount in new int[] { 1, 5, 10 })
                 {
+                    QueryRequestOptions queryRequestOptions = new QueryRequestOptions()
+                    {
+                        MaxConcurrency = 2,
+                        MaxItemCount = maxItemCount,
+                        MaxBufferedItemCount = 100,
+                    };
+
                     List<CosmosElement> actualWithoutContinuationTokens = await QueryTestsBase.QueryWithoutContinuationTokensAsync<CosmosElement>(
                         container,
                         query,
-                        new QueryRequestOptions()
-                        {
-                            MaxConcurrency = 2,
-                            MaxItemCount = maxItemCount,
-                            MaxBufferedItemCount = 100,
-                        });
+                        queryRequestOptions);
                     HashSet<CosmosElement> actualWithoutContinuationTokensSet = new HashSet<CosmosElement>(actualWithoutContinuationTokens);
 
                     List<CosmosElement> actualWithTryGetContinuationTokens = await QueryTestsBase.QueryWithCosmosElementContinuationTokenAsync<CosmosElement>(
                         container,
                         query,
-                        new QueryRequestOptions()
-                        {
-                            MaxConcurrency = 2,
-                            MaxItemCount = maxItemCount,
-                            MaxBufferedItemCount = 100,
-                        });
+                        queryRequestOptions);
                     HashSet<CosmosElement> actualWithTryGetContinuationTokensSet = new HashSet<CosmosElement>(actualWithTryGetContinuationTokens);
 
                     Assert.IsTrue(
@@ -541,30 +538,26 @@
             List<(string, List<CosmosElement>)> queryAndExpectedResultsListArrayAggregates = new List<(string, List<CosmosElement>)>()
             {
                 (
-                    "SELECT c.name AS NameGroup, MAKELIST(c.age) AS list_age FROM c GROUP BY c.name",
+                    "SELECT c.name AS Name, MAKELIST(c.age) AS AgeList FROM c GROUP BY c.name",
                     documents
                         .GroupBy(document => document["name"])
                         .Select(grouping => CosmosObject.Create(
                             new Dictionary<string, CosmosElement>()
                             {
-                                { "NameGroup", grouping.Key },
-                                { "list_age", CosmosArray.Create(
-                                    grouping.Select(document => document["age"])
-                                )}
+                                { "Name", grouping.Key },
+                                { "AgeList", CosmosArray.Create(grouping.Select(document => document["age"]))}
                             }))
                         .ToList<CosmosElement>()
                 ),
                 (
-                    "SELECT c.name AS NameGroup, MAKESET(c.age) AS list_age FROM c GROUP BY c.name",
+                    "SELECT c.name AS Name, MAKESET(c.age) AS AgeSet FROM c GROUP BY c.name",
                     documents
                         .GroupBy(document => document["name"])
                         .Select(grouping => CosmosObject.Create(
                             new Dictionary<string, CosmosElement>()
                             {
-                                { "NameGroup", grouping.Key },
-                                { "list_age", CosmosArray.Create(
-                                    grouping.Select(document => document["age"]).Distinct()
-                                )}
+                                { "Name", grouping.Key },
+                                { "AgeSet", CosmosArray.Create(grouping.Select(document => document["age"]).Distinct())}
                             }))
                         .ToList<CosmosElement>()
                 )
@@ -574,28 +567,25 @@
             {
                 foreach (int maxItemCount in new int[] { 1, 5, 10 })
                 {
+                    QueryRequestOptions queryRequestOptions = new QueryRequestOptions()
+                    {
+                        MaxConcurrency = 2,
+                        MaxItemCount = maxItemCount,
+                        MaxBufferedItemCount = 100,
+                    };
+
                     List<CosmosElement> actualWithoutContinuationTokens = await QueryTestsBase.QueryWithoutContinuationTokensAsync<CosmosElement>(
                         container,
                         query,
-                        new QueryRequestOptions()
-                        {
-                            MaxConcurrency = 2,
-                            MaxItemCount = maxItemCount,
-                            MaxBufferedItemCount = 100,
-                        });
+                        queryRequestOptions);
 
                     this.NormalizeGroupByArrayAggregateResults(actualWithoutContinuationTokens);
                     HashSet<CosmosElement> actualWithoutContinuationTokensSet = new HashSet<CosmosElement>(actualWithoutContinuationTokens);
 
                     List<CosmosElement> actualWithTryGetContinuationTokens = await QueryTestsBase.QueryWithCosmosElementContinuationTokenAsync<CosmosElement>(
                         container,
-                        query,
-                        new QueryRequestOptions()
-                        {
-                            MaxConcurrency = 2,
-                            MaxItemCount = maxItemCount,
-                            MaxBufferedItemCount = 100,
-                        });
+                        query, 
+                        queryRequestOptions);
 
                     this.NormalizeGroupByArrayAggregateResults(actualWithTryGetContinuationTokens);
                     HashSet<CosmosElement> actualWithTryGetContinuationTokensSet = new HashSet<CosmosElement>(actualWithTryGetContinuationTokens);
@@ -643,7 +633,7 @@
             {
                 if (results[i] is CosmosObject cosmosObject)
                 {
-                    IDictionary<string, CosmosElement> myDict = new Dictionary<string, CosmosElement>();
+                    IDictionary<string, CosmosElement> normalizedResult = new Dictionary<string, CosmosElement>();
 
                     foreach (KeyValuePair<string, CosmosElement> kvp in cosmosObject)
                     {
@@ -651,15 +641,15 @@
                         {
                             CosmosElement[] normalizedArray = cosmosArray.ToArray();
                             Array.Sort(normalizedArray);
-                            myDict.Add(kvp.Key, CosmosArray.Create(normalizedArray));
+                            normalizedResult.Add(kvp.Key, CosmosArray.Create(normalizedArray));
                         }
                         else
                         {
-                            myDict.Add(kvp.Key, kvp.Value);
+                            normalizedResult.Add(kvp.Key, kvp.Value);
                         }
                     }
 
-                    IReadOnlyDictionary<string, CosmosElement> newDict = new ReadOnlyDictionary<string, CosmosElement>(myDict);
+                    ReadOnlyDictionary<string, CosmosElement> newDict = new ReadOnlyDictionary<string, CosmosElement>(normalizedResult);
                     results[i] = CosmosObject.Create(newDict);
                 }
             }
