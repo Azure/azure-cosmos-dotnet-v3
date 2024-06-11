@@ -151,8 +151,8 @@
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
   </ACTIVITY>
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="ThresholdViolation" />
+  <EVENT name="ThresholdViolation" />
 </OTelActivities></Output>
   </Result>
   <Result>
@@ -292,8 +292,8 @@
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
   </ACTIVITY>
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="ThresholdViolation" />
+  <EVENT name="ThresholdViolation" />
 </OTelActivities></Output>
   </Result>
 </Results>

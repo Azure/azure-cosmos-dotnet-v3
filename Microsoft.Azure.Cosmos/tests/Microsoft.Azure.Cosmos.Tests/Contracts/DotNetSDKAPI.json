@@ -3686,6 +3686,30 @@
     "Microsoft.Azure.Cosmos.CosmosThresholdOptions;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
+        "System.Nullable`1[System.Double] get_RequestChargeThreshold()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.Double] get_RequestChargeThreshold();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[System.Double] RequestChargeThreshold": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.Nullable`1[System.Double] RequestChargeThreshold;CanRead:True;CanWrite:True;System.Nullable`1[System.Double] get_RequestChargeThreshold();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_RequestChargeThreshold(System.Nullable`1[System.Double]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[System.Int32] get_PayloadSizeThresholdInBytes()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.Int32] get_PayloadSizeThresholdInBytes();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[System.Int32] PayloadSizeThresholdInBytes": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.Nullable`1[System.Int32] PayloadSizeThresholdInBytes;CanRead:True;CanWrite:True;System.Nullable`1[System.Int32] get_PayloadSizeThresholdInBytes();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_PayloadSizeThresholdInBytes(System.Nullable`1[System.Int32]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.TimeSpan get_NonPointOperationLatencyThreshold()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -3722,12 +3746,26 @@
           ],
           "MethodInfo": "Void set_NonPointOperationLatencyThreshold(System.TimeSpan);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Void set_PayloadSizeThresholdInBytes(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_PayloadSizeThresholdInBytes(System.Nullable`1[System.Int32]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Void set_PointOperationLatencyThreshold(System.TimeSpan)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_PointOperationLatencyThreshold(System.TimeSpan);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_RequestChargeThreshold(System.Nullable`1[System.Double])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_RequestChargeThreshold(System.Nullable`1[System.Double]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -5612,6 +5650,13 @@
           ],
           "MethodInfo": "Boolean RegexMatch(System.Object, System.String);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Int32 DocumentId(System.Object)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "ExtensionAttribute"
+          ],
+          "MethodInfo": "Int32 DocumentId(System.Object);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Microsoft.Azure.Cosmos.FeedIterator ToStreamIterator[T](System.Linq.IQueryable`1[T])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -7019,6 +7064,11 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String MexicoCentral;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String NewZealandNorth": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String NewZealandNorth;IsInitOnly:False;IsStatic:True;"
         },
         "System.String NorthCentralUS": {
           "Type": "Field",

@@ -1118,11 +1118,11 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="ThresholdViolation" />
+  <EVENT name="ThresholdViolation" />
+  <EVENT name="ThresholdViolation" />
+  <EVENT name="ThresholdViolation" />
+  <EVENT name="ThresholdViolation" />
 </OTelActivities></Output>
   </Result>
   <Result>
@@ -1864,11 +1864,11 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="ThresholdViolation" />
+  <EVENT name="ThresholdViolation" />
+  <EVENT name="ThresholdViolation" />
+  <EVENT name="ThresholdViolation" />
+  <EVENT name="ThresholdViolation" />
 </OTelActivities></Output>
   </Result>
   <Result>
@@ -2591,11 +2591,11 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="ThresholdViolation" />
+  <EVENT name="ThresholdViolation" />
+  <EVENT name="ThresholdViolation" />
+  <EVENT name="ThresholdViolation" />
+  <EVENT name="ThresholdViolation" />
 </OTelActivities></Output>
   </Result>
   <Result>
@@ -3338,11 +3338,11 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
-  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="ThresholdViolation" />
+  <EVENT name="ThresholdViolation" />
+  <EVENT name="ThresholdViolation" />
+  <EVENT name="ThresholdViolation" />
+  <EVENT name="ThresholdViolation" />
 </OTelActivities></Output>
   </Result>
   <Result>
@@ -3662,7 +3662,7 @@
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="ThresholdViolation" />
 </OTelActivities></Output>
   </Result>
 </Results>

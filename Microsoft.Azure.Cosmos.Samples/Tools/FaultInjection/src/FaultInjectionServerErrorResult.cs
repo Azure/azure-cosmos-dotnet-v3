@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private readonly int times;
         private readonly TimeSpan delay;
         private readonly bool suppressServiceRequests;
+        private readonly double injectionRate;
 
         /// <summary>
         /// Creates a new FaultInjectionServerErrorResult.
@@ -21,12 +22,19 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <param name="serverErrorType">Specifies the server error type.</param>
         /// <param name="times">Specifies the number of times a rule can be applied on a single operation.</param>
         /// <param name="delay">Specifies the injected delay for the server error.</param>
-        public FaultInjectionServerErrorResult(FaultInjectionServerErrorType serverErrorType, int times, TimeSpan delay, bool suppressServiceRequests)
+        /// <param name="injectionRate">Specifies the percentage of how many times the rule will be applied.</param>
+        public FaultInjectionServerErrorResult(
+            FaultInjectionServerErrorType serverErrorType, 
+            int times, 
+            TimeSpan delay, 
+            bool suppressServiceRequests,
+            double injectionRate = 1)
         {
             this.serverErrorType = serverErrorType;
             this.times = times;
             this.delay = delay;
             this.suppressServiceRequests = suppressServiceRequests;
+            this.injectionRate = injectionRate;
         }
 
         /// <summary>
@@ -69,16 +77,26 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         }
 
         /// <summary>
+        /// Gets the percentage of how many times the rule will be applied.
+        /// </summary>
+        /// <returns></returns>
+        public double GetInjectionRate()
+        {
+            return this.injectionRate;
+        }
+
+        /// <summary>
         /// To String method
         /// </summary>
         /// <returns>a string represeting the <see cref="FaultInjectionServerErrorResult"/>.</returns>
         public override string ToString()
         {
             return String.Format(
-                "FaultInjectionServerErrorResult{{ serverErrorType: {0}, times: {1}, delay: {2}}}",
+                "FaultInjectionServerErrorResult{{ serverErrorType: {0}, times: {1}, delay: {2}, applicationPercentage: {3}}",
                 this.serverErrorType,
                 this.times,
-                this.delay);
+                this.delay,
+                this.injectionRate);
         }
     }
 }
