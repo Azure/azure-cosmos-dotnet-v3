@@ -342,6 +342,95 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             }
         }
 
+        [TestMethod]
+        public void ArrayNestingDepthResizeTest()
+        {
+            {
+                object[] nestedArray = null;
+                ReadOnlyMemory<byte> buffer = null;
+                IJsonReader jsonReader = null;
+                for (int i = 0; i < 500; i++)
+                {
+                    IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Binary);
+
+                    object[] arrayValue = new object[] { (Number64)i, nestedArray };
+                    nestedArray = arrayValue;
+
+                    jsonWriter.WriteArrayStart();
+                    jsonWriter.WriteNumber64Value(i);
+
+                    jsonReader?.WriteAll(jsonWriter);
+                    jsonWriter.WriteArrayEnd();
+
+                    buffer = jsonWriter.GetResult();
+
+                    jsonReader = JsonReader.Create(buffer);
+                }
+
+                {
+                    TryCatch<IReadOnlyList<object>> tryDeserialize = JsonSerializer.Monadic.Deserialize<IReadOnlyList<object>>(buffer);
+                    Assert.IsTrue(tryDeserialize.Succeeded);
+
+                    IReadOnlyList<object> result = tryDeserialize.Result;
+
+                    while (result != null)
+                    {
+                        Assert.IsTrue((Number64)result[0] == (Number64)nestedArray[0]);
+
+                        result = (result.Count() == 1) ? null : result[1] as IReadOnlyList<object>;
+                        nestedArray = (nestedArray.Count() == 1) ? null : nestedArray[1] as object[];
+                    }
+                }
+            }
+        }
+
+        [TestMethod]
+        public void ObjectNestingDepthResizeTest()
+        {
+            {
+                NestedObject nestedObject = null;
+                ReadOnlyMemory<byte> buffer = null;
+                IJsonReader jsonReader = null;
+                for (int i = 0; i < 500; i++)
+                {
+                    IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Binary);
+
+                    NestedObject newNestedObject = new NestedObject(i, nestedObject);
+                    nestedObject = newNestedObject;
+
+                    jsonWriter.WriteObjectStart();
+
+                    jsonWriter.WriteFieldName("value");
+                    jsonWriter.WriteNumber64Value(i);
+
+                    jsonWriter.WriteFieldName("child");
+                    if (jsonReader != null)
+                    {
+                        jsonReader.WriteAll(jsonWriter);
+                    }
+                    else
+                    {
+                        jsonWriter.WriteNullValue();
+                    }
+
+                    jsonWriter.WriteObjectEnd();
+
+                    buffer = jsonWriter.GetResult();
+
+                    jsonReader = JsonReader.Create(buffer);
+                }
+
+                {
+                    TryCatch<NestedObject> tryDeserialize = JsonSerializer.Monadic.Deserialize<NestedObject>(buffer);
+                    Assert.IsTrue(tryDeserialize.Succeeded);
+
+                    NestedObject result = tryDeserialize.Result;
+
+                    Assert.IsTrue(result.Equals(nestedObject));
+                }
+            }
+        }
+
         private sealed class Person
         {
             public Person(string name, int age)
@@ -366,6 +455,38 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             public bool Equals(Person other)
             {
                 return (this.Name == other.Name) && (this.Age == other.Age);
+            }
+
+            public override int GetHashCode()
+            {
+                return 0;
+            }
+        }
+
+        private sealed class NestedObject
+        {
+            public NestedObject(int value, NestedObject child)
+            {
+                this.Value = value;
+                this.Child = child;
+            }
+
+            public int Value { get; }
+            public NestedObject Child { get; }
+
+            public override bool Equals(object obj)
+            {
+                if (!(obj is NestedObject nestedObject))
+                {
+                    return false;
+                }
+
+                return this.Equals(nestedObject);
+            }
+
+            public bool Equals(NestedObject other)
+            {
+                return this.Value == other.Value && (this.Child?.Equals(other.Child) ?? other.Child == null);
             }
 
             public override int GetHashCode()

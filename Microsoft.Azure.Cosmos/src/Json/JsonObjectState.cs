@@ -19,22 +19,22 @@ namespace Microsoft.Azure.Cosmos.Json
     sealed class JsonObjectState
     {
         /// <summary>
-        /// This constant defines the maximum nesting depth that the parser supports.
-        /// The JSON spec states that this is an implementation dependent thing, so we're just picking a value for now.
-        /// FWIW .Net chose 100
-        /// Note: This value needs to be a multiple of 8 and must be less than 2^15 (see asserts in the constructor)
-        /// </summary>
-        private const int JsonMaxNestingDepth = 256;
-
-        /// <summary>
         /// Flag for determining whether to throw exceptions that connote a context at the end or not started / complete.
         /// </summary>
         private readonly bool readMode;
 
         /// <summary>
+        /// This defines the current maximum nesting depth that the parser supports.
+        /// The JSON spec states that this is an implementation dependent thing, so we're just picking a value for now.
+        /// FWIW .Net chose 100
+        /// Note: This value needs to be a multiple of 8 and must be less than 2^15 (see asserts in the constructor)
+        /// </summary>
+        private int jsonMaxNestingDepth = 256;
+
+        /// <summary>
         /// Stores a bitmap for whether we are in an array or object context at a particular level (0 => array, 1 => object).
         /// </summary>
-        private readonly byte[] nestingStackBitmap;
+        private byte[] nestingStackBitmap;
 
         /// <summary>
         /// The current nesting stack index.
@@ -52,11 +52,11 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <param name="readMode">Flag for determining whether to throw exceptions that correspond to a JsonReader or JsonWriter.</param>
         public JsonObjectState(bool readMode)
         {
-            Debug.Assert(JsonMaxNestingDepth % 8 == 0, "JsonMaxNestingDepth must be multiple of 8");
-            Debug.Assert(JsonMaxNestingDepth < (1 << 15), "JsonMaxNestingDepth must be less than 2^15");
+            Debug.Assert(this.jsonMaxNestingDepth % 8 == 0, "JsonMaxNestingDepth must be multiple of 8");
+            Debug.Assert(this.jsonMaxNestingDepth < (1 << 15), "JsonMaxNestingDepth must be less than 2^15");
 
             this.readMode = readMode;
-            this.nestingStackBitmap = new byte[JsonMaxNestingDepth / 8];
+            this.nestingStackBitmap = new byte[this.jsonMaxNestingDepth / 8];
             this.nestingStackIndex = -1;
             this.CurrentTokenType = JsonTokenType.NotStarted;
             this.currentContext = JsonObjectContext.None;
@@ -179,9 +179,15 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <param name="isArray">Whether the JsonObjectContext is an array.</param>
         private void Push(bool isArray)
         {
-            if (this.nestingStackIndex + 1 >= JsonMaxNestingDepth)
+            if (this.nestingStackIndex + 1 >= this.jsonMaxNestingDepth)
             {
-                throw new InvalidOperationException(RMResources.JsonMaxNestingExceeded);
+                int newMaxNestingDepth = this.jsonMaxNestingDepth * 2;
+                if (newMaxNestingDepth >= (1 << 15))
+                {
+                    throw new InvalidOperationException(RMResources.JsonMaxNestingExceeded);
+                }
+
+                this.ResizeNestingArray(newMaxNestingDepth);
             }
 
             this.nestingStackIndex++;
@@ -196,6 +202,19 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.nestingStackBitmap[this.nestingStackIndex / 8] |= this.Mask;
                 this.currentContext = JsonObjectContext.Object;
             }
+        }
+
+        private void ResizeNestingArray(int newJsonMaxNestingDepth)
+        {
+            Debug.Assert(newJsonMaxNestingDepth > this.jsonMaxNestingDepth);
+            Debug.Assert(this.jsonMaxNestingDepth % 8 == 0, "JsonMaxNestingDepth must be multiple of 8");
+            Debug.Assert(this.jsonMaxNestingDepth < (1 << 15), "JsonMaxNestingDepth must be less than 2^15");
+
+            byte[] newNestingStackBitmap = new byte[newJsonMaxNestingDepth / 8];
+            Array.Copy(this.nestingStackBitmap, newNestingStackBitmap, Math.Min(this.nestingStackBitmap.Length, newNestingStackBitmap.Length));
+
+            this.nestingStackBitmap = newNestingStackBitmap;
+            this.jsonMaxNestingDepth = newJsonMaxNestingDepth;
         }
 
         /// <summary>
