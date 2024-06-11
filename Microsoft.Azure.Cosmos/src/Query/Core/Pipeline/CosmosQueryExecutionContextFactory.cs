@@ -609,6 +609,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     inputParameters.SqlQuerySpec,
                     cosmosQueryContext.ResourceTypeEnum,
                     partitionKeyDefinition,
+                    containerQueryProperties.VectorEmbeddingPolicy,
                     inputParameters.PartitionKey != null,
                     containerQueryProperties.GeospatialType,
                     cosmosQueryContext.UseSystemPrefix,
