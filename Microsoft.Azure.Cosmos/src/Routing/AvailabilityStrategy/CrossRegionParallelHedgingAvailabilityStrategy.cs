@@ -36,14 +36,18 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public TimeSpan ThresholdStep { get; private set; }
 
+        public bool ExcludeRegions { get; private set; }
+
         /// <summary>
         /// Constustor for parallel hedging availability strategy
         /// </summary>
         /// <param name="threshold"></param>
         /// <param name="thresholdStep"></param>
+        /// <param name="excludeRegions"></param>
         public CrossRegionParallelHedgingAvailabilityStrategy(
             TimeSpan threshold,
-            TimeSpan? thresholdStep)
+            TimeSpan? thresholdStep,
+            bool excludeRegions = false)
         {
             if (threshold <= TimeSpan.Zero)
             {
@@ -57,6 +61,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.Threshold = threshold;
             this.ThresholdStep = thresholdStep ?? TimeSpan.MaxValue;
+            this.ExcludeRegions = excludeRegions;
         }
 
         internal override bool Enabled()
@@ -124,15 +129,42 @@ namespace Microsoft.Azure.Cosmos
                 {
                     TimeSpan awaitTime = requestNumber == 0 ? this.Threshold : this.ThresholdStep;
 
-                    Task hedgeTimer = Task.Delay(awaitTime, cancellationToken);
+                    Task hedgeTimer;
+                    if (awaitTime == TimeSpan.MaxValue)
+                    {
+                        awaitTime = TimeSpan.FromMilliseconds(-1);
+
+                        hedgeTimer = Task.Delay(awaitTime, cancellationToken);
+                    }
+                    else
+                    {
+                        hedgeTimer = Task.Delay(awaitTime, cancellationToken);
+                    }
 
                     if (requestNumber == 0)
                     {
-                        primaryRequest = this.RequestSenderAndResultCheckAsync(
-                            sender,
-                            request,
-                            cancellationToken,
-                            cancellationTokenSource);
+                        if (this.ExcludeRegions)
+                        {
+                            request.RequestOptions ??= new RequestOptions();
+
+                            List<string> excludeRegions = new List<string>(hedgeRegions);
+                            excludeRegions.RemoveAt(requestNumber);
+                            request.RequestOptions.ExcludeRegions = excludeRegions;
+
+                            primaryRequest = this.RequestSenderAndResultCheckAsync(
+                                sender,
+                                request,
+                                cancellationToken,
+                                cancellationTokenSource);
+                        }
+                        else 
+                        {
+                            primaryRequest = this.RequestSenderAndResultCheckAsync(
+                                sender,
+                                request,
+                                cancellationToken,
+                                cancellationTokenSource);
+                        }
 
                         requestTasks.Add(primaryRequest);
                     }
@@ -148,7 +180,7 @@ namespace Microsoft.Azure.Cosmos
 
                         requestTasks.Add(requestTask);
                     }
-                    
+
                     requestTasks.Add(hedgeTimer);
 
                     Task completedTask = await Task.WhenAny(requestTasks);

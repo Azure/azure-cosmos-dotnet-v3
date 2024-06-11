@@ -419,7 +419,7 @@ namespace Microsoft.Azure.Cosmos
             StoreRequestHeaders clone = new StoreRequestHeaders();
             foreach (string key in this.CosmosMessageHeaders.AllKeys())
             {
-                clone.Add(key, this.CosmosMessageHeaders[key]);
+                clone.Add(key, this.CosmosMessageHeaders.Get(key));
             }
 
             return new Headers(clone);

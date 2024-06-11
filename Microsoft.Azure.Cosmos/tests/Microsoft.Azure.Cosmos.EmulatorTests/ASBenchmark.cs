@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using global::Azure.Core.Serialization;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.FaultInjection;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Database = Database;
     using PartitionKey = PartitionKey;
@@ -23,17 +24,104 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private CosmosClient client;
         private Database database;
         private Container container;
-        private Container changeFeedContainer;
         private CosmosSystemTextJsonSerializer cosmosSystemTextJsonSerializer;
         private string connectionString;
         private string dbName;
         private string containerName;
-        private string changeFeedContainerName;
-        private int itemCount = 10000;
+
+        public TestContext TestContext { get; set; }
+
+        public static readonly FaultInjectionRule readsession = new FaultInjectionRuleBuilder(
+            id: "readsession",
+            condition: new FaultInjectionConditionBuilder()
+                .WithRegion("Central US")
+                .WithOperationType(FaultInjectionOperationType.ReadItem)
+                .Build(),
+            result: 
+                FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ReadSessionNotAvailable)
+                .WithInjectionRate(.1)
+                .Build())
+            .WithDuration(TimeSpan.FromMinutes(90))
+            .Build();
+
+        public static readonly FaultInjectionRule readsession2 = new FaultInjectionRuleBuilder(
+            id: "readSession2",
+            condition: new FaultInjectionConditionBuilder()
+                .WithRegion("East US")
+                .WithOperationType(FaultInjectionOperationType.ReadItem)
+                .Build(),
+            result:
+                FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ReadSessionNotAvailable)
+                .Build())
+            .Build();
+
+        public static readonly FaultInjectionRule responseDelay = new FaultInjectionRuleBuilder(
+            id: "responseDely",
+            condition:
+                new FaultInjectionConditionBuilder()
+                    .WithRegion("Central US")
+                    .WithOperationType(FaultInjectionOperationType.ReadItem)
+                    .Build(),
+            result:
+                FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
+                    .WithInjectionRate(.1)
+                    .WithDelay(TimeSpan.FromSeconds(6))
+                    .Build())
+            .WithDuration(TimeSpan.FromMinutes(90))
+            .Build();
+
+        public static readonly FaultInjectionRule responseDelay2 = new FaultInjectionRuleBuilder(
+            id: "responseDely2",
+            condition:
+                new FaultInjectionConditionBuilder()
+                    .WithRegion("East US")
+                    .WithOperationType(FaultInjectionOperationType.ReadItem)
+                    .Build(),
+            result:
+                FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
+                    .WithInjectionRate(.1)
+                    .WithDelay(TimeSpan.FromSeconds(6))
+                    .Build())
+            .WithDuration(TimeSpan.FromMinutes(90))
+            .Build();
+
+        private static AvailabilityStrategy NoExclude40 = new CrossRegionParallelHedgingAvailabilityStrategy(TimeSpan.FromMilliseconds(40), TimeSpan.FromMilliseconds(40), false);
+
+        private static readonly AvailabilityStrategy NoExclude100 = new CrossRegionParallelHedgingAvailabilityStrategy(TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(100), false);
+
+        private static readonly AvailabilityStrategy NoExclude500 = new CrossRegionParallelHedgingAvailabilityStrategy(TimeSpan.FromMilliseconds(500), TimeSpan.FromMilliseconds(500), false);
+
+        private static readonly AvailabilityStrategy Exclude40 = new CrossRegionParallelHedgingAvailabilityStrategy(TimeSpan.FromMilliseconds(40), TimeSpan.FromMilliseconds(40), true);
+
+        private static readonly AvailabilityStrategy Exclude100 = new CrossRegionParallelHedgingAvailabilityStrategy(TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(100), true);
+
+        private static readonly AvailabilityStrategy Exclude500 = new CrossRegionParallelHedgingAvailabilityStrategy(TimeSpan.FromMilliseconds(500), TimeSpan.FromMilliseconds(500), true);
+
+        private static readonly AvailabilityStrategy Disabled = new DisabledAvailabilityStrategy();
+
+        private readonly Dictionary<string, FaultInjectionRule> rules = new Dictionary<string, FaultInjectionRule>()
+        {
+            { "readsession", readsession },
+            { "readsession2", readsession2 },
+            { "responseDelay", responseDelay },
+            { "responseDelay2", responseDelay2 }
+        };
+
+        private readonly Dictionary<string, AvailabilityStrategy> strategies = new Dictionary<string, AvailabilityStrategy>()
+        {
+            { "NoExclude40", NoExclude40 },
+            { "NoExclude100", NoExclude100 },
+            { "NoExclude500", NoExclude500 },
+            { "Exclude40", Exclude40 },
+            { "Exclude100", Exclude100 },
+            { "Exclude500", Exclude500 },
+            { "Disabled", Disabled }
+        };
 
         [TestInitialize]
         public async Task TestInitAsync()
         {
+            Console.WriteLine("Setting up test");
             this.connectionString = "";
 
             JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions()
@@ -47,20 +135,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Assert.Fail("Set environment variable COSMOSDB_MULTI_REGION to run the tests");
             }
+
             this.client = new CosmosClient(
                 this.connectionString,
                 new CosmosClientOptions()
                 {
                     Serializer = this.cosmosSystemTextJsonSerializer,
                 });
+            Console.WriteLine("Client Created");
+            this.dbName = "TestDb";
+            this.containerName = "TestContainer";
 
-            this.dbName = Guid.NewGuid().ToString();
-            this.containerName = Guid.NewGuid().ToString();
-            this.changeFeedContainerName = Guid.NewGuid().ToString();
-            this.database = this.client.CreateDatabaseIfNotExistsAsync(this.dbName).Result;
-            this.container = this.database.CreateContainerIfNotExistsAsync(this.containerName, "/pk").Result;
-            this.changeFeedContainer = this.database.CreateContainerIfNotExistsAsync(this.changeFeedContainerName, "/partitionKey").Result;
+            this.database = await this.client.CreateDatabaseIfNotExistsAsync(this.dbName);
+            Console.WriteLine("Database Created");
+            this.container = await this.database.CreateContainerIfNotExistsAsync(this.containerName, "/pk");
 
+            this.TestContext.WriteLine("Test Start: \n\n");
+            this.TestContext.WriteLine("Creating Data");
             for (int i = 0; i < 10000; i++)
             {
                 await this.container.CreateItemAsync<AvailabilityStrategyTestObject>(
@@ -71,47 +162,52 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Other = Guid.NewGuid().ToString()
                     });
             }
+            this.TestContext.WriteLine("Data Created");
 
             //Must Ensure the data is replicated to all regions
-            await Task.Delay(3000);
+            await Task.Delay(5000);
         }
 
         [TestCleanup]
-        public async Task TestCleanup()
+        public void TestCleanup()
         {
-            await this.database?.DeleteAsync();
             this.client?.Dispose();
         }
 
         [TestMethod]
-        public async Task ASBenchmarkTest()
+        public void ASBenchmarkTestDoNothing()
         {
-            FaultInjectionRule responseDelay = new FaultInjectionRuleBuilder(
-                id: "responseDely",
-                condition:
-                    new FaultInjectionConditionBuilder()
-                        .WithRegion("Central US")
-                        .WithOperationType(FaultInjectionOperationType.ReadItem)
-                        .Build(),
-                result:
-                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
-                        .WithDelay(TimeSpan.FromMilliseconds(4000))
-                        .WithInjectionRate(.1)
-                        .Build())
-                .WithDuration(TimeSpan.FromMinutes(90))
-                .Build();
+            Assert.IsTrue(true);
+        }
 
-            List<FaultInjectionRule> rules = new List<FaultInjectionRule>() { responseDelay };
-            FaultInjector faultInjector = new FaultInjector(rules);
+        [DataTestMethod]
+        [DataRow("readsession", "readsession2", "RS-NoExclude40", "NoExclude40")]
+        [DataRow("readsession", "readsession2", "RS-NoExclude100", "NoExclude100")]
+        [DataRow("readsession", "readsession2", "RS-Off", "Disabled")]
+        [DataRow("readsession", "readsession2", "Exclude40", "Exclude40")]
+        [DataRow("readsession", "readsession2", "Exclude100", "Exclude100")]
+        [DataRow("responseDelay", "responseDelay2", "DELAY-NoExclude100", "NoExclude100")]
+        [DataRow("responseDelay", "responseDelay2", "DELAY-Exclude100", "Exclude100")]
+        [DataRow("responseDelay", "responseDelay2", "DELAY-NoExclude500", "NoExclude500")]
+        [DataRow("responseDelay", "responseDelay2", "DELAY-Exclude500", "Exclude500")]
+        [DataRow("responseDelay", "responseDelay2", "DELAY-Off", "Disabled")]
+        public async Task ASBenchmarkTest(string rule1name, string rule2name, string name, string availStrat)
+        {
+            FaultInjectionRule rule1 = this.rules[rule1name];
+            FaultInjectionRule rule2 = this.rules[rule2name];
 
-            responseDelay.Disable();
+            AvailabilityStrategy strategy = this.strategies[availStrat];
+
+            rule1.Disable();
+            rule2.Disable();
+
+            FaultInjector faultInjector = new FaultInjector(new List<FaultInjectionRule>() { rule1, rule2 });
 
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ConnectionMode = ConnectionMode.Direct,
-                ApplicationPreferredRegions = new List<string>() { "Central US", "East US" },
-                AvailabilityStrategy = new CrossRegionParallelHedgingAvailabilityStrategy(
-                        threshold: TimeSpan.FromMilliseconds(500), null),
+                AvailabilityStrategy = strategy,
+                ApplicationPreferredRegions = new List<string>() { "Central US", "East US", "South Central US"},
                 Serializer = this.cosmosSystemTextJsonSerializer
             };
 
@@ -122,24 +218,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Database database = faultInjectionClient.GetDatabase(this.dbName);
             Container container = database.GetContainer(this.containerName);
 
-            responseDelay.Enable();
+            rule1.Enable();
+            rule2.Enable();
+
+            await Task.Delay(3000);
 
             ItemResponse<AvailabilityStrategyTestObject> ir;
             int itemNum;
-            int ruleHC = (int)responseDelay.GetHitCount();
+            int ruleHC = (int)rule1.GetHitCount();
             bool isHedged;
             Random random = new Random();
             List<HedgeDatum> hedgeData = new List<HedgeDatum>(10000);
 
-            Console.WriteLine("Starting Benchmark" + DateTime.UtcNow);
+            Console.WriteLine("Starting Benchmark: " + DateTime.UtcNow);
+            this.TestContext.WriteLine("Starting Benchmark: " + DateTime.UtcNow);
             for (int i = 0; i < 10000; i++)
             {
-                itemNum = random.Next(0, this.itemCount);
+                itemNum = random.Next(0, 10000);
                 ir = await container.ReadItemAsync<AvailabilityStrategyTestObject>(
-                    partitionKey: new PartitionKey(itemNum % 10),
-                    id: itemNum.ToString());
+                    itemNum.ToString(),
+                    new PartitionKey((itemNum % 10).ToString()));
 
-                isHedged = ruleHC < responseDelay.GetHitCount();
+                isHedged = ruleHC < rule1.GetHitCount();
                 hedgeData.Add(new HedgeDatum()
                 {
                     Id = itemNum,
@@ -154,25 +254,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 if (i % 100 == 0)
                 {
-                    Console.WriteLine($"{i/10000}% Complete");
                     await this.container.CreateItemAsync<AvailabilityStrategyTestObject>(
                         new AvailabilityStrategyTestObject()
                         {
-                            Id = this.itemCount.ToString(),
-                            Pk = (this.itemCount % 10).ToString(),
+                            Id = Guid.NewGuid().ToString(),
+                            Pk = (itemNum % 10).ToString(),
                             Other = Guid.NewGuid().ToString()
                         });
-                    this.itemCount++;
                 }
             }
 
-            using (StreamWriter writer = new StreamWriter("hedgeBenchmarkBase.csv"))
+            using (StreamWriter writer = new StreamWriter(name + ".csv"))
             using (CsvWriter csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
             {
                 csv.WriteRecords(hedgeData);
             }
-
-            Console.WriteLine("Ending Benchmark" + DateTime.UtcNow);
+            faultInjectionClient.Dispose();
+            Console.WriteLine("Ending Benchmark: " + DateTime.UtcNow);
         }
 
         private class HedgeDatum
