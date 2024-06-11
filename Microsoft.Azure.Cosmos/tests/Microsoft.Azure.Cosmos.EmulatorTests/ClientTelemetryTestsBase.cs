@@ -1045,11 +1045,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .WithApplicationName("userAgentSuffix");
 
 
-            this.cosmosClientBuilder.clientOptions.ServerCertificateCustomValidationCallback = (X509Certificate2 cert, X509Chain chain, SslPolicyErrors error) =>
-            {
-                System.Diagnostics.Trace.TraceError($"{cert.SubjectName} -> {error}");
-                return true;
-            };
+            this.cosmosClientBuilder.clientOptions.DisableServerCertificateValidation = true;
 
             this.SetClient(mode == ConnectionMode.Gateway
                 ? this.cosmosClientBuilder.WithConnectionModeGateway().Build()
