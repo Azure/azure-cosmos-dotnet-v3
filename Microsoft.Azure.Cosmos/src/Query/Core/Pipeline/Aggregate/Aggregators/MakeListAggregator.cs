@@ -22,9 +22,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
         private MakeListAggregator(CosmosArray initialList)
         {
             this.globalList = new List<CosmosElement>();
-            foreach (CosmosElement setItem in initialList)
+            foreach (CosmosElement listItem in initialList)
             {
-                this.globalList.Add(setItem);
+                this.globalList.Add(listItem);
             }
         }
 
@@ -40,9 +40,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
 
         public CosmosElement GetResult()
         {
-            CosmosElement[] cosmosElementArray = new CosmosElement[this.globalList.Count];
-            this.globalList.CopyTo(cosmosElementArray);
-            return CosmosArray.Create(cosmosElementArray);
+            return CosmosArray.Create(this.globalList);
         }
 
         public static TryCatch<IAggregator> TryCreate(CosmosElement continuationToken)
@@ -68,9 +66,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
 
         public CosmosElement GetCosmosElementContinuationToken()
         {
-            CosmosElement[] cosmosElementArray = new CosmosElement[this.globalList.Count];
-            this.globalList.CopyTo(cosmosElementArray);
-            return CosmosArray.Create(cosmosElementArray);
+            return this.GetResult();
         }
     }
 }

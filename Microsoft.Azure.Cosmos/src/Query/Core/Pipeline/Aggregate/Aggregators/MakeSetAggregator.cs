@@ -40,9 +40,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
 
         public CosmosElement GetResult()
         {
-            CosmosElement[] cosmosElementArray = new CosmosElement[this.globalSet.Count];
-            this.globalSet.CopyTo(cosmosElementArray);
-            return CosmosArray.Create(cosmosElementArray);
+            return CosmosArray.Create(this.globalSet);
         }
 
         public string GetContinuationToken()
@@ -73,9 +71,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
 
         public CosmosElement GetCosmosElementContinuationToken()
         {
-            CosmosElement[] cosmosElementArray = new CosmosElement[this.globalSet.Count];
-            this.globalSet.CopyTo(cosmosElementArray);
-            return CosmosArray.Create(cosmosElementArray);
+            return this.GetResult();
         }
     }
 }
