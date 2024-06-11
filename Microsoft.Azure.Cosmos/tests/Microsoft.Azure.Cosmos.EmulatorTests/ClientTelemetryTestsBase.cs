@@ -22,6 +22,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using Cosmos.Util;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
+    using System.Security.Cryptography.X509Certificates;
+    using System.Net.Security;
 
     public abstract class ClientTelemetryTestsBase : BaseCosmosClientHelper
     {
@@ -1041,6 +1043,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.cosmosClientBuilder = this.cosmosClientBuilder
                 .WithHttpClientFactory(() => new HttpClient(handlerHelper))
                 .WithApplicationName("userAgentSuffix");
+
+
+            this.cosmosClientBuilder.clientOptions.ServerCertificateCustomValidationCallback = (X509Certificate2 cert, X509Chain chain, SslPolicyErrors error) =>
+            {
+                System.Diagnostics.Trace.TraceError($"{cert.SubjectName} -> {error}");
+                return true;
+            };
 
             this.SetClient(mode == ConnectionMode.Gateway
                 ? this.cosmosClientBuilder.WithConnectionModeGateway().Build()

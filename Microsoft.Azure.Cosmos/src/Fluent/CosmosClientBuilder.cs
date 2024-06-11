@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
     /// </summary>
     public class CosmosClientBuilder
     {
-        private readonly CosmosClientOptions clientOptions = new CosmosClientOptions();
+        internal readonly CosmosClientOptions clientOptions = new CosmosClientOptions();
         private readonly string accountEndpoint;
         private readonly string accountKey;
         private readonly AzureKeyCredential azureKeyCredential;
