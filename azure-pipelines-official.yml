@@ -47,7 +47,7 @@ stages:
         inputs:
           command: test
           projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj'
-          arguments: --filter "TestCategory=ClientTelemetryRelease" --verbosity normal --configuration ${{ variables.BuildConfiguration }} /p:OS=Windows
+          arguments: --filter "TestCategory=ClientTelemetryRelease & TestCategory!=Quarantine" --verbosity normal --configuration ${{ variables.BuildConfiguration }} /p:OS=Windows
           nugetConfigPath: NuGet.config
           publishTestResults: true
           testRunTitle: Microsoft.Azure.Cosmos.EmulatorTests
