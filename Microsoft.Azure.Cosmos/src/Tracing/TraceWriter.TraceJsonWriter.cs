@@ -194,7 +194,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteFieldName("Id");
                 this.jsonWriter.WriteStringValue("AggregatedClientSideRequestStatistics");
 
-                this.WriteJsonUriArrayWithDuplicatesCounted("ContactedReplicas", clientSideRequestStatisticsTraceDatum.ContactedReplicas);
+                this.WriteJsonUriArrayWithDuplicatesCounted("ContactedReplicas", TraceWriter.TraceDatumJsonWriter.GetFinalContactedReplica(clientSideRequestStatisticsTraceDatum));
 
                 this.WriteRegionsContactedArray("RegionsContacted", clientSideRequestStatisticsTraceDatum.RegionsContacted);
                 this.WriteJsonUriArray("FailedReplicas", clientSideRequestStatisticsTraceDatum.FailedReplicas);
@@ -206,7 +206,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                 foreach (KeyValuePair<string, ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics> stat in clientSideRequestStatisticsTraceDatum.EndpointToAddressResolutionStatistics)
                 {
-                   this.VisitAddressResolutionStatistics(stat.Value);
+                    this.VisitAddressResolutionStatistics(stat.Value);
                 }
 
                 this.jsonWriter.WriteArrayEnd();
@@ -235,6 +235,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 }
 
                 this.jsonWriter.WriteObjectEnd();
+            }
+
+            private static List<TransportAddressUri> GetFinalContactedReplica(ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
+            {
+                return new List<TransportAddressUri> { clientSideRequestStatisticsTraceDatum.ContactedReplicas.LastOrDefault() };
             }
 
             private void VisitHttpResponseStatistics(ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics stat, IJsonWriter jsonWriter)
