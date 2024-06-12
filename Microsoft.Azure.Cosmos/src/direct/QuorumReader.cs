@@ -681,6 +681,19 @@ namespace Microsoft.Azure.Documents
             {
                 barrierRequest.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
 
+                long cachedGclsn = gclsnTracker.GetGclsn();
+                if(hasConvergedOnLSN && cachedGclsn >= targetGlobalCommittedLSN)
+                {
+                    DefaultTrace.TraceInformation(
+                        "QuorumReader: WaitForReadBarrierAsync - Cache value succeeded. ReadMode: {0}, " +
+                            "HasLSNConverged: {1}, BarrierRequestRetryCount: {2}, Cache Value: {3}",
+                        readMode,
+                        hasConvergedOnLSN,
+                        readBarrierRetryCount,
+                        cachedGclsn);
+                    return true;
+                }
+
                 ValueStopwatch barrierRequestStopWatch = ValueStopwatch.StartNew();
                 using StoreResultList disposableResponses = new(await this.storeReader.ReadMultipleReplicaAsync(
                     barrierRequest,

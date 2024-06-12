@@ -419,6 +419,11 @@ For globally strong write:
                 barrierRequest.RequestContext.TimeoutHelper.ThrowTimeoutIfElapsed();
                 long cachedGclsnValue = gclsnTracker.GetGclsn();
 
+                if(cachedGclsnValue >= selectedGlobalCommittedLsn)
+                {
+                    return true;
+                }
+
                 ValueStopwatch barrierRequestStopWatch = ValueStopwatch.StartNew();
                 IList<ReferenceCountedDisposable<StoreResult>> responses = await this.storeReader.ReadMultipleReplicaAsync(
                     barrierRequest,

@@ -129,9 +129,7 @@
             List<Task> tasks = new List<Task>();
 
             // Iterate through all permutations 
-            //List<List<string>> permutations = GetRegionsPermutations(writeRegion, readRegions); 
-            List<string> regions = new List<string>();
-            regions.AddRange(readRegions);
+            //List<List<string>> permutations = GetRegionsPermutations(writeRegion, readRegions);
             List<List<string>> permutations = new List<List<string>> { new List<string> { readRegions[0], writeRegion, readRegions[1] } };
             foreach (List<string> permutation in permutations)
             {
@@ -141,7 +139,7 @@
                 CosmosClient client = new CosmosClient(endpoint, authKey, new CosmosClientOptions
                 {
                     ApplicationPreferredRegions = permutation.ToArray(),
-                    ApplicationName = "PerfTestOptimized" + formattedRegion,
+                    ApplicationName = "PerfTestCached" + formattedRegion,
                     ConnectionMode = ConnectionMode.Direct,
                     ConsistencyLevel = ConsistencyLevel.Strong,
                     CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions()
