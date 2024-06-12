@@ -13,19 +13,20 @@ namespace Microsoft.Azure.Documents
 
     internal class GclsnStore
     {
-       private ConcurrentDictionary<PartitionKeyRange, PartitionGclsnTracker> partitionKeyRangeToGlobalCommittedlsnCache = new();
+       private ConcurrentDictionary<string, PartitionGclsnTracker> partitionKeyRangeToGlobalCommittedlsnCache = new();
 
         public void SetGclsn(PartitionKeyRange partitionKeyRangeId, long gclsn)
         {
-            if(partitionKeyRangeId == null)
+            if(partitionKeyRangeId == null || string.IsNullOrEmpty(partitionKeyRangeId.Id))
             {
                 return;
             }
 
-            if (!this.partitionKeyRangeToGlobalCommittedlsnCache.TryGetValue(partitionKeyRangeId, out PartitionGclsnTracker partitionGclsn))
+            string pkRangeId = partitionKeyRangeId.Id;
+            if (!this.partitionKeyRangeToGlobalCommittedlsnCache.TryGetValue(pkRangeId, out PartitionGclsnTracker partitionGclsn))
             {
-                partitionGclsn = new PartitionGclsnTracker(partitionKeyRangeId, gclsn);
-                if (!this.partitionKeyRangeToGlobalCommittedlsnCache.TryAdd(partitionKeyRangeId, partitionGclsn))
+                partitionGclsn = new PartitionGclsnTracker(pkRangeId, gclsn);
+                if (!this.partitionKeyRangeToGlobalCommittedlsnCache.TryAdd(pkRangeId, partitionGclsn))
                 {
                     throw new InvalidOperationException($"Failed to add partitionKeyRangeId: {partitionKeyRangeId} to the GclsnStore.");
                 }
@@ -36,7 +37,7 @@ namespace Microsoft.Azure.Documents
 
         public bool TryGetGclsn(PartitionKeyRange partitionKeyRangeId, out long gclsn)
         {
-            if(this.partitionKeyRangeToGlobalCommittedlsnCache.TryGetValue(partitionKeyRangeId, out PartitionGclsnTracker gclsnTracker))
+            if(this.partitionKeyRangeToGlobalCommittedlsnCache.TryGetValue(partitionKeyRangeId.Id, out PartitionGclsnTracker gclsnTracker))
             {
                 gclsn = gclsnTracker.GetGclsn();
                 return true;
@@ -48,18 +49,19 @@ namespace Microsoft.Azure.Documents
 
         public PartitionGclsnTracker GetPartitionGclsnTracker(PartitionKeyRange partitionKeyRangeId)
         {
-            if (this.partitionKeyRangeToGlobalCommittedlsnCache.TryGetValue(partitionKeyRangeId, out PartitionGclsnTracker gclsnTracker))
+            string pkRangeId = partitionKeyRangeId.Id;
+            if (this.partitionKeyRangeToGlobalCommittedlsnCache.TryGetValue(pkRangeId, out PartitionGclsnTracker gclsnTracker))
             {
                 return gclsnTracker;
             }
 
-            PartitionGclsnTracker partitionGclsnTracker = new PartitionGclsnTracker(partitionKeyRangeId, -1);
-            if (this.partitionKeyRangeToGlobalCommittedlsnCache.TryAdd(partitionKeyRangeId, partitionGclsnTracker))
+            PartitionGclsnTracker partitionGclsnTracker = new PartitionGclsnTracker(pkRangeId, -1);
+            if (this.partitionKeyRangeToGlobalCommittedlsnCache.TryAdd(pkRangeId, partitionGclsnTracker))
             {
                 return partitionGclsnTracker;
             }
 
-            if (this.partitionKeyRangeToGlobalCommittedlsnCache.TryGetValue(partitionKeyRangeId, out gclsnTracker))
+            if (this.partitionKeyRangeToGlobalCommittedlsnCache.TryGetValue(pkRangeId, out gclsnTracker))
             {
                 return gclsnTracker;
             }

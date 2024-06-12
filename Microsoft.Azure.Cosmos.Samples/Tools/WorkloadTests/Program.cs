@@ -22,7 +22,7 @@
         private static readonly TimeSpan RUN_TIME = TimeSpan.FromDays(2);
         private const string DATABASE_NAME = "ycsb";
         private const string CONTAINER_NAME = "try";
-        private const int CONCURRENCY_PER_SDK_INSTANCE = 4;
+        private const int CONCURRENCY_PER_SDK_INSTANCE = 10;
 
         private string Region { get; }
         private DateTime StartTime { get; }
@@ -102,7 +102,7 @@
             List<string> readRegions = new List<string>();
 
             // Disable PPAF to figure out regions
-            System.Environment.SetEnvironmentVariable("AZURE_COSMOS_PARTITION_LEVEL_FAILOVER_ENABLED", "FALSE");
+            //System.Environment.SetEnvironmentVariable("AZURE_COSMOS_PARTITION_LEVEL_FAILOVER_ENABLED", "FALSE");
 
             using (CosmosClient client = new CosmosClient(endpoint, authKey, new CosmosClientOptions
             {
@@ -124,12 +124,15 @@
             }
 
             //Enable PPAF
-            System.Environment.SetEnvironmentVariable("AZURE_COSMOS_PARTITION_LEVEL_FAILOVER_ENABLED", "TRUE");
+            //System.Environment.SetEnvironmentVariable("AZURE_COSMOS_PARTITION_LEVEL_FAILOVER_ENABLED", "TRUE");
             DateTime startTime = DateTime.UtcNow;
             List<Task> tasks = new List<Task>();
 
             // Iterate through all permutations 
-            List<List<string>> permutations = GetRegionsPermutations(writeRegion, readRegions);
+            //List<List<string>> permutations = GetRegionsPermutations(writeRegion, readRegions); 
+            List<string> regions = new List<string>();
+            regions.AddRange(readRegions);
+            List<List<string>> permutations = new List<List<string>> { new List<string> { readRegions[0], writeRegion, readRegions[1] } };
             foreach (List<string> permutation in permutations)
             {
                 Console.WriteLine($"Setting up clients for regions: {string.Join(", ", permutation)}");

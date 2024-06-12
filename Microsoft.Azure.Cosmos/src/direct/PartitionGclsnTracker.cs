@@ -13,11 +13,11 @@ namespace Microsoft.Azure.Documents
 
     internal class PartitionGclsnTracker
     {
-        public PartitionKeyRange partitionKeyRangeId { get; }
+        public string partitionKeyRangeId { get; }
         private long gclsn;
         private readonly object lockObject = new object();
 
-        public PartitionGclsnTracker(PartitionKeyRange partitionKeyRangeId, long gclsn)
+        public PartitionGclsnTracker(string partitionKeyRangeId, long gclsn)
         {
             this.partitionKeyRangeId = partitionKeyRangeId;
             this.gclsn = gclsn;

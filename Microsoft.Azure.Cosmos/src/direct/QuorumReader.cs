@@ -696,7 +696,7 @@ namespace Microsoft.Azure.Documents
                 TimeSpan previousBarrierRequestLatency = barrierRequestStopWatch.Elapsed;
 
                 // PartitionKeyRange could have changed from split/merge. Update the GCLSN tracker.
-                if (barrierRequest.PartitionKeyRangeIdentity != null && barrierRequest.RequestContext.ResolvedPartitionKeyRange != gclsnTracker.partitionKeyRangeId)
+                if (barrierRequest.PartitionKeyRangeIdentity != null && barrierRequest.RequestContext.ResolvedPartitionKeyRange.Id != gclsnTracker.partitionKeyRangeId)
                 {
                     gclsnTracker = gclsnStore.GetPartitionGclsnTracker(barrierRequest.RequestContext.ResolvedPartitionKeyRange);
                 }
