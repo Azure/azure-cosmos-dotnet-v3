@@ -117,19 +117,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             Logger.LogLine($"@ {DateTime.Now}, CFProcessor starting...");
 
             await processor.StartAsync();
-            await Task.Delay(GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests.ChangeFeedSetupTime);
-            await monitoredContainer.CreateItemAsync<dynamic>(new { id = "1", pk = "1", description = "Testing TTL on CFP.", ttl = ttlInSeconds }, partitionKey: new PartitionKey("1"));
 
-            // NOTE(philipthomas-MSFT): Please allow these Logger.LogLine because TTL on items will purge at random times so I am using this to test when ran locally using emulator.
-
-            Logger.LogLine($"@ {DateTime.Now}, Document created.");
-
-            bool receivedDelete = allDocsProcessed.WaitOne(60000);
-            Assert.IsTrue(receivedDelete, "Timed out waiting for docs to process");
-
-            if (exception != default)
+            try
             {
-                Assert.Fail(exception.ToString());
+                await Task.Delay(GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests.ChangeFeedSetupTime);
+                await monitoredContainer.CreateItemAsync<dynamic>(new { id = "1", pk = "1", description = "Testing TTL on CFP.", ttl = ttlInSeconds }, partitionKey: new PartitionKey("1"));
+
+                // NOTE(philipthomas-MSFT): Please allow these Logger.LogLine because TTL on items will purge at random times so I am using this to test when ran locally using emulator.
+
+                Logger.LogLine($"@ {DateTime.Now}, Document created.");
+
+                bool receivedDelete = allDocsProcessed.WaitOne(300000);
+                Assert.IsTrue(receivedDelete, "Timed out waiting for docs to process");
+
+                if (exception != default)
+                {
+                    Assert.Fail(exception.ToString());
+                }
+            }
+            finally
+            {
+                await processor.StopAsync();
             }
         }
 
