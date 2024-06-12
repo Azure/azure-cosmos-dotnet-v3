@@ -22,7 +22,7 @@
         private static readonly TimeSpan RUN_TIME = TimeSpan.FromDays(2);
         private const string DATABASE_NAME = "ycsb";
         private const string CONTAINER_NAME = "try";
-        private const int CONCURRENCY_PER_SDK_INSTANCE = 10;
+        private const int CONCURRENCY_PER_SDK_INSTANCE = 20;
 
         private string Region { get; }
         private DateTime StartTime { get; }
@@ -129,9 +129,7 @@
             List<Task> tasks = new List<Task>();
 
             // Iterate through all permutations 
-            //List<List<string>> permutations = GetRegionsPermutations(writeRegion, readRegions); 
-            List<string> regions = new List<string>();
-            regions.AddRange(readRegions);
+            //List<List<string>> permutations = GetRegionsPermutations(writeRegion, readRegions);
             List<List<string>> permutations = new List<List<string>> { new List<string> { readRegions[0], writeRegion, readRegions[1] } };
             foreach (List<string> permutation in permutations)
             {
@@ -141,7 +139,7 @@
                 CosmosClient client = new CosmosClient(endpoint, authKey, new CosmosClientOptions
                 {
                     ApplicationPreferredRegions = permutation.ToArray(),
-                    ApplicationName = "PerfTestOptimized" + formattedRegion,
+                    ApplicationName = "PerfTestCache" + formattedRegion,
                     ConnectionMode = ConnectionMode.Direct,
                     ConsistencyLevel = ConsistencyLevel.Strong,
                     CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions()
@@ -290,7 +288,7 @@
                 int count = Interlocked.Increment(ref this.totalCount);
                 if (taskItemCount % 50 == 0)
                 {
-                    Console.WriteLine($"Task {taskNum}; Total: {count}, {region}, Task Count: {taskItemCount}, time{DateTime.UtcNow:MM_dd_yy H_mm_ss}, create failed: {this.createFailureCount}, read failed: {this.readFailureCount}");
+                    Console.WriteLine($"Task {taskNum}; Total: {count}, Skip: {CosmosClient.SkipBarrierRequestCount}, {region}, Task Count: {taskItemCount}, time{DateTime.UtcNow:MM_dd_yy H_mm_ss}, create failed: {this.createFailureCount}, read failed: {this.readFailureCount}");
                 }
 
                 Item item = Item.CreateRandom();
@@ -303,7 +301,7 @@
                     using MemoryStream stream = new MemoryStream(bytes);
                     CosmosDiagnostics createDiagonstics;
                     int createStatusCode = 0;
-                    bool logDiagnostics = count % 50 == 0;
+                    bool logDiagnostics = count % 20 == 0;
                     using (Activity? ac = this.source.CreateActivity("AppCreateItemStreamAsync", ActivityKind.Server))
                     {
                         Stopwatch sw = Stopwatch.StartNew();

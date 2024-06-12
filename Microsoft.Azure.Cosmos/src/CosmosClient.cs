@@ -114,6 +114,8 @@ namespace Microsoft.Azure.Cosmos
         internal static int numberOfClientsCreated;
         internal static int NumberOfActiveClients;
 
+        public static int SkipBarrierRequestCount = 0;
+
         internal DateTime? DisposedDateTimeUtc { get; private set; } = null;
 
         static CosmosClient()

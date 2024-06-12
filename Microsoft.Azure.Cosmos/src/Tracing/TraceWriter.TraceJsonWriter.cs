@@ -221,6 +221,19 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                 this.jsonWriter.WriteArrayEnd();
 
+                if(clientSideRequestStatisticsTraceDatum.GlobalCommitedLsnStatistics.Count > 0)
+                {
+                    this.jsonWriter.WriteFieldName("GclsnCacheHits");
+                    this.jsonWriter.WriteArrayStart();
+
+                    foreach (ClientSideRequestStatisticsTraceDatum.GclsnStatistics stat in clientSideRequestStatisticsTraceDatum.GlobalCommitedLsnStatistics)
+                    {
+                        this.VisitGclsnStatistics(stat);
+                    }
+
+                    this.jsonWriter.WriteArrayEnd();
+                }
+
                 if (clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList.Count > 0)
                 {
                     this.jsonWriter.WriteFieldName("HttpResponseStats");
@@ -342,6 +355,26 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     this.jsonWriter.WriteFieldName("StoreResult");
                     this.Visit(storeResponseStatistics.StoreResult);
                 }
+
+                this.jsonWriter.WriteObjectEnd();
+            }
+
+            private void VisitGclsnStatistics(
+                ClientSideRequestStatisticsTraceDatum.GclsnStatistics gclsnStats)
+            {
+                this.jsonWriter.WriteObjectStart();
+
+                this.jsonWriter.WriteFieldName("StartTimeUTC");
+                this.WriteDateTimeStringValue(gclsnStats.RequestStartTime);
+
+                this.jsonWriter.WriteFieldName("PartitionKeyRangeId");
+                this.jsonWriter.WriteStringValue(gclsnStats.PartitionKeyRangeId);
+
+                this.jsonWriter.WriteFieldName("TargetGclsn");
+                this.jsonWriter.WriteNumber64Value(gclsnStats.TargetGlobalCommittedLSN);
+
+                this.jsonWriter.WriteFieldName("CacheGclsn");
+                this.jsonWriter.WriteNumber64Value(gclsnStats.CachedGlobalCommittedLSN);
 
                 this.jsonWriter.WriteObjectEnd();
             }

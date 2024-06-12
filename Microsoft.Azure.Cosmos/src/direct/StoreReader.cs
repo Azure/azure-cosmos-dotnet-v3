@@ -315,6 +315,7 @@ namespace Microsoft.Azure.Documents
                             entity.RequestContext.ClientRequestStatistics.FailedReplicas.Add(targetUri);
                         }
 
+
                         entity.RequestContext.ClientRequestStatistics.RecordResponse(
                             entity,
                             storeResult,
@@ -334,6 +335,11 @@ namespace Microsoft.Azure.Documents
                             {
                                 storeResultList.Add(disposableStoreResult.TryAddReference());
                             }
+                        }
+
+                        if(this.sessionContainer != null)
+                        {
+                            this.sessionContainer.GetGclsnStore().SetGclsn(entity.RequestContext.ResolvedPartitionKeyRange, storeResult.GlobalCommittedLSN);
                         }
 
                         hasGoneException |= storeResult.StatusCode == StatusCodes.Gone && storeResult.SubStatusCode != SubStatusCodes.NameCacheIsStale;

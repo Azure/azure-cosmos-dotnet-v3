@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Common
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Runtime.CompilerServices;
     using System.Text;
     using System.Threading;
     using Microsoft.Azure.Cosmos.Core.Trace;
@@ -67,7 +68,13 @@ namespace Microsoft.Azure.Cosmos.Common
 
         public void SetSessionToken(string collectionRid, string collectionFullname, INameValueCollection responseHeaders)
         {
-            SessionContainer.SetSessionToken(this.state, collectionRid, collectionFullname, responseHeaders);
+            ResourceId resourceId = ResourceId.Parse(collectionRid);
+            string collectionName = PathsHelper.GetCollectionPath(collectionFullname);
+            string token = responseHeaders[HttpConstants.HttpHeaders.SessionToken];
+            if (!string.IsNullOrEmpty(token))
+            {
+                SessionContainer.SetSessionToken(this.state, resourceId, collectionName, token);
+            }
         }
 
         public void SetSessionToken(DocumentServiceRequest request, INameValueCollection responseHeaders)
@@ -229,17 +236,6 @@ namespace Microsoft.Azure.Cosmos.Common
                         self.rwlock.ExitWriteLock();
                     }
                 }
-            }
-        }
-
-        private static void SetSessionToken(SessionContainerState self, string collectionRid, string collectionFullname, INameValueCollection responseHeaders)
-        {
-            ResourceId resourceId = ResourceId.Parse(collectionRid);
-            string collectionName = PathsHelper.GetCollectionPath(collectionFullname);
-            string token = responseHeaders[HttpConstants.HttpHeaders.SessionToken];
-            if (!string.IsNullOrEmpty(token))
-            {
-                SessionContainer.SetSessionToken(self, resourceId, collectionName, token);
             }
         }
 

@@ -10,8 +10,11 @@ namespace Microsoft.Azure.Documents
     using System.Linq;
     using System.Runtime.ExceptionServices;
     using System.Text;
+    using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
     //=================================================================================================================
     // Strong read logic:
@@ -681,6 +684,32 @@ namespace Microsoft.Azure.Documents
             {
                 barrierRequest.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
 
+                long cachedGclsnValue = gclsnTracker.GetGclsn();
+                if(hasConvergedOnLSN && cachedGclsnValue >= targetGlobalCommittedLSN)
+                {
+                    if(barrierRequest.RequestContext.ClientRequestStatistics != null)
+                    {
+                        ClientSideRequestStatisticsTraceDatum stats = barrierRequest.RequestContext.ClientRequestStatistics as ClientSideRequestStatisticsTraceDatum;
+                        if (stats!= null)
+                        {
+                            stats.RecordGlobalCommitedCacheHit(
+                              partitionKeyRangeId: gclsnTracker.partitionKeyRangeId,
+                              targetGclsn: targetGlobalCommittedLSN,
+                              cachedGclsn: cachedGclsnValue);
+                        }
+                    }
+
+                    Interlocked.Increment(ref CosmosClient.SkipBarrierRequestCount);
+                    DefaultTrace.TraceInformation(
+                        "QuorumReader: WaitForReadBarrierAsync - Cache value succeeded. ReadMode: {0}, " +
+                            "HasLSNConverged: {1}, BarrierRequestRetryCount: {2}, Cache Value: {3}",
+                        readMode,
+                        hasConvergedOnLSN,
+                        readBarrierRetryCount,
+                        cachedGclsnValue);
+                    return true;
+                }
+
                 ValueStopwatch barrierRequestStopWatch = ValueStopwatch.StartNew();
                 using StoreResultList disposableResponses = new(await this.storeReader.ReadMultipleReplicaAsync(
                     barrierRequest,
@@ -695,12 +724,6 @@ namespace Microsoft.Azure.Documents
                 IList<ReferenceCountedDisposable<StoreResult>> responses = disposableResponses.Value;
                 TimeSpan previousBarrierRequestLatency = barrierRequestStopWatch.Elapsed;
 
-                // PartitionKeyRange could have changed from split/merge. Update the GCLSN tracker.
-                if (barrierRequest.PartitionKeyRangeIdentity != null && barrierRequest.RequestContext.ResolvedPartitionKeyRange.Id != gclsnTracker.partitionKeyRangeId)
-                {
-                    gclsnTracker = gclsnStore.GetPartitionGclsnTracker(barrierRequest.RequestContext.ResolvedPartitionKeyRange);
-                }
-
                 int readBarrierLsnReachedCount = 0;
                 long maxGlobalCommittedLsnInResponses = 0;
                 foreach(ReferenceCountedDisposable<StoreResult> response in responses)
@@ -713,7 +736,16 @@ namespace Microsoft.Azure.Documents
                 }
 
                 // Update the cached GCLSN value for the partition key range.
-                gclsnTracker.SetGclsn(maxGlobalCommittedLsnInResponses);
+                if (gclsnTracker.TrySetGclsn(maxGlobalCommittedLsnInResponses))
+                {
+                    DefaultTrace.TraceInformation(
+                        "QuorumReader: gclsnTracker updated - , " +
+                            "HasLSNConverged: {1}, BarrierRequestRetryCount: {2}, Cache Value: {3}",
+                        readMode,
+                        hasConvergedOnLSN,
+                        readBarrierRetryCount,
+                        cachedGclsnValue);
+                }
 
                 if (!hasConvergedOnLSN && readBarrierLsnReachedCount >= readQuorum)
                 {

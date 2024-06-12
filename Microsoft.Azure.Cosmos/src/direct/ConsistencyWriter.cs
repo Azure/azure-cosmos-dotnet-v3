@@ -11,7 +11,9 @@ namespace Microsoft.Azure.Documents
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
     /*
 
@@ -260,6 +262,9 @@ For globally strong write:
                     throw new InternalServerErrorException();
                 }
 
+                // Always update the cached GCLSN value for the partition key range.
+                this.sessionContainer.GetGclsnStore().SetGclsn(request.RequestContext.ResolvedPartitionKeyRange, storeResult.Target.GlobalCommittedLSN);
+
                 if (ReplicatedResourceClient.IsGlobalStrongEnabled() && this.ShouldPerformWriteBarrierForGlobalStrong(storeResult.Target))
                 {
                     long lsn = storeResult.Target.LSN;
@@ -280,9 +285,6 @@ For globally strong write:
                     request.RequestContext.ForceRefreshAddressCache = false;
 
                     DefaultTrace.TraceInformation("ConsistencyWriter: globalCommittedLsn {0}, lsn {1}", globalCommittedLsn, lsn);
-
-                    // Always update the cached GCLSN value for the partition key range.
-                    this.sessionContainer.GetGclsnStore().SetGclsn(request.RequestContext.ResolvedPartitionKeyRange, globalCommittedLsn);
 
                     //barrier only if necessary, i.e. when write region completes write, but read regions have not.
                     if (globalCommittedLsn < lsn)
@@ -419,6 +421,25 @@ For globally strong write:
                 barrierRequest.RequestContext.TimeoutHelper.ThrowTimeoutIfElapsed();
                 long cachedGclsnValue = gclsnTracker.GetGclsn();
 
+                if(cachedGclsnValue >= selectedGlobalCommittedLsn)
+                {
+                    if (barrierRequest.RequestContext.ClientRequestStatistics != null)
+                    {
+                        ClientSideRequestStatisticsTraceDatum stats = barrierRequest.RequestContext.ClientRequestStatistics as ClientSideRequestStatisticsTraceDatum;
+                        if (stats != null)
+                        {
+                            stats.RecordGlobalCommitedCacheHit(
+                               partitionKeyRangeId: gclsnTracker.partitionKeyRangeId,
+                               targetGclsn: selectedGlobalCommittedLsn,
+                               cachedGclsn: cachedGclsnValue);
+                        }
+                    }
+
+                    Interlocked.Increment(ref CosmosClient.SkipBarrierRequestCount);
+                    DefaultTrace.TraceInformation("ConsistencyWriter: cache pk id: {0} Cached value {1}; select commit: {2}", gclsnTracker.partitionKeyRangeId, cachedGclsnValue, selectedGlobalCommittedLsn);
+                    return true;
+                }
+
                 ValueStopwatch barrierRequestStopWatch = ValueStopwatch.StartNew();
                 IList<ReferenceCountedDisposable<StoreResult>> responses = await this.storeReader.ReadMultipleReplicaAsync(
                     barrierRequest,
@@ -444,7 +465,10 @@ For globally strong write:
                     foreach (ReferenceCountedDisposable<StoreResult> response in responses)
                     {
                         // Update the cached GCLSN value for the partition key range.
-                        gclsnTracker.SetGclsn(selectedGlobalCommittedLsn);
+                        if (gclsnTracker.TrySetGclsn(response.Target.GlobalCommittedLSN))
+                        {
+                            DefaultTrace.TraceInformation("ConsistencyWriter: gclsnTracker updated pk id: {0}; updated GCLSN: {1}", gclsnTracker.partitionKeyRangeId, response.Target.GlobalCommittedLSN);
+                        }
 
                         if (response.Target.GlobalCommittedLSN >= selectedGlobalCommittedLsn)
                         {

@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Documents
                 return;
             }
 
-            string pkRangeId = partitionKeyRangeId.Id;
+            string pkRangeId = partitionKeyRangeId.ResourceId;
             if (!this.partitionKeyRangeToGlobalCommittedlsnCache.TryGetValue(pkRangeId, out PartitionGclsnTracker partitionGclsn))
             {
                 partitionGclsn = new PartitionGclsnTracker(pkRangeId, gclsn);
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Documents
                 }
             }
 
-            partitionGclsn.SetGclsn(gclsn);
+            partitionGclsn.TrySetGclsn(gclsn);
         }
 
         public bool TryGetGclsn(PartitionKeyRange partitionKeyRangeId, out long gclsn)
@@ -47,21 +47,21 @@ namespace Microsoft.Azure.Documents
             return false;
         }
 
-        public PartitionGclsnTracker GetPartitionGclsnTracker(PartitionKeyRange partitionKeyRangeId)
+        public PartitionGclsnTracker GetPartitionGclsnTracker(PartitionKeyRange partitionKeyRange)
         {
-            string pkRangeId = partitionKeyRangeId.Id;
-            if (this.partitionKeyRangeToGlobalCommittedlsnCache.TryGetValue(pkRangeId, out PartitionGclsnTracker gclsnTracker))
+            string partitionKeyRangeId = partitionKeyRange.Id;
+            if (this.partitionKeyRangeToGlobalCommittedlsnCache.TryGetValue(partitionKeyRangeId, out PartitionGclsnTracker gclsnTracker))
             {
                 return gclsnTracker;
             }
 
-            PartitionGclsnTracker partitionGclsnTracker = new PartitionGclsnTracker(pkRangeId, -1);
-            if (this.partitionKeyRangeToGlobalCommittedlsnCache.TryAdd(pkRangeId, partitionGclsnTracker))
+            PartitionGclsnTracker partitionGclsnTracker = new PartitionGclsnTracker(partitionKeyRangeId, -1);
+            if (this.partitionKeyRangeToGlobalCommittedlsnCache.TryAdd(partitionKeyRangeId, partitionGclsnTracker))
             {
                 return partitionGclsnTracker;
             }
 
-            if (this.partitionKeyRangeToGlobalCommittedlsnCache.TryGetValue(pkRangeId, out gclsnTracker))
+            if (this.partitionKeyRangeToGlobalCommittedlsnCache.TryGetValue(partitionKeyRangeId, out gclsnTracker))
             {
                 return gclsnTracker;
             }

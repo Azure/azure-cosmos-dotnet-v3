@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Globalization;
     using System.Net;
     using System.Net.Http;
     using System.Text;
@@ -14,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Rntbd;
+    using static Microsoft.Azure.Documents.ClientSideRequestStatistics.HttpResponseStatistics;
 
     internal sealed class ClientSideRequestStatisticsTraceDatum : TraceDatum, IClientSideRequestStatistics
     {
@@ -28,10 +30,12 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         private readonly Dictionary<string, AddressResolutionStatistics> endpointToAddressResolutionStats;
         private readonly List<StoreResponseStatistics> storeResponseStatistics;
         private readonly List<HttpResponseStatistics> httpResponseStatistics;
+        private readonly List<GclsnStatistics> globalCommitedLsnCacheHits;
 
         private IReadOnlyDictionary<string, AddressResolutionStatistics> shallowCopyOfEndpointToAddressResolutionStatistics = null;
         private IReadOnlyList<StoreResponseStatistics> shallowCopyOfStoreResponseStatistics = null;
         private IReadOnlyList<HttpResponseStatistics> shallowCopyOfHttpResponseStatistics = null;
+        
         private SystemUsageHistory systemUsageHistory = null;
 
         public ClientSideRequestStatisticsTraceDatum(DateTime startTime, ITrace trace)
@@ -44,6 +48,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             this.FailedReplicas = new HashSet<TransportAddressUri>();
             this.RegionsContacted = new HashSet<(string, Uri)>();
             this.httpResponseStatistics = new List<HttpResponseStatistics>();
+            this.globalCommitedLsnCacheHits = new List<GclsnStatistics>();
             this.Trace = trace;
         }
 
@@ -77,6 +82,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         public ITrace Trace { get; private set; }
 
         public TraceSummary TraceSummary => this.Trace?.Summary;
+
+        public IReadOnlyList<GclsnStatistics> GlobalCommitedLsnStatistics => this.globalCommitedLsnCacheHits;
 
         public IReadOnlyList<StoreResponseStatistics> StoreResponseStatisticsList
         {
@@ -141,6 +148,17 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             {
                 this.partitionAddressInformationRefreshes.Add((existingInfo, newInfo));
             }
+        }
+
+        public void RecordGlobalCommitedCacheHit(string partitionKeyRangeId, long targetGclsn, long cachedGclsn)
+        {
+            this.globalCommitedLsnCacheHits.Add(new GclsnStatistics
+            {
+                RequestStartTime = DateTime.UtcNow,
+                PartitionKeyRangeId = partitionKeyRangeId,
+                CachedGlobalCommittedLSN = targetGclsn,
+                TargetGlobalCommittedLSN = cachedGclsn,
+            });
         }
 
         public void WriteAddressCachRefreshContent(IJsonWriter jsonWriter)
@@ -521,6 +539,41 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             public HttpMethod HttpMethod { get; }
             public Uri RequestUri { get; }
             public string ActivityId { get; }
+        }
+
+        public struct GclsnStatistics
+        {
+            public DateTime RequestStartTime;
+            public string PartitionKeyRangeId;
+            public long CachedGlobalCommittedLSN;
+            public long TargetGlobalCommittedLSN;
+
+            public override string ToString()
+            {
+                StringBuilder stringBuilder = new StringBuilder();
+                this.AppendToBuilder(stringBuilder);
+                return stringBuilder.ToString();
+            }
+
+            public void AppendToBuilder(StringBuilder stringBuilder)
+            {
+                if (stringBuilder == null)
+                {
+                    throw new ArgumentNullException(nameof(stringBuilder));
+                }
+
+                stringBuilder.Append("RequestStart: ");
+                stringBuilder.Append(this.RequestStartTime.ToString("o", CultureInfo.InvariantCulture));
+
+                stringBuilder.Append("; PK Range Id: ");
+                stringBuilder.Append(this.PartitionKeyRangeId);
+
+                stringBuilder.Append("; Cached GCLSN: ");
+                stringBuilder.Append(this.CachedGlobalCommittedLSN);
+
+                stringBuilder.Append("; Target GCLSN: ");
+                stringBuilder.Append(this.TargetGlobalCommittedLSN);
+            }
         }
     }
 }

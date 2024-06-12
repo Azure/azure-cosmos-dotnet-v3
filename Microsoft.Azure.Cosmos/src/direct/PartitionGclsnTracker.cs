@@ -23,22 +23,24 @@ namespace Microsoft.Azure.Documents
             this.gclsn = gclsn;
         }
 
-        public void SetGclsn(long gclsn)
+        public bool TrySetGclsn(long gclsn)
         {
             if (gclsn <= this.gclsn)
             {
-                return;
+                return false;
             }
 
             lock (this.lockObject)
             {
                 if (gclsn <= this.gclsn)
                 {
-                    return;
+                    return false;
                 }
 
                 this.gclsn = gclsn;
             }
+
+            return true;
         }
 
         public long GetGclsn()
