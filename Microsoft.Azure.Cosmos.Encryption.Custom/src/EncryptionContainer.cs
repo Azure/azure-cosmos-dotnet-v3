@@ -1020,6 +1020,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 requestOptions,
                 cancellationToken);
         }
+
+        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(string processorName, ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate)
+        {
+            throw new NotImplementedException();
+        }
 #endif
 
 #if SDKPROJECTREF
@@ -1087,22 +1092,5 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             return decryptItems;
         }
-
-#if ENCRYPTIONPREVIEW
-        public override Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(PartitionKey partitionKey, RequestOptions requestOptions = null, CancellationToken cancellationToken = default)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(FeedRange feedRange, CancellationToken cancellationToken = default)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(string processorName, ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate)
-        {
-            throw new NotImplementedException();
-        }
-#endif
     }
 }
