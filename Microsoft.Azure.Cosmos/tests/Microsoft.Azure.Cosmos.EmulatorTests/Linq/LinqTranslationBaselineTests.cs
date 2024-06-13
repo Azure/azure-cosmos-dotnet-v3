@@ -110,6 +110,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             public string StringField;
             public string StringField2;
             public int[] ArrayField;
+            public SimpleObject[] ObjectArrayField;
             public List<int> EnumerableField;
             public Point Point;
             public int? NullableField;
@@ -879,6 +880,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("ArrayField contains", b => getQuery(b).Select(doc => doc.ArrayField.Contains(1))),
                 new LinqTestInput("EnumerableField contains", b => getQuery(b).Select(doc => doc.EnumerableField.Contains(1))),
                 new LinqTestInput("EnumerableField not contains", b => getQuery(b).Select(doc => !doc.EnumerableField.Contains(1))),
+                new LinqTestInput("ObjectArrayField contains object", b => getQuery(b).Select(doc => doc.ObjectArrayField.Contains(new SimpleObject(){ Field = "test" }))),
                 // Contains with constants should be IN
                 new LinqTestInput("Constant list contains numeric field", b => getQuery(b).Select(doc => constantList.Contains((int)doc.NumericField))),
                 new LinqTestInput("Constant array contains numeric field", b => getQuery(b).Select(doc => constantArray.Contains((int)doc.NumericField))),

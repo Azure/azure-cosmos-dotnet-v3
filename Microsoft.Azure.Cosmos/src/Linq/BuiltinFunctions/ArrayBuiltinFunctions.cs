@@ -72,7 +72,10 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                 SqlScalarExpression array = ExpressionToSql.VisitScalarExpression(searchList, context);
                 SqlScalarExpression expression = ExpressionToSql.VisitScalarExpression(searchExpression, context);
-                return SqlFunctionCallScalarExpression.CreateBuiltin("ARRAY_CONTAINS", array, expression);
+
+                return searchExpression.Type.IsClass ?
+                     SqlFunctionCallScalarExpression.CreateBuiltin("ARRAY_CONTAINS", array, expression, SqlLiteralScalarExpression.SqlTrueLiteralScalarExpression) :
+                     SqlFunctionCallScalarExpression.CreateBuiltin("ARRAY_CONTAINS", array, expression);
             }
 
             private SqlScalarExpression VisitIN(Expression expression, ConstantExpression constantExpressionList, TranslationContext context)
