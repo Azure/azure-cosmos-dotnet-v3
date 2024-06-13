@@ -20,10 +20,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class ASBenchmark
     {
-
-        private CosmosClient client;
-        private Database database;
-        private Container container;
         private CosmosSystemTextJsonSerializer cosmosSystemTextJsonSerializer;
         private string connectionString;
         private string dbName;
@@ -85,13 +81,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             .WithDuration(TimeSpan.FromMinutes(90))
             .Build();
 
-        private static AvailabilityStrategy NoExclude40 = new CrossRegionParallelHedgingAvailabilityStrategy(TimeSpan.FromMilliseconds(40), TimeSpan.FromMilliseconds(40), false);
+        private static readonly AvailabilityStrategy NoExclude40 = new CrossRegionParallelHedgingAvailabilityStrategy(TimeSpan.FromMilliseconds(40), TimeSpan.FromMilliseconds(40), false);
+
+        private static readonly AvailabilityStrategy NoExclude30 = new CrossRegionParallelHedgingAvailabilityStrategy(TimeSpan.FromMilliseconds(30), TimeSpan.FromMilliseconds(30), false);
 
         private static readonly AvailabilityStrategy NoExclude100 = new CrossRegionParallelHedgingAvailabilityStrategy(TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(100), false);
 
         private static readonly AvailabilityStrategy NoExclude500 = new CrossRegionParallelHedgingAvailabilityStrategy(TimeSpan.FromMilliseconds(500), TimeSpan.FromMilliseconds(500), false);
 
         private static readonly AvailabilityStrategy Exclude40 = new CrossRegionParallelHedgingAvailabilityStrategy(TimeSpan.FromMilliseconds(40), TimeSpan.FromMilliseconds(40), true);
+        
+        private static readonly AvailabilityStrategy Exclude30 = new CrossRegionParallelHedgingAvailabilityStrategy(TimeSpan.FromMilliseconds(30), TimeSpan.FromMilliseconds(30), true);
 
         private static readonly AvailabilityStrategy Exclude100 = new CrossRegionParallelHedgingAvailabilityStrategy(TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(100), true);
 
@@ -115,7 +115,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             { "Exclude40", Exclude40 },
             { "Exclude100", Exclude100 },
             { "Exclude500", Exclude500 },
-            { "Disabled", Disabled }
+            { "Disabled", Disabled },
+            { "NoExclude30", NoExclude30 },
+            { "Exclude30", Exclude30 },
         };
 
         [TestInitialize]
@@ -136,42 +138,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.Fail("Set environment variable COSMOSDB_MULTI_REGION to run the tests");
             }
 
-            this.client = new CosmosClient(
-                this.connectionString,
-                new CosmosClientOptions()
-                {
-                    Serializer = this.cosmosSystemTextJsonSerializer,
-                });
-            Console.WriteLine("Client Created");
             this.dbName = "TestDb";
             this.containerName = "TestContainer";
 
-            this.database = await this.client.CreateDatabaseIfNotExistsAsync(this.dbName);
-            Console.WriteLine("Database Created");
-            this.container = await this.database.CreateContainerIfNotExistsAsync(this.containerName, "/pk");
-
-            this.TestContext.WriteLine("Test Start: \n\n");
-            this.TestContext.WriteLine("Creating Data");
-            for (int i = 0; i < 10000; i++)
-            {
-                await this.container.CreateItemAsync<AvailabilityStrategyTestObject>(
-                    new AvailabilityStrategyTestObject()
-                    {
-                        Id = i.ToString(),
-                        Pk = (i % 10).ToString(),
-                        Other = Guid.NewGuid().ToString()
-                    });
-            }
-            this.TestContext.WriteLine("Data Created");
-
             //Must Ensure the data is replicated to all regions
             await Task.Delay(5000);
-        }
-
-        [TestCleanup]
-        public void TestCleanup()
-        {
-            this.client?.Dispose();
         }
 
         [TestMethod]
@@ -180,17 +151,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(true);
         }
 
+        //[DataTestMethod]
+        //[DataRow("readsession", "readsession2", "RS-NoExclude40-3", "NoExclude40")]
+        //[DataRow("readsession", "readsession2", "RS-NoExclude100-3", "NoExclude100")]
+        //[DataRow("readsession", "readsession2", "RS-Off-3", "Disabled")]
+        //[DataRow("readsession", "readsession2", "Exclude40-3", "Exclude40")]
+        //[DataRow("readsession", "readsession2", "Exclude100-3", "Exclude100")]
+        //[DataRow("responseDelay", "responseDelay2", "DELAY-NoExclude100-3", "NoExclude100")]
+        //[DataRow("responseDelay", "responseDelay2", "DELAY-Exclude100-3", "Exclude100")]
+        //[DataRow("responseDelay", "responseDelay2", "DELAY-NoExclude500-3", "NoExclude500")]
+        //[DataRow("responseDelay", "responseDelay2", "DELAY-Exclude500-3", "Exclude500")]
+        //[DataRow("responseDelay", "responseDelay2", "DELAY-Off-3", "Disabled")]
         [DataTestMethod]
-        [DataRow("readsession", "readsession2", "RS-NoExclude40", "NoExclude40")]
-        [DataRow("readsession", "readsession2", "RS-NoExclude100", "NoExclude100")]
-        [DataRow("readsession", "readsession2", "RS-Off", "Disabled")]
-        [DataRow("readsession", "readsession2", "Exclude40", "Exclude40")]
-        [DataRow("readsession", "readsession2", "Exclude100", "Exclude100")]
-        [DataRow("responseDelay", "responseDelay2", "DELAY-NoExclude100", "NoExclude100")]
-        [DataRow("responseDelay", "responseDelay2", "DELAY-Exclude100", "Exclude100")]
-        [DataRow("responseDelay", "responseDelay2", "DELAY-NoExclude500", "NoExclude500")]
-        [DataRow("responseDelay", "responseDelay2", "DELAY-Exclude500", "Exclude500")]
-        [DataRow("responseDelay", "responseDelay2", "DELAY-Off", "Disabled")]
+        [DataRow("responseDelay", "readsession2", "RS-NoExclude30", "NoExclude30")]
+        [DataRow("responseDelay", "readsession2", "RS-NoExclude30-2", "NoExclude30")]
+        [DataRow("responseDelay", "readsession2", "RS-NoExclude30-3", "NoExclude30")]
+        [DataRow("readsession", "readsession2", "RS-Exclude30", "Exclude30")]
+        [DataRow("readsession", "readsession2", "RS-Exclude30-2", "Exclude30")]
+        [DataRow("readsession", "readsession2", "RS-Exclude30-3", "Exclude30")]
         public async Task ASBenchmarkTest(string rule1name, string rule2name, string name, string availStrat)
         {
             FaultInjectionRule rule1 = this.rules[rule1name];
@@ -254,7 +232,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 if (i % 100 == 0)
                 {
-                    await this.container.CreateItemAsync<AvailabilityStrategyTestObject>(
+                    await container.CreateItemAsync<AvailabilityStrategyTestObject>(
                         new AvailabilityStrategyTestObject()
                         {
                             Id = Guid.NewGuid().ToString(),
