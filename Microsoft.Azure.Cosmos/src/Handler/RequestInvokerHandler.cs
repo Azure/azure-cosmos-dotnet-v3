@@ -126,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             ResponseMessage response = await base.SendAsync(request, cancellationToken);
             if (request.RequestOptions?.ExcludeRegions != null)
             {
-                ((CosmosTraceDiagnostics)response.Diagnostics).Value.AddDatum("ExcludedRegions", request.RequestOptions.ExcludeRegions);
+                ((CosmosTraceDiagnostics)response.Diagnostics).Value.AddOrUpdateDatum("ExcludedRegions", request.RequestOptions.ExcludeRegions);
             }
             return response;
         }

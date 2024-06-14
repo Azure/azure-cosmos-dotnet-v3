@@ -124,7 +124,17 @@ namespace Microsoft.Azure.Cosmos
                 {
                     TimeSpan awaitTime = requestNumber == 0 ? this.Threshold : this.ThresholdStep;
 
-                    Task hedgeTimer = Task.Delay(awaitTime, cancellationToken);
+                    Task hedgeTimer;
+                    if (awaitTime == TimeSpan.MaxValue)
+                    {
+                        awaitTime = TimeSpan.FromMilliseconds(-1);
+
+                        hedgeTimer = Task.Delay(awaitTime, cancellationToken);
+                    }
+                    else
+                    {
+                        hedgeTimer = Task.Delay(awaitTime, cancellationToken);
+                    }
 
                     if (requestNumber == 0)
                     {
