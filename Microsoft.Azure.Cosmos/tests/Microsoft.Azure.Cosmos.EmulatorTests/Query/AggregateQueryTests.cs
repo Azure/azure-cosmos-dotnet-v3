@@ -1112,9 +1112,11 @@
         [TestMethod]
         public async Task TestArrayAggregatesWithContinuationTokenAsync()
         {
-            //await this.TestArrayAggregatesWithContinuationToken(100, new int[] { 1, 10, 100 });
-
             await this.TestArrayAggregatesWithContinuationToken(100);
+
+            // using 2048 + 1 documents here to ensure list size hits continuation token limit of 16KB
+            // We aggregates c.age (integers) which has 8 bytes, 16KB / 8B = 2048
+            await this.TestArrayAggregatesWithContinuationToken(2049);
         }
         private async Task TestArrayAggregatesWithContinuationToken(int numDocuments)
         {
@@ -1153,7 +1155,6 @@
             {
                 foreach (string[] queriesToCompare in new string[][]
                 {
-                //new string[]{ "SELECT VALUE c.age FROM c ORDER BY c.age", "SELECT VALUE MakeList(c.age) FROM c GROUP BY c.name" },
                 new string[]{ "SELECT VALUE c.age FROM c", "SELECT VALUE MakeList(c.age) FROM c" },
                 new string[]{ "SELECT DISTINCT VALUE c.age FROM c ORDER BY c.age", "SELECT VALUE MakeSet(c.age) FROM c" },
                 })
@@ -1165,7 +1166,7 @@
                         new QueryRequestOptions()
                         {
                             MaxConcurrency = 10,
-                            MaxItemCount = 10000,
+                            MaxItemCount = 100,
                         },
                         QueryDrainingMode.ContinuationToken | QueryDrainingMode.HoldState);
 
@@ -1173,8 +1174,8 @@
                     Array.Sort(normalizedExpectedResult);
 
                     CosmosArray normalizedExpectedCosmosArray = CosmosArray.Create(normalizedExpectedResult);
-                    int[] pageSizes = new int[] { 1, 10, 100 };
-                    //int[] pageSizes = (documents.Count() < 1000) ? new int[] { 1, 10, 100 } : new int[] { 1000 };
+
+                    int[] pageSizes = (documents.Count() < 1000) ? new int[] { 1, 10, 100 } : new int[] { 100 };
                     foreach (int pageSize in pageSizes)
                     {
                         string queryWithAggregate = queriesToCompare[1];
