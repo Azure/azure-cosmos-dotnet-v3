@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Drawing.Printing;
     using System.Linq;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -563,6 +564,7 @@
                 )
             };
 
+            // Test query correctness.
             foreach ((string query, List<CosmosElement> expectedResults) in queryAndExpectedResultsListArrayAggregates)
             {
                 foreach (int maxItemCount in new int[] { 1, 5, 10 })
@@ -578,7 +580,6 @@
                         container,
                         query,
                         queryRequestOptions);
-
                     this.NormalizeGroupByArrayAggregateResults(actualWithoutContinuationTokens);
                     HashSet<CosmosElement> actualWithoutContinuationTokensSet = new HashSet<CosmosElement>(actualWithoutContinuationTokens);
 
@@ -586,15 +587,28 @@
                         container,
                         query, 
                         queryRequestOptions);
-
                     this.NormalizeGroupByArrayAggregateResults(actualWithTryGetContinuationTokens);
                     HashSet<CosmosElement> actualWithTryGetContinuationTokensSet = new HashSet<CosmosElement>(actualWithTryGetContinuationTokens);
+
+                    List<CosmosElement> actualWithCombinations = await QueryTestsBase.RunQueryCombinationsAsync(
+                        container,
+                        query,
+                        queryRequestOptions,
+                        QueryDrainingMode.HoldState | QueryDrainingMode.CosmosElementContinuationToken);
+                    this.NormalizeGroupByArrayAggregateResults(actualWithCombinations);
+                    HashSet<CosmosElement> actualWithCombinationsSet = new HashSet<CosmosElement>(actualWithCombinations);
 
                     Assert.IsTrue(
                        actualWithoutContinuationTokensSet.SetEquals(actualWithTryGetContinuationTokensSet),
                        $"Results did not match for query: {query} with maxItemCount: {maxItemCount}" +
                        $"ActualWithoutContinuationTokens: {JsonConvert.SerializeObject(actualWithoutContinuationTokensSet)}" +
                        $"ActualWithTryGetContinuationTokens: {JsonConvert.SerializeObject(actualWithTryGetContinuationTokensSet)}");
+
+                    Assert.IsTrue(
+                       actualWithoutContinuationTokensSet.SetEquals(actualWithCombinationsSet),
+                       $"Results did not match for query: {query} with maxItemCount: {maxItemCount}" +
+                       $"ActualWithoutContinuationTokens: {JsonConvert.SerializeObject(actualWithoutContinuationTokensSet)}" +
+                       $"ActualWithCombinations: {JsonConvert.SerializeObject(actualWithCombinationsSet)}");
 
                     this.NormalizeGroupByArrayAggregateResults(expectedResults);
                     HashSet<CosmosElement> expectedSet = new HashSet<CosmosElement>(expectedResults);
@@ -633,7 +647,7 @@
             {
                 if (results[i] is CosmosObject cosmosObject)
                 {
-                    IDictionary<string, CosmosElement> normalizedResult = new Dictionary<string, CosmosElement>();
+                    Dictionary<string, CosmosElement> normalizedResult = new Dictionary<string, CosmosElement>();
 
                     foreach (KeyValuePair<string, CosmosElement> kvp in cosmosObject)
                     {
@@ -649,8 +663,7 @@
                         }
                     }
 
-                    ReadOnlyDictionary<string, CosmosElement> newDict = new ReadOnlyDictionary<string, CosmosElement>(normalizedResult);
-                    results[i] = CosmosObject.Create(newDict);
+                    results[i] = CosmosObject.Create(normalizedResult);
                 }
             }
         }
