@@ -95,11 +95,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    if (feedRangeStates[i].State != null)
+                    FeedRangeState<QueryState> feedRangeState = feedRangeStates[i];
+                    if (feedRangeState.State != null)
                     {
                         ParallelContinuationToken parallelContinuationToken = new ParallelContinuationToken(
-                            token: feedRangeStates[i].State != null ? ((CosmosString)feedRangeStates[i].State.Value).Value : null,
-                            range: ((FeedRangeEpk)feedRangeStates[i].FeedRange).Range);
+                            token: feedRangeState.State != null ? ((CosmosString)feedRangeState.State.Value).Value : null,
+                            range: ((FeedRangeEpk)feedRangeState.FeedRange).Range);
 
                         activeParallelContinuationTokens.Add(parallelContinuationToken);
                     }
