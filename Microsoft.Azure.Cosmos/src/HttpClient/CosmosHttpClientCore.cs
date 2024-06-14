@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
+    using Microsoft.Azure.Documents.FaultInjection;
 
     internal sealed class CosmosHttpClientCore : CosmosHttpClient
     {
@@ -27,6 +28,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly ICommunicationEventSource eventSource;
 
         private bool disposedValue;
+        private static IChaosInterceptor chaosInterceptor;
 
         private CosmosHttpClientCore(
             HttpClient httpClient,
@@ -46,8 +48,11 @@ namespace Microsoft.Azure.Cosmos
             ConnectionPolicy connectionPolicy,
             HttpMessageHandler httpMessageHandler,
             EventHandler<SendingRequestEventArgs> sendingRequestEventArgs,
-            EventHandler<ReceivedResponseEventArgs> receivedResponseEventArgs)
+            EventHandler<ReceivedResponseEventArgs> receivedResponseEventArgs,
+            IChaosInterceptor faultInjectionchaosInterceptor)
         {
+            chaosInterceptor = faultInjectionchaosInterceptor;
+
             if (connectionPolicy == null)
             {
                 throw new ArgumentNullException(nameof(connectionPolicy));
