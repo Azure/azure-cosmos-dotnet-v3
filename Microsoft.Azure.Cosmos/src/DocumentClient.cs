@@ -945,7 +945,8 @@ namespace Microsoft.Azure.Cosmos
                 this.ConnectionPolicy,
                 handler,
                 this.sendingRequest,
-                this.receivedResponse);
+                this.receivedResponse,
+                this.chaosInterceptor);
 
             // Loading VM Information (non blocking call and initialization won't fail if this call fails)
             VmMetadataApiHandler.TryInitialize(this.httpClient);

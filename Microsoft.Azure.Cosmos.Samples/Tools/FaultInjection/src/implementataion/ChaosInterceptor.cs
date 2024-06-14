@@ -203,6 +203,39 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         }
 
         /// <summary>
+        /// Used to inject faults on http request call
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        public Task<(bool, StoreResponse)> OnHttpRequestCallAsync(DocumentServiceRequest request)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Used to inject faults, such as send delays, before http request send
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        public Task OnBeforeHttpSendAsync(DocumentServiceRequest request)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Used to inject faults, such as response delays, after http request send
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        public Task OnAfterHttpSendAsync(DocumentServiceRequest request)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
         /// Gets the fault injection rule id for the given activity id
         /// If multible FaultInjectionRules are applied to the same activity, the first rule applied will be returned
         /// Will return the empty string if no rule is found
