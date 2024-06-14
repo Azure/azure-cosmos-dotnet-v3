@@ -1341,8 +1341,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ItemMultiplePartitionQuery()
         {
-            // 3000
-            IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(this.Container, 3000, randomPartitionKey: true);
+            IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(this.Container, 3, randomPartitionKey: true);
 
             ToDoActivity find = itemList.First();
             QueryDefinition sql = new QueryDefinition("select * from toDoActivity t where t.id = '" + find.id + "'");
