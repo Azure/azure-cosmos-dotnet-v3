@@ -78,9 +78,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
             }
             else
             {
-                Stopwatch sw = new ();
-                sw.Start();
-
                 // left most and any non null continuations
                 FeedRangeState<QueryState>[] feedRangeStates = crossPartitionState.Value.ToArray();
                 Array.Sort<FeedRangeState<QueryState>>(feedRangeStates, (x, y) => string.CompareOrdinal(((FeedRangeEpk)x.FeedRange).Range.Min, ((FeedRangeEpk)y.FeedRange).Range.Min));
@@ -114,9 +111,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
                 CosmosArray cosmosElementParallelContinuationTokens = CosmosArray.Create(cosmosElementContinuationTokens);
 
                 queryState = new QueryState(cosmosElementParallelContinuationTokens);
-
-                sw.Stop();
-                Console.WriteLine(sw.Elapsed.ToString());
             }
 
             QueryPage crossPartitionQueryPage = new QueryPage(
