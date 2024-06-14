@@ -645,26 +645,29 @@
         {
             for (int i = 0; i < results.Count; i++)
             {
-                if (results[i] is CosmosObject cosmosObject)
+                if (results[i] is not CosmosObject)
                 {
-                    Dictionary<string, CosmosElement> normalizedResult = new Dictionary<string, CosmosElement>();
-
-                    foreach (KeyValuePair<string, CosmosElement> kvp in cosmosObject)
-                    {
-                        if (kvp.Value is CosmosArray cosmosArray)
-                        {
-                            CosmosElement[] normalizedArray = cosmosArray.ToArray();
-                            Array.Sort(normalizedArray);
-                            normalizedResult.Add(kvp.Key, CosmosArray.Create(normalizedArray));
-                        }
-                        else
-                        {
-                            normalizedResult.Add(kvp.Key, kvp.Value);
-                        }
-                    }
-
-                    results[i] = CosmosObject.Create(normalizedResult);
+                    Assert.Fail("This function assumes results are CosmosObjects (ie, not from a SELECT VALUE query).");
                 }
+
+                Dictionary<string, CosmosElement> normalizedResult = new Dictionary<string, CosmosElement>();
+
+                CosmosObject resultObject = (CosmosObject)results[i];
+                foreach (KeyValuePair<string, CosmosElement> kvp in resultObject)
+                {
+                    if (kvp.Value is CosmosArray cosmosArray)
+                    {
+                        CosmosElement[] normalizedArray = cosmosArray.ToArray();
+                        Array.Sort(normalizedArray);
+                        normalizedResult.Add(kvp.Key, CosmosArray.Create(normalizedArray));
+                    }
+                    else
+                    {
+                        normalizedResult.Add(kvp.Key, kvp.Value);
+                    }
+                }
+
+                results[i] = CosmosObject.Create(normalizedResult);
             }
         }
     }
