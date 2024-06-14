@@ -1342,14 +1342,69 @@
                         PartitionKeyDefinition pkDefinitions = CreateHashPartitionKey("/key");
                         return new List<QueryPlanBaselineTestInput>
                         {
-                            new QueryPlanBaselineTestInput($"{variation.Description} Geography", pkDefinitions, new SqlQuerySpec(variation.Query)) { GeospatialType = Cosmos.GeospatialType.Geography },
-                            new QueryPlanBaselineTestInput($"{variation.Description} Geometry", pkDefinitions, new SqlQuerySpec(variation.Query)) { GeospatialType = Cosmos.GeospatialType.Geometry }
+                            new QueryPlanBaselineTestInput($"{variation.Description} Geography", pkDefinitions, vectorEmbeddingPolicy: null, new SqlQuerySpec(variation.Query), Cosmos.GeospatialType.Geography),
+                            new QueryPlanBaselineTestInput($"{variation.Description} Geometry", pkDefinitions, vectorEmbeddingPolicy : null, new SqlQuerySpec(variation.Query), Cosmos.GeospatialType.Geometry)
                         };
                     })
                 .ToList();
 
             this.ExecuteTestSuite(testVariations);
         }
+
+        [TestMethod]
+        [Owner("ndeshpan")]
+        public void VectorSearch()
+        {
+            List<QueryPlanBaselineTestInput> testCases = new List<QueryPlanBaselineTestInput>
+            {
+                MakeVectorTest("Euclidean Distance", Cosmos.DistanceFunction.Euclidean),
+                MakeVectorTest("Cosine Similarity", Cosmos.DistanceFunction.Cosine),
+                MakeVectorTest("Dot Product", Cosmos.DistanceFunction.DotProduct),
+            };
+
+            this.ExecuteTestSuite(testCases);
+        }
+
+        private static QueryPlanBaselineTestInput MakeVectorTest(string description, Cosmos.DistanceFunction distanceFunction)
+        {
+            PartitionKeyDefinition partitionKeyDefinition = CreateHashPartitionKey("/PartitionKey");
+
+            Cosmos.VectorEmbeddingPolicy vectorEmbeddingPolicy = new Cosmos.VectorEmbeddingPolicy(new Collection<Cosmos.Embedding>
+                {
+                    new Cosmos.Embedding
+                    {
+                        Path = "/embedding",
+                        DataType = Cosmos.VectorDataType.Float32,
+                        Dimensions = 8,
+                        DistanceFunction = distanceFunction
+                    }
+                });
+
+            string queryText = @"SELECT TOP 10 c.title AS Title, VectorDistance(c.embedding, @vectorEmbedding, true) AS SimilarityScore
+                                 FROM c
+                                 ORDER BY VectorDistance(c.embedding, @vectorEmbedding, true)";
+
+            SqlQuerySpec sqlQuerySpec = new SqlQuerySpec(
+                queryText,
+                new SqlParameterCollection(new SqlParameter[] { new SqlParameter("@vectorEmbedding", VectorEmbedding) }));
+
+            return new QueryPlanBaselineTestInput(
+                description,
+                partitionKeyDefinition,
+                vectorEmbeddingPolicy,
+                sqlQuerySpec,
+                Cosmos.GeospatialType.Geography);
+        }
+
+        private static readonly double[] VectorEmbedding = new double[] {
+            0.0039695268496870995,
+            0.027338456362485886,
+            -0.005676387343555689,
+            -0.013547309674322605,
+            -0.002445543883368373,
+            0.01579204574227333,
+            -0.016796082258224487,
+            -0.012471556663513184 };
 
         private static PartitionKeyDefinition CreateHashPartitionKey(
             params string[] partitionKeys) => new PartitionKeyDefinition()
@@ -1440,6 +1495,7 @@
             TryCatch<PartitionedQueryExecutionInfoInternal> info = QueryPartitionProviderTestInstance.Object.TryGetPartitionedQueryExecutionInfoInternal(
                 JsonConvert.SerializeObject(input.SqlQuerySpec),
                 input.PartitionKeyDefinition,
+                input.VectorEmbeddingPolicy,
                 requireFormattableOrderByQuery: true,
                 isContinuationExpected: false,
                 allowNonValueAggregateQuery: true,
@@ -1459,18 +1515,36 @@
 
     public sealed class QueryPlanBaselineTestInput : BaselineTestInput
     {
-        internal PartitionKeyDefinition PartitionKeyDefinition { get; set; }
-        internal SqlQuerySpec SqlQuerySpec { get; set; }
-        internal Cosmos.GeospatialType? GeospatialType { get; set; }
+        internal PartitionKeyDefinition PartitionKeyDefinition { get; }
+
+        internal Cosmos.VectorEmbeddingPolicy VectorEmbeddingPolicy { get; }
+
+        internal SqlQuerySpec SqlQuerySpec { get; }
+
+        internal Cosmos.GeospatialType? GeospatialType { get; }
 
         internal QueryPlanBaselineTestInput(
             string description,
             PartitionKeyDefinition partitionKeyDefinition,
             SqlQuerySpec sqlQuerySpec)
-            : base(description)
+            : this(description, partitionKeyDefinition, vectorEmbeddingPolicy: null, sqlQuerySpec, geospatialType: null)
         {
             this.PartitionKeyDefinition = partitionKeyDefinition;
             this.SqlQuerySpec = sqlQuerySpec;
+        }
+
+        internal QueryPlanBaselineTestInput(
+            string description,
+            PartitionKeyDefinition partitionKeyDefinition,
+            Cosmos.VectorEmbeddingPolicy vectorEmbeddingPolicy,
+            SqlQuerySpec sqlQuerySpec,
+            Cosmos.GeospatialType? geospatialType)
+            : base(description)
+        {
+            this.PartitionKeyDefinition = partitionKeyDefinition;
+            this.VectorEmbeddingPolicy = vectorEmbeddingPolicy;
+            this.SqlQuerySpec = sqlQuerySpec;
+            this.GeospatialType = geospatialType;
         }
 
         public override void SerializeAsXml(XmlWriter xmlWriter)

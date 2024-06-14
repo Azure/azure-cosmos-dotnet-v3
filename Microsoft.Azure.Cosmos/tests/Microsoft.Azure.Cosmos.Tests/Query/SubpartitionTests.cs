@@ -172,6 +172,7 @@
             TryCatch<PartitionedQueryExecutionInfo> tryGetQueryPlan = queryPartitionProvider.TryGetPartitionedQueryExecutionInfo(
                 querySpecJsonString: querySpecJsonString,
                 partitionKeyDefinition: pkDefinition,
+                vectorEmbeddingPolicy: null,
                 requireFormattableOrderByQuery: true,
                 isContinuationExpected: true,
                 allowNonValueAggregateQuery: true,
@@ -326,6 +327,7 @@
                             true)
                     },
                     SubpartitionTests.CreatePartitionKeyDefinition(),
+                    vectorEmbeddingPolicy: null,
                     Cosmos.GeospatialType.Geometry));
             }
 
@@ -349,14 +351,26 @@
                 throw new NotImplementedException();
             }
 
-            public override async Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(SqlQuerySpec sqlQuerySpec, ResourceType resourceType, PartitionKeyDefinition partitionKeyDefinition, bool requireFormattableOrderByQuery, bool isContinuationExpected, bool allowNonValueAggregateQuery, bool hasLogicalPartitionKey, bool allowDCount, bool useSystemPrefix, Cosmos.GeospatialType geospatialType, CancellationToken cancellationToken)
+            public override Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(
+                SqlQuerySpec sqlQuerySpec,
+                ResourceType resourceType,
+                PartitionKeyDefinition partitionKeyDefinition,
+                Cosmos.VectorEmbeddingPolicy vectorEmbeddingPolicy,
+                bool requireFormattableOrderByQuery,
+                bool isContinuationExpected,
+                bool allowNonValueAggregateQuery,
+                bool hasLogicalPartitionKey,
+                bool allowDCount,
+                bool useSystemPrefix,
+                Cosmos.GeospatialType geospatialType,
+                CancellationToken cancellationToken)
             {
                 CosmosSerializerCore serializerCore = new();
                 using StreamReader streamReader = new(serializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, Documents.ResourceType.Document));
                 string sqlQuerySpecJsonString = streamReader.ReadToEnd();
 
                 (PartitionedQueryExecutionInfo partitionedQueryExecutionInfo, QueryPartitionProvider queryPartitionProvider) = OptimisticDirectExecutionQueryBaselineTests.GetPartitionedQueryExecutionInfoAndPartitionProvider(sqlQuerySpecJsonString, partitionKeyDefinition);
-                return TryCatch<PartitionedQueryExecutionInfo>.FromResult(partitionedQueryExecutionInfo);
+                return Task.FromResult(TryCatch<PartitionedQueryExecutionInfo>.FromResult(partitionedQueryExecutionInfo));
             }
         }
     }

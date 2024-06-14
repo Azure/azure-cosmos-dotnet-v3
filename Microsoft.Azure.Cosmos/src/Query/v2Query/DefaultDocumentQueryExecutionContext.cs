@@ -317,6 +317,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         allowNonValueAggregates: false,
                         useSystemPrefix: false,
                         partitionKeyDefinition: partitionKeyDefinition,
+                        vectorEmbeddingPolicy: collection.VectorEmbeddingPolicy,
                         queryPartitionProvider: queryPartitionProvider,
                         clientApiVersion: version,
                         geospatialType: collection.GeospatialConfig.GeospatialType,
