@@ -3407,34 +3407,7 @@
       "NestedTypes": {}
     },
     "Microsoft.Azure.Cosmos.CosmosLinqSerializer;Microsoft.Azure.Cosmos.CosmosSerializer;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
-      "Subclasses": {
-        "Microsoft.Azure.Cosmos.CosmosSystemTextJsonSerializer;Microsoft.Azure.Cosmos.CosmosLinqSerializer;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
-          "Subclasses": {},
-          "Members": {
-            "System.IO.Stream ToStream[T](T)": {
-              "Type": "Method",
-              "Attributes": [],
-              "MethodInfo": "System.IO.Stream ToStream[T](T);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
-            },
-            "System.String SerializeMemberName(System.Reflection.MemberInfo)": {
-              "Type": "Method",
-              "Attributes": [],
-              "MethodInfo": "System.String SerializeMemberName(System.Reflection.MemberInfo);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-            },
-            "T FromStream[T](System.IO.Stream)": {
-              "Type": "Method",
-              "Attributes": [],
-              "MethodInfo": "T FromStream[T](System.IO.Stream);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
-            },
-            "Void .ctor(System.Text.Json.JsonSerializerOptions)": {
-              "Type": "Constructor",
-              "Attributes": [],
-              "MethodInfo": "[Void .ctor(System.Text.Json.JsonSerializerOptions), Void .ctor(System.Text.Json.JsonSerializerOptions)]"
-            }
-          },
-          "NestedTypes": {}
-        }
-      },
+      "Subclasses": {},
       "Members": {
         "System.String SerializeMemberName(System.Reflection.MemberInfo)": {
           "Type": "Method",
@@ -3685,65 +3658,12 @@
     "Microsoft.Azure.Cosmos.CosmosSerializer;System.Object;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {
         "Microsoft.Azure.Cosmos.CosmosLinqSerializer;Microsoft.Azure.Cosmos.CosmosSerializer;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
-          "Subclasses": {
-            "Microsoft.Azure.Cosmos.CosmosSystemTextJsonSerializer;Microsoft.Azure.Cosmos.CosmosLinqSerializer;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
-              "Subclasses": {},
-              "Members": {
-                "System.IO.Stream ToStream[T](T)": {
-                  "Type": "Method",
-                  "Attributes": [],
-                  "MethodInfo": "System.IO.Stream ToStream[T](T);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
-                },
-                "System.String SerializeMemberName(System.Reflection.MemberInfo)": {
-                  "Type": "Method",
-                  "Attributes": [],
-                  "MethodInfo": "System.String SerializeMemberName(System.Reflection.MemberInfo);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-                },
-                "T FromStream[T](System.IO.Stream)": {
-                  "Type": "Method",
-                  "Attributes": [],
-                  "MethodInfo": "T FromStream[T](System.IO.Stream);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
-                },
-                "Void .ctor(System.Text.Json.JsonSerializerOptions)": {
-                  "Type": "Constructor",
-                  "Attributes": [],
-                  "MethodInfo": "[Void .ctor(System.Text.Json.JsonSerializerOptions), Void .ctor(System.Text.Json.JsonSerializerOptions)]"
-                }
-              },
-              "NestedTypes": {}
-            }
-          },
+          "Subclasses": {},
           "Members": {
             "System.String SerializeMemberName(System.Reflection.MemberInfo)": {
               "Type": "Method",
               "Attributes": [],
               "MethodInfo": "System.String SerializeMemberName(System.Reflection.MemberInfo);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-            }
-          },
-          "NestedTypes": {}
-        },
-        "Microsoft.Azure.Cosmos.CosmosSystemTextJsonSerializer;Microsoft.Azure.Cosmos.CosmosLinqSerializer;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
-          "Subclasses": {},
-          "Members": {
-            "System.IO.Stream ToStream[T](T)": {
-              "Type": "Method",
-              "Attributes": [],
-              "MethodInfo": "System.IO.Stream ToStream[T](T);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
-            },
-            "System.String SerializeMemberName(System.Reflection.MemberInfo)": {
-              "Type": "Method",
-              "Attributes": [],
-              "MethodInfo": "System.String SerializeMemberName(System.Reflection.MemberInfo);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-            },
-            "T FromStream[T](System.IO.Stream)": {
-              "Type": "Method",
-              "Attributes": [],
-              "MethodInfo": "T FromStream[T](System.IO.Stream);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
-            },
-            "Void .ctor(System.Text.Json.JsonSerializerOptions)": {
-              "Type": "Constructor",
-              "Attributes": [],
-              "MethodInfo": "[Void .ctor(System.Text.Json.JsonSerializerOptions), Void .ctor(System.Text.Json.JsonSerializerOptions)]"
             }
           },
           "NestedTypes": {}
@@ -3759,32 +3679,6 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "T FromStream[T](System.IO.Stream);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
-        }
-      },
-      "NestedTypes": {}
-    },
-    "Microsoft.Azure.Cosmos.CosmosSystemTextJsonSerializer;Microsoft.Azure.Cosmos.CosmosLinqSerializer;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
-      "Subclasses": {},
-      "Members": {
-        "System.IO.Stream ToStream[T](T)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.IO.Stream ToStream[T](T);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
-        },
-        "System.String SerializeMemberName(System.Reflection.MemberInfo)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.String SerializeMemberName(System.Reflection.MemberInfo);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "T FromStream[T](System.IO.Stream)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "T FromStream[T](System.IO.Stream);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
-        },
-        "Void .ctor(System.Text.Json.JsonSerializerOptions)": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "[Void .ctor(System.Text.Json.JsonSerializerOptions), Void .ctor(System.Text.Json.JsonSerializerOptions)]"
         }
       },
       "NestedTypes": {}
