@@ -191,6 +191,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal bool IsNonStreamingOrderByQueryFeatureDisabled { get; set; } = ConfigurationManager.IsNonStreamingOrderByQueryFeatureDisabled(defaultValue: false);
 
+        internal bool EnableDistributedQueryGatewayMode { get; set; } = ConfigurationManager.IsDistributedQueryGatewayModeEnabled(defaultValue: false);
+
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
