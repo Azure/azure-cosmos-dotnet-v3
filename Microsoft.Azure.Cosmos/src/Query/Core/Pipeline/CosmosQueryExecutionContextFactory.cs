@@ -248,6 +248,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                    inputParameters.InitialFeedRange,
                    trace);
 
+            Debug.Assert(targetRanges != null, $"{nameof(CosmosQueryExecutionContextFactory)} Assert!", "targetRanges != null");
+
             TryCatch<IQueryPipelineStage> tryCreatePipelineStage;
             Documents.PartitionKeyRange targetRange = await TryGetTargetRangeOptimisticDirectExecutionAsync(
                 inputParameters,
@@ -270,7 +272,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
             else
             {
-                bool singleLogicalPartitionKeyQuery = inputParameters.PartitionKey.HasValue
+                bool singleLogicalPartitionKeyQuery = (inputParameters.PartitionKey.HasValue && targetRanges.Count == 1)
                     || ((partitionedQueryExecutionInfo.QueryRanges.Count == 1)
                     && partitionedQueryExecutionInfo.QueryRanges[0].IsSingleValue);
                 bool serverStreamingQuery = !partitionedQueryExecutionInfo.QueryInfo.HasAggregates
@@ -408,6 +410,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     inputParameters.ExecutionEnvironment,
                     inputParameters.ReturnResultsInDeterministicOrder,
                     inputParameters.EnableOptimisticDirectExecution,
+                    inputParameters.IsNonStreamingOrderByQueryFeatureDisabled,
                     inputParameters.TestInjections);
             }
 
@@ -593,6 +596,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     inputParameters.SqlQuerySpec,
                     cosmosQueryContext.ResourceLink,
                     inputParameters.PartitionKey,
+                    inputParameters.IsNonStreamingOrderByQueryFeatureDisabled,
                     trace,
                     cancellationToken);
             }
@@ -605,6 +609,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     inputParameters.SqlQuerySpec,
                     cosmosQueryContext.ResourceTypeEnum,
                     partitionKeyDefinition,
+                    containerQueryProperties.VectorEmbeddingPolicy,
                     inputParameters.PartitionKey != null,
                     containerQueryProperties.GeospatialType,
                     cosmosQueryContext.UseSystemPrefix,
@@ -841,6 +846,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 ExecutionEnvironment? executionEnvironment,
                 bool? returnResultsInDeterministicOrder,
                 bool enableOptimisticDirectExecution,
+                bool isNonStreamingOrderByQueryFeatureDisabled,
                 TestInjections testInjections)
             {
                 this.SqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
@@ -874,6 +880,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 this.ExecutionEnvironment = executionEnvironment.GetValueOrDefault(InputParameters.DefaultExecutionEnvironment);
                 this.ReturnResultsInDeterministicOrder = returnResultsInDeterministicOrder.GetValueOrDefault(InputParameters.DefaultReturnResultsInDeterministicOrder);
                 this.EnableOptimisticDirectExecution = enableOptimisticDirectExecution;
+                this.IsNonStreamingOrderByQueryFeatureDisabled = isNonStreamingOrderByQueryFeatureDisabled;
                 this.TestInjections = testInjections;
             }
 
@@ -890,6 +897,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             public bool ReturnResultsInDeterministicOrder { get; }
             public TestInjections TestInjections { get; }
             public bool EnableOptimisticDirectExecution { get; }
+            public bool IsNonStreamingOrderByQueryFeatureDisabled { get; }
 
             public InputParameters WithContinuationToken(CosmosElement token)
             {
@@ -906,6 +914,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     this.ExecutionEnvironment,
                     this.ReturnResultsInDeterministicOrder,
                     this.EnableOptimisticDirectExecution,
+                    this.IsNonStreamingOrderByQueryFeatureDisabled,
                     this.TestInjections);
             }
         }

@@ -120,6 +120,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         public TryCatch<PartitionedQueryExecutionInfo> TryGetPartitionedQueryExecutionInfo(
             string querySpecJsonString,
             PartitionKeyDefinition partitionKeyDefinition,
+            VectorEmbeddingPolicy vectorEmbeddingPolicy,
             bool requireFormattableOrderByQuery,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
@@ -131,6 +132,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             TryCatch<PartitionedQueryExecutionInfoInternal> tryGetInternalQueryInfo = this.TryGetPartitionedQueryExecutionInfoInternal(
                 querySpecJsonString: querySpecJsonString,
                 partitionKeyDefinition: partitionKeyDefinition,
+                vectorEmbeddingPolicy: vectorEmbeddingPolicy,
                 requireFormattableOrderByQuery: requireFormattableOrderByQuery,
                 isContinuationExpected: isContinuationExpected,
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
@@ -180,6 +182,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         internal TryCatch<PartitionedQueryExecutionInfoInternal> TryGetPartitionedQueryExecutionInfoInternal(
             string querySpecJsonString,
             PartitionKeyDefinition partitionKeyDefinition,
+            VectorEmbeddingPolicy vectorEmbeddingPolicy,
             bool requireFormattableOrderByQuery,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
@@ -224,6 +227,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             uint errorCode;
             uint serializedQueryExecutionInfoResultLength;
 
+            string vectorEmbeddingPolicyString = vectorEmbeddingPolicy != null ?
+                JsonConvert.SerializeObject(vectorEmbeddingPolicy) :
+                null;
+
             unsafe
             {
                 ServiceInteropWrapper.PartitionKeyRangesApiOptions partitionKeyRangesApiOptions =
@@ -241,13 +248,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
                 fixed (byte* bytePtr = buffer)
                 {
-                    errorCode = ServiceInteropWrapper.GetPartitionKeyRangesFromQuery3(
+                    errorCode = ServiceInteropWrapper.GetPartitionKeyRangesFromQuery4(
                         this.serviceProvider,
                         querySpecJsonString,
                         partitionKeyRangesApiOptions,
                         allParts,
                         partsLengths,
                         (uint)partitionKeyDefinition.Paths.Count,
+                        vectorEmbeddingPolicyString,
+                        vectorEmbeddingPolicyString?.Length ?? 0,
                         new IntPtr(bytePtr),
                         (uint)buffer.Length,
                         out serializedQueryExecutionInfoResultLength);
@@ -261,13 +270,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
                         fixed (byte* bytePtr2 = buffer)
                         {
-                            errorCode = ServiceInteropWrapper.GetPartitionKeyRangesFromQuery3(
+                            errorCode = ServiceInteropWrapper.GetPartitionKeyRangesFromQuery4(
                                 this.serviceProvider,
                                 querySpecJsonString,
                                 partitionKeyRangesApiOptions,
                                 allParts,
                                 partsLengths,
                                 (uint)partitionKeyDefinition.Paths.Count,
+                                vectorEmbeddingPolicyString,
+                                vectorEmbeddingPolicyString?.Length ?? 0,
                                 new IntPtr(bytePtr2),
                                 (uint)buffer.Length,
                                 out serializedQueryExecutionInfoResultLength);
