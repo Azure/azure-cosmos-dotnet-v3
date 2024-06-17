@@ -1357,12 +1357,46 @@
         {
             List<QueryPlanBaselineTestInput> testCases = new List<QueryPlanBaselineTestInput>
             {
-                MakeVectorTest("Euclidean Distance", Cosmos.DistanceFunction.Euclidean),
-                MakeVectorTest("Cosine Similarity", Cosmos.DistanceFunction.Cosine),
-                MakeVectorTest("Dot Product", Cosmos.DistanceFunction.DotProduct),
+                MakeVectorTest("Euclidean Distance with query parameter", Cosmos.DistanceFunction.Euclidean),
+                MakeVectorTest("Cosine Similarity with query parameter", Cosmos.DistanceFunction.Cosine),
+                MakeVectorTest("Dot Product with query parameter", Cosmos.DistanceFunction.DotProduct),
+                MakeInlineVectorQueryTest("Euclidean Distance with inline vector", Cosmos.DistanceFunction.Euclidean),
+                MakeInlineVectorQueryTest("Cosine Similarity with inline vector", Cosmos.DistanceFunction.Cosine),
+                MakeInlineVectorQueryTest("Dot Product with inline vector", Cosmos.DistanceFunction.DotProduct),
             };
 
             this.ExecuteTestSuite(testCases);
+        }
+
+        private static QueryPlanBaselineTestInput MakeInlineVectorQueryTest(string description, Cosmos.DistanceFunction distanceFunction)
+        {
+            PartitionKeyDefinition partitionKeyDefinition = CreateHashPartitionKey("/PartitionKey");
+
+            Cosmos.VectorEmbeddingPolicy vectorEmbeddingPolicy = new Cosmos.VectorEmbeddingPolicy(new Collection<Cosmos.Embedding>
+            {
+                new Cosmos.Embedding
+                {
+                    Path = "/embedding",
+                    DataType = Cosmos.VectorDataType.Float32,
+                    Dimensions = 8,
+                    DistanceFunction = distanceFunction
+                }
+            });
+
+            string queryText = @"SELECT TOP 10 c.title AS Title, VectorDistance(c.embedding, [0.0039695268496870995, 0.027338456362485886, -0.005676387343555689, -0.013547309674322605, -0.002445543883368373, 0.01579204574227333, -0.016796082258224487, -0.012471556663513184], true) AS SimilarityScore
+                                 FROM c
+                                 ORDER BY VectorDistance(c.embedding, [0.0039695268496870995, 0.027338456362485886, -0.005676387343555689, -0.013547309674322605, -0.002445543883368373, 0.01579204574227333, -0.016796082258224487, -0.012471556663513184], true)";
+
+            SqlQuerySpec sqlQuerySpec = new SqlQuerySpec(queryText);
+
+            QueryPlanBaselineTestInput testInput = new QueryPlanBaselineTestInput(
+                description,
+                partitionKeyDefinition,
+                vectorEmbeddingPolicy,
+                sqlQuerySpec,
+                Cosmos.GeospatialType.Geography);
+
+            return testInput;
         }
 
         private static QueryPlanBaselineTestInput MakeVectorTest(string description, Cosmos.DistanceFunction distanceFunction)
@@ -1370,15 +1404,15 @@
             PartitionKeyDefinition partitionKeyDefinition = CreateHashPartitionKey("/PartitionKey");
 
             Cosmos.VectorEmbeddingPolicy vectorEmbeddingPolicy = new Cosmos.VectorEmbeddingPolicy(new Collection<Cosmos.Embedding>
+            {
+                new Cosmos.Embedding
                 {
-                    new Cosmos.Embedding
-                    {
-                        Path = "/embedding",
-                        DataType = Cosmos.VectorDataType.Float32,
-                        Dimensions = 8,
-                        DistanceFunction = distanceFunction
-                    }
-                });
+                    Path = "/embedding",
+                    DataType = Cosmos.VectorDataType.Float32,
+                    Dimensions = 8,
+                    DistanceFunction = distanceFunction
+                }
+            });
 
             string queryText = @"SELECT TOP 10 c.title AS Title, VectorDistance(c.embedding, @vectorEmbedding, true) AS SimilarityScore
                                  FROM c
