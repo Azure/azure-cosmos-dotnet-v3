@@ -340,6 +340,8 @@ namespace Microsoft.Azure.Cosmos.Query
 
             requestHeaders[HttpConstants.HttpHeaders.SupportedSerializationFormats] = this.feedOptions.SupportedSerializationFormats?.ToString() ?? DefaultSupportedSerializationFormats;
 
+            requestHeaders[HttpConstants.HttpHeaders.ContentSerializationFormat] = "cosmosbinary";
+
             return requestHeaders;
         }
 
