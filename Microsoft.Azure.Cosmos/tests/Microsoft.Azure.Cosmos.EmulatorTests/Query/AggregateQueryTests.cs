@@ -1115,12 +1115,13 @@
             await this.TestArrayAggregatesWithContinuationToken(100);
 
             // using 2048 + 1 documents here to ensure list size hits continuation token limit of 16KB
-            // We aggregates c.age (integers) which has 8 bytes, 16KB / 8B = 2048
+            // We aggregate c.age (integers) which has 8 bytes, 16KB / 8B = 2048
             await this.TestArrayAggregatesWithContinuationToken(2049);
         }
+
         private async Task TestArrayAggregatesWithContinuationToken(int numDocuments)
         {
-            int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            int seed = 135749376;
 
             Random rand = new Random(seed);
             List<Person> people = new List<Person>();

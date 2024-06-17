@@ -22,10 +22,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
         private MakeListAggregator(CosmosArray initialList)
         {
             this.globalList = new List<CosmosElement>();
-            foreach (CosmosElement listItem in initialList)
+
+            // InitialList should never be null, but if it is we just keep global list as an empty list. 
+            if (initialList == null)
             {
-                this.globalList.Add(listItem);
+                return;
             }
+
+            this.globalList.AddRange(initialList.ToList<CosmosElement>());
         }
 
         public void Aggregate(CosmosElement localList)

@@ -22,10 +22,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
         private MakeSetAggregator(CosmosArray initialSet)
         {
             this.globalSet = new HashSet<CosmosElement>();
-            foreach (CosmosElement setItem in initialSet)
+
+            // InitialSet should never be null, but if it is we just keep globalSet as an empty set. 
+            if (initialSet == null)
             {
-                this.globalSet.Add(setItem);
+                return;
             }
+
+            this.globalSet.UnionWith(initialSet.ToList<CosmosElement>());
         }
 
         public void Aggregate(CosmosElement localSet)
