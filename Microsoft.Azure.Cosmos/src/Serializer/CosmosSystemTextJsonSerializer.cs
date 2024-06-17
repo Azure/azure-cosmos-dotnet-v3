@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// This class provides a default implementation of System.Text.Json Cosmos Linq Serializer.
     /// </summary>
-    public class CosmosSystemTextJsonSerializer : CosmosLinqSerializer
+    internal class CosmosSystemTextJsonSerializer : CosmosLinqSerializer
     {
         /// <summary>
         /// A read-only instance of <see cref="JsonSerializerOptions"/>.
@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
         /// with the default values for the Cosmos SDK
         /// </summary>
         /// <param name="jsonSerializerOptions">An instance of <see cref="JsonSerializerOptions"/> containing the json serialization options.</param>
-        public CosmosSystemTextJsonSerializer(
+        internal CosmosSystemTextJsonSerializer(
             JsonSerializerOptions jsonSerializerOptions)
         {
             this.jsonSerializerOptions = jsonSerializerOptions;
@@ -37,14 +37,14 @@ namespace Microsoft.Azure.Cosmos
             if (stream == null)
                 throw new ArgumentNullException(nameof(stream));
 
-            if (stream.CanSeek && stream.Length == 0)
-            {
-                return default;
-            }
-
             if (typeof(Stream).IsAssignableFrom(typeof(T)))
             {
                 return (T)(object)stream;
+            }
+
+            if (stream.CanSeek && stream.Length == 0)
+            {
+                return default;
             }
 
             using (stream)
@@ -60,10 +60,7 @@ namespace Microsoft.Azure.Cosmos
             MemoryStream streamPayload = new ();
             using Utf8JsonWriter writer = new (streamPayload);
 
-            JsonSerializer.Serialize(
-                writer: writer,
-                value: input,
-                options: this.jsonSerializerOptions);
+            JsonSerializer.Serialize(writer, input, this.jsonSerializerOptions);
 
             streamPayload.Position = 0;
             return streamPayload;
