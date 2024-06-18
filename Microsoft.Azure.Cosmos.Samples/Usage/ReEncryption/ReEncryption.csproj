@@ -8,7 +8,7 @@
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Azure.Identity" Version="1.11.0" />
+    <PackageReference Include="Azure.Identity" Version="1.11.4" />
     <PackageReference Include="Azure.Security.KeyVault.Keys" Version="4.2.0" />
     <PackageReference Include="Microsoft.Azure.Cosmos.Encryption" Version="1.0.0-previewV20" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.2.0" />

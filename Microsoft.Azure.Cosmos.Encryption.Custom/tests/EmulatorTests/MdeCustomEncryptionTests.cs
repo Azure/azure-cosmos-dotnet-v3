@@ -1046,7 +1046,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
             };
 
-            CosmosSystemTextJsonSerializer cosmosSystemTextJsonSerializer = new CosmosSystemTextJsonSerializer(jsonSerializerOptions);
+            LegacyEncryptionTests.CosmosSystemTextJsonSerializer cosmosSystemTextJsonSerializer = new (jsonSerializerOptions);
 
             CosmosClient clientWithCosmosSystemTextJsonSerializer = TestCommon.CreateCosmosClient(builder => builder
                 .WithCustomSerializer(cosmosSystemTextJsonSerializer)
