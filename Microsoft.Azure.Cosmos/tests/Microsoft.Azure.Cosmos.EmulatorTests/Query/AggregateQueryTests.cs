@@ -626,7 +626,7 @@
                 args.UndefinedKey
             };
 
-            string[] aggregateOperators = new string[] { "AVG", "MAX", "MIN", "SUM", "COUNT", "MAKELIST", "MAKESET" };
+            string[] aggregateOperators = new string[] { "AVG", "MIN", "MAX", "SUM", "COUNT", "MAKELIST", "MAKESET" };
             string[] typeCheckFunctions = new string[] { "IS_ARRAY", "IS_BOOL", "IS_NULL", "IS_NUMBER", "IS_OBJECT", "IS_STRING", "IS_DEFINED", "IS_PRIMITIVE" };
             List<(string, bool)> queries = new List<(string, bool)>();
             foreach (string aggregateOperator in aggregateOperators)
