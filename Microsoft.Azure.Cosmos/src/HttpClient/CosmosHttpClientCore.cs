@@ -465,6 +465,17 @@ namespace Microsoft.Azure.Cosmos
             // Only read the header initially. The content gets copied into a memory stream later
             // if we read the content HTTP client will buffer the message and then it will get buffered
             // again when it is copied to the memory stream.
+
+            if (chaosInterceptor != null) 
+            {
+                await chaosInterceptor.OnBeforeHttpSendAsync();
+
+                (bool isFaulted, HttpResponseMessage faultyResponse) = await chaosInterceptor.OnHttpRequestCallAsync();
+                if (isFaulted)
+                {
+                    return faultyResponse;
+                }
+            }
             HttpResponseMessage responseMessage = await this.httpClient.SendAsync(
                     requestMessage,
                     HttpCompletionOption.ResponseHeadersRead,
@@ -474,6 +485,11 @@ namespace Microsoft.Azure.Cosmos
             if (responseMessage.RequestMessage == null)
             {
                 responseMessage.RequestMessage = requestMessage;
+            }
+
+            if (chaosInterceptor != null)
+            {
+                await chaosInterceptor.OnAfterHttpSendAsync();
             }
 
             DateTime receivedTimeUtc = DateTime.UtcNow;
