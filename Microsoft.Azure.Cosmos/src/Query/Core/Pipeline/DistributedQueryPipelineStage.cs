@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
@@ -22,7 +23,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
         private readonly PartitionKey? partitionKey;
 
-        private CosmosElement continuationToken;
+        private readonly QueryPaginationOptions queryPaginationOptions;
+
+        private string continuationToken;
 
         private bool started;
 
@@ -33,12 +36,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             SqlQuerySpec sqlQuerySpec,
             FeedRangeInternal feedRangeInternal,
             PartitionKey? partitionKey,
-            CosmosElement continuationToken)
+            QueryPaginationOptions queryPaginationOptions,
+            string continuationToken)
         {
             this.cosmosDistributedQueryClient = cosmosDistributedQueryClient ?? throw new ArgumentNullException(nameof(cosmosDistributedQueryClient));
             this.sqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
             this.feedRangeInternal = feedRangeInternal ?? FeedRangeEpk.FullRange;
             this.partitionKey = partitionKey;
+            this.queryPaginationOptions = queryPaginationOptions ?? throw new ArgumentNullException(nameof(queryPaginationOptions));
             this.continuationToken = continuationToken;
         }
 
@@ -47,9 +52,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             SqlQuerySpec sqlQuerySpec,
             FeedRangeInternal feedRangeInternal,
             PartitionKey? partitionKey,
-            CosmosElement continuationToken)
+            QueryPaginationOptions queryPaginationOptions,
+            CosmosElement continuation)
         {
-            return new DistributedQueryPipelineStage(cosmosDistributedQueryClient, sqlQuerySpec, feedRangeInternal, partitionKey, continuationToken);
+            string continuationToken = GetContinuationToken(continuation);
+
+            return new DistributedQueryPipelineStage(
+                cosmosDistributedQueryClient,
+                sqlQuerySpec,
+                feedRangeInternal,
+                partitionKey,
+                queryPaginationOptions,
+                continuationToken);
         }
 
         public async ValueTask<bool> MoveNextAsync(Tracing.ITrace trace, CancellationToken cancellationToken)
@@ -66,12 +80,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     this.feedRangeInternal,
                     this.sqlQuerySpec,
                     this.continuationToken,
-                    QueryPaginationOptions.Default,
+                    this.queryPaginationOptions,
                     trace,
                     cancellationToken);
 
-                this.continuationToken = this.Current.Result?.State?.Value;
                 this.started = true;
+                if (this.Current.Failed)
+                {
+                    return true;
+                }
+
+                this.continuationToken = GetContinuationToken(this.Current.Result?.State?.Value);
                 return true;
             }
 
@@ -81,6 +100,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
         public ValueTask DisposeAsync()
         {
             return default;
+        }
+
+        private static string GetContinuationToken(CosmosElement continuation)
+        {
+            return (continuation != null && continuation is CosmosString continuationUtfAny) ?
+                continuationUtfAny.Value.ToString() :
+                null;
         }
     }
 }

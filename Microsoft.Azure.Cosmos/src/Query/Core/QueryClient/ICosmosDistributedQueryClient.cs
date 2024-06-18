@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             PartitionKey? partitionKey,
             FeedRangeInternal feedRange,
             SqlQuerySpec sqlQuerySpec,
-            CosmosElement continuationToken,
+            string continuationToken,
             QueryPaginationOptions queryPaginationOptions,
             ITrace trace,
             CancellationToken cancellationToken);

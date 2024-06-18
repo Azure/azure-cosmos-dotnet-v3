@@ -108,6 +108,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                             inputParameters.SqlQuerySpec,
                             inputParameters.InitialFeedRange,
                             inputParameters.PartitionKey,
+                            new QueryPaginationOptions(inputParameters.MaxItemCount),
                             inputParameters.InitialUserContinuationToken));
                 }
 

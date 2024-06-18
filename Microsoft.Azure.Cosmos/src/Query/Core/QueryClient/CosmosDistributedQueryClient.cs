@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             Cosmos.PartitionKey? partitionKey,
             FeedRangeInternal feedRange,
             SqlQuerySpec sqlQuerySpec,
-            CosmosElement continuationToken,
+            string continuationToken,
             QueryPaginationOptions queryPaginationOptions,
             Tracing.ITrace trace,
             CancellationToken cancellationToken)
@@ -83,15 +83,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             SqlQuerySpec sqlQuerySpec,
             Cosmos.PartitionKey? partitionKey,
             FeedRangeInternal feedRange,
-            CosmosElement continuationToken,
+            string continuationToken,
             QueryPaginationOptions queryPaginationOptions,
             Tracing.ITrace trace)
         {
-            Stream serializedQuerySpec = this.cosmosClientContext.SerializerCore.ToStream(sqlQuerySpec);
+            Stream serializedQuerySpec = this.cosmosClientContext.SerializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, ResourceType.Document);
 
             StoreRequestHeaders headers = new StoreRequestHeaders();
             headers.ContentType = RuntimeConstants.MediaTypes.QueryJson;
             headers.Add(HttpConstants.HttpHeaders.IsContinuationExpected, bool.TrueString);
+            headers.Add(HttpConstants.HttpHeaders.EnableCrossPartitionQuery, bool.TrueString);
             headers.ConsistencyLevel = this.cosmosClientContext.ClientOptions.ConsistencyLevel.ToString();
             headers.Continuation = continuationToken?.ToString();
             headers.PageSize = queryPaginationOptions.PageSizeLimit?.ToString() ?? int.MaxValue.ToString();
