@@ -23,13 +23,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
         {
             this.globalList = new List<CosmosElement>();
 
-            // InitialList should never be null, but if it is we just keep global list as an empty list. 
-            if (initialList == null)
-            {
-                return;
-            }
-
-            this.globalList.AddRange(initialList.ToList<CosmosElement>());
+            this.Aggregate(initialList);
         }
 
         public void Aggregate(CosmosElement localList)

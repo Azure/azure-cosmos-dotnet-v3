@@ -23,13 +23,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
         {
             this.globalSet = new HashSet<CosmosElement>();
 
-            // InitialSet should never be null, but if it is we just keep globalSet as an empty set. 
-            if (initialSet == null)
-            {
-                return;
-            }
-
-            this.globalSet.UnionWith(initialSet.ToList<CosmosElement>());
+            this.Aggregate(initialSet);
         }
 
         public void Aggregate(CosmosElement localSet)
