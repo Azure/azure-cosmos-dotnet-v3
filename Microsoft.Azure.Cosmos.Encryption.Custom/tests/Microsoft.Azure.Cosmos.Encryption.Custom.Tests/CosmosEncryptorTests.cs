@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             }
             catch (InvalidOperationException ex)
             {
-                Assert.AreEqual("Null DataEncryptionKey returned from FetchDataEncryptionKeyAsync.", ex.Message);
+                Assert.AreEqual("Null DataEncryptionKey returned from FetchDataEncryptionKeyWithoutRawKeyAsync.", ex.Message);
             }
         }
 
