@@ -196,6 +196,84 @@ FROM c]]></RewrittenQuery>
   </Result>
   <Result>
     <Input>
+      <Description>Single Aggregate (MAKELIST) Without 'VALUE' and Without alias.</Description>
+      <Query>SELECT MAKELIST(c.blah) FROM c</Query>
+      <PartitionKeys />
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>$1</Alias>
+              <AggregateOperator>MakeList</AggregateOperator>
+            </AliasToAggregateType>
+          </GroupByAliasToAggregateType>
+          <GroupByAliases>
+            <Alias>$1</Alias>
+          </GroupByAliases>
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[SELECT {"$1": {"item": MAKELIST(c.blah)}} AS payload
+FROM c]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Single Aggregate (MAKESET) Without 'VALUE' and Without alias.</Description>
+      <Query>SELECT MAKESET(c.blah) FROM c</Query>
+      <PartitionKeys />
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>$1</Alias>
+              <AggregateOperator>MakeSet</AggregateOperator>
+            </AliasToAggregateType>
+          </GroupByAliasToAggregateType>
+          <GroupByAliases>
+            <Alias>$1</Alias>
+          </GroupByAliases>
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[SELECT {"$1": {"item": MAKESET(c.blah)}} AS payload
+FROM c]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
       <Description>Single Aggregate (SUM) Without 'VALUE' and With alias.</Description>
       <Query>SELECT SUM(c.blah) as sum_blah FROM c</Query>
       <PartitionKeys />
@@ -385,6 +463,84 @@ FROM c]]></RewrittenQuery>
           </Range>
         </QueryRanges>
         <RewrittenQuery><![CDATA[SELECT {"avg_blah": {"item": {"sum": SUM(c.blah), "count": COUNT(c.blah)}}} AS payload
+FROM c]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Single Aggregate (MAKELIST) Without 'VALUE' and With alias.</Description>
+      <Query>SELECT MAKELIST(c.blah) as makelist_blah FROM c</Query>
+      <PartitionKeys />
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>makelist_blah</Alias>
+              <AggregateOperator>MakeList</AggregateOperator>
+            </AliasToAggregateType>
+          </GroupByAliasToAggregateType>
+          <GroupByAliases>
+            <Alias>makelist_blah</Alias>
+          </GroupByAliases>
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[SELECT {"makelist_blah": {"item": MAKELIST(c.blah)}} AS payload
+FROM c]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Single Aggregate (MAKESET) Without 'VALUE' and With alias.</Description>
+      <Query>SELECT MAKESET(c.blah) as makeset_blah FROM c</Query>
+      <PartitionKeys />
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>makeset_blah</Alias>
+              <AggregateOperator>MakeSet</AggregateOperator>
+            </AliasToAggregateType>
+          </GroupByAliasToAggregateType>
+          <GroupByAliases>
+            <Alias>makeset_blah</Alias>
+          </GroupByAliases>
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[SELECT {"makeset_blah": {"item": MAKESET(c.blah)}} AS payload
 FROM c]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
     </Output>
@@ -631,6 +787,102 @@ FROM c]]></RewrittenQuery>
   </Result>
   <Result>
     <Input>
+      <Description>Multiple Aggregates (MAKELIST) With alias.</Description>
+      <Query>
+                    SELECT 
+                        MAKELIST(c.blah) as makelist_blah, 
+                        MAKELIST(c.blah) as makelist_blah2 
+                    FROM c</Query>
+      <PartitionKeys />
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>makelist_blah</Alias>
+              <AggregateOperator>MakeList</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>makelist_blah2</Alias>
+              <AggregateOperator>MakeList</AggregateOperator>
+            </AliasToAggregateType>
+          </GroupByAliasToAggregateType>
+          <GroupByAliases>
+            <Alias>makelist_blah</Alias>
+            <Alias>makelist_blah2</Alias>
+          </GroupByAliases>
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[SELECT {"makelist_blah": {"item": MAKELIST(c.blah)}, "makelist_blah2": {"item": MAKELIST(c.blah)}} AS payload
+FROM c]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Multiple Aggregates (MAKESET) With alias.</Description>
+      <Query>
+                    SELECT 
+                        MAKESET(c.blah) as makeset_blah, 
+                        MAKESET(c.blah) as makeset_blah2 
+                    FROM c</Query>
+      <PartitionKeys />
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>makeset_blah</Alias>
+              <AggregateOperator>MakeSet</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>makeset_blah2</Alias>
+              <AggregateOperator>MakeSet</AggregateOperator>
+            </AliasToAggregateType>
+          </GroupByAliasToAggregateType>
+          <GroupByAliases>
+            <Alias>makeset_blah</Alias>
+            <Alias>makeset_blah2</Alias>
+          </GroupByAliases>
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[SELECT {"makeset_blah": {"item": MAKESET(c.blah)}, "makeset_blah2": {"item": MAKESET(c.blah)}} AS payload
+FROM c]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
       <Description>Multiple Aggregates (SUM) Without alias.</Description>
       <Query>
                     SELECT 
@@ -865,6 +1117,102 @@ FROM c]]></RewrittenQuery>
           </Range>
         </QueryRanges>
         <RewrittenQuery><![CDATA[SELECT {"$1": {"item": {"sum": SUM(c.blah), "count": COUNT(c.blah)}}, "$2": {"item": {"sum": SUM(c.blah), "count": COUNT(c.blah)}}} AS payload
+FROM c]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Multiple Aggregates (MAKELIST) Without alias.</Description>
+      <Query>
+                    SELECT 
+                        MAKELIST(c.blah), 
+                        MAKELIST(c.blah)
+                    FROM c</Query>
+      <PartitionKeys />
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>$1</Alias>
+              <AggregateOperator>MakeList</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>$2</Alias>
+              <AggregateOperator>MakeList</AggregateOperator>
+            </AliasToAggregateType>
+          </GroupByAliasToAggregateType>
+          <GroupByAliases>
+            <Alias>$1</Alias>
+            <Alias>$2</Alias>
+          </GroupByAliases>
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[SELECT {"$1": {"item": MAKELIST(c.blah)}, "$2": {"item": MAKELIST(c.blah)}} AS payload
+FROM c]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Multiple Aggregates (MAKESET) Without alias.</Description>
+      <Query>
+                    SELECT 
+                        MAKESET(c.blah), 
+                        MAKESET(c.blah)
+                    FROM c</Query>
+      <PartitionKeys />
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>$1</Alias>
+              <AggregateOperator>MakeSet</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>$2</Alias>
+              <AggregateOperator>MakeSet</AggregateOperator>
+            </AliasToAggregateType>
+          </GroupByAliasToAggregateType>
+          <GroupByAliases>
+            <Alias>$1</Alias>
+            <Alias>$2</Alias>
+          </GroupByAliases>
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[SELECT {"$1": {"item": MAKESET(c.blah)}, "$2": {"item": MAKESET(c.blah)}} AS payload
 FROM c]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
     </Output>
@@ -1351,6 +1699,198 @@ FROM c]]></RewrittenQuery>
   </Result>
   <Result>
     <Input>
+      <Description>Multiple Aggregates (MAKELIST) mixed alias.</Description>
+      <Query>
+                    SELECT 
+                        MAKELIST(c.blah) as makelist_blah, 
+                        MAKELIST(c.blah)
+                    FROM c</Query>
+      <PartitionKeys />
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>makelist_blah</Alias>
+              <AggregateOperator>MakeList</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>$1</Alias>
+              <AggregateOperator>MakeList</AggregateOperator>
+            </AliasToAggregateType>
+          </GroupByAliasToAggregateType>
+          <GroupByAliases>
+            <Alias>makelist_blah</Alias>
+            <Alias>$1</Alias>
+          </GroupByAliases>
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[SELECT {"makelist_blah": {"item": MAKELIST(c.blah)}, "$1": {"item": MAKELIST(c.blah)}} AS payload
+FROM c]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Multiple Aggregates (MAKELIST) mixed alias.</Description>
+      <Query>
+                    SELECT 
+                        MAKELIST(c.blah),
+                        MAKELIST(c.blah) as makelist_blah
+                    FROM c</Query>
+      <PartitionKeys />
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>makelist_blah</Alias>
+              <AggregateOperator>MakeList</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>$1</Alias>
+              <AggregateOperator>MakeList</AggregateOperator>
+            </AliasToAggregateType>
+          </GroupByAliasToAggregateType>
+          <GroupByAliases>
+            <Alias>$1</Alias>
+            <Alias>makelist_blah</Alias>
+          </GroupByAliases>
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[SELECT {"$1": {"item": MAKELIST(c.blah)}, "makelist_blah": {"item": MAKELIST(c.blah)}} AS payload
+FROM c]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Multiple Aggregates (MAKESET) mixed alias.</Description>
+      <Query>
+                    SELECT 
+                        MAKESET(c.blah) as makeset_blah, 
+                        MAKESET(c.blah)
+                    FROM c</Query>
+      <PartitionKeys />
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>makeset_blah</Alias>
+              <AggregateOperator>MakeSet</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>$1</Alias>
+              <AggregateOperator>MakeSet</AggregateOperator>
+            </AliasToAggregateType>
+          </GroupByAliasToAggregateType>
+          <GroupByAliases>
+            <Alias>makeset_blah</Alias>
+            <Alias>$1</Alias>
+          </GroupByAliases>
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[SELECT {"makeset_blah": {"item": MAKESET(c.blah)}, "$1": {"item": MAKESET(c.blah)}} AS payload
+FROM c]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Multiple Aggregates (MAKESET) mixed alias.</Description>
+      <Query>
+                    SELECT 
+                        MAKESET(c.blah),
+                        MAKESET(c.blah) as makeset_blah
+                    FROM c</Query>
+      <PartitionKeys />
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>makeset_blah</Alias>
+              <AggregateOperator>MakeSet</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>$1</Alias>
+              <AggregateOperator>MakeSet</AggregateOperator>
+            </AliasToAggregateType>
+          </GroupByAliasToAggregateType>
+          <GroupByAliases>
+            <Alias>$1</Alias>
+            <Alias>makeset_blah</Alias>
+          </GroupByAliases>
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[SELECT {"$1": {"item": MAKESET(c.blah)}, "makeset_blah": {"item": MAKESET(c.blah)}} AS payload
+FROM c]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
       <Description>Multiple Aggregates (SUM) interleaved aliases.</Description>
       <Query>
                     SELECT 
@@ -1615,6 +2155,114 @@ FROM c]]></RewrittenQuery>
           </Range>
         </QueryRanges>
         <RewrittenQuery><![CDATA[SELECT {"avg_blah": {"item": {"sum": SUM(c.blah), "count": COUNT(c.blah)}}, "$1": {"item": {"sum": SUM(c.blah), "count": COUNT(c.blah)}}, "avg_blah2": {"item": {"sum": SUM(c.blah), "count": COUNT(c.blah)}}} AS payload
+FROM c]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Multiple Aggregates (MAKELIST) interleaved aliases.</Description>
+      <Query>
+                    SELECT 
+                        MAKELIST(c.blah) as makelist_blah, 
+                        MAKELIST(c.blah),
+                        MAKELIST(c.blah) as makelist_blah2
+                    FROM c</Query>
+      <PartitionKeys />
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>makelist_blah</Alias>
+              <AggregateOperator>MakeList</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>makelist_blah2</Alias>
+              <AggregateOperator>MakeList</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>$1</Alias>
+              <AggregateOperator>MakeList</AggregateOperator>
+            </AliasToAggregateType>
+          </GroupByAliasToAggregateType>
+          <GroupByAliases>
+            <Alias>makelist_blah</Alias>
+            <Alias>$1</Alias>
+            <Alias>makelist_blah2</Alias>
+          </GroupByAliases>
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[SELECT {"makelist_blah": {"item": MAKELIST(c.blah)}, "$1": {"item": MAKELIST(c.blah)}, "makelist_blah2": {"item": MAKELIST(c.blah)}} AS payload
+FROM c]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Multiple Aggregates (MAKESET) interleaved aliases.</Description>
+      <Query>
+                    SELECT 
+                        MAKESET(c.blah) as makeset_blah, 
+                        MAKESET(c.blah),
+                        MAKESET(c.blah) as makeset_blah2
+                    FROM c</Query>
+      <PartitionKeys />
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>makeset_blah</Alias>
+              <AggregateOperator>MakeSet</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>$1</Alias>
+              <AggregateOperator>MakeSet</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>makeset_blah2</Alias>
+              <AggregateOperator>MakeSet</AggregateOperator>
+            </AliasToAggregateType>
+          </GroupByAliasToAggregateType>
+          <GroupByAliases>
+            <Alias>makeset_blah</Alias>
+            <Alias>$1</Alias>
+            <Alias>makeset_blah2</Alias>
+          </GroupByAliases>
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[SELECT {"makeset_blah": {"item": MAKESET(c.blah)}, "$1": {"item": MAKESET(c.blah)}, "makeset_blah2": {"item": MAKESET(c.blah)}} AS payload
 FROM c]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
     </Output>
