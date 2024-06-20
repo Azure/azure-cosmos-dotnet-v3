@@ -23,11 +23,11 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(SdkProjectRef)' != 'True' AND '$(IsPreview)' != 'True' ">
-      <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.32.3" />
+      <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.40.0" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(SdkProjectRef)' != 'True' AND '$(IsPreview)' == 'True' ">
-      <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.35.1-preview" />
+      <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.41.0-preview.0" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(SdkProjectRef)' == 'True' ">
@@ -36,7 +36,7 @@
 	
   <ItemGroup>
      <PackageReference Include="Azure.Core" Version="1.38.0" />
-     <PackageReference Include="Azure.Identity" Version="1.11.0" />
+     <PackageReference Include="Azure.Identity" Version="1.11.4" />
      <PackageReference Include="Microsoft.Data.Encryption.Cryptography" Version="0.2.0-pre" />
      <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />     
   </ItemGroup>
