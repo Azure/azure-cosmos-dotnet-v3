@@ -1,4 +1,4 @@
-﻿<Results>
+<Results>
   <Result>
     <Query><![CDATA[SELECT VALUE AVG (c.field)
 FROM c
@@ -508,6 +508,210 @@ WHERE c.key = "oneObjectKey"]]></Query>
 FROM c
 WHERE c.key = "undefinedKey"]]></Query>
     <Aggregation><![CDATA[0]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAKELIST (c.field)
+FROM c
+WHERE IS_ARRAY(c.field)]]></Query>
+    <Aggregation><![CDATA[[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]]]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAKELIST (c.field)
+FROM c
+WHERE IS_BOOL(c.field)]]></Query>
+    <Aggregation><![CDATA[[false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true]]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAKELIST (c.field)
+FROM c
+WHERE IS_NULL(c.field)]]></Query>
+    <Aggregation><![CDATA[[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAKELIST (c.field)
+FROM c
+WHERE IS_NUMBER(c.field)]]></Query>
+    <Aggregation><![CDATA[[8204,8204,14799,14799,19377,19377,21344,21344,27832,27832,28384,28384,31256,31256,39908,39908,50445,50445,59354,59354,62645,62645,63899,63899,68915,68915,70086,70086,75246,75246,80799,80799,88308,88308,92569,92569,94673,94673,94726,94726]]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAKELIST (c.field)
+FROM c
+WHERE IS_OBJECT(c.field)]]></Query>
+    <Aggregation><![CDATA[[{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}]]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAKELIST (c.field)
+FROM c
+WHERE IS_STRING(c.field)]]></Query>
+    <Aggregation><![CDATA[["0.12541667890055883","0.12541667890055883","0.17028699776636763","0.17028699776636763","0.21411905540810855","0.21411905540810855","0.30774512202839605","0.30774512202839605","0.31831863583918596","0.31831863583918596","0.33943602458547617","0.33943602458547617","0.35054585866189836","0.35054585866189836","0.3936524989053851","0.3936524989053851","0.4173777645534732","0.4173777645534732","0.43862057451094527","0.43862057451094527","0.4645141444469402","0.4645141444469402","0.49734567501458604","0.49734567501458604","0.5207309469211525","0.5207309469211525","0.529118959107026","0.529118959107026","0.5440849543288746","0.5440849543288746","0.5854627101614432","0.5854627101614432","0.8055444181922564","0.8055444181922564","0.8419260577493934","0.8419260577493934","0.8958994657247791","0.8958994657247791","0.917828386145564","0.917828386145564"]]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAKELIST (c.field)
+FROM c
+WHERE IS_DEFINED(c.field)]]></Query>
+    <Aggregation><![CDATA[[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,8204,8204,14799,14799,19377,19377,21344,21344,27832,27832,28384,28384,31256,31256,39908,39908,50445,50445,59354,59354,62645,62645,63899,63899,68915,68915,70086,70086,75246,75246,80799,80799,88308,88308,92569,92569,94673,94673,94726,94726,"0.12541667890055883","0.12541667890055883","0.17028699776636763","0.17028699776636763","0.21411905540810855","0.21411905540810855","0.30774512202839605","0.30774512202839605","0.31831863583918596","0.31831863583918596","0.33943602458547617","0.33943602458547617","0.35054585866189836","0.35054585866189836","0.3936524989053851","0.3936524989053851","0.4173777645534732","0.4173777645534732","0.43862057451094527","0.43862057451094527","0.4645141444469402","0.4645141444469402","0.49734567501458604","0.49734567501458604","0.5207309469211525","0.5207309469211525","0.529118959107026","0.529118959107026","0.5440849543288746","0.5440849543288746","0.5854627101614432","0.5854627101614432","0.8055444181922564","0.8055444181922564","0.8419260577493934","0.8419260577493934","0.8958994657247791","0.8958994657247791","0.917828386145564","0.917828386145564",[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}]]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAKELIST (c.field)
+FROM c
+WHERE IS_PRIMITIVE(c.field)]]></Query>
+    <Aggregation><![CDATA[[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,8204,8204,14799,14799,19377,19377,21344,21344,27832,27832,28384,28384,31256,31256,39908,39908,50445,50445,59354,59354,62645,62645,63899,63899,68915,68915,70086,70086,75246,75246,80799,80799,88308,88308,92569,92569,94673,94673,94726,94726,"0.12541667890055883","0.12541667890055883","0.17028699776636763","0.17028699776636763","0.21411905540810855","0.21411905540810855","0.30774512202839605","0.30774512202839605","0.31831863583918596","0.31831863583918596","0.33943602458547617","0.33943602458547617","0.35054585866189836","0.35054585866189836","0.3936524989053851","0.3936524989053851","0.4173777645534732","0.4173777645534732","0.43862057451094527","0.43862057451094527","0.4645141444469402","0.4645141444469402","0.49734567501458604","0.49734567501458604","0.5207309469211525","0.5207309469211525","0.529118959107026","0.529118959107026","0.5440849543288746","0.5440849543288746","0.5854627101614432","0.5854627101614432","0.8055444181922564","0.8055444181922564","0.8419260577493934","0.8419260577493934","0.8958994657247791","0.8958994657247791","0.917828386145564","0.917828386145564"]]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAKELIST (c.field)
+FROM c
+WHERE c.key = "doubleOnly"]]></Query>
+    <Aggregation><![CDATA[[8204,14799,19377,21344,27832,28384,31256,39908,50445,59354,62645,63899,68915,70086,75246,80799,88308,92569,94673,94726]]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAKELIST (c.field)
+FROM c
+WHERE c.key = "stringOnly"]]></Query>
+    <Aggregation><![CDATA[["0.12541667890055883","0.17028699776636763","0.21411905540810855","0.30774512202839605","0.31831863583918596","0.33943602458547617","0.35054585866189836","0.3936524989053851","0.4173777645534732","0.43862057451094527","0.4645141444469402","0.49734567501458604","0.5207309469211525","0.529118959107026","0.5440849543288746","0.5854627101614432","0.8055444181922564","0.8419260577493934","0.8958994657247791","0.917828386145564"]]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAKELIST (c.field)
+FROM c
+WHERE c.key = "boolOnly"]]></Query>
+    <Aggregation><![CDATA[[false,false,false,false,false,false,false,false,false,false,false,true,true,true,true,true,true,true,true,true]]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAKELIST (c.field)
+FROM c
+WHERE c.key = "nullOnly"]]></Query>
+    <Aggregation><![CDATA[[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAKELIST (c.field)
+FROM c
+WHERE c.key = "objectOnlyKey"]]></Query>
+    <Aggregation><![CDATA[[{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}]]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAKELIST (c.field)
+FROM c
+WHERE c.key = "arrayOnlyKey"]]></Query>
+    <Aggregation><![CDATA[[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]]]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAKELIST (c.field)
+FROM c
+WHERE c.key = "oneArrayKey"]]></Query>
+    <Aggregation><![CDATA[[[]]]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAKELIST (c.field)
+FROM c
+WHERE c.key = "oneObjectKey"]]></Query>
+    <Aggregation><![CDATA[[{}]]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAKELIST (c.field)
+FROM c
+WHERE c.key = "undefinedKey"]]></Query>
+    <Aggregation><![CDATA[[]]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAKESET (c.field)
+FROM c
+WHERE IS_ARRAY(c.field)]]></Query>
+    <Aggregation><![CDATA[[[]]]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAKESET (c.field)
+FROM c
+WHERE IS_BOOL(c.field)]]></Query>
+    <Aggregation><![CDATA[[false,true]]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAKESET (c.field)
+FROM c
+WHERE IS_NULL(c.field)]]></Query>
+    <Aggregation><![CDATA[[null]]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAKESET (c.field)
+FROM c
+WHERE IS_NUMBER(c.field)]]></Query>
+    <Aggregation><![CDATA[[8204,14799,19377,21344,27832,28384,31256,39908,50445,59354,62645,63899,68915,70086,75246,80799,88308,92569,94673,94726]]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAKESET (c.field)
+FROM c
+WHERE IS_OBJECT(c.field)]]></Query>
+    <Aggregation><![CDATA[[{}]]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAKESET (c.field)
+FROM c
+WHERE IS_STRING(c.field)]]></Query>
+    <Aggregation><![CDATA[["0.12541667890055883","0.17028699776636763","0.21411905540810855","0.30774512202839605","0.31831863583918596","0.33943602458547617","0.35054585866189836","0.3936524989053851","0.4173777645534732","0.43862057451094527","0.4645141444469402","0.49734567501458604","0.5207309469211525","0.529118959107026","0.5440849543288746","0.5854627101614432","0.8055444181922564","0.8419260577493934","0.8958994657247791","0.917828386145564"]]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAKESET (c.field)
+FROM c
+WHERE IS_DEFINED(c.field)]]></Query>
+    <Aggregation><![CDATA[[null,false,true,8204,14799,19377,21344,27832,28384,31256,39908,50445,59354,62645,63899,68915,70086,75246,80799,88308,92569,94673,94726,"0.12541667890055883","0.17028699776636763","0.21411905540810855","0.30774512202839605","0.31831863583918596","0.33943602458547617","0.35054585866189836","0.3936524989053851","0.4173777645534732","0.43862057451094527","0.4645141444469402","0.49734567501458604","0.5207309469211525","0.529118959107026","0.5440849543288746","0.5854627101614432","0.8055444181922564","0.8419260577493934","0.8958994657247791","0.917828386145564",[],{}]]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAKESET (c.field)
+FROM c
+WHERE IS_PRIMITIVE(c.field)]]></Query>
+    <Aggregation><![CDATA[[null,false,true,8204,14799,19377,21344,27832,28384,31256,39908,50445,59354,62645,63899,68915,70086,75246,80799,88308,92569,94673,94726,"0.12541667890055883","0.17028699776636763","0.21411905540810855","0.30774512202839605","0.31831863583918596","0.33943602458547617","0.35054585866189836","0.3936524989053851","0.4173777645534732","0.43862057451094527","0.4645141444469402","0.49734567501458604","0.5207309469211525","0.529118959107026","0.5440849543288746","0.5854627101614432","0.8055444181922564","0.8419260577493934","0.8958994657247791","0.917828386145564"]]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAKESET (c.field)
+FROM c
+WHERE c.key = "doubleOnly"]]></Query>
+    <Aggregation><![CDATA[[8204,14799,19377,21344,27832,28384,31256,39908,50445,59354,62645,63899,68915,70086,75246,80799,88308,92569,94673,94726]]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAKESET (c.field)
+FROM c
+WHERE c.key = "stringOnly"]]></Query>
+    <Aggregation><![CDATA[["0.12541667890055883","0.17028699776636763","0.21411905540810855","0.30774512202839605","0.31831863583918596","0.33943602458547617","0.35054585866189836","0.3936524989053851","0.4173777645534732","0.43862057451094527","0.4645141444469402","0.49734567501458604","0.5207309469211525","0.529118959107026","0.5440849543288746","0.5854627101614432","0.8055444181922564","0.8419260577493934","0.8958994657247791","0.917828386145564"]]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAKESET (c.field)
+FROM c
+WHERE c.key = "boolOnly"]]></Query>
+    <Aggregation><![CDATA[[false,true]]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAKESET (c.field)
+FROM c
+WHERE c.key = "nullOnly"]]></Query>
+    <Aggregation><![CDATA[[null]]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAKESET (c.field)
+FROM c
+WHERE c.key = "objectOnlyKey"]]></Query>
+    <Aggregation><![CDATA[[{}]]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAKESET (c.field)
+FROM c
+WHERE c.key = "arrayOnlyKey"]]></Query>
+    <Aggregation><![CDATA[[[]]]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAKESET (c.field)
+FROM c
+WHERE c.key = "oneArrayKey"]]></Query>
+    <Aggregation><![CDATA[[[]]]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAKESET (c.field)
+FROM c
+WHERE c.key = "oneObjectKey"]]></Query>
+    <Aggregation><![CDATA[[{}]]]></Aggregation>
+  </Result>
+  <Result>
+    <Query><![CDATA[SELECT VALUE MAKESET (c.field)
+FROM c
+WHERE c.key = "undefinedKey"]]></Query>
+    <Aggregation><![CDATA[[]]]></Aggregation>
   </Result>
   <Result>
     <Query><![CDATA[SELECT VALUE MIN (c.field)
