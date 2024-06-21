@@ -63,6 +63,16 @@
                 @"/key"),
 
                 Hash(
+                @"MAKELIST",
+                @"SELECT VALUE MAKELIST(c.blah) FROM c",
+                @"/key"),
+
+                Hash(
+                @"MAKESET",
+                @"SELECT VALUE MAKESET(c.blah) FROM c",
+                @"/key"),
+
+                Hash(
                 @"COUNT 1",
                 @"SELECT VALUE COUNT(1) FROM c",
                 @"/key"),
@@ -114,7 +124,9 @@
                 "COUNT",
                 "MIN",
                 "MAX",
-                "AVG"
+                "AVG",
+                "MAKELIST",
+                "MAKESET"
             };
 
             List<QueryPlanBaselineTestInput> testVariations = new List<QueryPlanBaselineTestInput>();
