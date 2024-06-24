@@ -93,8 +93,8 @@ namespace Microsoft.Azure.Cosmos
 
                 Assert.IsTrue(getAccountInfoCount > 0, "Callback is not working. There should be at least one call in this time frame.");
                 getAccountInfoCount = 0;
-                Thread.Sleep(TimeSpan.FromSeconds(3));
-                Assert.AreEqual(0, getAccountInfoCount, "There should be no more account calls after the GlobalEndpointManager is disposed");
+                await Task.Delay(TimeSpan.FromSeconds(5));
+                Assert.IsTrue(getAccountInfoCount <= 1, "There should be at most 1 call to refresh tied to the background refresh happening while Dispose cancels the internal CancellationToken");
             }
             finally
             {

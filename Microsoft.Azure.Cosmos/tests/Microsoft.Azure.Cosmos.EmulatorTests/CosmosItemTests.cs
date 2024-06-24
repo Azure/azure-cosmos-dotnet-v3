@@ -1723,9 +1723,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 ContainerQueryProperties containerQueryProperties = new ContainerQueryProperties(
                     containerResponse.Resource.ResourceId,
-                    null,
+                    effectivePartitionKeyRanges: null,
                     //new List<Documents.Routing.Range<string>> { new Documents.Routing.Range<string>("AA", "AA", true, true) },
                     containerResponse.Resource.PartitionKey,
+                    vectorEmbeddingPolicy: null,
                     containerResponse.Resource.GeospatialConfig.GeospatialType);
 
                 // There should only be one range since the EPK option is set.
