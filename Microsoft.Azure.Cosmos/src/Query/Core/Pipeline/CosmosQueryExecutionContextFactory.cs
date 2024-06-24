@@ -97,19 +97,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            // The default
             using (ITrace createQueryPipelineTrace = trace.StartChild("Create Query Pipeline", TraceComponent.Query, Tracing.TraceLevel.Info))
             {
-                if (inputParameters.EnableDistributedQueryGatewayMode)
+                if (inputParameters.EnableDistributedQueryGatewayMode &&
+                    cosmosQueryContext.ResourceTypeEnum == Documents.ResourceType.Document &&
+                    cosmosQueryContext.OperationTypeEnum == Documents.OperationType.Query)
                 {
-                    return TryCatch<IQueryPipelineStage>.FromResult(
-                        DistributedQueryPipelineStage.Create(
-                            distributedQueryClient,
-                            inputParameters.SqlQuerySpec,
-                            inputParameters.InitialFeedRange,
-                            inputParameters.PartitionKey,
-                            new QueryPaginationOptions(inputParameters.MaxItemCount),
-                            inputParameters.InitialUserContinuationToken));
+                    TryCatch<IQueryPipelineStage> tryCreateDistributedQueryPipeline = DistributedQueryPipelineStage.MonadicCreate(
+                        distributedQueryClient,
+                        inputParameters.SqlQuerySpec,
+                        inputParameters.InitialFeedRange,
+                        inputParameters.PartitionKey,
+                        new QueryPaginationOptions(inputParameters.MaxItemCount),
+                        inputParameters.InitialUserContinuationToken);
+
+                    if (tryCreateDistributedQueryPipeline.Succeeded)
+                    {
+                        return tryCreateDistributedQueryPipeline;
+                    }
                 }
 
                 // Try to parse the continuation token.

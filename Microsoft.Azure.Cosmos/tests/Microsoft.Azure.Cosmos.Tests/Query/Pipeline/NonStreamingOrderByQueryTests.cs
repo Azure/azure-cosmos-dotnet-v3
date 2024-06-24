@@ -727,6 +727,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         private static class DebugTraceHelpers
         {
             private const bool Enabled = false;
+#pragma warning disable CS0162 // Unreachable code detected
 
             [Conditional("DEBUG")]
             public static void TraceSplit(FeedRangeInternal feedRange)
@@ -798,6 +799,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     }
                 }
             }
+#pragma warning restore CS0162 // Unreachable code detected
         }
 
         private class MockDocumentContainer : IDocumentContainer

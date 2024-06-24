@@ -295,17 +295,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         private async Task TestPageSizeAsync(string query, int expectedPageSize, int expectedResults, MockInMemoryContainer inMemoryContainer, DocumentContainer documentContainer)
         {
-            (CosmosQueryExecutionContextFactory.InputParameters inputParameters, CosmosQueryContextCore cosmosQueryContextCore) = CreateInputParamsAndQueryContext(
+            IQueryPipelineStage queryPipelineStage = CreateQueryPipelineStage(
+                documentContainer,
                 query,
                 partitionKeyDefinition,
                 null,
                 new QueryRequestOptions());
-
-            IQueryPipelineStage queryPipelineStage = CosmosQueryExecutionContextFactory.Create(
-                documentContainer,
-                cosmosQueryContextCore,
-                inputParameters,
-                NoOpTrace.Singleton);
 
             List<CosmosElement> elements = new List<CosmosElement>();
             while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default))
@@ -320,7 +315,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             Assert.AreEqual(expected: expectedResults, actual: elements.Count);
         }
 
-        private static Tuple<CosmosQueryExecutionContextFactory.InputParameters, CosmosQueryContextCore> CreateInputParamsAndQueryContext(
+        private static IQueryPipelineStage CreateQueryPipelineStage(
+            DocumentContainer documentContainer,
             string query,
             PartitionKeyDefinition partitionKeyDefinition,
             Cosmos.PartitionKey? partitionKeyValue,
@@ -330,7 +326,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             using StreamReader streamReader = new(serializerCore.ToStreamSqlQuerySpec(new SqlQuerySpec(query), Documents.ResourceType.Document));
             string sqlQuerySpecJsonString = streamReader.ReadToEnd();
 
-            CosmosQueryExecutionContextFactory.InputParameters inputParameters = new CosmosQueryExecutionContextFactory.InputParameters(
+            CosmosQueryExecutionContextFactory.InputParameters inputParameters = CosmosQueryExecutionContextFactory.InputParameters.Create(
                 sqlQuerySpec: new SqlQuerySpec(query),
                 initialUserContinuationToken: null,
                 initialFeedRange: null,
@@ -344,6 +340,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 returnResultsInDeterministicOrder: null,
                 enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
                 isNonStreamingOrderByQueryFeatureDisabled: queryRequestOptions.IsNonStreamingOrderByQueryFeatureDisabled,
+                enableDistributedQueryGatewayMode: queryRequestOptions.EnableDistributedQueryGatewayMode,
                 testInjections: queryRequestOptions.TestSettings);
 
             string databaseId = "db1234";
@@ -426,7 +423,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                  useSystemPrefix: false,
                  correlatedActivityId: Guid.NewGuid());
 
-            return Tuple.Create(inputParameters, cosmosQueryContextCore);
+            Mock<ICosmosDistributedQueryClient> mockDistributedQueryClient = new Mock<ICosmosDistributedQueryClient>();
+            IQueryPipelineStage queryPipelineStage = CosmosQueryExecutionContextFactory.Create(
+                documentContainer,
+                cosmosQueryContextCore,
+                mockDistributedQueryClient.Object,
+                inputParameters,
+                NoOpTrace.Singleton);
+
+            return queryPipelineStage;
         }
 
         internal static QueryPartitionProvider GetQueryPartitionProvider()
