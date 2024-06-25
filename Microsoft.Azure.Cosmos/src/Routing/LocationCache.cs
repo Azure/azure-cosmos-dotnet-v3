@@ -320,7 +320,10 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public ReadOnlyCollection<Uri> GetApplicableEndpoints(DocumentServiceRequest request, bool isReadRequest)
         {
-            ReadOnlyCollection<Uri> endpoints = isReadRequest ? this.ReadEndpoints : this.WriteEndpoints;
+            ReadOnlyCollection<Uri> endpoints = 
+                isReadRequest 
+                ? this.ReadEndpoints 
+                : this.WriteEndpoints;
 
             if (request.RequestContext.ExcludeRegions == null || request.RequestContext.ExcludeRegions.Count == 0)
             {
@@ -328,7 +331,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
             return this.GetApplicableEndpoints(
-                endpoints,
                 isReadRequest ? this.locationInfo.AvailableReadEndpointByLocation : this.locationInfo.AvailableWriteEndpointByLocation,
                 this.defaultEndpoint,
                 request.RequestContext.ExcludeRegions);
@@ -336,13 +338,8 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public ReadOnlyCollection<string> GetApplicableRegions(IEnumerable<string> excludeRegions, bool isReadRequest)
         {
-            ReadOnlyCollection<string> endpoints = isReadRequest 
-                ? this.locationInfo.AvailableReadLocations 
-                : this.locationInfo.AvailableReadLocations;
-
             return this.GetApplicableRegions(
-                endpoints,
-                isReadRequest ? this.locationInfo.AvailableReadEndpointByLocation : this.locationInfo.AvailableWriteEndpointByLocation,
+                isReadRequest ? this.locationInfo.AvailableReadLocations : this.locationInfo.AvailableWriteLocations,
                 this.locationInfo.PreferredLocations[0],
                 excludeRegions);
         }
@@ -350,34 +347,29 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <summary>
         /// Gets applicable endpoints for a request, if there are no applicable endpoints, returns the fallback endpoint
         /// </summary>
-        /// <param name="endpoints"></param>
         /// <param name="regionNameByEndpoint"></param>
         /// <param name="fallbackEndpoint"></param>
         /// <param name="excludeRegions"></param>
         /// <returns>a list of applicable endpoints for a request</returns>
         private ReadOnlyCollection<Uri> GetApplicableEndpoints(
-            IReadOnlyList<Uri> endpoints,
             ReadOnlyDictionary<string, Uri> regionNameByEndpoint,
             Uri fallbackEndpoint,
             IEnumerable<string> excludeRegions)
         {
-            List<Uri> applicableEndpoints = new List<Uri>(endpoints.Count);
-            HashSet<Uri> excludeUris = new HashSet<Uri>();
+            List<Uri> applicableEndpoints = new List<Uri>(regionNameByEndpoint.Count);
+            HashSet<string> preferredLocationsHash = new HashSet<string>(this.locationInfo.PreferredLocations);
 
-            foreach (string region in excludeRegions)
+            if (excludeRegions != null)
             {
-                string normalizedRegionName = this.regionNameMapper.GetCosmosDBRegionName(region);
-                if (regionNameByEndpoint.ContainsKey(normalizedRegionName))
+                foreach (string region in excludeRegions)
                 {
-                    excludeUris.Add(regionNameByEndpoint[normalizedRegionName]);
-                }
-            }
-            
-            foreach (Uri endpoint in endpoints)
-            {
-                if (!excludeUris.Contains(endpoint))
-                {
-                    applicableEndpoints.Add(endpoint);
+                    string normalizedRegionName = this.regionNameMapper.GetCosmosDBRegionName(region);
+                    if (!regionNameByEndpoint.ContainsKey(normalizedRegionName)
+                        && preferredLocationsHash.Contains(normalizedRegionName))
+                    {
+                        Uri endpoint = regionNameByEndpoint[normalizedRegionName];
+                        applicableEndpoints.Add(endpoint);
+                    }
                 }
             }
 
@@ -392,19 +384,16 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <summary>
         /// Gets applicable endpoints for a request, if there are no applicable endpoints, returns the fallback endpoint
         /// </summary>
-        /// <param name="availableRegions"></param>
         /// <param name="regionNameByEndpoint"></param>
         /// <param name="fallbackRegion"></param>
         /// <param name="excludeRegions"></param>
         /// <returns>a list of applicable endpoints for a request</returns>
         private ReadOnlyCollection<string> GetApplicableRegions(
-            IReadOnlyList<string> availableRegions,
-            ReadOnlyDictionary<string, Uri> regionNameByEndpoint,
+            ReadOnlyCollection<string> regionNameByEndpoint,
             string fallbackRegion,
             IEnumerable<string> excludeRegions)
         {
-            List<string> applicableRegions = new List<string>(availableRegions.Count);
-            HashSet<string> regions = new HashSet<string>();
+            List<string> applicableRegions = new List<string>(regionNameByEndpoint.Count);
             HashSet<string> preferredLocationsHash = new HashSet<string>(this.locationInfo.PreferredLocations);
 
             if (excludeRegions != null)
@@ -412,19 +401,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                 foreach (string region in excludeRegions)
                 {
                     string normalizedRegionName = this.regionNameMapper.GetCosmosDBRegionName(region);
-                    if (regionNameByEndpoint.ContainsKey(normalizedRegionName))
+                    if (!regionNameByEndpoint.Contains(normalizedRegionName)
+                        && preferredLocationsHash.Contains(normalizedRegionName))
                     {
-                        regions.Add(normalizedRegionName);
+                        applicableRegions.Add(normalizedRegionName);
                     }
-                }
-            }
-
-            foreach (string availableRegion in availableRegions)
-            {
-                if (!regions.Contains(availableRegion) 
-                    && preferredLocationsHash.Contains(availableRegion))
-                {
-                    applicableRegions.Add(availableRegion);
                 }
             }
 

@@ -6,9 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
-    using Telemetry;
 
     /// <summary>
     /// The default cosmos request options

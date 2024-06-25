@@ -299,10 +299,11 @@ namespace Microsoft.Azure.Cosmos
                 serviceRequest.UseStatusCodeFor429 = true;
                 serviceRequest.Properties = this.Properties;
                 this.DocumentServiceRequest = serviceRequest;
-                if (this.LocationEndpointToRoute != null)
-                {
-                    this.DocumentServiceRequest.RequestContext.RouteToLocation(this.LocationEndpointToRoute);
-                }
+            }
+
+            if (this.LocationEndpointToRoute != null)
+            {
+                this.DocumentServiceRequest.RequestContext.RouteToLocation(this.LocationEndpointToRoute);
             }
 
             // Routing to a particular PartitionKeyRangeId
@@ -354,10 +355,9 @@ namespace Microsoft.Azure.Cosmos
             }
 
             clone.UseGatewayMode = this.UseGatewayMode;
-
             clone.ContainerId = this.ContainerId;
-
             clone.DatabaseId = this.DatabaseId;
+            clone.LocationEndpointToRoute = this.LocationEndpointToRoute;
 
             return clone;
         }
