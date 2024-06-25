@@ -265,8 +265,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 trace: trace);
         }
 
-        public override CosmosElement GetCosmosElementContinuationToken() => this.queryPipelineStage.Current.Result.State?.Value;
-
         protected override void Dispose(bool disposing)
         {
             this.queryPipelineStage.DisposeAsync();

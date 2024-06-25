@@ -1188,7 +1188,7 @@
                                 MaxConcurrency = 10,
                                 MaxItemCount = pageSize
                             },
-                           QueryDrainingMode.ContinuationToken | QueryDrainingMode.HoldState | QueryDrainingMode.CosmosElementContinuationToken);
+                           QueryDrainingMode.ContinuationToken | QueryDrainingMode.HoldState);
 
                         CosmosElement aggregateResult = actualDocuments.First();
                         CosmosArray normalizedActualCosmosArray = null;
