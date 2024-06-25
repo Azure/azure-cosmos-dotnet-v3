@@ -42,26 +42,9 @@ GROUP BY root["id"] ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT v0[0] AS Min, v1[0] AS Max, v2[0] AS Avg, ARRAY_LENGTH(root) AS Count 
+SELECT MIN(root["Int"]) AS Min, MAX(root["Int"]) AS Max, AVG(root["Int"]) AS Avg, COUNT(1) AS Count 
 FROM root 
-JOIN (
-    SELECT VALUE ARRAY(
-        SELECT VALUE MIN(value["Int"]) 
-        FROM root 
-        JOIN value IN root)) AS v0 
-        JOIN (
-            SELECT VALUE ARRAY(
-                SELECT VALUE MAX(value["Int"]) 
-                FROM root 
-                JOIN value IN root)) AS v1 
-                JOIN (
-                    SELECT VALUE ARRAY(
-                        SELECT VALUE AVG(value["Int"]) 
-                        FROM root 
-                        JOIN value IN root)) AS v2 
-                        GROUP BY root["id"] 
-]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":129,"end":134},"code":"SC1001","message":"Syntax error, incorrect syntax near 'value'."}]},0x800A0B00]]></ErrorMessage>
+GROUP BY root["id"] ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -71,10 +54,9 @@ JOIN (
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT root["FamilyId"] AS familyId, ARRAY_LENGTH(root) AS familyIdCount 
+SELECT root["FamilyId"] AS familyId, COUNT(1) AS familyIdCount 
 FROM root 
 GROUP BY root["FamilyId"] ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":50,"end":54},"code":"SC2102","message":"Property reference 'root' is invalid in the select list because it is not contained in either an aggregate function or the GROUP BY clause."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -84,21 +66,9 @@ GROUP BY root["FamilyId"] ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT v1[0] AS Min, v3[0] AS Max 
+SELECT MIN(root) AS Min, MAX(root) AS Max 
 FROM root 
-JOIN (
-    SELECT VALUE ARRAY(
-        SELECT VALUE MIN(v0) 
-        FROM root 
-        JOIN v0 IN root)) AS v1 
-        JOIN (
-            SELECT VALUE ARRAY(
-                SELECT VALUE MAX(v2) 
-                FROM root 
-                JOIN v2 IN root)) AS v3 
-                GROUP BY root["id"] 
-]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":7,"end":9},"code":"SC2102","message":"Property reference 'v1' is invalid in the select list because it is not contained in either an aggregate function or the GROUP BY clause."},{"severity":"Error","location":{"start":21,"end":23},"code":"SC2102","message":"Property reference 'v3' is invalid in the select list because it is not contained in either an aggregate function or the GROUP BY clause."}]},0x800A0B00]]></ErrorMessage>
+GROUP BY root["id"] ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -107,23 +77,8 @@ JOIN (
       <Expression><![CDATA[query.GroupBy(k => k.Id, (key, values) => new AnonymousType(valueSelect = values.Select(value => value.Int), valueOrderBy = values.OrderBy(f => f.FamilyId)))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery><![CDATA[
-SELECT v0 AS valueSelect, v1 AS valueOrderBy 
-FROM root 
-JOIN (
-    SELECT VALUE ARRAY(
-        SELECT VALUE value["Int"] 
-        FROM root 
-        JOIN value IN root)) AS v0 
-        JOIN (
-            SELECT VALUE ARRAY(
-                SELECT VALUE f 
-                FROM root 
-                JOIN f IN root 
-                ORDER BY f["FamilyId"] ASC)) AS v1 
-                GROUP BY root["id"] 
-]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":93,"end":98},"code":"SC1001","message":"Syntax error, incorrect syntax near 'value'."}]},0x800A0B00]]></ErrorMessage>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Method 'Select' is not supported.]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -133,7 +88,7 @@ JOIN (
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT r0 AS keyAlias, ARRAY_LENGTH(r0) AS count 
+SELECT r0 AS keyAlias, COUNT(1) AS count 
 FROM (
     SELECT VALUE root["id"] 
     FROM root) AS r0 
@@ -148,13 +103,12 @@ FROM (
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT r0["Id1"] AS keyAlias, ARRAY_LENGTH(r0) AS count 
+SELECT r0["Id1"] AS keyAlias, COUNT(1) AS count 
 FROM (
     SELECT VALUE {"Id1": root["id"], "family1": root["FamilyId"], "childrenN1": root["Children"]} 
     FROM root) AS r0 
     GROUP BY r0["Id1"] 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":43,"end":45},"code":"SC2102","message":"Property reference 'r0' is invalid in the select list because it is not contained in either an aggregate function or the GROUP BY clause."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -164,7 +118,7 @@ FROM (
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT x0 AS keyAlias, ARRAY_LENGTH(x0) AS count 
+SELECT x0 AS keyAlias, COUNT(1) AS count 
 FROM root 
 JOIN x0 IN root["Children"] 
 GROUP BY x0 ]]></SqlQuery>
@@ -177,14 +131,14 @@ GROUP BY x0 ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT r0["id"] AS keyAlias, ARRAY_LENGTH(r0) AS count 
+SELECT r0["id"] AS keyAlias, COUNT(1) AS count 
 FROM (
     SELECT VALUE root 
     FROM root 
     OFFSET 10 LIMIT 2147483647) AS r0 
     GROUP BY r0["id"] 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":89,"end":115},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":81,"end":107},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -194,13 +148,13 @@ FROM (
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT r0["id"] AS keyAlias, ARRAY_LENGTH(r0) AS count 
+SELECT r0["id"] AS keyAlias, COUNT(1) AS count 
 FROM (
     SELECT TOP 10 VALUE root 
     FROM root) AS r0 
     GROUP BY r0["id"] 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":68,"end":74},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":60,"end":66},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -210,14 +164,14 @@ FROM (
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT r0["id"] AS keyAlias, ARRAY_LENGTH(r0) AS count 
+SELECT r0["id"] AS keyAlias, COUNT(1) AS count 
 FROM (
     SELECT VALUE root 
     FROM root 
     OFFSET 10 LIMIT 10) AS r0 
     GROUP BY r0["id"] 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":89,"end":107},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":81,"end":99},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -227,11 +181,10 @@ FROM (
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT root["id"] AS keyAlias, ARRAY_LENGTH(root) AS count 
+SELECT root["id"] AS keyAlias, COUNT(1) AS count 
 FROM root 
 WHERE (root["id"] != "a") 
 GROUP BY root["id"] ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":44,"end":48},"code":"SC2102","message":"Property reference 'root' is invalid in the select list because it is not contained in either an aggregate function or the GROUP BY clause."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -241,11 +194,11 @@ GROUP BY root["id"] ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT root["id"] AS keyAlias, ARRAY_LENGTH(root) AS count 
+SELECT root["id"] AS keyAlias, COUNT(1) AS count 
 FROM root 
 GROUP BY root["id"]  
 ORDER BY root["Int"] ASC]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":99,"end":110},"code":"SC2103","message":"Property reference 'root[\"Int\"]' is invalid in the ORDER BY clause because it is not contained in either an aggregate function or the GROUP BY clause."},{"severity":"Error","location":{"start":44,"end":48},"code":"SC2102","message":"Property reference 'root' is invalid in the select list because it is not contained in either an aggregate function or the GROUP BY clause."}]},0x800A0B00]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":89,"end":100},"code":"SC2103","message":"Property reference 'root[\"Int\"]' is invalid in the ORDER BY clause because it is not contained in either an aggregate function or the GROUP BY clause."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -255,11 +208,10 @@ ORDER BY root["Int"] ASC]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT root["id"] AS keyAlias, ARRAY_LENGTH(root) AS count 
+SELECT root["id"] AS keyAlias, COUNT(1) AS count 
 FROM root 
 GROUP BY root["id"]  
 ORDER BY root["id"] DESC]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":44,"end":48},"code":"SC2102","message":"Property reference 'root' is invalid in the select list because it is not contained in either an aggregate function or the GROUP BY clause."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -269,12 +221,11 @@ ORDER BY root["id"] DESC]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT root["id"] AS keyAlias, ARRAY_LENGTH(root) AS count 
+SELECT root["id"] AS keyAlias, COUNT(1) AS count 
 FROM root 
 WHERE (root["id"] != "a") 
 GROUP BY root["id"]  
 ORDER BY root["id"] ASC]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":44,"end":48},"code":"SC2102","message":"Property reference 'root' is invalid in the select list because it is not contained in either an aggregate function or the GROUP BY clause."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>

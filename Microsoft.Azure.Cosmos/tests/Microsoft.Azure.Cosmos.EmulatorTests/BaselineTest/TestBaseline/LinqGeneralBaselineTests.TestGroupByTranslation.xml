@@ -168,10 +168,9 @@ GROUP BY root["Int"] ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT root["FamilyId"] AS familyId, ARRAY_LENGTH(root) AS familyIdCount 
+SELECT root["FamilyId"] AS familyId, COUNT(1) AS familyIdCount 
 FROM root 
 GROUP BY root["FamilyId"] ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":50,"end":54},"code":"SC2102","message":"Property reference 'root' is invalid in the select list because it is not contained in either an aggregate function or the GROUP BY clause."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>

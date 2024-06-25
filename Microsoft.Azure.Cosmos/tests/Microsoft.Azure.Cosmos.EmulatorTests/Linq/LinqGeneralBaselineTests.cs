@@ -747,7 +747,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             // Currently unsupported case 
             inputs.Add(new LinqTestInput("GroupBy Single Value With Min", b => getQuery(b).GroupBy(k => k.FamilyId /*keySelector*/,
-                                                                              (key, values) => new { familyId = key, familyIdCount = values.Count() } /*multi-value select */)));
+                                                                              (key, values) => new { familyId = key, familyIdCount = values.Count() } /*multi-value select */),
+                                                                              ignoreOrderingForAnonymousTypeObject: true));
 
             // Other methods followed by GroupBy
 
@@ -887,12 +888,13 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             // The translation is correct (SELECT VALUE MIN(root) FROM root GROUP BY root["Number"]
             // but the behavior between LINQ and SQL is different
-            // In Linq, it requires the object to have comparer traits, where as in CosmosDB, we will return null
+            // In Linq, the queries will return an object on root, where as in CosmosDB, we will return null
             inputs.Add(new LinqTestInput("GroupBy Multi Value With Aggregate On Root", b => getQuery(b).GroupBy(k => k.Id /*keySelector*/,
                                                                                 (key, values) => new {
                                                                                     Min = values.Min(),
                                                                                     Max = values.Max()}), 
-                                                                                ignoreOrderingForAnonymousTypeObject: true));
+                                                                                ignoreOrderingForAnonymousTypeObject: true,
+                                                                                skipVerification: true));
 
             // Non-aggregate method calls
             inputs.Add(new LinqTestInput("GroupBy Multi Value With Non-Aggregate", b => getQuery(b).GroupBy(k => k.Id /*keySelector*/,

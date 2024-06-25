@@ -1339,6 +1339,80 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
+        /// Visit a method call, construct the corresponding query and return the select clause for the aggregate function.
+        /// At ExpressionToSql point only LINQ method calls are allowed.
+        /// These methods are static extension methods of IQueryable or IEnumerable.
+        /// </summary>
+        /// <param name="inputExpression">Method to translate.</param>
+        /// <param name="context">Query translation context.</param>
+        private static SqlSelectClause VisitGroupByAggregateMethodCall(MethodCallExpression inputExpression, TranslationContext context)
+        {
+            context.PushMethod(inputExpression);
+
+            Type declaringType = inputExpression.Method.DeclaringType;
+            if ((declaringType != typeof(Queryable) && declaringType != typeof(Enumerable))
+                || !inputExpression.Method.IsStatic)
+            {
+                throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.OnlyLINQMethodsAreSupported, inputExpression.Method.Name));
+            }
+
+            if (inputExpression.Object != null)
+            {
+                throw new DocumentQueryException(ClientResources.ExpectedMethodCallsMethods);
+            }
+
+            Expression inputCollection = inputExpression.Arguments[0]; // all these methods are static extension methods, so argument[0] is the collection
+
+            Collection collection = ExpressionToSql.Translate(inputCollection, context);
+            context.PushCollection(collection);
+
+            bool shouldBeOnNewQuery = context.CurrentQuery.ShouldBeOnNewQuery(inputExpression.Method.Name, inputExpression.Arguments.Count);
+            context.PushSubqueryBinding(shouldBeOnNewQuery);
+
+            if (context.LastExpressionIsGroupBy)
+            {
+                throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, "Group By cannot be followed by other methods"));
+            }
+
+            SqlSelectClause select;
+            switch (inputExpression.Method.Name)
+            {
+                case LinqMethods.Average:
+                    {
+                        select = ExpressionToSql.VisitAggregateFunction(inputExpression.Arguments, context, SqlFunctionCallScalarExpression.Names.Avg);
+                        break;
+                    }
+                case LinqMethods.Count:
+                    {
+                        select = ExpressionToSql.VisitCount(inputExpression.Arguments, context);
+                        break;
+                    }
+                case LinqMethods.Max:
+                    {
+                        select = ExpressionToSql.VisitAggregateFunction(inputExpression.Arguments, context, SqlFunctionCallScalarExpression.Names.Max);
+                        break;
+                    }
+                case LinqMethods.Min:
+                    {
+                        select = ExpressionToSql.VisitAggregateFunction(inputExpression.Arguments, context, SqlFunctionCallScalarExpression.Names.Min);
+                        break;
+                    }
+                case LinqMethods.Sum:
+                    {
+                        select = ExpressionToSql.VisitAggregateFunction(inputExpression.Arguments, context, SqlFunctionCallScalarExpression.Names.Sum);
+                        break;
+                    }
+                default:
+                    throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.MethodNotSupported, inputExpression.Method.Name));
+            }
+
+            context.PopSubqueryBinding();
+            context.PopCollection();
+            context.PopMethod();
+            return select;
+        }
+
+        /// <summary>
         /// Determine if an expression should be translated to a subquery.
         /// This only applies to expression that is inside a lamda.
         /// </summary>
@@ -1781,33 +1855,63 @@ namespace Microsoft.Azure.Cosmos.Linq
                     {
                         // Single Value Selector
                         MethodCallExpression methodCallExpression = (MethodCallExpression)valueSelectorExpression;
-                        switch (methodCallExpression.Method.Name)
-                        {
-                            case LinqMethods.Max:
-                            case LinqMethods.Min:
-                            case LinqMethods.Average:
-                            case LinqMethods.Count:
-                            case LinqMethods.Sum:
-                                ExpressionToSql.VisitMethodCall(methodCallExpression, context);
-                                break;
-                            default:
-                                throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.MethodNotSupported, methodCallExpression.Method.Name));
-                        }
-
+                        SqlSelectClause select = ExpressionToSql.VisitGroupByAggregateMethodCall(methodCallExpression, context);
+                        context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
                         break;
                     }
                 case ExpressionType.New:
                     {
                         // Add select item clause at the end of this method
                         NewExpression newExpression = (NewExpression)valueSelectorExpression;
-                        // Get the list of items and the bindings
 
                         if (newExpression.Members == null)
                         {
                             throw new DocumentQueryException(ClientResources.ConstructorInvocationNotSupported);
                         }
 
-                        SqlSelectItem[] selectItems = ExpressionToSql.CreateSelectItems(newExpression.Arguments, newExpression.Members, context);
+                        // Get the list of items and the bindings
+                        ReadOnlyCollection<Expression> newExpressionArguments = newExpression.Arguments;
+                        ReadOnlyCollection<MemberInfo> newExpressionMembers = newExpression.Members;
+
+                        SqlSelectItem[] selectItems = new SqlSelectItem[newExpressionArguments.Count];
+                        for (int i = 0; i < newExpressionArguments.Count; i++)
+                        {
+                            MemberInfo member = newExpressionMembers[i];
+                            string memberName = member.GetMemberName(context);
+                            SqlIdentifier alias = SqlIdentifier.Create(memberName);
+
+                            Expression arg = newExpressionArguments[i];
+                            switch (arg.NodeType)
+                            {
+                                case ExpressionType.Constant:
+                                    {
+                                        SqlScalarExpression selectExpression = ExpressionToSql.VisitConstant((ConstantExpression)arg, context);
+
+                                        SqlSelectItem prop = SqlSelectItem.Create(selectExpression, alias);
+                                        selectItems[i] = prop;
+                                        break;
+                                    }
+                                case ExpressionType.Parameter:
+                                    {
+                                        SqlScalarExpression selectExpression = ExpressionToSql.VisitParameter((ParameterExpression)arg, context);
+
+                                        SqlSelectItem prop = SqlSelectItem.Create(selectExpression, alias);
+                                        selectItems[i] = prop;
+                                        break;
+                                    }
+                                case ExpressionType.Call:
+                                    {
+                                        SqlSelectClause selectClause = ExpressionToSql.VisitGroupByAggregateMethodCall((MethodCallExpression)arg, context);
+                                        SqlScalarExpression selectExpression = ((SqlSelectValueSpec)selectClause.SelectSpec).Expression;
+
+                                        SqlSelectItem prop = SqlSelectItem.Create(selectExpression, alias);
+                                        selectItems[i] = prop;
+                                        break;
+                                    }
+                                default:
+                                    throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.ExpressionTypeIsNotSupported, arg.NodeType));
+                            }
+                        }
 
                         SqlSelectListSpec sqlSpec = SqlSelectListSpec.Create(selectItems);
                         SqlSelectClause select = SqlSelectClause.Create(sqlSpec, null);

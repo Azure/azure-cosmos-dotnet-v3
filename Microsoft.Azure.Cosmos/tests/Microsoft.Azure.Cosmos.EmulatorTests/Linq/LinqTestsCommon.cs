@@ -37,9 +37,31 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <returns></returns>
         private static bool CompareListOfAnonymousType(List<object> queryResults, List<dynamic> dataResults, bool ignoreOrderingForAnonymousTypeObject)
         {
-            return ignoreOrderingForAnonymousTypeObject 
-                ? queryResults.OrderBy(x => x).ToList().SequenceEqual(dataResults.OrderBy(x => x).ToList())
-                : queryResults.SequenceEqual(dataResults);
+            if (!ignoreOrderingForAnonymousTypeObject)
+            {
+                return queryResults.SequenceEqual(dataResults);
+            }
+
+            bool resultMatched = true;
+            foreach (object obj in queryResults)
+            {
+                if (!dataResults.Any(a => a.Equals(obj)))
+                {
+                    resultMatched = false;
+                    return false;
+                }
+            }
+
+            foreach (dynamic obj in dataResults)
+            {
+                if (!queryResults.Any(a => a.Equals(obj)))
+                {
+                    resultMatched = false;
+                    break;
+                }
+            }
+
+            return resultMatched;
         }
 
         /// <summary>
