@@ -232,6 +232,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 ContainerId = cosmosContainerCore?.Id,
                 DatabaseId = cosmosContainerCore?.Database?.Id,
+                Trace = null
             };
 
             ResponseMessage responseMessage = new ResponseMessage(
