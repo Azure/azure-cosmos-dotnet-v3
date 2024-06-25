@@ -96,5 +96,19 @@ namespace Microsoft.Azure.Cosmos.Tracing
             }
         }
 
+        internal void SetRegionsContacted(IReadOnlyList<(string, Uri)> regionsContacted)
+        {
+            lock (this.regionContactedInternal)
+            {
+                this.regionContactedInternal.Clear();
+                this.regionContactedInternal.UnionWith(regionsContacted);
+            }
+        }
+
+        internal void SetFailedRequestCount(int failedRequestCount)
+        {
+            this.failedRequestCount = failedRequestCount;
+        }
+
     }
 }

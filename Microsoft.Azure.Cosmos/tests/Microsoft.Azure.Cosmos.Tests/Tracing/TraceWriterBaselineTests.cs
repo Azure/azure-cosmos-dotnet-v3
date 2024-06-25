@@ -946,6 +946,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             {
                 this.data[key] = value;
             }
+
+            public bool TryRemoveClientConfig()
+            {
+                return this.data.Remove("Client Configuration");
+            }
         }
     }
 }
