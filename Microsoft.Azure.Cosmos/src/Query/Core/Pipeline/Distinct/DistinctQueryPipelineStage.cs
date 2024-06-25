@@ -35,20 +35,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
         }
 
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
-            ExecutionEnvironment executionEnvironment,
             CosmosElement requestContinuation,
             MonadicCreatePipelineStage monadicCreatePipelineStage,
-            DistinctQueryType distinctQueryType) => executionEnvironment switch
-            {
-                ExecutionEnvironment.Client => ClientDistinctQueryPipelineStage.MonadicCreate(
-                    requestContinuation,
-                    monadicCreatePipelineStage,
-                    distinctQueryType),
-                ExecutionEnvironment.Compute => ComputeDistinctQueryPipelineStage.MonadicCreate(
-                    requestContinuation,
-                    monadicCreatePipelineStage,
-                    distinctQueryType),
-                _ => throw new ArgumentException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}."),
-            };
+            DistinctQueryType distinctQueryType)
+        {
+            return ClientDistinctQueryPipelineStage.MonadicCreate(
+                requestContinuation,
+                monadicCreatePipelineStage,
+                distinctQueryType);
+        }
     }
 }

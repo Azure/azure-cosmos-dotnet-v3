@@ -47,27 +47,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
         }
 
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
-            ExecutionEnvironment executionEnvironment,
             DCountInfo info,
             CosmosElement continuationToken,
-            MonadicCreatePipelineStage monadicCreatePipelineStage) => executionEnvironment switch
-            {
-                ExecutionEnvironment.Client => ClientDCountQueryPipelineStage.MonadicCreate(
-                    info,
-                    continuationToken,
-                    monadicCreatePipelineStage),
-                ExecutionEnvironment.Compute => ComputeDCountQueryPipelineStage.MonadicCreate(
-                    info,
-                    continuationToken,
-                    monadicCreatePipelineStage),
-                _ => throw new ArgumentException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}."),
-            };
+            MonadicCreatePipelineStage monadicCreatePipelineStage)
+        {
+            return ClientDCountQueryPipelineStage.MonadicCreate(
+                info,
+                continuationToken,
+                monadicCreatePipelineStage);
+        }
 
-        protected CosmosElement GetFinalResult() => this.info.IsValueAggregate ?
-            CosmosNumber64.Create(this.count) as CosmosElement :
-            CosmosObject.Create(new Dictionary<string, CosmosElement>
-            {
-                { this.info.DCountAlias, CosmosNumber64.Create(this.count) }
-            });
+        protected CosmosElement GetFinalResult()
+        {
+            return this.info.IsValueAggregate ?
+                CosmosNumber64.Create(this.count) as CosmosElement :
+                CosmosObject.Create(new Dictionary<string, CosmosElement>
+                {
+                    { this.info.DCountAlias, CosmosNumber64.Create(this.count) }
+                });
+        }
     }
 }

@@ -26,7 +26,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
     internal static class PipelineFactory
     {
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
-            ExecutionEnvironment executionEnvironment,
             IDocumentContainer documentContainer,
             SqlQuerySpec sqlQuerySpec,
             IReadOnlyList<FeedRangeEpk> targetRanges,
@@ -100,7 +99,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             {
                 MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
                 monadicCreatePipelineStage = (continuationToken) => AggregateQueryPipelineStage.MonadicCreate(
-                    executionEnvironment,
                     queryInfo.Aggregates,
                     queryInfo.GroupByAliasToAggregateType,
                     queryInfo.GroupByAliases,
@@ -113,7 +111,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             {
                 MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
                 monadicCreatePipelineStage = (continuationToken) => DistinctQueryPipelineStage.MonadicCreate(
-                    executionEnvironment,
                     continuationToken,
                     monadicCreateSourceStage,
                     queryInfo.DistinctType);
@@ -123,7 +120,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             {
                 MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
                 monadicCreatePipelineStage = (continuationToken) => GroupByQueryPipelineStage.MonadicCreate(
-                    executionEnvironment,
                     continuationToken,
                     monadicCreateSourceStage,
                     queryInfo.Aggregates,
@@ -137,7 +133,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             {
                 MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
                 monadicCreatePipelineStage = (continuationToken) => SkipQueryPipelineStage.MonadicCreate(
-                    executionEnvironment,
                     queryInfo.Offset.Value,
                     continuationToken,
                     monadicCreateSourceStage);
@@ -147,7 +142,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             {
                 MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
                 monadicCreatePipelineStage = (continuationToken) => TakeQueryPipelineStage.MonadicCreateLimitStage(
-                    executionEnvironment,
                     queryInfo.Limit.Value,
                     continuationToken,
                     monadicCreateSourceStage);
@@ -157,7 +151,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             {
                 MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
                 monadicCreatePipelineStage = (continuationToken) => TakeQueryPipelineStage.MonadicCreateTopStage(
-                    executionEnvironment,
                     queryInfo.Top.Value,
                     continuationToken,
                     monadicCreateSourceStage);
@@ -167,7 +160,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             {
                 MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
                 monadicCreatePipelineStage = (continuationToken) => DCountQueryPipelineStage.MonadicCreate(
-                    executionEnvironment,
                     queryInfo.DCountInfo,
                     continuationToken,
                     monadicCreateSourceStage);
