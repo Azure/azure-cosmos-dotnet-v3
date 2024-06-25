@@ -593,7 +593,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     TestSettings = queryRequestOptions.TestSettings,
                 };
 
-                computeRequestOptions.ExecutionEnvironment = ExecutionEnvironment.Compute;
                 computeRequestOptions.CosmosElementContinuationToken = continuationToken;
 
                 using (FeedIteratorInternal<T> itemQuery = (FeedIteratorInternal<T>)container.GetItemQueryIterator<T>(

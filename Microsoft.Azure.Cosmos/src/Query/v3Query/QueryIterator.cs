@@ -95,41 +95,29 @@ namespace Microsoft.Azure.Cosmos.Query
             DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
 
             CosmosElement requestContinuationToken;
-            switch (queryRequestOptions.ExecutionEnvironment.GetValueOrDefault(ExecutionEnvironment.Client))
+            if (continuationToken != null)
             {
-                case ExecutionEnvironment.Client:
-                    if (continuationToken != null)
-                    {
-                        TryCatch<CosmosElement> tryParse = CosmosElement.Monadic.Parse(continuationToken);
-                        if (tryParse.Failed)
-                        {
-                            return new QueryIterator(
-                                cosmosQueryContext,
-                                new FaultedQueryPipelineStage(
-                                    new MalformedContinuationTokenException(
-                                        message: $"Malformed Continuation Token: {continuationToken}",
-                                        innerException: tryParse.Exception)),
-                                queryRequestOptions.CosmosSerializationFormatOptions,
-                                queryRequestOptions,
-                                clientContext,
-                                correlatedActivityId,
-                                containerCore);
-                        }
+                TryCatch<CosmosElement> tryParse = CosmosElement.Monadic.Parse(continuationToken);
+                if (tryParse.Failed)
+                {
+                    return new QueryIterator(
+                        cosmosQueryContext,
+                        new FaultedQueryPipelineStage(
+                            new MalformedContinuationTokenException(
+                                message: $"Malformed Continuation Token: {continuationToken}",
+                                innerException: tryParse.Exception)),
+                        queryRequestOptions.CosmosSerializationFormatOptions,
+                        queryRequestOptions,
+                        clientContext,
+                        correlatedActivityId,
+                        containerCore);
+                }
 
-                        requestContinuationToken = tryParse.Result;
-                    }
-                    else
-                    {
-                        requestContinuationToken = null;
-                    }
-                    break;
-
-                case ExecutionEnvironment.Compute:
-                    requestContinuationToken = queryRequestOptions.CosmosElementContinuationToken;
-                    break;
-
-                default:
-                    throw new ArgumentOutOfRangeException($"Unknown {nameof(ExecutionEnvironment)}: {queryRequestOptions.ExecutionEnvironment.Value}.");
+                requestContinuationToken = tryParse.Result;
+            }
+            else
+            {
+                requestContinuationToken = null;
             }
 
             CosmosQueryExecutionContextFactory.InputParameters inputParameters = new CosmosQueryExecutionContextFactory.InputParameters(
@@ -142,7 +130,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 partitionKey: queryRequestOptions.PartitionKey,
                 properties: queryRequestOptions.Properties,
                 partitionedQueryExecutionInfo: partitionedQueryExecutionInfo,
-                executionEnvironment: queryRequestOptions.ExecutionEnvironment,
                 returnResultsInDeterministicOrder: queryRequestOptions.ReturnResultsInDeterministicOrder,
                 enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
                 isNonStreamingOrderByQueryFeatureDisabled: queryRequestOptions.IsNonStreamingOrderByQueryFeatureDisabled,
