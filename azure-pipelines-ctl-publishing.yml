@@ -12,7 +12,7 @@ jobs:
     pool:
       name: 'OneES'
       demands: 
-        - agent.name -equals dotnet-ubuntu-latest
+        - Agent.OS -equals Linux
 
     steps:
     - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
