@@ -11,7 +11,8 @@ jobs:
 
     pool:
       name: 'OneES'
-      vmImage: ubuntu-22.04
+      demands: 
+        - ImageOverride -equals dotnet-ubuntu-latest
 
     steps:
     - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
