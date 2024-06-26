@@ -86,6 +86,7 @@ namespace Microsoft.Azure.Cosmos
                 containerProperties.ResourceId,
                 effectivePartitionKeyRange,
                 containerProperties.PartitionKey,
+                containerProperties.VectorEmbeddingPolicy,
                 containerProperties.GeospatialConfig.GeospatialType);
         }
 
@@ -93,6 +94,7 @@ namespace Microsoft.Azure.Cosmos
             SqlQuerySpec sqlQuerySpec,
             ResourceType resourceType,
             PartitionKeyDefinition partitionKeyDefinition,
+            VectorEmbeddingPolicy vectorEmbeddingPolicy,
             bool requireFormattableOrderByQuery,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
@@ -117,6 +119,7 @@ namespace Microsoft.Azure.Cosmos
             return (await this.documentClient.QueryPartitionProvider).TryGetPartitionedQueryExecutionInfo(
                 querySpecJsonString: queryString,
                 partitionKeyDefinition: partitionKeyDefinition,
+                vectorEmbeddingPolicy: vectorEmbeddingPolicy,
                 requireFormattableOrderByQuery: requireFormattableOrderByQuery,
                 isContinuationExpected: isContinuationExpected,
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
