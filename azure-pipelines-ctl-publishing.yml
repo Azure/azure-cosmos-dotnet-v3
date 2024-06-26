@@ -11,9 +11,7 @@ jobs:
 
     pool:
       name: 'OneES'
-      vmImage: ubuntu-latest
-      demands: 
-        - Agent.OS -equals Linux
+      vmImage: ubuntu-22.04
 
     steps:
     - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
