@@ -11,6 +11,7 @@ jobs:
 
     pool:
       name: 'OneES'
+      vmImage: ubuntu-latest
       demands: 
         - Agent.OS -equals Linux
 
