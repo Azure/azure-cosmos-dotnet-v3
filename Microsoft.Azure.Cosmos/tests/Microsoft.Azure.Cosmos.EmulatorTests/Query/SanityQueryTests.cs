@@ -352,7 +352,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
                             await ValidateNonDeterministicQuery(QueryTestsBase.QueryWithoutContinuationTokensAsync<CosmosObject>, useOrderBy);
                             await ValidateNonDeterministicQuery(QueryTestsBase.QueryWithContinuationTokensAsync<CosmosObject>, useOrderBy);
-                            await ValidateNonDeterministicQuery(QueryTestsBase.QueryWithCosmosElementContinuationTokenAsync<CosmosObject>, useOrderBy);
                         }
                     }
                 }
@@ -732,7 +731,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                                         containerWithForcedPlan,
                                         query,
                                         feedOptions,
-                                        QueryDrainingMode.HoldState | QueryDrainingMode.CosmosElementContinuationToken);
+                                        QueryDrainingMode.HoldState);
 
                                     Assert.IsTrue(feedOptions.TestSettings.Stats.PipelineType.HasValue);
                                     Assert.AreEqual(TestInjections.PipelineType.Passthrough, feedOptions.TestSettings.Stats.PipelineType.Value);
@@ -768,7 +767,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                                         containerWithForcedPlan,
                                         query,
                                         feedOptions,
-                                        QueryDrainingMode.HoldState | QueryDrainingMode.CosmosElementContinuationToken);
+                                        QueryDrainingMode.HoldState);
 
                                     Assert.IsTrue(feedOptions.TestSettings.Stats.PipelineType.HasValue);
                                     Assert.AreEqual(TestInjections.PipelineType.Specialized, feedOptions.TestSettings.Stats.PipelineType.Value);
