@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestMessage"></param>
         /// <param name="cancellationToken"></param>
         /// <returns>nothing, this will throw.</returns>
-        public override Task<ResponseMessage> ExecuteAvailablityStrategyAsync(
+        public override Task<ResponseMessage> ExecuteAvailabilityStrategyAsync(
             Func<RequestMessage,
             CancellationToken,
             Task<ResponseMessage>> sender,

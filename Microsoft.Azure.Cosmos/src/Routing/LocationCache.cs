@@ -357,17 +357,15 @@ namespace Microsoft.Azure.Cosmos.Routing
             IEnumerable<string> excludeRegions)
         {
             List<Uri> applicableEndpoints = new List<Uri>(regionNameByEndpoint.Count);
-            HashSet<string> preferredLocationsHash = new HashSet<string>(this.locationInfo.PreferredLocations);
+            HashSet<string> excludeRegionsHash = new HashSet<string>(excludeRegions);
 
             if (excludeRegions != null)
             {
-                foreach (string region in excludeRegions)
+                foreach (string region in this.locationInfo.PreferredLocations)
                 {
-                    string normalizedRegionName = this.regionNameMapper.GetCosmosDBRegionName(region);
-                    if (!regionNameByEndpoint.ContainsKey(normalizedRegionName)
-                        && preferredLocationsHash.Contains(normalizedRegionName))
+                    if (!excludeRegionsHash.Contains(region)
+                        && regionNameByEndpoint.TryGetValue(region, out Uri endpoint))
                     {
-                        Uri endpoint = regionNameByEndpoint[normalizedRegionName];
                         applicableEndpoints.Add(endpoint);
                     }
                 }
@@ -394,17 +392,16 @@ namespace Microsoft.Azure.Cosmos.Routing
             IEnumerable<string> excludeRegions)
         {
             List<string> applicableRegions = new List<string>(regionNameByEndpoint.Count);
-            HashSet<string> preferredLocationsHash = new HashSet<string>(this.locationInfo.PreferredLocations);
+            HashSet<string> excludeRegionsHash = new HashSet<string>(excludeRegions);
 
             if (excludeRegions != null)
             {
-                foreach (string region in excludeRegions)
+                foreach (string region in this.locationInfo.PreferredLocations)
                 {
-                    string normalizedRegionName = this.regionNameMapper.GetCosmosDBRegionName(region);
-                    if (!regionNameByEndpoint.Contains(normalizedRegionName)
-                        && preferredLocationsHash.Contains(normalizedRegionName))
+                    if (!excludeRegionsHash.Contains(region)
+                        && regionNameByEndpoint.Contains(region))
                     {
-                        applicableRegions.Add(normalizedRegionName);
+                        applicableRegions.Add(region);
                     }
                 }
             }

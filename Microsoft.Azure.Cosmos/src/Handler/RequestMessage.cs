@@ -321,7 +321,7 @@ namespace Microsoft.Azure.Cosmos
         /// Clone the request message
         /// </summary>
         /// <returns>a cloned copy of the RequestMessage</returns>
-        internal RequestMessage Clone(ITrace newTrace)
+        internal RequestMessage Clone(ITrace newTrace, CloneableStream cloneContent)
         {
             RequestMessage clone = new RequestMessage(
                 this.Method,
@@ -332,10 +332,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.Content != null)
             {
-                Stream cloneContent = new MemoryStream((int)this.Content.Length);
-                this.Content.Position = 0;
-                this.Content.CopyTo(cloneContent);
-                clone.Content = cloneContent;
+                clone.Content = cloneContent.Clone();
             }
 
             if (this.RequestOptions != null)
