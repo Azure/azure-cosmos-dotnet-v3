@@ -31,23 +31,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
         }
 
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
-            ExecutionEnvironment executionEnvironment,
             int offsetCount,
             CosmosElement continuationToken,
             MonadicCreatePipelineStage monadicCreatePipelineStage)
         {
-            TryCatch<IQueryPipelineStage> tryCreate = executionEnvironment switch
-            {
-                ExecutionEnvironment.Client => ClientSkipQueryPipelineStage.MonadicCreate(
+            TryCatch<IQueryPipelineStage> tryCreate = ClientSkipQueryPipelineStage.MonadicCreate(
                     offsetCount,
                     continuationToken,
-                    monadicCreatePipelineStage),
-                ExecutionEnvironment.Compute => ComputeSkipQueryPipelineStage.MonadicCreate(
-                    offsetCount,
-                    continuationToken,
-                    monadicCreatePipelineStage),
-                _ => throw new ArgumentException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}"),
-            };
+                    monadicCreatePipelineStage);
 
             return tryCreate;
         }

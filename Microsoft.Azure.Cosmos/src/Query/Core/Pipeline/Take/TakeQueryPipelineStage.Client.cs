@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                 this.takeEnum = takeEnum;
             }
 
-            public static TryCatch<IQueryPipelineStage> MonadicCreateLimitStage(
+            public static new TryCatch<IQueryPipelineStage> MonadicCreateLimitStage(
                 int limitCount,
                 CosmosElement requestContinuationToken,
                 MonadicCreatePipelineStage monadicCreatePipelineStage)
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                 return TryCatch<IQueryPipelineStage>.FromResult(stage);
             }
 
-            public static TryCatch<IQueryPipelineStage> MonadicCreateTopStage(
+            public static new TryCatch<IQueryPipelineStage> MonadicCreateTopStage(
                 int topCount,
                 CosmosElement requestContinuationToken,
                 MonadicCreatePipelineStage monadicCreatePipelineStage)

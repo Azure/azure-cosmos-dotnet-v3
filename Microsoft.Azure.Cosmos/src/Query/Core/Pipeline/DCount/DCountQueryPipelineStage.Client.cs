@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
                 // all the work is done in the base constructor.
             }
 
-            public static TryCatch<IQueryPipelineStage> MonadicCreate(
+            public static new TryCatch<IQueryPipelineStage> MonadicCreate(
                 DCountInfo info,
                 CosmosElement continuationToken,
                 MonadicCreatePipelineStage monadicCreatePipelineStage)

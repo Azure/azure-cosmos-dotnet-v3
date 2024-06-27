@@ -183,8 +183,6 @@ namespace Microsoft.Azure.Cosmos
 
         internal SupportedSerializationFormats? SupportedSerializationFormats { get; set; }
 
-        internal ExecutionEnvironment? ExecutionEnvironment { get; set; }
-
         internal bool? ReturnResultsInDeterministicOrder { get; set; }
 
         internal TestInjections TestSettings { get; set; }

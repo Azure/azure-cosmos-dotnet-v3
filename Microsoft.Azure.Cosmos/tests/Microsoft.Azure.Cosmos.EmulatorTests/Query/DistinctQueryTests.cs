@@ -225,7 +225,7 @@
                             MaxConcurrency = 10,
                             MaxItemCount = 100,
                         },
-                        QueryDrainingMode.HoldState | QueryDrainingMode.CosmosElementContinuationToken);
+                        QueryDrainingMode.HoldState);
                     documentsFromWithoutDistinct = documentsFromWithoutDistinct
                         .Where(document => documentsSeen.Add(document, out UInt128 hash))
                         .ToList();
@@ -241,7 +241,7 @@
                                 MaxConcurrency = 10,
                                 MaxItemCount = pageSize
                             },
-                            QueryDrainingMode.HoldState | QueryDrainingMode.CosmosElementContinuationToken);
+                            QueryDrainingMode.HoldState);
 
                         string[] expectedDocuments = documentsFromWithoutDistinct.Select(x => x.ToString()).ToArray();
                         string[] actualDocuments = documentsFromWithDistinct.Select(x => x.ToString()).ToArray();
@@ -262,7 +262,7 @@
                                     MaxConcurrency = 10,
                                     MaxItemCount = pageSize
                                 },
-                                QueryDrainingMode.HoldState | QueryDrainingMode.CosmosElementContinuationToken);
+                                QueryDrainingMode.HoldState);
 
                             Assert.AreEqual(1, documentsWithDCount.Count);
                             long dcount = Number64.ToLong((documentsWithDCount.First() as CosmosNumber).Value);

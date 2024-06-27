@@ -514,18 +514,6 @@
                         queryRequestOptions);
                     HashSet<CosmosElement> actualWithoutContinuationTokensSet = new HashSet<CosmosElement>(actualWithoutContinuationTokens);
 
-                    List<CosmosElement> actualWithTryGetContinuationTokens = await QueryTestsBase.QueryWithCosmosElementContinuationTokenAsync<CosmosElement>(
-                        container,
-                        query,
-                        queryRequestOptions);
-                    HashSet<CosmosElement> actualWithTryGetContinuationTokensSet = new HashSet<CosmosElement>(actualWithTryGetContinuationTokens);
-
-                    Assert.IsTrue(
-                       actualWithoutContinuationTokensSet.SetEquals(actualWithTryGetContinuationTokensSet),
-                       $"Results did not match for query: {query} with maxItemCount: {maxItemCount}" +
-                       $"ActualWithoutContinuationTokens: {JsonConvert.SerializeObject(actualWithoutContinuationTokensSet)}" +
-                       $"ActualWithTryGetContinuationTokens: {JsonConvert.SerializeObject(actualWithTryGetContinuationTokensSet)}");
-
                     HashSet<CosmosElement> expectedSet = new HashSet<CosmosElement>(expectedResults);
 
                     Assert.IsTrue(
@@ -583,26 +571,13 @@
                     this.NormalizeGroupByArrayAggregateResults(actualWithoutContinuationTokens);
                     HashSet<CosmosElement> actualWithoutContinuationTokensSet = new HashSet<CosmosElement>(actualWithoutContinuationTokens);
 
-                    List<CosmosElement> actualWithTryGetContinuationTokens = await QueryTestsBase.QueryWithCosmosElementContinuationTokenAsync<CosmosElement>(
-                        container,
-                        query, 
-                        queryRequestOptions);
-                    this.NormalizeGroupByArrayAggregateResults(actualWithTryGetContinuationTokens);
-                    HashSet<CosmosElement> actualWithTryGetContinuationTokensSet = new HashSet<CosmosElement>(actualWithTryGetContinuationTokens);
-
                     List<CosmosElement> actualWithCombinations = await QueryTestsBase.RunQueryCombinationsAsync(
                         container,
                         query,
                         queryRequestOptions,
-                        QueryDrainingMode.HoldState | QueryDrainingMode.CosmosElementContinuationToken);
+                        QueryDrainingMode.HoldState);
                     this.NormalizeGroupByArrayAggregateResults(actualWithCombinations);
                     HashSet<CosmosElement> actualWithCombinationsSet = new HashSet<CosmosElement>(actualWithCombinations);
-
-                    Assert.IsTrue(
-                       actualWithoutContinuationTokensSet.SetEquals(actualWithTryGetContinuationTokensSet),
-                       $"Results did not match for query: {query} with maxItemCount: {maxItemCount}" +
-                       $"ActualWithoutContinuationTokens: {JsonConvert.SerializeObject(actualWithoutContinuationTokensSet)}" +
-                       $"ActualWithTryGetContinuationTokens: {JsonConvert.SerializeObject(actualWithTryGetContinuationTokensSet)}");
 
                     Assert.IsTrue(
                        actualWithoutContinuationTokensSet.SetEquals(actualWithCombinationsSet),
