@@ -44,11 +44,6 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool HasMoreResults => this.feedIteratorInternal.HasMoreResults;
 
-        public override CosmosElement GetCosmosElementContinuationToken()
-        {
-            return this.feedIteratorInternal.GetCosmosElementContinuationToken();
-        }
-
         public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
             return this.clientContext.OperationHelperAsync(
