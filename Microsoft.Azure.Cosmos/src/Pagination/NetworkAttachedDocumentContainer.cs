@@ -31,6 +31,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
     {
         private readonly ContainerInternal container;
         private readonly CosmosQueryClient cosmosQueryClient;
+        private readonly ICosmosDistributedQueryClient distributedQueryClient;
         private readonly QueryRequestOptions queryRequestOptions;
         private readonly ChangeFeedRequestOptions changeFeedRequestOptions;
         private readonly string resourceLink;
@@ -40,6 +41,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
         public NetworkAttachedDocumentContainer(
             ContainerInternal container,
             CosmosQueryClient cosmosQueryClient,
+            ICosmosDistributedQueryClient distributedQueryClient,
             Guid correlatedActivityId,
             QueryRequestOptions queryRequestOptions = null,
             ChangeFeedRequestOptions changeFeedRequestOptions = null,
@@ -48,6 +50,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
         {
             this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.cosmosQueryClient = cosmosQueryClient ?? throw new ArgumentNullException(nameof(cosmosQueryClient));
+            this.distributedQueryClient = distributedQueryClient; // optional
             this.queryRequestOptions = queryRequestOptions;
             this.changeFeedRequestOptions = changeFeedRequestOptions;
             this.resourceLink = resourceLink ?? this.container.LinkUri;
@@ -254,21 +257,38 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 throw new ArgumentNullException(nameof(trace));
             }
 
-            QueryRequestOptions queryRequestOptions = this.queryRequestOptions == null ? new QueryRequestOptions() : this.queryRequestOptions;
+            QueryRequestOptions queryRequestOptions = this.queryRequestOptions ?? new QueryRequestOptions();
             AdditionalRequestHeaders additionalRequestHeaders = new AdditionalRequestHeaders(this.correlatedActivityId, isContinuationExpected: false, optimisticDirectExecute: queryPaginationOptions.OptimisticDirectExecute);
 
-            TryCatch<QueryPage> monadicQueryPage = await this.cosmosQueryClient.ExecuteItemQueryAsync(
-                this.resourceLink,
-                this.resourceType,
-                Documents.OperationType.Query,
-                feedRangeState.FeedRange,
-                queryRequestOptions,
-                additionalRequestHeaders,
-                sqlQuerySpec,
-                feedRangeState.State == null ? null : ((CosmosString)feedRangeState.State.Value).Value,
-                queryPaginationOptions.PageSizeLimit ?? int.MaxValue,
-                trace,
-                cancellationToken);
+            TryCatch<QueryPage> monadicQueryPage;
+            if (this.distributedQueryClient != null &&
+                queryPaginationOptions.EnableDistributedQueryGatewayMode && 
+                this.resourceType == Documents.ResourceType.Document)
+            {
+                monadicQueryPage = await this.distributedQueryClient.MonadicQueryAsync(
+                    queryRequestOptions.PartitionKey,
+                    feedRangeState.FeedRange,
+                    sqlQuerySpec,
+                    feedRangeState.State == null ? null : ((CosmosString)feedRangeState.State.Value).Value,
+                    queryPaginationOptions,
+                    trace,
+                    cancellationToken);
+            }
+            else
+            {
+                monadicQueryPage = await this.cosmosQueryClient.ExecuteItemQueryAsync(
+                    this.resourceLink,
+                    this.resourceType,
+                    Documents.OperationType.Query,
+                    feedRangeState.FeedRange,
+                    queryRequestOptions,
+                    additionalRequestHeaders,
+                    sqlQuerySpec,
+                    feedRangeState.State == null ? null : ((CosmosString)feedRangeState.State.Value).Value,
+                    queryPaginationOptions.PageSizeLimit ?? int.MaxValue,
+                    trace,
+                    cancellationToken);
+            }
 
             return monadicQueryPage;
         }

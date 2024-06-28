@@ -164,11 +164,9 @@
                 useSystemPrefix: false,
                 correlatedActivityId: Guid.NewGuid());
 
-            Mock<ICosmosDistributedQueryClient> mockDistributedQueryClient = new Mock<ICosmosDistributedQueryClient>();
             IQueryPipelineStage queryPipelineStage = CosmosQueryExecutionContextFactory.Create(
                         documentContainer,
                         cosmosQueryContextCore,
-                        mockDistributedQueryClient.Object,
                         inputParameters,
                         NoOpTrace.Singleton);
 

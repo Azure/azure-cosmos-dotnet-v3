@@ -43,18 +43,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         public static IQueryPipelineStage Create(
             DocumentContainer documentContainer,
             CosmosQueryContext cosmosQueryContext,
-            ICosmosDistributedQueryClient distributedQueryClient,
             InputParameters inputParameters,
             ITrace trace)
         {
             if (cosmosQueryContext == null)
             {
                 throw new ArgumentNullException(nameof(cosmosQueryContext));
-            }
-
-            if (distributedQueryClient == null)
-            {
-                throw new ArgumentNullException(nameof(distributedQueryClient));
             }
 
             if (inputParameters == null)
@@ -76,7 +70,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                         valueFactory: (trace, innerCancellationToken) => TryCreateCoreContextAsync(
                             documentContainer,
                             cosmosQueryContext,
-                            distributedQueryClient,
                             inputParameters,
                             trace,
                             innerCancellationToken));
@@ -92,7 +85,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         private static async Task<TryCatch<IQueryPipelineStage>> TryCreateCoreContextAsync(
             DocumentContainer documentContainer,
             CosmosQueryContext cosmosQueryContext,
-            ICosmosDistributedQueryClient distributedQueryClient,
             InputParameters inputParameters,
             ITrace trace,
             CancellationToken cancellationToken)
@@ -104,11 +96,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     cosmosQueryContext.OperationTypeEnum == Documents.OperationType.Query)
                 {
                     TryCatch<IQueryPipelineStage> tryCreateDistributedQueryPipeline = DistributedQueryPipelineStage.MonadicCreate(
-                        distributedQueryClient,
+                        documentContainer,
                         inputParameters.SqlQuerySpec,
                         inputParameters.InitialFeedRange,
                         inputParameters.PartitionKey,
-                        new QueryPaginationOptions(inputParameters.MaxItemCount),
+                        new QueryPaginationOptions(
+                            inputParameters.MaxItemCount,
+                            additionalHeaders: null,
+                            optimisticDirectExecute: false,
+                            enableDistributedQueryGatewayMode: true),
                         inputParameters.InitialUserContinuationToken);
 
                     if (tryCreateDistributedQueryPipeline.Succeeded)

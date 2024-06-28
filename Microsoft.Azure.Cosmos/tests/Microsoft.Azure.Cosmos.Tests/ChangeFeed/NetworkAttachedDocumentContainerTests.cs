@@ -34,6 +34,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 container.Object,
                 client.Object,
+                distributedQueryClient: null,
                 Guid.NewGuid());
 
             TryCatch result = await networkAttachedDocumentContainer.MonadicRefreshProviderAsync(
@@ -82,6 +83,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 container.Object,
                 Mock.Of<CosmosQueryClient>(),
+                distributedQueryClient: null,
                 Guid.NewGuid());
 
             await networkAttachedDocumentContainer.MonadicChangeFeedAsync(
@@ -142,6 +144,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 container.Object,
                 Mock.Of<CosmosQueryClient>(),
+                distributedQueryClient: null,
                 Guid.NewGuid());
 
             await networkAttachedDocumentContainer.MonadicChangeFeedAsync(

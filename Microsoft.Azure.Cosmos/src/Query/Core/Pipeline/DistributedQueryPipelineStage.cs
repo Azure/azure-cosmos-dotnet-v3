@@ -10,13 +10,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
 
     internal sealed class DistributedQueryPipelineStage : IQueryPipelineStage
     {
-        private readonly ICosmosDistributedQueryClient cosmosDistributedQueryClient;
+        private readonly IDocumentContainer documentContainer;
 
         private readonly SqlQuerySpec sqlQuerySpec;
 
@@ -33,14 +34,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
         public TryCatch<QueryPage> Current { get; private set; }
 
         private DistributedQueryPipelineStage(
-            ICosmosDistributedQueryClient cosmosDistributedQueryClient,
+            IDocumentContainer documentContainer,
             SqlQuerySpec sqlQuerySpec,
             FeedRangeInternal feedRangeInternal,
             PartitionKey? partitionKey,
             QueryPaginationOptions queryPaginationOptions,
             ContinuationToken continuationToken)
         {
-            this.cosmosDistributedQueryClient = cosmosDistributedQueryClient ?? throw new ArgumentNullException(nameof(cosmosDistributedQueryClient));
+            this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
             this.sqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
             this.feedRangeInternal = feedRangeInternal ?? FeedRangeEpk.FullRange;
             this.partitionKey = partitionKey;
@@ -49,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
         }
 
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
-            ICosmosDistributedQueryClient cosmosDistributedQueryClient,
+            IDocumentContainer documentContainer,
             SqlQuerySpec sqlQuerySpec,
             FeedRangeInternal feedRangeInternal,
             PartitionKey? partitionKey,
@@ -63,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             }
 
             return TryCatch<IQueryPipelineStage>.FromResult(new DistributedQueryPipelineStage(
-                cosmosDistributedQueryClient,
+                documentContainer,
                 sqlQuerySpec,
                 feedRangeInternal,
                 partitionKey,
@@ -83,11 +84,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                 return false;
             }
 
-            TryCatch<QueryPage> tryCatchQueryPage = await this.cosmosDistributedQueryClient.MonadicQueryAsync(
-                this.partitionKey,
+            QueryState queryState = this.continuationToken.BackendToken == null ? null : new QueryState(this.continuationToken.BackendToken);
+            FeedRangeState<QueryState> feedRangeState = new FeedRangeState<QueryState>(
                 this.feedRangeInternal,
+                queryState);
+            TryCatch<QueryPage> tryCatchQueryPage = await this.documentContainer.MonadicQueryAsync(
                 this.sqlQuerySpec,
-                this.continuationToken.BackendToken,
+                feedRangeState,
                 this.queryPaginationOptions,
                 trace,
                 cancellationToken);
@@ -101,8 +104,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
             QueryPage page = tryCatchQueryPage.Result;
 
-            this.continuationToken = new ContinuationToken(GetBackendContinuationToken(page.State?.Value));
+            TryCatch<ContinuationToken> tryCatchContinuation = ContinuationToken.MonadicCreatefromBackendToken(page.State?.Value);
+            if (tryCatchContinuation.Failed)
+            {
+                this.Current = TryCatch<QueryPage>.FromException(tryCatchContinuation.Exception);
+                return true;
+            }
 
+            this.continuationToken = tryCatchContinuation.Result;
             CosmosElement innerState = this.continuationToken.ToCosmosElement();
             QueryState state = innerState == null ? null : new QueryState(innerState);
             this.Current = TryCatch<QueryPage>.FromResult(new QueryPage(
@@ -123,20 +132,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             return default;
         }
 
-        private static string GetBackendContinuationToken(CosmosElement continuation)
-        {
-            return (continuation != null && continuation is CosmosString continuationUtfAny) ?
-                continuationUtfAny.Value.ToString() :
-                null;
-        }
-
         private readonly struct ContinuationToken
         {
             private const string TokenPropertyName = "DQC";
 
-            public string BackendToken { get; }
+            public CosmosString BackendToken { get; }
 
-            public ContinuationToken(string backendToken)
+            private ContinuationToken(CosmosString backendToken)
             {
                 this.BackendToken = backendToken;
             }
@@ -150,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
                 return CosmosObject.Create(new Dictionary<string, CosmosElement>()
                 {
-                    { TokenPropertyName, CosmosString.Create(this.BackendToken) }
+                    { TokenPropertyName, this.BackendToken }
                 });
             }
 
@@ -169,7 +171,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                         new ArgumentException($"Invalid {nameof(DistributedQueryPipelineStage)} continuation token: {cosmosElement}"));
                 }
 
-                return TryCatch<ContinuationToken>.FromResult(new ContinuationToken(backendTokenString.Value));
+                return TryCatch<ContinuationToken>.FromResult(new ContinuationToken(backendTokenString));
+            }
+
+            public static TryCatch<ContinuationToken> MonadicCreatefromBackendToken(CosmosElement continuation)
+            {
+                if (continuation == null)
+                {
+                    return TryCatch<ContinuationToken>.FromResult(default);
+                }
+
+                if (continuation is CosmosString continuationUtfAny)
+                {
+                    return TryCatch<ContinuationToken>.FromResult(new ContinuationToken(continuationUtfAny));
+                }
+
+                return TryCatch<ContinuationToken>.FromException(new ArgumentException(
+                        $"Invalid {nameof(DistributedQueryPipelineStage)} continuation token: {continuation}"));
             }
         }
     }
