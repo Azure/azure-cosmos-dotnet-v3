@@ -163,11 +163,9 @@
                 useSystemPrefix: false,
                 correlatedActivityId: Guid.NewGuid());
 
-            Mock<ICosmosDistributedQueryClient> mockDistributedQueryClient = new Mock<ICosmosDistributedQueryClient>();
             IQueryPipelineStage queryPipelineStage = CosmosQueryExecutionContextFactory.Create(
                         documentContainer,
                         cosmosQueryContextCore,
-                        mockDistributedQueryClient.Object,
                         inputParameters,
                         NoOpTrace.Singleton);
 
@@ -339,9 +337,9 @@
                     Cosmos.GeospatialType.Geometry));
             }
 
-            public override async Task<bool> GetClientDisableOptimisticDirectExecutionAsync()
+            public override Task<bool> GetClientDisableOptimisticDirectExecutionAsync()
             {
-                return this.queryPartitionProvider.ClientDisableOptimisticDirectExecution;
+                return Task.FromResult(this.queryPartitionProvider.ClientDisableOptimisticDirectExecution);
             }
 
             public override Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangeByFeedRangeAsync(string resourceLink, string collectionResourceId, PartitionKeyDefinition partitionKeyDefinition, FeedRangeInternal feedRangeInternal, bool forceRefresh, ITrace trace)

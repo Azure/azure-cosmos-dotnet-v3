@@ -60,10 +60,42 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     MakeTest(
                         "SELECT VALUE c.x FROM c WHERE c.x < 200",
                         PageSizes,
-                        Expectations.AllDocumentsLessThan200ArePresent)
+                        Expectations.AllDocumentsLessThan200ArePresent),
+                    MakeTest(
+                        "SELECT VALUE c.x FROM c WHERE c.x > 200",
+                        PageSizes,
+                        Expectations.AllDocumentsGreaterThan200ArePresent),
                 };
 
                 return ContinuationTestsAsync(container, testCases);
+            }
+
+            await this.CreateIngestQueryDeleteAsync(
+                ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                CreateDocuments(DocumentCount),
+                ImplementationAsync);
+        }
+
+        [TestMethod]
+        public async Task PartitionedParityTestsAsync()
+        {
+            static Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> _)
+            {
+                string[] testCases = new[]
+                {
+                    "SELECT VALUE COUNT(1) FROM c",
+                    "SELECT VALUE COUNT(1) FROM c WHERE c.x <= 400",
+                    "SELECT c.x % 3 AS mod3 , COUNT(1) FROM c GROUP BY c.x % 3",
+                    "SELECT c.x % 10 AS mod10 , MAX(c.x) FROM c GROUP BY c.x % 10",
+                    "SELECT c.id, c.x FROM c ORDER BY c.x",
+                    "SELECT c.id, c.x FROM c ORDER BY c.x DESC",
+                    "SELECT c.id, c.x FROM c ORDER BY c.x OFFSET 2 LIMIT 2",
+                    "SELECT c.id, c.x FROM c ORDER BY c.x DESC OFFSET 2 LIMIT 2",
+                    "SELECT TOP 20 c.id, c.x FROM c WHERE c.x <= 200 ORDER BY c.x DESC",
+                };
+
+                return RunPartitionedParityTestsAsync(container, testCases);
             }
 
             await this.CreateIngestQueryDeleteAsync(
@@ -101,6 +133,65 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             }
 
             Assert.IsNull(Environment.GetEnvironmentVariable(ConfigurationManager.DistributedQueryGatewayModeEnabled));
+        }
+
+        private static async Task RunPartitionedParityTestsAsync(Container container, IEnumerable<string> testCases)
+        {
+            IReadOnlyList<FeedRange> feedRanges = await container.GetFeedRangesAsync();
+
+            foreach (string query in testCases)
+            {
+                int index = 0;
+                foreach (FeedRange _ in feedRanges)
+                {
+                    FeedRangePartitionKeyRange feedRangePartitionKeyRange = new FeedRangePartitionKeyRange(index.ToString());
+
+                    List<CosmosElement> expected = await RunQueryAsync(
+                        container,
+                        feedRangePartitionKeyRange,
+                        query,
+                        new QueryRequestOptions());
+
+                    QueryRequestOptions options = new QueryRequestOptions()
+                    {
+                        EnableDistributedQueryGatewayMode = true,
+                    };
+
+                    List<CosmosElement> actual = await RunQueryAsync(
+                        container,
+                        feedRangePartitionKeyRange,
+                        query,
+                        options);
+
+                    if (!expected.SequenceEqual(actual))
+                    {
+                        System.Diagnostics.Trace.TraceError($"Expected: {string.Join(",", expected)}");
+                        System.Diagnostics.Trace.TraceError($"Actual: {string.Join(",", actual)}");
+                    }
+                }
+            }
+        }
+
+        private static async Task<List<CosmosElement>> RunQueryAsync(
+            Container container,
+            FeedRange feedRange,
+            string query,
+            QueryRequestOptions options)
+        {
+            FeedIterator<CosmosElement> feedIterator = container.GetItemQueryIterator<CosmosElement>(
+                queryDefinition: new QueryDefinition(query),
+                feedRange: feedRange,
+                requestOptions: options);
+
+            List<CosmosElement> results = new List<CosmosElement>();
+            while (feedIterator.HasMoreResults)
+            {
+                FeedResponse<CosmosElement> feedResponse = await feedIterator.ReadNextAsync();
+                Assert.IsTrue(feedResponse.StatusCode.IsSuccess());
+                results.AddRange(feedResponse);
+            }
+
+            return results;
         }
 
         private static async Task ContinuationTestsAsync(Container container, IEnumerable<TestCase> testCases)

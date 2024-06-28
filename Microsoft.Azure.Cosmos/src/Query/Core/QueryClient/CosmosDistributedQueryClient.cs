@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             FeedRangeInternal feedRange,
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
-            QueryPaginationOptions queryPaginationOptions,
+            QueryExecutionOptions queryPaginationOptions,
             Tracing.ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             Cosmos.PartitionKey? partitionKey,
             FeedRangeInternal feedRange,
             string continuationToken,
-            QueryPaginationOptions queryPaginationOptions,
+            QueryExecutionOptions queryPaginationOptions,
             Tracing.ITrace trace)
         {
             Stream serializedQuerySpec = this.cosmosClientContext.SerializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, ResourceType.Document);

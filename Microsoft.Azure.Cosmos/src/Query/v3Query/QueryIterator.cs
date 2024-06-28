@@ -86,9 +86,15 @@ namespace Microsoft.Azure.Cosmos.Query
                 useSystemPrefix: QueryIterator.IsSystemPrefixExpected(queryRequestOptions),
                 correlatedActivityId: correlatedActivityId);
 
+            ICosmosDistributedQueryClient distributedQueryClient = new CosmosDistributedQueryClient(
+                clientContext,
+                resourceLink,
+                correlatedActivityId);
+
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 containerCore,
                 client,
+                distributedQueryClient,
                 correlatedActivityId,
                 queryRequestOptions,
                 resourceType: resourceType);
@@ -120,11 +126,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 requestContinuationToken = null;
             }
 
-            ICosmosDistributedQueryClient distributedQueryClient = new CosmosDistributedQueryClient(
-                clientContext,
-                resourceLink,
-                correlatedActivityId);
-
             CosmosQueryExecutionContextFactory.InputParameters inputParameters = CosmosQueryExecutionContextFactory.InputParameters.Create(
                 sqlQuerySpec: sqlQuerySpec,
                 initialUserContinuationToken: requestContinuationToken,
@@ -143,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             return new QueryIterator(
                 cosmosQueryContext,
-                CosmosQueryExecutionContextFactory.Create(documentContainer, cosmosQueryContext, distributedQueryClient, inputParameters, NoOpTrace.Singleton),
+                CosmosQueryExecutionContextFactory.Create(documentContainer, cosmosQueryContext, inputParameters, NoOpTrace.Singleton),
                 queryRequestOptions.CosmosSerializationFormatOptions,
                 queryRequestOptions,
                 clientContext,

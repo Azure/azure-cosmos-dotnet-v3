@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             FeedRangeInternal feedRange,
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
-            QueryPaginationOptions queryPaginationOptions,
+            QueryExecutionOptions queryPaginationOptions,
             ITrace trace,
             CancellationToken cancellationToken);
     }

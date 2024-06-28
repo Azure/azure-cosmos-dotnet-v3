@@ -422,11 +422,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                  useSystemPrefix: false,
                  correlatedActivityId: Guid.NewGuid());
 
-            Mock<ICosmosDistributedQueryClient> mockDistributedQueryClient = new Mock<ICosmosDistributedQueryClient>();
             IQueryPipelineStage queryPipelineStage = CosmosQueryExecutionContextFactory.Create(
                 documentContainer,
                 cosmosQueryContextCore,
-                mockDistributedQueryClient.Object,
                 inputParameters,
                 NoOpTrace.Singleton);
 
@@ -613,7 +611,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 feedRanges,
                 partitionKey: null,
                 GetQueryPlan(query),
-                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: pageSize),
+                queryPaginationOptions: new QueryExecutionOptions(pageSizeHint: pageSize),
                 containerQueryProperties: new ContainerQueryProperties(),
                 maxConcurrency: 10,
                 requestContinuationToken: state);
@@ -691,7 +689,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 this.PageSizeSpecified = null;
             }
 
-            public Task<TryCatch<ChangeFeedPage>> MonadicChangeFeedAsync(FeedRangeState<ChangeFeedState> feedRangeState, ChangeFeedPaginationOptions changeFeedPaginationOptions, ITrace trace, CancellationToken cancellationToken)
+            public Task<TryCatch<ChangeFeedPage>> MonadicChangeFeedAsync(FeedRangeState<ChangeFeedState> feedRangeState, ChangeFeedExecutionOptions changeFeedPaginationOptions, ITrace trace, CancellationToken cancellationToken)
             {
                 return this.MonadicDocumentContainer.MonadicChangeFeedAsync(feedRangeState, changeFeedPaginationOptions, trace, cancellationToken);
             }
@@ -721,14 +719,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 return this.MonadicDocumentContainer.MonadicMergeAsync(feedRange1, feedRange2, cancellationToken);
             }
 
-            public Task<TryCatch<QueryPage>> MonadicQueryAsync(SqlQuerySpec sqlQuerySpec, FeedRangeState<QueryState> feedRangeState, QueryPaginationOptions queryPaginationOptions, ITrace trace, CancellationToken cancellationToken)
+            public Task<TryCatch<QueryPage>> MonadicQueryAsync(SqlQuerySpec sqlQuerySpec, FeedRangeState<QueryState> feedRangeState, QueryExecutionOptions queryPaginationOptions, ITrace trace, CancellationToken cancellationToken)
             {
                 this.PageSizeSpecified = queryPaginationOptions.PageSizeLimit;
                 
                 return this.MonadicDocumentContainer.MonadicQueryAsync(sqlQuerySpec, feedRangeState, queryPaginationOptions, trace, cancellationToken);
             }
 
-            public Task<TryCatch<ReadFeedPage>> MonadicReadFeedAsync(FeedRangeState<ReadFeedState> feedRangeState, ReadFeedPaginationOptions readFeedPaginationOptions, ITrace trace, CancellationToken cancellationToken)
+            public Task<TryCatch<ReadFeedPage>> MonadicReadFeedAsync(FeedRangeState<ReadFeedState> feedRangeState, ReadFeedExecutionOptions readFeedPaginationOptions, ITrace trace, CancellationToken cancellationToken)
             {
                 return this.MonadicDocumentContainer.MonadicReadFeedAsync(feedRangeState, readFeedPaginationOptions, trace, cancellationToken);
             }

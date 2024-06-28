@@ -34,6 +34,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 container.Object,
                 client.Object,
+                distributedQueryClient: null,
                 Guid.NewGuid());
 
             TryCatch result = await networkAttachedDocumentContainer.MonadicRefreshProviderAsync(
@@ -82,11 +83,12 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 container.Object,
                 Mock.Of<CosmosQueryClient>(),
+                distributedQueryClient: null,
                 Guid.NewGuid());
 
             await networkAttachedDocumentContainer.MonadicChangeFeedAsync(
                 feedRangeState: new FeedRangeState<ChangeFeedState>(new FeedRangePartitionKeyRange("0"), ChangeFeedState.Beginning()),
-                changeFeedPaginationOptions: new ChangeFeedPaginationOptions(ChangeFeedMode.Incremental, pageSizeHint: 10),
+                changeFeedPaginationOptions: new ChangeFeedExecutionOptions(ChangeFeedMode.Incremental, pageSizeHint: 10),
                 trace: NoOpTrace.Singleton,
                 cancellationToken: default);
 
@@ -142,11 +144,12 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 container.Object,
                 Mock.Of<CosmosQueryClient>(),
+                distributedQueryClient: null,
                 Guid.NewGuid());
 
             await networkAttachedDocumentContainer.MonadicChangeFeedAsync(
                 feedRangeState: new FeedRangeState<ChangeFeedState>(new FeedRangePartitionKeyRange("0"), ChangeFeedState.Beginning()),
-                changeFeedPaginationOptions: new ChangeFeedPaginationOptions(ChangeFeedMode.AllVersionsAndDeletes, pageSizeHint: 10),
+                changeFeedPaginationOptions: new ChangeFeedExecutionOptions(ChangeFeedMode.AllVersionsAndDeletes, pageSizeHint: 10),
                 trace: NoOpTrace.Singleton,
                 cancellationToken: default);
 

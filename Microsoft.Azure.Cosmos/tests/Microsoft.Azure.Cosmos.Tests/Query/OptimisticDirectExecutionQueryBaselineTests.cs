@@ -1054,11 +1054,9 @@
                 useSystemPrefix: false,
                 correlatedActivityId: Guid.NewGuid());
 
-            Mock<ICosmosDistributedQueryClient> mockDistributedQueryClient = new Mock<ICosmosDistributedQueryClient>();
             IQueryPipelineStage queryPipelineStage = CosmosQueryExecutionContextFactory.Create(
                 documentContainer,
                 cosmosQueryContextCore,
-                mockDistributedQueryClient.Object,
                 inputParameters,
                 NoOpTrace.Singleton);
 
@@ -1112,7 +1110,7 @@
             public override async Task<TryCatch<QueryPage>> MonadicQueryAsync(
                 SqlQuerySpec sqlQuerySpec,
                 FeedRangeState<QueryState> feedRangeState,
-                QueryPaginationOptions queryPaginationOptions,
+                QueryExecutionOptions queryPaginationOptions,
                 ITrace trace,
                 CancellationToken cancellationToken)
             {
