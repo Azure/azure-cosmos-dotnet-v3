@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                 this.distinctQueryType = distinctQueryType;
             }
 
-            public static TryCatch<IQueryPipelineStage> MonadicCreate(
+            public static new TryCatch<IQueryPipelineStage> MonadicCreate(
                 CosmosElement requestContinuation,
                 MonadicCreatePipelineStage monadicCreatePipelineStage,
                 DistinctQueryType distinctQueryType)
