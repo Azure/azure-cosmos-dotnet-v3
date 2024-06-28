@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string endpointUrl)
         {
             this.diagnosticsHelper = diagnosticsHelper ?? throw new ArgumentNullException(nameof(diagnosticsHelper));
-            this.endpointUrl = endpointUrl ?? throw new ArgumentNullException(nameof(endpointUrl));
+            this.endpointUrl = "https://juno-test.documents-dev.windows-int.net/api/clienttelemetry/trace/";
 
             this.globalEndpointManager = globalEndpointManager;
             
