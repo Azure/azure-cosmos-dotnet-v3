@@ -60,10 +60,34 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     MakeTest(
                         "SELECT VALUE c.x FROM c WHERE c.x < 200",
                         PageSizes,
-                        Expectations.AllDocumentsLessThan200ArePresent)
+                        Expectations.AllDocumentsLessThan200ArePresent),
+                    MakeTest(
+                        "SELECT VALUE c.x FROM c WHERE c.x > 200",
+                        PageSizes,
+                        Expectations.AllDocumentsGreaterThan200ArePresent),
                 };
 
                 return ContinuationTestsAsync(container, testCases);
+            }
+
+            await this.CreateIngestQueryDeleteAsync(
+                ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                CreateDocuments(DocumentCount),
+                ImplementationAsync);
+        }
+
+        [TestMethod]
+        public async Task ParityTestsAsync()
+        {
+            static Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> _)
+            {
+                string[] testCases = new[]
+                {
+                    "SELECT VALUE COUNT(1) FROM c",
+                };
+
+                return RunParityTestsAsync(container, testCases);
             }
 
             await this.CreateIngestQueryDeleteAsync(
@@ -101,6 +125,65 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             }
 
             Assert.IsNull(Environment.GetEnvironmentVariable(ConfigurationManager.DistributedQueryGatewayModeEnabled));
+        }
+
+        private static async Task RunParityTestsAsync(Container container, IEnumerable<string> testCases)
+        {
+            IReadOnlyList<FeedRange> feedRanges = await container.GetFeedRangesAsync();
+
+            foreach (string query in testCases)
+            {
+                int index = 0;
+                foreach (FeedRange feedRange in feedRanges)
+                {
+                    FeedRangePartitionKeyRange feedRangePartitionKeyRange = new FeedRangePartitionKeyRange(index.ToString());
+
+                    List<CosmosElement> expected = await RunQueryAsync(
+                        container,
+                        feedRangePartitionKeyRange,
+                        query,
+                        new QueryRequestOptions());
+
+                    QueryRequestOptions options = new QueryRequestOptions()
+                    {
+                        EnableDistributedQueryGatewayMode = true,
+                    };
+
+                    List<CosmosElement> actual = await RunQueryAsync(
+                        container,
+                        feedRangePartitionKeyRange,
+                        query,
+                        options);
+
+                    if (!expected.SequenceEqual(actual))
+                    {
+                        System.Diagnostics.Trace.TraceError($"Expected: {string.Join(",", expected)}");
+                        System.Diagnostics.Trace.TraceError($"Actual: {string.Join(",", actual)}");
+                    }
+                }
+            }
+        }
+
+        private static async Task<List<CosmosElement>> RunQueryAsync(
+            Container container,
+            FeedRange feedRange,
+            string query,
+            QueryRequestOptions options)
+        {
+            FeedIterator<CosmosElement> feedIterator = container.GetItemQueryIterator<CosmosElement>(
+                queryDefinition: new QueryDefinition(query),
+                feedRange: feedRange,
+                requestOptions: options);
+
+            List<CosmosElement> results = new List<CosmosElement>();
+            while (feedIterator.HasMoreResults)
+            {
+                FeedResponse<CosmosElement> feedResponse = await feedIterator.ReadNextAsync();
+                Assert.IsTrue(feedResponse.StatusCode.IsSuccess());
+                results.AddRange(feedResponse);
+            }
+
+            return results;
         }
 
         private static async Task ContinuationTestsAsync(Container container, IEnumerable<TestCase> testCases)
