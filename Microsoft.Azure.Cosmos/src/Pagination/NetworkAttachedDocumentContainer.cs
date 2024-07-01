@@ -41,6 +41,26 @@ namespace Microsoft.Azure.Cosmos.Pagination
         public NetworkAttachedDocumentContainer(
             ContainerInternal container,
             CosmosQueryClient cosmosQueryClient,
+            Guid correlatedActivityId,
+            QueryRequestOptions queryRequestOptions = null,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null,
+            string resourceLink = null,
+            ResourceType resourceType = ResourceType.Document)
+            : this(
+                  container,
+                  cosmosQueryClient,
+                  distributedQueryClient: null,
+                  correlatedActivityId,
+                  queryRequestOptions,
+                  changeFeedRequestOptions,
+                  resourceLink,
+                  resourceType)
+        {
+        }
+
+        public NetworkAttachedDocumentContainer(
+            ContainerInternal container,
+            CosmosQueryClient cosmosQueryClient,
             ICosmosDistributedQueryClient distributedQueryClient,
             Guid correlatedActivityId,
             QueryRequestOptions queryRequestOptions = null,

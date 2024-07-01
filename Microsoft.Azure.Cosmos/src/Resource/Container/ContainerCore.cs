@@ -334,7 +334,6 @@ namespace Microsoft.Azure.Cosmos
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 this,
                 this.queryClient,
-                distributedQueryClient: null,
                 correlatedActivityId: Guid.NewGuid(),
                 changeFeedRequestOptions: changeFeedRequestOptions);
             DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
@@ -366,7 +365,6 @@ namespace Microsoft.Azure.Cosmos
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 this,
                 this.queryClient,
-                distributedQueryClient: null,
                 Guid.NewGuid(),
                 changeFeedRequestOptions: changeFeedRequestOptions);
             DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
@@ -652,7 +650,6 @@ namespace Microsoft.Azure.Cosmos
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 this,
                 this.queryClient,
-                distributedQueryClient: null,
                 correlatedActivityId: Guid.NewGuid(),
                 changeFeedRequestOptions: changeFeedRequestOptions);
             DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
@@ -686,7 +683,6 @@ namespace Microsoft.Azure.Cosmos
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 this,
                 this.queryClient,
-                distributedQueryClient: null,
                 Guid.NewGuid(),
                 changeFeedRequestOptions: changeFeedRequestOptions);
             DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);

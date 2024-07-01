@@ -763,7 +763,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             NetworkAttachedDocumentContainer container = new NetworkAttachedDocumentContainer(
                 mockContainerInternal.Object,
                 mockCosmosQueryClient.Object,
-                distributedQueryClient: null,
                 Guid.NewGuid());
 
             FeedRangeState<ChangeFeedState> state = new FeedRangeState<ChangeFeedState>();

@@ -193,7 +193,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                 NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                     containerInternal,
                     queryClient,
-                    distributedQueryClient: null,
                     Guid.NewGuid());
 
                 // warm up the caches
