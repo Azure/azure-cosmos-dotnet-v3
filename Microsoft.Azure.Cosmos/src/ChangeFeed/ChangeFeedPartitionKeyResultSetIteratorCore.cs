@@ -85,11 +85,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public override bool HasMoreResults => this.hasMoreResultsInternal;
 
-        public override CosmosElement GetCosmosElementContinuationToken()
-        {
-            throw new NotImplementedException();
-        }
-
         /// <summary>
         /// Get the next set of results from the cosmos service
         /// </summary>

@@ -407,7 +407,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     inputParameters.PartitionKey,
                     inputParameters.Properties,
                     inputParameters.PartitionedQueryExecutionInfo,
-                    inputParameters.ExecutionEnvironment,
                     inputParameters.ReturnResultsInDeterministicOrder,
                     inputParameters.EnableOptimisticDirectExecution,
                     inputParameters.IsNonStreamingOrderByQueryFeatureDisabled,
@@ -559,7 +558,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 $"Invalid MaxItemCount {optimalPageSize}");
 
             return PipelineFactory.MonadicCreate(
-                executionEnvironment: inputParameters.ExecutionEnvironment,
                 documentContainer: documentContainer,
                 sqlQuerySpec: inputParameters.SqlQuerySpec,
                 targetRanges: targetRanges
@@ -831,7 +829,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             private const int DefaultMaxItemCount = 1000;
             private const int DefaultMaxBufferedItemCount = 1000;
             private const bool DefaultReturnResultsInDeterministicOrder = true;
-            private const ExecutionEnvironment DefaultExecutionEnvironment = ExecutionEnvironment.Client;
 
             public InputParameters(
                 SqlQuerySpec sqlQuerySpec,
@@ -843,7 +840,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 PartitionKey? partitionKey,
                 IReadOnlyDictionary<string, object> properties,
                 PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
-                ExecutionEnvironment? executionEnvironment,
                 bool? returnResultsInDeterministicOrder,
                 bool enableOptimisticDirectExecution,
                 bool isNonStreamingOrderByQueryFeatureDisabled,
@@ -877,7 +873,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 this.PartitionKey = partitionKey;
                 this.Properties = properties;
                 this.PartitionedQueryExecutionInfo = partitionedQueryExecutionInfo;
-                this.ExecutionEnvironment = executionEnvironment.GetValueOrDefault(InputParameters.DefaultExecutionEnvironment);
                 this.ReturnResultsInDeterministicOrder = returnResultsInDeterministicOrder.GetValueOrDefault(InputParameters.DefaultReturnResultsInDeterministicOrder);
                 this.EnableOptimisticDirectExecution = enableOptimisticDirectExecution;
                 this.IsNonStreamingOrderByQueryFeatureDisabled = isNonStreamingOrderByQueryFeatureDisabled;
@@ -893,7 +888,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             public PartitionKey? PartitionKey { get; }
             public IReadOnlyDictionary<string, object> Properties { get; }
             public PartitionedQueryExecutionInfo PartitionedQueryExecutionInfo { get; }
-            public ExecutionEnvironment ExecutionEnvironment { get; }
             public bool ReturnResultsInDeterministicOrder { get; }
             public TestInjections TestInjections { get; }
             public bool EnableOptimisticDirectExecution { get; }
@@ -911,7 +905,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     this.PartitionKey,
                     this.Properties,
                     this.PartitionedQueryExecutionInfo,
-                    this.ExecutionEnvironment,
                     this.ReturnResultsInDeterministicOrder,
                     this.EnableOptimisticDirectExecution,
                     this.IsNonStreamingOrderByQueryFeatureDisabled,
