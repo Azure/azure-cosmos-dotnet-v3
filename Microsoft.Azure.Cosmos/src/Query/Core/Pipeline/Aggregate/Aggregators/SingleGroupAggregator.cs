@@ -29,8 +29,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
         /// </summary>
         public abstract CosmosElement GetResult();
 
-        public abstract CosmosElement GetCosmosElementContinuationToken();
-
         public static TryCatch<SingleGroupAggregator> TryCreate(
             IReadOnlyList<AggregateOperator> aggregates,
             IReadOnlyDictionary<string, AggregateOperator?> aggregateAliasToAggregateType,
@@ -106,11 +104,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
                 return this.aggregateValue.Result;
             }
 
-            public override CosmosElement GetCosmosElementContinuationToken()
-            {
-                return this.aggregateValue.GetCosmosElementContinuationToken();
-            }
-
             public override string ToString()
             {
                 return this.aggregateValue.ToString();
@@ -150,17 +143,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
                 }
 
                 return new OrderedCosmosObject(dictionary, keys);
-            }
-
-            public override CosmosElement GetCosmosElementContinuationToken()
-            {
-                Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>();
-                foreach (KeyValuePair<string, AggregateValue> kvp in this.aliasToValue)
-                {
-                    dictionary.Add(kvp.Key, kvp.Value.GetCosmosElementContinuationToken());
-                }
-
-                return CosmosObject.Create(dictionary);
             }
 
             public static TryCatch<SingleGroupAggregator> TryCreate(
@@ -311,8 +293,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
 
             public abstract CosmosElement Result { get; }
 
-            public abstract CosmosElement GetCosmosElementContinuationToken();
-
             public override string ToString()
             {
                 return this.Result.ToString();
@@ -348,11 +328,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
                 {
                     AggregateItem aggregateItem = new AggregateItem(aggregateValue);
                     this.aggregator.Aggregate(aggregateItem.Item);
-                }
-
-                public override CosmosElement GetCosmosElementContinuationToken()
-                {
-                    return this.aggregator.GetCosmosElementContinuationToken();
                 }
 
                 public static TryCatch<AggregateValue> TryCreate(
@@ -420,21 +395,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
 
                         return this.value;
                     }
-                }
-
-                public override CosmosElement GetCosmosElementContinuationToken()
-                {
-                    Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>
-                    {
-                        { nameof(this.initialized), CosmosBoolean.Create(this.initialized) }
-                    };
-
-                    if (this.value != null)
-                    {
-                        dictionary.Add(nameof(this.value), this.value);
-                    }
-
-                    return CosmosObject.Create(dictionary);
                 }
 
                 public static TryCatch<AggregateValue> TryCreate(CosmosElement continuationToken)

@@ -228,17 +228,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                 return results;
             }
 
-            public CosmosElement GetCosmosElementContinuationToken()
-            {
-                Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>();
-                foreach (KeyValuePair<UInt128, SingleGroupAggregator> kvp in this.table)
-                {
-                    dictionary.Add(kvp.Key.ToString(), kvp.Value.GetCosmosElementContinuationToken());
-                }
-
-                return CosmosObject.Create(dictionary);
-            }
-
             public IEnumerator<KeyValuePair<UInt128, SingleGroupAggregator>> GetEnumerator => this.table.GetEnumerator();
 
             public static TryCatch<GroupingTable> TryCreateFromContinuationToken(
