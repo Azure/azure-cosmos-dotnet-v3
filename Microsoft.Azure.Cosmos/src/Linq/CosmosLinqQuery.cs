@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     /// This is the entry point for LINQ query creation/execution, it generate query provider, implements IOrderedQueryable.
     /// </summary>
     /// <seealso cref="CosmosLinqQueryProvider"/>
-    internal sealed class CosmosLinqQuery<T> : IDocumentQuery<T>, IOrderedQueryable<T>
+    internal sealed class CosmosLinqQuery<T> : IDocumentQuery<T>, IOrderedQueryable<T>, IAsyncEnumerable<T>
     {
         private readonly CosmosLinqQueryProvider queryProvider;
         private readonly Guid correlatedActivityId;
@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     " use GetItemQueryIterator to execute asynchronously");
             }
 
-            FeedIterator<T> localFeedIterator = this.CreateFeedIterator(false, out ScalarOperationKind scalarOperationKind);
+            using FeedIterator<T> localFeedIterator = this.CreateFeedIterator(false, out ScalarOperationKind scalarOperationKind);
             Debug.Assert(
                 scalarOperationKind == ScalarOperationKind.None,
                 "CosmosLinqQuery Assert!",
@@ -122,6 +122,33 @@ namespace Microsoft.Azure.Cosmos.Linq
 #pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
 
                 foreach (T item in items)
+                {
+                    yield return item;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Retrieves an object that can iterate through the individual results of the query asynchronously.
+        /// </summary>
+        /// <remarks>
+        /// This triggers an asynchronous multi-page load.
+        /// </remarks>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>IEnumerator</returns>
+        public async IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+        {
+            using FeedIteratorInlineCore<T> localFeedIterator = this.CreateFeedIterator(isContinuationExpected: false, out ScalarOperationKind scalarOperationKind);
+            Debug.Assert(
+                scalarOperationKind == ScalarOperationKind.None,
+                "CosmosLinqQuery Assert!",
+                $"Unexpected client operation. Expected 'None', Received '{scalarOperationKind}'");
+
+            while (localFeedIterator.HasMoreResults)
+            {
+                FeedResponse<T> response = await localFeedIterator.ReadNextAsync(cancellationToken);
+
+                foreach (T item in response)
                 {
                     yield return item;
                 }
