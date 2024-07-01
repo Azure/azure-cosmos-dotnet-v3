@@ -78,6 +78,14 @@ namespace Microsoft.Azure.Cosmos
                     this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
                     this.documentServiceRequest?.ResourceAddress ?? string.Empty);
 
+                if (this.isPertitionLevelFailoverEnabled)
+                {
+                    // In the event of the routing gateway having outage on region A, mark the partition as unavailable assuming that the
+                    // partition has been failed over to region B, when per partition automatic failover is enabled.
+                    this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
+                         this.documentServiceRequest);
+                }
+
                 // Mark both read and write requests because it gateway exception.
                 // This means all requests going to the region will fail.
                 return await this.ShouldRetryOnEndpointFailureAsync(
