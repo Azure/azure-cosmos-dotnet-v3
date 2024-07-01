@@ -203,7 +203,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     CrossPartitionChangeFeedAsyncEnumerator enumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
                         documentContainer,
                         new CrossFeedRangeState<ChangeFeedState>(monadicChangeFeedCrossFeedRangeState.Result.FeedRangeStates),
-                        new ChangeFeedPaginationOptions(
+                        new ChangeFeedExecutionOptions(
                             changeFeedMode,
                             changeFeedRequestOptions?.PageSizeHint,
                             changeFeedRequestOptions?.JsonSerializationFormatOptions?.JsonSerializationFormat,

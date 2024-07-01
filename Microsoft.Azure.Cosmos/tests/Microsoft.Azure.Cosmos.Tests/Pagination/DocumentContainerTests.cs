@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 {
                     ReadFeedPage page = await documentContainer.ReadFeedAsync(
                         feedRangeState: new FeedRangeState<ReadFeedState>(feedRange, ReadFeedState.Beginning()),
-                        readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 1),
+                        readFeedPaginationOptions: new ReadFeedExecutionOptions(pageSizeHint: 1),
                         trace: NoOpTrace.Singleton,
                         cancellationToken: default);
                     return (page.GetRecords().Count, page.State);
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     {
                         ReadFeedPage page = await documentContainer.ReadFeedAsync(
                             feedRangeState: new FeedRangeState<ReadFeedState>(feedRange, resumeState),
-                            readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 1),
+                            readFeedPaginationOptions: new ReadFeedExecutionOptions(pageSizeHint: 1),
                             trace: NoOpTrace.Singleton,
                             cancellationToken: default);
                         resumeState = page.State;
@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 {
                     ChangeFeedPage page = await documentContainer.ChangeFeedAsync(
                         feedRangeState: new FeedRangeState<ChangeFeedState>(feedRange, ChangeFeedState.Beginning()),
-                        changeFeedPaginationOptions: new ChangeFeedPaginationOptions(
+                        changeFeedPaginationOptions: new ChangeFeedExecutionOptions(
                             mode: ChangeFeedMode.Incremental,
                             pageSizeHint: 1),
                         trace: NoOpTrace.Singleton,
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     {
                         ChangeFeedPage page = await documentContainer.ChangeFeedAsync(
                             feedRangeState: new FeedRangeState<ChangeFeedState>(feedRange, resumeState),
-                            changeFeedPaginationOptions: new ChangeFeedPaginationOptions(
+                            changeFeedPaginationOptions: new ChangeFeedExecutionOptions(
                                 mode: ChangeFeedMode.Incremental,
                                 pageSizeHint: 1),
                             trace: NoOpTrace.Singleton,
@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     QueryPage page = await documentContainer.QueryAsync(
                         sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
                         feedRangeState: new FeedRangeState<QueryState>(feedRange, state: null),
-                        queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 1),
+                        queryPaginationOptions: new QueryExecutionOptions(pageSizeHint: 1),
                         trace: NoOpTrace.Singleton,
                         cancellationToken: default);
 
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         QueryPage page = await documentContainer.QueryAsync(
                             sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
                             feedRangeState: new FeedRangeState<QueryState>(feedRange, resumeState),
-                            queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 1),
+                            queryPaginationOptions: new QueryExecutionOptions(pageSizeHint: 1),
                             trace: NoOpTrace.Singleton,
                             cancellationToken: default);
 
@@ -612,7 +612,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 {
                     ReadFeedPage fullRangePage = await documentContainer.ReadFeedAsync(
                         new FeedRangeState<ReadFeedState>(range, readFeedState),
-                        readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 100),
+                        readFeedPaginationOptions: new ReadFeedExecutionOptions(pageSizeHint: 100),
                         NoOpTrace.Singleton,
                         cancellationToken: default);
 
@@ -626,7 +626,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             {
                 ReadFeedPage partitionKeyPage = await documentContainer.ReadFeedAsync(
                     new FeedRangeState<ReadFeedState>(new FeedRangePartitionKey(new Cosmos.PartitionKey(0)), ReadFeedState.Beginning()),
-                    readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 100),
+                    readFeedPaginationOptions: new ReadFeedExecutionOptions(pageSizeHint: 100),
                     NoOpTrace.Singleton,
                     cancellationToken: default);
                 Assert.AreEqual(1, partitionKeyPage.GetRecords().Count);
@@ -651,7 +651,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                                     isMinInclusive: true,
                                     isMaxInclusive: false)),
                             ReadFeedState.Beginning()),
-                        readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 100),
+                        readFeedPaginationOptions: new ReadFeedExecutionOptions(pageSizeHint: 100),
                         NoOpTrace.Singleton,
                         cancellationToken: default);
                     sumChildCount += partitionKeyRangePage.GetRecords().Count;
@@ -681,7 +681,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 QueryPage fullRangePage = await documentContainer.QueryAsync(
                     sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
                     feedRangeState: new FeedRangeState<QueryState>(range, state: null),
-                    queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: int.MaxValue),
+                    queryPaginationOptions: new QueryExecutionOptions(pageSizeHint: int.MaxValue),
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
                 Assert.AreEqual(numItemsToInsert, fullRangePage.Documents.Count);
@@ -691,7 +691,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 QueryPage partitionKeyPage = await documentContainer.QueryAsync(
                     sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
                     feedRangeState: new FeedRangeState<QueryState>(new FeedRangePartitionKey(new Cosmos.PartitionKey(0)), state: null),
-                    queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: int.MaxValue),
+                    queryPaginationOptions: new QueryExecutionOptions(pageSizeHint: int.MaxValue),
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
                 Assert.AreEqual(1, partitionKeyPage.Documents.Count);
@@ -717,7 +717,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                                     isMinInclusive: true,
                                     isMaxInclusive: false)),
                             state: null),
-                        queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: int.MaxValue),
+                        queryPaginationOptions: new QueryExecutionOptions(pageSizeHint: int.MaxValue),
                         NoOpTrace.Singleton,
                         cancellationToken: default);
                     sumChildCount += partitionKeyRangePage.Documents.Count;
@@ -766,7 +766,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 Guid.NewGuid());
 
             FeedRangeState<ChangeFeedState> state = new FeedRangeState<ChangeFeedState>();
-            ChangeFeedPaginationOptions options = new ChangeFeedPaginationOptions(ChangeFeedMode.Incremental);
+            ChangeFeedExecutionOptions options = new ChangeFeedExecutionOptions(ChangeFeedMode.Incremental);
             TryCatch<ChangeFeedPage> result = await container.MonadicChangeFeedAsync(
                 state,
                 options,

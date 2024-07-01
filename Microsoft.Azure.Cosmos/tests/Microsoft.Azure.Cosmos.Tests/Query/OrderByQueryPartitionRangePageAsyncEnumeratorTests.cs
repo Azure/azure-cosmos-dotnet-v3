@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                         sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
                         feedRangeState: new FeedRangeState<QueryState>(ranges[0], state),
                         partitionKey: null,
-                        queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+                        queryPaginationOptions: new QueryExecutionOptions(pageSizeHint: 10),
                         filter: "filter",
                         PrefetchPolicy.PrefetchSinglePage),
                     NoOpTrace.Singleton,

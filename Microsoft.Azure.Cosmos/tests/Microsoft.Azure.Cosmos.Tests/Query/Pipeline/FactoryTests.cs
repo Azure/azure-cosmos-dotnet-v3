@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 partitionKey: null,
                 containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
                 queryInfo: new QueryInfo() { },
-                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+                queryPaginationOptions: new QueryExecutionOptions(pageSizeHint: 10),
                 maxConcurrency: 10,
                 requestContinuationToken: default); ;
             Assert.IsTrue(monadicCreatePipeline.Succeeded);

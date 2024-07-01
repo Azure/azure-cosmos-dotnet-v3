@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
     {
         Task<ReadFeedPage> ReadFeedAsync(
             FeedRangeState<ReadFeedState> feedRangeState,
-            ReadFeedPaginationOptions readFeedPaginationOptions,
+            ReadFeedExecutionOptions readFeedPaginationOptions,
             ITrace trace,
             CancellationToken cancellationToken);
     }

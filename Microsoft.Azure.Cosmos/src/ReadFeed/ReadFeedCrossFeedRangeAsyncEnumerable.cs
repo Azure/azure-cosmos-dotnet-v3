@@ -17,12 +17,12 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
     {
         private readonly IDocumentContainer documentContainer;
         private readonly ReadFeedCrossFeedRangeState state;
-        private readonly ReadFeedPaginationOptions readFeedPaginationOptions;
+        private readonly ReadFeedExecutionOptions readFeedPaginationOptions;
 
         public ReadFeedCrossFeedRangeAsyncEnumerable(
             IDocumentContainer documentContainer,
             ReadFeedCrossFeedRangeState state,
-            ReadFeedPaginationOptions readFeedPaginationOptions)
+            ReadFeedExecutionOptions readFeedPaginationOptions)
         {
             this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
             this.state = state;

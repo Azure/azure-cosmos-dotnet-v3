@@ -636,7 +636,7 @@ namespace Microsoft.Azure.Cosmos
                 additionalHeaders = null;
             }
 
-            ChangeFeedPaginationOptions changeFeedPaginationOptions = new ChangeFeedPaginationOptions(
+            ChangeFeedExecutionOptions changeFeedPaginationOptions = new ChangeFeedExecutionOptions(
                 changeFeedMode,
                 changeFeedRequestOptions?.PageSizeHint,
                 changeFeedRequestOptions?.JsonSerializationFormatOptions?.JsonSerializationFormat,
@@ -698,13 +698,13 @@ namespace Microsoft.Azure.Cosmos
 
                 DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
 
-                ReadFeedPaginationOptions.PaginationDirection? direction = null;
+                ReadFeedExecutionOptions.PaginationDirection? direction = null;
                 if ((requestOptions.Properties != null) && requestOptions.Properties.TryGetValue(HttpConstants.HttpHeaders.EnumerationDirection, out object enumerationDirection))
                 {
-                    direction = (byte)enumerationDirection == (byte)RntbdConstants.RntdbEnumerationDirection.Reverse ? ReadFeedPaginationOptions.PaginationDirection.Reverse : ReadFeedPaginationOptions.PaginationDirection.Forward;
+                    direction = (byte)enumerationDirection == (byte)RntbdConstants.RntdbEnumerationDirection.Reverse ? ReadFeedExecutionOptions.PaginationDirection.Reverse : ReadFeedExecutionOptions.PaginationDirection.Forward;
                 }
 
-                ReadFeedPaginationOptions readFeedPaginationOptions = new ReadFeedPaginationOptions(
+                ReadFeedExecutionOptions readFeedPaginationOptions = new ReadFeedExecutionOptions(
                     direction,
                     pageSizeHint: requestOptions.MaxItemCount ?? int.MaxValue);
 
@@ -771,13 +771,13 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
-                ReadFeedPaginationOptions.PaginationDirection? direction = null;
+                ReadFeedExecutionOptions.PaginationDirection? direction = null;
                 if ((queryRequestOptions.Properties != null) && queryRequestOptions.Properties.TryGetValue(HttpConstants.HttpHeaders.EnumerationDirection, out object enumerationDirection))
                 {
-                    direction = (byte)enumerationDirection == (byte)RntbdConstants.RntdbEnumerationDirection.Reverse ? ReadFeedPaginationOptions.PaginationDirection.Reverse : ReadFeedPaginationOptions.PaginationDirection.Forward;
+                    direction = (byte)enumerationDirection == (byte)RntbdConstants.RntdbEnumerationDirection.Reverse ? ReadFeedExecutionOptions.PaginationDirection.Reverse : ReadFeedExecutionOptions.PaginationDirection.Forward;
                 }
 
-                ReadFeedPaginationOptions readFeedPaginationOptions = new ReadFeedPaginationOptions(
+                ReadFeedExecutionOptions readFeedPaginationOptions = new ReadFeedExecutionOptions(
                     direction,
                     pageSizeHint: queryRequestOptions.MaxItemCount ?? int.MaxValue);
 
@@ -804,13 +804,13 @@ namespace Microsoft.Azure.Cosmos
                 queryRequestOptions);
             DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
 
-            ReadFeedPaginationOptions.PaginationDirection? direction = null;
+            ReadFeedExecutionOptions.PaginationDirection? direction = null;
             if ((queryRequestOptions?.Properties != null) && queryRequestOptions.Properties.TryGetValue(HttpConstants.HttpHeaders.EnumerationDirection, out object enumerationDirection))
             {
-                direction = (byte)enumerationDirection == (byte)RntbdConstants.RntdbEnumerationDirection.Reverse ? ReadFeedPaginationOptions.PaginationDirection.Reverse : ReadFeedPaginationOptions.PaginationDirection.Forward;
+                direction = (byte)enumerationDirection == (byte)RntbdConstants.RntdbEnumerationDirection.Reverse ? ReadFeedExecutionOptions.PaginationDirection.Reverse : ReadFeedExecutionOptions.PaginationDirection.Forward;
             }
 
-            ReadFeedPaginationOptions readFeedPaginationOptions = new ReadFeedPaginationOptions(
+            ReadFeedExecutionOptions readFeedPaginationOptions = new ReadFeedExecutionOptions(
                 direction,
                 pageSizeHint: queryRequestOptions?.MaxItemCount);
 

@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System.Collections.Immutable;
     using Microsoft.Azure.Documents;
 
-    internal abstract class PaginationOptions
+    internal abstract class ExecutionOptions
     {
         protected static readonly ImmutableHashSet<string> bannedAdditionalHeaders = new HashSet<string>()
         {
@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
         private static readonly ImmutableDictionary<string, string> EmptyDictionary = new Dictionary<string, string>()
             .ToImmutableDictionary<string, string>();
 
-        protected PaginationOptions(
+        protected ExecutionOptions(
             int? pageSizeLimit = null,
             IReadOnlyDictionary<string, string> additionalHeaders = null)
         {

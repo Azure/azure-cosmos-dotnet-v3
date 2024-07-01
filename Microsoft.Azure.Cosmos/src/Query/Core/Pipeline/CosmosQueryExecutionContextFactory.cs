@@ -89,9 +89,30 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            // The default
             using (ITrace createQueryPipelineTrace = trace.StartChild("Create Query Pipeline", TraceComponent.Query, Tracing.TraceLevel.Info))
             {
+                if (inputParameters.EnableDistributedQueryGatewayMode &&
+                    cosmosQueryContext.ResourceTypeEnum == Documents.ResourceType.Document &&
+                    cosmosQueryContext.OperationTypeEnum == Documents.OperationType.Query)
+                {
+                    TryCatch<IQueryPipelineStage> tryCreateDistributedQueryPipeline = DistributedQueryPipelineStage.MonadicCreate(
+                        documentContainer,
+                        inputParameters.SqlQuerySpec,
+                        inputParameters.InitialFeedRange,
+                        inputParameters.PartitionKey,
+                        new QueryExecutionOptions(
+                            inputParameters.MaxItemCount,
+                            additionalHeaders: null,
+                            optimisticDirectExecute: false,
+                            enableDistributedQueryGatewayMode: true),
+                        inputParameters.InitialUserContinuationToken);
+
+                    if (tryCreateDistributedQueryPipeline.Succeeded)
+                    {
+                        return tryCreateDistributedQueryPipeline;
+                    }
+                }
+
                 // Try to parse the continuation token.
                 CosmosElement continuationToken = inputParameters.InitialUserContinuationToken;
                 PartitionedQueryExecutionInfo queryPlanFromContinuationToken = inputParameters.PartitionedQueryExecutionInfo;
@@ -397,7 +418,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     Parameters = inputParameters.SqlQuerySpec.Parameters
                 };
 
-                inputParameters = new InputParameters(
+                inputParameters = InputParameters.Create(
                     rewrittenQuerySpec,
                     inputParameters.InitialUserContinuationToken,
                     inputParameters.InitialFeedRange,
@@ -410,6 +431,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     inputParameters.ReturnResultsInDeterministicOrder,
                     inputParameters.EnableOptimisticDirectExecution,
                     inputParameters.IsNonStreamingOrderByQueryFeatureDisabled,
+                    inputParameters.EnableDistributedQueryGatewayMode,
                     inputParameters.TestInjections);
             }
 
@@ -499,7 +521,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                             isMinInclusive: true,
                             isMaxInclusive: false)))
                     .ToList(),
-                queryPaginationOptions: new QueryPaginationOptions(
+                queryPaginationOptions: new QueryExecutionOptions(
                     pageSizeHint: inputParameters.MaxItemCount),
                 partitionKey: inputParameters.PartitionKey,
                 containerQueryProperties: containerQueryProperties,
@@ -570,7 +592,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     .ToList(),
                 partitionKey: inputParameters.PartitionKey,
                 queryInfo: partitionedQueryExecutionInfo.QueryInfo,
-                queryPaginationOptions: new QueryPaginationOptions(
+                queryPaginationOptions: new QueryExecutionOptions(
                     pageSizeHint: (int)optimalPageSize),
                 containerQueryProperties: containerQueryProperties,
                 maxConcurrency: inputParameters.MaxConcurrency,
@@ -830,7 +852,39 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             private const int DefaultMaxBufferedItemCount = 1000;
             private const bool DefaultReturnResultsInDeterministicOrder = true;
 
-            public InputParameters(
+            private InputParameters(
+                SqlQuerySpec sqlQuerySpec,
+                CosmosElement initialUserContinuationToken,
+                FeedRangeInternal initialFeedRange,
+                int maxConcurrency,
+                int maxItemCount,
+                int maxBufferedItemCount,
+                PartitionKey? partitionKey,
+                IReadOnlyDictionary<string, object> properties,
+                PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
+                bool returnResultsInDeterministicOrder,
+                bool enableOptimisticDirectExecution,
+                bool isNonStreamingOrderByQueryFeatureDisabled,
+                bool enableDistributedQueryGatewayMode,
+                TestInjections testInjections)
+            {
+                this.SqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
+                this.InitialUserContinuationToken = initialUserContinuationToken;
+                this.InitialFeedRange = initialFeedRange;
+                this.MaxConcurrency = maxConcurrency;
+                this.MaxItemCount = maxItemCount;
+                this.MaxBufferedItemCount = maxBufferedItemCount;
+                this.PartitionKey = partitionKey;
+                this.Properties = properties;
+                this.PartitionedQueryExecutionInfo = partitionedQueryExecutionInfo;
+                this.ReturnResultsInDeterministicOrder = returnResultsInDeterministicOrder;
+                this.EnableOptimisticDirectExecution = enableOptimisticDirectExecution;
+                this.IsNonStreamingOrderByQueryFeatureDisabled = isNonStreamingOrderByQueryFeatureDisabled;
+                this.EnableDistributedQueryGatewayMode = enableDistributedQueryGatewayMode;
+                this.TestInjections = testInjections;
+            }
+
+            public static InputParameters Create(
                 SqlQuerySpec sqlQuerySpec,
                 CosmosElement initialUserContinuationToken,
                 FeedRangeInternal initialFeedRange,
@@ -843,40 +897,47 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 bool? returnResultsInDeterministicOrder,
                 bool enableOptimisticDirectExecution,
                 bool isNonStreamingOrderByQueryFeatureDisabled,
+                bool enableDistributedQueryGatewayMode,
                 TestInjections testInjections)
             {
-                this.SqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
-                this.InitialUserContinuationToken = initialUserContinuationToken;
-                this.InitialFeedRange = initialFeedRange;
+                if (sqlQuerySpec == null)
+                {
+                    throw new ArgumentNullException(nameof(sqlQuerySpec));
+                }
 
                 int resolvedMaxConcurrency = maxConcurrency.GetValueOrDefault(InputParameters.DefaultMaxConcurrency);
                 if (resolvedMaxConcurrency < 0)
                 {
                     resolvedMaxConcurrency = int.MaxValue;
                 }
-                this.MaxConcurrency = resolvedMaxConcurrency;
 
                 int resolvedMaxItemCount = maxItemCount.GetValueOrDefault(InputParameters.DefaultMaxItemCount);
                 if (resolvedMaxItemCount < 0)
                 {
                     resolvedMaxItemCount = int.MaxValue;
                 }
-                this.MaxItemCount = resolvedMaxItemCount;
 
                 int resolvedMaxBufferedItemCount = maxBufferedItemCount.GetValueOrDefault(InputParameters.DefaultMaxBufferedItemCount);
                 if (resolvedMaxBufferedItemCount < 0)
                 {
                     resolvedMaxBufferedItemCount = int.MaxValue;
                 }
-                this.MaxBufferedItemCount = resolvedMaxBufferedItemCount;
-
-                this.PartitionKey = partitionKey;
-                this.Properties = properties;
-                this.PartitionedQueryExecutionInfo = partitionedQueryExecutionInfo;
-                this.ReturnResultsInDeterministicOrder = returnResultsInDeterministicOrder.GetValueOrDefault(InputParameters.DefaultReturnResultsInDeterministicOrder);
-                this.EnableOptimisticDirectExecution = enableOptimisticDirectExecution;
-                this.IsNonStreamingOrderByQueryFeatureDisabled = isNonStreamingOrderByQueryFeatureDisabled;
-                this.TestInjections = testInjections;
+                
+                return new InputParameters(
+                    sqlQuerySpec: sqlQuerySpec,
+                    initialUserContinuationToken: initialUserContinuationToken,
+                    initialFeedRange: initialFeedRange,
+                    maxConcurrency: resolvedMaxConcurrency,
+                    maxItemCount: resolvedMaxItemCount,
+                    maxBufferedItemCount: resolvedMaxBufferedItemCount,
+                    partitionKey: partitionKey,
+                    properties: properties,
+                    partitionedQueryExecutionInfo: partitionedQueryExecutionInfo,
+                    returnResultsInDeterministicOrder: returnResultsInDeterministicOrder.GetValueOrDefault(InputParameters.DefaultReturnResultsInDeterministicOrder),
+                    enableOptimisticDirectExecution: enableOptimisticDirectExecution,
+                    isNonStreamingOrderByQueryFeatureDisabled: isNonStreamingOrderByQueryFeatureDisabled,
+                    enableDistributedQueryGatewayMode: enableDistributedQueryGatewayMode,
+                    testInjections: testInjections);
             }
 
             public SqlQuerySpec SqlQuerySpec { get; }
@@ -892,6 +953,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             public TestInjections TestInjections { get; }
             public bool EnableOptimisticDirectExecution { get; }
             public bool IsNonStreamingOrderByQueryFeatureDisabled { get; }
+            public bool EnableDistributedQueryGatewayMode { get; }
 
             public InputParameters WithContinuationToken(CosmosElement token)
             {
@@ -908,6 +970,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     this.ReturnResultsInDeterministicOrder,
                     this.EnableOptimisticDirectExecution,
                     this.IsNonStreamingOrderByQueryFeatureDisabled,
+                    this.EnableDistributedQueryGatewayMode,
                     this.TestInjections);
             }
         }

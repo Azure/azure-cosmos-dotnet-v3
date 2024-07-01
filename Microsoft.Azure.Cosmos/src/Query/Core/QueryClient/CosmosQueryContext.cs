@@ -26,10 +26,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
         public virtual Guid CorrelatedActivityId { get; }
         public virtual bool UseSystemPrefix { get; }
 
-        internal CosmosQueryContext()
-        {
-        }
-
         public CosmosQueryContext(
             CosmosQueryClient client,
             ResourceType resourceTypeEnum,

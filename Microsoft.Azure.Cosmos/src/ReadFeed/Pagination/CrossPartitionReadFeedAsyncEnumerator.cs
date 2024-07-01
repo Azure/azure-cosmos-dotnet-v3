@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
         public static CrossPartitionReadFeedAsyncEnumerator Create(
             IDocumentContainer documentContainer,
             CrossFeedRangeState<ReadFeedState> crossFeedRangeState,
-            ReadFeedPaginationOptions readFeedPaginationOptions)
+            ReadFeedExecutionOptions readFeedPaginationOptions)
         {
             if (documentContainer == null)
             {
@@ -71,12 +71,12 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
                 throw new ArgumentNullException(nameof(crossFeedRangeState));
             }
 
-            readFeedPaginationOptions ??= ReadFeedPaginationOptions.Default;
+            readFeedPaginationOptions ??= ReadFeedExecutionOptions.Default;
 
-            ReadFeedPaginationOptions.PaginationDirection paginationDirection = readFeedPaginationOptions.Direction.GetValueOrDefault(ReadFeedPaginationOptions.PaginationDirection.Forward);
+            ReadFeedExecutionOptions.PaginationDirection paginationDirection = readFeedPaginationOptions.Direction.GetValueOrDefault(ReadFeedExecutionOptions.PaginationDirection.Forward);
 
             IComparer<PartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>> comparer;
-            if (paginationDirection == ReadFeedPaginationOptions.PaginationDirection.Forward)
+            if (paginationDirection == ReadFeedExecutionOptions.PaginationDirection.Forward)
             {
                 comparer = PartitionRangePageAsyncEnumeratorComparerForward.Singleton;
             }
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
 
         private static CreatePartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> MakeCreateFunction(
             IReadFeedDataSource readFeedDataSource,
-            ReadFeedPaginationOptions readFeedPaginationOptions)
+            ReadFeedExecutionOptions readFeedPaginationOptions)
         {
             return (FeedRangeState<ReadFeedState> feedRangeState) => new ReadFeedPartitionRangeEnumerator(
                 readFeedDataSource,

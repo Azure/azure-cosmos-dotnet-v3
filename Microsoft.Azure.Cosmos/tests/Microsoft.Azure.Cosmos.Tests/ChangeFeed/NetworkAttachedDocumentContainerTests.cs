@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
 
             await networkAttachedDocumentContainer.MonadicChangeFeedAsync(
                 feedRangeState: new FeedRangeState<ChangeFeedState>(new FeedRangePartitionKeyRange("0"), ChangeFeedState.Beginning()),
-                changeFeedPaginationOptions: new ChangeFeedPaginationOptions(ChangeFeedMode.Incremental, pageSizeHint: 10),
+                changeFeedPaginationOptions: new ChangeFeedExecutionOptions(ChangeFeedMode.Incremental, pageSizeHint: 10),
                 trace: NoOpTrace.Singleton,
                 cancellationToken: default);
 
@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
 
             await networkAttachedDocumentContainer.MonadicChangeFeedAsync(
                 feedRangeState: new FeedRangeState<ChangeFeedState>(new FeedRangePartitionKeyRange("0"), ChangeFeedState.Beginning()),
-                changeFeedPaginationOptions: new ChangeFeedPaginationOptions(ChangeFeedMode.AllVersionsAndDeletes, pageSizeHint: 10),
+                changeFeedPaginationOptions: new ChangeFeedExecutionOptions(ChangeFeedMode.AllVersionsAndDeletes, pageSizeHint: 10),
                 trace: NoOpTrace.Singleton,
                 cancellationToken: default);
 

@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 {
                     new OrderByColumn("_ts", SortOrder.Ascending)
                 },
-                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+                queryPaginationOptions: new QueryExecutionOptions(pageSizeHint: 10),
                 maxConcurrency: 10,
                 nonStreamingOrderBy: false,
                 continuationToken: null);
@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 {
                     new OrderByColumn("_ts", SortOrder.Ascending)
                 },
-                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+                queryPaginationOptions: new QueryExecutionOptions(pageSizeHint: 10),
                 maxConcurrency: 10,
                 nonStreamingOrderBy: false,
                 continuationToken: CosmosObject.Create(new Dictionary<string, CosmosElement>()));
@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 {
                     new OrderByColumn("_ts", SortOrder.Ascending)
                 },
-                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+                queryPaginationOptions: new QueryExecutionOptions(pageSizeHint: 10),
                 maxConcurrency: 10,
                 nonStreamingOrderBy: false,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>()));
@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 {
                     new OrderByColumn("_ts", SortOrder.Ascending)
                 },
-                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+                queryPaginationOptions: new QueryExecutionOptions(pageSizeHint: 10),
                 maxConcurrency: 10,
                 nonStreamingOrderBy: false,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>() { CosmosString.Create("asdf") }));
@@ -178,7 +178,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     {
                     new OrderByColumn("item", SortOrder.Ascending)
                     },
-                    queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+                    queryPaginationOptions: new QueryExecutionOptions(pageSizeHint: 10),
                     maxConcurrency: 10,
                     nonStreamingOrderBy: false,
                     continuationToken: CosmosArray.Create(
@@ -223,7 +223,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                                new OrderByColumn("item1", SortOrder.Ascending),
                                new OrderByColumn("item2", SortOrder.Ascending)
                         },
-                        queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+                        queryPaginationOptions: new QueryExecutionOptions(pageSizeHint: 10),
                         maxConcurrency: 10,
                         nonStreamingOrderBy: false,
                         continuationToken: CosmosArray.Create(
@@ -283,7 +283,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                         {
                                new OrderByColumn("item", SortOrder.Ascending)
                         },
-                        queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+                        queryPaginationOptions: new QueryExecutionOptions(pageSizeHint: 10),
                         maxConcurrency: 10,
                         nonStreamingOrderBy: false,
                         continuationToken: CosmosArray.Create(
@@ -326,7 +326,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     {
                         new OrderByColumn("item", SortOrder.Ascending)
                     },
-                    queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+                    queryPaginationOptions: new QueryExecutionOptions(pageSizeHint: 10),
                     maxConcurrency: 10,
                     nonStreamingOrderBy: false,
                     continuationToken: CosmosArray.Create(
@@ -368,7 +368,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                             new OrderByColumn("item1", SortOrder.Ascending),
                             new OrderByColumn("item2", SortOrder.Ascending)
                         },
-                        queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+                        queryPaginationOptions: new QueryExecutionOptions(pageSizeHint: 10),
                         maxConcurrency: 10,
                         nonStreamingOrderBy: false,
                         continuationToken: CosmosArray.Create(
@@ -402,7 +402,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 c => c.MonadicQueryAsync(
                     It.Is<SqlQuerySpec>(sqlQuerySpec => expectedQuerySpec.Equals(sqlQuerySpec.QueryText) && sqlQuerySpec.ResumeFilter.ResumeValues.Count == 1),
                     It.IsAny<FeedRangeState<QueryState>>(),
-                    It.IsAny<QueryPaginationOptions>(),
+                    It.IsAny<QueryExecutionOptions>(),
                     NoOpTrace.Singleton,
                     default))
                 .ReturnsAsync(TryCatch<QueryPage>.FromResult(emptyPage));
@@ -424,7 +424,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 {
                     new OrderByColumn("c._ts", SortOrder.Ascending)
                 },
-                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 1),
+                queryPaginationOptions: new QueryExecutionOptions(pageSizeHint: 1),
                 maxConcurrency: 0,
                 nonStreamingOrderBy: false,
                 continuationToken: CosmosElement.Parse(continuationToken));
@@ -462,7 +462,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 {
                     new OrderByColumn("c._ts", SortOrder.Ascending)
                 },
-                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+                queryPaginationOptions: new QueryExecutionOptions(pageSizeHint: 10),
                 maxConcurrency: 10,
                 nonStreamingOrderBy: nonStreamingOrderBy,
                 continuationToken: null);
@@ -511,7 +511,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 {
                     new OrderByColumn("c._ts", SortOrder.Ascending)
                 },
-                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+                queryPaginationOptions: new QueryExecutionOptions(pageSizeHint: 10),
                 maxConcurrency: 10,
                 nonStreamingOrderBy: false,
                 continuationToken: null);
@@ -573,7 +573,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     {
                         new OrderByColumn("c.pk", SortOrder.Ascending)
                     },
-                    queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+                    queryPaginationOptions: new QueryExecutionOptions(pageSizeHint: 10),
                     maxConcurrency: 10,
                     nonStreamingOrderBy: nonStreamingOrderBy,
                     continuationToken: continuationToken);

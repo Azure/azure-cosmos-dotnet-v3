@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
         public async Task<TryCatch<ReadFeedPage>> MonadicReadFeedAsync(
             FeedRangeState<ReadFeedState> feedRangeState,
-            ReadFeedPaginationOptions readFeedPaginationOptions,
+            ReadFeedExecutionOptions readFeedPaginationOptions,
             ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         public async Task<TryCatch<QueryPage>> MonadicQueryAsync(
             SqlQuerySpec sqlQuerySpec,
             FeedRangeState<QueryState> feedRangeState,
-            QueryPaginationOptions queryPaginationOptions,
+            QueryExecutionOptions queryPaginationOptions,
             ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
         public async Task<TryCatch<ChangeFeedPage>> MonadicChangeFeedAsync(
             FeedRangeState<ChangeFeedState> feedRangeState, 
-            ChangeFeedPaginationOptions changeFeedPaginationOptions, 
+            ChangeFeedExecutionOptions changeFeedPaginationOptions, 
             ITrace trace,
             CancellationToken cancellationToken)
         {

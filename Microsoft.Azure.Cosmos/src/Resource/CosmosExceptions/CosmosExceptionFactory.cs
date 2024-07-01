@@ -92,16 +92,19 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
         internal static CosmosException Create(
             DocumentServiceResponse documentServiceResponse,
             Headers responseHeaders,
-            RequestMessage requestMessage)
+            Tracing.ITrace trace)
         {
             if (documentServiceResponse == null)
             {
                 throw new ArgumentNullException(nameof(documentServiceResponse));
             }
 
-            if (requestMessage == null)
+            if (trace == null)
             {
-                throw new ArgumentNullException(nameof(requestMessage));
+                // Ideally, we would throw new ArgumentNullException(nameof(trace));
+                // However, someone decided to make RequestMessage.Trace settable, so we cannot enforce this invariant.
+                // Instead, we will just use a NoOpTrace.
+                trace = NoOpTrace.Singleton;
             }
 
             if (responseHeaders == null)
@@ -116,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 message: errorMessage,
                 stackTrace: null,
                 headers: responseHeaders,
-                trace: requestMessage.Trace,
+                trace: trace,
                 error: error,
                 innerException: null);
         }

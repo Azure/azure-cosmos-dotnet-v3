@@ -129,9 +129,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
         public static CrossPartitionChangeFeedAsyncEnumerator Create(
             IDocumentContainer documentContainer,
             CrossFeedRangeState<ChangeFeedState> state,
-            ChangeFeedPaginationOptions changeFeedPaginationOptions)
+            ChangeFeedExecutionOptions changeFeedPaginationOptions)
         {
-            changeFeedPaginationOptions ??= ChangeFeedPaginationOptions.Default;
+            changeFeedPaginationOptions ??= ChangeFeedExecutionOptions.Default;
 
             if (documentContainer == null)
             {
@@ -164,7 +164,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
 
         private static CreatePartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> MakeCreateFunction(
             IChangeFeedDataSource changeFeedDataSource,
-            ChangeFeedPaginationOptions changeFeedPaginationOptions) => (FeedRangeState<ChangeFeedState> feedRangeState) => new ChangeFeedPartitionRangePageAsyncEnumerator(
+            ChangeFeedExecutionOptions changeFeedPaginationOptions) => (FeedRangeState<ChangeFeedState> feedRangeState) => new ChangeFeedPartitionRangePageAsyncEnumerator(
                 changeFeedDataSource,
                 feedRangeState,
                 changeFeedPaginationOptions);

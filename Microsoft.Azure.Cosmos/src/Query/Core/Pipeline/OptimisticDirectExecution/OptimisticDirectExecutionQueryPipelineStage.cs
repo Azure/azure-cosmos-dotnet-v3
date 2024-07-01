@@ -142,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
             FallbackQueryPipelineStageFactory fallbackQueryPipelineStageFactory,
             CancellationToken cancellationToken)
         {
-            QueryPaginationOptions paginationOptions = new QueryPaginationOptions(pageSizeHint: inputParameters.MaxItemCount, optimisticDirectExecute: true);
+            QueryExecutionOptions paginationOptions = new QueryExecutionOptions(pageSizeHint: inputParameters.MaxItemCount, optimisticDirectExecute: true);
             TryCatch<IQueryPipelineStage> pipelineStage = OptimisticDirectExecutionQueryPipelineImpl.MonadicCreate(
                 documentContainer: documentContainer,
                 sqlQuerySpec: inputParameters.SqlQuerySpec,
@@ -239,7 +239,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                 SqlQuerySpec sqlQuerySpec,
                 FeedRangeEpk targetRange,
                 Cosmos.PartitionKey? partitionKey,
-                QueryPaginationOptions queryPaginationOptions,
+                QueryExecutionOptions queryPaginationOptions,
                 ContainerQueryProperties containerQueryProperties,
                 CosmosElement continuationToken,
                 CancellationToken cancellationToken)

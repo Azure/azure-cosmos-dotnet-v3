@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public Task<TryCatch<ReadFeedPage>> MonadicReadFeedAsync(
             FeedRangeState<ReadFeedState> feedRangeState,
-            ReadFeedPaginationOptions readFeedPaginationOptions,
+            ReadFeedExecutionOptions readFeedPaginationOptions,
             ITrace trace,
             CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicReadFeedAsync(
                 feedRangeState,
@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public Task<ReadFeedPage> ReadFeedAsync(
             FeedRangeState<ReadFeedState> feedRangeState,
-            ReadFeedPaginationOptions readFeedPaginationOptions,
+            ReadFeedExecutionOptions readFeedPaginationOptions,
             ITrace trace,
             CancellationToken cancellationToken) => TryCatch<ReadFeedPage>.UnsafeGetResultAsync(
                 this.MonadicReadFeedAsync(
@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
         public Task<TryCatch<QueryPage>> MonadicQueryAsync(
             SqlQuerySpec sqlQuerySpec,
             FeedRangeState<QueryState> feedRangeState,
-            QueryPaginationOptions queryPaginationOptions,
+            QueryExecutionOptions queryPaginationOptions,
             ITrace trace,
             CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicQueryAsync(
                 sqlQuerySpec,
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
         public Task<QueryPage> QueryAsync(
             SqlQuerySpec sqlQuerySpec,
             FeedRangeState<QueryState> feedRangeState,
-            QueryPaginationOptions queryPaginationOptions,
+            QueryExecutionOptions queryPaginationOptions,
             ITrace trace,
             CancellationToken cancellationToken) => TryCatch<QueryPage>.UnsafeGetResultAsync(
                 this.MonadicQueryAsync(
@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public Task<ChangeFeedPage> ChangeFeedAsync(
             FeedRangeState<ChangeFeedState> feedRangeState,
-            ChangeFeedPaginationOptions changeFeedPaginationOptions,
+            ChangeFeedExecutionOptions changeFeedPaginationOptions,
             ITrace trace,
             CancellationToken cancellationToken) => TryCatch<ChangeFeedPage>.UnsafeGetResultAsync(
                 this.MonadicChangeFeedAsync(
@@ -194,7 +194,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public Task<TryCatch<ChangeFeedPage>> MonadicChangeFeedAsync(
             FeedRangeState<ChangeFeedState> state,
-            ChangeFeedPaginationOptions changeFeedPaginationOptions,
+            ChangeFeedExecutionOptions changeFeedPaginationOptions,
             ITrace trace,
             CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicChangeFeedAsync(
                 state,

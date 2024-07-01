@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
         public ReadFeedIteratorCore(
             IDocumentContainer documentContainer,
             string continuationToken,
-            ReadFeedPaginationOptions readFeedPaginationOptions,
+            ReadFeedExecutionOptions readFeedPaginationOptions,
             QueryRequestOptions queryRequestOptions,
             ContainerInternal container,
             CancellationToken cancellationToken)
@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
             this.container = container;
 
             this.queryRequestOptions = queryRequestOptions;
-            readFeedPaginationOptions ??= ReadFeedPaginationOptions.Default;
+            readFeedPaginationOptions ??= ReadFeedExecutionOptions.Default;
 
             if (!string.IsNullOrEmpty(continuationToken))
             {
