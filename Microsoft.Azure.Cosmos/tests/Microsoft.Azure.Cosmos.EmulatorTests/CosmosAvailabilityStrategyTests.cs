@@ -779,17 +779,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Properties = properties
             };
+           
+            httpRequest.RequestOptions = requestOptions;
+            httpRequest.ResourceType = ResourceType.Document;
+            httpRequest.OperationType = OperationType.Read;
+            httpRequest.Headers.CorrelatedActivityId = Guid.NewGuid().ToString();
+            httpRequest.PartitionKeyRangeId = new PartitionKeyRangeIdentity("0", "1");
+            httpRequest.UseGatewayMode = true;
+            httpRequest.ContainerId = "testcontainer";
+            httpRequest.DatabaseId = "testdb";
+            httpRequest.Content = Stream.Null;
+
             using (CloneableStream clonedBody = await StreamExtension.AsClonableStreamAsync(httpRequest.Content))
             {
-                httpRequest.RequestOptions = requestOptions;
-                httpRequest.ResourceType = ResourceType.Document;
-                httpRequest.OperationType = OperationType.Read;
-                httpRequest.Headers.CorrelatedActivityId = Guid.NewGuid().ToString();
-                httpRequest.PartitionKeyRangeId = new PartitionKeyRangeIdentity("0", "1");
-                httpRequest.UseGatewayMode = true;
-                httpRequest.ContainerId = "testcontainer";
-                httpRequest.DatabaseId = "testdb";
-
                 RequestMessage clone = httpRequest.Clone(httpRequest.Trace, clonedBody);
 
                 Assert.AreEqual(httpRequest.RequestOptions.Properties, clone.RequestOptions.Properties);
