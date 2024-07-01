@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Text.Json.Serialization;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure.Core;
     using global::Azure.Core.Serialization;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Diagnostics;
@@ -762,7 +763,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [TestCategory("MultiRegion")]
-        public void RequestMessageCloneTests()
+        public async Task RequestMessageCloneTests()
         {
             RequestMessage httpRequest = new RequestMessage(
                 HttpMethod.Get,
@@ -778,26 +779,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Properties = properties
             };
+            using (CloneableStream clonedBody = await StreamExtension.AsClonableStreamAsync(httpRequest.Content))
+            {
+                httpRequest.RequestOptions = requestOptions;
+                httpRequest.ResourceType = ResourceType.Document;
+                httpRequest.OperationType = OperationType.Read;
+                httpRequest.Headers.CorrelatedActivityId = Guid.NewGuid().ToString();
+                httpRequest.PartitionKeyRangeId = new PartitionKeyRangeIdentity("0", "1");
+                httpRequest.UseGatewayMode = true;
+                httpRequest.ContainerId = "testcontainer";
+                httpRequest.DatabaseId = "testdb";
 
-            httpRequest.RequestOptions = requestOptions;
-            httpRequest.ResourceType = ResourceType.Document;
-            httpRequest.OperationType = OperationType.Read;
-            httpRequest.Headers.CorrelatedActivityId = Guid.NewGuid().ToString();
-            httpRequest.PartitionKeyRangeId = new PartitionKeyRangeIdentity("0", "1");
-            httpRequest.UseGatewayMode = true;
-            httpRequest.ContainerId = "testcontainer";
-            httpRequest.DatabaseId = "testdb";
+                RequestMessage clone = httpRequest.Clone(httpRequest.Trace, clonedBody);
 
-            RequestMessage clone = httpRequest.Clone(httpRequest.Trace);
-
-            Assert.AreEqual(httpRequest.RequestOptions.Properties, clone.RequestOptions.Properties);
-            Assert.AreEqual(httpRequest.ResourceType, clone.ResourceType);
-            Assert.AreEqual(httpRequest.OperationType, clone.OperationType);
-            Assert.AreEqual(httpRequest.Headers.CorrelatedActivityId, clone.Headers.CorrelatedActivityId);
-            Assert.AreEqual(httpRequest.PartitionKeyRangeId, clone.PartitionKeyRangeId);
-            Assert.AreEqual(httpRequest.UseGatewayMode, clone.UseGatewayMode);
-            Assert.AreEqual(httpRequest.ContainerId, clone.ContainerId);
-            Assert.AreEqual(httpRequest.DatabaseId, clone.DatabaseId);
+                Assert.AreEqual(httpRequest.RequestOptions.Properties, clone.RequestOptions.Properties);
+                Assert.AreEqual(httpRequest.ResourceType, clone.ResourceType);
+                Assert.AreEqual(httpRequest.OperationType, clone.OperationType);
+                Assert.AreEqual(httpRequest.Headers.CorrelatedActivityId, clone.Headers.CorrelatedActivityId);
+                Assert.AreEqual(httpRequest.PartitionKeyRangeId, clone.PartitionKeyRangeId);
+                Assert.AreEqual(httpRequest.UseGatewayMode, clone.UseGatewayMode);
+                Assert.AreEqual(httpRequest.ContainerId, clone.ContainerId);
+                Assert.AreEqual(httpRequest.DatabaseId, clone.DatabaseId);
+            }
         }
 
         private static async Task HandleChangesAsync(
