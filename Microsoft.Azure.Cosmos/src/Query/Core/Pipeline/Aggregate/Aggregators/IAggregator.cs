@@ -22,7 +22,5 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
         /// </summary>
         /// <returns>The result of the aggregation.</returns>
         CosmosElement GetResult();
-
-        CosmosElement GetCosmosElementContinuationToken();
     }
 }
