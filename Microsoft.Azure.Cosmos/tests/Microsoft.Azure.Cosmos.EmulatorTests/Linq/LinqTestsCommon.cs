@@ -35,11 +35,16 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="queryResults"></param>
         /// <param name="dataResults"></param>
         /// <returns></returns>
-        private static bool CompareListOfAnonymousType(List<object> queryResults, List<dynamic> dataResults, bool ignoreOrderingForAnonymousTypeObject)
+        private static bool CompareListOfAnonymousType(List<object> queryResults, List<dynamic> dataResults, bool ignoreOrder)
         {
-            if (!ignoreOrderingForAnonymousTypeObject)
+            if (!ignoreOrder)
             {
                 return queryResults.SequenceEqual(dataResults);
+            }
+
+            if (queryResults.Count != dataResults.Count)
+            {
+                return false;
             }
 
             bool resultMatched = true;
