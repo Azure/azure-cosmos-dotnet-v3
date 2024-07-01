@@ -54,8 +54,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
                 ContainerQueryProperties containerQueryProperties = new ContainerQueryProperties(
                     containerResponse.Resource.ResourceId,
-                    null,
+                    effectivePartitionKeyRanges: null,
                     containerResponse.Resource.PartitionKey,
+                    vectorEmbeddingPolicy: null,
                     containerResponse.Resource.GeospatialConfig.GeospatialType);
 
                 IReadOnlyList<FeedRange> feedTokens = await container.GetFeedRangesAsync();

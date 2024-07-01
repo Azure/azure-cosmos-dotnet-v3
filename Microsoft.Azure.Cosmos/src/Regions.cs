@@ -389,5 +389,10 @@ namespace Microsoft.Azure.Cosmos
         /// Name of the Azure Taiwan Northwest region in the Azure Cosmos DB service.
         /// </summary>
         public const string TaiwanNorthwest = "Taiwan Northwest";
+
+        /// <summary>
+        /// Name of the Azure New Zealand North region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string NewZealandNorth = "New Zealand North";
     }
 }

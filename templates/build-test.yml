@@ -19,7 +19,7 @@ jobs:
 - job:
   displayName: Tests Debug
   pool:
-    vmImage: ${{ parameters.VmImage }}
+    name: 'OneES'
 
   steps:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
@@ -57,7 +57,7 @@ jobs:
   displayName: PerformanceTests ${{ parameters.BuildConfiguration }}
   condition: and(succeeded(), eq(${{ parameters.IncludePerformance }}, true))
   pool:
-    vmImage: ${{ parameters.VmImage }}
+    name: 'OneES'
 
   steps:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
@@ -93,7 +93,7 @@ jobs:
   timeoutInMinutes: 120
   condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
   pool:
-    vmImage: ${{ parameters.VmImage }}
+    name: 'OneES'
 
   steps:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
@@ -118,13 +118,15 @@ jobs:
       nugetConfigPath: NuGet.config
       publishTestResults: true
       testRunTitle: Microsoft.Azure.Cosmos.EmulatorTests
+    env: 
+      AZURE_COSMOS_NON_STREAMING_ORDER_BY_FLAG_DISABLED: true
 
 - job:
   displayName: EmulatorTests ${{ parameters.BuildConfiguration }} - ${{ parameters.EmulatorPipeline2CategoryListName }}
   timeoutInMinutes: 120
   condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
   pool:
-    vmImage: ${{ parameters.VmImage }}
+    name: 'OneES'
 
   steps:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
@@ -149,13 +151,15 @@ jobs:
       nugetConfigPath: NuGet.config
       publishTestResults: true
       testRunTitle: Microsoft.Azure.Cosmos.EmulatorTests
+    env: 
+      AZURE_COSMOS_NON_STREAMING_ORDER_BY_FLAG_DISABLED: true
 
 - job:
   displayName: Encryption EmulatorTests ${{ parameters.BuildConfiguration }}
   timeoutInMinutes: 90
   condition: and(eq(${{ parameters.IncludeEncryption }}, true), and(succeeded(), eq('${{ parameters.OS }}', 'Windows')))
   pool:
-    vmImage: ${{ parameters.VmImage }}
+    name: 'OneES'
 
   steps:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
@@ -180,13 +184,15 @@ jobs:
       nugetConfigPath: NuGet.config
       publishTestResults: true
       testRunTitle: Microsoft.Azure.Cosmos.Encryption.EmulatorTests
+    env: 
+      AZURE_COSMOS_NON_STREAMING_ORDER_BY_FLAG_DISABLED: true
 
 - job:
   displayName: Encryption.Custom EmulatorTests ${{ parameters.BuildConfiguration }}
   timeoutInMinutes: 90
   condition: and(eq(${{ parameters.IncludeEncryption }}, true), and(succeeded(), eq('${{ parameters.OS }}', 'Windows')))
   pool:
-    vmImage: ${{ parameters.VmImage }}
+    name: 'OneES'
 
   steps:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
@@ -211,13 +217,15 @@ jobs:
       nugetConfigPath: NuGet.config
       publishTestResults: true
       testRunTitle: Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
+    env: 
+      AZURE_COSMOS_NON_STREAMING_ORDER_BY_FLAG_DISABLED: true
 
 - job:
   displayName: EmulatorTests ${{ parameters.BuildConfiguration }} - ${{ parameters.EmulatorPipeline3CategoryListName }}
   timeoutInMinutes: 120
   condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
   pool:
-    vmImage: ${{ parameters.VmImage }}
+    name: 'OneES'
 
   steps:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
@@ -242,3 +250,4 @@ jobs:
       testRunTitle: Microsoft.Azure.Cosmos.EmulatorTests
     env: 
       COSMOSDB_MULTI_REGION: ${{ parameters.MultiRegionConnectionString }}
+      AZURE_COSMOS_NON_STREAMING_ORDER_BY_FLAG_DISABLED: true
