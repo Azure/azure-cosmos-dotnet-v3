@@ -847,7 +847,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 {
                     request.RequestContext.ExcludeRegions = excludeRegions;
 
-                    ReadOnlyCollection<Uri> applicableEndpoints = endpointManager.GetApplicableEndpoints(request, isReadRequest); 
+                    ReadOnlyCollection<Uri> applicableEndpoints = this.cache.GetApplicableEndpoints(request, isReadRequest); 
                     
                     Uri endpoint = endpointManager.ResolveServiceEndpoint(request);
                     ReadOnlyCollection<Uri> applicableRegions = this.GetApplicableRegions(isReadRequest, useMultipleWriteLocations, usesPreferredLocations, excludeRegions);

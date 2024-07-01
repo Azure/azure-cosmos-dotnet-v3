@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.Globalization;
     using System.IO;
+    using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Threading;
@@ -62,6 +63,28 @@ namespace Microsoft.Azure.Cosmos
             this.Method = method;
             this.RequestUriString = requestUriString;
             this.Trace = trace ?? throw new ArgumentNullException(nameof(trace));
+        }
+
+        /// <summary>
+        /// Create a <see cref="RequestMessage"/>, used for Clone() method. 
+        /// </summary>
+        /// <param name="method">The http method</param>
+        /// <param name="requestUriString">The requested URI</param>
+        /// <param name="trace">The trace node to append traces to.</param>
+        /// <param name="headers">The headers to use.</param>
+        /// <param name="properties">The properties to use.</param>
+        private RequestMessage(
+            HttpMethod method,
+            string requestUriString,
+            ITrace trace,
+            Headers headers,
+            Dictionary<string, object> properties)
+        {
+            this.Method = method;
+            this.RequestUriString = requestUriString;
+            this.Trace = trace ?? throw new ArgumentNullException(nameof(trace));
+            this.headers = new Lazy<Headers>(() => headers);
+            this.properties = new Lazy<Dictionary<string, object>>(() => properties);
         }
 
         /// <summary>
@@ -139,6 +162,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal string ContainerId { get; set; }
         internal string DatabaseId { get; set; }
+        internal Uri LocationEndpointToRoute { get; set; }
 
         /// <summary>
         /// Request properties Per request context available to handlers. 
@@ -277,6 +301,11 @@ namespace Microsoft.Azure.Cosmos
                 this.DocumentServiceRequest = serviceRequest;
             }
 
+            if (this.LocationEndpointToRoute != null)
+            {
+                this.DocumentServiceRequest.RequestContext.RouteToLocation(this.LocationEndpointToRoute);
+            }
+
             // Routing to a particular PartitionKeyRangeId
             if (this.PartitionKeyRangeId != null)
             {
@@ -286,6 +315,54 @@ namespace Microsoft.Azure.Cosmos
             this.DocumentServiceRequest.RequestContext.ExcludeRegions = this.RequestOptions?.ExcludeRegions;
             this.OnBeforeRequestHandler(this.DocumentServiceRequest);
             return this.DocumentServiceRequest;
+        }
+
+        /// <summary>
+        /// Clone the request message
+        /// </summary>
+        /// <returns>a cloned copy of the RequestMessage</returns>
+        internal RequestMessage Clone(ITrace newTrace, CloneableStream cloneContent)
+        {
+            RequestMessage clone = new RequestMessage(
+                this.Method,
+                this.RequestUriString,
+                newTrace,
+                this.Headers.Clone(),
+                this.Properties.ToDictionary(entry => entry.Key, entry => entry.Value));
+
+            if (this.Content != null)
+            {
+                clone.Content = cloneContent.Clone();
+            }
+
+            if (this.RequestOptions != null)
+            {
+                clone.RequestOptions = this.RequestOptions.ShallowCopy();
+            }
+
+            clone.ResourceType = this.ResourceType;
+
+            clone.OperationType = this.OperationType;
+
+            if (this.PartitionKeyRangeId != null)
+            {
+                clone.PartitionKeyRangeId = string.IsNullOrEmpty(this.PartitionKeyRangeId.CollectionRid)
+                    ? new PartitionKeyRangeIdentity(this.PartitionKeyRangeId.PartitionKeyRangeId)
+                    : new PartitionKeyRangeIdentity(this.PartitionKeyRangeId.CollectionRid, this.PartitionKeyRangeId.PartitionKeyRangeId);
+            }
+
+            clone.UseGatewayMode = this.UseGatewayMode;
+            clone.ContainerId = this.ContainerId;
+            clone.DatabaseId = this.DatabaseId;
+            clone.LocationEndpointToRoute = this.LocationEndpointToRoute;
+
+            return clone;
+        }
+
+        internal void RouteToLocation(Uri location)
+        {
+            this.LocationEndpointToRoute = location;
+            this.DocumentServiceRequest?.RequestContext.RouteToLocation(location);
         }
 
         private static Dictionary<string, object> CreateDictionary()

@@ -651,6 +651,10 @@ namespace Microsoft.Azure.Cosmos
                 this.httpClientFactory = value;
             }
         }
+        /// <summary>
+        /// Availability Strategy to be used for periods of high latency
+        /// </summary>
+        internal AvailabilityStrategy AvailabilityStrategy { get; set; }
 
         /// <summary>
         /// Enable partition key level failover

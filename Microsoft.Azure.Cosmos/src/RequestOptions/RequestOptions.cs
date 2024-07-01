@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using Microsoft.Azure.Documents;
-    using Telemetry;
 
     /// <summary>
     /// The default cosmos request options
@@ -70,6 +69,14 @@ namespace Microsoft.Azure.Cosmos
         /// If all regions are excluded, then the request will be routed to the primary/hub region.
         /// </summary>
         public List<string> ExcludeRegions { get; set; }
+
+        /// <summary>
+        /// Cosmos availability strategy.
+        /// Availability strategy allows the SDK to send out additional cross region requests to help 
+        /// reduce latency and increase availability. Currently there is one type of availability strategy, parallel request hedging.
+        /// If there is a globally enabled availability strategy, setting one in the request options will override the global one.
+        /// </summary>
+        internal AvailabilityStrategy AvailabilityStrategy { get; set; }
 
         /// <summary>
         /// Gets or sets the boolean to use effective partition key routing in the cosmos db request.
