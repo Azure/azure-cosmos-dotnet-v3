@@ -862,7 +862,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 PartitionKey? partitionKey,
                 IReadOnlyDictionary<string, object> properties,
                 PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
-                ExecutionEnvironment executionEnvironment,
                 bool returnResultsInDeterministicOrder,
                 bool enableOptimisticDirectExecution,
                 bool isNonStreamingOrderByQueryFeatureDisabled,
@@ -878,7 +877,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 this.PartitionKey = partitionKey;
                 this.Properties = properties;
                 this.PartitionedQueryExecutionInfo = partitionedQueryExecutionInfo;
-                this.ExecutionEnvironment = executionEnvironment;
                 this.ReturnResultsInDeterministicOrder = returnResultsInDeterministicOrder;
                 this.EnableOptimisticDirectExecution = enableOptimisticDirectExecution;
                 this.IsNonStreamingOrderByQueryFeatureDisabled = isNonStreamingOrderByQueryFeatureDisabled;
@@ -935,7 +933,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     partitionKey: partitionKey,
                     properties: properties,
                     partitionedQueryExecutionInfo: partitionedQueryExecutionInfo,
-                    executionEnvironment: executionEnvironment.GetValueOrDefault(InputParameters.DefaultExecutionEnvironment),
                     returnResultsInDeterministicOrder: returnResultsInDeterministicOrder.GetValueOrDefault(InputParameters.DefaultReturnResultsInDeterministicOrder),
                     enableOptimisticDirectExecution: enableOptimisticDirectExecution,
                     isNonStreamingOrderByQueryFeatureDisabled: isNonStreamingOrderByQueryFeatureDisabled,
