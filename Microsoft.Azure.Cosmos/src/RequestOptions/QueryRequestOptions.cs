@@ -191,6 +191,9 @@ namespace Microsoft.Azure.Cosmos
 
         internal bool IsNonStreamingOrderByQueryFeatureDisabled { get; set; } = ConfigurationManager.IsNonStreamingOrderByQueryFeatureDisabled(defaultValue: false);
 
+        // This is a temporary flag to enable the distributed query gateway mode.
+        // This flag will be removed once we have a way for the client to determine
+        // that we are talking to a distributed query gateway.
         internal bool EnableDistributedQueryGatewayMode { get; set; } = ConfigurationManager.IsDistributedQueryGatewayModeEnabled(defaultValue: false);
 
         /// <summary>

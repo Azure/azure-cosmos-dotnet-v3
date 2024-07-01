@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
@@ -20,23 +19,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
     {
         private readonly CosmosClientContext cosmosClientContext;
 
-        private readonly string resourceLink;
+        private readonly string containerLink;
 
         private readonly Guid correlatedActivityId;
 
-        private readonly IDocumentClientRetryPolicy retryPolicy;
-
         private DocumentClient DocumentClient => this.cosmosClientContext.DocumentClient;
+
+        private IDocumentClientRetryPolicy RetryPolicy => this.cosmosClientContext.DocumentClient.ResetSessionTokenRetryPolicy.GetRequestPolicy();
 
         public CosmosDistributedQueryClient(
             CosmosClientContext cosmosClientContext,
-            string resourceLink,
+            string containerLink,
             Guid correlatedActivityId)
         {
             this.cosmosClientContext = cosmosClientContext ?? throw new ArgumentNullException(nameof(cosmosClientContext));
-            this.resourceLink = resourceLink ?? throw new ArgumentNullException(nameof(resourceLink));
+            this.containerLink = containerLink ?? throw new ArgumentNullException(nameof(containerLink));
             this.correlatedActivityId = correlatedActivityId;
-            this.retryPolicy = this.cosmosClientContext.DocumentClient.ResetSessionTokenRetryPolicy.GetRequestPolicy();
         }
 
         public async Task<TryCatch<QueryPage>> MonadicQueryAsync(
@@ -67,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
 
                 DocumentServiceResponse response = await this.DocumentClient.ExecuteQueryAsync(
                     request,
-                    this.retryPolicy,
+                    this.RetryPolicy,
                     cancellationToken);
 
                 return CreatePage(response, trace);
@@ -106,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             DocumentServiceRequest request = new DocumentServiceRequest(
                 operationType: OperationType.Query,
                 resourceType: ResourceType.Document,
-                path: this.resourceLink,
+                path: this.containerLink,
                 body: serializedQuerySpec,
                 authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey,
                 headers: headers.INameValueCollection)
