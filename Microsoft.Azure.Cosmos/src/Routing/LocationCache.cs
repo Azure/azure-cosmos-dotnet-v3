@@ -357,7 +357,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             IEnumerable<string> excludeRegions)
         {
             List<Uri> applicableEndpoints = new List<Uri>(regionNameByEndpoint.Count);
-            HashSet<string> excludeRegionsHash = new HashSet<string>(excludeRegions);
+            HashSet<string> excludeRegionsHash = excludeRegions == null ? null : new HashSet<string>(excludeRegions);
 
             if (excludeRegions != null)
             {
@@ -365,6 +365,16 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                     if (!excludeRegionsHash.Contains(region)
                         && regionNameByEndpoint.TryGetValue(region, out Uri endpoint))
+                    {
+                        applicableEndpoints.Add(endpoint);
+                    }
+                }
+            }
+            else
+            {
+                foreach (string region in this.locationInfo.PreferredLocations)
+                {
+                    if (regionNameByEndpoint.TryGetValue(region, out Uri endpoint))
                     {
                         applicableEndpoints.Add(endpoint);
                     }
@@ -392,14 +402,24 @@ namespace Microsoft.Azure.Cosmos.Routing
             IEnumerable<string> excludeRegions)
         {
             List<string> applicableRegions = new List<string>(regionNameByEndpoint.Count);
-            HashSet<string> excludeRegionsHash = new HashSet<string>(excludeRegions);
+            HashSet<string> excludeRegionsHash = excludeRegions == null ? null : new HashSet<string>(excludeRegions);
 
             if (excludeRegions != null)
             {
                 foreach (string region in this.locationInfo.PreferredLocations)
                 {
-                    if (!excludeRegionsHash.Contains(region)
-                        && regionNameByEndpoint.Contains(region))
+                    if (regionNameByEndpoint.Contains(region)
+                        && !excludeRegionsHash.Contains(region))
+                    {
+                        applicableRegions.Add(region);
+                    }
+                }
+            }
+            else
+            {
+                foreach (string region in this.locationInfo.PreferredLocations)
+                {
+                    if (regionNameByEndpoint.Contains(region))
                     {
                         applicableRegions.Add(region);
                     }
