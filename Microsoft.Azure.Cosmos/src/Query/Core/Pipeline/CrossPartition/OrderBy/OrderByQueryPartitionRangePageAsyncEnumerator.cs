@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             SqlQuerySpec sqlQuerySpec,
             FeedRangeState<QueryState> feedRangeState,
             PartitionKey? partitionKey,
-            QueryPaginationOptions queryPaginationOptions,
+            QueryExecutionOptions queryPaginationOptions,
             string filter,
             PrefetchPolicy prefetchPolicy)
         {
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
         public SqlQuerySpec SqlQuerySpec => this.innerEnumerator.SqlQuerySpec;
 
-        public QueryPaginationOptions QueryPaginationOptions => this.innerEnumerator.QueryPaginationOptions;
+        public QueryExecutionOptions QueryPaginationOptions => this.innerEnumerator.QueryPaginationOptions;
 
         public string Filter => this.innerEnumerator.Filter;
 
@@ -112,14 +112,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 SqlQuerySpec sqlQuerySpec,
                 FeedRangeState<QueryState> feedRangeState,
                 PartitionKey? partitionKey,
-                QueryPaginationOptions queryPaginationOptions,
+                QueryExecutionOptions queryPaginationOptions,
                 string filter)
                 : base(feedRangeState)
             {
                 this.queryDataSource = queryDataSource ?? throw new ArgumentNullException(nameof(queryDataSource));
                 this.SqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
                 this.PartitionKey = partitionKey;
-                this.QueryPaginationOptions = queryPaginationOptions ?? QueryPaginationOptions.Default;
+                this.QueryPaginationOptions = queryPaginationOptions ?? QueryExecutionOptions.Default;
                 this.Filter = filter;
             }
 
@@ -127,13 +127,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             public PartitionKey? PartitionKey { get; }
 
-            public QueryPaginationOptions QueryPaginationOptions { get; }
+            public QueryExecutionOptions QueryPaginationOptions { get; }
 
             public string Filter { get; }
 
             public InnerEnumerator CloneWithMaxPageSize()
             {
-                QueryPaginationOptions options = new QueryPaginationOptions(
+                QueryExecutionOptions options = new QueryExecutionOptions(
                     pageSizeHint: int.MaxValue,
                     optimisticDirectExecute: this.QueryPaginationOptions.OptimisticDirectExecute,
                     additionalHeaders: this.QueryPaginationOptions.AdditionalHeaders);
