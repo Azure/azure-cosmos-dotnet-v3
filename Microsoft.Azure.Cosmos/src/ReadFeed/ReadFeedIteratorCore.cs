@@ -350,10 +350,5 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                 Content = page.Content,
             };
         }
-
-        public override CosmosElement GetCosmosElementContinuationToken()
-        {
-            throw new NotSupportedException();
-        }
     }
 }

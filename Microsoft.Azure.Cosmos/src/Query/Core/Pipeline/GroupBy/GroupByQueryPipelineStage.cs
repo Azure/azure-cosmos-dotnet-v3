@@ -62,33 +62,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
         }
 
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
-            ExecutionEnvironment executionEnvironment,
             CosmosElement continuationToken,
             MonadicCreatePipelineStage monadicCreatePipelineStage,
             IReadOnlyList<AggregateOperator> aggregates,
             IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
             IReadOnlyList<string> orderedAliases,
             bool hasSelectValue,
-            int pageSize) => executionEnvironment switch
-            {
-                ExecutionEnvironment.Client => ClientGroupByQueryPipelineStage.MonadicCreate(
-                    continuationToken,
-                    monadicCreatePipelineStage,
-                    aggregates,
-                    groupByAliasToAggregateType,
-                    orderedAliases,
-                    hasSelectValue,
-                    pageSize),
-                ExecutionEnvironment.Compute => ComputeGroupByQueryPipelineStage.MonadicCreate(
-                    continuationToken,
-                    monadicCreatePipelineStage,
-                    aggregates,
-                    groupByAliasToAggregateType,
-                    orderedAliases,
-                    hasSelectValue,
-                    pageSize),
-                _ => throw new ArgumentException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}"),
-            };
+            int pageSize)
+        {
+            return ClientGroupByQueryPipelineStage.MonadicCreate(
+                continuationToken,
+                monadicCreatePipelineStage,
+                aggregates,
+                groupByAliasToAggregateType,
+                orderedAliases,
+                hasSelectValue,
+                pageSize);
+        }
 
         protected void AggregateGroupings(IReadOnlyList<CosmosElement> cosmosElements)
         {

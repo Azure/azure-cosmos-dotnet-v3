@@ -131,11 +131,6 @@ namespace Microsoft.Azure.Cosmos
             return responseMessage;
         }
 
-        public override CosmosElement GetCosmosElementContinuationToken()
-        {
-            throw new NotImplementedException();
-        }
-
         private static async Task RewriteStreamAsTextAsync(ResponseMessage responseMessage, QueryRequestOptions requestOptions, ITrace trace)
         {
             using (ITrace rewriteTrace = trace.StartChild("Rewrite Stream as Text", TraceComponent.Json, TraceLevel.Info))
@@ -220,11 +215,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override bool HasMoreResults => this.feedIterator.HasMoreResults;
-
-        public override CosmosElement GetCosmosElementContinuationToken()
-        {
-            return this.feedIterator.GetCosmosElementContinuationToken();
-        }
 
         /// <summary>
         /// Get the next set of results from the cosmos service
