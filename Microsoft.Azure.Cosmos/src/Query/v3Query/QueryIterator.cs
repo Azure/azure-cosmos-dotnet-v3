@@ -86,9 +86,15 @@ namespace Microsoft.Azure.Cosmos.Query
                 useSystemPrefix: QueryIterator.IsSystemPrefixExpected(queryRequestOptions),
                 correlatedActivityId: correlatedActivityId);
 
+            ICosmosDistributedQueryClient distributedQueryClient = new CosmosDistributedQueryClient(
+                clientContext,
+                resourceLink,
+                correlatedActivityId);
+
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 containerCore,
                 client,
+                distributedQueryClient,
                 correlatedActivityId,
                 queryRequestOptions,
                 resourceType: resourceType);
@@ -120,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 requestContinuationToken = null;
             }
 
-            CosmosQueryExecutionContextFactory.InputParameters inputParameters = new CosmosQueryExecutionContextFactory.InputParameters(
+            CosmosQueryExecutionContextFactory.InputParameters inputParameters = CosmosQueryExecutionContextFactory.InputParameters.Create(
                 sqlQuerySpec: sqlQuerySpec,
                 initialUserContinuationToken: requestContinuationToken,
                 initialFeedRange: feedRangeInternal,
@@ -133,6 +139,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 returnResultsInDeterministicOrder: queryRequestOptions.ReturnResultsInDeterministicOrder,
                 enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
                 isNonStreamingOrderByQueryFeatureDisabled: queryRequestOptions.IsNonStreamingOrderByQueryFeatureDisabled,
+                enableDistributedQueryGatewayMode: queryRequestOptions.EnableDistributedQueryGatewayMode,
                 testInjections: queryRequestOptions.TestSettings);
 
             return new QueryIterator(

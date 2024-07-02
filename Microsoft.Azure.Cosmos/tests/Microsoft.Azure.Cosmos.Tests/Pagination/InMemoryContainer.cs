@@ -339,13 +339,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
         public Task<TryCatch<ReadFeedPage>> MonadicReadFeedAsync(
             FeedRangeState<ReadFeedState> feedRangeState,
-            ReadFeedPaginationOptions readFeedPaginationOptions,
+            ReadFeedExecutionOptions readFeedPaginationOptions,
             ITrace trace,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            readFeedPaginationOptions ??= ReadFeedPaginationOptions.Default;
+            readFeedPaginationOptions ??= ReadFeedExecutionOptions.Default;
 
             using (ITrace readFeed = trace.StartChild("Read Feed Transport", TraceComponent.Transport, TraceLevel.Info))
             {
@@ -470,7 +470,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         public virtual Task<TryCatch<QueryPage>> MonadicQueryAsync(
             SqlQuerySpec sqlQuerySpec,
             FeedRangeState<QueryState> feedRangeState,
-            QueryPaginationOptions queryPaginationOptions,
+            QueryExecutionOptions queryPaginationOptions,
             ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -663,7 +663,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     continuationSkipCount = 0;
                 }
 
-                queryPageResults = queryPageResults.Take((queryPaginationOptions ?? QueryPaginationOptions.Default).PageSizeLimit.GetValueOrDefault(int.MaxValue));
+                queryPageResults = queryPageResults.Take((queryPaginationOptions ?? QueryExecutionOptions.Default).PageSizeLimit.GetValueOrDefault(int.MaxValue));
                 List<CosmosElement> queryPageResultList = queryPageResults.ToList();
                 QueryState queryState;
                 if (queryPageResultList.LastOrDefault() is CosmosObject lastDocument
@@ -741,7 +741,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
         public Task<TryCatch<ChangeFeedPage>> MonadicChangeFeedAsync(
             FeedRangeState<ChangeFeedState> feedRangeState,
-            ChangeFeedPaginationOptions changeFeedPaginationOptions,
+            ChangeFeedExecutionOptions changeFeedPaginationOptions,
             ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -778,7 +778,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 List<Change> filteredChanges = changes
                     .Where(change => IsRecordWithinFeedRange(change.Record, feedRangeState.FeedRange, this.partitionKeyDefinition))
                     .Where(change => feedRangeState.State.Accept(ChangeFeedPredicate.Singleton, change))
-                    .Take((changeFeedPaginationOptions ?? ChangeFeedPaginationOptions.Default).PageSizeLimit.GetValueOrDefault(int.MaxValue))
+                    .Take((changeFeedPaginationOptions ?? ChangeFeedExecutionOptions.Default).PageSizeLimit.GetValueOrDefault(int.MaxValue))
                     .ToList();
 
                 if (filteredChanges.Count == 0)
