@@ -215,7 +215,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// </summary>
         /// <param name="queryResultsList"></param>
         /// <param name="dataResultsList"></param>
-        private static void ValidateResults(List<object> queryResultsList, List<dynamic> dataResultsList, bool ignoreOrderingForAnonymousTypeObject)
+        private static void ValidateResults(List<object> queryResultsList, List<dynamic> dataResultsList, bool ignoreOrder)
         {
             bool resultMatched = true;
             string actualStr = null;
@@ -233,7 +233,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 }
                 else if (LinqTestsCommon.IsAnonymousType(firstElem.GetType()))
                 {
-                    resultMatched &= CompareListOfAnonymousType(queryResultsList, dataResultsList, ignoreOrderingForAnonymousTypeObject);
+                    resultMatched &= CompareListOfAnonymousType(queryResultsList, dataResultsList, ignoreOrder);
                 }
                 else if (LinqTestsCommon.IsNumber(firstElem))
                 {
