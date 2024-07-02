@@ -57,4 +57,62 @@
 {"id":"2","value2":"97"}]]></Documents>
     </Output>
   </Result>
+  <Result>
+    <Input>
+      <Description>SELECT ORDER BY with ODE</Description>
+      <Query><![CDATA[SELECT c.id, c.value2, c.intVal FROM c ORDER BY c.intVal]]></Query>
+      <ODE>True</ODE>
+    </Input>
+    <Output>
+      <Documents><![CDATA[{"id":"2","value2":"97","intVal":-47},
+{"id":"2","value2":"92","intVal":-42},
+{"id":"2","value2":"87","intVal":-37},
+{"id":"2","value2":"82","intVal":-32},
+{"id":"2","value2":"77","intVal":-27},
+{"id":"2","value2":"72","intVal":-22},
+{"id":"2","value2":"67","intVal":-17},
+{"id":"2","value2":"62","intVal":-12},
+{"id":"2","value2":"57","intVal":-7},
+{"id":"2","value2":"52","intVal":-2},
+{"id":"2","value2":"47","intVal":3},
+{"id":"2","value2":"42","intVal":8},
+{"id":"2","value2":"37","intVal":13},
+{"id":"2","value2":"32","intVal":18},
+{"id":"2","value2":"27","intVal":23},
+{"id":"2","value2":"22","intVal":28},
+{"id":"2","value2":"17","intVal":33},
+{"id":"2","value2":"12","intVal":38},
+{"id":"2","value2":"7","intVal":43},
+{"id":"2","value2":"2","intVal":48}]]></Documents>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SELECT ORDER BY without ODE</Description>
+      <Query><![CDATA[SELECT c.id, c.value2, c.intVal FROM c ORDER BY c.intVal]]></Query>
+      <ODE>False</ODE>
+    </Input>
+    <Output>
+      <Documents><![CDATA[{"id":"2","value2":"97","intVal":-47},
+{"id":"2","value2":"92","intVal":-42},
+{"id":"2","value2":"87","intVal":-37},
+{"id":"2","value2":"82","intVal":-32},
+{"id":"2","value2":"77","intVal":-27},
+{"id":"2","value2":"72","intVal":-22},
+{"id":"2","value2":"67","intVal":-17},
+{"id":"2","value2":"62","intVal":-12},
+{"id":"2","value2":"57","intVal":-7},
+{"id":"2","value2":"52","intVal":-2},
+{"id":"2","value2":"47","intVal":3},
+{"id":"2","value2":"42","intVal":8},
+{"id":"2","value2":"37","intVal":13},
+{"id":"2","value2":"32","intVal":18},
+{"id":"2","value2":"27","intVal":23},
+{"id":"2","value2":"22","intVal":28},
+{"id":"2","value2":"17","intVal":33},
+{"id":"2","value2":"12","intVal":38},
+{"id":"2","value2":"7","intVal":43},
+{"id":"2","value2":"2","intVal":48}]]></Documents>
+    </Output>
+  </Result>
 </Results>

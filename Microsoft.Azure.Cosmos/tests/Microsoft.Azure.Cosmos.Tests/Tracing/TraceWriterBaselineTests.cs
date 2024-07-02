@@ -749,7 +749,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
         private static IQueryPipelineStage CreatePipeline(IDocumentContainer documentContainer, string query, int pageSize = 10, CosmosElement state = null)
         {
             TryCatch<IQueryPipelineStage> tryCreatePipeline = PipelineFactory.MonadicCreate(
-                ExecutionEnvironment.Compute,
                 documentContainer,
                 new SqlQuerySpec(query),
                 new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
@@ -770,6 +769,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             TryCatch<PartitionedQueryExecutionInfoInternal> info = QueryPartitionProviderTestInstance.Object.TryGetPartitionedQueryExecutionInfoInternal(
                 Newtonsoft.Json.JsonConvert.SerializeObject(new SqlQuerySpec(query)),
                 partitionKeyDefinition,
+                vectorEmbeddingPolicy: null,
                 requireFormattableOrderByQuery: true,
                 isContinuationExpected: false,
                 allowNonValueAggregateQuery: true,

@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             {
                 return false;
             }
-            else if (Random.Shared.NextDouble() > this.result.GetApplicationPercentage())
+            else if (Random.Shared.NextDouble() > this.result.GetInjectionRate())
             {
                 return false;
             }

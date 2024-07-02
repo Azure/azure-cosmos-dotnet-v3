@@ -23,7 +23,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             Mock<IDocumentContainer> mockDocumentContainer = new Mock<IDocumentContainer>();
 
             TryCatch<IQueryPipelineStage> monadicCreatePipeline = PipelineFactory.MonadicCreate(
-                ExecutionEnvironment.Compute,
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                 targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },

@@ -30,7 +30,6 @@
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
@@ -143,7 +142,7 @@
                         clientDisableOde: clientForceDisableODEFromBackend);
                     Assert.Fail("Expected exception. Received none.");
                 }
-                catch(InvalidOperationException ex)
+                catch (InvalidOperationException ex)
                 {
                     Assert.IsTrue(ex.ToString().Contains("Execution of this query cannot resume using Optimistic Direct Execution continuation token due to partition split. Please restart the query without the continuation token."));
                 }
@@ -605,7 +604,7 @@
         {
             string textPath = "../../../Query/DistributionPlans/Text";
             string[] filePaths = Directory.GetFiles(textPath);
-            
+
             foreach (string filePath in filePaths)
             {
                 string testResponse = File.ReadAllText(filePath);
@@ -821,6 +820,7 @@
             TryCatch<PartitionedQueryExecutionInfo> tryGetQueryPlan = queryPartitionProvider.TryGetPartitionedQueryExecutionInfo(
                 querySpecJsonString: querySpecJsonString,
                 partitionKeyDefinition: pkDefinition,
+                vectorEmbeddingPolicy: null,
                 requireFormattableOrderByQuery: true,
                 isContinuationExpected: true,
                 allowNonValueAggregateQuery: true,
@@ -828,7 +828,7 @@
                 allowDCount: true,
                 useSystemPrefix: false,
                 geospatialType: Cosmos.GeospatialType.Geography);
-            
+
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = tryGetQueryPlan.Succeeded ? tryGetQueryPlan.Result : throw tryGetQueryPlan.Exception;
             return Tuple.Create(partitionedQueryExecutionInfo, queryPartitionProvider);
         }
@@ -1019,14 +1019,13 @@
                 partitionKey: input.PartitionKeyValue,
                 properties: new Dictionary<string, object>() { { "x-ms-query-partitionkey-definition", input.PartitionKeyDefinition } },
                 partitionedQueryExecutionInfo: null,
-                executionEnvironment: null,
                 returnResultsInDeterministicOrder: null,
                 enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
                 isNonStreamingOrderByQueryFeatureDisabled: false,
                 testInjections: queryRequestOptions.TestSettings);
 
-            List<PartitionKeyRange> targetPkRanges = new ();
-            foreach(FeedRangeEpk feedRangeEpk in containerRanges)
+            List<PartitionKeyRange> targetPkRanges = new();
+            foreach (FeedRangeEpk feedRangeEpk in containerRanges)
             {
                 targetPkRanges.Add(new PartitionKeyRange
                 {
@@ -1266,7 +1265,7 @@
         private readonly IReadOnlyList<PartitionKeyRange> targetPartitionKeyRanges;
 
         public TestCosmosQueryClient(QueryPartitionProvider queryPartitionProvider, IEnumerable<PartitionKeyRange> targetPartitionKeyRanges)
-        { 
+        {
             this.queryPartitionProvider = queryPartitionProvider;
             this.targetPartitionKeyRanges = targetPartitionKeyRanges.ToList();
         }
@@ -1303,7 +1302,7 @@
             return Task.FromResult(new ContainerQueryProperties(
                  "test",
                  new List<Range<string>>
-                 { 
+                 {
                      new Range<string>(
                          PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
                          PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
@@ -1311,6 +1310,7 @@
                          true)
                  },
                  new PartitionKeyDefinition(),
+                 vectorEmbeddingPolicy: null,
                  Cosmos.GeospatialType.Geometry));
         }
 
@@ -1334,12 +1334,24 @@
             throw new NotImplementedException();
         }
 
-        public override Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(SqlQuerySpec sqlQuerySpec, ResourceType resourceType, PartitionKeyDefinition partitionKeyDefinition, bool requireFormattableOrderByQuery, bool isContinuationExpected, bool allowNonValueAggregateQuery, bool hasLogicalPartitionKey, bool allowDCount, bool useSystemPrefix, Cosmos.GeospatialType geospatialType, CancellationToken cancellationToken)
+        public override Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(
+            SqlQuerySpec sqlQuerySpec,
+            ResourceType resourceType,
+            PartitionKeyDefinition partitionKeyDefinition,
+            Cosmos.VectorEmbeddingPolicy vectorEmbeddingPolicy,
+            bool requireFormattableOrderByQuery,
+            bool isContinuationExpected,
+            bool allowNonValueAggregateQuery,
+            bool hasLogicalPartitionKey,
+            bool allowDCount,
+            bool useSystemPrefix,
+            Cosmos.GeospatialType geospatialType,
+            CancellationToken cancellationToken)
         {
             CosmosSerializerCore serializerCore = new CosmosSerializerCore();
             using StreamReader streamReader = new StreamReader(serializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, Documents.ResourceType.Document));
             string sqlQuerySpecJsonString = streamReader.ReadToEnd();
-            
+
             (PartitionedQueryExecutionInfo partitionedQueryExecutionInfo, QueryPartitionProvider queryPartitionProvider) = OptimisticDirectExecutionQueryBaselineTests.GetPartitionedQueryExecutionInfoAndPartitionProvider(sqlQuerySpecJsonString, partitionKeyDefinition);
             return Task.FromResult(TryCatch<PartitionedQueryExecutionInfo>.FromResult(partitionedQueryExecutionInfo));
         }

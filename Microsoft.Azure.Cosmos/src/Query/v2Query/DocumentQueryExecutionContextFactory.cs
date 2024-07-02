@@ -99,6 +99,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 //need to make it not rely on information from collection cache.
                 PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = await queryExecutionContext.GetPartitionedQueryExecutionInfoAsync(
                     partitionKeyDefinition: collection.PartitionKey,
+                    vectorEmbeddingPolicy: collection.VectorEmbeddingPolicy,
                     requireFormattableOrderByQuery: true,
                     isContinuationExpected: isContinuationExpected,
                     allowNonValueAggregateQuery: true,

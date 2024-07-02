@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
             {
             }
 
-            public static TryCatch<IQueryPipelineStage> MonadicCreate(
+            public static new TryCatch<IQueryPipelineStage> MonadicCreate(
                 CosmosElement requestContinuation,
                 MonadicCreatePipelineStage monadicCreatePipelineStage,
                 IReadOnlyList<AggregateOperator> aggregates,

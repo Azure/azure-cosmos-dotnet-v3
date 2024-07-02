@@ -27,7 +27,7 @@ jobs:
 - job: GenerateNugetPackages
   displayName: Generate Nuget packages
   pool:
-    vmImage: ${{ parameters.VmImage }}
+    name: 'OneES'
 
   steps:
   - task: DotNetCoreCLI@2
