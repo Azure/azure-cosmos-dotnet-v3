@@ -577,7 +577,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 // we skip unordered query because the LINQ results vs actual query results are non-deterministic
                 if (!input.skipVerification)
                 {
-                    LinqTestsCommon.ValidateResults(queryResults, dataResults, input.ignoreOrderingForAnonymousTypeObject);
+                    LinqTestsCommon.ValidateResults(queryResults, dataResults, input.ignoreOrder);
                 }
 
                 string serializedResults = serializeResultsInBaseline ?
@@ -676,7 +676,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         //     - scenarios not supported in LINQ, e.g. sequence doesn't contain element.
         internal bool skipVerification;
 
-        internal readonly bool ignoreOrderingForAnonymousTypeObject;
+        // Ignore Ordering for AnonymousType object
+        internal readonly bool ignoreOrder;
 
         internal LinqTestInput(
             string description, 
@@ -689,7 +690,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         {
             this.Expression = expr ?? throw new ArgumentNullException($"{nameof(expr)} must not be null.");
             this.skipVerification = skipVerification;
-            this.ignoreOrderingForAnonymousTypeObject = ignoreOrderingForAnonymousTypeObject;
+            this.ignoreOrder = ignoreOrderingForAnonymousTypeObject;
             this.expressionStr = expressionStr;
             this.inputData = inputData;
         }
