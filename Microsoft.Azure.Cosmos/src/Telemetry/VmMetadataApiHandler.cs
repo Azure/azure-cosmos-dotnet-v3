@@ -34,28 +34,34 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private static bool isInitialized = false;
         private static AzureVMMetadata azMetadata = null;
-       
         internal static void TryInitialize(CosmosHttpClient httpClient)
         {
-            if (VmMetadataApiHandler.isInitialized)
+            bool isVMMetadataAccessDisabled = ConfigurationManager.GetEnvironmentVariable<bool>("COSMOS_DISABLE_VM_METADATA_ACCESS", false);
+            if (System.Diagnostics.Debugger.IsAttached || isVMMetadataAccessDisabled)
             {
                 return;
             }
-
-            lock (VmMetadataApiHandler.lockObject)
+            else
             {
                 if (VmMetadataApiHandler.isInitialized)
                 {
                     return;
                 }
 
-                DefaultTrace.TraceInformation("Initializing VM Metadata API ");
+                lock (VmMetadataApiHandler.lockObject)
+                {
+                    if (VmMetadataApiHandler.isInitialized)
+                    {
+                        return;
+                    }
 
-                VmMetadataApiHandler.isInitialized = true;
+                    DefaultTrace.TraceInformation("Initializing VM Metadata API ");
 
-                _ = Task.Run(() => MetadataApiCallAsync(httpClient), default);
+                    VmMetadataApiHandler.isInitialized = true;
+
+                    _ = Task.Run(() => MetadataApiCallAsync(httpClient), default);
+                }
             }
-
         }
 
         private static async Task MetadataApiCallAsync(CosmosHttpClient httpClient)
