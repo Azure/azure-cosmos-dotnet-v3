@@ -63,17 +63,57 @@
 
             string officialVersionText = propertyGroupNode?["ClientOfficialVersion"]?.InnerText;
             string previewVersionText = propertyGroupNode?["ClientPreviewVersion"]?.InnerText;
+            string previewSuffixText = propertyGroupNode?["ClientPreviewSuffixVersion"]?.InnerText;
 
             Trace.TraceInformation($"Official Version: {officialVersionText}");
             Trace.TraceInformation($"Preview Version: {previewVersionText}");
+            Trace.TraceInformation($"PreviewSuffix Suffix: {previewSuffixText}");
 
+            this.ValidateVersioning(officialVersionText, previewVersionText, previewSuffixText, failureExpected: false);
+        }
+
+        [TestMethod]
+        [DataRow("4.0.0", "4.1.0", "preview.0", false)]
+        [DataRow("4.0.1", "4.1.0", "preview.1", false)]
+        // Invalida pattern's
+        [DataRow("4.0.0", "4.0.0", "preview.0", true)]
+        [DataRow("4.0.0", "4.1.0", "preview.1", true)]
+        [DataRow("4.2.0", "4.1.0", "preview.0", true)]
+        public void ValidateVersioning(string officialVersionText, 
+            string previewVersionText, 
+            string previewSuffixText,
+            bool failureExpected)
+        {
             Version officialVersion = new Version(officialVersionText);
             Version previewVersion = new Version(previewVersionText);
 
-            // Preview minor version should always be one ahead of the official version
-            Assert.AreEqual(officialVersion.Major, previewVersion.Major, $"{officialVersionText} {previewVersionText}");
-            Assert.AreEqual(officialVersion.Minor + 1, previewVersion.Minor, $"{officialVersionText} {previewVersionText}");
-            Assert.AreEqual(officialVersion.Build, previewVersion.Build, $"{officialVersionText} {previewVersionText}");
+            string debugText = $"{officialVersionText} {previewVersionText} {previewSuffixText}";
+
+            string[] peviewSuffixSplits = previewSuffixText.Split('.');
+            Assert.AreEqual(2, peviewSuffixSplits.Length, $"{debugText}");
+
+            try
+            {
+                // Preview minor version should always be one ahead of the official version
+                Assert.AreEqual(officialVersion.Major, previewVersion.Major, $"{debugText}");
+                Assert.AreEqual(officialVersion.Minor + 1, previewVersion.Minor, $"{debugText}");
+                Assert.AreEqual(0, previewVersion.Build, $"{debugText}");
+
+                Assert.AreEqual(officialVersion.Build, int.Parse(peviewSuffixSplits[1]), $"{debugText}");
+                Assert.AreEqual("preview", peviewSuffixSplits[0], false, $"{debugText}");
+
+                if (failureExpected)
+                {
+                    Assert.Fail(debugText); 
+                }
+            }
+            catch (Exception)
+            {
+                if (!failureExpected)
+                {
+                    throw;
+                }
+            }
         }
     }
 }
