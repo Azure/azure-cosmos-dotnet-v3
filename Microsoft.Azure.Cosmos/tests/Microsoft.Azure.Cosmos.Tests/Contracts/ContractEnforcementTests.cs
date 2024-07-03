@@ -65,9 +65,9 @@
             string previewVersionText = propertyGroupNode?["ClientPreviewVersion"]?.InnerText;
             string previewSuffixText = propertyGroupNode?["ClientPreviewSuffixVersion"]?.InnerText;
 
-            Trace.TraceInformation($"Official Version: {officialVersionText}");
-            Trace.TraceInformation($"Preview Version: {previewVersionText}");
-            Trace.TraceInformation($"PreviewSuffix Suffix: {previewSuffixText}");
+            Logger.LogLine($"Official Version: {officialVersionText}");
+            Logger.LogLine($"Preview Version: {previewVersionText}");
+            Logger.LogLine($"PreviewSuffix Suffix: {previewSuffixText}");
 
             this.ValdateSDKVersionsUtil(officialVersionText, previewVersionText, previewSuffixText);
         }
