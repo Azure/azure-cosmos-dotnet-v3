@@ -52,26 +52,24 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 return;
             }
-            else
+  
+            if (VmMetadataApiHandler.isInitialized)
+            {
+                return;
+            }
+
+            lock (VmMetadataApiHandler.lockObject)
             {
                 if (VmMetadataApiHandler.isInitialized)
                 {
                     return;
                 }
 
-                lock (VmMetadataApiHandler.lockObject)
-                {
-                    if (VmMetadataApiHandler.isInitialized)
-                    {
-                        return;
-                    }
+                DefaultTrace.TraceInformation("Initializing VM Metadata API ");
 
-                    DefaultTrace.TraceInformation("Initializing VM Metadata API ");
+                VmMetadataApiHandler.isInitialized = true;
 
-                    VmMetadataApiHandler.isInitialized = true;
-
-                    _ = Task.Run(() => MetadataApiCallAsync(httpClient), default);
-                }
+                _ = Task.Run(() => MetadataApiCallAsync(httpClient), default);
             }
         }
 
