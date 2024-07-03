@@ -41,7 +41,6 @@ namespace Microsoft.Azure.Cosmos
         [DataRow("true", DisplayName = "When COSMOS_DISABLE_VM_METADATA_ACCESS is set as true, VM ID should not be fetched")]
         [DataRow("false", DisplayName = "When COSMOS_DISABLE_VM_METADATA_ACCESS is set as false, VM ID should be fetched")]
         [DataRow(null, DisplayName = "When nothing is set, VM ID should be fetched ")]
-        [DataRow("invalid value", DisplayName = "When COSMOS_DISABLE_VM_METADATA_ACCESS is set as an 'invalid value', VM ID should be fetched")]
         public async Task GetVmIdAsMachineIdTest(string isVmMetadataAccessDisabled)
         {
             Environment.SetEnvironmentVariable("COSMOS_DISABLE_VM_METADATA_ACCESS", isVmMetadataAccessDisabled);

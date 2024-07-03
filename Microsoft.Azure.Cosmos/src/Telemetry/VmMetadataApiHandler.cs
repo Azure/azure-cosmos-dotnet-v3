@@ -36,16 +36,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private static AzureVMMetadata azMetadata = null;
         internal static void TryInitialize(CosmosHttpClient httpClient)
         {
-            bool isVMMetadataAccessDisabled = false; // Default value
-            try
-            {
-                isVMMetadataAccessDisabled = ConfigurationManager.GetEnvironmentVariable<bool>("COSMOS_DISABLE_VM_METADATA_ACCESS", false);
-            }
-            catch (Exception ex)
-            {
-                DefaultTrace.TraceWarning($"Error while reading environment variable COSMOS_DISABLE_VM_METADATA_ACCESS {0}", ex.Message);
-            }
-
+            bool isVMMetadataAccessDisabled = isVMMetadataAccessDisabled = ConfigurationManager.GetEnvironmentVariable<bool>("COSMOS_DISABLE_VM_METADATA_ACCESS", false);
             if (System.Diagnostics.Debugger.IsAttached || isVMMetadataAccessDisabled)
             {
                 return;
