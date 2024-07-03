@@ -34,10 +34,21 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private static bool isInitialized = false;
         private static AzureVMMetadata azMetadata = null;
+
+        /// <summary>
+        /// Check for environment variable COSMOS_DISABLE_VM_METADATA_ACCESS to decide if VM metadata call should be made or not.
+        /// If environment variable is set to true, then VM metadata call will not be made.
+        /// If environment variable is set to false, then VM metadata call will be made.
+        /// If environment variable is not set, then set the value according to the debugger which means 
+        ///     In Debug mode, it is will be true and VM metadata call will be disabled.
+        ///     In Release mode, it is will be false and VM metadata call will be enabled.
+        /// </summary>.
+        /// <param name="httpClient"></param>
         internal static void TryInitialize(CosmosHttpClient httpClient)
         {
-            bool isVMMetadataAccessDisabled = isVMMetadataAccessDisabled = ConfigurationManager.GetEnvironmentVariable<bool>("COSMOS_DISABLE_VM_METADATA_ACCESS", false);
-            if (System.Diagnostics.Debugger.IsAttached || isVMMetadataAccessDisabled)
+            bool isVMMetadataAccessDisabled = 
+                ConfigurationManager.GetEnvironmentVariable<bool>("COSMOS_DISABLE_VM_METADATA_ACCESS", System.Diagnostics.Debugger.IsAttached);
+            if (isVMMetadataAccessDisabled)
             {
                 return;
             }
