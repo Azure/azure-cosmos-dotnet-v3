@@ -69,7 +69,7 @@
             Trace.TraceInformation($"Preview Version: {previewVersionText}");
             Trace.TraceInformation($"PreviewSuffix Suffix: {previewSuffixText}");
 
-            this.ValdateSDKVersions(officialVersionText, previewVersionText, previewSuffixText, failureExpected: false);
+            this.ValdateSDKVersionsUtil(officialVersionText, previewVersionText, previewSuffixText);
         }
 
         [TestMethod]
@@ -84,6 +84,20 @@
             string previewSuffixText,
             bool failureExpected)
         {
+            if (failureExpected)
+            {
+                Assert.ThrowsException<AssertFailedException>(() => this.ValdateSDKVersionsUtil(officialVersionText, previewVersionText, previewSuffixText));
+            }
+            else
+            {
+                this.ValdateSDKVersionsUtil(officialVersionText, previewVersionText, previewSuffixText);
+            }
+        }
+
+        private void ValdateSDKVersionsUtil(string officialVersionText,
+            string previewVersionText,
+            string previewSuffixText)
+        {
             Version officialVersion = new Version(officialVersionText);
             Version previewVersion = new Version(previewVersionText);
 
@@ -92,28 +106,13 @@
             string[] peviewSuffixSplits = previewSuffixText.Split('.');
             Assert.AreEqual(2, peviewSuffixSplits.Length, $"{debugText}");
 
-            try
-            {
-                // Preview minor version should always be one ahead of the official version
-                Assert.AreEqual(officialVersion.Major, previewVersion.Major, $"{debugText}");
-                Assert.AreEqual(officialVersion.Minor + 1, previewVersion.Minor, $"{debugText}");
-                Assert.AreEqual(0, previewVersion.Build, $"{debugText}");
+            // Preview minor version should always be one ahead of the official version
+            Assert.AreEqual(officialVersion.Major, previewVersion.Major, $"{debugText}");
+            Assert.AreEqual(officialVersion.Minor + 1, previewVersion.Minor, $"{debugText}");
+            Assert.AreEqual(0, previewVersion.Build, $"{debugText}");
 
-                Assert.AreEqual(officialVersion.Build, int.Parse(peviewSuffixSplits[1]), $"{debugText}");
-                Assert.AreEqual("preview", peviewSuffixSplits[0], false, $"{debugText}");
-
-                if (failureExpected)
-                {
-                    Assert.Fail(debugText); 
-                }
-            }
-            catch (Exception)
-            {
-                if (!failureExpected)
-                {
-                    throw;
-                }
-            }
+            Assert.AreEqual(officialVersion.Build, int.Parse(peviewSuffixSplits[1]), $"{debugText}");
+            Assert.AreEqual("preview", peviewSuffixSplits[0], false, $"{debugText}");
         }
     }
 }
