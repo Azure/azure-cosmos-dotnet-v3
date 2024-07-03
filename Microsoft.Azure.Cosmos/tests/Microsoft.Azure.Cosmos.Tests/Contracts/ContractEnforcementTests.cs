@@ -69,7 +69,7 @@
             Trace.TraceInformation($"Preview Version: {previewVersionText}");
             Trace.TraceInformation($"PreviewSuffix Suffix: {previewSuffixText}");
 
-            this.ValidateVersioning(officialVersionText, previewVersionText, previewSuffixText, failureExpected: false);
+            this.ValdateSDKVersions(officialVersionText, previewVersionText, previewSuffixText, failureExpected: false);
         }
 
         [TestMethod]
@@ -79,7 +79,7 @@
         [DataRow("4.0.0", "4.0.0", "preview.0", true)]
         [DataRow("4.0.0", "4.1.0", "preview.1", true)]
         [DataRow("4.2.0", "4.1.0", "preview.0", true)]
-        public void ValidateVersioning(string officialVersionText, 
+        public void ValdateSDKVersions(string officialVersionText, 
             string previewVersionText, 
             string previewSuffixText,
             bool failureExpected)
