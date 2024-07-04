@@ -12,6 +12,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     public sealed class EncryptionOptions
     {
         /// <summary>
+        /// Initializes a new instance of the <see cref="EncryptionOptions"/> class.
+        /// </summary>
+        public EncryptionOptions()
+        {
+            this.CompressionOption = new CompressionOption();
+        }
+
+        /// <summary>
         /// Identifier of the data encryption key to be used for encrypting the data in the request payload.
         /// The data encryption key must be suitable for use with the <see cref="EncryptionAlgorithm"/> provided.
         /// </summary>
@@ -35,5 +43,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// Example of a path specification: /sensitive
         /// </summary>
         public IEnumerable<string> PathsToEncrypt { get; set; }
+
+        public CompressionOption CompressionOption { get; set; }
     }
 }

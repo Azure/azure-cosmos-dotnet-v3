@@ -21,6 +21,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     using DataEncryptionKey = Custom.DataEncryptionKey;
     using Newtonsoft.Json.Linq;
     using System.Buffers.Text;
+    using System.IO.Compression;
+    using System.Text;
+    using System.Diagnostics;
 
     [TestClass]
     public class MdeCustomEncryptionTests
@@ -47,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         private static TestKeyWrapProvider legacytestKeyWrapProvider;
         private static CosmosDataEncryptionKeyProvider dualDekProvider;
         private const string metadataUpdateSuffix = "updated";
-        private static TimeSpan cacheTTL = TimeSpan.FromDays(1);
+        private static readonly TimeSpan cacheTTL = TimeSpan.FromDays(1);
         private static DataEncryptionKeyProperties legacyDekProperties;
         private static TestEncryptor encryptorWithDualWrapProvider;
 
@@ -82,10 +85,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 using (await MdeCustomEncryptionTests.database.DeleteStreamAsync()) { }
             }
 
-            if (MdeCustomEncryptionTests.client != null)
-            {
-                MdeCustomEncryptionTests.client.Dispose();
-            }
+            MdeCustomEncryptionTests.client?.Dispose();
         }
 
         [TestMethod]
@@ -377,7 +377,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(32, unwrapcount);
 
             // 2 hours default
-            testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider();  
+            testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider();
 
             dekProvider = new CosmosDataEncryptionKeyProvider(testEncryptionKeyStoreProvider);
             await dekProvider.InitializeAsync(MdeCustomEncryptionTests.database, MdeCustomEncryptionTests.keyContainer.Id);
@@ -441,14 +441,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             TestDoc expectedDoc = new TestDoc(testDoc);
 
-#if SDKPROJECTREF
-            // FIXME Remove the above once the binary encoding issue is fixed.
             // Read feed (null query)
             await MdeCustomEncryptionTests.ValidateQueryResultsAsync(
                 MdeCustomEncryptionTests.encryptionContainer,
                 query: null,
                 expectedDoc);
-#endif
 
             await MdeCustomEncryptionTests.ValidateQueryResultsAsync(
                 MdeCustomEncryptionTests.encryptionContainer,
@@ -536,7 +533,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             TestDoc testDoc1 = await MdeCustomEncryptionTests.CreateItemAsync(MdeCustomEncryptionTests.encryptionContainerForChangeFeed, MdeCustomEncryptionTests.dekId, TestDoc.PathsToEncrypt);
             TestDoc testDoc2 = await MdeCustomEncryptionTests.CreateItemAsync(MdeCustomEncryptionTests.encryptionContainerForChangeFeed, dek2, TestDoc.PathsToEncrypt);
-            
+
             // change feed iterator
             await this.ValidateChangeFeedIteratorResponse(MdeCustomEncryptionTests.encryptionContainerForChangeFeed, testDoc1, testDoc2);
 
@@ -581,7 +578,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             FeedIterator<DecryptableItem> changeIterator = MdeCustomEncryptionTests.encryptionContainer.GetChangeFeedIterator<DecryptableItem>(
                ChangeFeedStartFrom.Beginning(),
                ChangeFeedMode.Incremental);
-            
+
             while (changeIterator.HasMoreResults)
             {
                 readDocsLazily = await changeIterator.ReadNextAsync();
@@ -992,7 +989,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             // doc3ToCreate, doc4ToCreate wasn't encrypted
             await MdeCustomEncryptionTests.VerifyItemByReadAsync(MdeCustomEncryptionTests.itemContainer, doc3ToCreate);
-            await MdeCustomEncryptionTests.VerifyItemByReadAsync(MdeCustomEncryptionTests.itemContainer, doc4ToCreate);            
+            await MdeCustomEncryptionTests.VerifyItemByReadAsync(MdeCustomEncryptionTests.itemContainer, doc4ToCreate);
         }
 
         [TestMethod]
@@ -1035,7 +1032,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(3, customSerializer.FromStreamCalled);
 
             await MdeCustomEncryptionTests.VerifyItemByReadAsync(encryptionContainerWithCustomSerializer, doc1ToCreate);
-            await MdeCustomEncryptionTests.VerifyItemByReadAsync(encryptionContainerWithCustomSerializer, doc1ToReplace);           
+            await MdeCustomEncryptionTests.VerifyItemByReadAsync(encryptionContainerWithCustomSerializer, doc1ToReplace);
         }
 
         [TestMethod]
@@ -1046,7 +1043,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
             };
 
-            LegacyEncryptionTests.CosmosSystemTextJsonSerializer cosmosSystemTextJsonSerializer = new (jsonSerializerOptions);
+            LegacyEncryptionTests.CosmosSystemTextJsonSerializer cosmosSystemTextJsonSerializer = new(jsonSerializerOptions);
 
             CosmosClient clientWithCosmosSystemTextJsonSerializer = TestCommon.CreateCosmosClient(builder => builder
                 .WithCustomSerializer(cosmosSystemTextJsonSerializer)
@@ -1055,15 +1052,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             // get database and container
             Database databaseWithCosmosSystemTextJsonSerializer = clientWithCosmosSystemTextJsonSerializer.GetDatabase(MdeCustomEncryptionTests.database.Id);
             Container containerWithCosmosSystemTextJsonSerializer = databaseWithCosmosSystemTextJsonSerializer.GetContainer(MdeCustomEncryptionTests.itemContainer.Id);
-                        
+
             // create the Dek container
             Container dekContainerWithCosmosSystemTextJsonSerializer = await databaseWithCosmosSystemTextJsonSerializer.CreateContainerAsync(Guid.NewGuid().ToString(), "/id", 400);
-            
+
             CosmosDataEncryptionKeyProvider dekProviderWithCosmosSystemTextJsonSerializer = new CosmosDataEncryptionKeyProvider(new TestEncryptionKeyStoreProvider());
             await dekProviderWithCosmosSystemTextJsonSerializer.InitializeAsync(databaseWithCosmosSystemTextJsonSerializer, dekContainerWithCosmosSystemTextJsonSerializer.Id);
-            
-            TestEncryptor encryptorWithCosmosSystemTextJsonSerializer =  new TestEncryptor(dekProviderWithCosmosSystemTextJsonSerializer);
-            
+
+            TestEncryptor encryptorWithCosmosSystemTextJsonSerializer = new TestEncryptor(dekProviderWithCosmosSystemTextJsonSerializer);
+
             // enable encryption on container
             Container encryptionContainerWithCosmosSystemTextJsonSerializer = containerWithCosmosSystemTextJsonSerializer.WithEncryptor(encryptorWithCosmosSystemTextJsonSerializer);
 
@@ -1107,7 +1104,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             ItemResponse<TestDocSystemText> createTestDoc = await encryptionContainerWithCosmosSystemTextJsonSerializer.CreateItemAsync(
                 testDocSystemText,
                 new PartitionKey(testDocSystemText.PartitionKey),
-                MdeCustomEncryptionTests.GetRequestOptions(dekId, new List<string>() { "/status"}, legacyAlgo: false));
+                MdeCustomEncryptionTests.GetRequestOptions(dekId, new List<string>() { "/status" }, legacyAlgo: false));
 
             Assert.AreEqual(HttpStatusCode.Created, createTestDoc.StatusCode);
 
@@ -1160,7 +1157,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
             string partitionKey = "thePK";
             string dek1 = MdeCustomEncryptionTests.dekId;
-            
+
             ItemResponse<TestDoc> doc1CreatedResponse = await MdeCustomEncryptionTests.CreateItemAsync(MdeCustomEncryptionTests.encryptionContainer, dek1, TestDoc.PathsToEncrypt, partitionKey);
             TestDoc doc1ToCreateAgain = doc1CreatedResponse.Resource;
             doc1ToCreateAgain.NonSensitive = Guid.NewGuid().ToString();
@@ -1174,6 +1171,314 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(1, batchResponse.Count);
         }
 
+        [TestMethod]
+        public async Task EncryptionCreateItem_withCompressionSupport()
+        {
+            EncryptionItemRequestOptions encryptionRequestOptions = new EncryptionItemRequestOptions
+            {
+                EncryptionOptions = new EncryptionOptions
+                {
+                    DataEncryptionKeyId = MdeCustomEncryptionTests.dekId,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                    PathsToEncrypt = TestDoc.PathsToEncrypt,
+                    CompressionOption = new CompressionOption
+                    {
+                        Algorithm = CompressionAlgorithm.Brotli,
+                        PathsToCompress = new List<string> { "/Sensitive_StringFormat", "/Sensitive_NestedObjectFormatL1", "/Sensitive_ArrayFormat" }
+                    }
+                }
+            };
+
+            TestDoc itemToInsert = TestDoc.Create();
+            using (Stream itemStream = itemToInsert.ToStream())
+            {
+                ItemResponse<TestDoc> response = await encryptionContainer.CreateItemAsync(
+                    itemToInsert,
+                    new PartitionKey(itemToInsert.PK),
+                    encryptionRequestOptions);
+
+                TestDoc decryptedItem = response.Resource;
+
+                Assert.IsNotNull(decryptedItem);
+                Assert.AreEqual(itemToInsert.Sensitive_StringFormat, decryptedItem.Sensitive_StringFormat);
+                Assert.AreEqual(itemToInsert.Sensitive_IntFormat, decryptedItem.Sensitive_IntFormat);
+                Assert.AreEqual(itemToInsert.Sensitive_BoolFormat, decryptedItem.Sensitive_BoolFormat);
+                Assert.AreEqual(itemToInsert.Sensitive_DecimalFormat, decryptedItem.Sensitive_DecimalFormat);
+                Assert.AreEqual(itemToInsert.Sensitive_DateFormat, decryptedItem.Sensitive_DateFormat);
+                Assert.AreEqual(itemToInsert.Sensitive_FloatFormat, decryptedItem.Sensitive_FloatFormat);
+
+                string actualDocument_object = JsonConvert.SerializeObject(itemToInsert.Sensitive_NestedObjectFormatL1, Formatting.None);
+                string afterDecryption_object = JsonConvert.SerializeObject(decryptedItem.Sensitive_NestedObjectFormatL1, Formatting.None);
+
+                Assert.AreEqual(actualDocument_object, afterDecryption_object);
+
+                string actualDocument_array = JsonConvert.SerializeObject(itemToInsert.Sensitive_ArrayFormat, Formatting.None);
+                string afterDecryption_array = JsonConvert.SerializeObject(decryptedItem.Sensitive_ArrayFormat, Formatting.None);
+
+                Assert.AreEqual(actualDocument_array, afterDecryption_array);
+            }
+        }
+
+        [TestMethod]
+        public async Task CompressionEncryptionDecryptionCheck()
+        {
+            string originalData = "this is a testetstetststs.";
+            JObject itemObj = new JObject
+            {
+                 { "testproperty", originalData }
+            };
+
+            EncryptionOptions encryptionOptions = new EncryptionOptions
+            {
+                DataEncryptionKeyId = MdeCustomEncryptionTests.dekId,
+                EncryptionAlgorithm = "MdeAeadAes256CbcHmac256Randomized",
+                PathsToEncrypt = new List<string> { "/testproperty" },
+                CompressionOption = new CompressionOption
+                {
+                    Algorithm = CompressionAlgorithm.Brotli,
+                    PathsToCompress = new List<string> { "/testproperty" }
+                }
+            };
+
+            JObject compressedJObj = await CompressionAsync(itemObj, encryptionOptions);
+            Assert.IsNotNull(compressedJObj);
+
+            Stream compressedStream = EncryptionProcessor.BaseSerializer.ToStream(compressedJObj);
+
+            CosmosDiagnosticsContext context = new CosmosDiagnosticsContext();
+            CancellationToken token = new CancellationToken();
+            Encryptor encryptor = new MockEncryptor();
+
+            Stream encryptedStream = await EncryptionProcessor.EncryptAsync_1(compressedStream, encryptor, encryptionOptions, context, token);
+            Assert.IsNotNull(encryptedStream);
+
+            /*JObject encryptedJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(encryptedStream);
+             Assert.IsNotNull(encryptedJObj);*/
+
+            Stream decryptedStream = (await EncryptionProcessor.DecryptAsync_1(encryptedStream, encryptor, context, token)).Item1;
+            Assert.IsNotNull(decryptedStream);
+
+            JObject decryptedJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(decryptedStream);
+            Assert.IsNotNull(decryptedJObj);
+
+            JObject decompressedJObj = await DecompressionAsync(decryptedJObj, encryptionOptions);
+            Assert.IsNotNull(decompressedJObj);
+        }
+
+        [TestMethod]
+        public async Task EncryptionandDecryptionwithCompressionSupport()
+        {
+            EncryptionOptions encryptionOptions = new EncryptionOptions
+            {
+                DataEncryptionKeyId = MdeCustomEncryptionTests.dekId,
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                PathsToEncrypt = TestDoc.PathsToEncrypt,
+                CompressionOption = new CompressionOption
+                {
+                    Algorithm = CompressionAlgorithm.Brotli,
+                    PathsToCompress = TestDoc.PathsToEncrypt
+                }
+            };
+
+            Encryptor encryptor = new MockEncryptor();
+            TestDoc testDoc = TestDoc.Create();
+            CosmosDiagnosticsContext context = new CosmosDiagnosticsContext();
+            CancellationToken token = new CancellationToken();
+
+            using (Stream stream = testDoc.ToStream())
+            {
+                Stream encryptedStream = await EncryptionProcessor.EncryptAsync(stream, encryptor, encryptionOptions, context, token);
+
+                Stream decryptedStream = (await EncryptionProcessor.DecryptAsync(encryptedStream, encryptor, context, token)).Item1;
+
+                JObject decryptedObject = EncryptionProcessor.BaseSerializer.FromStream<JObject>(decryptedStream);
+
+                Assert.IsNotNull(decryptedObject);
+            }
+        }
+
+        [TestMethod]
+        public async Task CompressionEncryptionDecryptionDecompressionMultiplePathsCheck()
+        {
+            string TestString1 = "This test will be used for compression and decompressionaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+            string TestString2 = "Another test string for compression and decompressionbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+            string TestString3 = "third test string for compression and decompressionbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
+            JObject itemObj = new JObject {
+                {"testproperty1", TestString1},
+                {"testproperty2", TestString2},
+                {"testproperty3", TestString3 }
+            };
+
+            EncryptionOptions encryptionOptions = new EncryptionOptions
+            {
+                DataEncryptionKeyId = MdeCustomEncryptionTests.dekId,
+                EncryptionAlgorithm = "MdeAeadAes256CbcHmac256Randomized",
+                PathsToEncrypt = new List<string> { "/testproperty1", "/testproperty2", "/testproperty3" },
+                CompressionOption = new CompressionOption
+                {
+                    Algorithm = CompressionAlgorithm.Brotli,
+                    PathsToCompress = new List<string> { "/testproperty1", "/testproperty2", "/testproperty3" }
+                }
+            };
+
+            JObject compressedJObj = await CompressionAsync(itemObj, encryptionOptions);
+            Assert.IsNotNull(compressedJObj);
+
+            Stream compressedStream = EncryptionProcessor.BaseSerializer.ToStream(compressedJObj);
+
+            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContext();
+            CancellationToken cancellationToken = new CancellationToken();
+            Encryptor encryptor_1 = new MockEncryptor();
+
+            Stream encryptedStream = await EncryptionProcessor.EncryptAsync_1(compressedStream, encryptor_1, encryptionOptions, diagnosticsContext, cancellationToken);
+            Assert.IsNotNull(encryptedStream);
+
+            Stream decryptedStream = (await EncryptionProcessor.DecryptAsync_1(encryptedStream, encryptor_1, diagnosticsContext, cancellationToken)).Item1;
+
+            JObject decryptedJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(decryptedStream);
+            Assert.IsNotNull(decryptedJObj);
+
+            JObject decompressedJObj = await DecompressionAsync(decryptedJObj, encryptionOptions);
+            Assert.IsNotNull(decompressedJObj);
+        }
+
+        public class MockEncryptor : Encryptor
+        {
+            public override Task<byte[]> EncryptAsync(
+                byte[] plainText,
+                string dataEncryptionKeyId,
+                string encryptionAlgorithm,
+                CancellationToken cancellationToken = default)
+            {
+
+                return Task.FromResult(plainText);
+            }
+
+            public override Task<byte[]> DecryptAsync(
+                byte[] cipherText,
+                string dataEncryptionKeyId,
+                string encryptionAlgorithm,
+                CancellationToken cancellationToken = default)
+            {
+
+                return Task.FromResult(cipherText);
+            }
+        }
+
+        public static async Task<JObject> CompressionAsync(JObject itemJObj, EncryptionOptions encryptionOptions)
+        {
+
+            foreach (string pathToCompress in encryptionOptions.CompressionOption.PathsToCompress)
+            {
+                string propertyName = pathToCompress;
+                if (!itemJObj.TryGetValue(propertyName, out JToken propertyValue))
+                {
+                    continue;
+                }
+
+                if (propertyValue.Type == JTokenType.Null)
+                {
+                    continue;
+                }
+
+                byte[] plainText = Encoding.UTF8.GetBytes(propertyValue.ToString());
+                byte[] compressedData = encryptionOptions.CompressionOption.Algorithm switch
+                {
+                    CompressionAlgorithm.Gzip => await CompressGzipAsync(plainText),
+                    CompressionAlgorithm.Brotli => await CompressBrotliAsync(plainText),
+                    _ => throw new NotSupportedException($"Compression Algorithm : {encryptionOptions.CompressionOption.Algorithm} is not supported.")
+                };
+
+                itemJObj[propertyName] = Convert.ToBase64String(compressedData);
+            }
+
+            return itemJObj;
+        }
+
+        public static async Task<byte[]> CompressGzipAsync(byte[] data)
+        {
+            using (MemoryStream ms = new MemoryStream())
+            {
+                using (GZipStream gs = new GZipStream(ms, CompressionMode.Compress))
+                {
+                    await gs.WriteAsync(data, 0, data.Length);
+                }
+
+                return ms.ToArray();
+            }
+        }
+
+        public static async Task<byte[]> CompressBrotliAsync(byte[] data)
+        {
+            using (MemoryStream ms = new MemoryStream())
+            {
+                using (BrotliStream bs = new BrotliStream(ms, CompressionMode.Compress))
+                {
+                    await bs.WriteAsync(data, 0, data.Length);
+                }
+
+                return ms.ToArray();
+            }
+        }
+
+        public static async Task<JObject> DecompressionAsync(JObject itemJObj, EncryptionOptions encryptionOptions)
+        {
+            foreach (string pathToCompress in encryptionOptions.CompressionOption.PathsToCompress)
+            {
+                string propertyName = pathToCompress;
+                if (!itemJObj.TryGetValue(propertyName, out JToken propertyValue))
+                {
+                    continue;
+                }
+
+                if (propertyValue.Type == JTokenType.Null)
+                {
+                    continue;
+                }
+
+                byte[] compressedData = Convert.FromBase64String(propertyValue.ToString());
+                byte[] decompressedData = encryptionOptions.CompressionOption.Algorithm switch
+                {
+                    CompressionAlgorithm.Gzip => await DecompressionGzipAsync(compressedData),
+                    CompressionAlgorithm.Brotli => await DecompressionBrotliAsync(compressedData),
+                    _ => throw new NotSupportedException($"Compression Algorithm : {encryptionOptions.CompressionOption.Algorithm} is not supported.")
+                };
+
+                itemJObj[propertyName] = Encoding.UTF8.GetString(decompressedData);
+            }
+
+            return itemJObj;
+        }
+
+        public static async Task<byte[]> DecompressionGzipAsync(byte[] Data)
+        {
+            using (MemoryStream inputstream = new MemoryStream(Data))
+            {
+                using (MemoryStream outputstream = new MemoryStream())
+                {
+                    using (GZipStream gs = new GZipStream(inputstream, CompressionMode.Decompress))
+                    {
+                        await gs.CopyToAsync(outputstream);
+                        return outputstream.ToArray();
+                    }
+                }
+            }
+        }
+
+        public static async Task<byte[]> DecompressionBrotliAsync(byte[] Data)
+        {
+            using (MemoryStream inputStream = new MemoryStream(Data))
+            {
+                using (MemoryStream outputStream = new MemoryStream())
+                {
+                    using (BrotliStream bs = new BrotliStream(inputStream, CompressionMode.Decompress))
+                    {
+                        await bs.CopyToAsync(outputStream);
+                        return outputStream.ToArray();
+                    }
+                }
+            }
+        }
         // One of query or queryDefinition is to be passed in non-null
         private static async Task ValidateQueryResultsAsync(
             Container container,
@@ -1212,7 +1517,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             {
                 Assert.AreEqual(1, readDocs.Count);
                 TestDoc readDoc = readDocs.Single();
-                VerifyExpectedDocResponse(expectedDoc, readDoc);               
+                VerifyExpectedDocResponse(expectedDoc, readDoc);
 
                 Assert.AreEqual(1, readDocsLazily.Count);
                 if (!legacyAlgo)
@@ -1618,7 +1923,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             int decryptedDoc = 0;
             int failedDoc = 0;
 
-            while(readDocsLazily.MoveNext())
+            while (readDocsLazily.MoveNext())
             {
                 try
                 {
@@ -1920,7 +2225,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 MdeCustomEncryptionTests.metadata1);
 
             Assert.AreEqual(HttpStatusCode.Created, dekResponse.StatusCode);
-            
+
             return VerifyDekResponse(dekResponse,
                 dekId);
         }
@@ -1940,7 +2245,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.IsNotNull(dekProperties.SelfLink);
             Assert.IsNotNull(dekProperties.CreatedTime);
             Assert.IsNotNull(dekProperties.LastModified);
-            
+
             return dekProperties;
         }
 
@@ -1985,7 +2290,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             else
             {
                 Assert.AreEqual(expectedDoc.Sensitive_ArrayFormat, verifyDoc.Sensitive_ArrayFormat);
-                Assert.AreEqual(expectedDoc.Sensitive_NestedObjectFormatL1, verifyDoc.Sensitive_NestedObjectFormatL1);               
+                Assert.AreEqual(expectedDoc.Sensitive_NestedObjectFormatL1, verifyDoc.Sensitive_NestedObjectFormatL1);
             }
             Assert.AreEqual(expectedDoc.Sensitive_DateFormat, verifyDoc.Sensitive_DateFormat);
             Assert.AreEqual(expectedDoc.Sensitive_DecimalFormat, verifyDoc.Sensitive_DecimalFormat);
@@ -1997,9 +2302,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
         public class TestDoc
         {
-            public static List<string> PathsToEncrypt { get; } = 
+            public static List<string> PathsToEncrypt { get; } =
                 new List<string>() {
-                    "/Sensitive_StringFormat", 
+                    "/Sensitive_StringFormat",
                     "/Sensitive_ArrayFormat",
                     "/Sensitive_DecimalFormat",
                     "/Sensitive_IntFormat",
@@ -2040,17 +2345,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             {
                 public int Sensitive_ArrayIntFormat { get; set; }
                 public decimal Sensitive_ArrayDecimalFormat { get; set; }
+                public string Sensitive_StringFormat { get; set; }
             }
 
             public class Sensitive_NestedObjectL1
             {
                 public int Sensitive_IntFormatL1 { get; set; }
+                public decimal Sensitive_DecimalFormat { get; set; }
                 public Sensitive_NestedObjectL2 Sensitive_NestedObjectFormatL2 { get; set; }
+
+                public Sensitive_NestedObjectL2 Sensitive_NestedObjectFormatL3 { get; set; }
             }
 
             public class Sensitive_NestedObjectL2
             {
-                public int Sensitive_IntFormatL2 { get; set; }                
+                public int Sensitive_IntFormatL2 { get; set; }
+                public string Sensitive_StringFormat { get; set; }
             }
 
             public TestDoc(TestDoc other)
@@ -2117,7 +2427,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Id = Guid.NewGuid().ToString(),
                     PK = partitionKey ?? Guid.NewGuid().ToString(),
                     NonSensitive = Guid.NewGuid().ToString(),
-                    Sensitive_StringFormat = Guid.NewGuid().ToString(),
+                    Sensitive_StringFormat = new string('a', 10000),
                     Sensitive_DateFormat = new DateTime(1987, 12, 25),
                     Sensitive_DecimalFormat = 472.3108m,
                     Sensitive_IntFormat = 1965,
@@ -2127,18 +2437,28 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     {
                         new Sensitive_ArrayData
                         {
-                            Sensitive_ArrayIntFormat = 1999,
-                            Sensitive_ArrayDecimalFormat = 472.3199m
+                            Sensitive_ArrayIntFormat = 1000*2000,
+                            Sensitive_ArrayDecimalFormat = 472.3199m,
+                            Sensitive_StringFormat = new string('a',10000)
                         }
                     },
                     Sensitive_NestedObjectFormatL1 = new Sensitive_NestedObjectL1()
                     {
-                        Sensitive_IntFormatL1 = 1999,
+                        Sensitive_IntFormatL1 = 19999 * 2000,
+                        Sensitive_DecimalFormat = 12.3459m,
+
                         Sensitive_NestedObjectFormatL2 = new Sensitive_NestedObjectL2()
                         {
-                            Sensitive_IntFormatL2 = 2000,
+                            Sensitive_IntFormatL2 = 20000 * 20000,
+                            Sensitive_StringFormat = new string('a', 100000000)
+                        },
+
+                        Sensitive_NestedObjectFormatL3 = new Sensitive_NestedObjectL2()
+                        {
+                            Sensitive_IntFormatL2 = 20000 * 20000,
+                            Sensitive_StringFormat = new string('a', 100000000)
                         }
-                    }                    
+                    }
                 };
             }
 
@@ -2480,15 +2800,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             TestDoc expectedDoc = new TestDoc(testDoc);
 
-#if SDKPROJECTREF
-            // FIXME Remove the above once the binary encoding issue is fixed.
             // Read feed (null query)
             await MdeCustomEncryptionTests.ValidateQueryResultsAsync(
                 MdeCustomEncryptionTests.encryptionContainer,
                 query: null,
                 expectedDoc,
                 legacyAlgo: true);
-#endif
 
             await MdeCustomEncryptionTests.ValidateQueryResultsAsync(
                 MdeCustomEncryptionTests.encryptionContainer,
@@ -2656,8 +2973,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 return Task.FromResult(new EncryptionKeyWrapResult(key.Select(b => (byte)(b + moveBy)).ToArray(), responseMetadata));
             }
         }
-        
+
 #pragma warning restore CS0618 // Type or member is obsolete
-#endregion
+        #endregion
     }
 }
