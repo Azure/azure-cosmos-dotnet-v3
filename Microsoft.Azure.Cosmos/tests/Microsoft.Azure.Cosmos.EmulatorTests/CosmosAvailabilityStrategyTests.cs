@@ -416,9 +416,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 ConnectionMode = ConnectionMode.Direct,
                 ApplicationPreferredRegions = new List<string>() { "Central US", "North Central US" },
-                //AvailabilityStrategy = new CrossRegionParallelHedgingAvailabilityStrategy(
-                //        threshold: TimeSpan.FromMilliseconds(100),
-                //        thresholdStep: TimeSpan.FromMilliseconds(50)),
+                AvailabilityStrategy = new CrossRegionParallelHedgingAvailabilityStrategy(
+                        threshold: TimeSpan.FromMilliseconds(100),
+                        thresholdStep: TimeSpan.FromMilliseconds(50)),
                 Serializer = this.cosmosSystemTextJsonSerializer
             };
 
