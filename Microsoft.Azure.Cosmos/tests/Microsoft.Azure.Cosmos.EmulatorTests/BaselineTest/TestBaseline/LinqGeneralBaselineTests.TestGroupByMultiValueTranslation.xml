@@ -17,8 +17,10 @@ GROUP BY root ]]></SqlQuery>
       <Expression><![CDATA[query.GroupBy(k => k.Id, (key, values) => new AnonymousType(Key = key, key = key))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Expression with NodeType 'New' is not supported.]]></ErrorMessage>
+      <SqlQuery><![CDATA[
+SELECT root["id"] AS Key, root["id"] AS key 
+FROM root 
+GROUP BY root["id"] ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -27,8 +29,10 @@ GROUP BY root ]]></SqlQuery>
       <Expression><![CDATA[query.GroupBy(k => k.Id, (key, values) => new AnonymousType(KeyAlias = key, values = 123))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Expression with NodeType 'New' is not supported.]]></ErrorMessage>
+      <SqlQuery><![CDATA[
+SELECT root["id"] AS KeyAlias, 123 AS values 
+FROM root 
+GROUP BY root["id"] ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -37,8 +41,10 @@ GROUP BY root ]]></SqlQuery>
       <Expression><![CDATA[query.GroupBy(k => k.Id, (key, values) => new AnonymousType(Min = values.Min(value => value.Int), Max = values.Max(value => value.Int), Avg = values.Average(value => value.Int), Count = values.Count()))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Expression with NodeType 'New' is not supported.]]></ErrorMessage>
+      <SqlQuery><![CDATA[
+SELECT MIN(root["Int"]) AS Min, MAX(root["Int"]) AS Max, AVG(root["Int"]) AS Avg, COUNT(1) AS Count 
+FROM root 
+GROUP BY root["id"] ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -47,8 +53,10 @@ GROUP BY root ]]></SqlQuery>
       <Expression><![CDATA[query.GroupBy(k => k.FamilyId, (key, values) => new AnonymousType(familyId = key, familyIdCount = values.Count()))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Expression with NodeType 'New' is not supported.]]></ErrorMessage>
+      <SqlQuery><![CDATA[
+SELECT root["FamilyId"] AS familyId, COUNT(1) AS familyIdCount 
+FROM root 
+GROUP BY root["FamilyId"] ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -57,8 +65,10 @@ GROUP BY root ]]></SqlQuery>
       <Expression><![CDATA[query.GroupBy(k => k.Id, (key, values) => new AnonymousType(Min = values.Min(), Max = values.Max()))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Expression with NodeType 'New' is not supported.]]></ErrorMessage>
+      <SqlQuery><![CDATA[
+SELECT MIN(root) AS Min, MAX(root) AS Max 
+FROM root 
+GROUP BY root["id"] ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -68,7 +78,7 @@ GROUP BY root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Expression with NodeType 'New' is not supported.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Method 'Select' is not supported.]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -77,8 +87,13 @@ GROUP BY root ]]></SqlQuery>
       <Expression><![CDATA[query.Select(x => x.Id).GroupBy(k => k, (key, values) => new AnonymousType(keyAlias = key, count = values.Count()))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Expression with NodeType 'New' is not supported.]]></ErrorMessage>
+      <SqlQuery><![CDATA[
+SELECT r0 AS keyAlias, COUNT(1) AS count 
+FROM (
+    SELECT VALUE root["id"] 
+    FROM root) AS r0 
+    GROUP BY r0 
+]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -87,8 +102,13 @@ GROUP BY root ]]></SqlQuery>
       <Expression><![CDATA[query.Select(x => new AnonymousType(Id1 = x.Id, family1 = x.FamilyId, childrenN1 = x.Children)).GroupBy(k => k.Id1, (key, values) => new AnonymousType(keyAlias = key, count = values.Count()))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Expression with NodeType 'New' is not supported.]]></ErrorMessage>
+      <SqlQuery><![CDATA[
+SELECT r0["Id1"] AS keyAlias, COUNT(1) AS count 
+FROM (
+    SELECT VALUE {"Id1": root["id"], "family1": root["FamilyId"], "childrenN1": root["Children"]} 
+    FROM root) AS r0 
+    GROUP BY r0["Id1"] 
+]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -97,8 +117,11 @@ GROUP BY root ]]></SqlQuery>
       <Expression><![CDATA[query.SelectMany(x => x.Children).GroupBy(k => k, (key, values) => new AnonymousType(keyAlias = key, count = values.Count()))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Expression with NodeType 'New' is not supported.]]></ErrorMessage>
+      <SqlQuery><![CDATA[
+SELECT x0 AS keyAlias, COUNT(1) AS count 
+FROM root 
+JOIN x0 IN root["Children"] 
+GROUP BY x0 ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -107,8 +130,15 @@ GROUP BY root ]]></SqlQuery>
       <Expression><![CDATA[query.Skip(10).GroupBy(k => k.Id, (key, values) => new AnonymousType(keyAlias = key, count = values.Count()))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Expression with NodeType 'New' is not supported.]]></ErrorMessage>
+      <SqlQuery><![CDATA[
+SELECT r0["id"] AS keyAlias, COUNT(1) AS count 
+FROM (
+    SELECT VALUE root 
+    FROM root 
+    OFFSET 10 LIMIT 2147483647) AS r0 
+    GROUP BY r0["id"] 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":81,"end":107},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -117,8 +147,14 @@ GROUP BY root ]]></SqlQuery>
       <Expression><![CDATA[query.Take(10).GroupBy(k => k.Id, (key, values) => new AnonymousType(keyAlias = key, count = values.Count()))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Expression with NodeType 'New' is not supported.]]></ErrorMessage>
+      <SqlQuery><![CDATA[
+SELECT r0["id"] AS keyAlias, COUNT(1) AS count 
+FROM (
+    SELECT TOP 10 VALUE root 
+    FROM root) AS r0 
+    GROUP BY r0["id"] 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":60,"end":66},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -127,8 +163,15 @@ GROUP BY root ]]></SqlQuery>
       <Expression><![CDATA[query.Skip(10).Take(10).GroupBy(k => k.Id, (key, values) => new AnonymousType(keyAlias = key, count = values.Count()))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Expression with NodeType 'New' is not supported.]]></ErrorMessage>
+      <SqlQuery><![CDATA[
+SELECT r0["id"] AS keyAlias, COUNT(1) AS count 
+FROM (
+    SELECT VALUE root 
+    FROM root 
+    OFFSET 10 LIMIT 10) AS r0 
+    GROUP BY r0["id"] 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":81,"end":99},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -137,8 +180,11 @@ GROUP BY root ]]></SqlQuery>
       <Expression><![CDATA[query.Where(x => (x.Id != "a")).GroupBy(k => k.Id, (key, values) => new AnonymousType(keyAlias = key, count = values.Count()))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Expression with NodeType 'New' is not supported.]]></ErrorMessage>
+      <SqlQuery><![CDATA[
+SELECT root["id"] AS keyAlias, COUNT(1) AS count 
+FROM root 
+WHERE (root["id"] != "a") 
+GROUP BY root["id"] ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -147,8 +193,12 @@ GROUP BY root ]]></SqlQuery>
       <Expression><![CDATA[query.OrderBy(x => x.Int).GroupBy(k => k.Id, (key, values) => new AnonymousType(keyAlias = key, count = values.Count()))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Expression with NodeType 'New' is not supported.]]></ErrorMessage>
+      <SqlQuery><![CDATA[
+SELECT root["id"] AS keyAlias, COUNT(1) AS count 
+FROM root 
+GROUP BY root["id"]  
+ORDER BY root["Int"] ASC]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":89,"end":100},"code":"SC2103","message":"Property reference 'root[\"Int\"]' is invalid in the ORDER BY clause because it is not contained in either an aggregate function or the GROUP BY clause."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -157,8 +207,11 @@ GROUP BY root ]]></SqlQuery>
       <Expression><![CDATA[query.OrderByDescending(x => x.Id).GroupBy(k => k.Id, (key, values) => new AnonymousType(keyAlias = key, count = values.Count()))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Expression with NodeType 'New' is not supported.]]></ErrorMessage>
+      <SqlQuery><![CDATA[
+SELECT root["id"] AS keyAlias, COUNT(1) AS count 
+FROM root 
+GROUP BY root["id"]  
+ORDER BY root["id"] DESC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -167,8 +220,12 @@ GROUP BY root ]]></SqlQuery>
       <Expression><![CDATA[query.Where(x => (x.Id != "a")).OrderBy(x => x.Id).GroupBy(k => k.Id, (key, values) => new AnonymousType(keyAlias = key, count = values.Count()))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Expression with NodeType 'New' is not supported.]]></ErrorMessage>
+      <SqlQuery><![CDATA[
+SELECT root["id"] AS keyAlias, COUNT(1) AS count 
+FROM root 
+WHERE (root["id"] != "a") 
+GROUP BY root["id"]  
+ORDER BY root["id"] ASC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -178,7 +235,7 @@ GROUP BY root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Expression with NodeType 'New' is not supported.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Group By cannot be followed by other methods]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -188,7 +245,7 @@ GROUP BY root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Expression with NodeType 'New' is not supported.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Group By cannot be followed by other methods]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -198,7 +255,7 @@ GROUP BY root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Expression with NodeType 'New' is not supported.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Group By cannot be followed by other methods]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -208,7 +265,7 @@ GROUP BY root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Expression with NodeType 'New' is not supported.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Group By cannot be followed by other methods]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -218,7 +275,7 @@ GROUP BY root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Expression with NodeType 'New' is not supported.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Group By cannot be followed by other methods]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -228,7 +285,7 @@ GROUP BY root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Expression with NodeType 'New' is not supported.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Group By cannot be followed by other methods]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -238,7 +295,7 @@ GROUP BY root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Expression with NodeType 'New' is not supported.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Group By cannot be followed by other methods]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -248,7 +305,7 @@ GROUP BY root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Expression with NodeType 'New' is not supported.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Group By cannot be followed by other methods]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -258,7 +315,7 @@ GROUP BY root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Expression with NodeType 'New' is not supported.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Group By cannot be followed by other methods]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -268,7 +325,7 @@ GROUP BY root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Expression with NodeType 'New' is not supported.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Group By cannot be followed by other methods]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -278,7 +335,7 @@ GROUP BY root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Expression with NodeType 'New' is not supported.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Group By cannot be followed by other methods]]></ErrorMessage>
     </Output>
   </Result>
 </Results>
