@@ -79,17 +79,17 @@ namespace Microsoft.Azure.Cosmos.Handlers
             await request.AssertPartitioningDetailsAsync(this.client, cancellationToken, request.Trace);
             this.FillMultiMasterContext(request);
 
-            if (this.CanUseAvailabilityStrategy(request))
-            {
-                AvailabilityStrategy strategy = request.RequestOptions?.AvailabilityStrategy ?? this.client.ClientOptions.AvailabilityStrategy;
-                
-                return await strategy.ExecuteAvailabilityStrategyAsync(
-                            this.BaseSendAsync,
-                            this.client,
-                            request,
-                            cancellationToken);
-            }
+            AvailabilityStrategy strategy = this.AvailabilityStrategy(request);
             
+            if (strategy != null && strategy.GetType() != typeof(DisabledAvailabilityStrategy))
+            {
+                return await strategy.ExecuteAvailabilityStrategyAsync(
+                    this.BaseSendAsync,
+                    this.client,
+                    request,
+                    cancellationToken);
+            }
+
             return await this.BaseSendAsync(request, cancellationToken);
         }
 
@@ -99,24 +99,16 @@ namespace Microsoft.Azure.Cosmos.Handlers
         /// </summary>
         /// <param name="request"></param>
         /// <returns>whether the request should be a parallel hedging request.</returns>
-        public bool CanUseAvailabilityStrategy(RequestMessage request)
+        public AvailabilityStrategy AvailabilityStrategy(RequestMessage request)
         {
             //No availability strategy options
             if (request.RequestOptions?.AvailabilityStrategy == null && this.client.ClientOptions.AvailabilityStrategy == null)
             {
-                return false;
+                return null;
             }
 
-            AvailabilityStrategy strategyOptions = request.RequestOptions?.AvailabilityStrategy
+            return request.RequestOptions?.AvailabilityStrategy
                     ?? this.client.ClientOptions.AvailabilityStrategy;
-            
-            //Request level availability strategy options are disabled/override client level
-            if (!strategyOptions.Enabled())
-            {
-                return false;
-            }
-
-            return true;
         }
 
         public virtual async Task<ResponseMessage> BaseSendAsync(

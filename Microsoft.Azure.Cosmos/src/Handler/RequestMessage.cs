@@ -330,7 +330,7 @@ namespace Microsoft.Azure.Cosmos
                 this.Headers.Clone(),
                 this.Properties.ToDictionary(entry => entry.Key, entry => entry.Value));
 
-            if (this.Content != null)
+            if (this.Content != null && cloneContent != null)
             {
                 clone.Content = cloneContent.Clone();
             }

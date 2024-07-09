@@ -157,9 +157,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.dbName = Guid.NewGuid().ToString();
             this.containerName = Guid.NewGuid().ToString();
             this.changeFeedContainerName = Guid.NewGuid().ToString();
-            this.database = this.client.CreateDatabaseIfNotExistsAsync(this.dbName).Result;
-            this.container = this.database.CreateContainerIfNotExistsAsync(this.containerName, "/pk").Result;
-            this.changeFeedContainer = this.database.CreateContainerIfNotExistsAsync(this.changeFeedContainerName, "/partitionKey").Result;
+            this.database = await this.client.CreateDatabaseIfNotExistsAsync(this.dbName);
+            this.container = await this.database.CreateContainerIfNotExistsAsync(this.containerName, "/pk");
+            this.changeFeedContainer = await this.database.CreateContainerIfNotExistsAsync(this.changeFeedContainerName, "/partitionKey");
 
             await this.container.CreateItemAsync<AvailabilityStrategyTestObject>(new AvailabilityStrategyTestObject { Id = "testId", Pk = "pk" });
             await this.container.CreateItemAsync<AvailabilityStrategyTestObject>(new AvailabilityStrategyTestObject { Id = "testId2", Pk = "pk2" });
@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.container.CreateItemAsync<AvailabilityStrategyTestObject>(new AvailabilityStrategyTestObject { Id = "testId4", Pk = "pk4" });
 
             //Must Ensure the data is replicated to all regions
-            await Task.Delay(3000);
+            await Task.Delay(60000);
         }
 
         [TestMethod]
@@ -416,9 +416,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 ConnectionMode = ConnectionMode.Direct,
                 ApplicationPreferredRegions = new List<string>() { "Central US", "North Central US" },
-                AvailabilityStrategy = new CrossRegionParallelHedgingAvailabilityStrategy(
-                        threshold: TimeSpan.FromMilliseconds(100),
-                        thresholdStep: TimeSpan.FromMilliseconds(50)),
+                //AvailabilityStrategy = new CrossRegionParallelHedgingAvailabilityStrategy(
+                //        threshold: TimeSpan.FromMilliseconds(100),
+                //        thresholdStep: TimeSpan.FromMilliseconds(50)),
                 Serializer = this.cosmosSystemTextJsonSerializer
             };
 

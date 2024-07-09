@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Threading;
@@ -111,7 +110,7 @@ namespace Microsoft.Azure.Cosmos
             using (CancellationTokenSource cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
             {
                 using (CloneableStream clonedBody = (CloneableStream)(request.Content == null
-                    ? new CloneableStream(new MemoryStream()) 
+                    ? null//new CloneableStream(new MemoryStream())
                     : await StreamExtension.AsClonableStreamAsync(request.Content)))
                 {
                     IReadOnlyCollection<string> hedgeRegions = client.DocumentClient.GlobalEndpointManager
@@ -171,14 +170,20 @@ namespace Microsoft.Azure.Cosmos
 
                                 timerTokenSource.Cancel();
                                 requestTasks.Remove(hedgeTimer);
+
+                                if (completedTask.IsFaulted)
+                                {
+                                    AggregateException innerExceptions = completedTask.Exception.Flatten();
+                                }
+
                                 (bool isNonTransient, responseMessage) = await (Task<(bool, ResponseMessage)>)completedTask;
                                 if (isNonTransient)
                                 {
                                     cancellationTokenSource.Cancel();
-                                    ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value.AddDatum(
+                                    ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value.AddOrUpdateDatum(
                                         HedgeRegions,
                                         HedgeRegionsToString(responseMessage.Diagnostics.GetContactedRegions()));
-                                    ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value.AddDatum(
+                                    ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value.AddOrUpdateDatum(
                                         HedgeContext,
                                         object.ReferenceEquals(primaryRequest, completedTask)
                                             ? HedgeContextOriginalRequest
@@ -205,10 +210,10 @@ namespace Microsoft.Azure.Cosmos
                         if (isNonTransient || requestTasks.Count == 0)
                         {
                             cancellationTokenSource.Cancel();
-                            ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value.AddDatum(
+                            ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value.AddOrUpdateDatum(
                                 HedgeRegions,
                                 HedgeRegionsToString(responseMessage.Diagnostics.GetContactedRegions()));
-                            ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value.AddDatum(
+                            ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value.AddOrUpdateDatum(
                                 HedgeContext,
                                 object.ReferenceEquals(primaryRequest, completedTask)
                                 ? HedgeContextOriginalRequest
@@ -263,7 +268,7 @@ namespace Microsoft.Azure.Cosmos
             try
             {
                 ResponseMessage response = await sender.Invoke(request, cancellationToken);
-                if (IsNonTransientResult((int)response.StatusCode, (int)response.Headers.SubStatusCode))
+                if (IsFinalResult((int)response.StatusCode, (int)response.Headers.SubStatusCode))
                 {
                     if (!cancellationToken.IsCancellationRequested)
                     {
@@ -274,7 +279,7 @@ namespace Microsoft.Azure.Cosmos
 
                 return (false, response);
             }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            catch (OperationCanceledException) when (cancellationTokenSource.IsCancellationRequested)
             {
                 return (false, null);
             }
@@ -285,7 +290,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private static bool IsNonTransientResult(int statusCode, int subStatusCode)
+        private static bool IsFinalResult(int statusCode, int subStatusCode)
         {
             //All 1xx, 2xx, and 3xx status codes should be treated as final results
             if (statusCode < (int)HttpStatusCode.BadRequest)
