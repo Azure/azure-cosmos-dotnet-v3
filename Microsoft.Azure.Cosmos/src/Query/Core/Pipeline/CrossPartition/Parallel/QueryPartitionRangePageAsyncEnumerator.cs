@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
     {
         private readonly IQueryDataSource queryDataSource;
         private readonly SqlQuerySpec sqlQuerySpec;
-        private readonly QueryPaginationOptions queryPaginationOptions;
+        private readonly QueryExecutionOptions queryPaginationOptions;
         private readonly ContainerQueryProperties containerQueryProperties;
         private readonly Cosmos.PartitionKey? partitionKey;
 
@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
             SqlQuerySpec sqlQuerySpec,
             FeedRangeState<QueryState> feedRangeState,
             Cosmos.PartitionKey? partitionKey,
-            QueryPaginationOptions queryPaginationOptions,
+            QueryExecutionOptions queryPaginationOptions,
             ContainerQueryProperties containerQueryProperties)
             : base(feedRangeState)
         {
