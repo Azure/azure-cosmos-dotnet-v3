@@ -259,6 +259,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             else
                             {
                                 Range<string> singleRange = overlappingRanges[0].ToRange();
+                                Console.WriteLine($"RequestInvokerHandler.SendAsync - Using FeedRange: {singleRange}");
                                 if ((singleRange.Min == feedRangeEpk.Range.Min) && (singleRange.Max == feedRangeEpk.Range.Max))
                                 {
                                     // 2) The EpkRange spans exactly one physical partition

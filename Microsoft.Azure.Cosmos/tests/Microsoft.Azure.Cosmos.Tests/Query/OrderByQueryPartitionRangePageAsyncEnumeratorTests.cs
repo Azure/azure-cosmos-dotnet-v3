@@ -64,7 +64,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                         partitionKey: null,
                         queryPaginationOptions: new QueryExecutionOptions(pageSizeHint: 10),
                         filter: "filter",
-                        PrefetchPolicy.PrefetchSinglePage),
+                        PrefetchPolicy.PrefetchSinglePage,
+                        containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties()),
                     NoOpTrace.Singleton,
                     cancellationToken);
 

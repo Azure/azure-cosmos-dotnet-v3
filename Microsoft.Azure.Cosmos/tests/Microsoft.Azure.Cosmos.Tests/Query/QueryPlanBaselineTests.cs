@@ -25,6 +25,20 @@
     {
         [TestMethod]
         [Owner("brchon")]
+        public void Test2()
+        {
+            List<QueryPlanBaselineTestInput> testVariations = new List<QueryPlanBaselineTestInput>
+            {
+                Hash(
+                @"Aggregate No Partition Key",
+                @"SELECT count(1) as count FROM (SELECT DISTINCT c.userId, c.tenantDomain, c.userstoreDomain FROM c WHERE (c.loginTimestamp BETWEEN ""2024-04-01 00:00:00Z"" AND ""2024-04-20 23:59:59Z"")) AS x where x.tenantDomain = ""carbon.super"""),
+            };
+
+            this.ExecuteTestSuite(testVariations);
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
         public void Aggregates()
         {
             List<QueryPlanBaselineTestInput> testVariations = new List<QueryPlanBaselineTestInput>

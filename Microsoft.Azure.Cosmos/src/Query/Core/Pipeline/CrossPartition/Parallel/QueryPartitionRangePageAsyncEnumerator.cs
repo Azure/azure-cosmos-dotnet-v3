@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
                 throw new ArgumentNullException(nameof(trace));
             }
 
-            FeedRangeInternal feedRange = this.LimitFeedRangeToSinglePartition();
+            FeedRangeInternal feedRange = LimitFeedRangeToSinglePartition(this.partitionKey, this.FeedRangeState.FeedRange, this.containerQueryProperties);
             return this.queryDataSource.MonadicQueryAsync(
               sqlQuerySpec: this.sqlQuerySpec,
               feedRangeState: new FeedRangeState<QueryState>(feedRange, this.FeedRangeState.State),
@@ -63,29 +63,28 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
         /// Since such an epk range does not exist at the container level, Service generates a GoneException.
         /// This method restrics the range of each container by shrinking the ends of the range so that they do not span across physical partition.
         /// </summary>
-        private FeedRangeInternal LimitFeedRangeToSinglePartition()
+        internal static FeedRangeInternal LimitFeedRangeToSinglePartition(PartitionKey? partitionKey, FeedRangeInternal feedRange, ContainerQueryProperties containerQueryProperties)
         {
             // We sadly need to check the partition key, since a user can set a partition key in the request options with a different continuation token.
             // In the future the partition filtering and continuation information needs to be a tightly bounded contract (like cross feed range state).
-            FeedRangeInternal feedRange = this.FeedRangeState.FeedRange;
-            if (this.partitionKey.HasValue)
+            if (partitionKey.HasValue)
             {
                 // ISSUE-HACK-adityasa-3/25/2024 - We should not update the original feed range inside this class.
                 // Instead we should guarantee that when enumerator is instantiated it is limited to a single physical partition.
                 // Ultimately we should remove enumerator's dependency on PartitionKey.
-                if ((this.containerQueryProperties.PartitionKeyDefinition.Paths.Count > 1) &&
-                    (this.partitionKey.Value.InternalKey.Components.Count != this.containerQueryProperties.PartitionKeyDefinition.Paths.Count) &&
+                if ((containerQueryProperties.PartitionKeyDefinition.Paths.Count > 1) &&
+                    (partitionKey.Value.InternalKey.Components.Count != containerQueryProperties.PartitionKeyDefinition.Paths.Count) &&
                     (feedRange is FeedRangeEpk feedRangeEpk))
                 {
-                    if (this.containerQueryProperties.EffectiveRangesForPartitionKey == null ||
-                        this.containerQueryProperties.EffectiveRangesForPartitionKey.Count == 0)
+                    if (containerQueryProperties.EffectiveRangesForPartitionKey == null ||
+                        containerQueryProperties.EffectiveRangesForPartitionKey.Count == 0)
                     {
                         throw new InvalidOperationException(
                             "EffectiveRangesForPartitionKey should be populated when PK is specified in request options.");
                     }
 
                     foreach (Documents.Routing.Range<String> epkForPartitionKey in
-                        this.containerQueryProperties.EffectiveRangesForPartitionKey)
+                    containerQueryProperties.EffectiveRangesForPartitionKey)
                     {
                         if (Documents.Routing.Range<String>.CheckOverlapping(
                                 feedRangeEpk.Range,
@@ -138,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
                 }
                 else
                 {
-                    feedRange = new FeedRangePartitionKey(this.partitionKey.Value);
+                    feedRange = new FeedRangePartitionKey(partitionKey.Value);
                 }
             }
 

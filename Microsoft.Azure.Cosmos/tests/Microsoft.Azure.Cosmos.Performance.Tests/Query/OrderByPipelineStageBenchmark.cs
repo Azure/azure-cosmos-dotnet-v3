@@ -68,7 +68,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Query
                     queryPaginationOptions: new QueryExecutionOptions(pageSizeHint: EndUserPageSize),
                     maxConcurrency: MaxConcurrency,
                     nonStreamingOrderBy: nonStreamingOrderBy,
-                    continuationToken: null);
+                    continuationToken: null,
+                    containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties());
 
             IQueryPipelineStage pipeline = pipelineStage.Result;
 
