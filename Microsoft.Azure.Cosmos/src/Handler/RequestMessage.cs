@@ -162,7 +162,6 @@ namespace Microsoft.Azure.Cosmos
 
         internal string ContainerId { get; set; }
         internal string DatabaseId { get; set; }
-        internal Uri LocationEndpointToRoute { get; set; }
 
         /// <summary>
         /// Request properties Per request context available to handlers. 
@@ -301,11 +300,6 @@ namespace Microsoft.Azure.Cosmos
                 this.DocumentServiceRequest = serviceRequest;
             }
 
-            if (this.LocationEndpointToRoute != null)
-            {
-                this.DocumentServiceRequest.RequestContext.RouteToLocation(this.LocationEndpointToRoute);
-            }
-
             // Routing to a particular PartitionKeyRangeId
             if (this.PartitionKeyRangeId != null)
             {
@@ -354,15 +348,8 @@ namespace Microsoft.Azure.Cosmos
             clone.UseGatewayMode = this.UseGatewayMode;
             clone.ContainerId = this.ContainerId;
             clone.DatabaseId = this.DatabaseId;
-            clone.LocationEndpointToRoute = this.LocationEndpointToRoute;
 
             return clone;
-        }
-
-        internal void RouteToLocation(Uri location)
-        {
-            this.LocationEndpointToRoute = location;
-            this.DocumentServiceRequest?.RequestContext.RouteToLocation(location);
         }
 
         private static Dictionary<string, object> CreateDictionary()

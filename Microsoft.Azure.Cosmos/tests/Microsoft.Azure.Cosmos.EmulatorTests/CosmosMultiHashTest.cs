@@ -177,7 +177,7 @@
             foreach (Document document in documents)
             {
                 pKey = new PartitionKeyBuilder()
-                    .Add(document.GetPropertyValue<string>("ZipCode"))
+                    //.Add(document.GetPropertyValue<string>("ZipCode"))
                     .Add(document.GetPropertyValue<string>("City"))
                     .Build();
 
