@@ -160,8 +160,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             {
                 // Unfortunately we need to keep both the epk range and partition key for queries
                 // Since the continuation token format uses epk range even though we only need the partition key to route the request.
-                FeedRangeInternal feedRange = this.PartitionKey.HasValue ? new FeedRangePartitionKey(this.PartitionKey.Value) : this.FeedRangeState.FeedRange;
-                // FeedRangeInternal feedRange = CrossPartition.Parallel.QueryPartitionRangePageAsyncEnumerator.LimitFeedRangeToSinglePartition(this.PartitionKey, this.FeedRangeState.FeedRange, this.containerQueryProperties);
+                FeedRangeInternal feedRange = CrossPartition.Parallel.QueryPartitionRangePageAsyncEnumerator.LimitFeedRangeToSinglePartition(this.PartitionKey, this.FeedRangeState.FeedRange, this.containerQueryProperties);
 
                 TryCatch<QueryPage> monadicQueryPage = await this.queryDataSource
                     .MonadicQueryAsync(

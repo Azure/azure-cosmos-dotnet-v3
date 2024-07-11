@@ -63,7 +63,7 @@
 
         static async Task<Container> Open()
         {
-            CosmosClient client = new(accountEndpoint: "https://geo-weu-asisf-dev-db.documents.azure.com:443/", authKeyOrResourceToken: << KEY HERE >>);
+            CosmosClient client = new(accountEndpoint: "https://geo-weu-asisf-dev-db.documents.azure.com:443/");
             Database database = await client.CreateDatabaseIfNotExistsAsync(id: "ASI");
 
             ContainerProperties containerProperties = new ContainerProperties()
