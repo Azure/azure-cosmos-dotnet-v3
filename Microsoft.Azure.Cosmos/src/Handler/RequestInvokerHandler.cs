@@ -114,6 +114,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 ((CosmosTraceDiagnostics)response.Diagnostics).Value.AddOrUpdateDatum("ExcludedRegions", request.RequestOptions.ExcludeRegions);
             }
+
             return response;
         }
 
