@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             AvailabilityStrategy strategy = this.AvailabilityStrategy(request);
             
-            if (strategy != null && strategy.GetType() != typeof(DisabledAvailabilityStrategy))
+            if (strategy?.Enabled())
             {
                 return await strategy.ExecuteAvailabilityStrategyAsync(
                     this.BaseSendAsync,
