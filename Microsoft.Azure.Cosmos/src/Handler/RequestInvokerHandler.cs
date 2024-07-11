@@ -101,12 +101,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
         /// <returns>whether the request should be a parallel hedging request.</returns>
         public AvailabilityStrategy AvailabilityStrategy(RequestMessage request)
         {
-            //No availability strategy options
-            if (request.RequestOptions?.AvailabilityStrategy == null && this.client.ClientOptions.AvailabilityStrategy == null)
-            {
-                return null;
-            }
-
             return request.RequestOptions?.AvailabilityStrategy
                     ?? this.client.ClientOptions.AvailabilityStrategy;
         }
