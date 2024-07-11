@@ -515,7 +515,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 }
 
                 List<CosmosObject> documents = new List<CosmosObject>();
-                foreach (Record record in records.Where(r => IsRecordWithinFeedRange(r, feedRangeState.FeedRange, this.partitionKeyDefinition) && IsRecordWithinQueryPartition(r, this.queryRequestOptions, this.partitionKeyDefinition)))
+                foreach (Record record in records.Where(r => IsRecordWithinFeedRange(r, feedRangeState.FeedRange, this.partitionKeyDefinition)))
                 {
                     CosmosObject document = ConvertRecordToCosmosElement(record);
                     documents.Add(CosmosObject.Create(document));
@@ -717,26 +717,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                             state: queryState,
                             streaming: default)));
             }
-        }
-
-        private bool IsRecordWithinQueryPartition(Record record, QueryRequestOptions queryRequestOptions, PartitionKeyDefinition partitionKeyDefinition)
-        {
-            if(queryRequestOptions?.PartitionKey == null)
-            {
-                return true;
-            }
-
-            IList<CosmosElement> partitionKey = GetPartitionKeysFromObjectModel(queryRequestOptions.PartitionKey.Value);
-            IList<CosmosElement> partitionKeyFromRecord = GetPartitionKeysFromPayload(record.Payload, partitionKeyDefinition);
-            if (partitionKeyDefinition.Kind == PartitionKind.MultiHash)
-            {
-                PartitionKeyHash partitionKeyHash = GetHashFromPartitionKeys(partitionKey, partitionKeyDefinition);
-                PartitionKeyHash partitionKeyFromRecordHash = GetHashFromPartitionKeys(partitionKeyFromRecord, partitionKeyDefinition);
-
-                return partitionKeyHash.Equals(partitionKeyFromRecordHash) || partitionKeyFromRecordHash.Value.StartsWith(partitionKeyHash.Value);
-            }
-
-            return partitionKey.SequenceEqual(partitionKeyFromRecord);
         }
 
         public Task<TryCatch<ChangeFeedPage>> MonadicChangeFeedAsync(

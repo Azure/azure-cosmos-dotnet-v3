@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class OrderByQueryPartitionRangePageAsyncEnumerator : PartitionRangePageAsyncEnumerator<OrderByQueryPage, QueryState>, IPrefetcher
@@ -25,7 +26,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             PartitionKey? partitionKey,
             QueryExecutionOptions queryPaginationOptions,
             string filter,
-            PrefetchPolicy prefetchPolicy)
+            PrefetchPolicy prefetchPolicy,
+            ContainerQueryProperties containerQueryProperties)
         {
             InnerEnumerator enumerator = new InnerEnumerator(
                 queryDataSource,
@@ -33,7 +35,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 feedRangeState,
                 partitionKey,
                 queryPaginationOptions,
-                filter);
+                filter,
+                containerQueryProperties);
 
             BufferedPartitionRangePageAsyncEnumeratorBase<OrderByQueryPage, QueryState> bufferedEnumerator = prefetchPolicy switch
             {
@@ -106,6 +109,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         private sealed class InnerEnumerator : PartitionRangePageAsyncEnumerator<OrderByQueryPage, QueryState>
         {
             private readonly IQueryDataSource queryDataSource;
+            private readonly ContainerQueryProperties containerQueryProperties;
 
             public InnerEnumerator(
                 IQueryDataSource queryDataSource,
@@ -113,7 +117,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 FeedRangeState<QueryState> feedRangeState,
                 PartitionKey? partitionKey,
                 QueryExecutionOptions queryPaginationOptions,
-                string filter)
+                string filter,
+                ContainerQueryProperties containerQueryProperties)
                 : base(feedRangeState)
             {
                 this.queryDataSource = queryDataSource ?? throw new ArgumentNullException(nameof(queryDataSource));
@@ -121,6 +126,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 this.PartitionKey = partitionKey;
                 this.QueryPaginationOptions = queryPaginationOptions ?? QueryExecutionOptions.Default;
                 this.Filter = filter;
+                this.containerQueryProperties = containerQueryProperties;
             }
 
             public SqlQuerySpec SqlQuerySpec { get; }
@@ -144,16 +150,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     this.FeedRangeState,
                     this.PartitionKey,
                     options,
-                    this.Filter);
+                    this.Filter,
+                    this.containerQueryProperties);
             }
 
             public override ValueTask DisposeAsync() => default;
 
             protected override async Task<TryCatch<OrderByQueryPage>> GetNextPageAsync(ITrace trace, CancellationToken cancellationToken)
             {
-                // Unfortunately we need to keep both the epk range and partition key for queries
-                // Since the continuation token format uses epk range even though we only need the partition key to route the request.
-                FeedRangeInternal feedRange = this.PartitionKey.HasValue ? new FeedRangePartitionKey(this.PartitionKey.Value) : this.FeedRangeState.FeedRange;
+                FeedRangeInternal feedRange = HierarchicalPartitionUtil.LimitFeedRangeToSinglePartition(this.PartitionKey, this.FeedRangeState.FeedRange, this.containerQueryProperties);
 
                 TryCatch<QueryPage> monadicQueryPage = await this.queryDataSource
                     .MonadicQueryAsync(
