@@ -405,6 +405,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="..\..\..\Directory.Build.props" Link="Directory.Build.props">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Update="Tracing\TraceWriterBaselineTests.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Compile>
