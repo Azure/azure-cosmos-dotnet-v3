@@ -416,13 +416,13 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>a cloned copy of the current <see cref="Headers"/></returns>
         internal Headers Clone()
         {
-            StoreRequestHeaders clone = new StoreRequestHeaders();
+            Headers clone = new Headers();
             foreach (string key in this.CosmosMessageHeaders.AllKeys())
             {
                 clone.Add(key, this.CosmosMessageHeaders.Get(key));
             }
 
-            return new Headers(clone);
+            return clone;
         }
 
         /// <summary>
