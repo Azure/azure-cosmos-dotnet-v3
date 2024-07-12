@@ -13,6 +13,8 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Documents;
+    using System.Net.Http;
+    using static Microsoft.Azure.Cosmos.GatewayAccountReaderTests;
 
     [TestClass]
     public class AsyncCacheTest
@@ -312,6 +314,56 @@ namespace Microsoft.Azure.Cosmos.Tests
             TaskCreationOptions.None,
             new SingleTaskScheduler()
             );
+        }
+
+        [TestMethod]
+        public async Task LocalHttp2Testing()
+        {
+            HttpMessageHandler messageHandler = new CustomMessageHandler();
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy()
+            {
+            };
+
+            CosmosHttpClientCore cosmosHttpClient = (CosmosHttpClientCore)CosmosHttpClientCore.CreateWithConnectionPolicy(
+                apiType: ApiType.None,
+                eventSource: DocumentClientEventSource.Instance,
+                connectionPolicy: connectionPolicy,
+                httpMessageHandler: null,
+                sendingRequestEventArgs: null,
+                receivedResponseEventArgs: null);
+
+            using (cosmosHttpClient)
+            {
+                // Create an HttpRequestMessage
+                HttpRequestMessage request = new HttpRequestMessage()
+                {
+                    RequestUri = new Uri("https://jsonplaceholder.typicode.com/posts"),
+                    Method = HttpMethod.Get,
+                    Version = new Version(1, 1) // Set HTTP/2 here
+                };
+
+                try
+                {
+                    // Send the request
+                    HttpResponseMessage response = await cosmosHttpClient.ExecuteHttpHelperAsync(request, ResourceType.Address, default);
+
+                    // Ensure we got a successful response
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        Console.WriteLine($"Error: {response.StatusCode}");
+                    }
+                    else
+                    {
+                        // Read the response content
+                        string content = await response.Content.ReadAsStringAsync();
+                        Console.WriteLine(content);
+                    }
+                }
+                catch (HttpRequestException e)
+                {
+                    Console.WriteLine($"Request exception: {e.Message}");
+                }
+            }
         }
 
         private int GenerateIntFuncThatThrows()

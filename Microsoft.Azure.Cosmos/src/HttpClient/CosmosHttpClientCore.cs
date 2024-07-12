@@ -441,7 +441,7 @@ namespace Microsoft.Azure.Cosmos
             return !timeoutEnumerator.MoveNext(); // No more retries are configured
         }
 
-        private async Task<HttpResponseMessage> ExecuteHttpHelperAsync(
+        public async Task<HttpResponseMessage> ExecuteHttpHelperAsync(
             HttpRequestMessage requestMessage,
             ResourceType resourceType,
             CancellationToken cancellationToken)
