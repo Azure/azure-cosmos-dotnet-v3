@@ -20,7 +20,7 @@
         private ContainerInternal Container = null;
         private const string PartitionKey = "/pk";
 
-        // [TestInitialize]
+        [TestInitialize]
         public async Task TestInitialize()
         {
             await this.TestInit();
