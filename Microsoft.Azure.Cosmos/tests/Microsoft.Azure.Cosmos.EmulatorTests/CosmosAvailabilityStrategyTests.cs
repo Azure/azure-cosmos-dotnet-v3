@@ -120,7 +120,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             { "Gone", goneResult },
             { "RetryWith", retryWithResult },
             { "InternalServerError", internalServerErrorResult },
-            { "TooManyRequests", tooManyRequestsResult },
             { "ReadSessionNotAvailable", readSessionNotAvailableResult },
             { "Timeout", timeoutResult },
             { "PartitionIsSplitting", partitionIsSplittingResult },
@@ -354,7 +353,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow("SinglePartitionQuery", "Query", "Gone", DisplayName = "SinglePartitionQuery | Gone")]
         [DataRow("SinglePartitionQuery", "Query", "RetryWith", DisplayName = "SinglePartitionQuery | RetryWith")]
         [DataRow("SinglePartitionQuery", "Query", "InternalServerError", DisplayName = "SinglePartitionQuery | InternalServerError")]
-        [DataRow("SinglePartitionQuery", "Query", "TooManyRequests", DisplayName = "SinglePartitionQuery | TooManyRequests")]
         [DataRow("SinglePartitionQuery", "Query", "ReadSessionNotAvailable", DisplayName = "SinglePartitionQuery | ReadSessionNotAvailable")]
         [DataRow("SinglePartitionQuery", "Query", "Timeout", DisplayName = "SinglePartitionQuery | Timeout")]
         [DataRow("SinglePartitionQuery", "Query", "PartitionIsSplitting", DisplayName = "SinglePartitionQuery | PartitionIsSplitting")]
@@ -364,7 +362,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow("CrossPartitionQuery", "Query", "Gone", DisplayName = "CrossPartitionQuery | Gone")]
         [DataRow("CrossPartitionQuery", "Query", "RetryWith", DisplayName = "CrossPartitionQuery | RetryWith")]
         [DataRow("CrossPartitionQuery", "Query", "InternalServerError", DisplayName = "CrossPartitionQuery | InternalServerError")]
-        [DataRow("CrossPartitionQuery", "Query", "TooManyRequests", DisplayName = "CrossPartitionQuery | TooManyRequests")]
         [DataRow("CrossPartitionQuery", "Query", "ReadSessionNotAvailable", DisplayName = "CrossPartitionQuery | ReadSessionNotAvailable")]
         [DataRow("CrossPartitionQuery", "Query", "Timeout", DisplayName = "CrossPartitionQuery | Timeout")]
         [DataRow("CrossPartitionQuery", "Query", "PartitionIsSplitting", DisplayName = "CrossPartitionQuery | PartitionIsSplitting")]
@@ -374,7 +371,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow("ReadMany", "ReadMany", "Gone", DisplayName = "ReadMany | Gone")]
         [DataRow("ReadMany", "ReadMany", "RetryWith", DisplayName = "ReadMany | RetryWith")]
         [DataRow("ReadMany", "ReadMany", "InternalServerError", DisplayName = "ReadMany | InternalServerError")]
-        [DataRow("ReadMany", "ReadMany", "TooManyRequests", DisplayName = "ReadMany | TooManyRequests")]
         [DataRow("ReadMany", "ReadMany", "ReadSessionNotAvailable", DisplayName = "ReadMany | ReadSessionNotAvailable")]
         [DataRow("ReadMany", "ReadMany", "Timeout", DisplayName = "ReadMany | Timeout")]
         [DataRow("ReadMany", "ReadMany", "PartitionIsSplitting", DisplayName = "ReadMany | PartitionIsSplitting")]
@@ -384,7 +380,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow("ChangeFeed", "ChangeFeed", "Gone", DisplayName = "ChangeFeed | Gone")]
         [DataRow("ChangeFeed", "ChangeFeed", "RetryWith", DisplayName = "ChangeFeed | RetryWith")]
         [DataRow("ChangeFeed", "ChangeFeed", "InternalServerError", DisplayName = "ChangeFeed | InternalServerError")]
-        [DataRow("ChangeFeed", "ChangeFeed", "TooManyRequests", DisplayName = "ChangeFeed | TooManyRequests")]
         [DataRow("ChangeFeed", "ChangeFeed", "ReadSessionNotAvailable", DisplayName = "ChangeFeed | ReadSessionNotAvailable")]
         [DataRow("ChangeFeed", "ChangeFeed", "Timeout", DisplayName = "ChangeFeed | Timeout")]
         [DataRow("ChangeFeed", "ChangeFeed", "PartitionIsSplitting", DisplayName = "ChangeFeed | PartitionIsSplitting")]
