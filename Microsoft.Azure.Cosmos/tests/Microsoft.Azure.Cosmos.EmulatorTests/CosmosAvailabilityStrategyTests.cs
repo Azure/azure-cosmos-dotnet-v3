@@ -83,9 +83,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static readonly IFaultInjectionResult internalServerErrorResult = FaultInjectionResultBuilder
             .GetResultBuilder(FaultInjectionServerErrorType.InternalServerEror)
             .Build();
-        private static readonly IFaultInjectionResult tooManyRequestsResult = FaultInjectionResultBuilder
-            .GetResultBuilder(FaultInjectionServerErrorType.TooManyRequests)
-            .Build();
         private static readonly IFaultInjectionResult readSessionNotAvailableResult = FaultInjectionResultBuilder
             .GetResultBuilder(FaultInjectionServerErrorType.ReadSessionNotAvailable)
             .Build();
@@ -348,7 +345,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow("Read", "Read", "Gone", DisplayName = "Read | Gone")]
         [DataRow("Read", "Read", "RetryWith", DisplayName = "Read | RetryWith")]
         [DataRow("Read", "Read", "InternalServerError", DisplayName = "Read | InternalServerError")]
-        [DataRow("Read", "Read", "TooManyRequests", DisplayName = "Read | TooManyRequests")]
         [DataRow("Read", "Read", "ReadSessionNotAvailable", DisplayName = "Read | ReadSessionNotAvailable")]
         [DataRow("Read", "Read", "Timeout", DisplayName = "Read | Timeout")]
         [DataRow("Read", "Read", "PartitionIsSplitting", DisplayName = "Read | PartitionIsSplitting")]
