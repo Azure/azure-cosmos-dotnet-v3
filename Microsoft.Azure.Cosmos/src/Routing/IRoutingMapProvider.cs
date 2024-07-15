@@ -25,38 +25,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <returns>List of effective partition key ranges for a collection or null if collection doesn't exist.</returns>
         Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(string collectionResourceId, Range<string> range, ITrace trace, bool forceRefresh = false);
 
-        /// <summary>
-        /// Returns list of effective partition key ranges for a collection.
-        /// </summary>
-        /// <param name="collectionResourceId"></param>
-        /// <param name="ranges"></param>
-        /// <param name="partitionKey"></param>
-        /// <param name="trace"></param>
-        /// <param name="forceRefresh"></param>
-        /// <returns>List of effective partition key ranges for a collection or null if collection doesn't exist.</returns>
-        Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
-            string collectionResourceId,
-            IList<Range<string>> ranges,
-            PartitionKey partitionKey,
-            ITrace trace,
-            bool forceRefresh = false);
-
-        /// <summary>
-        /// Returns list of effective partition key ranges for a collection.
-        /// </summary>
-        /// <param name="collectionResourceId"></param>
-        /// <param name="ranges"></param>
-        /// <param name="feedRange"></param>
-        /// <param name="trace"></param>
-        /// <param name="forceRefresh"></param>
-        /// <returns>List of effective partition key ranges for a collection or null if collection doesn't exist.</returns>
-        Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
-            string collectionResourceId,
-            IList<Range<string>> ranges,
-            FeedRange feedRange,
-            ITrace trace,
-            bool forceRefresh = false);
-
         Task<PartitionKeyRange> TryGetPartitionKeyRangeByIdAsync(string collectionResourceId, string partitionKeyRangeId, ITrace trace, bool forceRefresh = false);
     }
 }

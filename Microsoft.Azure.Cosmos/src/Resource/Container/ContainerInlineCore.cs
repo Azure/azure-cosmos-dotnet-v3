@@ -660,5 +660,25 @@ namespace Microsoft.Azure.Cosmos
                 task: (trace) => base.DeleteAllItemsByPartitionKeyStreamAsync(partitionKey, trace, requestOptions, cancellationToken),
                 openTelemetry: (response) => new OpenTelemetryResponse(response));
         }
+
+        public override async Task<IReadOnlyList<FeedRange>> FindOverlappingRangesAsync(
+            Cosmos.PartitionKey partitionKey,
+            IReadOnlyList<FeedRange> feedRanges,
+            CancellationToken cancellationToken = default)
+        {
+            return await base.FindOverlappingRangesAsync(
+                partitionKey: partitionKey,
+                feedRanges: feedRanges,
+                cancellationToken: cancellationToken);
+        }
+
+        public override IReadOnlyList<FeedRange> FindOverlappingRanges(
+            Cosmos.FeedRange feedRange,
+            IReadOnlyList<Cosmos.FeedRange> feedRanges)
+        {
+            return base.FindOverlappingRanges(
+                feedRange: feedRange,
+                feedRanges: feedRanges);
+        }
     }
 }

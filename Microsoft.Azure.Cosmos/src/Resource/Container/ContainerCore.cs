@@ -11,11 +11,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Pagination;
-    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
@@ -699,6 +696,75 @@ namespace Microsoft.Azure.Cosmos
             return new FeedIteratorCore<T>(
                 changeFeedIteratorCore,
                 responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
+        }
+
+        public override async Task<IReadOnlyList<Cosmos.FeedRange>> FindOverlappingRangesAsync(
+            Cosmos.PartitionKey partitionKey,
+            IReadOnlyList<Cosmos.FeedRange> feedRanges,
+            CancellationToken cancellationToken = default)
+        {
+            List<FeedRange> overlappingRanges = new ();
+
+            foreach (Range<string> range in ContainerCore.ConvertToRange(feedRanges))
+            {
+                if (Range<string>.CheckOverlapping(
+                    range1: await this.ConvertToRangeAsync(
+                        partitionKey: partitionKey,
+                        cancellationToken: cancellationToken),
+                    range2: range))
+                {
+                    overlappingRanges.Add(new FeedRangeEpk(range));
+                }
+            }
+
+            return overlappingRanges;
+        }
+
+        public override IReadOnlyList<Cosmos.FeedRange> FindOverlappingRanges(
+            Cosmos.FeedRange feedRange,
+            IReadOnlyList<Cosmos.FeedRange> feedRanges)
+        {
+            List<FeedRange> overlappingRanges = new List<FeedRange>();
+
+            foreach (Range<string> range in ContainerCore.ConvertToRange(feedRanges))
+            {
+                if (Range<string>.CheckOverlapping(
+                    range1: ContainerCore.ConvertToRange(feedRange),
+                    range2: range))
+                {
+                    overlappingRanges.Add(new FeedRangeEpk(range));
+                }
+            }
+
+            return overlappingRanges;
+        }
+
+        private async Task<Range<string>> ConvertToRangeAsync(PartitionKey partitionKey, CancellationToken cancellationToken)
+        {
+            PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync(cancellationToken);
+            string effectivePartitionKeyString = partitionKey.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition);
+            CollectionRoutingMap collectionRoutingMap = await this.GetRoutingMapAsync(cancellationToken);
+            PartitionKeyRange partitionKeyRange = collectionRoutingMap.GetRangeByEffectivePartitionKey(effectivePartitionKeyString);
+
+            return partitionKeyRange.ToRange();
+        }
+
+        private static IEnumerable<Range<string>> ConvertToRange(IReadOnlyList<FeedRange> fromFeedRanges)
+        {
+            foreach (FeedRange fromFeedRange in fromFeedRanges)
+            {
+                yield return ContainerCore.ConvertToRange(fromFeedRange);
+            }
+        }
+
+        private static Range<string> ConvertToRange(FeedRange fromFeedRange)
+        {
+            if (fromFeedRange is not FeedRangeEpk feedRangeEpk)
+            {
+                return default;
+            }
+
+            return feedRangeEpk.Range;
         }
     }
 }

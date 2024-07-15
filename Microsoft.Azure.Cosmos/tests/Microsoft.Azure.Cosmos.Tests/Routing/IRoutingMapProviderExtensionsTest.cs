@@ -38,30 +38,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 return Task.FromResult(this.routingMap.GetOverlappingRanges(range));
             }
 
-            public Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
-                string collectionResourceId,
-                IList<Range<string>> ranges,
-                PartitionKey partitionKey,
-                ITrace trace,
-                bool forceRefresh = false)
-            {
-                Range<string> range = default;
-
-                return Task.FromResult(this.routingMap.GetOverlappingRanges(range));
-            }
-
-            public Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
-                string collectionResourceId,
-                IList<Range<string>> ranges,
-                Cosmos.FeedRange feedRange,
-                ITrace trace,
-                bool forceRefresh = false)
-            {
-                Range<string> range = default;
-
-                return Task.FromResult(this.routingMap.GetOverlappingRanges(range));
-            }
-
             public Task<PartitionKeyRange> TryGetPartitionKeyRangeByIdAsync(
                 string collectionResourceId,
                 string partitionKeyRangeId,

@@ -11,17 +11,15 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Linq;
     using System.Net;
     using System.Text;
+    using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Routing;
-    using Newtonsoft.Json;
 
     internal class PartitionKeyRangeCache : IRoutingMapProvider, ICollectionRoutingMapCache
     {
@@ -81,42 +79,6 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 return routingMap.GetOverlappingRanges(range);
             }
-        }
-
-        /// <summary>
-        /// Gets the overlapping ranges for a list of feed ranges.
-        /// </summary>
-        /// <param name="collectionRid"></param>
-        /// <param name="ranges"></param>
-        /// <param name="trace"></param>
-        /// <param name="forceRefresh"></param>
-        public virtual async Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
-            string collectionRid,
-            IReadOnlyList<Range<string>> ranges,
-            ITrace trace,
-            bool forceRefresh = false)
-        {
-            List<PartitionKeyRange> partitionKeyRanges = new ();
-
-            using (ITrace childTrace = trace.StartChild("Try Get Overlapping Ranges", TraceComponent.Routing, Tracing.TraceLevel.Info))
-            {
-                Debug.Assert(ResourceId.TryParse(collectionRid, out ResourceId collectionRidParsed), "Could not parse CollectionRid from ResourceId.");
-
-                foreach (Range<string> range in ranges)
-                {
-                    IReadOnlyList<PartitionKeyRange> overlappingRanges = await this.TryGetOverlappingRangesAsync(
-                        collectionRid: collectionRid,
-                        range: range,
-                        trace: childTrace,
-                        forceRefresh: forceRefresh);
-
-                    Debug.Assert(overlappingRanges != null, $"There should always be overlapping ranges for {JsonConvert.SerializeObject(range)}.");
-
-                    partitionKeyRanges.AddRange(overlappingRanges);
-                }
-            }
-
-            return partitionKeyRanges.AsReadOnly();
         }
 
         public virtual async Task<PartitionKeyRange> TryGetPartitionKeyRangeByIdAsync(
@@ -360,60 +322,6 @@ namespace Microsoft.Azure.Cosmos.Routing
                     }
                 }
             }
-        }
-
-        /// <summary>
-        /// Gets the overlapping ranges for a list of feed ranges.
-        /// </summary>
-        /// <param name="collectionRid"></param>
-        /// <param name="ranges"></param>
-        /// <param name="partitionKey"></param>
-        /// <param name="trace"></param>
-        /// <param name="forceRefresh"></param>
-        public virtual async Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
-            string collectionRid,
-            IList<Range<string>> ranges,
-            Cosmos.PartitionKey partitionKey,
-            ITrace trace,
-            bool forceRefresh = false)
-        {            
-            List<PartitionKeyRange> logicalPartitionKeyRanges = await this.TryGetOverlappingRangesAsync(
-                collectionRid,
-                ranges,
-                trace,
-                forceRefresh);
-
-            // look at all the bookmarks, does the feed range of the bookmark overlap with the feed range (min, max) of the logical partition.
-            // is it in between the single epk hash value
-            // single partition key of the change.
-
-            // get the partition key for the feed range.
-
-            return logicalPartitionKeyRanges.AsReadOnly();
-        }
-
-        /// <summary>
-        /// Gets the overlapping ranges for a list of feed ranges.
-        /// </summary>
-        /// <param name="collectionRid"></param>
-        /// <param name="ranges"></param>
-        /// <param name="feedRange"></param>
-        /// <param name="trace"></param>
-        /// <param name="forceRefresh"></param>
-        public virtual async Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
-            string collectionRid,
-            IList<Range<string>> ranges,
-            FeedRange feedRange,
-            ITrace trace,
-            bool forceRefresh = false)
-        {
-            List<PartitionKeyRange> partitionKeyRanges = await this.TryGetOverlappingRangesAsync(
-                collectionRid,
-                ranges,
-                trace,
-                forceRefresh);
-
-            return partitionKeyRanges.AsReadOnly();
         }
     }
 }

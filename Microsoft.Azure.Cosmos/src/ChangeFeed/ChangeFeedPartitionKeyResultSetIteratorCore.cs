@@ -148,12 +148,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             if (this.feedRangeEpk != null)
             {
                 responseMessage.Headers.FeedRangeDetails = FeedRangeDetail.Create(
-                    minInclusive: this.feedRangeEpk.Range.Min,
-                    maxExclusive: this.feedRangeEpk.Range.Max,
+                    feedRange: FeedRangeEpk.FromJsonString(this.feedRangeEpk.ToJsonString()),
                     collectionRid: responseMessage.RequestMessage.DocumentServiceRequest.ResourceId);
             }
 
             return responseMessage;
         }
+
     }
 }
