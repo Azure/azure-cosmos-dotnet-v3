@@ -459,9 +459,9 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets the feed range details.
+        /// Gets the feed range.
         /// </summary>
-        internal virtual ChangeFeed.FeedRangeDetail FeedRangeDetails
+        internal virtual FeedRange FeedRange
         {
             get;
             set;

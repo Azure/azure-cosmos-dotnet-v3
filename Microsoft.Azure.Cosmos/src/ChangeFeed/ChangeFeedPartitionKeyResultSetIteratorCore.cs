@@ -143,13 +143,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             responseMessage.Headers.ContinuationToken = etag;
             this.changeFeedStartFrom = new ChangeFeedStartFromContinuationAndFeedRange(etag, (FeedRangeInternal)this.changeFeedStartFrom.FeedRange);
 
-            // Set the FeedRangeMinMax response header.
+            // Set the FeedRange response header.
+            // NOTE(philipthomas-MSFT): Is this null-check necessary? Under what conditions will feedRangeEpk is null?
 
             if (this.feedRangeEpk != null)
             {
-                responseMessage.Headers.FeedRangeDetails = FeedRangeDetail.Create(
-                    feedRange: FeedRangeEpk.FromJsonString(this.feedRangeEpk.ToJsonString()),
-                    collectionRid: responseMessage.RequestMessage.DocumentServiceRequest.ResourceId);
+                responseMessage.Headers.FeedRange = new FeedRangeEpk(this.feedRangeEpk.Range);
             }
 
             return responseMessage;

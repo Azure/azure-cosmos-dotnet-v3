@@ -267,68 +267,43 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         public async Task WhenADocumentIsCreatedThenUpdatedHeaderHasFeedRangeTestsAsync()
         {
             ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes);
-            ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
+            ManualResetEvent allDocsProcessed = new (false);
             Exception exception = default;
 
             ChangeFeedProcessor processor = monitoredContainer
                 .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: "processor", onChangesDelegate: async (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItem<dynamic>> docs, CancellationToken token) =>
                 {
-                    // NOTE(philipthomas-MSFT): Not sure if I need these below.
-                    //string id = default;
-                    //string pk = default;
-                    //string description = default;
-
                     foreach (ChangeFeedItem<dynamic> change in docs)
                     {
-                        FeedRange feedRange = context.Headers.FeedRangeDetails.FeedRange; // FeedRange, Critical
-                        string containerRId = context.Headers.FeedRangeDetails.CollectionRid; // ContainerResourceId, Ancillary
-                        string lsn = context.Headers.ContinuationToken; // LSN, Critical
+                        FeedRange feedRange = context.Headers.FeedRange; // FeedRange
+                        string lsn = context.Headers.ContinuationToken; // LSN
 
                         Assert.IsNotNull(feedRange);
                         Logger.LogLine($"{nameof(feedRange)} -> {feedRange.ToJsonString()}");
                         
-                        Assert.IsNotNull(containerRId);
-                        Logger.LogLine($"{nameof(containerRId)} -> {containerRId}");
-                        
                         Assert.IsNotNull(lsn);
                         Logger.LogLine($"{nameof(lsn)} -> {lsn}");
 
-                        Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("", "05C1DFFFFFFFFC", true, false);
-                        FeedRangeEpk feedRangeEpk = new FeedRangeEpk(range);
-                        string representation = feedRangeEpk.ToJsonString();
-
-                        List<FeedRange> ranges = new List<FeedRange>()
+                        List<FeedRange> ranges = new ()
                         {
-                            FeedRange.FromJsonString(representation),
+                            FeedRange.FromJsonString("{\"Range\":{\"min\":\"\",\"max\":\"05C1DFFFFFFFFC\"}}"),
+                            FeedRange.FromJsonString("{\"Range\":{\"min\":\"08888888888888\",\"max\":\"09999999999999\"}}"), // should be out of range
                         };
 
+                        // NOTE(philipthomas-MSFT): FindOverlappingRanges, uses FeedRange.
                         IReadOnlyList<FeedRange> overlappingRangesFromFeedRange = monitoredContainer.FindOverlappingRanges(
-                            feedRange: feedRange, 
+                            feedRange: feedRange,
                             feedRanges: ranges);
 
                         Assert.IsNotNull(overlappingRangesFromFeedRange);
                         Logger.LogLine($"{nameof(overlappingRangesFromFeedRange)} -> {JsonConvert.SerializeObject(overlappingRangesFromFeedRange)}");
 
-                        string pk = change.Current.pk.ToString();
-                        PartitionKey partitionKey = new (pk);
-
-                        IReadOnlyList<FeedRange> overlappingRangesFromPartitionKey = await monitoredContainer.FindOverlappingRangesAsync(
-                            partitionKey: partitionKey,
-                            feedRanges: ranges);
+                        // NOTE(philipthomas-MSFT): FindOverlappingRangesAsync, uses PartitionKey.
+                        PartitionKey partitionKey = new (change.Current.pk.ToString());
+                        IReadOnlyList<FeedRange> overlappingRangesFromPartitionKey = await monitoredContainer.FindOverlappingRangesAsync(partitionKey: partitionKey, feedRanges: ranges, cancellationToken: token);
                         
                         Assert.IsNotNull(overlappingRangesFromPartitionKey);
                         Logger.LogLine($"{nameof(overlappingRangesFromPartitionKey)} -> {JsonConvert.SerializeObject(overlappingRangesFromPartitionKey)}");
-
-                        // NOTE(philipthomas-MSFT): Not sure if I need these below.
-                        //id = change.Current.id.ToString();
-                        //pk = change.Current.pk.ToString();
-                        //description = change.Current.description.ToString();
-
-                        //ChangeFeedOperationType operationType = change.Metadata.OperationType;
-                        //long previousLsn = change.Metadata.PreviousLsn;
-                        //DateTime m = change.Metadata.ConflictResolutionTimestamp;
-                        //long lsn = change.Metadata.Lsn;
-                        //bool isTimeToLiveExpired = change.Metadata.IsTimeToLiveExpired;
                     }
 
                     Assert.IsNotNull(context.LeaseToken);
