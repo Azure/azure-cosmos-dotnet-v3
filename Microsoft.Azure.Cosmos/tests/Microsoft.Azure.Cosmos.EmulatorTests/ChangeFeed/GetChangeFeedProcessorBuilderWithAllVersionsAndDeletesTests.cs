@@ -11,7 +11,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -154,31 +156,32 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             ChangeFeedProcessor processor = monitoredContainer
                 .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: "processor", onChangesDelegate: (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItem<dynamic>> docs, CancellationToken token) =>
                 {
-                    string id = default;
-                    string pk = default;
-                    string description = default;
+                    // NOTE(philipthomas-MSFT): Not sure if I need these below.
+                    //string id = default;
+                    //string pk = default;
+                    //string description = default;
 
-                    foreach (ChangeFeedItem<dynamic> change in docs)
-                    {
-                        if (change.Metadata.OperationType != ChangeFeedOperationType.Delete)
-                        {
-                            id = change.Current.id.ToString();
-                            pk = change.Current.pk.ToString();
-                            description = change.Current.description.ToString();
-                        }
-                        else
-                        {
-                            id = change.Previous.id.ToString();
-                            pk = change.Previous.pk.ToString();
-                            description = change.Previous.description.ToString();
-                        }
+                    //foreach (ChangeFeedItem<dynamic> change in docs)
+                    //{
+                    //if (change.Metadata.OperationType != ChangeFeedOperationType.Delete)
+                    //{
+                    //    id = change.Current.id.ToString();
+                    //    pk = change.Current.pk.ToString();
+                    //    description = change.Current.description.ToString();
+                    //}
+                    //else
+                    //{
+                    //    id = change.Previous.id.ToString();
+                    //    pk = change.Previous.pk.ToString();
+                    //    description = change.Previous.description.ToString();
+                    //}
 
-                        ChangeFeedOperationType operationType = change.Metadata.OperationType;
-                        long previousLsn = change.Metadata.PreviousLsn;
-                        DateTime m = change.Metadata.ConflictResolutionTimestamp;
-                        long lsn = change.Metadata.Lsn;
-                        bool isTimeToLiveExpired = change.Metadata.IsTimeToLiveExpired;
-                    }
+                    //ChangeFeedOperationType operationType = change.Metadata.OperationType;
+                    //long previousLsn = change.Metadata.PreviousLsn;
+                    //DateTime m = change.Metadata.ConflictResolutionTimestamp;
+                    //long lsn = change.Metadata.Lsn;
+                    //bool isTimeToLiveExpired = change.Metadata.IsTimeToLiveExpired;
+                    //}
 
                     Assert.IsNotNull(context.LeaseToken);
                     Assert.IsNotNull(context.Diagnostics);
@@ -245,6 +248,142 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             await Task.Delay(1000);
 
             await monitoredContainer.DeleteItemAsync<dynamic>(id: "1", partitionKey: new PartitionKey("1"));
+
+            bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+
+            await processor.StopAsync();
+
+            if (exception != default)
+            {
+                Assert.Fail(exception.ToString());
+            }
+        }
+
+        [TestMethod]
+        [Owner("philipthomas-MSFT")]
+        [Description("Scenario: When a document is created, then updated, there should be 2 changes that will appear for that " +
+            "document when using ChangeFeedProcessor with AllVersionsAndDeletes set as the ChangeFeedMode. The context header also now" +
+            "has the FeedRange included.")]
+        public async Task WhenADocumentIsCreatedThenUpdatedHeaderHasFeedRangeTestsAsync()
+        {
+            ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes);
+            ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
+            Exception exception = default;
+
+            ChangeFeedProcessor processor = monitoredContainer
+                .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: "processor", onChangesDelegate: async (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItem<dynamic>> docs, CancellationToken token) =>
+                {
+                    // NOTE(philipthomas-MSFT): Not sure if I need these below.
+                    //string id = default;
+                    //string pk = default;
+                    //string description = default;
+
+                    foreach (ChangeFeedItem<dynamic> change in docs)
+                    {
+                        FeedRange feedRange = context.Headers.FeedRangeDetails.FeedRange; // FeedRange, Critical
+                        string containerRId = context.Headers.FeedRangeDetails.CollectionRid; // ContainerResourceId, Ancillary
+                        string lsn = context.Headers.ContinuationToken; // LSN, Critical
+
+                        Assert.IsNotNull(feedRange);
+                        Logger.LogLine($"{nameof(feedRange)} -> {feedRange.ToJsonString()}");
+                        
+                        Assert.IsNotNull(containerRId);
+                        Logger.LogLine($"{nameof(containerRId)} -> {containerRId}");
+                        
+                        Assert.IsNotNull(lsn);
+                        Logger.LogLine($"{nameof(lsn)} -> {lsn}");
+
+                        Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("", "05C1DFFFFFFFFC", true, false);
+                        FeedRangeEpk feedRangeEpk = new FeedRangeEpk(range);
+                        string representation = feedRangeEpk.ToJsonString();
+
+                        List<FeedRange> ranges = new List<FeedRange>()
+                        {
+                            FeedRange.FromJsonString(representation),
+                        };
+
+                        IReadOnlyList<FeedRange> overlappingRangesFromFeedRange = monitoredContainer.FindOverlappingRanges(
+                            feedRange: feedRange, 
+                            feedRanges: ranges);
+
+                        Assert.IsNotNull(overlappingRangesFromFeedRange);
+                        Logger.LogLine($"{nameof(overlappingRangesFromFeedRange)} -> {JsonConvert.SerializeObject(overlappingRangesFromFeedRange)}");
+
+                        string pk = change.Current.pk.ToString();
+                        PartitionKey partitionKey = new (pk);
+
+                        IReadOnlyList<FeedRange> overlappingRangesFromPartitionKey = await monitoredContainer.FindOverlappingRangesAsync(
+                            partitionKey: partitionKey,
+                            feedRanges: ranges);
+                        
+                        Assert.IsNotNull(overlappingRangesFromPartitionKey);
+                        Logger.LogLine($"{nameof(overlappingRangesFromPartitionKey)} -> {JsonConvert.SerializeObject(overlappingRangesFromPartitionKey)}");
+
+                        // NOTE(philipthomas-MSFT): Not sure if I need these below.
+                        //id = change.Current.id.ToString();
+                        //pk = change.Current.pk.ToString();
+                        //description = change.Current.description.ToString();
+
+                        //ChangeFeedOperationType operationType = change.Metadata.OperationType;
+                        //long previousLsn = change.Metadata.PreviousLsn;
+                        //DateTime m = change.Metadata.ConflictResolutionTimestamp;
+                        //long lsn = change.Metadata.Lsn;
+                        //bool isTimeToLiveExpired = change.Metadata.IsTimeToLiveExpired;
+                    }
+
+                    Assert.IsNotNull(context.LeaseToken);
+                    Assert.IsNotNull(context.Diagnostics);
+                    Assert.IsNotNull(context.Headers);
+                    Assert.IsNotNull(context.Headers.Session);
+                    Assert.IsTrue(context.Headers.RequestCharge > 0);
+                    Assert.IsTrue(context.Diagnostics.ToString().Contains("Change Feed Processor Read Next Async"));
+                    Assert.AreEqual(expected: 2, actual: docs.Count);
+
+                    ChangeFeedItem<dynamic> createChange = docs.ElementAt(0);
+                    Assert.IsNotNull(createChange.Current);
+                    Assert.AreEqual(expected: "1", actual: createChange.Current.id.ToString());
+                    Assert.AreEqual(expected: "1", actual: createChange.Current.pk.ToString());
+                    Assert.AreEqual(expected: "original test", actual: createChange.Current.description.ToString());
+                    Assert.AreEqual(expected: createChange.Metadata.OperationType, actual: ChangeFeedOperationType.Create);
+                    Assert.AreEqual(expected: createChange.Metadata.PreviousLsn, actual: 0);
+                    Assert.IsNull(createChange.Previous);
+
+                    ChangeFeedItem<dynamic> replaceChange = docs.ElementAt(1);
+                    Assert.IsNotNull(replaceChange.Current);
+                    Assert.AreEqual(expected: "1", actual: replaceChange.Current.id.ToString());
+                    Assert.AreEqual(expected: "1", actual: replaceChange.Current.pk.ToString());
+                    Assert.AreEqual(expected: "test after replace", actual: replaceChange.Current.description.ToString());
+                    Assert.AreEqual(expected: replaceChange.Metadata.OperationType, actual: ChangeFeedOperationType.Replace);
+                    Assert.AreEqual(expected: createChange.Metadata.Lsn, actual: replaceChange.Metadata.PreviousLsn);
+                    Assert.IsNull(replaceChange.Previous);
+
+                    Assert.IsTrue(condition: createChange.Metadata.ConflictResolutionTimestamp < replaceChange.Metadata.ConflictResolutionTimestamp, message: "The create operation must happen before the replace operation.");
+                    Assert.IsTrue(condition: createChange.Metadata.Lsn < replaceChange.Metadata.Lsn, message: "The create operation must happen before the replace operation.");
+                    Assert.IsTrue(condition: createChange.Metadata.Lsn < replaceChange.Metadata.Lsn, message: "The replace operation must happen before the delete operation.");
+
+                    return;
+                })
+                .WithInstanceName(Guid.NewGuid().ToString())
+                .WithLeaseContainer(this.LeaseContainer)
+                .WithErrorNotification((leaseToken, error) =>
+                {
+                    exception = error.InnerException;
+
+                    return Task.CompletedTask;
+                })
+                .Build();
+
+            // Start the processor, insert 1 document to generate a checkpoint, and modify it.
+            // 1 second delay between operations to get different timestamps.
+
+            await processor.StartAsync();
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+
+            await monitoredContainer.CreateItemAsync<dynamic>(new { id = "1", pk = "1", description = "original test" }, partitionKey: new PartitionKey("1"));
+            await Task.Delay(1000);
+
+            await monitoredContainer.UpsertItemAsync<dynamic>(new { id = "1", pk = "1", description = "test after replace" }, partitionKey: new PartitionKey("1"));
+            await Task.Delay(1000);
 
             bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
 
