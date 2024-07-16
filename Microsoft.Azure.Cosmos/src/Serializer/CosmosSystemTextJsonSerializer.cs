@@ -13,12 +13,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// This class provides a default implementation of System.Text.Json Cosmos Linq Serializer.
     /// </summary>
-#if PREVIEW
-        public
-#else
-    internal
-#endif
-    class CosmosSystemTextJsonSerializer : CosmosLinqSerializer
+    public class CosmosSystemTextJsonSerializer : CosmosLinqSerializer
     {
         /// <summary>
         /// A read-only instance of <see cref="JsonSerializerOptions"/>.
