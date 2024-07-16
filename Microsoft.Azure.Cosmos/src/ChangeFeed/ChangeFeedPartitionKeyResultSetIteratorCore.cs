@@ -143,16 +143,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             responseMessage.Headers.ContinuationToken = etag;
             this.changeFeedStartFrom = new ChangeFeedStartFromContinuationAndFeedRange(etag, (FeedRangeInternal)this.changeFeedStartFrom.FeedRange);
 
-            // Set the FeedRange response header.
-            // NOTE(philipthomas-MSFT): Is this null-check necessary? Under what conditions will feedRangeEpk is null?
-
-            if (this.feedRangeEpk != null)
-            {
-                responseMessage.Headers.FeedRange = new FeedRangeEpk(this.feedRangeEpk.Range);
-            }
+            // Set the FeedRangeEpk response header.
+            responseMessage.Headers.FeedRangeEpk = this.feedRangeEpk;
 
             return responseMessage;
         }
-
     }
 }

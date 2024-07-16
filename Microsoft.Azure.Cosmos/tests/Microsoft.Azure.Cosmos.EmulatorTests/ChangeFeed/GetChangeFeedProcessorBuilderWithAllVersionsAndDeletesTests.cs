@@ -275,11 +275,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 {
                     foreach (ChangeFeedItem<dynamic> change in docs)
                     {
-                        FeedRange feedRange = context.Headers.FeedRange; // FeedRange
+                        FeedRange feedRangeFromContextRoot = context.FeedRange; // FeedRange
                         string lsn = context.Headers.ContinuationToken; // LSN
 
-                        Assert.IsNotNull(feedRange);
-                        Logger.LogLine($"{nameof(feedRange)} -> {feedRange.ToJsonString()}");
+                        Assert.IsNotNull(feedRangeFromContextRoot);
+                        Logger.LogLine($"{nameof(feedRangeFromContextRoot)} -> {feedRangeFromContextRoot.ToJsonString()}");
                         
                         Assert.IsNotNull(lsn);
                         Logger.LogLine($"{nameof(lsn)} -> {lsn}");
@@ -292,7 +292,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
                         // NOTE(philipthomas-MSFT): FindOverlappingRanges, uses FeedRange.
                         IReadOnlyList<FeedRange> overlappingRangesFromFeedRange = monitoredContainer.FindOverlappingRanges(
-                            feedRange: feedRange,
+                            feedRange: feedRangeFromContextRoot,
                             feedRanges: ranges);
 
                         Assert.IsNotNull(overlappingRangesFromFeedRange);
@@ -369,6 +369,42 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 Assert.Fail(exception.ToString());
             }
         }
+
+        ///// <summary>
+        ///// Checks bookmark ranges using partitionKey's range to see if that current changed lsn has been processed.
+        ///// </summary>
+        ///// <param name="monitoredContainer">Critical for invoking GetEPKRangeForPrefixPartitionKey.</param>
+        ///// <param name="partitionKey">Critical for getting  range of PartitionKey.</param>
+        ///// <param name="lsnOfChange">Critical for determining if the current changed lsn has been processed.</param>
+        ///// <param name="bookmarks">Critical for feed ranges with lsn from the bookmarks. [{ min, max, lsn }]</param>
+        ///// <param name="cancellationToken">Ancillary cancellationToken for downstream async calls.</param>
+        //public async static Task<bool> HasChangeBeenLsnProcessedAsync(
+        //    ContainerInternal monitoredContainer,
+        //    Documents.PartitionKey partitionKey,
+        //    long lsnOfChange,
+        //    IReadOnlyList<(Range<string> range, long lsn)> bookmarks,
+        //    CancellationToken cancellationToken)
+        //{
+        //    PartitionKeyDefinition partitionKeyDefinition = await monitoredContainer.GetPartitionKeyDefinitionAsync(cancellationToken);
+        //    Range<string> rangeFromPartitionKey = partitionKey.InternalKey.GetEPKRangeForPrefixPartitionKey(partitionKeyDefinition);
+        //    long highestOverlappingLsn = 0;
+
+        //    foreach ((Range<string> range, long lsn) in bookmarks)
+        //    {
+        //        if (PartitionKeyRangeCache.IsStringBetween(
+        //            strToCheck: rangeFromPartitionKey.Max, // NOTE(philipthomas-MSFT): should I be comparing Min, or Max, or Both?
+        //            str1: range.Min,
+        //            str2: range.Max))
+        //        {
+        //            if (lsn > highestOverlappingLsn)
+        //            {
+        //                highestOverlappingLsn = lsn;
+        //            }
+        //        }
+        //    }
+
+        //    return lsnOfChange <= highestOverlappingLsn;
+        //}
 
         /// <summary>
         /// This is based on an issue located at <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4308"/>.
