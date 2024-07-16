@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
     using System;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
 
-    internal static class HierarchicalPartitionUtil
+    internal static class HierarchicalPartitionUtils
     {
         /// <summary>
         /// Updates the FeedRange to limit the scope of incoming feedRange to logical partition within a single physical partition.
@@ -37,8 +37,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
                             "EffectiveRangesForPartitionKey should be populated when PK is specified in request options.");
                     }
 
-                    foreach (Documents.Routing.Range<String> epkForPartitionKey in
-                    containerQueryProperties.EffectiveRangesForPartitionKey)
+                    foreach (Documents.Routing.Range<String> epkForPartitionKey in containerQueryProperties.EffectiveRangesForPartitionKey)
                     {
                         if (Documents.Routing.Range<String>.CheckOverlapping(
                                 feedRangeEpk.Range,

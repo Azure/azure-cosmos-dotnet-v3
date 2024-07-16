@@ -21,22 +21,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
         public static OrderByQueryPartitionRangePageAsyncEnumerator Create(
             IQueryDataSource queryDataSource,
+            ContainerQueryProperties containerQueryProperties,
             SqlQuerySpec sqlQuerySpec,
             FeedRangeState<QueryState> feedRangeState,
             PartitionKey? partitionKey,
             QueryExecutionOptions queryPaginationOptions,
             string filter,
-            PrefetchPolicy prefetchPolicy,
-            ContainerQueryProperties containerQueryProperties)
+            PrefetchPolicy prefetchPolicy)
         {
             InnerEnumerator enumerator = new InnerEnumerator(
                 queryDataSource,
+                containerQueryProperties,
                 sqlQuerySpec,
                 feedRangeState,
                 partitionKey,
                 queryPaginationOptions,
-                filter,
-                containerQueryProperties);
+                filter);
 
             BufferedPartitionRangePageAsyncEnumeratorBase<OrderByQueryPage, QueryState> bufferedEnumerator = prefetchPolicy switch
             {
@@ -113,20 +113,20 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             public InnerEnumerator(
                 IQueryDataSource queryDataSource,
+                ContainerQueryProperties containerQueryProperties,
                 SqlQuerySpec sqlQuerySpec,
                 FeedRangeState<QueryState> feedRangeState,
                 PartitionKey? partitionKey,
                 QueryExecutionOptions queryPaginationOptions,
-                string filter,
-                ContainerQueryProperties containerQueryProperties)
+                string filter)
                 : base(feedRangeState)
             {
                 this.queryDataSource = queryDataSource ?? throw new ArgumentNullException(nameof(queryDataSource));
+                this.containerQueryProperties = containerQueryProperties;
                 this.SqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
                 this.PartitionKey = partitionKey;
                 this.QueryPaginationOptions = queryPaginationOptions ?? QueryExecutionOptions.Default;
                 this.Filter = filter;
-                this.containerQueryProperties = containerQueryProperties;
             }
 
             public SqlQuerySpec SqlQuerySpec { get; }
@@ -146,19 +146,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
                 return new InnerEnumerator(
                     this.queryDataSource,
+                    this.containerQueryProperties,
                     this.SqlQuerySpec,
                     this.FeedRangeState,
                     this.PartitionKey,
                     options,
-                    this.Filter,
-                    this.containerQueryProperties);
+                    this.Filter);
             }
 
             public override ValueTask DisposeAsync() => default;
 
             protected override async Task<TryCatch<OrderByQueryPage>> GetNextPageAsync(ITrace trace, CancellationToken cancellationToken)
             {
-                FeedRangeInternal feedRange = HierarchicalPartitionUtil.LimitFeedRangeToSinglePartition(this.PartitionKey, this.FeedRangeState.FeedRange, this.containerQueryProperties);
+                FeedRangeInternal feedRange = HierarchicalPartitionUtils.LimitFeedRangeToSinglePartition(this.PartitionKey, this.FeedRangeState.FeedRange, this.containerQueryProperties);
 
                 TryCatch<QueryPage> monadicQueryPage = await this.queryDataSource
                     .MonadicQueryAsync(
