@@ -15,6 +15,9 @@
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Cosmos.Common;
+    using System.Net.Http;
+    using System.Reflection;
+    using System.Collections.Concurrent;
 
     /// <summary>
     /// Tests for <see cref="ClientRetryPolicy"/>
@@ -122,6 +125,72 @@
             Task<ShouldRetryResult> retryStatus = retryPolicy.ShouldRetryAsync(documentClientException, cancellationToken);
 
             Assert.IsFalse(retryStatus.Result.ShouldRetry);
+        }
+
+        /// <summary>
+        /// Tests to validate that when HttpRequestException is thrown while connecting to a gateway endpoint for a single master write account with PPAF enabled,
+        /// a partition level failover is added and the request is retried to the next region.
+        /// </summary>
+        [TestMethod]
+        [DataRow(true, DisplayName = "Case when partition level failover is enabled.")]
+        [DataRow(false, DisplayName = "Case when partition level failover is disabled.")]
+
+        public void HttpRequestExceptionHandelingTests(
+            bool enablePartitionLevelFailover)
+        {
+            const bool enableEndpointDiscovery = true;
+            const string suffix = "-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF";
+
+            //Creates a sample write request
+            DocumentServiceRequest request = this.CreateRequest(false, false);
+            request.RequestContext.ResolvedPartitionKeyRange = new PartitionKeyRange() { Id = "0" , MinInclusive = "3F" + suffix, MaxExclusive = "5F" + suffix };
+
+            //Create GlobalEndpointManager
+            using GlobalEndpointManager endpointManager = this.Initialize(
+               useMultipleWriteLocations: false,
+               enableEndpointDiscovery: enableEndpointDiscovery,
+               isPreferredLocationsListEmpty: false,
+               enablePartitionLevelFailover: enablePartitionLevelFailover);
+
+            // Capture the read locations.
+            ReadOnlyCollection<Uri> readLocations = endpointManager.ReadEndpoints;
+
+            //Create Retry Policy
+            ClientRetryPolicy retryPolicy = new (
+                globalEndpointManager: endpointManager,
+                partitionKeyRangeLocationCache: this.partitionKeyRangeLocationCache,
+                retryOptions: new RetryOptions(),
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPertitionLevelFailoverEnabled: enablePartitionLevelFailover);
+
+            CancellationToken cancellationToken = new ();
+            HttpRequestException httpRequestException = new (message: "Connecting to endpoint has failed.");
+
+            GlobalPartitionEndpointManagerCore.PartitionKeyRangeFailoverInfo partitionKeyRangeFailoverInfo = ClientRetryPolicyTests.GetPartitionKeyRangeFailoverInfoUsingReflection(
+                this.partitionKeyRangeLocationCache,
+                request.RequestContext.ResolvedPartitionKeyRange);
+
+            // Validate that the partition key range failover info is not present before the http request exception was captured in the retry policy.
+            Assert.IsNull(partitionKeyRangeFailoverInfo);
+
+            retryPolicy.OnBeforeSendRequest(request);
+            Task<ShouldRetryResult> retryStatus = retryPolicy.ShouldRetryAsync(httpRequestException, cancellationToken);
+
+            Assert.IsTrue(retryStatus.Result.ShouldRetry);
+
+            partitionKeyRangeFailoverInfo = ClientRetryPolicyTests.GetPartitionKeyRangeFailoverInfoUsingReflection(
+                this.partitionKeyRangeLocationCache,
+                request.RequestContext.ResolvedPartitionKeyRange);
+
+            if (enablePartitionLevelFailover)
+            {
+                // Validate that the partition key range failover info to the next account region is present after the http request exception was captured in the retry policy.
+                Assert.AreEqual(partitionKeyRangeFailoverInfo.Current, readLocations[1]);
+            }
+            else
+            {
+                Assert.IsNull(partitionKeyRangeFailoverInfo);
+            }
         }
 
         [TestMethod]
@@ -285,6 +354,28 @@
                 }
             }
         }
+
+        private static GlobalPartitionEndpointManagerCore.PartitionKeyRangeFailoverInfo GetPartitionKeyRangeFailoverInfoUsingReflection(
+            GlobalPartitionEndpointManager globalPartitionEndpointManager,
+            PartitionKeyRange pkRange)
+        {
+            FieldInfo fieldInfo = globalPartitionEndpointManager
+                .GetType()
+                .GetField(
+                    name: "PartitionKeyRangeToLocation",
+                    bindingAttr: BindingFlags.Instance | BindingFlags.NonPublic);
+
+            if (fieldInfo != null)
+            {
+                Lazy<ConcurrentDictionary<PartitionKeyRange, GlobalPartitionEndpointManagerCore.PartitionKeyRangeFailoverInfo>> partitionKeyRangeToLocation = (Lazy<ConcurrentDictionary<PartitionKeyRange, GlobalPartitionEndpointManagerCore.PartitionKeyRangeFailoverInfo>>)fieldInfo.GetValue(globalPartitionEndpointManager);
+                partitionKeyRangeToLocation.Value.TryGetValue(pkRange, out GlobalPartitionEndpointManagerCore.PartitionKeyRangeFailoverInfo partitionKeyRangeFailoverInfo);
+
+                return partitionKeyRangeFailoverInfo;
+            }
+
+            return null;
+        }
+
         private static AccountProperties CreateDatabaseAccount(
             bool useMultipleWriteLocations,
             bool enforceSingleMasterSingleWriteLocation)
