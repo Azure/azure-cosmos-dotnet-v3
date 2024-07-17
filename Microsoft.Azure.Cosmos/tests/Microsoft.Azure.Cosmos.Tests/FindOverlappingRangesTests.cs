@@ -7,7 +7,11 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
     using Newtonsoft.Json;
 
     [TestClass]
@@ -15,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     {
         [TestMethod]
         [Owner("philipthomas-MSFT")]
-        [Description("When the feed range has x overlaps for y feed ranges.")]
+        [Description("When a given feed range has x overlaps for y feed ranges.")]
         [DataRow(1, 0)]
         [DataRow(2, 0)]
         [DataRow(2, 1)]
@@ -32,14 +36,14 @@ namespace Microsoft.Azure.Cosmos.Tests
         [DataRow(10, 7)]
         [DataRow(10, 8)]
         [DataRow(10, 9)]
-        public void GivenXFeedRangeAndYFeedRangesWhenTheFeedRangeOverlapsThenReturnAllOverlappingRangesTest(
+        public void GivenAFeedRangeAndYFeedRangesWhenTheFeedRangeOverlapsThenReturnXOverlappingRangesTest(
             int numberOfRanges,
             int expectedOverlap)
         {
             ContainerInternal container = (ContainerInternal)MockCosmosUtil.CreateMockCosmosClient()
                 .GetContainer(
-                    databaseId: "TestDb",
-                    containerId: "Test");
+                    databaseId: Guid.NewGuid().ToString(),
+                    containerId: Guid.NewGuid().ToString());
 
             IEnumerable<Cosmos.FeedRange> feedRanges = FindOverlappingRangesTests.CreateFeedRanges(
                 minHexValue: "",
@@ -63,6 +67,71 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.AreEqual(
                 expected: expectedOverlap + 1, 
+                actual: actualOverlap,
+                message: $"The given feedRange should have {expectedOverlap + 1} overlaps for {numberOfRanges}  feedRanges.");
+
+            Assert.IsTrue(overlappingRanges.Contains(feedRanges.ElementAt(0)));
+            Assert.IsTrue(overlappingRanges.Contains(feedRanges.ElementAt(0 + expectedOverlap)));
+        }
+
+        [TestMethod]
+        [Owner("philipthomas-MSFT")]
+        [Description("When a given partition key has x overlaps for y feed ranges.")]
+        [DataRow(1, 0)]
+        [DataRow(2, 0)]
+        [DataRow(2, 1)]
+        [DataRow(3, 0)]
+        [DataRow(3, 1)]
+        [DataRow(3, 2)]
+        [DataRow(10, 0)]
+        [DataRow(10, 1)]
+        [DataRow(10, 2)]
+        [DataRow(10, 3)]
+        [DataRow(10, 4)]
+        [DataRow(10, 5)]
+        [DataRow(10, 6)]
+        [DataRow(10, 7)]
+        [DataRow(10, 8)]
+        [DataRow(10, 9)]
+        public async Task GivenAPartitionKeyAndYFeedRangesWhenTheFeedRangeOverlapsThenReturnXOverlappingRangesTestAsync(
+            int numberOfRanges,
+            int expectedOverlap)
+        {
+            ContainerInternal container = (ContainerInternal)MockCosmosUtil.CreateMockCosmosClient()
+                .GetContainer(
+                    databaseId: Guid.NewGuid().ToString(),
+            containerId: Guid.NewGuid().ToString());
+
+            // NOTE(philipthomas-MSFT): Mock these later and finish this test.
+            //PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync(cancellationToken);
+            //string effectivePartitionKeyString = partitionKey.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition);
+            //CollectionRoutingMap collectionRoutingMap = await this.GetRoutingMapAsync(cancellationToken);
+            //PartitionKeyRange partitionKeyRange = collectionRoutingMap.GetRangeByEffectivePartitionKey(effectivePartitionKeyString);
+
+            IEnumerable<Cosmos.FeedRange> feedRanges = FindOverlappingRangesTests.CreateFeedRanges(
+                minHexValue: "",
+                maxHexValue: "FFFFFFFFFFFFFFF",
+                numberOfRanges: numberOfRanges);
+
+            Cosmos.FeedRange feedRange = FindOverlappingRangesTests.CreateFeedRangeThatOverlap(
+                overlap: expectedOverlap,
+                feedRanges: feedRanges.ToList());
+
+            Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKeyBuilder().Build();
+
+            Logger.LogLine($"{feedRange} -> {feedRange.ToJsonString()}");
+
+            IReadOnlyList<Cosmos.FeedRange> overlappingRanges = await container.FindOverlappingRangesAsync(
+                partitionKey: partitionKey,
+                feedRanges: feedRanges.ToList());
+
+            Assert.IsNotNull(overlappingRanges);
+            Logger.LogLine($"{nameof(overlappingRanges)} -> {JsonConvert.SerializeObject(overlappingRanges)}");
+
+            int actualOverlap = overlappingRanges.Count;
+
+            Assert.AreEqual(
+                expected: expectedOverlap + 1,
                 actual: actualOverlap,
                 message: $"The given feedRange should have {expectedOverlap + 1} overlaps for {numberOfRanges}  feedRanges.");
 
