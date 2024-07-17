@@ -11,9 +11,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
-    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -156,33 +154,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             ChangeFeedProcessor processor = monitoredContainer
                 .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: "processor", onChangesDelegate: (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItem<dynamic>> docs, CancellationToken token) =>
                 {
-                    // NOTE(philipthomas-MSFT): Not sure if I need these below.
-                    //string id = default;
-                    //string pk = default;
-                    //string description = default;
-
-                    //foreach (ChangeFeedItem<dynamic> change in docs)
-                    //{
-                    //if (change.Metadata.OperationType != ChangeFeedOperationType.Delete)
-                    //{
-                    //    id = change.Current.id.ToString();
-                    //    pk = change.Current.pk.ToString();
-                    //    description = change.Current.description.ToString();
-                    //}
-                    //else
-                    //{
-                    //    id = change.Previous.id.ToString();
-                    //    pk = change.Previous.pk.ToString();
-                    //    description = change.Previous.description.ToString();
-                    //}
-
-                    //ChangeFeedOperationType operationType = change.Metadata.OperationType;
-                    //long previousLsn = change.Metadata.PreviousLsn;
-                    //DateTime m = change.Metadata.ConflictResolutionTimestamp;
-                    //long lsn = change.Metadata.Lsn;
-                    //bool isTimeToLiveExpired = change.Metadata.IsTimeToLiveExpired;
-                    //}
-
                     Assert.IsNotNull(context.LeaseToken);
                     Assert.IsNotNull(context.Diagnostics);
                     Assert.IsNotNull(context.Headers);
@@ -271,39 +242,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             Exception exception = default;
 
             ChangeFeedProcessor processor = monitoredContainer
-                .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: "processor", onChangesDelegate: async (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItem<dynamic>> docs, CancellationToken token) =>
+                .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: "processor", onChangesDelegate: (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItem<dynamic>> docs, CancellationToken token) =>
                 {
                     foreach (ChangeFeedItem<dynamic> change in docs)
                     {
-                        FeedRange feedRangeFromContextRoot = context.FeedRange; // FeedRange
+                        FeedRange feedRange = context.FeedRange; // FeedRange
                         string lsn = context.Headers.ContinuationToken; // LSN
-
-                        Assert.IsNotNull(feedRangeFromContextRoot);
-                        Logger.LogLine($"{nameof(feedRangeFromContextRoot)} -> {feedRangeFromContextRoot.ToJsonString()}");
-                        
-                        Assert.IsNotNull(lsn);
-                        Logger.LogLine($"{nameof(lsn)} -> {lsn}");
-
-                        List<FeedRange> ranges = new ()
-                        {
-                            FeedRange.FromJsonString("{\"Range\":{\"min\":\"\",\"max\":\"05C1DFFFFFFFFC\"}}"),
-                            FeedRange.FromJsonString("{\"Range\":{\"min\":\"08888888888888\",\"max\":\"09999999999999\"}}"), // should be out of range
-                        };
-
-                        // NOTE(philipthomas-MSFT): FindOverlappingRanges, uses FeedRange.
-                        IReadOnlyList<FeedRange> overlappingRangesFromFeedRange = monitoredContainer.FindOverlappingRanges(
-                            feedRange: feedRangeFromContextRoot,
-                            feedRanges: ranges);
-
-                        Assert.IsNotNull(overlappingRangesFromFeedRange);
-                        Logger.LogLine($"{nameof(overlappingRangesFromFeedRange)} -> {JsonConvert.SerializeObject(overlappingRangesFromFeedRange)}");
-
-                        // NOTE(philipthomas-MSFT): FindOverlappingRangesAsync, uses PartitionKey.
-                        PartitionKey partitionKey = new (change.Current.pk.ToString());
-                        IReadOnlyList<FeedRange> overlappingRangesFromPartitionKey = await monitoredContainer.FindOverlappingRangesAsync(partitionKey: partitionKey, feedRanges: ranges, cancellationToken: token);
-                        
-                        Assert.IsNotNull(overlappingRangesFromPartitionKey);
-                        Logger.LogLine($"{nameof(overlappingRangesFromPartitionKey)} -> {JsonConvert.SerializeObject(overlappingRangesFromPartitionKey)}");
                     }
 
                     Assert.IsNotNull(context.LeaseToken);
@@ -336,7 +280,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     Assert.IsTrue(condition: createChange.Metadata.Lsn < replaceChange.Metadata.Lsn, message: "The create operation must happen before the replace operation.");
                     Assert.IsTrue(condition: createChange.Metadata.Lsn < replaceChange.Metadata.Lsn, message: "The replace operation must happen before the delete operation.");
 
-                    return;
+                    return Task.CompletedTask;
                 })
                 .WithInstanceName(Guid.NewGuid().ToString())
                 .WithLeaseContainer(this.LeaseContainer)
@@ -369,42 +313,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 Assert.Fail(exception.ToString());
             }
         }
-
-        ///// <summary>
-        ///// Checks bookmark ranges using partitionKey's range to see if that current changed lsn has been processed.
-        ///// </summary>
-        ///// <param name="monitoredContainer">Critical for invoking GetEPKRangeForPrefixPartitionKey.</param>
-        ///// <param name="partitionKey">Critical for getting  range of PartitionKey.</param>
-        ///// <param name="lsnOfChange">Critical for determining if the current changed lsn has been processed.</param>
-        ///// <param name="bookmarks">Critical for feed ranges with lsn from the bookmarks. [{ min, max, lsn }]</param>
-        ///// <param name="cancellationToken">Ancillary cancellationToken for downstream async calls.</param>
-        //public async static Task<bool> HasChangeBeenLsnProcessedAsync(
-        //    ContainerInternal monitoredContainer,
-        //    Documents.PartitionKey partitionKey,
-        //    long lsnOfChange,
-        //    IReadOnlyList<(Range<string> range, long lsn)> bookmarks,
-        //    CancellationToken cancellationToken)
-        //{
-        //    PartitionKeyDefinition partitionKeyDefinition = await monitoredContainer.GetPartitionKeyDefinitionAsync(cancellationToken);
-        //    Range<string> rangeFromPartitionKey = partitionKey.InternalKey.GetEPKRangeForPrefixPartitionKey(partitionKeyDefinition);
-        //    long highestOverlappingLsn = 0;
-
-        //    foreach ((Range<string> range, long lsn) in bookmarks)
-        //    {
-        //        if (PartitionKeyRangeCache.IsStringBetween(
-        //            strToCheck: rangeFromPartitionKey.Max, // NOTE(philipthomas-MSFT): should I be comparing Min, or Max, or Both?
-        //            str1: range.Min,
-        //            str2: range.Max))
-        //        {
-        //            if (lsn > highestOverlappingLsn)
-        //            {
-        //                highestOverlappingLsn = lsn;
-        //            }
-        //        }
-        //    }
-
-        //    return lsnOfChange <= highestOverlappingLsn;
-        //}
 
         /// <summary>
         /// This is based on an issue located at <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4308"/>.
