@@ -1218,6 +1218,94 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 Assert.AreEqual(actualDocument_array, afterDecryption_array);
             }
         }
+        [TestMethod]
+        public async Task UpdateItemInCompressionSupport()
+        {
+            EncryptionItemRequestOptions encryptionItemRequestOptions = new EncryptionItemRequestOptions
+                {
+                     EncryptionOptions = new EncryptionOptions
+                     {
+                           DataEncryptionKeyId = MdeCustomEncryptionTests.dekId,
+                           EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                           PathsToEncrypt = TestDoc.PathsToEncrypt,
+                           CompressionOption = new CompressionOption
+                           {
+                                Algorithm = CompressionAlgorithm.Brotli,
+                                PathsToCompress = new List<string> { "/Sensitive_StringFormat", "/Sensitive_NestedObjectFormatL1", "/Sensitive_ArrayFormat" 
+                           }
+                    }
+                }
+            };
+            TestDoc itemToInsert = TestDoc.Create();
+            using (Stream itemStream = itemToInsert.ToStream())
+            {
+                  ItemResponse<TestDoc> response = await encryptionContainer.CreateItemAsync(
+                  itemToInsert,
+                  new PartitionKey(itemToInsert.PK),
+                  encryptionItemRequestOptions);
+             }
+            TestDoc itemUpdate = TestDoc.CreateNewItem();
+            using (Stream itemStream = itemUpdate.ToStream())
+            {
+                  ItemResponse<TestDoc> updateItem = await encryptionContainer.ReplaceItemAsync<TestDoc>(itemUpdate, itemToInsert.Id, new PartitionKey(itemToInsert.PK), encryptionItemRequestOptions);
+
+                  TestDoc decryptedItem = updateItem.Resource;
+
+                  Assert.IsNotNull(decryptedItem);
+                  Assert.AreEqual(itemUpdate.Sensitive_StringFormat, decryptedItem.Sensitive_StringFormat);
+                  Assert.AreEqual(itemUpdate.Sensitive_IntFormat, decryptedItem.Sensitive_IntFormat);
+                  Assert.AreEqual(itemUpdate.Sensitive_BoolFormat, decryptedItem.Sensitive_BoolFormat);
+                  Assert.AreEqual(itemUpdate.Sensitive_DecimalFormat, decryptedItem.Sensitive_DecimalFormat);
+                  Assert.AreEqual(itemUpdate.Sensitive_DateFormat, decryptedItem.Sensitive_DateFormat);
+                  Assert.AreEqual(itemUpdate.Sensitive_FloatFormat, decryptedItem.Sensitive_FloatFormat);
+
+                  string actualDocument_object = JsonConvert.SerializeObject(itemUpdate.Sensitive_NestedObjectFormatL1, Formatting.None);
+                  string afterDecryption_object = JsonConvert.SerializeObject(decryptedItem.Sensitive_NestedObjectFormatL1, Formatting.None);
+
+                  Assert.AreEqual(actualDocument_object, afterDecryption_object);
+                  string actualDocument_array = JsonConvert.SerializeObject(itemUpdate.Sensitive_ArrayFormat, Formatting.None);
+                  string afterDecryption_array = JsonConvert.SerializeObject(decryptedItem.Sensitive_ArrayFormat, Formatting.None);
+
+                  Assert.AreEqual(actualDocument_array, afterDecryption_array);
+           }
+      }
+
+       [TestMethod]
+       public async Task DeleteItemInCompressionSupport()
+       {
+             EncryptionItemRequestOptions encryptionItemRequestOptions = new EncryptionItemRequestOptions 
+             {
+                  EncryptionOptions = new EncryptionOptions
+                  {
+                      DataEncryptionKeyId = MdeCustomEncryptionTests.dekId,
+                      EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                      PathsToEncrypt = TestDoc.PathsToEncrypt,
+                      CompressionOption = new CompressionOption
+                      {
+                           Algorithm = CompressionAlgorithm.Brotli,
+                           PathsToCompress = new List<string> { "/Sensitive_StringFormat", "/Sensitive_NestedObjectFormatL1", "/Sensitive_ArrayFormat" }
+                      }
+                  }
+             };
+             TestDoc testDoc = TestDoc.Create();
+             using (Stream stream =  testDoc.ToStream()) 
+             {
+                 ItemResponse<TestDoc> itemResponse = await encryptionContainer.CreateItemAsync<TestDoc>(testDoc,new PartitionKey(testDoc.PK),encryptionItemRequestOptions);
+             }
+             await encryptionContainer.DeleteItemAsync<TestDoc>(testDoc.Id, new PartitionKey(testDoc.PK), encryptionItemRequestOptions);
+             try
+             {
+                 ItemResponse<TestDoc> readResponse = await encryptionContainer.ReadItemAsync<TestDoc>(
+                 testDoc.Id,
+                 new PartitionKey(testDoc.PK),
+                 encryptionItemRequestOptions);
+                 Assert.Fail("Item was not deleted.");
+             }
+             catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+             {
+                 Assert.IsTrue(true);
+             }
+        }
 
         [TestMethod]
         public async Task CompressionEncryptionDecryptionCheck()
@@ -2461,7 +2549,48 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     }
                 };
             }
+            
+            public static TestDoc CreateNewItem(string partitionKey = null)
+            {
+                 return new TestDoc()
+                 {
+                     Id = Guid.NewGuid().ToString(),
+                     PK = partitionKey ?? "a",
+                     NonSensitive = Guid.NewGuid().ToString(),
+                     Sensitive_StringFormat = new string('b', 10000),
+                     Sensitive_DateFormat = new DateTime(1987, 12, 25),
+                     Sensitive_DecimalFormat = 472.3108m,
+                     Sensitive_IntFormat = 1965,
+                     Sensitive_BoolFormat = true,
+                     Sensitive_FloatFormat = 8923.124f,
+                     Sensitive_ArrayFormat = new Sensitive_ArrayData[]
+                     {
+                          new Sensitive_ArrayData
+                          {
+                              Sensitive_ArrayIntFormat = 1000*2000,
+                              Sensitive_ArrayDecimalFormat = 472.3199m,
+                              Sensitive_StringFormat = new string('b',10000)
+                          }
+                    },
+                    Sensitive_NestedObjectFormatL1 = new Sensitive_NestedObjectL1()
+                    {
+                        Sensitive_IntFormatL1 = 19999 * 2000,
+                        Sensitive_DecimalFormat = 12.3459m,
 
+                        Sensitive_NestedObjectFormatL2 = new Sensitive_NestedObjectL2()
+                        {
+                        Sensitive_IntFormatL2 = 20000 * 20000,
+                        Sensitive_StringFormat = new string('b', 100000000)
+                    },
+
+                        Sensitive_NestedObjectFormatL3 = new Sensitive_NestedObjectL2()
+                        {
+                        Sensitive_IntFormatL2 = 20000 * 20000,
+                        Sensitive_StringFormat = new string('b', 100000000)
+                        }
+                    }
+                };
+            }
             public Stream ToStream()
             {
                 return TestCommon.ToStream(this);
