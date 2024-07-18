@@ -742,11 +742,9 @@ namespace Microsoft.Azure.Cosmos
         private async Task<Range<string>> ConvertToRangeAsync(PartitionKey partitionKey, CancellationToken cancellationToken)
         {
             PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync(cancellationToken);
-            string effectivePartitionKeyString = partitionKey.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition);
-            CollectionRoutingMap collectionRoutingMap = await this.GetRoutingMapAsync(cancellationToken);
-            PartitionKeyRange partitionKeyRange = collectionRoutingMap.GetRangeByEffectivePartitionKey(effectivePartitionKeyString);
+            Range<string> range = Range<string>.GetPointRange(partitionKey.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition));
 
-            return partitionKeyRange.ToRange();
+            return range;
         }
 
         private static IEnumerable<Range<string>> ConvertToRange(IReadOnlyList<FeedRange> fromFeedRanges)

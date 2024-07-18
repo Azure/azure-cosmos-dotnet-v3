@@ -32,8 +32,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public static CosmosClient CreateMockCosmosClient(
             Action<CosmosClientBuilder> customizeClientBuilder = null,
             Cosmos.ConsistencyLevel? accountConsistencyLevel = null,
-            bool enableTelemetry = false,
-            CollectionRoutingMap collectionRoutingMap = null)
+            bool enableTelemetry = false)
         {
             ConnectionPolicy policy = new ConnectionPolicy
             {
@@ -43,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
             };
 
-            DocumentClient documentClient = accountConsistencyLevel.HasValue ? new MockDocumentClient(accountConsistencyLevel.Value, policy) : new MockDocumentClient(policy, collectionRoutingMap);
+            DocumentClient documentClient = accountConsistencyLevel.HasValue ? new MockDocumentClient(accountConsistencyLevel.Value, policy) : new MockDocumentClient(policy);
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
             
             customizeClientBuilder?.Invoke(cosmosClientBuilder);

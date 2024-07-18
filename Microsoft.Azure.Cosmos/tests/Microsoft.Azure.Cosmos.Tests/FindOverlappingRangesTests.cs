@@ -6,11 +6,8 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using System.Linq;
-    using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -80,22 +77,23 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         [TestMethod]
         [Owner("philipthomas-MSFT")]
-        [Description("When a given partition key has x overlaps for y feed ranges.")]
-        [DataRow(1, 0)]
-        [DataRow(2, 0)]
-        //[DataRow(2, 1)]
+        [Description("Given a partition key and a X number of ranges, When checking to find which range the partition key belongs to, Then the" +
+            " range is found at id Y.")]
+        [DataRow(1, 1)]
+        [DataRow(2, 1)]
+        [DataRow(10, 1)]
         public async Task GivenAPartitionKeyAndYFeedRangesWhenTheFeedRangeOverlapsThenReturnXOverlappingRangesTestAsync(
             int numberOfRanges,
-            int expectedOverlap)
+            int expectedRangeId)
         {
-            ITrace trace = Microsoft.Azure.Cosmos.Tracing.Trace.GetRootTrace("TestTrace");
+            ITrace trace = Trace.GetRootTrace("TestTrace");
 
             IEnumerable<Cosmos.FeedRange> feedRanges = FindOverlappingRangesTests.CreateFeedRanges(
                 minHexValue: "",
                 maxHexValue: "FF",
                 numberOfRanges: numberOfRanges);
 
-            List<Tuple<PartitionKeyRange, ServiceIdentity>> partitionKeyRanges = new List<Tuple<PartitionKeyRange, ServiceIdentity>>(feedRanges.Count());
+            List<Tuple<PartitionKeyRange, ServiceIdentity>> partitionKeyRanges = new (feedRanges.Count());
 
             for (int counter = 0; counter < feedRanges.Count(); counter++)
             {
@@ -112,79 +110,24 @@ namespace Microsoft.Azure.Cosmos.Tests
                         (ServiceIdentity)null));
             }
 
-            CollectionRoutingMap collectionRoutingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(
-                ranges: partitionKeyRanges,
-                collectionUniqueId: string.Empty);
+            string containerId = Guid.NewGuid().ToString();
+            ContainerInternal container = (ContainerInternal)MockCosmosUtil
+                .CreateMockCosmosClient()
+                .GetContainer(
+                    databaseId: Guid.NewGuid().ToString(),
+                    containerId: containerId);
 
-            ContainerInternal originalContainer = (ContainerInternal)MockCosmosUtil
-                .CreateMockCosmosClient(collectionRoutingMap: collectionRoutingMap)
-                .GetContainer("TestDb", "TestContainer");
+            PartitionKeyDefinition partitionKeyDefinition = new();
+            partitionKeyDefinition.Paths.Add("/pk");
+            partitionKeyDefinition.Version = PartitionKeyDefinitionVersion.V1;
+            Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey("test");
 
-            Mock<CosmosClientContext> mockedContext = this.MockClientContext();
-            //mockedContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
-            //mockedContext.Setup(c => c.SerializerCore).Returns(MockCosmosUtil.Serializer);
-
-            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition() { Paths = new Collection<string>() { "/pk" } };
-
-            string link = "dbs/DvZRAA==/colls/DvZRAOvLgDM=/";
             const string collectionRid = "DvZRAOvLgDM=";
             ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId(collectionRid);
-            containerProperties.Id = "TestContainer";
+            containerProperties.Id = containerId;
             containerProperties.PartitionKey = partitionKeyDefinition;
 
-            Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
-            mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
-
-            using GlobalEndpointManager endpointManager = new(mockDocumentClient.Object, new ConnectionPolicy());
-
-            Mock<ContainerInternal> mockContainer = new Mock<ContainerInternal>();
-            mockContainer.Setup(x => x.LinkUri).Returns(link);
-            mockContainer.Setup(x => x.GetCachedContainerPropertiesAsync(It.IsAny<bool>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(containerProperties));
-
-
-            Mock<Common.CollectionCache> collectionCache = new Mock<Common.CollectionCache>(MockBehavior.Strict);
-            collectionCache.Setup(c => c.ResolveCollectionAsync(It.IsAny<DocumentServiceRequest>(), default, trace))
-                .ReturnsAsync(containerProperties);
-
-            mockContainer
-                .Setup(containerInternal => containerInternal.GetPartitionKeyDefinitionAsync(It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(partitionKeyDefinition));
-
-            Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(
-                MockBehavior.Strict,
-                new Mock<ICosmosAuthorizationTokenProvider>().Object,
-            new Mock<IStoreModel>().Object,
-                collectionCache.Object,
-                endpointManager);
-            partitionKeyRangeCache.Setup(c => c.TryLookupAsync("test", null, null, NoOpTrace.Singleton))
-                .ReturnsAsync(collectionRoutingMap);
-
-            Logger.LogLine($"{nameof(collectionRoutingMap)} -> {JsonConvert.SerializeObject(collectionRoutingMap)}");
-
-            mockContainer
-                .Setup(containerInternal => containerInternal.GetRoutingMapAsync(It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(collectionRoutingMap));
-            
-
-            // NOTE(philipthomas-MSFT): Mock these later and finish this test.
-            //PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync(cancellationToken);
-            //string effectivePartitionKeyString = partitionKey.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition);
-            //CollectionRoutingMap collectionRoutingMap = await this.GetRoutingMapAsync(cancellationToken);
-            //PartitionKeyRange partitionKeyRange = collectionRoutingMap.GetRangeByEffectivePartitionKey(effectivePartitionKeyString);
-
-
-            Cosmos.FeedRange feedRange = FindOverlappingRangesTests.CreateFeedRangeThatOverlap(
-                overlap: expectedOverlap,
-                feedRanges: feedRanges.ToList());
-            
-            Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKeyBuilder()
-                .Add("GA")
-                .Build();
-
-            Logger.LogLine($"{feedRange} -> {feedRange.ToJsonString()}");
-
-            IReadOnlyList<Cosmos.FeedRange> overlappingRanges = await originalContainer.FindOverlappingRangesAsync(
+            IReadOnlyList <Cosmos.FeedRange> overlappingRanges = await container.FindOverlappingRangesAsync(
                 partitionKey: partitionKey,
                 feedRanges: feedRanges.ToList());
 
@@ -194,12 +137,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             int actualOverlap = overlappingRanges.Count;
 
             Assert.AreEqual(
-                expected: expectedOverlap + 1,
+                expected: expectedRangeId,
                 actual: actualOverlap,
-                message: $"The given feedRange should have {expectedOverlap + 1} overlaps for {numberOfRanges}  feedRanges.");
+                message: $"The given partition key should be at range {expectedRangeId}.");
 
             Assert.IsTrue(overlappingRanges.Contains(feedRanges.ElementAt(0)));
-            Assert.IsTrue(overlappingRanges.Contains(feedRanges.ElementAt(0 + expectedOverlap)));
         }
 
         private Mock<CosmosClientContext> MockClientContext()

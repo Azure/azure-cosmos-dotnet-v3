@@ -27,12 +27,10 @@ namespace Microsoft.Azure.Cosmos.Tests
         Mock<ClientCollectionCache> collectionCache;
         Mock<PartitionKeyRangeCache> partitionKeyRangeCache;
         private readonly Cosmos.ConsistencyLevel accountConsistencyLevel;
-        private readonly CollectionRoutingMap collectionRoutingMap;
 
-        public MockDocumentClient(ConnectionPolicy connectionPolicy = null, CollectionRoutingMap collectionRoutingMap = null)
+        public MockDocumentClient(ConnectionPolicy connectionPolicy = null)
             : base(new Uri("http://localhost"), MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey, connectionPolicy)
         {
-            this.collectionRoutingMap = collectionRoutingMap;
             this.Init();
         }
 
@@ -244,7 +242,7 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
                             It.IsAny<DocumentServiceRequest>(),
                             It.IsAny<ITrace>()
                         )
-                ).Returns(Task.FromResult<CollectionRoutingMap>(this.collectionRoutingMap));
+                ).Returns(Task.FromResult<CollectionRoutingMap>(null));
             this.partitionKeyRangeCache.Setup(
                         m => m.TryGetOverlappingRangesAsync(
                             It.IsAny<string>(),
