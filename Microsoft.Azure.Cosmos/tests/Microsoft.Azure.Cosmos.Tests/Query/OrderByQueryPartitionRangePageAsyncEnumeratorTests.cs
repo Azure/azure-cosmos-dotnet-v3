@@ -59,6 +59,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 IAsyncEnumerator<TryCatch<OrderByQueryPage>> enumerator = new TracingAsyncEnumerator<TryCatch<OrderByQueryPage>>(
                     OrderByQueryPartitionRangePageAsyncEnumerator.Create(
                         queryDataSource: documentContainer,
+                        containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
                         sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
                         feedRangeState: new FeedRangeState<QueryState>(ranges[0], state),
                         partitionKey: null,
