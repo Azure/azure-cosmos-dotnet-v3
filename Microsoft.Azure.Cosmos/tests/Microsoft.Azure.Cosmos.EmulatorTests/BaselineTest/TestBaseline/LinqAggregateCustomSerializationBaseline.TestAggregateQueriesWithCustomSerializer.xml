@@ -130,7 +130,7 @@ FROM root]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE AVG(root["NumberValueDotNet"]) 
+SELECT VALUE AVG(root["NumericField"]) 
 FROM root]]></SqlQuery>
     </Output>
   </Result>
@@ -141,7 +141,7 @@ FROM root]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE SUM(root["NumberValueDotNet"]) 
+SELECT VALUE SUM(root["NumericField"]) 
 FROM root]]></SqlQuery>
     </Output>
   </Result>
@@ -154,7 +154,7 @@ FROM root]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE AVG(m0) 
 FROM root 
-JOIN m0 IN root["ArrayValuesDotNet"] 
+JOIN m0 IN root["ArrayField"] 
 WHERE ((m0 % 3) = 0)]]></SqlQuery>
     </Output>
   </Result>
@@ -167,11 +167,11 @@ WHERE ((m0 % 3) = 0)]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE COUNT(1) 
 FROM (
-    SELECT VALUE root["NumberValueDotNet"] 
+    SELECT VALUE root["NumericField"] 
     FROM root 
     OFFSET 2 LIMIT 2147483647) AS r0
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":77,"end":102},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":72,"end":97},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -181,7 +181,7 @@ FROM (
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE MIN(root["NumberValueDotNet"]) 
+SELECT VALUE MIN(root["NumericField"]) 
 FROM root]]></SqlQuery>
     </Output>
   </Result>
