@@ -593,11 +593,6 @@ namespace Microsoft.Azure.Cosmos
                         $"{nameof(this.Serializer)} is not compatible with {nameof(this.SerializerOptions)}. Only one can be set.  ");
                 }
 
-                if (this.UseSystemTextJsonForSerialization)
-                {
-                    throw new ArgumentException($"Cannot set a custom {nameof(this.Serializer)} when {nameof(this.UseSystemTextJsonForSerialization)} is enabled. Either specify a custom or set {nameof(this.UseSystemTextJsonForSerialization)} to the default STJ serializer.");
-                }
-
                 this.serializerInternal = value;
             }
         }
@@ -848,10 +843,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.serializerInternal == null)
             {
-                this.serializerInternal = this.UseSystemTextJsonForSerialization
-                    ? new CosmosSystemTextJsonSerializer(
-                        new System.Text.Json.JsonSerializerOptions())
-                    : serializer ?? throw new ArgumentNullException(nameof(serializer));
+                this.serializerInternal = serializer ?? throw new ArgumentNullException(nameof(serializer));
             }
         }
 

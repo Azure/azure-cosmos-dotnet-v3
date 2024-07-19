@@ -128,6 +128,12 @@ namespace Microsoft.Azure.Cosmos
                 requestInvokerHandler = clientPipelineBuilder.Build();
             }
 
+            if (clientOptions.UseSystemTextJsonForSerialization)
+            {
+                clientOptions.Serializer = new CosmosSystemTextJsonSerializer(
+                    new System.Text.Json.JsonSerializerOptions());
+            }
+
             CosmosSerializerCore serializerCore = CosmosSerializerCore.Create(
                 clientOptions.Serializer,
                 clientOptions.SerializerOptions);
