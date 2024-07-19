@@ -57,7 +57,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             TestDb = await CosmosClient.CreateDatabaseAsync(dbName);
 
             CosmosDefaultSTJClient = TestCommon.CreateCosmosClient((cosmosClientBuilder)
-                => cosmosClientBuilder.WithSystemTextJsonSerializerEnabled());
+                => cosmosClientBuilder.WithSystemTextJsonSerializerEnabled(),
+                useCustomSeralizer: false);
 
             string dbNameSTJ = $"{nameof(LinqTranslationBaselineTests)}-{Guid.NewGuid():N}";
             TestDbSTJDefault = await CosmosDefaultSTJClient.CreateDatabaseAsync(dbNameSTJ);
