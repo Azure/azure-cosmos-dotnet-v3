@@ -503,6 +503,19 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void ThrowOnCustomSerializerWithSTJSerializerEnabled()
+        {
+            CosmosClientOptions options = new CosmosClientOptions()
+            {
+                Serializer = new CosmosJsonDotNetSerializer()
+            };
+
+            options.SerializerOptions = new CosmosSerializationOptions();
+            options.UseSystemTextJsonForSerialization = true;
+        }
+
+        [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ThrowOnNullTokenCredential()
         {

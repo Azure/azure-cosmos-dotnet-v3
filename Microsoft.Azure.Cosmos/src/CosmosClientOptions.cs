@@ -394,6 +394,15 @@ namespace Microsoft.Azure.Cosmos
         public bool? EnableContentResponseOnWrite { get; set; }
 
         /// <summary>
+        /// Gets or sets the boolean flag to indicate if the default STJ serializer <see cref="CosmosSystemTextJsonSerializer"/> needed to be
+        /// used for JSON serialization.
+        /// </summary>
+        /// <value>
+        /// The default value is false
+        /// </value>
+        public bool UseSystemTextJsonForSerialization { get; set; } = false;
+
+        /// <summary>
         /// Gets or sets the advanced replica selection flag. The advanced replica selection logic keeps track of the replica connection
         /// status, and based on status, it prioritizes the replicas which show healthy stable connections, so that the requests can be sent
         /// confidently to the particular replica. This helps the cosmos client to become more resilient and effective to any connectivity issues.
@@ -582,6 +591,11 @@ namespace Microsoft.Azure.Cosmos
                 {
                     throw new ArgumentException(
                         $"{nameof(this.Serializer)} is not compatible with {nameof(this.SerializerOptions)}. Only one can be set.  ");
+                }
+
+                if (this.UseSystemTextJsonForSerialization)
+                {
+                    throw new ArgumentException($"Cannot set a custom {nameof(this.Serializer)} when {nameof(this.UseSystemTextJsonForSerialization)} is enabled. Either specify a custom or set {nameof(this.UseSystemTextJsonForSerialization)} to the default STJ serializer.");
                 }
 
                 this.serializerInternal = value;
@@ -834,7 +848,10 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.serializerInternal == null)
             {
-                this.serializerInternal = serializer ?? throw new ArgumentNullException(nameof(serializer));
+                this.serializerInternal = this.UseSystemTextJsonForSerialization
+                    ? new CosmosSystemTextJsonSerializer(
+                        new System.Text.Json.JsonSerializerOptions())
+                    : serializer ?? throw new ArgumentNullException(nameof(serializer));
             }
         }
 

@@ -728,6 +728,16 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Enables the usage of <see cref="CosmosSystemTextJsonSerializer"/> as the default
+        /// serializer.
+        /// </summary>
+        internal CosmosClientBuilder WithSystemTextJsonSerializerEnabled()
+        {
+            this.clientOptions.UseSystemTextJsonForSerialization = true;
+            return this;
+        }
+
+        /// <summary>
         /// Enables SDK to inject fault. Used for testing applications.  
         /// </summary>
         /// <param name="chaosInterceptorFactory"></param>
