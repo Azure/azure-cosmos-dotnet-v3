@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net.Security;
     using System.Security.Cryptography;
     using System.Security.Cryptography.X509Certificates;
+    using System.Text;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
@@ -479,6 +480,25 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void ValidateThatCustomSerializerGetsOverriddenWhenSTJSerializerEnabled()
+        {
+            CosmosClientOptions options = new CosmosClientOptions()
+            {
+                Serializer = new CosmosJsonDotNetSerializer()
+            };
+
+            options.UseSystemTextJsonForSerialization = true;
+
+            CosmosClient client = new(
+                "https://fake-account.documents.azure.com:443/",
+                Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
+                options
+            );
+
+            Assert.AreEqual(typeof(CosmosSystemTextJsonSerializer), client.ClientOptions.Serializer.GetType());
+        }
+
+        [TestMethod]
         [ExpectedException(typeof(ArgumentException))]
         public void ThrowOnSerializerOptionsWithCustomSerializer()
         {
@@ -500,19 +520,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             options.Serializer = new CosmosJsonDotNetSerializer();
-        }
-
-        [TestMethod]
-        [ExpectedException(typeof(ArgumentException))]
-        public void ThrowOnCustomSerializerWithSTJSerializerEnabled()
-        {
-            CosmosClientOptions options = new CosmosClientOptions()
-            {
-                Serializer = new CosmosJsonDotNetSerializer()
-            };
-
-            options.SerializerOptions = new CosmosSerializationOptions();
-            options.UseSystemTextJsonForSerialization = true;
         }
 
         [TestMethod]

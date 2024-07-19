@@ -397,6 +397,10 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the boolean flag to indicate if the default STJ serializer <see cref="CosmosSystemTextJsonSerializer"/> needed to be
         /// used for JSON serialization.
         /// </summary>
+        /// <remarks>
+        /// Note that, if this flag is set to true, then any custom seriliazer provided will be disregarded and overridden with the
+        /// default STJ serializer <see cref="CosmosSystemTextJsonSerializer"/>.
+        /// </remarks>
         /// <value>
         /// The default value is false
         /// </value>
