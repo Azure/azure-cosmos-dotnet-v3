@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Collector
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError($"Error while collecting operation telemetry. Exception : {1}", ex);
+                DefaultTrace.TraceError($"Error while collecting operation telemetry. Exception : {0}", ex);
             }
         }
 
