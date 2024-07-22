@@ -484,7 +484,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClientOptions options = new CosmosClientOptions()
             {
-                UseSystemTextJsonForSerialization = true
+                UseSystemTextJsonForSerialization = true,
+                STJSerializerOptions = new System.Text.Json.JsonSerializerOptions()
+                {
+                    PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+                }
             };
 
             CosmosClient client = new(

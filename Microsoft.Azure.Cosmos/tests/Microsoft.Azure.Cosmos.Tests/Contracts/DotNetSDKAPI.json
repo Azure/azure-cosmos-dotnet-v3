@@ -3000,6 +3000,18 @@
           ],
           "MethodInfo": "System.String get_ApplicationRegion();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "System.Text.Json.JsonSerializerOptions get_STJSerializerOptions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Text.Json.JsonSerializerOptions get_STJSerializerOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Text.Json.JsonSerializerOptions STJSerializerOptions": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.Text.Json.JsonSerializerOptions STJSerializerOptions;CanRead:True;CanWrite:True;System.Text.Json.JsonSerializerOptions get_STJSerializerOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_STJSerializerOptions(System.Text.Json.JsonSerializerOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.TimeSpan get_RequestTimeout()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -3169,6 +3181,13 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_ServerCertificateCustomValidationCallback(System.Func`4[System.Security.Cryptography.X509Certificates.X509Certificate2,System.Security.Cryptography.X509Certificates.X509Chain,System.Net.Security.SslPolicyErrors,System.Boolean]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_STJSerializerOptions(System.Text.Json.JsonSerializerOptions)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_STJSerializerOptions(System.Text.Json.JsonSerializerOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_TokenCredentialBackgroundRefreshInterval(System.Nullable`1[System.TimeSpan])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",

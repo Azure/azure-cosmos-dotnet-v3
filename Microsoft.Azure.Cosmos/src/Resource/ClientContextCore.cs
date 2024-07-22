@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 clientOptions.Serializer = new CosmosSystemTextJsonSerializer(
-                    new System.Text.Json.JsonSerializerOptions());
+                    clientOptions.STJSerializerOptions ?? new System.Text.Json.JsonSerializerOptions());
             }
 
             CosmosSerializerCore serializerCore = CosmosSerializerCore.Create(

@@ -407,6 +407,28 @@ namespace Microsoft.Azure.Cosmos
         public bool UseSystemTextJsonForSerialization { get; set; } = false;
 
         /// <summary>
+        /// Get or set the <see cref="System.Text.Json.JsonSerializerOptions"/> for the default STJ serializer <see cref="CosmosSystemTextJsonSerializer"/>.
+        /// </summary>
+        /// <example>
+        /// An example on how to configure the STJ serialization option to ignore null values
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosClientOptions clientOptions = new CosmosClientOptions()
+        /// {
+        ///     UseSystemTextJsonForSerialization = true,
+        ///     STJSerializerOptions = new System.Text.Json.JsonSerializerOptions()
+        ///     {
+        ///         DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+        ///     }
+        /// };
+        /// 
+        /// CosmosClient client = new CosmosClient("endpoint", "key", clientOptions);
+        /// ]]>
+        /// </code>
+        /// </example>
+        public System.Text.Json.JsonSerializerOptions STJSerializerOptions { get; set; }
+
+        /// <summary>
         /// Gets or sets the advanced replica selection flag. The advanced replica selection logic keeps track of the replica connection
         /// status, and based on status, it prioritizes the replicas which show healthy stable connections, so that the requests can be sent
         /// confidently to the particular replica. This helps the cosmos client to become more resilient and effective to any connectivity issues.
