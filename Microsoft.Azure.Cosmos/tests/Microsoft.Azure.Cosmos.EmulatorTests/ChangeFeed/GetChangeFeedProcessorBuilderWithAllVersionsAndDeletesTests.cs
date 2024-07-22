@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -40,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             "document when using ChangeFeedProcessor with AllVersionsAndDeletes set as the ChangeFeedMode.")]
         public async Task WhenADocumentIsCreatedWithTtlSetThenTheDocumentIsDeletedTestsAsync()
         {
-            ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes);
+            (ContainerInternal monitoredContainer, ContainerResponse containerResponse) = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes);
             Exception exception = default;
             int ttlInSeconds = 5;
             Stopwatch stopwatch = new();
@@ -147,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             "document when using ChangeFeedProcessor with AllVersionsAndDeletes set as the ChangeFeedMode.")]
         public async Task WhenADocumentIsCreatedThenUpdatedThenDeletedTestsAsync()
         {
-            ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes);
+            (ContainerInternal monitoredContainer, ContainerResponse containerResponse) = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes);
             ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
             Exception exception = default;
 
@@ -234,20 +235,49 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         [Owner("philipthomas-MSFT")]
         [Description("Scenario: When a document is created, then updated, there should be 2 changes that will appear for that " +
             "document when using ChangeFeedProcessor with AllVersionsAndDeletes set as the ChangeFeedMode. The context header also now" +
-            "has the FeedRange included.")]
+            "has the FeedRange included. This is simulating a customer scenario using FindOverlappingRanges.")]
         public async Task WhenADocumentIsCreatedThenUpdatedHeaderHasFeedRangeTestsAsync()
         {
-            ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes);
+            (ContainerInternal monitoredContainer, ContainerResponse containerResponse) = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes);
             ManualResetEvent allDocsProcessed = new (false);
             Exception exception = default;
 
             ChangeFeedProcessor processor = monitoredContainer
-                .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: "processor", onChangesDelegate: (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItem<dynamic>> docs, CancellationToken token) =>
+                .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: "processor", onChangesDelegate: async (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItem<dynamic>> docs, CancellationToken token) =>
                 {
                     foreach (ChangeFeedItem<dynamic> change in docs)
                     {
                         FeedRange feedRange = context.FeedRange; // FeedRange
-                        string lsn = context.Headers.ContinuationToken; // LSN
+                        _ = long.TryParse(context.Headers.ContinuationToken.Trim('"'), out long lsnOfChange); // LSN
+
+                        Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.GetClient().DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
+                        IReadOnlyList<Documents.PartitionKeyRange> currentContainerRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
+                            collectionRid: containerResponse.Resource.ResourceId,
+                            range: FeedRangeEpk.FullRange.Range,
+                            trace: NoOpTrace.Singleton,
+                            forceRefresh: true);
+
+                        IEnumerable<FeedRange> bookmarkRanges = GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests.CreateFeedRanges(
+                            minHexValue: currentContainerRanges.FirstOrDefault().MinInclusive,
+                            maxHexValue: currentContainerRanges.LastOrDefault().MaxExclusive,
+                            numberOfRanges: 3);
+
+                        List<(FeedRange range, long lsn)> bookmarks = GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
+                            .CreateBookmarks(bookmarkRanges);
+
+                        bool hasChangeBeenLsnProcessed = GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
+                            .HasChangeBeenLsnProcessed(
+                                monitoredContainer: monitoredContainer,
+                                feedRange: feedRange,
+                                lsnOfChange: lsnOfChange,
+                                bookmarks: bookmarks);
+
+                        Logger.LogLine($"{nameof(hasChangeBeenLsnProcessed)} -> {hasChangeBeenLsnProcessed}");
+
+                        if (hasChangeBeenLsnProcessed)
+                        {
+                            // Know what?
+                        }
                     }
 
                     Assert.IsNotNull(context.LeaseToken);
@@ -280,7 +310,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     Assert.IsTrue(condition: createChange.Metadata.Lsn < replaceChange.Metadata.Lsn, message: "The create operation must happen before the replace operation.");
                     Assert.IsTrue(condition: createChange.Metadata.Lsn < replaceChange.Metadata.Lsn, message: "The replace operation must happen before the delete operation.");
 
-                    return Task.CompletedTask;
+                    return; // Task.CompletedTask;
                 })
                 .WithInstanceName(Guid.NewGuid().ToString())
                 .WithLeaseContainer(this.LeaseContainer)
@@ -314,6 +344,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             }
         }
 
+        private static List<(FeedRange range, long lsn)> CreateBookmarks(IEnumerable<FeedRange> bookmarkRanges)
+        {
+           return bookmarkRanges
+                .Select((bookmarkRange, index) => (bookmarkRange, lsn: (long)(index + 1) * 25))
+                .ToList();
+
+        }
+
         /// <summary>
         /// This is based on an issue located at <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4308"/>.
         /// </summary>
@@ -325,7 +363,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         [DataRow(true)]
         public async Task WhenLatestVersionSwitchToAllVersionsAndDeletesExpectsAexceptionTestAsync(bool withStartFromBeginning)
         {
-            ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.LatestVersion);
+            (ContainerInternal monitoredContainer, ContainerResponse _) = await this.CreateMonitoredContainer(ChangeFeedMode.LatestVersion);
             ManualResetEvent allDocsProcessed = new(false);
 
             await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
@@ -357,7 +395,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         [DataRow(true)]
         public async Task WhenLegacyLatestVersionSwitchToAllVersionsAndDeletesExpectsAexceptionTestAsync(bool withStartFromBeginning)
         {
-            ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.LatestVersion);
+            (ContainerInternal monitoredContainer, ContainerResponse _) = await this.CreateMonitoredContainer(ChangeFeedMode.LatestVersion);
             ManualResetEvent allDocsProcessed = new(false);
 
             await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
@@ -395,7 +433,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         [DataRow(true)]
         public async Task WhenAllVersionsAndDeletesSwitchToLatestVersionExpectsAexceptionTestAsync(bool withStartFromBeginning)
         {
-            ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes);
+            (ContainerInternal monitoredContainer, ContainerResponse _) = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes);
             ManualResetEvent allDocsProcessed = new(false);
 
             await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
@@ -424,7 +462,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             "no exception is expected.")]
         public async Task WhenNoSwitchAllVersionsAndDeletesFDoesNotExpectAexceptionTestAsync()
         {
-            ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes);
+            (ContainerInternal monitoredContainer, ContainerResponse _) = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes);
             ManualResetEvent allDocsProcessed = new(false);
 
             try
@@ -458,7 +496,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         [DataRow(true)]
         public async Task WhenNoSwitchLatestVersionDoesNotExpectAexceptionTestAsync(bool withStartFromBeginning)
         {
-            ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.LatestVersion);
+            (ContainerInternal monitoredContainer, ContainerResponse _) = await this.CreateMonitoredContainer(ChangeFeedMode.LatestVersion);
             ManualResetEvent allDocsProcessed = new(false);
 
             try
@@ -494,7 +532,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         [DataRow(true)]
         public async Task WhenLegacyNoSwitchLatestVersionDoesNotExpectAnExceptionTestAsync(bool withStartFromBeginning)
         {
-            ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.LatestVersion);
+            (ContainerInternal monitoredContainer, ContainerResponse _) = await this.CreateMonitoredContainer(ChangeFeedMode.LatestVersion);
             ManualResetEvent allDocsProcessed = new(false);
 
             await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
@@ -628,7 +666,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             }
         }
 
-        private async Task<ContainerInternal> CreateMonitoredContainer(ChangeFeedMode changeFeedMode)
+        private async Task<(ContainerInternal, ContainerResponse)> CreateMonitoredContainer(ChangeFeedMode changeFeedMode)
         {
             string PartitionKey = "/pk";
             ContainerProperties properties = new ContainerProperties(id: Guid.NewGuid().ToString(),
@@ -644,7 +682,111 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 throughput: 10000,
                 cancellationToken: this.cancellationToken);
 
-            return (ContainerInternal)response;
+            return ((ContainerInternal)response, response);
+        }
+
+        private static Cosmos.FeedRange CreateFeedRange(string min, string max)
+        {
+            if (min == "0")
+            {
+                min = "";
+            }
+
+            Documents.Routing.Range<string> range = new(
+                min: min,
+                max: max,
+                isMinInclusive: true,
+                isMaxInclusive: false);
+
+            FeedRangeEpk feedRangeEpk = new(range);
+
+            return Cosmos.FeedRange.FromJsonString(feedRangeEpk.ToJsonString());
+        }
+
+        private static IEnumerable<Cosmos.FeedRange> CreateFeedRanges(
+            string minHexValue,
+            string maxHexValue,
+            int numberOfRanges = 10)
+        {
+            if (minHexValue == string.Empty)
+            {
+                minHexValue = "0";
+            }
+
+            // Convert hex strings to ulong
+            ulong minValue = ulong.Parse(minHexValue, System.Globalization.NumberStyles.HexNumber);
+            ulong maxValue = ulong.Parse(maxHexValue, System.Globalization.NumberStyles.HexNumber);
+
+            ulong range = maxValue - minValue + 1; // Include the upper boundary
+            ulong stepSize = range / (ulong)numberOfRanges;
+
+            // Generate the sub-ranges
+            List<(string, string)> subRanges = new();
+            ulong splitMaxValue = default;
+
+            for (int i = 0; i < numberOfRanges; i++)
+            {
+                ulong splitMinValue = splitMaxValue;
+                splitMaxValue = (i == numberOfRanges - 1) ? maxValue : splitMinValue + stepSize - 1;
+                subRanges.Add((splitMinValue.ToString("X"), splitMaxValue.ToString("X")));
+            }
+
+            List<Cosmos.FeedRange> feedRanges = new List<Cosmos.FeedRange>();
+
+            foreach ((string min, string max) in subRanges)
+            {
+                feedRanges.Add(GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests.CreateFeedRange(
+                    min: min,
+                    max: max));
+            }
+
+            return feedRanges;
+        }
+
+        /// <summary>
+        /// Checks bookmark ranges using partitionKey's range to see if that current changed lsn has been processed.
+        /// </summary>
+        /// <param name="monitoredContainer">Critical for invoking GetEPKRangeForPrefixPartitionKey.</param>
+        /// <param name="lsnOfChange">Critical for determining if the current changed lsn has been processed.</param>
+        /// <param name="bookmarks">Critical for feed ranges with lsn from the bookmarks. [{ min, max, lsn }]</param>
+        private static bool HasChangeBeenLsnProcessed(
+            ContainerInternal monitoredContainer,
+            FeedRange feedRange,
+            long lsnOfChange,
+            IReadOnlyList<(FeedRange range, long lsn)> bookmarks)
+        {
+            IReadOnlyList<FeedRange> overlappingRanges = monitoredContainer.FindOverlappingRanges(
+                feedRange: feedRange,
+                feedRanges: bookmarks.Select(bookmark => bookmark.range).ToList());
+
+            if (overlappingRanges == null)
+            {
+                return false;
+            }
+
+            Logger.LogLine($"{nameof(feedRange)} -> {feedRange.ToJsonString()}");
+            Logger.LogLine($"{nameof(lsnOfChange)} -> {lsnOfChange}");
+            Logger.LogLine($"{nameof(bookmarks)} -> {JsonConvert.SerializeObject(bookmarks)}");
+
+            foreach (FeedRange overlappingRange in overlappingRanges)
+            {
+                foreach ((FeedRange range, long lsn) in bookmarks.Select(x => x))
+                {
+                    if (lsnOfChange >= lsn && overlappingRange.Equals(range))
+                    {
+                        Logger.LogLine($"The range '{range}' with lsn '{lsn}' has been processed.");
+
+                        return true;
+                    }
+                    else
+                    {
+                        Logger.LogLine($"The range '{range}' with lsn '{lsn}' has not been processed.");
+                    }
+                }
+            }
+
+            return false;
+
         }
     }
 }
