@@ -19,7 +19,6 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
-    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" PrivateAssets="All" />
     <PackageReference Include="Microsoft.HybridRow" Version="[$(HybridRowVersion)]" PrivateAssets="All" />
   </ItemGroup>
 
@@ -360,6 +359,9 @@
     <None Update="Query\AggregateQueryTests.AggregateMixedTypes_baseline.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos.Samples\Tools\FaultInjection\src\FaultInjection.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

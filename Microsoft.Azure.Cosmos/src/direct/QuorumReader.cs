@@ -87,13 +87,14 @@ namespace Microsoft.Azure.Documents
             int readQuorumRetry = QuorumReader.maxNumberOfReadQuorumRetries;
             bool shouldRetryOnSecondary = false;
             bool hasPerformedReadFromPrimary = false;
+            bool includePrimary = false;
             do
             {
                 entity.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
 
                 shouldRetryOnSecondary = false;
                 using ReadQuorumResult secondaryQuorumReadResult =
-                    await this.ReadQuorumAsync(entity, readQuorumValue, false, readMode);
+                    await this.ReadQuorumAsync(entity, readQuorumValue, includePrimary, readMode);
                 switch (secondaryQuorumReadResult.QuorumResult)
                 {
                     case ReadQuorumResultKind.QuorumMet:
@@ -160,6 +161,7 @@ namespace Microsoft.Azure.Documents
                                 shouldRetryOnSecondary = true;
                                 DefaultTrace.TraceWarning("QuorumNotSelected: ReadPrimary did not succeed. Will retry on secondary.");
                                 hasPerformedReadFromPrimary = true;
+                                includePrimary = true;
                             }
                             else
                             {
