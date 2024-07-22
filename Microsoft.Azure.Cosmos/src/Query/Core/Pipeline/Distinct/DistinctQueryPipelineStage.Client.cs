@@ -19,6 +19,30 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
     internal abstract partial class DistinctQueryPipelineStage : QueryPipelineStageBase
     {
         /// <summary>
+        /// An DistinctMap that efficiently stores the documents that we have already seen.
+        /// </summary>
+        private readonly DistinctMap distinctMap;
+
+        protected DistinctQueryPipelineStage(
+            DistinctMap distinctMap,
+            IQueryPipelineStage source)
+            : base(source)
+        {
+            this.distinctMap = distinctMap ?? throw new ArgumentNullException(nameof(distinctMap));
+        }
+
+        public static TryCatch<IQueryPipelineStage> MonadicCreate(
+            CosmosElement requestContinuation,
+            MonadicCreatePipelineStage monadicCreatePipelineStage,
+            DistinctQueryType distinctQueryType)
+        {
+            return ClientDistinctQueryPipelineStage.MonadicCreate(
+                requestContinuation,
+                monadicCreatePipelineStage,
+                distinctQueryType);
+        }
+
+        /// <summary>
         /// Client implementaiton of Distinct. Here we only serialize the continuation token if there is a matching DISTINCT.
         /// </summary>
         private sealed class ClientDistinctQueryPipelineStage : DistinctQueryPipelineStage
