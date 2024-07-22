@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
     {
         Task<ChangeFeedPage> ChangeFeedAsync(
             FeedRangeState<ChangeFeedState> feedRangeState,
-            ChangeFeedPaginationOptions changeFeedPaginationOptions,
+            ChangeFeedExecutionOptions changeFeedPaginationOptions,
             ITrace trace,
             CancellationToken cancellationToken);
     }

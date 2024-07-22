@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos
                 CosmosException cosmosException = CosmosExceptionFactory.Create(
                     documentServiceResponse,
                     headers,
-                    requestMessage);
+                    requestMessage.Trace);
 
                 return cosmosException.ToCosmosResponseMessage(requestMessage);
             }

@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             IReadOnlyList<FeedRangeEpk> targetRanges,
             PartitionKey? partitionKey,
             QueryInfo queryInfo,
-            QueryPaginationOptions queryPaginationOptions,
+            QueryExecutionOptions queryPaginationOptions,
             ContainerQueryProperties containerQueryProperties,
             int maxConcurrency,
             CosmosElement requestContinuationToken)
@@ -79,7 +79,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     queryPaginationOptions: queryPaginationOptions,
                     maxConcurrency: maxConcurrency,
                     nonStreamingOrderBy: queryInfo.HasNonStreamingOrderBy,
-                    continuationToken: continuationToken);
+                    continuationToken: continuationToken,
+                    containerQueryProperties: containerQueryProperties);
             }
             else
             {
@@ -126,7 +127,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     queryInfo.GroupByAliasToAggregateType,
                     queryInfo.GroupByAliases,
                     queryInfo.HasSelectValue,
-                    (queryPaginationOptions ?? QueryPaginationOptions.Default).PageSizeLimit.GetValueOrDefault(int.MaxValue));
+                    (queryPaginationOptions ?? QueryExecutionOptions.Default).PageSizeLimit.GetValueOrDefault(int.MaxValue));
             }
 
             if (queryInfo.HasOffset)
