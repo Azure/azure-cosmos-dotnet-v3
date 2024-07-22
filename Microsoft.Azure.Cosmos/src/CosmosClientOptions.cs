@@ -426,6 +426,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <remarks>If no serializer options is provided explicitly, then the default system text json serializer options will be used.</remarks>
         public System.Text.Json.JsonSerializerOptions STJSerializerOptions { get; set; }
 
         /// <summary>

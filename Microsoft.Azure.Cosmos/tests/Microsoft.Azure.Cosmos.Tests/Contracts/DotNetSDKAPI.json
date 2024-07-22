@@ -4775,6 +4775,16 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithSerializerOptions(Microsoft.Azure.Cosmos.CosmosSerializationOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithSystemTextJsonSerializerEnabled()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithSystemTextJsonSerializerEnabled();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithSystemTextJsonSerializerOptions(System.Text.Json.JsonSerializerOptions)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithSystemTextJsonSerializerOptions(System.Text.Json.JsonSerializerOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithThrottlingRetryOptions(System.TimeSpan, Int32)": {
           "Type": "Method",
           "Attributes": [],

@@ -649,6 +649,31 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Enables the usage of <see cref="CosmosSystemTextJsonSerializer"/> as the default
+        /// serializer.
+        /// </summary>
+        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
+        public CosmosClientBuilder WithSystemTextJsonSerializerEnabled()
+        {
+            this.clientOptions.UseSystemTextJsonForSerialization = true;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the serializer options for <see cref="CosmosSystemTextJsonSerializer"/>. If none provided
+        /// the default system text json serializer options will be used.
+        /// </summary>
+        /// <param name="stjSerializerOptions">An instance of <see cref="System.Text.Json.JsonSerializerOptions"/>
+        /// containing the system text json serializer options.</param>
+        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
+        public CosmosClientBuilder WithSystemTextJsonSerializerOptions(
+            System.Text.Json.JsonSerializerOptions stjSerializerOptions)
+        {
+            this.clientOptions.STJSerializerOptions = stjSerializerOptions;
+            return this;
+        }
+
+        /// <summary>
         /// The event handler to be invoked before the request is sent.
         /// </summary>
         internal CosmosClientBuilder WithSendingRequestEventArgs(EventHandler<SendingRequestEventArgs> sendingRequestEventArgs)
@@ -724,16 +749,6 @@ namespace Microsoft.Azure.Cosmos.Fluent
         internal CosmosClientBuilder WithPartitionLevelFailoverEnabled()
         {
             this.clientOptions.EnablePartitionLevelFailover = true;
-            return this;
-        }
-
-        /// <summary>
-        /// Enables the usage of <see cref="CosmosSystemTextJsonSerializer"/> as the default
-        /// serializer.
-        /// </summary>
-        internal CosmosClientBuilder WithSystemTextJsonSerializerEnabled()
-        {
-            this.clientOptions.UseSystemTextJsonForSerialization = true;
             return this;
         }
 
