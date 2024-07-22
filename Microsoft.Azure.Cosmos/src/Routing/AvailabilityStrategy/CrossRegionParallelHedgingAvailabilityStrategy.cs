@@ -20,7 +20,12 @@ namespace Microsoft.Azure.Cosmos
     /// if the first parallel request or the original has not returned after the step time, 
     /// additional parallel requests will be sent out there is a response or all regions are exausted.
     /// </summary>
-    internal class CrossRegionParallelHedgingAvailabilityStrategy : AvailabilityStrategy
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+    class CrossRegionParallelHedgingAvailabilityStrategy : AvailabilityStrategy
     {
         private const string HedgeRegions = "Hedge Regions";
         private const string HedgeContext = "Hedge Context";

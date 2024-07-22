@@ -11,7 +11,12 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Types of availability strategies supported
     /// </summary>
-    internal abstract class AvailabilityStrategy
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+    abstract class AvailabilityStrategy
     {
         /// <summary>
         /// Execute the availability strategy
