@@ -795,7 +795,14 @@ namespace Microsoft.Azure.Documents
             selectedResponse = validReadResponses.Where(s => (s.Target.LSN == maxLsn) && (s.Target.StatusCode < StatusCodes.StartingErrorCode)).FirstOrDefault();
             if (selectedResponse == null)
             {
-                selectedResponse = validReadResponses.First(s => s.Target.LSN == maxLsn);
+                try
+                {
+                    selectedResponse = validReadResponses.First(s => s.Target.LSN == maxLsn);
+                }
+                catch
+                {
+                    selectedResponse = validReadResponses.First();
+                }
             }
 
             readLsn = selectedResponse.Target.ItemLSN == -1 ? 

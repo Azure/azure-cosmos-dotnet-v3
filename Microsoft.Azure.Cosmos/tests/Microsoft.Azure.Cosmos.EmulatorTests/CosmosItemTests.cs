@@ -33,6 +33,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Reflection;
     using System.Text.RegularExpressions;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.FaultInjection;
 
     [TestClass]
     public class CosmosItemTests : BaseCosmosClientHelper
@@ -3318,6 +3319,79 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     id: itemIdThatWillNotExist,
                     partitionKey: new Cosmos.PartitionKey(partitionKeyValue),
                     cancellationToken: cancellationToken));
+        }
+
+        [TestMethod]
+        public async Task TooManyReadTest()
+        {
+            string connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", null);
+
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                Assert.Fail("Set environment variable COSMOSDB_MULTI_REGION to run the tests");
+            }
+
+            FaultInjectionCondition readConditon = new FaultInjectionConditionBuilder()
+                .WithOperationType(FaultInjectionOperationType.ReadItem)
+                .Build();
+            IFaultInjectionResult tooManyRequestsResult = FaultInjectionResultBuilder
+                .GetResultBuilder(FaultInjectionServerErrorType.TooManyRequests)
+                .Build();
+            FaultInjectionRule rule = new FaultInjectionRuleBuilder(
+                id: "tooMany",
+                condition: readConditon,
+                result: tooManyRequestsResult)
+                .WithDuration(TimeSpan.FromMinutes(90))
+                .Build();
+
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule>() { rule };
+            FaultInjector faultInjector = new FaultInjector(rules);
+
+            rule.Disable();
+
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                ConsistencyLevel = Cosmos.ConsistencyLevel.Strong,
+            };
+
+            CosmosClient faultInjectionClient = new CosmosClient(
+                connectionString: connectionString,
+                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions));
+
+            Cosmos.Database db = await faultInjectionClient.CreateDatabaseIfNotExistsAsync("LoadTest");
+            Container container = await db.CreateContainerIfNotExistsAsync("LoadContainer", "/pk");
+            
+            dynamic item = new
+            {
+                id = "testId",
+                pk = "pk",
+            };
+
+            await container.CreateItemAsync<dynamic>(item);
+
+            rule.Enable();
+
+            try
+            {
+                ItemResponse<dynamic> ir = await container.ReadItemAsync<dynamic>(
+                        "testId",
+                        new Cosmos.PartitionKey("pk"),
+                        new ItemRequestOptions()
+                        {
+                            ExcludeRegions = new List<string>() { "West US" }
+                        });
+
+
+                Assert.AreEqual(HttpStatusCode.OK, ir.StatusCode);
+            }
+            finally
+            {
+                await db.DeleteAsync();
+                faultInjectionClient.Dispose();
+            }
+            
         }
 
         private static async Task GivenItemStreamAsyncWhenMissingMemberHandlingIsErrorThenExpectsCosmosExceptionTestAsync(
