@@ -241,6 +241,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             (ContainerInternal monitoredContainer, ContainerResponse containerResponse) = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes);
             ManualResetEvent allDocsProcessed = new (false);
             Exception exception = default;
+            PartitionKey partitionKey = new PartitionKey("1");
 
             ChangeFeedProcessor processor = monitoredContainer
                 .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: "processor", onChangesDelegate: async (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItem<dynamic>> docs, CancellationToken token) =>
@@ -250,33 +251,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                         FeedRange feedRange = context.FeedRange; // FeedRange
                         _ = long.TryParse(context.Headers.ContinuationToken.Trim('"'), out long lsnOfChange); // LSN
 
-                        Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.GetClient().DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
-                        IReadOnlyList<Documents.PartitionKeyRange> currentContainerRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
-                            collectionRid: containerResponse.Resource.ResourceId,
-                            range: FeedRangeEpk.FullRange.Range,
-                            trace: NoOpTrace.Singleton,
-                            forceRefresh: true);
+                        // Bookmarks would otherwise normaly be read from the customer's changed items, but I am generating this for test purposes.
+                        List<(FeedRange range, long lsn)> bookmarks = await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
+                            .CreateTestBookmarksAsync(
+                                cosmosClient: this.GetClient(),
+                                containerRId: containerResponse.Resource.ResourceId);
 
-                        IEnumerable<FeedRange> bookmarkRanges = GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests.CreateFeedRanges(
-                            minHexValue: currentContainerRanges.FirstOrDefault().MinInclusive,
-                            maxHexValue: currentContainerRanges.LastOrDefault().MaxExclusive,
-                            numberOfRanges: 3);
-
-                        List<(FeedRange range, long lsn)> bookmarks = GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
-                            .CreateBookmarks(bookmarkRanges);
-
-                        bool hasChangeBeenLsnProcessed = GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
-                            .HasChangeBeenLsnProcessed(
+                        // The customer will write their own HasChangeBeedProcessedAsync logic but can use this as a model.
+                        bool hasChangedBeenProcessed = await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
+                            .HasChangeBeedProcessedAsync(
+                                partitionKey: partitionKey,
                                 monitoredContainer: monitoredContainer,
-                                feedRange: feedRange,
                                 lsnOfChange: lsnOfChange,
                                 bookmarks: bookmarks);
 
-                        Logger.LogLine($"{nameof(hasChangeBeenLsnProcessed)} -> {hasChangeBeenLsnProcessed}");
-
-                        if (hasChangeBeenLsnProcessed)
+                        if (hasChangedBeenProcessed)
                         {
-                            // Know what?
+                            // Now? Up to customer to decide what to do.
                         }
                     }
 
@@ -344,9 +335,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             }
         }
 
-        private static List<(FeedRange range, long lsn)> CreateBookmarks(IEnumerable<FeedRange> bookmarkRanges)
+        private static async Task<List<(FeedRange range, long lsn)>> CreateTestBookmarksAsync(
+            CosmosClient cosmosClient,
+            string containerRId)
         {
-           return bookmarkRanges
+            Routing.PartitionKeyRangeCache partitionKeyRangeCache = await cosmosClient.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
+            IReadOnlyList<Documents.PartitionKeyRange> currentContainerRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
+                collectionRid: containerRId,
+                range: FeedRangeEpk.FullRange.Range,
+                trace: NoOpTrace.Singleton,
+                forceRefresh: true);
+
+            IEnumerable<FeedRange> bookmarkRanges = GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests.CreateFeedRanges(
+                minHexValue: currentContainerRanges.FirstOrDefault().MinInclusive,
+                maxHexValue: currentContainerRanges.LastOrDefault().MaxExclusive,
+                numberOfRanges: 3);
+
+            return bookmarkRanges
                 .Select((bookmarkRange, index) => (bookmarkRange, lsn: (long)(index + 1) * 25))
                 .ToList();
 
@@ -749,17 +754,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         /// <param name="monitoredContainer">Critical for invoking GetEPKRangeForPrefixPartitionKey.</param>
         /// <param name="lsnOfChange">Critical for determining if the current changed lsn has been processed.</param>
         /// <param name="bookmarks">Critical for feed ranges with lsn from the bookmarks. [{ min, max, lsn }]</param>
-        private static bool HasChangeBeenLsnProcessed(
+        private static bool HasChangeBeedProcessed(
             ContainerInternal monitoredContainer,
             FeedRange feedRange,
             long lsnOfChange,
             IReadOnlyList<(FeedRange range, long lsn)> bookmarks)
         {
-            IReadOnlyList<FeedRange> overlappingRanges = monitoredContainer.FindOverlappingRanges(
+            IReadOnlyList<FeedRange> overlappingRangesFromFeedRange = monitoredContainer.FindOverlappingRanges(
                 feedRange: feedRange,
                 feedRanges: bookmarks.Select(bookmark => bookmark.range).ToList());
 
-            if (overlappingRanges == null)
+            if (overlappingRangesFromFeedRange == null)
             {
                 return false;
             }
@@ -768,19 +773,51 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             Logger.LogLine($"{nameof(lsnOfChange)} -> {lsnOfChange}");
             Logger.LogLine($"{nameof(bookmarks)} -> {JsonConvert.SerializeObject(bookmarks)}");
 
-            foreach (FeedRange overlappingRange in overlappingRanges)
+            foreach (FeedRange overlappingRange in overlappingRangesFromFeedRange)
             {
                 foreach ((FeedRange range, long lsn) in bookmarks.Select(x => x))
                 {
-                    if (lsnOfChange >= lsn && overlappingRange.Equals(range))
+                    if (lsnOfChange <= lsn && overlappingRange.Equals(range))
                     {
                         Logger.LogLine($"The range '{range}' with lsn '{lsn}' has been processed.");
 
                         return true;
                     }
-                    else
+                }
+            }
+
+            return false;
+
+        }
+
+        private static async Task<bool> HasChangeBeedProcessedAsync(
+            ContainerInternal monitoredContainer,
+            PartitionKey partitionKey,
+            long lsnOfChange,
+            IReadOnlyList<(FeedRange range, long lsn)> bookmarks)
+        {
+            IReadOnlyList<FeedRange> overlappingRangesFromPartitionKey = await monitoredContainer.FindOverlappingRangesAsync(
+                partitionKey,
+                bookmarks.Select(bookmark => bookmark.range).ToList());
+
+            if (overlappingRangesFromPartitionKey == null)
+            {
+                return false;
+            }
+
+            Logger.LogLine($"{nameof(partitionKey)} -> {partitionKey.ToJsonString()}");
+            Logger.LogLine($"{nameof(lsnOfChange)} -> {lsnOfChange}");
+            Logger.LogLine($"{nameof(bookmarks)} -> {JsonConvert.SerializeObject(bookmarks)}");
+
+            foreach (FeedRange overlappingRange in overlappingRangesFromPartitionKey)
+            {
+                foreach ((FeedRange range, long lsn) in bookmarks.Select(x => x))
+                {
+                    if (lsnOfChange <= lsn && overlappingRange.Equals(range))
                     {
-                        Logger.LogLine($"The range '{range}' with lsn '{lsn}' has not been processed.");
+                        Logger.LogLine($"The range '{range}' with lsn '{lsn}' has been processed.");
+
+                        return true;
                     }
                 }
             }
