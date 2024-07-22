@@ -556,10 +556,10 @@ namespace Microsoft.Azure.Cosmos
             get => this.serializerOptions;
             set
             {
-                if (this.Serializer != null)
+                if (this.Serializer != null || this.UseSystemTextJsonForSerialization)
                 {
                     throw new ArgumentException(
-                        $"{nameof(this.SerializerOptions)} is not compatible with {nameof(this.Serializer)}. Only one can be set.  ");
+                        $"{nameof(this.SerializerOptions)} is not compatible with {nameof(this.Serializer)} or {nameof(this.UseSystemTextJsonForSerialization)}. Only one can be set.  ");
                 }
 
                 this.serializerOptions = value;
