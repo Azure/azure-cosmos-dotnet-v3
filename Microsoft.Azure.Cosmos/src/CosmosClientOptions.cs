@@ -402,7 +402,6 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// CosmosClientOptions clientOptions = new CosmosClientOptions()
         /// {
-        ///     UseSystemTextJsonForSerialization = true,
         ///     SystemTextJsonSerializerOptions = new System.Text.Json.JsonSerializerOptions()
         ///     {
         ///         DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
