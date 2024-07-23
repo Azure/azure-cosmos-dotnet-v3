@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
-    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -144,15 +143,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             responseMessage.Headers.ContinuationToken = etag;
             this.changeFeedStartFrom = new ChangeFeedStartFromContinuationAndFeedRange(etag, (FeedRangeInternal)this.changeFeedStartFrom.FeedRange);
 
-            // Set the FeedRangeMinMax response header.
-
-            if (this.feedRangeEpk != null)
-            {
-                responseMessage.Headers.FeedRangeDetails = FeedRangeDetail.Create(
-                    minInclusive: this.feedRangeEpk.Range.Min,
-                    maxExclusive: this.feedRangeEpk.Range.Max,
-                    collectionRid: responseMessage.RequestMessage.DocumentServiceRequest.ResourceId);
-            }
+            // Set the FeedRangeEpk response header.
+            responseMessage.Headers.FeedRangeEpk = this.feedRangeEpk;
 
             return responseMessage;
         }

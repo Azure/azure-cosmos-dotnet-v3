@@ -21,5 +21,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         public override CosmosDiagnostics Diagnostics => this.changeFeedObserverContextCore.Diagnostics;
 
         public override Headers Headers => this.changeFeedObserverContextCore.Headers;
+
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+            override FeedRange FeedRange => this.changeFeedObserverContextCore.FeedRange;
     }
 }

@@ -478,13 +478,15 @@ namespace Microsoft.Azure.Cosmos
             return null;
         }
 
-        /// <summary>
-        /// Gets the feed range details.
-        /// </summary>
-        public virtual ChangeFeed.FeedRangeDetail FeedRangeDetails
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+            virtual FeedRangeEpk FeedRangeEpk
         {
             get;
-            internal set;
+            set;
         }
     }
 }

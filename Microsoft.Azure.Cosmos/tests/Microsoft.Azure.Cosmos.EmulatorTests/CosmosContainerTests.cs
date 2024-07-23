@@ -11,9 +11,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using System.Net;
     using System.Threading.Tasks;
-    using HttpConstants = Microsoft.Azure.Documents.HttpConstants;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
-    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -1783,6 +1782,96 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsFalse(containerCore.LinkUri.ToString().StartsWith("/"));
 
             Assert.IsTrue(containerSettings.LastModified.Value > new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), containerSettings.LastModified.Value.ToString());
+        }
+
+        [TestMethod]
+        [Owner("philipthomas-MSFT")]
+        public async Task TestFindOverlappingRangesByPartitionKeyAsync()
+        {
+            Container container = default;
+
+            try
+            {
+                PartitionKey partitionKey = new PartitionKey("GA");
+                ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(
+                    id: Guid.NewGuid().ToString(),
+                    partitionKeyPath: "/pk");
+
+                container = containerResponse.Container;
+
+                await container.CreateItemAsync<dynamic>(item: new { id = Guid.NewGuid().ToString(), pk = "GA" }, partitionKey: partitionKey);
+
+                Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("AA", "BB", true, false);
+                FeedRangeEpk feedRangeEpk = new FeedRangeEpk(range);
+                string representation = feedRangeEpk.ToJsonString();
+
+                List<FeedRange> ranges = new List<FeedRange>()
+                {
+                    FeedRange.FromJsonString(representation),
+                };
+
+                IReadOnlyList<FeedRange> results = await container.FindOverlappingRangesAsync(
+                    partitionKey: partitionKey,
+                    feedRanges: ranges);
+
+                Assert.IsNotNull(results);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogLine($"{ex}");
+            }
+            finally
+            {
+                if (container != null)
+                {
+                    await container.DeleteContainerAsync();
+                }
+            }
+        }
+
+        [TestMethod]
+        [Owner("philipthomas-MSFT")]
+        public async Task TestFindOverlappingRangesByFeedRangeAsync()
+        {
+            Container container = default;
+
+            try
+            {
+                PartitionKey partitionKey = new PartitionKey("GA");
+                ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(
+                    id: Guid.NewGuid().ToString(),
+                    partitionKeyPath: "/pk");
+
+                container = containerResponse.Container;
+
+                await container.CreateItemAsync<dynamic>(item: new { id = Guid.NewGuid().ToString(), pk = "GA" }, partitionKey: partitionKey);
+
+                Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("AA", "BB", true, false);
+                FeedRangeEpk feedRangeEpk = new FeedRangeEpk(range);
+                string representation = feedRangeEpk.ToJsonString();
+
+                List<FeedRange> ranges = new List<FeedRange>()
+                {
+                    FeedRange.FromJsonString(representation),
+                };
+
+                IReadOnlyList<FeedRange> results = container.FindOverlappingRanges(
+                    feedRange: FeedRange.FromJsonString(FeedRangeEpk.FullRange.ToJsonString()),
+                    feedRanges: ranges);
+
+                Assert.IsNotNull(results);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogLine($"{ex}");
+            }
+            finally
+            {
+                if (container != null)
+                {
+                    await container.DeleteContainerAsync();
+                }
+            }
         }
     }
 }
