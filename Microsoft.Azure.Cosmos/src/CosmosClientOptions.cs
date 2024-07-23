@@ -414,6 +414,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         /// <remarks>Note that if this option is provided, then the SDK will use the <see cref="CosmosSystemTextJsonSerializer"/> as the default serializer
         /// and set the serializer options as the constructor args.
+        /// </remarks>
         public System.Text.Json.JsonSerializerOptions SystemTextJsonSerializerOptions { get; set; }
 
         /// <summary>
