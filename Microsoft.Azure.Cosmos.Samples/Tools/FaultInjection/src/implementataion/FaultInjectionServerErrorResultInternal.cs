@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private readonly int times;
         private readonly TimeSpan delay;
         private readonly bool suppressServiceRequest;
-        private readonly double applicationPercentage;
+        private readonly double injectionRate;
         private readonly FaultInjectionApplicationContext applicationContext;
 
         /// <summary>
@@ -28,21 +28,21 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <param name="serverErrorType"></param>
         /// <param name="times"></param>
         /// <param name="delay"></param>
-        /// <param name="applicationPercentage"></param>
+        /// <param name="injectionRate"></param>
         /// <param name="applicationContext"></param>
         public FaultInjectionServerErrorResultInternal(
             FaultInjectionServerErrorType serverErrorType, 
             int times, 
             TimeSpan delay, 
             bool suppressServiceRequest,
-            double applicationPercentage,
+            double injectionRate,
             FaultInjectionApplicationContext applicationContext)
         {
             this.serverErrorType = serverErrorType;
             this.times = times;
             this.delay = delay;
             this.suppressServiceRequest = suppressServiceRequest;
-            this.applicationPercentage = applicationPercentage;
+            this.injectionRate = injectionRate;
             this.applicationContext = applicationContext;
         }
 
@@ -87,9 +87,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// Returns the percentage of how many times the rule will be applied.
         /// </summary>
         /// <returns></returns>
-        public double GetApplicationPercentage()
+        public double GetInjectionRate()
         {
-            return this.applicationPercentage;
+            return this.injectionRate;
         }
 
         /// <summary>

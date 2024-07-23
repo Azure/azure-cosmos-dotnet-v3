@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     /// If you are making changes in this file please make sure you are adding similar test in <see cref="ClientTelemetryTests"/> also.
     /// </summary>
     [TestClass]
+    [TestCategory("Quarantine") /* Release pipelines failing to connect to telemetry service */]
     [TestCategory("ClientTelemetryRelease")]
     public class ClientTelemetryReleaseTests : ClientTelemetryTestsBase
     {

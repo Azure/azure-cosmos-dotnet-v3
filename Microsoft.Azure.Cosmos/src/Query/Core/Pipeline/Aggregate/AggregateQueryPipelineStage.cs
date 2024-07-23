@@ -58,30 +58,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
         }
 
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
-            ExecutionEnvironment executionEnvironment,
             IReadOnlyList<AggregateOperator> aggregates,
             IReadOnlyDictionary<string, AggregateOperator?> aliasToAggregateType,
             IReadOnlyList<string> orderedAliases,
             bool hasSelectValue,
             CosmosElement continuationToken,
-            MonadicCreatePipelineStage monadicCreatePipelineStage) => executionEnvironment switch
-            {
-                ExecutionEnvironment.Client => ClientAggregateQueryPipelineStage.MonadicCreate(
+            MonadicCreatePipelineStage monadicCreatePipelineStage)
+        {
+            return ClientAggregateQueryPipelineStage.MonadicCreate(
                     aggregates,
                     aliasToAggregateType,
                     orderedAliases,
                     hasSelectValue,
                     continuationToken,
-                    monadicCreatePipelineStage),
-                ExecutionEnvironment.Compute => ComputeAggregateQueryPipelineStage.MonadicCreate(
-                    aggregates,
-                    aliasToAggregateType,
-                    orderedAliases,
-                    hasSelectValue,
-                    continuationToken,
-                    monadicCreatePipelineStage),
-                _ => throw new ArgumentException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}."),
-            };
+                    monadicCreatePipelineStage);
+        }
 
         /// <summary>
         /// Struct for getting the payload out of the rewritten projection.

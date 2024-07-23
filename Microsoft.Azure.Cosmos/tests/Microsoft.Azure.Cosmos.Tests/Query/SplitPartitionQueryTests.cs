@@ -30,7 +30,7 @@
                 QueryPage queryPage = await documentContainer.QueryAsync(
                         sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec(query),
                         feedRangeState: new FeedRangeState<QueryState>(new FeedRangePartitionKey(partitionKey), state: null),
-                        queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: int.MaxValue),
+                        queryPaginationOptions: new QueryExecutionOptions(pageSizeHint: int.MaxValue),
                         trace: NoOpTrace.Singleton,
                         cancellationToken: default);
 

@@ -11,11 +11,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Documents;
 
-    internal sealed class QueryPaginationOptions : PaginationOptions
+    internal sealed class QueryExecutionOptions : ExecutionOptions
     {
-        public static readonly QueryPaginationOptions Default = new QueryPaginationOptions();
-
-        public bool OptimisticDirectExecute { get; }
+        public static readonly QueryExecutionOptions Default = new QueryExecutionOptions();
 
         public static readonly ImmutableHashSet<string> BannedHeaders = new HashSet<string>()
         {
@@ -26,16 +24,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination
             HttpConstants.HttpHeaders.IsContinuationExpected,
             HttpConstants.HttpHeaders.ContentType,
         }
-        .Concat(PaginationOptions.bannedAdditionalHeaders)
-        .ToImmutableHashSet();
+            .Concat(ExecutionOptions.bannedAdditionalHeaders)
+            .ToImmutableHashSet();
 
-        public QueryPaginationOptions(
+        public bool OptimisticDirectExecute { get; }
+
+        public bool EnableDistributedQueryGatewayMode { get; }
+
+        public QueryExecutionOptions(
             int? pageSizeHint = null,
+            IReadOnlyDictionary<string, string> additionalHeaders = null,
             bool optimisticDirectExecute = false,
-            IReadOnlyDictionary<string, string> additionalHeaders = null)
+            bool enableDistributedQueryGatewayMode = false)
             : base(pageSizeHint, additionalHeaders)
         {
             this.OptimisticDirectExecute = optimisticDirectExecute;
+            this.EnableDistributedQueryGatewayMode = enableDistributedQueryGatewayMode;
         }
 
         protected override ImmutableHashSet<string> BannedAdditionalHeaders => BannedHeaders;

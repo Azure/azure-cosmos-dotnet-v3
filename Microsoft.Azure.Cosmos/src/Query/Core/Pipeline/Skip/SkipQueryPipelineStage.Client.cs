@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
                 // Work is done in base constructor.
             }
 
-            public static TryCatch<IQueryPipelineStage> MonadicCreate(
+            public static new TryCatch<IQueryPipelineStage> MonadicCreate(
                 int offsetCount,
                 CosmosElement continuationToken,
                 MonadicCreatePipelineStage monadicCreatePipelineStage)
