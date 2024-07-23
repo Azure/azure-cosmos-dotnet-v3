@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Collections.Generic;
     using System.Threading;
     using HdrHistogram;
-    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
     using static Microsoft.Azure.Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum;
 
@@ -25,12 +24,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 if (NetworkDataRecorder.IsStatusCodeNotExcluded((int)storeStatistics.StoreResult.StatusCode, (int)storeStatistics.StoreResult.SubStatusCode))
                 {
-                    if (storeStatistics.RequestLatency.Ticks < 0)
-                    {
-                        DefaultTrace.TraceWarning($"Skipping invalid latency value i.e.{0} ", storeStatistics.RequestLatency.Ticks);
-                        continue;
-                    }
-
                     if (NetworkDataRecorder.IsUserOrServerError((int)storeStatistics.StoreResult.StatusCode))
                     {
                         RequestInfo requestInfo = this.CreateRequestInfo(storeStatistics, databaseId, containerId);
