@@ -24,6 +24,9 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public abstract Headers Headers { get; }
 
+        /// <summary>
+        /// Gets the feed range.
+        /// </summary>
 #if PREVIEW
         public
 #else

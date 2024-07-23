@@ -478,12 +478,7 @@ namespace Microsoft.Azure.Cosmos
             return null;
         }
 
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-            virtual FeedRangeEpk FeedRangeEpk
+        internal virtual FeedRangeEpk FeedRangeEpk
         {
             get;
             set;
