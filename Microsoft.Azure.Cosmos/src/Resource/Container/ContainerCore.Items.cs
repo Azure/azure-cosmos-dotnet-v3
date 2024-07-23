@@ -1253,5 +1253,71 @@ namespace Microsoft.Azure.Cosmos
                 changeFeedProcessor: changeFeedProcessor,
                 applyBuilderConfiguration: changeFeedProcessor.ApplyBuildConfiguration).WithChangeFeedMode(mode);
         }
+
+        public override async Task<IReadOnlyList<Cosmos.FeedRange>> FindOverlappingRangesAsync(
+            Cosmos.PartitionKey partitionKey,
+            IReadOnlyList<Cosmos.FeedRange> feedRanges,
+            CancellationToken cancellationToken = default)
+        {
+            List<FeedRange> overlappingRanges = new ();
+
+            foreach (Documents.Routing.Range<string> range in ContainerCore.ConvertToRange(feedRanges))
+            {
+                if (Documents.Routing.Range<string>.CheckOverlapping(
+                    range1: await this.ConvertToRangeAsync(
+                        partitionKey: partitionKey,
+                        cancellationToken: cancellationToken),
+                    range2: range))
+                {
+                    overlappingRanges.Add(new FeedRangeEpk(range));
+                }
+            }
+
+            return overlappingRanges;
+        }
+
+        public override IReadOnlyList<Cosmos.FeedRange> FindOverlappingRanges(
+            Cosmos.FeedRange feedRange,
+            IReadOnlyList<Cosmos.FeedRange> feedRanges)
+        {
+            List<FeedRange> overlappingRanges = new ();
+
+            foreach (Documents.Routing.Range<string> range in ContainerCore.ConvertToRange(feedRanges))
+            {
+                if (Documents.Routing.Range<string>.CheckOverlapping(
+                    range1: ContainerCore.ConvertToRange(feedRange),
+                    range2: range))
+                {
+                    overlappingRanges.Add(new FeedRangeEpk(range));
+                }
+            }
+
+            return overlappingRanges;
+        }
+
+        private async Task<Documents.Routing.Range<string>> ConvertToRangeAsync(PartitionKey partitionKey, CancellationToken cancellationToken)
+        {
+            PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync(cancellationToken);
+            Documents.Routing.Range<string> range = Documents.Routing.Range<string>.GetPointRange(partitionKey.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition));
+            return range;
+        }
+
+        private static IEnumerable<Documents.Routing.Range<string>> ConvertToRange(IReadOnlyList<FeedRange> fromFeedRanges)
+        {
+            foreach (FeedRange fromFeedRange in fromFeedRanges)
+            {
+                yield return ContainerCore.ConvertToRange(fromFeedRange);
+            }
+        }
+
+        private static Documents.Routing.Range<string> ConvertToRange(FeedRange fromFeedRange)
+        {
+            if (fromFeedRange is not FeedRangeEpk feedRangeEpk)
+            {
+                return default;
+            }
+
+            return feedRangeEpk.Range;
+        }
     }
 }

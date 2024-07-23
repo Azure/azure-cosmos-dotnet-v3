@@ -1652,23 +1652,6 @@ namespace Microsoft.Azure.Cosmos
             string processorName,
             ChangeFeedStreamHandlerWithManualCheckpoint onChangesDelegate);
 
-        /// <summary>
-        /// Takes a given list of ranges and find overlapping ranges for the given partition key.
-        /// </summary>
-        /// <param name="partitionKey">A given partition key.</param>
-        /// <param name="feedRanges">A given list of ranges.</param>
-        /// <param name="cancellationToken"></param>
-        /// <returns>A list of overlapping ranges for the the given partition key.</returns>
-        public abstract Task<IReadOnlyList<Cosmos.FeedRange>> FindOverlappingRangesAsync(Cosmos.PartitionKey partitionKey, IReadOnlyList<Cosmos.FeedRange> feedRanges, CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// Takes a given list of ranges and find overlapping ranges for the given feed range.
-        /// </summary>
-        /// <param name="feedRange">A given feed range.</param>
-        /// <param name="feedRanges">A given list of ranges.</param>
-        /// <returns>A list of overlapping ranges for the the given feed range epk.</returns>
-        public abstract IReadOnlyList<Cosmos.FeedRange> FindOverlappingRanges(Cosmos.FeedRange feedRange, IReadOnlyList<Cosmos.FeedRange> feedRanges);
-
 #if PREVIEW
         /// <summary>
         /// Deletes all items in the Container with the specified <see cref="PartitionKey"/> value.
@@ -1772,6 +1755,23 @@ namespace Microsoft.Azure.Cosmos
         public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
             string processorName,
             ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate);
+            
+        /// <summary>
+        /// Takes a given list of ranges and find overlapping ranges for the given partition key.
+        /// </summary>
+        /// <param name="partitionKey">A given partition key.</param>
+        /// <param name="feedRanges">A given list of ranges.</param>
+        /// <param name="cancellationToken"></param>
+        /// <returns>A list of overlapping ranges for the the given partition key.</returns>
+        public abstract Task<IReadOnlyList<Cosmos.FeedRange>> FindOverlappingRangesAsync(Cosmos.PartitionKey partitionKey, IReadOnlyList<Cosmos.FeedRange> feedRanges, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Takes a given list of ranges and find overlapping ranges for the given feed range.
+        /// </summary>
+        /// <param name="feedRange">A given feed range.</param>
+        /// <param name="feedRanges">A given list of ranges.</param>
+        /// <returns>A list of overlapping ranges for the the given feed range epk.</returns>
+        public abstract IReadOnlyList<Cosmos.FeedRange> FindOverlappingRanges(Cosmos.FeedRange feedRange, IReadOnlyList<Cosmos.FeedRange> feedRanges);
 #endif
     }
 }

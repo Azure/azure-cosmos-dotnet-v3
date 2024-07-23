@@ -585,8 +585,8 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            return new FeedIteratorInlineCore<T>(base.GetChangeFeedIterator<T>(changeFeedStartFrom, 
-                                                 changeFeedMode, 
+            return new FeedIteratorInlineCore<T>(base.GetChangeFeedIterator<T>(changeFeedStartFrom,
+                                                 changeFeedMode,
                                                  changeFeedRequestOptions),
                                                  this.ClientContext);
         }
@@ -661,24 +661,14 @@ namespace Microsoft.Azure.Cosmos
                 openTelemetry: (response) => new OpenTelemetryResponse(response));
         }
 
-        public override async Task<IReadOnlyList<FeedRange>> FindOverlappingRangesAsync(
-            Cosmos.PartitionKey partitionKey,
-            IReadOnlyList<FeedRange> feedRanges,
-            CancellationToken cancellationToken = default)
+        public override IReadOnlyList<FeedRange> FindOverlappingRanges(FeedRange feedRange, IReadOnlyList<FeedRange> feedRanges)
         {
-            return await base.FindOverlappingRangesAsync(
-                partitionKey: partitionKey,
-                feedRanges: feedRanges,
-                cancellationToken: cancellationToken);
+            return base.FindOverlappingRanges(feedRange, feedRanges);
         }
 
-        public override IReadOnlyList<FeedRange> FindOverlappingRanges(
-            Cosmos.FeedRange feedRange,
-            IReadOnlyList<Cosmos.FeedRange> feedRanges)
+        public override async Task<IReadOnlyList<FeedRange>> FindOverlappingRangesAsync(PartitionKey partitionKey, IReadOnlyList<FeedRange> feedRanges, CancellationToken cancellationToken = default)
         {
-            return base.FindOverlappingRanges(
-                feedRange: feedRange,
-                feedRanges: feedRanges);
+            return await base.FindOverlappingRangesAsync(partitionKey, feedRanges, cancellationToken);
         }
     }
 }
