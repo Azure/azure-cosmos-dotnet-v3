@@ -259,7 +259,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                         PartitionKey partitionKey = new(document.Current.pk.ToString());
 
                         // 4. Bookmarks
-                        List<(FeedRange range, long lsn)> bookmarks = GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests.CreateBookmarksIfNotExists(document);
+                        List<(FeedRange range, long lsn)> bookmarks = GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
+                            .CreateBookmarksIfNotExists(document);
 
                         // 5. Log
                         Logger.LogLine($"FeedRange: {feedRange.ToJsonString()}; LSN: {lsnOfChange}; PartitionKey: {partitionKey.ToJsonString()}; Bookmarks: {JsonConvert.SerializeObject(bookmarks)}");
@@ -278,7 +279,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                             // 7.a. Update bookmarks if not been processed so that it is picked up next time.
                             bookmarks.Add((feedRange, lsnOfChange));
                             await monitoredContainer.UpsertItemAsync<dynamic>(new { bookmarks, id = document.Current.id.ToString(), pk = document.Current.pk.ToString(), description = "original test" }, partitionKey: partitionKey, cancellationToken: token);
-                            await Task.Delay(1000);
+                            await Task.Delay(1000); // NOTE(philipthomas-MSFT): Not critical to delay this.
                         }
                         else
                         {
@@ -305,16 +306,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
 
             await monitoredContainer.CreateItemAsync<dynamic>(new { id = "1", pk = "WA", description = "original test" }, partitionKey: new PartitionKey("WA"));
-            await Task.Delay(1000);
+            await Task.Delay(1000); // NOTE(philipthomas-MSFT): Not critical to delay this.
 
             await monitoredContainer.CreateItemAsync<dynamic>(new { id = "2", pk = "GA", description = "original test" }, partitionKey: new PartitionKey("GA"));
-            await Task.Delay(1000);
-
-            //await monitoredContainer.UpsertItemAsync<dynamic>(new { id = "1", pk = "WA", description = "test after replace" }, partitionKey: new PartitionKey("WA"));
-            //await Task.Delay(1000);
-
-            //await monitoredContainer.UpsertItemAsync<dynamic>(new { id = "2", pk = "GA", description = "test after replace" }, partitionKey: new PartitionKey("GA"));
-            //await Task.Delay(1000);
+            await Task.Delay(1000); // NOTE(philipthomas-MSFT): Not critical to delay this.
 
             bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
 
@@ -343,28 +338,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
             return bookmarks;
         }
-
-        //private static async Task<List<(FeedRange range, long lsn)>> CreateTestBookmarksAsync(
-        //    CosmosClient cosmosClient,
-        //    string containerRId)
-        //{
-        //    Routing.PartitionKeyRangeCache partitionKeyRangeCache = await cosmosClient.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
-        //    IReadOnlyList<Documents.PartitionKeyRange> currentContainerRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
-        //        collectionRid: containerRId,
-        //        range: FeedRangeEpk.FullRange.Range,
-        //        trace: NoOpTrace.Singleton,
-        //        forceRefresh: true);
-
-        //    IEnumerable<FeedRange> bookmarkRanges = GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests.CreateFeedRanges(
-        //        minHexValue: currentContainerRanges.FirstOrDefault().MinInclusive,
-        //        maxHexValue: currentContainerRanges.LastOrDefault().MaxExclusive,
-        //        numberOfRanges: 3);
-
-        //    return bookmarkRanges
-        //        .Select((bookmarkRange, index) => (bookmarkRange, lsn: (long)(index + 1) * 25))
-        //        .ToList();
-
-        //}
 
         /// <summary>
         /// This is based on an issue located at <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4308"/>.
@@ -716,6 +689,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
             return Cosmos.FeedRange.FromJsonString(feedRangeEpk.ToJsonString());
         }
+
+        //private static async Task<List<(FeedRange range, long lsn)>> CreateTestBookmarksAsync(
+        //    CosmosClient cosmosClient,
+        //    string containerRId)
+        //{
+        //    Routing.PartitionKeyRangeCache partitionKeyRangeCache = await cosmosClient.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
+        //    IReadOnlyList<Documents.PartitionKeyRange> currentContainerRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
+        //        collectionRid: containerRId,
+        //        range: FeedRangeEpk.FullRange.Range,
+        //        trace: NoOpTrace.Singleton,
+        //        forceRefresh: true);
+
+        //    IEnumerable<FeedRange> bookmarkRanges = GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests.CreateFeedRanges(
+        //        minHexValue: currentContainerRanges.FirstOrDefault().MinInclusive,
+        //        maxHexValue: currentContainerRanges.LastOrDefault().MaxExclusive,
+        //        numberOfRanges: 3);
+
+        //    return bookmarkRanges
+        //        .Select((bookmarkRange, index) => (bookmarkRange, lsn: (long)(index + 1) * 25))
+        //        .ToList();
+
+        //}
 
         //private static IEnumerable<Cosmos.FeedRange> CreateFeedRanges(
         //    string minHexValue,
