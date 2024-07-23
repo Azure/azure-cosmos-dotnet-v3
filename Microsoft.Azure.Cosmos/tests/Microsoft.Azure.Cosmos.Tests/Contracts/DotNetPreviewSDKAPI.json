@@ -149,10 +149,10 @@
           ],
           "MethodInfo": "System.DateTime get_ConflictResolutionTimestamp();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void .ctor()": {
+        "Void .ctor(System.DateTime, Int64, Microsoft.Azure.Cosmos.ChangeFeedOperationType, Int64, Boolean)": {
           "Type": "Constructor",
           "Attributes": [],
-          "MethodInfo": "[Void .ctor(), Void .ctor()]"
+          "MethodInfo": "[Void .ctor(System.DateTime, Int64, Microsoft.Azure.Cosmos.ChangeFeedOperationType, Int64, Boolean), Void .ctor(System.DateTime, Int64, Microsoft.Azure.Cosmos.ChangeFeedOperationType, Int64, Boolean)]"
         }
       },
       "NestedTypes": {}
