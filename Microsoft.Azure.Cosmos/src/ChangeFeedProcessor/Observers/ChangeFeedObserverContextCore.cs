@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 #else
         internal
 #endif 
-            FeedRange FeedRange => new FeedRangeEpk(this.responseMessage.Headers.FeedRangeEpk.Range);
+        FeedRange FeedRange => new FeedRangeEpk(this.Headers.FeedRangeEpk.Range);
 
         public async Task CheckpointAsync()
         {
