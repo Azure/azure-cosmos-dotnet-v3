@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
             this.ThresholdStep = thresholdStep ?? TimeSpan.FromMilliseconds(-1);
         }
 
-        internal override bool Enabled()
+        public override bool Enabled()
         {
             return true;
         }

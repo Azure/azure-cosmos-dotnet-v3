@@ -32,6 +32,6 @@ namespace Microsoft.Azure.Cosmos
             RequestMessage requestMessage,
             CancellationToken cancellationToken);
 
-        internal abstract bool Enabled();
+        public abstract bool Enabled();
     }
 }

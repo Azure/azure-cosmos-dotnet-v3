@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
 #endif
     class DisabledAvailabilityStrategy : AvailabilityStrategy
     {
-        internal override bool Enabled()
+        public override bool Enabled()
         {
             return false;
         }
