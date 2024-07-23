@@ -128,16 +128,16 @@ namespace Microsoft.Azure.Cosmos
                 requestInvokerHandler = clientPipelineBuilder.Build();
             }
 
-            if (clientOptions.UseSystemTextJsonForSerialization)
+            if (clientOptions.SystemTextJsonSerializerOptions != null)
             {
                 if (clientOptions.Serializer != null || clientOptions.SerializerOptions != null)
                 {
                     throw new ArgumentException(
-                        $"{nameof(clientOptions.UseSystemTextJsonForSerialization)} is not compatible with {nameof(clientOptions.Serializer)} or {nameof(clientOptions.SerializerOptions)}. Only one can be set.  ");
+                        $"{nameof(clientOptions.SystemTextJsonSerializerOptions)} is not compatible with {nameof(clientOptions.Serializer)} or {nameof(clientOptions.SerializerOptions)}. Only one can be set.  ");
                 }
 
                 clientOptions.Serializer = new CosmosSystemTextJsonSerializer(
-                    clientOptions.STJSerializerOptions ?? new System.Text.Json.JsonSerializerOptions());
+                    clientOptions.SystemTextJsonSerializerOptions ?? new System.Text.Json.JsonSerializerOptions());
             }
 
             CosmosSerializerCore serializerCore = CosmosSerializerCore.Create(

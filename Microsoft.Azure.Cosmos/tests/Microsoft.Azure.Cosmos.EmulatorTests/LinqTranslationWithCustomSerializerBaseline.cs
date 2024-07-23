@@ -58,7 +58,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             CosmosDefaultSTJClient = TestCommon.CreateCosmosClient((cosmosClientBuilder)
                 => cosmosClientBuilder
-                    .WithSystemTextJsonSerializerEnabled()
                     .WithSystemTextJsonSerializerOptions(
                         new JsonSerializerOptions()),
                 useCustomSeralizer: false);

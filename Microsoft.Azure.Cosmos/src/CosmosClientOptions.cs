@@ -394,19 +394,6 @@ namespace Microsoft.Azure.Cosmos
         public bool? EnableContentResponseOnWrite { get; set; }
 
         /// <summary>
-        /// Gets or sets the boolean flag to indicate if the default STJ serializer <see cref="CosmosSystemTextJsonSerializer"/> needed to be
-        /// used for JSON serialization.
-        /// </summary>
-        /// <remarks>
-        /// Note that, if this flag is set to true, then any custom seriliazer provided will be disregarded and overridden with the
-        /// default STJ serializer <see cref="CosmosSystemTextJsonSerializer"/>.
-        /// </remarks>
-        /// <value>
-        /// The default value is false
-        /// </value>
-        public bool UseSystemTextJsonForSerialization { get; set; } = false;
-
-        /// <summary>
         /// Get or set the <see cref="System.Text.Json.JsonSerializerOptions"/> for the default STJ serializer <see cref="CosmosSystemTextJsonSerializer"/>.
         /// </summary>
         /// <example>
@@ -416,7 +403,7 @@ namespace Microsoft.Azure.Cosmos
         /// CosmosClientOptions clientOptions = new CosmosClientOptions()
         /// {
         ///     UseSystemTextJsonForSerialization = true,
-        ///     STJSerializerOptions = new System.Text.Json.JsonSerializerOptions()
+        ///     SystemTextJsonSerializerOptions = new System.Text.Json.JsonSerializerOptions()
         ///     {
         ///         DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
         ///     }
@@ -427,7 +414,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <remarks>If no serializer options is provided explicitly, then the default system text json serializer options will be used.</remarks>
-        public System.Text.Json.JsonSerializerOptions STJSerializerOptions { get; set; }
+        public System.Text.Json.JsonSerializerOptions SystemTextJsonSerializerOptions { get; set; }
 
         /// <summary>
         /// Gets or sets the advanced replica selection flag. The advanced replica selection logic keeps track of the replica connection
@@ -579,10 +566,10 @@ namespace Microsoft.Azure.Cosmos
             get => this.serializerOptions;
             set
             {
-                if (this.Serializer != null || this.UseSystemTextJsonForSerialization)
+                if (this.Serializer != null || this.SystemTextJsonSerializerOptions != null)
                 {
                     throw new ArgumentException(
-                        $"{nameof(this.SerializerOptions)} is not compatible with {nameof(this.Serializer)} or {nameof(this.UseSystemTextJsonForSerialization)}. Only one can be set.  ");
+                        $"{nameof(this.SerializerOptions)} is not compatible with {nameof(this.Serializer)} or {nameof(this.SystemTextJsonSerializerOptions)}. Only one can be set.  ");
                 }
 
                 this.serializerOptions = value;

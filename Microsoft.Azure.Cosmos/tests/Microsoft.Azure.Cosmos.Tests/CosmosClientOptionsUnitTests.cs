@@ -484,8 +484,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClientOptions options = new CosmosClientOptions()
             {
-                UseSystemTextJsonForSerialization = true,
-                STJSerializerOptions = new System.Text.Json.JsonSerializerOptions()
+                SystemTextJsonSerializerOptions = new System.Text.Json.JsonSerializerOptions()
                 {
                     PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
                 }
@@ -530,10 +529,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClientOptions options = new CosmosClientOptions()
             {
-                Serializer = new CosmosJsonDotNetSerializer()
+                Serializer = new CosmosJsonDotNetSerializer(),
+                SystemTextJsonSerializerOptions = new System.Text.Json.JsonSerializerOptions(),
             };
-
-            options.UseSystemTextJsonForSerialization = true;
 
             CosmosClient client = new(
                 "https://fake-account.documents.azure.com:443/",
@@ -549,9 +547,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosClientOptions options = new CosmosClientOptions()
             {
                 SerializerOptions = new CosmosSerializationOptions(),
+                SystemTextJsonSerializerOptions = new System.Text.Json.JsonSerializerOptions(),
             };
-
-            options.UseSystemTextJsonForSerialization = true;
 
             CosmosClient client = new(
                 "https://fake-account.documents.azure.com:443/",

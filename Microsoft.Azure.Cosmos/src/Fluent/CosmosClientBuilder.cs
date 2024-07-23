@@ -649,17 +649,6 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Enables the usage of <see cref="CosmosSystemTextJsonSerializer"/> as the default
-        /// serializer.
-        /// </summary>
-        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
-        public CosmosClientBuilder WithSystemTextJsonSerializerEnabled()
-        {
-            this.clientOptions.UseSystemTextJsonForSerialization = true;
-            return this;
-        }
-
-        /// <summary>
         /// Sets the serializer options for <see cref="CosmosSystemTextJsonSerializer"/>. If none provided
         /// the default system text json serializer options will be used.
         /// </summary>
@@ -669,7 +658,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         public CosmosClientBuilder WithSystemTextJsonSerializerOptions(
             System.Text.Json.JsonSerializerOptions stjSerializerOptions)
         {
-            this.clientOptions.STJSerializerOptions = stjSerializerOptions;
+            this.clientOptions.SystemTextJsonSerializerOptions = stjSerializerOptions;
             return this;
         }
 
