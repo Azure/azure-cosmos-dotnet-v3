@@ -655,7 +655,12 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Availability Strategy to be used for periods of high latency
         /// </summary>
-        internal AvailabilityStrategy AvailabilityStrategy { get; set; }
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        AvailabilityStrategy AvailabilityStrategy { get; set; }
 
         /// <summary>
         /// Enable partition key level failover
