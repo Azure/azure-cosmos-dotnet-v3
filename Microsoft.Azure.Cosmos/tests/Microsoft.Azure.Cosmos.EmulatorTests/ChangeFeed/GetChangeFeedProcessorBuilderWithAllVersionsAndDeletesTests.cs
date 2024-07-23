@@ -270,13 +270,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                                 partitionKey: partitionKey,
                                 monitoredContainer: monitoredContainer,
                                 lsnOfChange: lsnOfChange,
-                                bookmarks: bookmarks);
+                                bookmarks: bookmarks,
+                                cancellationToken: token);
 
                         if (!hasChangedBeenProcessed)
                         {
                             // 7.a. Update bookmarks if not been processed so that it is picked up next time.
                             bookmarks.Add((feedRange, lsnOfChange));
-                            await monitoredContainer.UpsertItemAsync<dynamic>(new { bookmarks, id = document.Current.id.ToString(), pk = document.Current.pk.ToString(), description = "original test" }, partitionKey: partitionKey);
+                            await monitoredContainer.UpsertItemAsync<dynamic>(new { bookmarks, id = document.Current.id.ToString(), pk = document.Current.pk.ToString(), description = "original test" }, partitionKey: partitionKey, cancellationToken: token);
                             await Task.Delay(1000);
                         }
                         else
@@ -798,11 +799,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             ContainerInternal monitoredContainer,
             PartitionKey partitionKey,
             long lsnOfChange,
-            IReadOnlyList<(FeedRange range, long lsn)> bookmarks)
+            IReadOnlyList<(FeedRange range, long lsn)> bookmarks,
+            CancellationToken cancellationToken)
         {
             IReadOnlyList<FeedRange> overlappingRangesFromPartitionKey = await monitoredContainer.FindOverlappingRangesAsync(
                 partitionKey,
-                bookmarks.Select(bookmark => bookmark.range).ToList());
+                bookmarks.Select(bookmark => bookmark.range).ToList(),
+                cancellationToken);
 
             if (overlappingRangesFromPartitionKey == null)
             {
