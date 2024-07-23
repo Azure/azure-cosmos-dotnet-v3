@@ -394,7 +394,7 @@ namespace Microsoft.Azure.Cosmos
         public bool? EnableContentResponseOnWrite { get; set; }
 
         /// <summary>
-        /// Get or set the <see cref="System.Text.Json.JsonSerializerOptions"/> for the default STJ serializer <see cref="CosmosSystemTextJsonSerializer"/>.
+        /// Gets or sets the <see cref="System.Text.Json.JsonSerializerOptions"/> for the default STJ serializer <see cref="CosmosSystemTextJsonSerializer"/>.
         /// </summary>
         /// <example>
         /// An example on how to configure the STJ serialization option to ignore null values
@@ -413,7 +413,8 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>If no serializer options is provided explicitly, then the default system text json serializer options will be used.</remarks>
+        /// <remarks>Note that if this option is provided, then the SDK will use the <see cref="CosmosSystemTextJsonSerializer"/> as the default serializer
+        /// and set the serializer options as the constructor args.
         public System.Text.Json.JsonSerializerOptions SystemTextJsonSerializerOptions { get; set; }
 
         /// <summary>

@@ -650,7 +650,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
         /// <summary>
         /// Sets the serializer options for <see cref="CosmosSystemTextJsonSerializer"/>. If none provided
-        /// the default system text json serializer options will be used.
+        /// the default system text json serializer will not be used for serialization.
         /// </summary>
         /// <param name="stjSerializerOptions">An instance of <see cref="System.Text.Json.JsonSerializerOptions"/>
         /// containing the system text json serializer options.</param>
