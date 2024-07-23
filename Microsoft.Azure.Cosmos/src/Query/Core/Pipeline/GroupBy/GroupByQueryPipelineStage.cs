@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators;
@@ -46,8 +45,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
     /// So we know how to aggregate each column. 
     /// At the end the columns are stitched together to make the grouped document.
     /// </summary>
-    internal abstract partial class GroupByQueryPipelineStage : QueryPipelineStageBase
+    internal class GroupByQueryPipelineStage : QueryPipelineStageBase
     {
+        private const string ContinuationTokenNotSupportedWithGroupBy = "Continuation token is not supported for queries with GROUP BY. Do not use FeedResponse.ResponseContinuation or remove the GROUP BY from the query.";
+
         private readonly GroupingTable groupingTable;
         protected readonly int pageSize;
         protected bool returnedLastPage; 
@@ -63,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
         }
 
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
-            CosmosElement continuationToken,
+            CosmosElement requestContinuation,
             MonadicCreatePipelineStage monadicCreatePipelineStage,
             IReadOnlyList<AggregateOperator> aggregates,
             IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
@@ -71,14 +72,30 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
             bool hasSelectValue,
             int pageSize)
         {
-            return ClientGroupByQueryPipelineStage.MonadicCreate(
-                continuationToken,
-                monadicCreatePipelineStage,
+            TryCatch<GroupingTable> tryCreateGroupingTable = GroupingTable.TryCreateFromContinuationToken(
                 aggregates,
                 groupByAliasToAggregateType,
                 orderedAliases,
                 hasSelectValue,
+                continuationToken: null);
+
+            if (tryCreateGroupingTable.Failed)
+            {
+                return TryCatch<IQueryPipelineStage>.FromException(tryCreateGroupingTable.Exception);
+            }
+
+            TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(requestContinuation);
+            if (tryCreateSource.Failed)
+            {
+                return tryCreateSource;
+            }
+
+            IQueryPipelineStage stage = new GroupByQueryPipelineStage(
+                tryCreateSource.Result,
+                tryCreateGroupingTable.Result,
                 pageSize);
+
+            return TryCatch<IQueryPipelineStage>.FromResult(stage);
         }
 
         protected void AggregateGroupings(IReadOnlyList<CosmosElement> cosmosElements)
@@ -91,114 +108,67 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
             }
         }
 
-        private sealed class ClientGroupByQueryPipelineStage : GroupByQueryPipelineStage
+        public override async ValueTask<bool> MoveNextAsync(Tracing.ITrace trace, CancellationToken cancellationToken)
         {
-            public const string ContinuationTokenNotSupportedWithGroupBy = "Continuation token is not supported for queries with GROUP BY. Do not use FeedResponse.ResponseContinuation or remove the GROUP BY from the query.";
-            private ClientGroupByQueryPipelineStage(
-                IQueryPipelineStage source,
-                GroupingTable groupingTable,
-                int pageSize)
-                : base(source, groupingTable, pageSize)
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (trace == null)
             {
+                throw new ArgumentNullException(nameof(trace));
             }
 
-            public static new TryCatch<IQueryPipelineStage> MonadicCreate(
-                CosmosElement requestContinuation,
-                MonadicCreatePipelineStage monadicCreatePipelineStage,
-                IReadOnlyList<AggregateOperator> aggregates,
-                IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
-                IReadOnlyList<string> orderedAliases,
-                bool hasSelectValue,
-                int pageSize)
+            if (this.returnedLastPage)
             {
-                TryCatch<GroupingTable> tryCreateGroupingTable = GroupingTable.TryCreateFromContinuationToken(
-                    aggregates,
-                    groupByAliasToAggregateType,
-                    orderedAliases,
-                    hasSelectValue,
-                    continuationToken: null);
-
-                if (tryCreateGroupingTable.Failed)
-                {
-                    return TryCatch<IQueryPipelineStage>.FromException(tryCreateGroupingTable.Exception);
-                }
-
-                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(requestContinuation);
-                if (tryCreateSource.Failed)
-                {
-                    return tryCreateSource;
-                }
-
-                IQueryPipelineStage stage = new ClientGroupByQueryPipelineStage(
-                    tryCreateSource.Result,
-                    tryCreateGroupingTable.Result,
-                    pageSize);
-
-                return TryCatch<IQueryPipelineStage>.FromResult(stage);
+                this.Current = default;
+                return false;
             }
 
-            public override async ValueTask<bool> MoveNextAsync(Tracing.ITrace trace, CancellationToken cancellationToken)
+            // Draining GROUP BY is broken down into two stages:
+
+            double requestCharge = 0.0;
+            IReadOnlyDictionary<string, string> addtionalHeaders = null;
+
+            while (await this.inputStage.MoveNextAsync(trace, cancellationToken))
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                if (trace == null)
+                // Stage 1: 
+                // Drain the groupings fully from all continuation and all partitions
+                TryCatch<QueryPage> tryGetSourcePage = this.inputStage.Current;
+                if (tryGetSourcePage.Failed)
                 {
-                    throw new ArgumentNullException(nameof(trace));
+                    this.Current = tryGetSourcePage;
+                    return true;
                 }
 
-                if (this.returnedLastPage)
-                {
-                    this.Current = default;
-                    return false;
-                }
+                QueryPage sourcePage = tryGetSourcePage.Result;
 
-                // Draining GROUP BY is broken down into two stages:
-
-                double requestCharge = 0.0;
-                IReadOnlyDictionary<string, string> addtionalHeaders = null;
-
-                while (await this.inputStage.MoveNextAsync(trace, cancellationToken))
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    // Stage 1: 
-                    // Drain the groupings fully from all continuation and all partitions
-                    TryCatch<QueryPage> tryGetSourcePage = this.inputStage.Current;
-                    if (tryGetSourcePage.Failed)
-                    {
-                        this.Current = tryGetSourcePage;
-                        return true;
-                    }
-
-                    QueryPage sourcePage = tryGetSourcePage.Result;
-
-                    requestCharge += sourcePage.RequestCharge;
-                    addtionalHeaders = sourcePage.AdditionalHeaders;
-                    this.AggregateGroupings(sourcePage.Documents);
-                }
-
-                // Stage 2:
-                // Emit the results from the grouping table page by page
-                IReadOnlyList<CosmosElement> results = this.groupingTable.Drain(this.pageSize);
-                if (this.groupingTable.Count == 0)
-                {
-                    this.returnedLastPage = true;
-                }
-
-                QueryPage queryPage = new QueryPage(
-                    documents: results,
-                    requestCharge: requestCharge,
-                    activityId: default,
-                    cosmosQueryExecutionInfo: default,
-                    distributionPlanSpec: default,
-                    disallowContinuationTokenMessage: ClientGroupByQueryPipelineStage.ContinuationTokenNotSupportedWithGroupBy,
-                    additionalHeaders: addtionalHeaders,
-                    state: default,
-                    streaming: null);
-
-                this.Current = TryCatch<QueryPage>.FromResult(queryPage);
-                return true;
+                requestCharge += sourcePage.RequestCharge;
+                addtionalHeaders = sourcePage.AdditionalHeaders;
+                this.AggregateGroupings(sourcePage.Documents);
             }
+
+            // Stage 2:
+            // Emit the results from the grouping table page by page
+            IReadOnlyList<CosmosElement> results = this.groupingTable.Drain(this.pageSize);
+            if (this.groupingTable.Count == 0)
+            {
+                this.returnedLastPage = true;
+            }
+
+            QueryPage queryPage = new QueryPage(
+                documents: results,
+                requestCharge: requestCharge,
+                activityId: default,
+                cosmosQueryExecutionInfo: default,
+                distributionPlanSpec: default,
+                disallowContinuationTokenMessage: GroupByQueryPipelineStage.ContinuationTokenNotSupportedWithGroupBy,
+                additionalHeaders: addtionalHeaders,
+                state: default,
+                streaming: null);
+
+            this.Current = TryCatch<QueryPage>.FromResult(queryPage);
+            return true;
         }
 
         /// <summary>

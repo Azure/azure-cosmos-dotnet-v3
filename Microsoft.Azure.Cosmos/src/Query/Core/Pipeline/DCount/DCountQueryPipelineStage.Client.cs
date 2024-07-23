@@ -18,9 +18,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
     /// <summary>
     /// Stage that is able to aggregate COUNT(DISTINCT) from multiple continuations and partitions.
     /// </summary>
-    internal abstract partial class DCountQueryPipelineStage : QueryPipelineStageBase
+    internal class DCountQueryPipelineStage : QueryPipelineStageBase
     {
-                /// <summary>
+        /// <summary>
         /// We need to keep track of whether the projection has the 'VALUE' keyword or an alias.
         /// </summary>
         private readonly DCountInfo info;
@@ -49,15 +49,85 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
             this.info = info;
         }
 
+        public override async ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
+            if (this.returnedFinalPage)
+            {
+                return false;
+            }
+
+            double requestCharge = 0;
+            IReadOnlyDictionary<string, string> additionalHeaders = null;
+            while (await this.inputStage.MoveNextAsync(trace, cancellationToken))
+            {
+                TryCatch<QueryPage> tryGetPageFromSource = this.inputStage.Current;
+                if (tryGetPageFromSource.Failed)
+                {
+                    this.Current = tryGetPageFromSource;
+                    return true;
+                }
+
+                QueryPage sourcePage = tryGetPageFromSource.Result;
+
+                requestCharge += sourcePage.RequestCharge;
+                additionalHeaders = sourcePage.AdditionalHeaders;
+
+                cancellationToken.ThrowIfCancellationRequested();
+                this.count += sourcePage.Documents.Count;
+            }
+
+            List<CosmosElement> finalResult = new List<CosmosElement>();
+            CosmosElement aggregationResult = this.GetFinalResult();
+            if (aggregationResult != null)
+            {
+                finalResult.Add(aggregationResult);
+            }
+
+            QueryPage queryPage = new QueryPage(
+                documents: finalResult,
+                requestCharge: requestCharge,
+                activityId: default,
+                cosmosQueryExecutionInfo: default,
+                distributionPlanSpec: default,
+                disallowContinuationTokenMessage: default,
+                additionalHeaders: additionalHeaders,
+                state: default,
+                streaming: default);
+
+            this.Current = TryCatch<QueryPage>.FromResult(queryPage);
+            this.returnedFinalPage = true;
+            return true;
+        }
+
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
             DCountInfo info,
             CosmosElement continuationToken,
             MonadicCreatePipelineStage monadicCreatePipelineStage)
         {
-            return ClientDCountQueryPipelineStage.MonadicCreate(
-                info,
-                continuationToken,
-                monadicCreatePipelineStage);
+            if (monadicCreatePipelineStage == null)
+            {
+                throw new ArgumentNullException(nameof(monadicCreatePipelineStage));
+            }
+
+            TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(continuationToken);
+            if (tryCreateSource.Failed)
+            {
+                return tryCreateSource;
+            }
+
+            DCountQueryPipelineStage stage = new DCountQueryPipelineStage(
+                source: tryCreateSource.Result,
+                count: 0,
+                info: info);
+
+            return TryCatch<IQueryPipelineStage>.FromResult(stage);
         }
 
         protected CosmosElement GetFinalResult()
@@ -68,99 +138,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
                 {
                     { this.info.DCountAlias, CosmosNumber64.Create(this.count) }
                 });
-        }
-
-        private sealed class ClientDCountQueryPipelineStage : DCountQueryPipelineStage
-        {
-            private ClientDCountQueryPipelineStage(
-                IQueryPipelineStage source,
-                long count,
-                DCountInfo info)
-                : base(source, count, info)
-            {
-                // all the work is done in the base constructor.
-            }
-
-            public static new TryCatch<IQueryPipelineStage> MonadicCreate(
-                DCountInfo info,
-                CosmosElement continuationToken,
-                MonadicCreatePipelineStage monadicCreatePipelineStage)
-            {
-                if (monadicCreatePipelineStage == null)
-                {
-                    throw new ArgumentNullException(nameof(monadicCreatePipelineStage));
-                }
-
-                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(continuationToken);
-                if (tryCreateSource.Failed)
-                {
-                    return tryCreateSource;
-                }
-
-                ClientDCountQueryPipelineStage stage = new ClientDCountQueryPipelineStage(
-                    source: tryCreateSource.Result,
-                    count: 0,
-                    info: info);
-
-                return TryCatch<IQueryPipelineStage>.FromResult(stage);
-            }
-
-            public override async ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                if (trace == null)
-                {
-                    throw new ArgumentNullException(nameof(trace));
-                }
-
-                if (this.returnedFinalPage)
-                {
-                    return false;
-                }
-
-                double requestCharge = 0;
-                IReadOnlyDictionary<string, string> additionalHeaders = null;
-                while (await this.inputStage.MoveNextAsync(trace, cancellationToken))
-                {
-                    TryCatch<QueryPage> tryGetPageFromSource = this.inputStage.Current;
-                    if (tryGetPageFromSource.Failed)
-                    {
-                        this.Current = tryGetPageFromSource;
-                        return true;
-                    }
-
-                    QueryPage sourcePage = tryGetPageFromSource.Result;
-
-                    requestCharge += sourcePage.RequestCharge;
-                    additionalHeaders = sourcePage.AdditionalHeaders;
-
-                    cancellationToken.ThrowIfCancellationRequested();
-                    this.count += sourcePage.Documents.Count;
-                }
-
-                List<CosmosElement> finalResult = new List<CosmosElement>();
-                CosmosElement aggregationResult = this.GetFinalResult();
-                if (aggregationResult != null)
-                {
-                    finalResult.Add(aggregationResult);
-                }
-
-                QueryPage queryPage = new QueryPage(
-                    documents: finalResult,
-                    requestCharge: requestCharge,
-                    activityId: default,
-                    cosmosQueryExecutionInfo: default,
-                    distributionPlanSpec: default,
-                    disallowContinuationTokenMessage: default,
-                    additionalHeaders: additionalHeaders,
-                    state: default,
-                    streaming: default);
-
-                this.Current = TryCatch<QueryPage>.FromResult(queryPage);
-                this.returnedFinalPage = true;
-                return true;
-            }
         }
     }
 }
