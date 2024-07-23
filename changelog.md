@@ -13,6 +13,34 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.43.0-preview.0"/> [3.43.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.43.0-preview.0) - 2024-07-24
+
+#### Added
+
+- [4198](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4198) Routing: Adds CrossRegionParallelHedgingAvailabilityStrategy
+
+### <a name="3.42.0"/> [3.42.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.42.0) - 2024-07-24
+
+#### Added
+
+- [4544](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4544) Azure.Identity: Bumps verion to 1.11.4
+- [4546](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4546) Client Encryption: Adds support for latest Cosmos Package.
+- [4490](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4490) Query: Adds Distribution for MakeList and MakeSet
+- [4559](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4559) Query: Adds a new QueryFeature flag for MakeList and MakeSet
+- [4556](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4556) Query: Adds distributed query gateway client pipeline stage
+- [4568](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4568) VM Metadata API: Adds an option to disable VM metadata API call
+- [4481](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4481) Query: Adds support for multi-value Group By query for LINQ
+- [4583](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4583) ChangeFeed: Adds MalformedContinuationToken SubstatusCode to exception
+- [4602](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4602) Direct Package: Bumps version to 3.35.0
+  > Note: This direct package incudes a fix to the QurorumReader for ReadManyOperations in Strong Consistency accounts.
+
+#### Fixed
+
+- [4538](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4538) Query: Fixes plumbing VectorEmbeddingPolicy to ServiceInterop to choose correct default distance function
+- [4523](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4523) Change Feed / Processor AVAD: Fixes timeToLiveExpired missing from metadata
+- [4558](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4558) Query: Removes compute specific logic from query pipelines that is no longer required
+- [4580](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4580) Change Feed: Fixes incorrect exception messages in VersionedAndRidCheckedCompositeToken
+
 ### <a name="3.42.0-preview.0"/> [3.42.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.42.0-preview.0) - 2024-06-07
 ### <a name="3.41.0"/> [3.41.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.41.0) - 2024-06-07
 
