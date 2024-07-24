@@ -372,7 +372,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos.Samples\Tools\FaultInjection\src\FaultInjection.csproj" />
+    <ProjectReference Include="..\FaultInjection\src\FaultInjection.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
