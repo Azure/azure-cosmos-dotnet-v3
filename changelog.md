@@ -15,9 +15,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### <a name="3.43.0-preview.0"/> [3.43.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.43.0-preview.0) - 2024-07-24
 
-#### Added
-
-- [4198](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4198) Routing: Adds CrossRegionParallelHedgingAvailabilityStrategy
 
 ### <a name="3.42.0"/> [3.42.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.42.0) - 2024-07-24
 
@@ -31,8 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [4568](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4568) VM Metadata API: Adds an option to disable VM metadata API call
 - [4481](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4481) Query: Adds support for multi-value Group By query for LINQ
 - [4583](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4583) ChangeFeed: Adds MalformedContinuationToken SubstatusCode to exception
-- [4602](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4602) Direct Package: Bumps version to 3.35.0
-  > Note: This direct package incudes a fix to the QurorumReader for ReadManyOperations in Strong Consistency accounts.
+- [4589](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4589) SystemTextJsonSerializer: Refactors Code to Introduce SystemTextJsonSerializerOptions to Set the Default STJ Serializer
 
 #### Fixed
 
