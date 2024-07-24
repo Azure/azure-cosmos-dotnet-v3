@@ -395,6 +395,8 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Gets or sets the <see cref="System.Text.Json.JsonSerializerOptions"/> for the default STJ serializer <see cref="CosmosSystemTextJsonSerializer"/>.
+        /// Note that if this option is provided, then the SDK will use the <see cref="CosmosSystemTextJsonSerializer"/> as the default serializer and set
+        /// the serializer options as the constructor args.
         /// </summary>
         /// <example>
         /// An example on how to configure the STJ serialization option to ignore null values
@@ -412,9 +414,6 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>Note that if this option is provided, then the SDK will use the <see cref="CosmosSystemTextJsonSerializer"/> as the default serializer
-        /// and set the serializer options as the constructor args.
-        /// </remarks>
         public System.Text.Json.JsonSerializerOptions SystemTextJsonSerializerOptions { get; set; }
 
         /// <summary>

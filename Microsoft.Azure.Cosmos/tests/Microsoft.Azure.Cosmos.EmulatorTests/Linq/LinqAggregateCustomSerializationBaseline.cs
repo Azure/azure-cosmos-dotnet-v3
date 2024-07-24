@@ -65,7 +65,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             stjClient = TestCommon.CreateCosmosClient((cosmosClientBuilder)
                 => cosmosClientBuilder.WithSystemTextJsonSerializerOptions(
-                    new JsonSerializerOptions()));
+                    new JsonSerializerOptions()),
+                    useCustomSeralizer: false);
 
             // Set a callback to get the handle of the last executed query to do the verification
             // This is neede because aggregate queries return type is a scalar so it can't be used 
