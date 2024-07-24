@@ -61,6 +61,7 @@ namespace Microsoft.Azure.Cosmos
         private int gatewayModeMaxConnectionLimit;
         private CosmosSerializationOptions serializerOptions;
         private CosmosSerializer serializerInternal;
+        private System.Text.Json.JsonSerializerOptions stjSerializerOptions;
 
         private ConnectionMode connectionMode;
         private Protocol connectionProtocol;
@@ -414,7 +415,20 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public System.Text.Json.JsonSerializerOptions SystemTextJsonSerializerOptions { get; set; }
+        public System.Text.Json.JsonSerializerOptions SystemTextJsonSerializerOptions
+        {
+            get => this.stjSerializerOptions;
+            set
+            {
+                if (this.Serializer != null || this.SerializerOptions != null)
+                {
+                    throw new ArgumentException(
+                        $"{nameof(this.SystemTextJsonSerializerOptions)} is not compatible with {nameof(this.Serializer)} or {nameof(this.SerializerOptions)}. Only one can be set.  ");
+                }
+
+                this.stjSerializerOptions = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the advanced replica selection flag. The advanced replica selection logic keeps track of the replica connection
