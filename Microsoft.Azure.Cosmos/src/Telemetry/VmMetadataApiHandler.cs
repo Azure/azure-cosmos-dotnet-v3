@@ -98,11 +98,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                 azMetadata = await VmMetadataApiHandler.ProcessResponseAsync(response);
 
-                DefaultTrace.TraceInformation($"Succesfully get Instance Metadata Response : {0}", azMetadata.Compute.VMId);
+                DefaultTrace.TraceInformation("Successfully get Instance Metadata Response : {0}", azMetadata.Compute.VMId);
             }
             catch (Exception e)
             {
-                DefaultTrace.TraceInformation($"Azure Environment metadata information not available. {0}", e.Message);
+                DefaultTrace.TraceInformation("Azure Environment metadata information not available. {0}", e.Message);
             }
         }
 
@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceWarning($"Error while generating hashed machine name {0}", ex.Message);
+                DefaultTrace.TraceWarning("Error while generating hashed machine name {0}", ex.Message);
             }
 
             return $"{VmMetadataApiHandler.UuidPrefix}{Guid.NewGuid()}";
