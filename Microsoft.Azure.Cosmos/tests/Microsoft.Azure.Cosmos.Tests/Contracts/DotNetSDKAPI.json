@@ -2988,11 +2988,9 @@
           ],
           "MethodInfo": "System.String get_ApplicationRegion();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Text.Json.JsonSerializerOptions get_SystemTextJsonSerializerOptions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.Text.Json.JsonSerializerOptions get_SystemTextJsonSerializerOptions()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "System.Text.Json.JsonSerializerOptions get_SystemTextJsonSerializerOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.Text.Json.JsonSerializerOptions SystemTextJsonSerializerOptions": {
@@ -3170,11 +3168,9 @@
           ],
           "MethodInfo": "Void set_ServerCertificateCustomValidationCallback(System.Func`4[System.Security.Cryptography.X509Certificates.X509Certificate2,System.Security.Cryptography.X509Certificates.X509Chain,System.Net.Security.SslPolicyErrors,System.Boolean]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void set_SystemTextJsonSerializerOptions(System.Text.Json.JsonSerializerOptions)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Void set_SystemTextJsonSerializerOptions(System.Text.Json.JsonSerializerOptions)": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "Void set_SystemTextJsonSerializerOptions(System.Text.Json.JsonSerializerOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_TokenCredentialBackgroundRefreshInterval(System.Nullable`1[System.TimeSpan])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
