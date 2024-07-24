@@ -5,6 +5,11 @@
         "Microsoft.Azure.Cosmos.CrossRegionParallelHedgingAvailabilityStrategy;Microsoft.Azure.Cosmos.AvailabilityStrategy;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
           "Subclasses": {},
           "Members": {
+            "Boolean Enabled()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Boolean Enabled();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
             "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] ExecuteAvailabilityStrategyAsync(System.Func`3[Microsoft.Azure.Cosmos.RequestMessage,System.Threading.CancellationToken,System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage]], Microsoft.Azure.Cosmos.CosmosClient, Microsoft.Azure.Cosmos.RequestMessage, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.CrossRegionParallelHedgingAvailabilityStrategy+<ExecuteAvailabilityStrategyAsync>))]": {
               "Type": "Method",
               "Attributes": [
@@ -47,6 +52,11 @@
         "Microsoft.Azure.Cosmos.DisabledAvailabilityStrategy;Microsoft.Azure.Cosmos.AvailabilityStrategy;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
           "Subclasses": {},
           "Members": {
+            "Boolean Enabled()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Boolean Enabled();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
             "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] ExecuteAvailabilityStrategyAsync(System.Func`3[Microsoft.Azure.Cosmos.RequestMessage,System.Threading.CancellationToken,System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage]], Microsoft.Azure.Cosmos.CosmosClient, Microsoft.Azure.Cosmos.RequestMessage, System.Threading.CancellationToken)": {
               "Type": "Method",
               "Attributes": [],
@@ -62,6 +72,11 @@
         }
       },
       "Members": {
+        "Boolean Enabled()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean Enabled();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] ExecuteAvailabilityStrategyAsync(System.Func`3[Microsoft.Azure.Cosmos.RequestMessage,System.Threading.CancellationToken,System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage]], Microsoft.Azure.Cosmos.CosmosClient, Microsoft.Azure.Cosmos.RequestMessage, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
@@ -472,6 +487,11 @@
     "Microsoft.Azure.Cosmos.CrossRegionParallelHedgingAvailabilityStrategy;Microsoft.Azure.Cosmos.AvailabilityStrategy;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
+        "Boolean Enabled()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean Enabled();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] ExecuteAvailabilityStrategyAsync(System.Func`3[Microsoft.Azure.Cosmos.RequestMessage,System.Threading.CancellationToken,System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage]], Microsoft.Azure.Cosmos.CosmosClient, Microsoft.Azure.Cosmos.RequestMessage, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.CrossRegionParallelHedgingAvailabilityStrategy+<ExecuteAvailabilityStrategyAsync>))]": {
           "Type": "Method",
           "Attributes": [
@@ -514,6 +534,11 @@
     "Microsoft.Azure.Cosmos.DisabledAvailabilityStrategy;Microsoft.Azure.Cosmos.AvailabilityStrategy;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
+        "Boolean Enabled()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean Enabled();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] ExecuteAvailabilityStrategyAsync(System.Func`3[Microsoft.Azure.Cosmos.RequestMessage,System.Threading.CancellationToken,System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage]], Microsoft.Azure.Cosmos.CosmosClient, Microsoft.Azure.Cosmos.RequestMessage, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
