@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             IQueryPipelineStage source = new MockQueryPipelineStage(pages);
 
             TryCatch<IQueryPipelineStage> tryCreateGroupByStage = GroupByQueryPipelineStage.MonadicCreate(
-                continuationToken: continuationToken,
+                requestContinuation: continuationToken,
                 monadicCreatePipelineStage: (CosmosElement continuationToken) => TryCatch<IQueryPipelineStage>.FromResult(source),
                 aggregates: new AggregateOperator[] { },
                 groupByAliasToAggregateType: groupByAliasToAggregateType,
