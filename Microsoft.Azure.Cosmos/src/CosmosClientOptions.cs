@@ -395,17 +395,17 @@ namespace Microsoft.Azure.Cosmos
         public bool? EnableContentResponseOnWrite { get; set; }
 
         /// <summary>
-        /// Gets or sets the <see cref="System.Text.Json.JsonSerializerOptions"/> for the default STJ serializer <see cref="CosmosSystemTextJsonSerializer"/>.
-        /// Note that if this option is provided, then the SDK will use the <see cref="CosmosSystemTextJsonSerializer"/> as the default serializer and set
+        /// Sets the <see cref="System.Text.Json.JsonSerializerOptions"/> for the System.Text.Json serializer.
+        /// Note that if this option is provided, then the SDK will use the System.Text.Json as the default serializer and set
         /// the serializer options as the constructor args.
         /// </summary>
         /// <example>
-        /// An example on how to configure the STJ serialization option to ignore null values
+        /// An example on how to configure the System.Text.Json serializer options to ignore null values
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosClientOptions clientOptions = new CosmosClientOptions()
         /// {
-        ///     SystemTextJsonSerializerOptions = new System.Text.Json.JsonSerializerOptions()
+        ///     UseSystemTextJsonSerializerWithOptions = new System.Text.Json.JsonSerializerOptions()
         ///     {
         ///         DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
         ///     }
@@ -415,18 +415,20 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public System.Text.Json.JsonSerializerOptions SystemTextJsonSerializerOptions
+        public System.Text.Json.JsonSerializerOptions UseSystemTextJsonSerializerWithOptions
         {
-            get => this.stjSerializerOptions;
+            private get => this.stjSerializerOptions;
             set
             {
                 if (this.Serializer != null || this.SerializerOptions != null)
                 {
                     throw new ArgumentException(
-                        $"{nameof(this.SystemTextJsonSerializerOptions)} is not compatible with {nameof(this.Serializer)} or {nameof(this.SerializerOptions)}. Only one can be set.  ");
+                        $"{nameof(this.UseSystemTextJsonSerializerWithOptions)} is not compatible with {nameof(this.Serializer)} or {nameof(this.SerializerOptions)}. Only one can be set.  ");
                 }
 
                 this.stjSerializerOptions = value;
+                this.serializerInternal = new CosmosSystemTextJsonSerializer(
+                    this.stjSerializerOptions);
             }
         }
 
@@ -580,10 +582,10 @@ namespace Microsoft.Azure.Cosmos
             get => this.serializerOptions;
             set
             {
-                if (this.Serializer != null || this.SystemTextJsonSerializerOptions != null)
+                if (this.Serializer != null || this.UseSystemTextJsonSerializerWithOptions != null)
                 {
                     throw new ArgumentException(
-                        $"{nameof(this.SerializerOptions)} is not compatible with {nameof(this.Serializer)} or {nameof(this.SystemTextJsonSerializerOptions)}. Only one can be set.  ");
+                        $"{nameof(this.SerializerOptions)} is not compatible with {nameof(this.Serializer)} or {nameof(this.UseSystemTextJsonSerializerWithOptions)}. Only one can be set.  ");
                 }
 
                 this.serializerOptions = value;
@@ -615,10 +617,10 @@ namespace Microsoft.Azure.Cosmos
             get => this.serializerInternal;
             set
             {
-                if (this.SerializerOptions != null)
+                if (this.SerializerOptions != null || this.UseSystemTextJsonSerializerWithOptions != null)
                 {
                     throw new ArgumentException(
-                        $"{nameof(this.Serializer)} is not compatible with {nameof(this.SerializerOptions)}. Only one can be set.  ");
+                        $"{nameof(this.Serializer)} is not compatible with {nameof(this.SerializerOptions)} or {nameof(this.UseSystemTextJsonSerializerWithOptions)}. Only one can be set.  ");
                 }
 
                 this.serializerInternal = value;
