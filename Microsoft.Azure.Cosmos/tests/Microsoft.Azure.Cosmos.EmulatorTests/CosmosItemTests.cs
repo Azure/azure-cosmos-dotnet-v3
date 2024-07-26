@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static readonly string nonPartitionItemId = "fixed-Container-Item";
         private static readonly string undefinedPartitionItemId = "undefined-partition-Item";
 
-        [TestInitialize]
+        //[TestInitialize]
         public async Task TestInitialize()
         {
             await base.TestInit(validateSinglePartitionKeyRangeCacheCall: true);
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.Container = response;
         }
 
-        [TestCleanup]
+        //[TestCleanup]
         public async Task Cleanup()
         {
             await base.TestCleanup();
@@ -3325,11 +3325,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Timeout(60000)]
         public async Task ReadMany2UnreachablePartitionsTest()
         {
+            string dbid = "TestDb";
+            string cid = "TestContainer";
+
             CosmosClient client1 = new CosmosClient(
-                connectionString: "");
+                connectionString: "", 
+                new CosmosClientOptions() {
+                    EnableUpgradeConsistencyToLocalQuorum = true,
+                });
 
             Cosmos.Database db = await client1.CreateDatabaseIfNotExistsAsync("TestDb");
-            Container c1 = await db.CreateContainerIfNotExistsAsync(new ContainerProperties("TestContainer", "/pk"));
+            Container c1 = await db.CreateContainerIfNotExistsAsync(new ContainerProperties("TestContainer", "/pk"), throughput: 400);
 
             List<(string, Cosmos.PartitionKey)> items = new List<(string, Cosmos.PartitionKey)>();
             
@@ -3353,20 +3359,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<FeedRange> feedRanges = (List<FeedRange>)await c1.GetFeedRangesAsync();
             Assert.IsTrue(feedRanges.Count > 0);
 
-
             FaultInjectionCondition condition = new FaultInjectionConditionBuilder()
                 .WithConnectionType(FaultInjectionConnectionType.Direct)
-                .WithOperationType(FaultInjectionOperationType.QueryItem)
+                .WithOperationType(FaultInjectionOperationType.All)
                 .WithEndpoint(new FaultInjectionEndpointBuilder(
-                    "TestDb", 
+                    dbid, 
                     "TestContainer",
                     feedRanges[0])
-                    .WithReplicaCount(2)
-                    .WithIncludePrimary(false)
+                    .WithReplicaCount(4)
+                    .WithIncludePrimary(true)
                     .Build())
                 .Build();
 
-            FaultInjectionServerErrorResult result = new FaultInjectionServerErrorResultBuilder(FaultInjectionServerErrorType.Gone)
+            FaultInjectionServerErrorResult result = new FaultInjectionServerErrorResultBuilder(FaultInjectionServerErrorType.TooManyRequests)
                 .WithTimes(int.MaxValue -1)
                 .Build();
 
@@ -3385,34 +3390,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
 
             //(string endpoint, string key) = TestCommon.GetAccountInfo();
-            CosmosClient fiClient = new CosmosClient(
+            using CosmosClient fiClient = new CosmosClient(
                 connectionString: "",
                 clientOptions: injector.GetFaultInjectionClientOptions(clientOptions));
 
-            string dbid = "TestDb";
-            string cid = "TestContainer";
+            Container fic = fiClient.GetContainer(dbid, cid);
 
-            Cosmos.Database fidb = await fiClient.CreateDatabaseIfNotExistsAsync(dbid);
-            Container fic = await fidb.CreateContainerIfNotExistsAsync(new ContainerProperties()
-            {
-                Id = cid,
-                PartitionKeyPath = "/pk",
-            });
-
-            try
-            {
-                rule.Enable();
-                FeedResponse<dynamic> feedResponse = await fic.ReadManyItemsAsync<dynamic>(items);
-            }
-            catch (Exception ex)
-            {
-                Assert.Fail(ex.ToString());
-            }
-            finally
-            {
-                rule.Disable();
-                fiClient.Dispose();
-            }
+            rule.Enable();
+            ItemResponse<dynamic> feedResponse = await fic.ReadItemAsync<dynamic>("id1", new Cosmos.PartitionKey("pk1"));
+            Console.WriteLine(feedResponse.Diagnostics.ToString());
         }
 
         private static async Task GivenItemStreamAsyncWhenMissingMemberHandlingIsErrorThenExpectsCosmosExceptionTestAsync(

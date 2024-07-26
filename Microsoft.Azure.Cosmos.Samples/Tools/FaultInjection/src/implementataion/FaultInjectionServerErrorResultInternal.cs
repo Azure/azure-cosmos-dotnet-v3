@@ -155,8 +155,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 case FaultInjectionServerErrorType.TooManyRequests:
                     INameValueCollection tooManyRequestsHeaders = args.RequestHeaders;
                     tooManyRequestsHeaders.Set(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, "500");
-                    tooManyRequestsHeaders.Set(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.RUBudgetExceeded).ToString(CultureInfo.InvariantCulture));
-                    tooManyRequestsHeaders.Set(WFConstants.BackendHeaders.LocalLSN, lsn);
+                    tooManyRequestsHeaders.Set(WFConstants.BackendHeaders.SubStatus, 3103.ToString(CultureInfo.InvariantCulture));
+                    tooManyRequestsHeaders.Set(WFConstants.BackendHeaders.LocalLSN, "-1");
+                    tooManyRequestsHeaders.Set(WFConstants.BackendHeaders.GlobalCommittedLSN, "-1");
 
                     storeResponse = new StoreResponse()
                     {
