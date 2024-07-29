@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -234,79 +235,58 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         [Owner("philipthomas-MSFT")]
         [Description("Scenario: When documents are created, the document when using ChangeFeedProcessor with AllVersionsAndDeletes set as the ChangeFeedMode. " +
             "The context header also now has the FeedRange included. This is simulating a customer scenario using HasChangeBeenProcessed and FindOverlappingRanges.")]
-        public async Task WhenADocumentIsCreatedThenCheckIfChangeHasBeenProcessedTestsAsync()
+        public async Task WhenADocumentIsCreatedThenCheckFeedRangeInContextAndFindOverlappingRangesTestsAsync()
         {
             (ContainerInternal monitoredContainer, ContainerResponse containerResponse) = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes);
             ManualResetEvent allDocsProcessed = new (false);
             Exception exception = default;
-            DateTime dateTime = DateTime.Now;
+            int readDocumentCount = 0;
 
             ChangeFeedProcessor processor = monitoredContainer
-                .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: "processor", onChangesDelegate: async (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItem<dynamic>> docs, CancellationToken token) =>
+                .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: "processor", onChangesDelegate: async (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItem<dynamic>> docs, CancellationToken cancellationToken) =>
                 {
-                    foreach (ChangeFeedItem<dynamic> changedDocument in docs)
+                    readDocumentCount += docs.Count;
+                    Assert.IsTrue(docs.Count > 0);
+
+                    FeedRange feedRange = context.FeedRange;
+                    Assert.IsNotNull(feedRange);
+
+                    Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.GetClient().DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
+                    IReadOnlyList<Documents.PartitionKeyRange> partitionKeyRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
+                        collectionRid: containerResponse.Resource.ResourceId,
+                        range: FeedRangeEpk.FullRange.Range,
+                        trace: NoOpTrace.Singleton,
+                        forceRefresh: true);
+
+                    List<FeedRange> ranges = partitionKeyRanges
+                        .Select(partitionKeyRange => new FeedRangeEpk(partitionKeyRange.ToRange()))
+                        .Select(feedRangeEpk => feedRangeEpk as FeedRange)
+                        .ToList();
+
+                    IReadOnlyList<FeedRange> feedRangeOverlappingRanges = monitoredContainer.FindOverlappingRanges(
+                        feedRange: feedRange,
+                        feedRanges: ranges);
+
+                    Assert.IsNotNull(feedRangeOverlappingRanges);
+                    Assert.AreEqual(expected: 1, actual: feedRangeOverlappingRanges.Count);
+
+                    foreach (ChangeFeedItem<dynamic> doc in docs)
                     {
-                        // NOTE(philipthomas-MSFT): Get all that we need, FeedRange, LsnOfChangedDocument, PartitionKey, and Bookmarks if exist.
-                        // How can we replay? Restart the processor and read documents.
+                        PartitionKey partitionKey = new(doc.Current.pk.ToString());
+                        IReadOnlyList<FeedRange> partitionKeyOverlappingRanges = await monitoredContainer.FindOverlappingRangesAsync(
+                            partitionKey: partitionKey, 
+                            feedRanges: ranges, 
+                            cancellationToken: cancellationToken);
 
-                        Debug.WriteLine($"changedDocument: {JsonConvert.SerializeObject(changedDocument)}");
+                        Assert.IsNotNull(partitionKeyOverlappingRanges);
+                        Assert.AreEqual(
+                            expected: 1,
+                            actual: partitionKeyOverlappingRanges.Count);
+                    }
 
-                        // 1.) FeedRange
-                        FeedRange feedRange = context.FeedRange;
-
-                        // 2.) LsnOfChangedDocument
-                        long lsnOfChangedDocument = changedDocument.Metadata.Lsn;
-                        
-                        // 3.) PartitionKey
-                        PartitionKey partitionKey = new(changedDocument.Current.pk.ToString());
-
-                        // 4. Bookmarks. The customer will write their own CreateBookmarksIfNotExists logic but can yse this as a model.
-                        List<(FeedRange range, long lsn)> bookmarks = GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
-                            .CreateBookmarksIfNotExists(changedDocument);
-
-                        // 5. Log
-                        Debug.WriteLine($"FeedRange: {feedRange.ToJsonString()}; LSN: {lsnOfChangedDocument}; PartitionKey: {partitionKey.ToJsonString()}; Bookmarks: {JsonConvert.SerializeObject(bookmarks)}");
-
-                        // 6. HasChangeBeenProcessed. The customer will write their own HasChangeBeedProcessedAsync logic but can use this as a model.
-                        bool hasChangedBeenProcessed = await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
-                            .HasChangeBeenProcessedAsync(
-                                partitionKey: partitionKey,
-                                feedRange: feedRange,
-                                monitoredContainer: monitoredContainer,
-                                lsnOfChange: lsnOfChangedDocument,
-                                bookmarks: bookmarks,
-                                cancellationToken: token);
-
-                        if (!hasChangedBeenProcessed)
-                        {
-                            // 7.a. Update bookmarks if not been processed so that it is picked up next time.
-                            (FeedRange range, long lsn) bookmark = bookmarks.FirstOrDefault(bookmark => bookmark.range.Equals(feedRange));
-
-                            if (bookmark == default)
-                            {
-                                bookmarks.Add((feedRange, lsnOfChangedDocument));
-
-                                await monitoredContainer.UpsertItemAsync<dynamic>(new { bookmarks, id = changedDocument.Current.id.ToString(), pk = changedDocument.Current.pk.ToString(), description = "original test" }, partitionKey: partitionKey, cancellationToken: token);
-                                await Task.Delay(1000); // NOTE(philipthomas-MSFT): Not critical to delay this.
-                            }
-                            else
-                            {
-                                bookmarks.Remove(bookmark);
-                                bookmark.lsn = lsnOfChangedDocument;
-                                bookmarks.Add(bookmark);
-                                //Debug.WriteLine($"bookmark.lsn: {bookmark.lsn}");
-                                //Debug.WriteLine($"bookmarks: {JsonConvert.SerializeObject(bookmarks)}");
-
-                                await monitoredContainer.UpsertItemAsync<dynamic>(new { bookmarks, id = changedDocument.Current.id.ToString(), pk = changedDocument.Current.pk.ToString(), description = "original test" }, partitionKey: partitionKey, cancellationToken: token);
-                                await Task.Delay(1000); // NOTE(philipthomas-MSFT): Not critical to delay this.
-                            }
-                        }
-                        else
-                        {
-                            // 7.b. Customer maybe log these, but nothing else.
-
-                            Debug.WriteLine($"hasChangedBeenProcessed");
-                        }
+                    if (readDocumentCount == 1)
+                    {
+                        allDocsProcessed.Set();
                     }
 
                     return;
@@ -327,115 +307,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             await processor.StartAsync();
             await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
 
-            await monitoredContainer.CreateItemAsync<dynamic>(new { id = "1", pk = "WA", description = "original test" }, partitionKey: new PartitionKey("WA"));
+            await monitoredContainer.CreateItemAsync<dynamic>(new { id = "1", pk = "WA", description = "<blank>" }, partitionKey: new PartitionKey("WA"));
             await Task.Delay(1000); // NOTE(philipthomas-MSFT): Not critical to delay this.
 
-            //await monitoredContainer.CreateItemAsync<dynamic>(new { id = "2", pk = "GA", description = "original test" }, partitionKey: new PartitionKey("GA"));
-            //await Task.Delay(1000); // NOTE(philipthomas-MSFT): Not critical to delay this.
-
-            bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
-
-            await processor.StopAsync();
-
-            await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests.ReplayCFPAsync(
-                monitoredContainer,
-                this.LeaseContainer,
-                dateTime);
-
-            if (exception != default)
-            {
-                Assert.Fail(exception.ToString());
-            }
-        }
-
-        private static async Task ReplayCFPAsync(
-            ContainerInternal monitoredContainer,
-            Container leaseContainer,
-            DateTime startTime)
-        {
-            Logger.LogLine($"=== ReplayCFPAsync ===");
-
-            ManualResetEvent allDocsProcessed = new(false);
-            Exception exception = default;
-            ChangeFeedProcessor processor = monitoredContainer
-                .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: "processor", onChangesDelegate: async (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItem<dynamic>> docs, CancellationToken token) =>
-                {
-                    foreach (ChangeFeedItem<dynamic> changedDocument in docs)
-                    {
-                        // 1.) FeedRange
-                        FeedRange feedRange = context.FeedRange;
-
-                        // 2.) LsnOfChangedDocument
-                        long lsnOfChangedDocument = changedDocument.Metadata.Lsn;
-
-                        // 3.) PartitionKey
-                        PartitionKey partitionKey = new(changedDocument.Current.pk.ToString());
-
-                        // 4. Bookmarks. The customer will write their own CreateBookmarksIfNotExists logic but can yse this as a model.
-                        List<(FeedRange range, long lsn)> bookmarks = GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
-                            .CreateBookmarksIfNotExists(changedDocument);
-
-                        // 5. Log
-                        Debug.WriteLine($"FeedRange: {feedRange.ToJsonString()}; LSN: {lsnOfChangedDocument}; PartitionKey: {partitionKey.ToJsonString()}; Bookmarks: {JsonConvert.SerializeObject(bookmarks)}");
-
-                        // 6. HasChangeBeenProcessed. The customer will write their own HasChangeBeedProcessedAsync logic but can use this as a model.
-                        bool hasChangedBeenProcessed = await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
-                            .HasChangeBeenProcessedAsync(
-                                partitionKey: partitionKey,
-                                feedRange: feedRange,
-                                monitoredContainer: monitoredContainer,
-                                lsnOfChange: lsnOfChangedDocument,
-                                bookmarks: bookmarks,
-                                cancellationToken: token);
-
-                        if (!hasChangedBeenProcessed)
-                        {
-                            // 7.a. Update bookmarks if not been processed so that it is picked up next time.
-                            (FeedRange range, long lsn) bookmark = bookmarks.FirstOrDefault(bookmark => bookmark.range.Equals(feedRange));
-
-                            if (bookmark == default)
-                            {
-                                bookmarks.Add((feedRange, lsnOfChangedDocument));
-
-                                await monitoredContainer.UpsertItemAsync<dynamic>(new { bookmarks, id = changedDocument.Current.id.ToString(), pk = changedDocument.Current.pk.ToString(), description = "original test" }, partitionKey: partitionKey, cancellationToken: token);
-                                await Task.Delay(1000); // NOTE(philipthomas-MSFT): Not critical to delay this.
-                            }
-                            else
-                            {
-                                bookmarks.Remove(bookmark);
-                                bookmark.lsn = lsnOfChangedDocument;
-                                bookmarks.Add(bookmark);
-                                //Debug.WriteLine($"bookmark.lsn: {bookmark.lsn}");
-                                //Debug.WriteLine($"bookmarks: {JsonConvert.SerializeObject(bookmarks)}");
-
-                                await monitoredContainer.UpsertItemAsync<dynamic>(new { bookmarks, id = changedDocument.Current.id.ToString(), pk = changedDocument.Current.pk.ToString(), description = "original test" }, partitionKey: partitionKey, cancellationToken: token);
-                                await Task.Delay(1000); // NOTE(philipthomas-MSFT): Not critical to delay this.
-                            }
-                        }
-                        else
-                        {
-                            // 7.b. Customer maybe log these, but nothing else.
-
-                            Debug.WriteLine($"hasChangedBeenProcessed");
-                        }
-                    }
-
-                    return;
-                })
-                .WithStartTime(startTime)
-                .WithInstanceName(Guid.NewGuid().ToString())
-                .WithLeaseContainer(leaseContainer)
-                .WithErrorNotification((leaseToken, error) =>
-                {
-                    exception = error.InnerException;
-
-                    return Task.CompletedTask;
-                })
-                .Build();
-
-            await processor.StartAsync();
-            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
-
             bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
 
             await processor.StopAsync();
@@ -444,24 +318,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             {
                 Assert.Fail(exception.ToString());
             }
-        }
-
-        private static List<(FeedRange range, long lsn)> CreateBookmarksIfNotExists(ChangeFeedItem<dynamic> change)
-        {
-            List<(FeedRange range, long lsn)> bookmarks = new();
-
-            if (change.Current.bookmarks != null)
-            {
-                foreach (dynamic bookmark in change.Current.bookmarks)
-                {
-                    JObject asJObject = JObject.Parse(bookmark.ToString());
-
-                    bookmarks.Add((FeedRange.FromJsonString(asJObject["Item1"].ToString()), long.Parse(asJObject["Item2"].ToString())));
-                }
-
-            }
-
-            return bookmarks;
         }
 
         /// <summary>
@@ -668,6 +524,52 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     allDocsProcessed: allDocsProcessed,
                     withStartFromBeginning: withStartFromBeginning);
         }
+
+        private static async Task ChangeLeaseStateAsync(
+            Container leaseContainer)
+        {
+            FeedIterator iterator = leaseContainer.GetItemQueryStreamIterator(
+               queryText: "SELECT * FROM c",
+               continuationToken: null);
+
+            List<JObject> leases = new List<JObject>();
+            while (iterator.HasMoreResults)
+            {
+                using (ResponseMessage responseMessage = await iterator.ReadNextAsync().ConfigureAwait(false))
+                {
+                    responseMessage.EnsureSuccessStatusCode();
+                    leases.AddRange(CosmosFeedResponseSerializer.FromFeedResponseStream<JObject>(
+                        serializerCore: CosmosContainerExtensions.DefaultJsonSerializer,
+                        streamWithServiceEnvelope: responseMessage.Content));
+                }
+            }
+
+            int counter = 0;
+
+            foreach (JObject lease in leases)
+            {
+                if (!lease.ContainsKey("Mode"))
+                {
+                    continue;
+                }
+
+                counter++;
+
+                if (!string.IsNullOrWhiteSpace(lease["ContinuationToken"].Value<string>()))
+                {
+
+                    //Logger.LogLine($"before change lease -> {JsonConvert.SerializeObject(lease)}");
+
+                    lease["ContinuationToken"] = "\"0\"";
+
+                    _ = await leaseContainer.UpsertItemAsync(item: lease);
+
+                    //Logger.LogLine($"after change lease -> {JsonConvert.SerializeObject(lease)}");
+                }
+
+            }
+        }
+
 
         private static async Task RevertLeaseDocumentsToLegacyWithNoMode(
             Container leaseContainer,
