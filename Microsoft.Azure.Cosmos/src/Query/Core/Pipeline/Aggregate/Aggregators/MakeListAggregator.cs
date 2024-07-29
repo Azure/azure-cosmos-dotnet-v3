@@ -61,10 +61,5 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
 
             return TryCatch<IAggregator>.FromResult(new MakeListAggregator(initialList: partialList));
         }
-
-        public CosmosElement GetCosmosElementContinuationToken()
-        {
-            return this.GetResult();
-        }
     }
 }
