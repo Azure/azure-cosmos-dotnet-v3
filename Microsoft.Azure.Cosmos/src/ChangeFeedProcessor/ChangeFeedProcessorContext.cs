@@ -27,11 +27,6 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the feed range.
         /// </summary>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        abstract FeedRange FeedRange { get; }
+        public abstract FeedRange FeedRange { get; }
     }
 }

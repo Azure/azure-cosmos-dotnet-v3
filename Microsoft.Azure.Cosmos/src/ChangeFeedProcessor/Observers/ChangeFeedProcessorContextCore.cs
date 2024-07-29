@@ -22,11 +22,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public override Headers Headers => this.changeFeedObserverContextCore.Headers;
 
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-            override FeedRange FeedRange => this.changeFeedObserverContextCore.FeedRange;
+        public override FeedRange FeedRange => this.changeFeedObserverContextCore.FeedRange;
     }
 }
