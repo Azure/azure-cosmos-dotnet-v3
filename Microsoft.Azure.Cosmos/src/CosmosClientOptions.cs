@@ -417,7 +417,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public System.Text.Json.JsonSerializerOptions UseSystemTextJsonSerializerWithOptions
         {
-            private get => this.stjSerializerOptions;
+            get => this.stjSerializerOptions;
             set
             {
                 if (this.Serializer != null || this.SerializerOptions != null)
