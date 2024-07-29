@@ -763,12 +763,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
             throw new NotImplementedException();
         }
 
-        public override async Task<IReadOnlyList<Cosmos.FeedRange>> FindOverlappingRangesAsync(Cosmos.PartitionKey partitionKey, IReadOnlyList<Cosmos.FeedRange> feedRanges, CancellationToken cancellationToken = default)
+        public override Task<IReadOnlyList<Cosmos.FeedRange>> FindOverlappingRangesAsync(
+            Cosmos.PartitionKey partitionKey,
+            IReadOnlyList<Cosmos.FeedRange> feedRanges,
+            CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
         }
 
-        public override IReadOnlyList<Cosmos.FeedRange> FindOverlappingRanges(Cosmos.FeedRange feedRange, IReadOnlyList<Cosmos.FeedRange> feedRanges)
+        public override IReadOnlyList<Cosmos.FeedRange> FindOverlappingRanges(
+            Cosmos.FeedRange feedRange,
+            IReadOnlyList<Cosmos.FeedRange> feedRanges)
         {
             throw new NotImplementedException();
         }
