@@ -1027,22 +1027,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 processorName,
                 onChangesDelegate);
         }
-
-        public override async Task<IReadOnlyList<Cosmos.FeedRange>> FindOverlappingRangesAsync(Cosmos.PartitionKey partitionKey, IReadOnlyList<Cosmos.FeedRange> feedRanges, CancellationToken cancellationToken = default)
-        {
-            return await this.container.FindOverlappingRangesAsync(
-                partitionKey,
-                feedRanges,
-                cancellationToken);
-        }
-
-        public override IReadOnlyList<Cosmos.FeedRange> FindOverlappingRanges(Cosmos.FeedRange feedRange, IReadOnlyList<Cosmos.FeedRange> feedRanges)
-        {
-            return this.container.FindOverlappingRanges(
-                feedRange,
-                feedRanges);
-        }
-
 #endif
 
         private async Task<ResponseMessage> ReadManyItemsHelperAsync(

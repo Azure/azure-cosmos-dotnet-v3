@@ -326,6 +326,54 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             }
         }
 
+        [TestMethod]
+        [Owner("philipthomas-MSFT")]
+        [Description("Scenario: WithStartTime should throw an exception when used in AVAD mode.")]
+        public async Task WhenACFPInAVADModeUsesWithStartTimeExpectExceptionTestsAsync()
+        {
+            (ContainerInternal monitoredContainer, ContainerResponse containerResponse) = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes);
+
+            NotImplementedException e = Assert.ThrowsException<NotImplementedException>(() =>
+            {
+                ChangeFeedProcessor processor = monitoredContainer
+                    .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(
+                        processorName: "processor",
+                        onChangesDelegate: (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItem<dynamic>> docs, CancellationToken cancellationToken) => Task.CompletedTask)
+                    .WithStartTime(DateTime.Now)
+                    .WithInstanceName(Guid.NewGuid().ToString())
+                    .WithLeaseContainer(this.LeaseContainer)
+                    .Build();
+            });
+
+            Assert.AreEqual(
+                expected: "Using the 'WithStartTime' option with ChangeFeedProcessor is not supported with Microsoft.Azure.Cosmos.ChangeFeed.ChangeFeedModeFullFidelity mode.",
+                actual: e.Message);
+        }
+
+        [TestMethod]
+        [Owner("philipthomas-MSFT")]
+        [Description("Scenario: WithStartFromBeginning should throw an exception when used in AVAD mode.")]
+        public async Task WhenACFPInAVADModeUsesWithStartFromBeginningExpectExceptionTestsAsync()
+        {
+            (ContainerInternal monitoredContainer, ContainerResponse containerResponse) = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes);
+
+            NotImplementedException e = Assert.ThrowsException<NotImplementedException>(() =>
+            {
+                ChangeFeedProcessor processor = monitoredContainer
+                    .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(
+                        processorName: "processor",
+                        onChangesDelegate: (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItem<dynamic>> docs, CancellationToken cancellationToken) => Task.CompletedTask)
+                    .WithStartFromBeginning()
+                    .WithInstanceName(Guid.NewGuid().ToString())
+                    .WithLeaseContainer(this.LeaseContainer)
+                    .Build();
+            });
+
+            Assert.AreEqual(
+                expected: "Using the 'WithStartFromBeginning' option with ChangeFeedProcessor is not supported with Microsoft.Azure.Cosmos.ChangeFeed.ChangeFeedModeFullFidelity mode.",
+                actual: e.Message);
+        }
+
         /// <summary>
         /// This is based on an issue located at <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4308"/>.
         /// </summary>
