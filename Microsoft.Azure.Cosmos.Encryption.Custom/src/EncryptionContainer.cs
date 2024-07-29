@@ -1027,7 +1027,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 processorName,
                 onChangesDelegate);
         }
+#endif
 
+#if SDKPROJECTREF
         public override Task<IReadOnlyList<Cosmos.FeedRange>> FindOverlappingRangesAsync(
             Cosmos.PartitionKey partitionKey,
             IReadOnlyList<Cosmos.FeedRange> feedRanges,
