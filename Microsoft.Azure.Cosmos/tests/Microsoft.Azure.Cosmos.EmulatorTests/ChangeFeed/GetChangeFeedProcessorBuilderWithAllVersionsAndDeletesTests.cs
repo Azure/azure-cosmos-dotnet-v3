@@ -234,7 +234,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         [TestMethod]
         [Owner("philipthomas-MSFT")]
         [Description("Scenario: When documents are created, the document when using ChangeFeedProcessor with AllVersionsAndDeletes set as the ChangeFeedMode. " +
-            "The context header also now has the FeedRange included. This is simulating a customer scenario using HasChangeBeenProcessed and FindOverlappingRanges.")]
+            "The context also now has the FeedRange included. And using FeedRange and PartitionKey, testing FindOverlappingRanges.")]
         public async Task WhenADocumentIsCreatedThenCheckFeedRangeInContextAndFindOverlappingRangesTestsAsync()
         {
             (ContainerInternal monitoredContainer, ContainerResponse containerResponse) = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes);
@@ -247,6 +247,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 {
                     readDocumentCount += docs.Count;
                     Assert.IsTrue(docs.Count > 0);
+
+                    // NOTE(philipthomas-MSFT): New FeedRange on ChangeFeedProcessorContext.
 
                     FeedRange feedRange = context.FeedRange;
                     Assert.IsNotNull(feedRange);
@@ -263,6 +265,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                         .Select(feedRangeEpk => feedRangeEpk as FeedRange)
                         .ToList();
 
+                    // NOTE(philipthomas-MSFT): New FindOverlappingRanges using FeedRange.
+
                     IReadOnlyList<FeedRange> feedRangeOverlappingRanges = monitoredContainer.FindOverlappingRanges(
                         feedRange: feedRange,
                         feedRanges: ranges);
@@ -273,6 +277,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     foreach (ChangeFeedItem<dynamic> doc in docs)
                     {
                         PartitionKey partitionKey = new(doc.Current.pk.ToString());
+
+                        // NOTE(philipthomas-MSFT): New FindOverlappingRangesAsync using PartitionKey.
                         IReadOnlyList<FeedRange> partitionKeyOverlappingRanges = await monitoredContainer.FindOverlappingRangesAsync(
                             partitionKey: partitionKey, 
                             feedRanges: ranges, 
@@ -350,7 +356,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
             Assert.AreEqual(expected: "Switching ChangeFeedMode Incremental Feed to Full-Fidelity Feed is not allowed.", actual: exception.Message);
         }
-
 
         /// <summary>
         /// This is based on an issue located at <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4308"/>.
@@ -524,52 +529,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     allDocsProcessed: allDocsProcessed,
                     withStartFromBeginning: withStartFromBeginning);
         }
-
-        private static async Task ChangeLeaseStateAsync(
-            Container leaseContainer)
-        {
-            FeedIterator iterator = leaseContainer.GetItemQueryStreamIterator(
-               queryText: "SELECT * FROM c",
-               continuationToken: null);
-
-            List<JObject> leases = new List<JObject>();
-            while (iterator.HasMoreResults)
-            {
-                using (ResponseMessage responseMessage = await iterator.ReadNextAsync().ConfigureAwait(false))
-                {
-                    responseMessage.EnsureSuccessStatusCode();
-                    leases.AddRange(CosmosFeedResponseSerializer.FromFeedResponseStream<JObject>(
-                        serializerCore: CosmosContainerExtensions.DefaultJsonSerializer,
-                        streamWithServiceEnvelope: responseMessage.Content));
-                }
-            }
-
-            int counter = 0;
-
-            foreach (JObject lease in leases)
-            {
-                if (!lease.ContainsKey("Mode"))
-                {
-                    continue;
-                }
-
-                counter++;
-
-                if (!string.IsNullOrWhiteSpace(lease["ContinuationToken"].Value<string>()))
-                {
-
-                    //Logger.LogLine($"before change lease -> {JsonConvert.SerializeObject(lease)}");
-
-                    lease["ContinuationToken"] = "\"0\"";
-
-                    _ = await leaseContainer.UpsertItemAsync(item: lease);
-
-                    //Logger.LogLine($"after change lease -> {JsonConvert.SerializeObject(lease)}");
-                }
-
-            }
-        }
-
 
         private static async Task RevertLeaseDocumentsToLegacyWithNoMode(
             Container leaseContainer,
