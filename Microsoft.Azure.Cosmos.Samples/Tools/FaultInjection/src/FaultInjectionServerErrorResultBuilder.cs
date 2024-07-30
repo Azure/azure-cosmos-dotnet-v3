@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private TimeSpan delay;
         private bool suppressServiceRequest;
         private bool isDelaySet = false;
+        private IEnumerable<KeyValuePair<string, string>>? responseHeaders;
 
         /// <summary>
         /// Creates a <see cref="FaultInjectionServerErrorResult"/>.
@@ -67,11 +68,17 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             return this;
         }
 
+        public FaultInjectionServerErrorResultBuilder WithResponseHeaders(IEnumerable<KeyValuePair<string, string>> responseHeaders)
+        {
+            this.responseHeaders = responseHeaders;
+            return this;
+        }
+
         /// <summary>
         /// Creates a new <see cref="FaultInjectionServerErrorResult"/>.
         /// </summary>
         /// <returns>the <see cref="FaultInjectionServerErrorResult"/>.</returns>
-        public FaultInjectionServerErrorResult Build()
+        public IFaultInjectionResult Build()
         {
             if ((this.serverErrorType == FaultInjectionServerErrorType.ResponseDelay
                 || this.serverErrorType == FaultInjectionServerErrorType.ConnectionDelay)
@@ -84,7 +91,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 this.serverErrorType,
                 this.times,
                 this.delay,
-                this.suppressServiceRequest);
+                this.suppressServiceRequest,
+                this.responseHeaders);
         }
     }
 }

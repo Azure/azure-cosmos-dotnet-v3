@@ -4,16 +4,18 @@
 namespace Microsoft.Azure.Cosmos.FaultInjection
 {
     using System;
+    using Microsoft.Azure.Documents.Collections;
 
     /// <summary>
     /// Fault Injection Server Error Result.
     /// </summary>
-    public sealed class FaultInjectionServerErrorResult : IFaultInjectionResult
+    internal sealed class FaultInjectionServerErrorResult : IFaultInjectionResult
     {
         private readonly FaultInjectionServerErrorType serverErrorType;
         private readonly int times;
         private readonly TimeSpan delay;
         private readonly bool suppressServiceRequests;
+        private readonly IEnumerable<KeyValuePair<string, string>>? responseHeaders;
 
         /// <summary>
         /// Creates a new FaultInjectionServerErrorResult.
@@ -21,12 +23,13 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <param name="serverErrorType">Specifies the server error type.</param>
         /// <param name="times">Specifies the number of times a rule can be applied on a single operation.</param>
         /// <param name="delay">Specifies the injected delay for the server error.</param>
-        public FaultInjectionServerErrorResult(FaultInjectionServerErrorType serverErrorType, int times, TimeSpan delay, bool suppressServiceRequests)
+        public FaultInjectionServerErrorResult(FaultInjectionServerErrorType serverErrorType, int times, TimeSpan delay, bool suppressServiceRequests, IEnumerable<KeyValuePair<string, string>>? responseHeaders)
         {
             this.serverErrorType = serverErrorType;
             this.times = times;
             this.delay = delay;
             this.suppressServiceRequests = suppressServiceRequests;
+            this.responseHeaders = responseHeaders;
         }
 
         /// <summary>
@@ -66,6 +69,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         public bool GetSuppressServiceRequests()
         {
             return this.suppressServiceRequests;
+        }
+
+        public IEnumerable<KeyValuePair<string, string>>? GetResponseHeaders()
+        {
+           return this.responseHeaders;
         }
 
         /// <summary>

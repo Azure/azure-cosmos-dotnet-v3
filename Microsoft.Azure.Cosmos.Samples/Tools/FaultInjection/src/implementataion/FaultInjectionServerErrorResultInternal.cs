@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private readonly TimeSpan delay;
         private readonly bool suppressServiceRequest;
         private readonly FaultInjectionApplicationContext applicationContext;
+        private readonly IEnumerable<KeyValuePair<string, string>>? responseHeaders;
 
         /// <summary>
         /// Constructor for FaultInjectionServerErrorResultInternal
@@ -33,6 +34,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             int times, 
             TimeSpan delay, 
             bool suppressServiceRequest,
+            IEnumerable<KeyValuePair<string, string>>? responseHeaders,
             FaultInjectionApplicationContext applicationContext)
         {
             this.serverErrorType = serverErrorType;
@@ -40,6 +42,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             this.delay = delay;
             this.suppressServiceRequest = suppressServiceRequest;
             this.applicationContext = applicationContext;
+            this.responseHeaders = responseHeaders;
         }
 
         /// <summary>
@@ -128,9 +131,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             switch (this.serverErrorType)
             {
                 case FaultInjectionServerErrorType.Gone:
-                    INameValueCollection goneHeaders = args.RequestHeaders;
+                    INameValueCollection goneHeaders = args.RequestHeaders.Clone();
                     goneHeaders.Set(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.ServerGenerated410).ToString(CultureInfo.InvariantCulture));
                     goneHeaders.Set(WFConstants.BackendHeaders.LocalLSN, lsn);
+                    FaultInjectionServerErrorResultInternal.AddHeadersToResponse(goneHeaders, this.responseHeaders);
                     storeResponse = new StoreResponse()
                     {
                         Status = 410,
@@ -141,8 +145,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     return storeResponse;
 
                 case FaultInjectionServerErrorType.RetryWith:
-                    INameValueCollection retryWithHeaders = args.RequestHeaders;
+                    INameValueCollection retryWithHeaders = args.RequestHeaders.Clone();
                     retryWithHeaders.Set(WFConstants.BackendHeaders.LocalLSN, lsn);
+                    FaultInjectionServerErrorResultInternal.AddHeadersToResponse(retryWithHeaders, this.responseHeaders);
                     storeResponse = new StoreResponse()
                     {
                         Status = 449,
@@ -153,11 +158,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     return storeResponse;
 
                 case FaultInjectionServerErrorType.TooManyRequests:
-                    INameValueCollection tooManyRequestsHeaders = args.RequestHeaders;
+                    INameValueCollection tooManyRequestsHeaders = args.RequestHeaders.Clone();
                     tooManyRequestsHeaders.Set(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, "500");
                     tooManyRequestsHeaders.Set(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.RUBudgetExceeded).ToString(CultureInfo.InvariantCulture));
                     tooManyRequestsHeaders.Set(WFConstants.BackendHeaders.LocalLSN, lsn);
-
+                    FaultInjectionServerErrorResultInternal.AddHeadersToResponse(tooManyRequestsHeaders, this.responseHeaders);
                     storeResponse = new StoreResponse()
                     {
                         Status = 429,
@@ -168,9 +173,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     return storeResponse;
 
                 case FaultInjectionServerErrorType.Timeout:
-                    INameValueCollection timeoutHeaders = args.RequestHeaders;
+                    INameValueCollection timeoutHeaders = args.RequestHeaders.Clone();
                     timeoutHeaders.Set(WFConstants.BackendHeaders.LocalLSN, lsn);
-
+                    FaultInjectionServerErrorResultInternal.AddHeadersToResponse(timeoutHeaders, this.responseHeaders);
                     storeResponse = new StoreResponse()
                     {
                         Status = 408,
@@ -181,9 +186,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     return storeResponse;
 
                 case FaultInjectionServerErrorType.InternalServerEror:
-                    INameValueCollection internalServerErrorHeaders = args.RequestHeaders;
+                    INameValueCollection internalServerErrorHeaders = args.RequestHeaders.Clone();
                     internalServerErrorHeaders.Set(WFConstants.BackendHeaders.LocalLSN, lsn);
-
+                    FaultInjectionServerErrorResultInternal.AddHeadersToResponse(internalServerErrorHeaders, this.responseHeaders);
                     storeResponse = new StoreResponse()
                     {
                         Status = 500,
@@ -195,13 +200,14 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
                 case FaultInjectionServerErrorType.ReadSessionNotAvailable:
 
-                    const string badSesstionToken = "1:1#1#1=1#1=1";
+                    const string badSessionToken = "1:1#1#1=1#1=1";
 
-                    INameValueCollection readSessionHeaders = args.RequestHeaders;
+                    INameValueCollection readSessionHeaders = args.RequestHeaders.Clone();
                     readSessionHeaders.Set(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.ReadSessionNotAvailable).ToString(CultureInfo.InvariantCulture));
-                    readSessionHeaders.Set(HttpConstants.HttpHeaders.SessionToken, badSesstionToken);
+                    readSessionHeaders.Set(HttpConstants.HttpHeaders.SessionToken, badSessionToken);
+                    readSessionHeaders.Set(HttpConstants.HttpHeaders.SessionToken, badSessionToken);
                     readSessionHeaders.Set(WFConstants.BackendHeaders.LocalLSN, lsn);
-
+                    FaultInjectionServerErrorResultInternal.AddHeadersToResponse(readSessionHeaders, this.responseHeaders);
                     storeResponse = new StoreResponse()
                     {
                         Status = 404,
@@ -212,10 +218,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     return storeResponse;
 
                 case FaultInjectionServerErrorType.PartitionIsMigrating:
-                    INameValueCollection partitionMigrationHeaders = args.RequestHeaders;
+                    INameValueCollection partitionMigrationHeaders = args.RequestHeaders.Clone();
                     partitionMigrationHeaders.Set(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.CompletingPartitionMigration).ToString(CultureInfo.InvariantCulture));
                     partitionMigrationHeaders.Set(WFConstants.BackendHeaders.LocalLSN, lsn);
-
+                    FaultInjectionServerErrorResultInternal.AddHeadersToResponse(partitionMigrationHeaders, this.responseHeaders);
                     storeResponse = new StoreResponse()
                     {
                         Status = 410,
@@ -226,10 +232,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     return storeResponse;
 
                 case FaultInjectionServerErrorType.PartitionIsSplitting:
-                    INameValueCollection partitionSplitting = args.RequestHeaders;
+                    INameValueCollection partitionSplitting = args.RequestHeaders.Clone();
                     partitionSplitting.Set(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.CompletingSplit).ToString(CultureInfo.InvariantCulture));
                     partitionSplitting.Set(WFConstants.BackendHeaders.LocalLSN, lsn);
-
+                    FaultInjectionServerErrorResultInternal.AddHeadersToResponse(partitionSplitting, this.responseHeaders);
                     storeResponse = new StoreResponse()
                     {
                         Status = 410,
@@ -239,9 +245,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
                     return storeResponse;
                 case FaultInjectionServerErrorType.ServiceUnavailable:
-                    INameValueCollection serviceUnavailableHeaders = args.RequestHeaders;
+                    INameValueCollection serviceUnavailableHeaders = args.RequestHeaders.Clone();
                     serviceUnavailableHeaders.Set(WFConstants.BackendHeaders.LocalLSN, lsn);
-
+                    FaultInjectionServerErrorResultInternal.AddHeadersToResponse(serviceUnavailableHeaders, this.responseHeaders);
                     storeResponse = new StoreResponse()
                     {
                         Status = 503,
@@ -253,6 +259,17 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
                 default:
                     throw new ArgumentException($"Server error type {this.serverErrorType} is not supported");
+            }
+        }
+
+        private static void AddHeadersToResponse(INameValueCollection headers, IEnumerable<KeyValuePair<string, string>>? responseHeaders)
+        {
+            if (responseHeaders != null)
+            {
+                foreach (KeyValuePair<string, string> header in responseHeaders)
+                {
+                    headers.Set(header.Key, header.Value);
+                }
             }
         }
     }
