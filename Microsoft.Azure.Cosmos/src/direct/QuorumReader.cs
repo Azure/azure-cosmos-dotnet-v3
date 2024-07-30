@@ -774,7 +774,9 @@ namespace Microsoft.Azure.Documents
             long maxLsn = 0;
             long minLsn = long.MaxValue;
             int replicaCountMaxLsn = 0;
-            IEnumerable<ReferenceCountedDisposable<StoreResult>> validReadResponses = readResponses.Where(response => response.Target.IsValid && !isExceptionlessFailure((int)response.Target.StatusCode, response.Target.SubStatusCode));
+
+            // Use Valid responses (no exceptions) and exceptionsless failures with valid LSN
+            IEnumerable<ReferenceCountedDisposable<StoreResult>> validReadResponses = readResponses.Where(response => response.Target.IsValid && (!isExceptionlessFailure((int)response.Target.StatusCode, response.Target.SubStatusCode) || response.Target.LSN > 0));
             int validResponsesCount = validReadResponses.Count();
 
             if (validResponsesCount == 0)
