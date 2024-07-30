@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net.Security;
     using System.Security.Cryptography;
     using System.Security.Cryptography.X509Certificates;
+    using System.Text;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
@@ -479,6 +480,26 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void ValidateThatCustomSerializerGetsOverriddenWhenSTJSerializerEnabled()
+        {
+            CosmosClientOptions options = new CosmosClientOptions()
+            {
+                UseSystemTextJsonSerializerWithOptions = new System.Text.Json.JsonSerializerOptions()
+                {
+                    PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+                }
+            };
+
+            CosmosClient client = new(
+                "https://fake-account.documents.azure.com:443/",
+                Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
+                options
+            );
+
+            Assert.AreEqual(typeof(CosmosSystemTextJsonSerializer), client.ClientOptions.Serializer.GetType());
+        }
+
+        [TestMethod]
         [ExpectedException(typeof(ArgumentException))]
         public void ThrowOnSerializerOptionsWithCustomSerializer()
         {
@@ -500,6 +521,56 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             options.Serializer = new CosmosJsonDotNetSerializer();
+        }
+
+        [TestMethod]
+        [DataRow(false, DisplayName = "Test when the client options order is maintained")]
+        [DataRow(true, DisplayName = "Test when the client options order is reversed")]
+        [ExpectedException(typeof(ArgumentException))]
+        public void ThrowOnCustomSerializerWithSTJSerializerEnabled(
+            bool reverseOrder)
+        {
+            if (reverseOrder)
+            {
+                CosmosClientOptions options = new CosmosClientOptions()
+                {
+                    Serializer = new CosmosJsonDotNetSerializer(),
+                    UseSystemTextJsonSerializerWithOptions = new System.Text.Json.JsonSerializerOptions(),
+                };
+            }
+            else
+            {
+                CosmosClientOptions options = new CosmosClientOptions()
+                {
+                    UseSystemTextJsonSerializerWithOptions = new System.Text.Json.JsonSerializerOptions(),
+                    Serializer = new CosmosJsonDotNetSerializer(),
+                };
+            }
+        }
+
+        [TestMethod]
+        [DataRow(false, DisplayName = "Test when the client options order is maintained")]
+        [DataRow(true, DisplayName = "Test when the client options order is reversed")]
+        [ExpectedException(typeof(ArgumentException))]
+        public void ThrowOnSerializerOptionsWithSTJSerializerEnabled(
+            bool reverseOrder)
+        {
+            if (reverseOrder)
+            {
+                CosmosClientOptions options = new CosmosClientOptions()
+                {
+                    SerializerOptions = new CosmosSerializationOptions(),
+                    UseSystemTextJsonSerializerWithOptions = new System.Text.Json.JsonSerializerOptions(),
+                };
+            }
+            else
+            {
+                CosmosClientOptions options = new CosmosClientOptions()
+                {
+                    UseSystemTextJsonSerializerWithOptions = new System.Text.Json.JsonSerializerOptions(),
+                    SerializerOptions = new CosmosSerializationOptions(),
+                };
+            }
         }
 
         [TestMethod]
