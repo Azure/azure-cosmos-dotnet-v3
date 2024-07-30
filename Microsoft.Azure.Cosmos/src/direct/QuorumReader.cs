@@ -339,8 +339,8 @@ namespace Microsoft.Azure.Documents
 
                 int responseCount = responseResult.Count(response => response.Target.IsValid);
 
-                // Not count the failures that were exceptionless
-                responseCount = responseCount - responseResult.Count(response => entity.IsValidStatusCodeForExceptionlessRetry((int)response.Target.StatusCode, response.Target.SubStatusCode));
+                // Not count the failures that were exceptionless errors happened with invalid LSN
+                responseCount = responseCount - responseResult.Count(response => entity.IsValidStatusCodeForExceptionlessRetry((int)response.Target.StatusCode, response.Target.SubStatusCode) && response.Target.LSN < 0);
                 
                 if (responseCount < readQuorum)
                 {
@@ -433,9 +433,11 @@ namespace Microsoft.Azure.Documents
                 useSessionToken: useSessionToken);
             StoreResult storeResult = disposableStoreResult.Target;
 
-            if (entity.IsValidStatusCodeForExceptionlessRetry((int)storeResult.StatusCode, storeResult.SubStatusCode))
+            if (entity.IsValidStatusCodeForExceptionlessRetry((int)storeResult.StatusCode, storeResult.SubStatusCode)
+                && storeResult.LSN < 0)
             {
                 // Exceptionless failures should be treated similar to exceptions
+                // Validate LSN for cases where there is no exception because the ReadPrimary has requiresValidLsn: true
                 return new ReadPrimaryResult(
                     requestChargeTracker: entity.RequestContext.RequestChargeTracker, isSuccessful: true, shouldRetryOnSecondary: false, response: disposableStoreResult.TryAddReference());
             }
