@@ -6577,6 +6577,13 @@ namespace Microsoft.Azure.Cosmos
                 return this.GatewayStoreModel;
             }
 
+            if (this.isLiteClientEnabled
+                && operationType == OperationType.Read
+                && resourceType == ResourceType.Database)
+            {
+                return this.GatewayStoreModel;
+            }
+
             if (operationType == OperationType.Create
                 || operationType == OperationType.Upsert)
             {
@@ -6618,7 +6625,7 @@ namespace Microsoft.Azure.Cosmos
             }
             else if (operationType == OperationType.Read)
             {
-                if (resourceType == ResourceType.Collection || resourceType == ResourceType.Database)
+                if (resourceType == ResourceType.Collection)
                 {
                     return this.GatewayStoreModel;
                 }
