@@ -338,6 +338,10 @@ namespace Microsoft.Azure.Documents
                 }
 
                 int responseCount = responseResult.Count(response => response.Target.IsValid);
+
+                // Not count the failures that were exceptionless
+                responseCount = responseCount - responseResult.Count(response => entity.IsValidStatusCodeForExceptionlessRetry((int)response.Target.StatusCode, response.Target.SubStatusCode));
+                
                 if (responseCount < readQuorum)
                 {
                     return new ReadQuorumResult(entity.RequestContext.RequestChargeTracker,
@@ -360,6 +364,7 @@ namespace Microsoft.Azure.Documents
                     readQuorum,
                     false,
                     isGlobalStrongReadCandidate,
+                    entity.IsValidStatusCodeForExceptionlessRetry,
                     out readLsn,
                     out globalCommittedLSN,
                     out storeResult))
@@ -427,6 +432,14 @@ namespace Microsoft.Azure.Documents
                 requiresValidLsn: true, 
                 useSessionToken: useSessionToken);
             StoreResult storeResult = disposableStoreResult.Target;
+
+            if (entity.IsValidStatusCodeForExceptionlessRetry((int)storeResult.StatusCode, storeResult.SubStatusCode))
+            {
+                // Exceptionless failures should be treated similar to exceptions
+                return new ReadPrimaryResult(
+                    requestChargeTracker: entity.RequestContext.RequestChargeTracker, isSuccessful: true, shouldRetryOnSecondary: false, response: disposableStoreResult.TryAddReference());
+            }
+
             if (!storeResult.IsValid)
             {
                 ExceptionDispatchInfo.Capture(storeResult.GetException()).Throw();
@@ -751,6 +764,7 @@ namespace Microsoft.Azure.Documents
             int readQuorum,
             bool isPrimaryIncluded,
             bool isGlobalStrongRead,
+            Func<int, SubStatusCodes, bool> isExceptionlessFailure,
             out long readLsn,
             out long globalCommittedLSN,
             out ReferenceCountedDisposable<StoreResult> selectedResponse)
@@ -758,7 +772,7 @@ namespace Microsoft.Azure.Documents
             long maxLsn = 0;
             long minLsn = long.MaxValue;
             int replicaCountMaxLsn = 0;
-            IEnumerable<ReferenceCountedDisposable<StoreResult>> validReadResponses = readResponses.Where(response => response.Target.IsValid);
+            IEnumerable<ReferenceCountedDisposable<StoreResult>> validReadResponses = readResponses.Where(response => response.Target.IsValid && !isExceptionlessFailure((int)response.Target.StatusCode, response.Target.SubStatusCode));
             int validResponsesCount = validReadResponses.Count();
 
             if (validResponsesCount == 0)

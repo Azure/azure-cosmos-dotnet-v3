@@ -217,6 +217,23 @@ For globally strong write:
                         storeResult: storeResult.Target,
                         startTimeUtc: startTimeUtc,
                         endTimeUtc: DateTime.UtcNow);
+
+                    if (request.IsValidStatusCodeForExceptionlessRetry((int)response.StatusCode, response.SubStatusCode))
+                    {
+                        // Exceptionless failures should be treated similar to exceptions
+                        string value = response.Headers[HttpConstants.HttpHeaders.WriteRequestTriggerAddressRefresh];
+                        if (!string.IsNullOrWhiteSpace(value))
+                        {
+                            int result;
+                            if (int.TryParse(response.Headers.GetValues(HttpConstants.HttpHeaders.WriteRequestTriggerAddressRefresh)[0],
+                                NumberStyles.Integer,
+                                CultureInfo.InvariantCulture,
+                                out result) && result == 1)
+                            {
+                                this.addressSelector.StartBackgroundAddressRefresh(request);
+                            }
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
