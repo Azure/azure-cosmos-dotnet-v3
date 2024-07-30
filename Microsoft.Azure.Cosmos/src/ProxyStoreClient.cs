@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -54,7 +55,8 @@ namespace Microsoft.Azure.Cosmos
         {
             using (HttpResponseMessage responseMessage = await this.InvokeClientAsync(request, resourceType, physicalAddress, cancellationToken))
             {
-                return await ProxyStoreClient.ParseResponseAsync(responseMessage, request.SerializerSettings ?? this.SerializerSettings, request);
+                HttpResponseMessage proxyResponse = await ThinClientTransportSerializer.ConvertProxyResponseAsync(responseMessage);
+                return await ProxyStoreClient.ParseResponseAsync(proxyResponse, request.SerializerSettings ?? this.SerializerSettings, request);
             }
         }
 
@@ -366,6 +368,8 @@ namespace Microsoft.Azure.Cosmos
             BufferProviderWrapper bufferProviderWrapper = this.bufferProviderWrapperPool.Get();
             try
             {
+                requestMessage.Headers.TryAddWithoutValidation("x-ms-thinclient-proxy-operation-type", request.OperationType.ToOperationTypeString());
+                requestMessage.Headers.TryAddWithoutValidation("x-ms-thinclient-proxy-resource-type", request.ResourceType.ToResourceTypeString());
                 Stream contentStream = await ThinClientTransportSerializer.SerializeProxyRequestAsync(bufferProviderWrapper, this.globalDatabaseAccountName, requestMessage);
 
                 // force Http2, post and route to the thin client endpoint.
@@ -394,6 +398,8 @@ namespace Microsoft.Azure.Cosmos
            Uri physicalAddress,
            CancellationToken cancellationToken)
         {
+            DefaultTrace.TraceInformation("In {0}, OperationType: {1}, ResourceType: {2}", nameof(ProxyStoreClient), request.OperationType, request.ResourceType);
+
             return this.httpClient.SendHttpAsync(
                 () => this.PrepareRequestMessageAsync(request, physicalAddress),
                 resourceType,

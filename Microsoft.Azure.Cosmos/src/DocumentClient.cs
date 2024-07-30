@@ -200,6 +200,7 @@ namespace Microsoft.Azure.Cosmos
         private event EventHandler<SendingRequestEventArgs> sendingRequest;
         private event EventHandler<ReceivedResponseEventArgs> receivedResponse;
         private Func<TransportClient, TransportClient> transportClientHandlerFactory;
+        private string liteClientTestEndpoint = "https://aavasthy-vmsstest.sql.cosmos.azure.com:10650";
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DocumentClient"/> class using the
@@ -251,7 +252,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.isLiteClientEnabled)
             {
-                this.liteClientEndpoint = ConfigurationManager.GetLiteClientEndpoint(defaultValue: "https://jsonplaceholder.typicode.com/posts");
+                this.liteClientEndpoint = ConfigurationManager.GetLiteClientEndpoint(defaultValue: this.liteClientTestEndpoint);
             }
         }
 
@@ -509,7 +510,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.isLiteClientEnabled)
             {
-                this.liteClientEndpoint = ConfigurationManager.GetLiteClientEndpoint(defaultValue: "https://jsonplaceholder.typicode.com/posts");
+                this.liteClientEndpoint = ConfigurationManager.GetLiteClientEndpoint(defaultValue: this.liteClientTestEndpoint);
             }
 
             this.Initialize(
@@ -1086,7 +1087,7 @@ namespace Microsoft.Azure.Cosmos
             // Change it to this.ConnectionPolicy.ConnectionMode == ConnectionMode.LiteClient when LiteClient is supported.
             else if (this.isLiteClientEnabled)
             {
-                this.StoreModel = new ThinClientStoreModel(
+                ThinClientStoreModel thinClientStoreModel = new (
                     endpointManager: this.GlobalEndpointManager,
                     this.sessionContainer,
                     (Cosmos.ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel,
@@ -1094,7 +1095,11 @@ namespace Microsoft.Azure.Cosmos
                     this.serializerSettings,
                     this.liteModeHttpClient,
                     new Uri(this.liteClientEndpoint),
-                    this.ServiceEndpoint.ToString());
+                    this.accountServiceConfiguration.AccountProperties.Id);
+
+                thinClientStoreModel.SetCaches(this.partitionKeyRangeCache, this.collectionCache);
+
+                this.StoreModel = thinClientStoreModel;
             }
             else
             {
@@ -6613,7 +6618,7 @@ namespace Microsoft.Azure.Cosmos
             }
             else if (operationType == OperationType.Read)
             {
-                if (resourceType == ResourceType.Collection)
+                if (resourceType == ResourceType.Collection || resourceType == ResourceType.Database)
                 {
                     return this.GatewayStoreModel;
                 }

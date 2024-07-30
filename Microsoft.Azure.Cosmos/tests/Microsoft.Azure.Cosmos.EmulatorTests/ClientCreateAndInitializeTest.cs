@@ -6,13 +6,16 @@
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Net.Security;
     using System.Reflection;
+    using System.Security.Cryptography.X509Certificates;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Moq.Protected;
+    using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.ClientCreateAndInitializeTest;
 
     [TestClass]
     public class ClientCreateAndInitializeTest : BaseCosmosClientHelper
@@ -20,7 +23,7 @@
         private ContainerInternal Container = null;
         private const string PartitionKey = "/pk";
 
-        [TestInitialize]
+        // [TestInitialize]
         public async Task TestInitialize()
         {
             await this.TestInit();
@@ -364,5 +367,80 @@
             Assert.IsNotNull(ce);
             Assert.AreEqual(HttpStatusCode.NotFound, ce.StatusCode);
         }
+
+        [TestMethod]
+        [Owner("dkunda")]
+        public async Task CreateAndInitializeAsync_LocalTest()
+        {
+            string databaseName = "thin-client-test-db";
+            string containerName = "thin-client-test-container-1";
+            CosmosClientOptions clientOptions = new ()
+            {
+                ApplicationPreferredRegions = new List<string>()
+                {
+                    Regions.WestUS2,
+                },
+                EnablePartitionLevelFailover = false,
+                ConnectionMode = ConnectionMode.Direct,
+                RequestTimeout = TimeSpan.FromSeconds(500),
+                OpenTcpConnectionTimeout = TimeSpan.FromSeconds(5),
+                DisableServerCertificateValidation = true,
+                ServerCertificateCustomValidationCallback = (X509Certificate2 cerf, X509Chain chain, SslPolicyErrors error) => true
+            };
+
+            CosmosClient client = new CosmosClient(
+                "https://aavasthy-vmsstest.documents.azure.com:443/",
+                "key",
+                clientOptions
+            );
+
+            DatabaseResponse dbResponse = await client.CreateDatabaseIfNotExistsAsync(databaseName);
+
+            ContainerProperties properties = new ContainerProperties(id: containerName, partitionKeyPath: PartitionKey); ;
+
+            await dbResponse.Database.CreateContainerIfNotExistsAsync(properties);
+
+            Cosmos.Database database = client.GetDatabase(databaseName);
+            Container container = database.GetContainer(containerName);
+            Random random = new ();
+
+            for (int i = 0; i < 5; i++)
+            {
+                Comment comment = new Comment(Guid.NewGuid().ToString(), "pk", random.Next().ToString(), "abc@def.com", "blabla");
+                try
+                {
+                    ItemResponse<Comment> writeResponse = await container.CreateItemAsync<Comment>(
+                        item: comment,
+                        partitionKey: new Cosmos.PartitionKey(comment.pk)
+                    );
+
+                    Console.WriteLine("Comment ID: " + comment.id);
+                    Console.WriteLine(writeResponse.Diagnostics);
+
+                    ItemResponse<Comment> readResponse = await container.ReadItemAsync<Comment>(
+                        id: comment.id,
+                        partitionKey: new Cosmos.PartitionKey(comment.pk)
+                        );
+
+                    Console.WriteLine(readResponse.Diagnostics);
+                }
+                catch (CosmosException ce)
+                {
+                    Console.WriteLine(ce.Diagnostics);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Exception Occurred: " + ex.Message);
+                }
+            }
+        }
+
+        public record Comment(
+            string id,
+            string pk,
+            string name,
+            string email,
+            string body
+        );
     }
 }

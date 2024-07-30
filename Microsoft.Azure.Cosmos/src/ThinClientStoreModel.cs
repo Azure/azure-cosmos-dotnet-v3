@@ -61,6 +61,8 @@ namespace Microsoft.Azure.Cosmos
 
         public virtual async Task<DocumentServiceResponse> ProcessMessageAsync(DocumentServiceRequest request, CancellationToken cancellationToken = default)
         {
+            DefaultTrace.TraceInformation("In {0}, OperationType: {1}, ResourceType: {2}", nameof(ThinClientStoreModel), request.OperationType, request.ResourceType);
+
             await ThinClientStoreModel.ApplySessionTokenAsync(
                 request,
                 this.defaultConsistencyLevel,
