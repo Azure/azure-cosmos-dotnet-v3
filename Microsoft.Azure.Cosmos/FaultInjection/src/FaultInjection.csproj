@@ -22,7 +22,7 @@
 	</ItemGroup>
 
 	<ItemGroup Condition=" '$(SdkProjectRef)' == 'True' ">
-		<ProjectReference Include="..\..\..\src\Microsoft.Azure.Cosmos.csproj" />
+		<ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.csproj" />
 	</ItemGroup>
 
 	<ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
@@ -34,6 +34,6 @@
 	<PropertyGroup>
 		<SignAssembly>true</SignAssembly>
 		<DelaySign>true</DelaySign>
-		<AssemblyOriginatorKeyFile>..\..\..\..\testkey.snk</AssemblyOriginatorKeyFile>
+		<AssemblyOriginatorKeyFile>..\..\..\testkey.snk</AssemblyOriginatorKeyFile>
 	</PropertyGroup>
 </Project>
