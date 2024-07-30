@@ -61,6 +61,7 @@ namespace Microsoft.Azure.Cosmos
         private int gatewayModeMaxConnectionLimit;
         private CosmosSerializationOptions serializerOptions;
         private CosmosSerializer serializerInternal;
+        private System.Text.Json.JsonSerializerOptions stjSerializerOptions;
 
         private ConnectionMode connectionMode;
         private Protocol connectionProtocol;
@@ -394,6 +395,44 @@ namespace Microsoft.Azure.Cosmos
         public bool? EnableContentResponseOnWrite { get; set; }
 
         /// <summary>
+        /// Sets the <see cref="System.Text.Json.JsonSerializerOptions"/> for the System.Text.Json serializer.
+        /// Note that if this option is provided, then the SDK will use the System.Text.Json as the default serializer and set
+        /// the serializer options as the constructor args.
+        /// </summary>
+        /// <example>
+        /// An example on how to configure the System.Text.Json serializer options to ignore null values
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosClientOptions clientOptions = new CosmosClientOptions()
+        /// {
+        ///     UseSystemTextJsonSerializerWithOptions = new System.Text.Json.JsonSerializerOptions()
+        ///     {
+        ///         DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+        ///     }
+        /// };
+        /// 
+        /// CosmosClient client = new CosmosClient("endpoint", "key", clientOptions);
+        /// ]]>
+        /// </code>
+        /// </example>
+        public System.Text.Json.JsonSerializerOptions UseSystemTextJsonSerializerWithOptions
+        {
+            get => this.stjSerializerOptions;
+            set
+            {
+                if (this.Serializer != null || this.SerializerOptions != null)
+                {
+                    throw new ArgumentException(
+                        $"{nameof(this.UseSystemTextJsonSerializerWithOptions)} is not compatible with {nameof(this.Serializer)} or {nameof(this.SerializerOptions)}. Only one can be set.  ");
+                }
+
+                this.stjSerializerOptions = value;
+                this.serializerInternal = new CosmosSystemTextJsonSerializer(
+                    this.stjSerializerOptions);
+            }
+        }
+
+        /// <summary>
         /// Gets or sets the advanced replica selection flag. The advanced replica selection logic keeps track of the replica connection
         /// status, and based on status, it prioritizes the replicas which show healthy stable connections, so that the requests can be sent
         /// confidently to the particular replica. This helps the cosmos client to become more resilient and effective to any connectivity issues.
@@ -543,10 +582,10 @@ namespace Microsoft.Azure.Cosmos
             get => this.serializerOptions;
             set
             {
-                if (this.Serializer != null)
+                if (this.Serializer != null || this.UseSystemTextJsonSerializerWithOptions != null)
                 {
                     throw new ArgumentException(
-                        $"{nameof(this.SerializerOptions)} is not compatible with {nameof(this.Serializer)}. Only one can be set.  ");
+                        $"{nameof(this.SerializerOptions)} is not compatible with {nameof(this.Serializer)} or {nameof(this.UseSystemTextJsonSerializerWithOptions)}. Only one can be set.  ");
                 }
 
                 this.serializerOptions = value;
@@ -578,10 +617,10 @@ namespace Microsoft.Azure.Cosmos
             get => this.serializerInternal;
             set
             {
-                if (this.SerializerOptions != null)
+                if (this.SerializerOptions != null || this.UseSystemTextJsonSerializerWithOptions != null)
                 {
                     throw new ArgumentException(
-                        $"{nameof(this.Serializer)} is not compatible with {nameof(this.SerializerOptions)}. Only one can be set.  ");
+                        $"{nameof(this.Serializer)} is not compatible with {nameof(this.SerializerOptions)} or {nameof(this.UseSystemTextJsonSerializerWithOptions)}. Only one can be set.  ");
                 }
 
                 this.serializerInternal = value;
