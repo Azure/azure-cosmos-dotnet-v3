@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
     using Microsoft.Azure.Cosmos.FaultInjection.Tests.Utils;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
+    using Microsoft.VisualStudio.TestTools.UnitTesting.Logging;
     using Newtonsoft.Json.Linq;
 
     [TestClass]
@@ -1363,7 +1364,53 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 }
             }
         }
-           
+        
+        /// <summary>
+        /// Validates that if the service returns invalid responses (LSN -1) during quorum reads, the response is propagated upwards.
+        [TestMethod]
+        public async Task StrongInvalid429()
+        {
+            string tooManyRequestsRuleId = "tooManyRequestsRule-" + Guid.NewGuid().ToString();
+            FaultInjectionRule tooManyRequestsRule = new FaultInjectionRuleBuilder(
+                id: tooManyRequestsRuleId,
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithOperationType(FaultInjectionOperationType.ReadItem)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.TooManyRequests)
+                        .WithResponseHeaders(new Dictionary<string, string> { { WFConstants.BackendHeaders.LSN, "-1" }, { WFConstants.BackendHeaders.LocalLSN, "-1" } })
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(5))
+                .Build();
+
+            List<FaultInjectionRule> ruleList = new List<FaultInjectionRule> { tooManyRequestsRule };
+            FaultInjector faultInjector = new FaultInjector(ruleList);
+
+            tooManyRequestsRule.Disable();
+
+            using CosmosClient client = TestCommon.CreateCosmosClient(false, faultInjector, false);
+
+            DatabaseResponse database = await client.CreateDatabaseIfNotExistsAsync("testDb");
+
+            Container container = await database.Database.CreateContainerIfNotExistsAsync("test", "/pk");
+
+            JObject item = JObject.FromObject(new { id = Guid.NewGuid().ToString(), pk = Guid.NewGuid().ToString() });
+            await container.CreateItemAsync(item);
+
+            try
+            {
+                tooManyRequestsRule.Enable();
+
+                await container.ReadItemAsync<JObject>((string)item["id"], new Cosmos.PartitionKey((string)item["pk"]));
+                Assert.Fail("Should have failed");
+            }
+            catch (CosmosException ex)
+            {
+                Logger.LogMessage("{0}", ex.Diagnostics);
+                Assert.AreEqual(System.Net.HttpStatusCode.TooManyRequests, ex.StatusCode);
+            }
+        }
 
         private async Task<CosmosDiagnostics> PerformDocumentOperation(Container testContainer, OperationType operationType, JObject item)
         {
