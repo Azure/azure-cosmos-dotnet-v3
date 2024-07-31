@@ -338,9 +338,6 @@ namespace Microsoft.Azure.Documents
                 }
 
                 int responseCount = responseResult.Count(response => response.Target.IsValid);
-
-                // Not count the failures that were exceptionless errors happened with invalid LSN
-                responseCount = responseCount - responseResult.Count(response => entity.IsValidStatusCodeForExceptionlessRetry((int)response.Target.StatusCode, response.Target.SubStatusCode) && response.Target.LSN < 0);
                 
                 if (responseCount < readQuorum)
                 {
@@ -775,8 +772,7 @@ namespace Microsoft.Azure.Documents
             long minLsn = long.MaxValue;
             int replicaCountMaxLsn = 0;
 
-            // Use Valid responses (no exceptions) and exceptionsless failures with valid LSN
-            IEnumerable<ReferenceCountedDisposable<StoreResult>> validReadResponses = readResponses.Where(response => response.Target.IsValid && (!isExceptionlessFailure((int)response.Target.StatusCode, response.Target.SubStatusCode) || response.Target.LSN > 0));
+            IEnumerable<ReferenceCountedDisposable<StoreResult>> validReadResponses = readResponses.Where(response => response.Target.IsValid);
             int validResponsesCount = validReadResponses.Count();
 
             if (validResponsesCount == 0)
