@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.changeFeedProcessorOptions.Mode == ChangeFeedMode.AllVersionsAndDeletes)
             {
-                throw new InvalidOperationException($"Using the 'WithStartTime' option with ChangeFeedProcessor is not supported with {ChangeFeedMode.AllVersionsAndDeletes} mode.");
+                throw new InvalidOperationException($"Using the '{nameof(WithStartTime)}' option with ChangeFeedProcessor is not supported with {ChangeFeedMode.AllVersionsAndDeletes} mode.");
             }
 
             if (startTime == null)
