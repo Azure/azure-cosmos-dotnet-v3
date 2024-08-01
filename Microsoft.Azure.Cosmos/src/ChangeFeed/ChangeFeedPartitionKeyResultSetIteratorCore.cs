@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -58,15 +59,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 container: container,
                 mode: mode,
                 changeFeedStartFrom: startFrom,
-                options: requestOptions,
-                feedRangeEpk: lease?.FeedRange is FeedRangeEpk epk ? epk : default);
+                options: requestOptions);
         }
 
         private readonly CosmosClientContext clientContext;
 
         private readonly ChangeFeedRequestOptions changeFeedOptions;
         private readonly ChangeFeedMode mode;
-        private readonly FeedRangeEpk feedRangeEpk;
 
         private ChangeFeedStartFrom changeFeedStartFrom;
         private bool hasMoreResultsInternal;
@@ -75,15 +74,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             ContainerInternal container,
             ChangeFeedMode mode,
             ChangeFeedStartFrom changeFeedStartFrom,
-            ChangeFeedRequestOptions options,
-            FeedRangeEpk feedRangeEpk)
+            ChangeFeedRequestOptions options)
         {
             this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.mode = mode;
             this.changeFeedStartFrom = changeFeedStartFrom ?? throw new ArgumentNullException(nameof(changeFeedStartFrom));
             this.clientContext = this.container.ClientContext;
             this.changeFeedOptions = options;
-            this.feedRangeEpk = feedRangeEpk;
         }
 
         public override bool HasMoreResults => this.hasMoreResultsInternal;
@@ -142,9 +139,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             this.hasMoreResultsInternal = responseMessage.IsSuccessStatusCode;
             responseMessage.Headers.ContinuationToken = etag;
             this.changeFeedStartFrom = new ChangeFeedStartFromContinuationAndFeedRange(etag, (FeedRangeInternal)this.changeFeedStartFrom.FeedRange);
-
-            // Set the FeedRangeEpk response header.
-            responseMessage.Headers.FeedRangeEpk = this.feedRangeEpk;
 
             return responseMessage;
         }

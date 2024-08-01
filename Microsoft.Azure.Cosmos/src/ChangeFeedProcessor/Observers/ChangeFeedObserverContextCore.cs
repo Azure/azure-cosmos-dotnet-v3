@@ -37,13 +37,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public Headers Headers => this.responseMessage.Headers;
 
-#if PREVIEW
-        public
-#else
-        internal
-#endif 
-        FeedRange FeedRange => new FeedRangeEpk(this.Headers.FeedRangeEpk.Range);
-
         public async Task CheckpointAsync()
         {
             try
