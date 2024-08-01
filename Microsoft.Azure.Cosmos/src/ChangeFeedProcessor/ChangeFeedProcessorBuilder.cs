@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.changeFeedProcessorOptions.Mode == ChangeFeedMode.AllVersionsAndDeletes)
             {
-                throw new InvalidOperationException($"Using the 'WithStartFromBeginning' option with ChangeFeedProcessor is not supported with {ChangeFeedMode.AllVersionsAndDeletes} mode.");
+                throw new InvalidOperationException($"Using the '{nameof(WithStartFromBeginning)}' option with ChangeFeedProcessor is not supported with {ChangeFeedMode.AllVersionsAndDeletes} mode.");
             }
 
             this.changeFeedProcessorOptions.StartFromBeginning = true;
