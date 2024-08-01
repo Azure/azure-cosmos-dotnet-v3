@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
+namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
 {
     using System;
     using System.Collections.Generic;
@@ -10,26 +10,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
+    using Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
     [TestClass]
-    [TestCategory("ChangeFeedProcessor")]
-    public class GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests : BaseChangeFeedClientHelper
+    [TestCategory("ChangeFeedProcessor.AllVersionsAndDeletes")]
+    public class BuilderTests : BaseChangeFeedClientHelper
     {
         [TestInitialize]
         public async Task TestInitialize()
         {
-            await base.ChangeFeedTestInit();
+            await this.ChangeFeedTestInit();
         }
 
         [TestCleanup]
         public async Task Cleanup()
         {
-            await base.TestCleanup();
+            await this.TestCleanup();
         }
 
         [TestMethod]
@@ -47,14 +49,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
 
             ChangeFeedProcessor processor = monitoredContainer
-                .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: "processor", onChangesDelegate: (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItem<dynamic>> docs, CancellationToken token) =>
+                .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: "processor", onChangesDelegate: (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItem<ToDoActivity>> docs, CancellationToken token) =>
                 {
                     // NOTE(philipthomas-MSFT): Please allow these Logger.LogLine because TTL on items will purge at random times so I am using this to test when ran locally using emulator.
 
                     Logger.LogLine($"@ {DateTime.Now}, {nameof(stopwatch)} -> CFP AVAD took '{stopwatch.ElapsedMilliseconds}' to read document CRUD in feed.");
-                    Logger.LogLine($"@ {DateTime.Now}, {nameof(docs)} -> {JsonConvert.SerializeObject(docs)}");
 
-                    foreach (ChangeFeedItem<dynamic> change in docs)
+                    foreach (ChangeFeedItem<ToDoActivity> change in docs)
                     {
                         if (change.Metadata.OperationType == ChangeFeedOperationType.Create)
                         {
@@ -62,12 +63,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                             Assert.AreEqual(expected: "1", actual: change.Current.id.ToString());
                             Assert.AreEqual(expected: "1", actual: change.Current.pk.ToString());
                             Assert.AreEqual(expected: "Testing TTL on CFP.", actual: change.Current.description.ToString());
-                            Assert.AreEqual(expected: ttlInSeconds, actual: change.Current.ttl.ToObject<int>());
+                            Assert.AreEqual(expected: ttlInSeconds, actual: change.Current.ttl);
 
                             // metadata
-                            Assert.IsTrue(DateTime.TryParse(s: change.Metadata.ConflictResolutionTimestamp.ToString(), out _), message: "Invalid csrt must be a datetime value.");
+                            Assert.IsTrue(DateTime.TryParse(s: change.Metadata.Crts.ToString(), out _), message: "Invalid csrt must be a datetime value.");
                             Assert.IsTrue(change.Metadata.Lsn > 0, message: "Invalid lsn must be a long value.");
-                            Assert.IsFalse(change.Metadata.IsTimeToLiveExpired);
+                            Assert.IsFalse(change.Metadata.TimeToLiveExpired);
 
                             // previous
                             Assert.IsNull(change.Previous);
@@ -78,15 +79,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                             Assert.IsNull(change.Current.id);
 
                             // metadata
-                            Assert.IsTrue(DateTime.TryParse(s: change.Metadata.ConflictResolutionTimestamp.ToString(), out _), message: "Invalid csrt must be a datetime value.");
+                            Assert.IsTrue(DateTime.TryParse(s: change.Metadata.Crts.ToString(), out _), message: "Invalid csrt must be a datetime value.");
                             Assert.IsTrue(change.Metadata.Lsn > 0, message: "Invalid lsn must be a long value.");
-                            Assert.IsTrue(change.Metadata.IsTimeToLiveExpired);
+                            Assert.IsTrue(change.Metadata.TimeToLiveExpired);
 
                             // previous
                             Assert.AreEqual(expected: "1", actual: change.Previous.id.ToString());
                             Assert.AreEqual(expected: "1", actual: change.Previous.pk.ToString());
                             Assert.AreEqual(expected: "Testing TTL on CFP.", actual: change.Previous.description.ToString());
-                            Assert.AreEqual(expected: ttlInSeconds, actual: change.Previous.ttl.ToObject<int>());
+                            Assert.AreEqual(expected: ttlInSeconds, actual: change.Previous.ttl);
 
                             // stop after reading delete since it is the last document in feed.
                             stopwatch.Stop();
@@ -120,8 +121,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
             try
             {
-                await Task.Delay(GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests.ChangeFeedSetupTime);
-                await monitoredContainer.CreateItemAsync<dynamic>(new { id = "1", pk = "1", description = "Testing TTL on CFP.", ttl = ttlInSeconds }, partitionKey: new PartitionKey("1"));
+                await Task.Delay(ChangeFeedSetupTime);
+                await monitoredContainer.CreateItemAsync<ToDoActivity>(new ToDoActivity  { id = "1", pk = "1", description = "Testing TTL on CFP.", ttl = ttlInSeconds }, partitionKey: new PartitionKey("1"));
 
                 // NOTE(philipthomas-MSFT): Please allow these Logger.LogLine because TTL on items will purge at random times so I am using this to test when ran locally using emulator.
 
@@ -158,6 +159,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     string pk = default;
                     string description = default;
 
+                    Console.WriteLine(JsonConvert.SerializeObject(docs));
+
                     foreach (ChangeFeedItem<dynamic> change in docs)
                     {
                         if (change.Metadata.OperationType != ChangeFeedOperationType.Delete)
@@ -174,10 +177,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                         }
 
                         ChangeFeedOperationType operationType = change.Metadata.OperationType;
-                        long previousLsn = change.Metadata.PreviousLsn;
-                        DateTime m = change.Metadata.ConflictResolutionTimestamp;
+                        long previousLsn = change.Metadata.PreviousImageLSN;
+                        long m = change.Metadata.Crts;
                         long lsn = change.Metadata.Lsn;
-                        bool isTimeToLiveExpired = change.Metadata.IsTimeToLiveExpired;
+                        bool isTimeToLiveExpired = change.Metadata.TimeToLiveExpired;
                     }
 
                     Assert.IsNotNull(context.LeaseToken);
@@ -194,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     Assert.AreEqual(expected: "1", actual: createChange.Current.pk.ToString());
                     Assert.AreEqual(expected: "original test", actual: createChange.Current.description.ToString());
                     Assert.AreEqual(expected: createChange.Metadata.OperationType, actual: ChangeFeedOperationType.Create);
-                    Assert.AreEqual(expected: createChange.Metadata.PreviousLsn, actual: 0);
+                    Assert.AreEqual(expected: createChange.Metadata.PreviousImageLSN, actual: 0);
                     Assert.IsNull(createChange.Previous);
 
                     ChangeFeedItem<dynamic> replaceChange = docs.ElementAt(1);
@@ -203,20 +206,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     Assert.AreEqual(expected: "1", actual: replaceChange.Current.pk.ToString());
                     Assert.AreEqual(expected: "test after replace", actual: replaceChange.Current.description.ToString());
                     Assert.AreEqual(expected: replaceChange.Metadata.OperationType, actual: ChangeFeedOperationType.Replace);
-                    Assert.AreEqual(expected: createChange.Metadata.Lsn, actual: replaceChange.Metadata.PreviousLsn);
+                    Assert.AreEqual(expected: createChange.Metadata.Lsn, actual: replaceChange.Metadata.PreviousImageLSN);
                     Assert.IsNull(replaceChange.Previous);
 
                     ChangeFeedItem<dynamic> deleteChange = docs.ElementAt(2);
                     Assert.IsNull(deleteChange.Current.id);
                     Assert.AreEqual(expected: deleteChange.Metadata.OperationType, actual: ChangeFeedOperationType.Delete);
-                    Assert.AreEqual(expected: replaceChange.Metadata.Lsn, actual: deleteChange.Metadata.PreviousLsn);
+                    Assert.AreEqual(expected: replaceChange.Metadata.Lsn, actual: deleteChange.Metadata.PreviousImageLSN);
                     Assert.IsNotNull(deleteChange.Previous);
                     Assert.AreEqual(expected: "1", actual: deleteChange.Previous.id.ToString());
                     Assert.AreEqual(expected: "1", actual: deleteChange.Previous.pk.ToString());
                     Assert.AreEqual(expected: "test after replace", actual: deleteChange.Previous.description.ToString());
 
-                    Assert.IsTrue(condition: createChange.Metadata.ConflictResolutionTimestamp < replaceChange.Metadata.ConflictResolutionTimestamp, message: "The create operation must happen before the replace operation.");
-                    Assert.IsTrue(condition: replaceChange.Metadata.ConflictResolutionTimestamp < deleteChange.Metadata.ConflictResolutionTimestamp, message: "The replace operation must happen before the delete operation.");
+                    Assert.IsTrue(condition: createChange.Metadata.Crts < replaceChange.Metadata.Crts, message: "The create operation must happen before the replace operation.");
+                    Assert.IsTrue(condition: replaceChange.Metadata.Crts < deleteChange.Metadata.Crts, message: "The replace operation must happen before the delete operation.");
                     Assert.IsTrue(condition: createChange.Metadata.Lsn < replaceChange.Metadata.Lsn, message: "The create operation must happen before the replace operation.");
                     Assert.IsTrue(condition: createChange.Metadata.Lsn < replaceChange.Metadata.Lsn, message: "The replace operation must happen before the delete operation.");
 
@@ -236,7 +239,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             // 1 second delay between operations to get different timestamps.
 
             await processor.StartAsync();
-            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+            await Task.Delay(ChangeFeedSetupTime);
 
             await monitoredContainer.CreateItemAsync<dynamic>(new { id = "1", pk = "1", description = "original test" }, partitionKey: new PartitionKey("1"));
             await Task.Delay(1000);
@@ -246,7 +249,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
             await monitoredContainer.DeleteItemAsync<dynamic>(id: "1", partitionKey: new PartitionKey("1"));
 
-            bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+            bool isStartOk = allDocsProcessed.WaitOne(10 * ChangeFeedSetupTime);
 
             await processor.StopAsync();
 
@@ -270,16 +273,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.LatestVersion);
             ManualResetEvent allDocsProcessed = new(false);
 
-            await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
-                .BuildChangeFeedProcessorWithLatestVersionAsync(
+            await
+                BuildChangeFeedProcessorWithLatestVersionAsync(
                     monitoredContainer: monitoredContainer,
                     leaseContainer: this.LeaseContainer,
                     allDocsProcessed: allDocsProcessed,
                     withStartFromBeginning: withStartFromBeginning);
 
             ArgumentException exception = await Assert.ThrowsExceptionAsync<ArgumentException>(
-                () => GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
-                    .BuildChangeFeedProcessorWithAllVersionsAndDeletesAsync(
+                () =>
+                    BuildChangeFeedProcessorWithAllVersionsAndDeletesAsync(
                         monitoredContainer: monitoredContainer,
                         leaseContainer: this.LeaseContainer,
                         allDocsProcessed: allDocsProcessed));
@@ -302,8 +305,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.LatestVersion);
             ManualResetEvent allDocsProcessed = new(false);
 
-            await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
-                .BuildChangeFeedProcessorWithLatestVersionAsync(
+            await
+                BuildChangeFeedProcessorWithLatestVersionAsync(
                     monitoredContainer: monitoredContainer,
                     leaseContainer: this.LeaseContainer,
                     allDocsProcessed: allDocsProcessed,
@@ -311,14 +314,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
             // Read lease documents, remove the Mode, and update the lease documents, so that it mimics a legacy lease document.
 
-            await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
-                .RevertLeaseDocumentsToLegacyWithNoMode(
+            await
+                RevertLeaseDocumentsToLegacyWithNoMode(
                     leaseContainer: this.LeaseContainer,
                     leaseDocumentCount: 2);
 
             ArgumentException exception = await Assert.ThrowsExceptionAsync<ArgumentException>(
-                () => GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
-                    .BuildChangeFeedProcessorWithAllVersionsAndDeletesAsync(
+                () =>
+                    BuildChangeFeedProcessorWithAllVersionsAndDeletesAsync(
                         monitoredContainer: monitoredContainer,
                         leaseContainer: this.LeaseContainer,
                         allDocsProcessed: allDocsProcessed));
@@ -340,15 +343,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes);
             ManualResetEvent allDocsProcessed = new(false);
 
-            await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
-                .BuildChangeFeedProcessorWithAllVersionsAndDeletesAsync(
+            await
+                BuildChangeFeedProcessorWithAllVersionsAndDeletesAsync(
                     monitoredContainer: monitoredContainer,
                     leaseContainer: this.LeaseContainer,
                     allDocsProcessed: allDocsProcessed);
 
             ArgumentException exception = await Assert.ThrowsExceptionAsync<ArgumentException>(
-                () => GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
-                    .BuildChangeFeedProcessorWithLatestVersionAsync(
+                () =>
+                    BuildChangeFeedProcessorWithLatestVersionAsync(
                         monitoredContainer: monitoredContainer,
                         leaseContainer: this.LeaseContainer,
                         allDocsProcessed: allDocsProcessed,
@@ -371,14 +374,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
             try
             {
-                await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
-                    .BuildChangeFeedProcessorWithAllVersionsAndDeletesAsync(
+                await
+                    BuildChangeFeedProcessorWithAllVersionsAndDeletesAsync(
                         monitoredContainer: monitoredContainer,
                         leaseContainer: this.LeaseContainer,
                         allDocsProcessed: allDocsProcessed);
 
-                await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
-                    .BuildChangeFeedProcessorWithAllVersionsAndDeletesAsync(
+                await
+                    BuildChangeFeedProcessorWithAllVersionsAndDeletesAsync(
                         monitoredContainer: monitoredContainer,
                         leaseContainer: this.LeaseContainer,
                         allDocsProcessed: allDocsProcessed);
@@ -405,15 +408,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
             try
             {
-                await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
-                    .BuildChangeFeedProcessorWithLatestVersionAsync(
+                await
+                    BuildChangeFeedProcessorWithLatestVersionAsync(
                         monitoredContainer: monitoredContainer,
                         leaseContainer: this.LeaseContainer,
                         allDocsProcessed: allDocsProcessed,
                         withStartFromBeginning: withStartFromBeginning);
 
-                await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
-                    .BuildChangeFeedProcessorWithLatestVersionAsync(
+                await
+                    BuildChangeFeedProcessorWithLatestVersionAsync(
                         monitoredContainer: monitoredContainer,
                         leaseContainer: this.LeaseContainer,
                         allDocsProcessed: allDocsProcessed,
@@ -439,8 +442,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.LatestVersion);
             ManualResetEvent allDocsProcessed = new(false);
 
-            await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
-                .BuildChangeFeedProcessorWithLatestVersionAsync(
+            await
+                BuildChangeFeedProcessorWithLatestVersionAsync(
                     monitoredContainer: monitoredContainer,
                     leaseContainer: this.LeaseContainer,
                     allDocsProcessed: allDocsProcessed,
@@ -448,13 +451,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
             // Read lease documents, remove the Mode, and update the lease documents, so that it mimics a legacy lease document.
 
-            await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
-                .RevertLeaseDocumentsToLegacyWithNoMode(
+            await
+                RevertLeaseDocumentsToLegacyWithNoMode(
                     leaseContainer: this.LeaseContainer,
                     leaseDocumentCount: 2);
 
-            await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests
-                .BuildChangeFeedProcessorWithLatestVersionAsync(
+            await
+                BuildChangeFeedProcessorWithLatestVersionAsync(
                     monitoredContainer: monitoredContainer,
                     leaseContainer: this.LeaseContainer,
                     allDocsProcessed: allDocsProcessed,
@@ -495,7 +498,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
                 _ = await leaseContainer.UpsertItemAsync(item: lease);
             }
-                
+
             Assert.AreEqual(expected: leaseDocumentCount, actual: counter);
         }
 
@@ -528,8 +531,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             Interlocked.Exchange(ref latestVersionProcessorAtomic, processor);
 
             await processor.StartAsync();
-            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
-            bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+            await Task.Delay(ChangeFeedSetupTime);
+            bool isStartOk = allDocsProcessed.WaitOne(10 * ChangeFeedSetupTime);
 
             if (exception != default)
             {
@@ -561,8 +564,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             Interlocked.Exchange(ref allVersionsAndDeletesProcessorAtomic, processor);
 
             await processor.StartAsync();
-            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
-            bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+            await Task.Delay(ChangeFeedSetupTime);
+            bool isStartOk = allDocsProcessed.WaitOne(10 * ChangeFeedSetupTime);
 
             if (exception != default)
             {
