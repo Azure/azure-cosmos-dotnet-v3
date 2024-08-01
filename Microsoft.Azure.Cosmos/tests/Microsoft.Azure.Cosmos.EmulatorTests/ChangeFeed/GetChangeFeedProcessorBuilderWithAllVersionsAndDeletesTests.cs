@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -20,6 +21,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
     [TestCategory("ChangeFeedProcessor")]
     public class GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests : BaseChangeFeedClientHelper
     {
+        private ContainerResponse containerResponse;
+
         [TestInitialize]
         public async Task TestInitialize()
         {
@@ -573,20 +576,86 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         private async Task<ContainerInternal> CreateMonitoredContainer(ChangeFeedMode changeFeedMode)
         {
             string PartitionKey = "/pk";
-            ContainerProperties properties = new ContainerProperties(id: Guid.NewGuid().ToString(),
+            ContainerProperties containerProperties = new ContainerProperties(id: Guid.NewGuid().ToString(),
                 partitionKeyPath: PartitionKey);
 
             if (changeFeedMode == ChangeFeedMode.AllVersionsAndDeletes)
             {
-                properties.ChangeFeedPolicy.FullFidelityRetention = TimeSpan.FromMinutes(5);
-                properties.DefaultTimeToLive = -1;
+                containerProperties.ChangeFeedPolicy.FullFidelityRetention = TimeSpan.FromMinutes(5);
+                containerProperties.DefaultTimeToLive = -1;
             }
 
-            ContainerResponse response = await this.database.CreateContainerAsync(properties,
+            this.containerResponse = await this.database.CreateContainerAsync(containerProperties,
                 throughput: 10000,
                 cancellationToken: this.cancellationToken);
 
-            return (ContainerInternal)response;
+            return (ContainerInternal)this.containerResponse;
+        }
+
+        [TestMethod]
+        [Owner("philipthomas-MSFT")]
+        [Description("Scenario: Test to confirm that FeedRange is coming back in the context.")]
+        public async Task WhenADocumentHasChangedThenFeedRangeInContextTestsAsync()
+        {
+            ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes);
+            ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
+            Exception exception = default;
+
+            ChangeFeedProcessor processor = monitoredContainer
+                .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: "processor", onChangesDelegate: async (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItem<dynamic>> docs, CancellationToken token) =>
+                {
+                await GetChangeFeedProcessorBuilderWithAllVersionsAndDeletesTests.ValidateFeedRangeAsync(
+                    this.GetClient(),
+                    context.FeedRange,
+                    containerRid: this.containerResponse.Resource.ResourceId);
+
+                    allDocsProcessed.Set();
+
+                    return;
+                })
+                .WithInstanceName(Guid.NewGuid().ToString())
+                .WithLeaseContainer(this.LeaseContainer)
+                .WithErrorNotification((leaseToken, error) =>
+                {
+                    exception = error.InnerException;
+
+                    return Task.CompletedTask;
+                })
+                .Build();
+
+            // Start the processor, insert 1 document to generate a checkpoint, modify it, and then delete it.
+            // 1 second delay between operations to get different timestamps.
+
+            await processor.StartAsync();
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+
+            await monitoredContainer.CreateItemAsync<dynamic>(new { id = "1", pk = "1", description = "original test" }, partitionKey: new PartitionKey("1"));
+            await Task.Delay(1000);
+
+            bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+
+            await processor.StopAsync();
+
+            if (exception != default)
+            {
+                Assert.Fail(exception.ToString());
+            }
+        }
+
+        private static async Task ValidateFeedRangeAsync(CosmosClient cosmosClient, FeedRange feedRange, string containerRid)
+        {
+            Assert.IsNotNull(feedRange);
+
+            Routing.PartitionKeyRangeCache partitionKeyRangeCache = await cosmosClient.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
+            IReadOnlyList<Documents.PartitionKeyRange> parttionKeyRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
+                collectionRid: containerRid,
+                range: ((FeedRangeEpk)feedRange).Range,
+                trace: NoOpTrace.Singleton,
+                forceRefresh: true);
+
+            Assert.IsNotNull(parttionKeyRanges);
+            Logger.LogLine($"{nameof(parttionKeyRanges)} -> {JsonConvert.SerializeObject(parttionKeyRanges)}");
+            Assert.AreEqual(1, parttionKeyRanges.Count);
         }
     }
 }

@@ -23,5 +23,10 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the headers related to the service response that provided the changes.
         /// </summary>
         public abstract Headers Headers { get; }
+
+        /// <summary>
+        /// Gets the feed range.
+        /// </summary>
+        public abstract FeedRange FeedRange { get; }
     }
 }
