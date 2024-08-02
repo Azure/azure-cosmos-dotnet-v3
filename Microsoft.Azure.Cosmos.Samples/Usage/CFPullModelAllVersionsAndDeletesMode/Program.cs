@@ -60,12 +60,12 @@ namespace CFPullModelAllVersionsAndDeletesMode
             Console.WriteLine("Creating ChangeFeedIterator to read the change feed in All Versions and Deletes mode.");
 
             // <InitializeFeedIterator>
-            using (FeedIterator<AllVersionsAndDeletesCFResponse> allVersionsIterator = container
-                .GetChangeFeedIterator<AllVersionsAndDeletesCFResponse>(ChangeFeedStartFrom.Now(), ChangeFeedMode.AllVersionsAndDeletes))
+            using (FeedIterator<ChangeFeedItem<Item>> allVersionsIterator = container
+                .GetChangeFeedIterator<ChangeFeedItem<Item>>(ChangeFeedStartFrom.Now(), ChangeFeedMode.AllVersionsAndDeletes))
             {
                 while (allVersionsIterator.HasMoreResults)
                 {
-                    FeedResponse<AllVersionsAndDeletesCFResponse> response = await allVersionsIterator.ReadNextAsync();
+                    FeedResponse<ChangeFeedItem<Item>> response = await allVersionsIterator.ReadNextAsync();
 
                     if (response.StatusCode == HttpStatusCode.NotModified)
                     {
@@ -134,11 +134,11 @@ namespace CFPullModelAllVersionsAndDeletesMode
             Console.WriteLine("Press any key to stop.");
 
             // <ReadAllVersionsAndDeletesChanges>
-            using (FeedIterator<AllVersionsAndDeletesCFResponse> allVersionsIterator = container.GetChangeFeedIterator<AllVersionsAndDeletesCFResponse>(ChangeFeedStartFrom.ContinuationToken(allVersionsContinuationToken), ChangeFeedMode.AllVersionsAndDeletes, new ChangeFeedRequestOptions { PageSizeHint = 10 }))
+            using (FeedIterator<ChangeFeedItem<Item>> allVersionsIterator = container.GetChangeFeedIterator<ChangeFeedItem<Item>>(ChangeFeedStartFrom.ContinuationToken(allVersionsContinuationToken), ChangeFeedMode.AllVersionsAndDeletes, new ChangeFeedRequestOptions { PageSizeHint = 10 }))
             {
                 while (allVersionsIterator.HasMoreResults)
                 {
-                    FeedResponse<AllVersionsAndDeletesCFResponse> response = await allVersionsIterator.ReadNextAsync();
+                    FeedResponse<ChangeFeedItem<Item>> response = await allVersionsIterator.ReadNextAsync();
 
                     if (response.StatusCode == HttpStatusCode.NotModified)
                     {
@@ -147,28 +147,24 @@ namespace CFPullModelAllVersionsAndDeletesMode
                     }
                     else
                     {
-                        foreach (AllVersionsAndDeletesCFResponse r in response)
+                        foreach (ChangeFeedItem<Item> item in response)
                         {
                             // if operaiton is delete
-                            if (r.Metadata.OperationType == "delete")
+                            if (item.Metadata.OperationType == ChangeFeedOperationType.Delete)
                             {
-                                Item item = r.Previous;
-
-                                if (r.Metadata.TimeToLiveExpired == true)
+                                if (item.Metadata.IsTimeToLiveExpired == true)
                                 {
-                                    Console.WriteLine($"Operation: {r.Metadata.OperationType} (due to TTL). Item id: {item.Id}. Previous value: {item.Value}");
+                                    Console.WriteLine($"Operation: {item.Metadata.OperationType} (due to TTL). Item id: {item.Previous.Id}. Previous value: {item.Previous.Value}");
                                 }
                                 else
                                 {
-                                    Console.WriteLine($"Operation: {r.Metadata.OperationType} (not due to TTL). Item id: {item.Id}. Previous value: {item.Value}");
+                                    Console.WriteLine($"Operation: {item.Metadata.OperationType} (not due to TTL). Item id: {item.Previous.Id}. Previous value: {item.Previous.Value}");
                                 }
                             }
                             // if operation is create or replace
                             else
                             {
-                                Item item = r.Current;
-
-                                Console.WriteLine($"Operation: {r.Metadata.OperationType}. Item id: {item.Id}. Current value: {item.Value}");
+                                Console.WriteLine($"Operation: {item.Metadata.OperationType}. Item id: {item.Current.Id}. Current value: {item.Current.Value}");
                             }
                         }
                     }
@@ -194,32 +190,11 @@ namespace CFPullModelAllVersionsAndDeletesMode
         }
     }
 
-    internal class AllVersionsAndDeletesCFResponse
-    {
-        [JsonProperty("current")]
-        public Item Current { get; set; }
-
-        [JsonProperty("previous")]
-        public Item Previous { get; set; }
-
-        [JsonProperty("metadata")]
-        public Metadata Metadata { get; set; }
-    }
-
     internal class Item
     {
         [JsonProperty("id")]
         public string Id { get; set; }
 
         public double Value { get; set; }
-    }
-
-    internal class Metadata
-    {
-        [JsonProperty("operationType")]
-        public string OperationType { get; set; }
-
-        [JsonProperty("timeToLiveExpired")]
-        public Boolean TimeToLiveExpired { get; set; }
     }
 }
