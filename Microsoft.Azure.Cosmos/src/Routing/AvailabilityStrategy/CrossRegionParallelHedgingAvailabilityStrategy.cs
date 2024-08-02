@@ -243,7 +243,9 @@ namespace Microsoft.Azure.Cosmos
             CancellationTokenSource cancellationTokenSource)
         {
             RequestMessage clonedRequest;
-            using (clonedRequest = request.Clone(request.Trace.Parent, clonedBody))
+            using (clonedRequest = request.Clone(
+                request.Trace.Parent.Parent.Parent.Parent.Parent.Parent,
+                clonedBody))
             {
                 clonedRequest.RequestOptions ??= new RequestOptions();
 
