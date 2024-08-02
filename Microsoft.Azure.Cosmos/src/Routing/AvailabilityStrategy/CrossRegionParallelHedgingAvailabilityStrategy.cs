@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos
             using (CancellationTokenSource cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
             {
                 using (CloneableStream clonedBody = (CloneableStream)(request.Content == null
-                    ? null
+                    ? null//new CloneableStream(new MemoryStream())
                     : await StreamExtension.AsClonableStreamAsync(request.Content)))
                 {
                     IReadOnlyCollection<string> hedgeRegions = client.DocumentClient.GlobalEndpointManager
