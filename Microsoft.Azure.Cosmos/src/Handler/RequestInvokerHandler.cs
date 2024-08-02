@@ -90,6 +90,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     cancellationToken);
             }
 
+            if (request.RequestOptions?.ExcludeRegions != null)
+            {
+                ResponseMessage response = await this.BaseSendAsync(request, cancellationToken);
+                ((CosmosTraceDiagnostics)response.Diagnostics).Value.AddOrUpdateDatum("ExcludedRegions", request.RequestOptions.ExcludeRegions);
+                return response;
+            }
+
             return await this.BaseSendAsync(request, cancellationToken);
         }
 
@@ -109,13 +116,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             RequestMessage request,
             CancellationToken cancellationToken)
         {
-            ResponseMessage response = await base.SendAsync(request, cancellationToken);
-            if (request.RequestOptions?.ExcludeRegions != null)
-            {
-                ((CosmosTraceDiagnostics)response.Diagnostics).Value.AddOrUpdateDatum("ExcludedRegions", request.RequestOptions.ExcludeRegions);
-            }
-
-            return response;
+            return await base.SendAsync(request, cancellationToken);
         }
 
         public virtual async Task<T> SendAsync<T>(
