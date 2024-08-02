@@ -222,10 +222,22 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 OperationType operationType
                     = (this.response == null || this.response?.OperationType == OperationType.Invalid) ? this.operationType : this.response.OperationType;
 
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.OperationType, Enum.GetName(typeof(OperationType), operationType));
+                string operationName = Enum.GetName(typeof(OperationType), operationType);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.OperationType, operationName);
 
                 if (this.response != null)
                 {
+                    if (this.response.BatchOperationName != null)
+                    {
+                        string batchOpsName = Enum.GetName(typeof(OperationType), this.response.BatchOperationName);
+                        operationName = $"{operationName}.{batchOpsName}";
+                    }
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.OperationType, operationName);
+
+                    if (this.response.BatchSize is not null)
+                    {
+                        this.scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.BatchSize, (int)this.response.BatchSize);
+                    }
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestContentLength, this.response.RequestContentLength);
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.ResponseContentLength, this.response.ResponseContentLength);
                     this.scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.StatusCode, (int)this.response.StatusCode);

@@ -54,6 +54,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                      "db.cosmosdb.request_charge",
                      "db.cosmosdb.regions_contacted",
                      "db.cosmosdb.item_count",
+                     "db.cosmosdb.batch_size",
                      "exception.type",
                      "exception.message",
                      "exception.stacktrace",

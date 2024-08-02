@@ -69,5 +69,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// OperationType
         /// </summary>
         internal Documents.OperationType OperationType { get; set; }
+
+        /// <summary>
+        /// Batch Size
+        /// </summary>
+        internal int? BatchSize { get; set; }
+
+        /// <summary>
+        /// Will have value for homogeneous batch operation and will be null for heterogeneous batch operation
+        /// </summary>
+        internal Documents.OperationType? BatchOperationName { get; set; }
     }
 }
