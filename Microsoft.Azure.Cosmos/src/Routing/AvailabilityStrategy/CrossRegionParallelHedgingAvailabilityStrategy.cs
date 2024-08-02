@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CrossRegionParallelHedgingAvailabilityStrategy : AvailabilityStrategy
     {
-        private const string HedgeRegions = "Hedge Regions";
+        private const string HedgedRegion = "Hedged Region";
         private const string HedgeContext = "Hedge Context";
         private const string HedgeContextOriginalRequest = "Original Request";
         private const string HedgeContextHedgedRequest = "Hedged Request";
@@ -181,8 +181,8 @@ namespace Microsoft.Azure.Cosmos
                                 {
                                     cancellationTokenSource.Cancel();
                                     ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value.AddOrUpdateDatum(
-                                        HedgeRegions,
-                                        HedgeRegionsToString(responseMessage.Diagnostics.GetContactedRegions()));
+                                        HedgedRegion,
+                                        HedgedRegionToString(responseMessage.Diagnostics.GetContactedRegions().First()));
                                     ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value.AddOrUpdateDatum(
                                         HedgeContext,
                                         object.ReferenceEquals(primaryRequest, completedTask)
@@ -211,8 +211,8 @@ namespace Microsoft.Azure.Cosmos
                         {
                             cancellationTokenSource.Cancel();
                             ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value.AddOrUpdateDatum(
-                                HedgeRegions,
-                                HedgeRegionsToString(responseMessage.Diagnostics.GetContactedRegions()));
+                                HedgedRegion,
+                                HedgedRegionToString(responseMessage.Diagnostics.GetContactedRegions().First()));
                             ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value.AddOrUpdateDatum(
                                 HedgeContext,
                                 object.ReferenceEquals(primaryRequest, completedTask)
@@ -315,9 +315,9 @@ namespace Microsoft.Azure.Cosmos
             return statusCode == (int)HttpStatusCode.NotFound && subStatusCode == (int)SubStatusCodes.Unknown;
         }
 
-        private static string HedgeRegionsToString(IReadOnlyList<(string, Uri)> hedgeRegions)
+        private static string HedgedRegionToString((string, Uri) a)
         {
-            return string.Join(",", hedgeRegions);
+            return $"{a.Item1}: {a.Item2}";
         }
     }
 }
