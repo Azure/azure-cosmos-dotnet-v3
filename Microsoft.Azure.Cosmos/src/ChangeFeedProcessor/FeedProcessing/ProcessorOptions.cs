@@ -22,6 +22,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 
         public TimeSpan RequestTimeout { get; set; } = CosmosHttpClient.GatewayRequestTimeout;
 
-        public FeedRangeInternal FeedRange { get; set; }
+        public FeedRange FeedRange { get; set; }
     }
 }
