@@ -83,11 +83,17 @@ namespace Microsoft.Azure.Cosmos.Handlers
             
             if (strategy != null && strategy.Enabled())
             {
-                return await strategy.ExecuteAvailabilityStrategyAsync(
+                ResponseMessage response = await strategy.ExecuteAvailabilityStrategyAsync(
                     this.BaseSendAsync,
                     this.client,
                     request,
                     cancellationToken);
+
+                if (request.RequestOptions?.ExcludeRegions != null)
+                {
+                    ((CosmosTraceDiagnostics)response.Diagnostics).Value.AddOrUpdateDatum("ExcludedRegions", request.RequestOptions.ExcludeRegions);
+                }
+                return response;
             }
 
             if (request.RequestOptions?.ExcludeRegions != null)
