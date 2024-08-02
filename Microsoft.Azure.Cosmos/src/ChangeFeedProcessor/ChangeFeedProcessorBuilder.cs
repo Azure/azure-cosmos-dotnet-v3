@@ -132,6 +132,11 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
         internal virtual ChangeFeedProcessorBuilder WithStartFromBeginning()
         {
+            if (this.changeFeedProcessorOptions.Mode == ChangeFeedMode.AllVersionsAndDeletes)
+            {
+                throw new InvalidOperationException($"Using the '{nameof(WithStartFromBeginning)}' option with ChangeFeedProcessor is not supported with {ChangeFeedMode.AllVersionsAndDeletes} mode.");
+            }
+
             this.changeFeedProcessorOptions.StartFromBeginning = true;
             return this;
         }
@@ -149,6 +154,11 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
         public ChangeFeedProcessorBuilder WithStartTime(DateTime startTime)
         {
+            if (this.changeFeedProcessorOptions.Mode == ChangeFeedMode.AllVersionsAndDeletes)
+            {
+                throw new InvalidOperationException($"Using the '{nameof(WithStartTime)}' option with ChangeFeedProcessor is not supported with {ChangeFeedMode.AllVersionsAndDeletes} mode.");
+            }
+
             if (startTime == null)
             {
                 throw new ArgumentNullException(nameof(startTime));
