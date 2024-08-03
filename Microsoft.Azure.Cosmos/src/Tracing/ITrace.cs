@@ -115,5 +115,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// <param name="trace">Existing trace.</param>
         void AddChild(ITrace trace);
 
+        /// <summary>
+        /// Removes client config from the trace. Used for multitrace instances
+        /// </summary>
+        /// <returns>a bool representing if remove was sucessfull</returns>
+        bool TryRemoveClientConfig();
+
     }
 }
