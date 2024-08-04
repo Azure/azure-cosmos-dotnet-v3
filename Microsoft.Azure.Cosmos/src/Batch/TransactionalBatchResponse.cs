@@ -394,12 +394,22 @@ namespace Microsoft.Azure.Cosmos
 
         internal int GetBatchSize()
         {
+            if (this.Operations == null)
+            {
+               return 0;
+            }
             return this.Operations.Count;
         }
 
         internal OperationType? GetBatchOperationName()
         {
             HashSet<OperationType> operationNames = new ();
+
+            if (this.Operations == null)
+            {
+                return null;
+            }
+
             foreach (ItemBatchOperation operation in this.Operations)
             {
                 operationNames.Add(operation.OperationType);
