@@ -353,7 +353,6 @@
   <EVENT name="ThresholdViolation" />
   <EVENT name="ThresholdViolation" />
   <EVENT name="ThresholdViolation" />
-  <EVENT name="FailedRequest" />
 </OTelActivities></Output>
   </Result>
   <Result>
@@ -691,7 +690,6 @@
   <EVENT name="ThresholdViolation" />
   <EVENT name="ThresholdViolation" />
   <EVENT name="ThresholdViolation" />
-  <EVENT name="FailedRequest" />
 </OTelActivities></Output>
   </Result>
   <Result>
@@ -1029,7 +1027,6 @@
   <EVENT name="ThresholdViolation" />
   <EVENT name="ThresholdViolation" />
   <EVENT name="ThresholdViolation" />
-  <EVENT name="FailedRequest" />
 </OTelActivities></Output>
   </Result>
   <Result>
@@ -1367,7 +1364,6 @@
   <EVENT name="ThresholdViolation" />
   <EVENT name="ThresholdViolation" />
   <EVENT name="ThresholdViolation" />
-  <EVENT name="FailedRequest" />
 </OTelActivities></Output>
   </Result>
   <Result>
@@ -1705,7 +1701,6 @@
   <EVENT name="ThresholdViolation" />
   <EVENT name="ThresholdViolation" />
   <EVENT name="ThresholdViolation" />
-  <EVENT name="FailedRequest" />
 </OTelActivities></Output>
   </Result>
   <Result>
@@ -2043,7 +2038,6 @@
   <EVENT name="ThresholdViolation" />
   <EVENT name="ThresholdViolation" />
   <EVENT name="ThresholdViolation" />
-  <EVENT name="FailedRequest" />
 </OTelActivities></Output>
   </Result>
   <Result>
@@ -2381,7 +2375,6 @@
   <EVENT name="ThresholdViolation" />
   <EVENT name="ThresholdViolation" />
   <EVENT name="ThresholdViolation" />
-  <EVENT name="FailedRequest" />
 </OTelActivities></Output>
   </Result>
   <Result>
@@ -2719,7 +2712,6 @@
   <EVENT name="ThresholdViolation" />
   <EVENT name="ThresholdViolation" />
   <EVENT name="ThresholdViolation" />
-  <EVENT name="FailedRequest" />
 </OTelActivities></Output>
   </Result>
   <Result>
@@ -3057,7 +3049,6 @@
   <EVENT name="ThresholdViolation" />
   <EVENT name="ThresholdViolation" />
   <EVENT name="ThresholdViolation" />
-  <EVENT name="FailedRequest" />
 </OTelActivities></Output>
   </Result>
   <Result>
@@ -3395,7 +3386,6 @@
   <EVENT name="ThresholdViolation" />
   <EVENT name="ThresholdViolation" />
   <EVENT name="ThresholdViolation" />
-  <EVENT name="FailedRequest" />
 </OTelActivities></Output>
   </Result>
   <Result>
