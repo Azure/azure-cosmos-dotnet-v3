@@ -292,6 +292,9 @@ namespace Microsoft.Azure.Documents
             public const string EnableUserDefinedType = "enableUserDefinedType";
             public const string ExcludeOwnerIdFromDocumentTable = "excludeOwnerIdFromDocumentTable";
             public const string EnableQuerySupportForHybridRow = "enableQuerySupportForHybridRow";
+
+            public const string EnableNRegionSynchronousCommit = "enableNRegionSynchronousCommit";
+
             public const string FederationProxyFqdn = "federationProxyFqdn";
             public const string IsFailedOver = "isFailedOver";
             public const string FederationProxyReservedCname = "federationProxyReservedCname";

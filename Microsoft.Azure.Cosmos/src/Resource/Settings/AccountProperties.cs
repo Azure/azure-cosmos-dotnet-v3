@@ -99,6 +99,9 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Constants.Properties.RId, NullValueHandling = NullValueHandling.Ignore)]
         internal string ResourceId { get; set; }
 
+        [JsonProperty(PropertyName = Constants.Properties.EnableNRegionSynchronousCommit, NullValueHandling = NullValueHandling.Ignore)]
+        public bool EnableNReginSynchronousCommit { get; set; }
+
         [JsonProperty(PropertyName = Constants.Properties.WritableLocations)]
         internal Collection<AccountRegion> WriteLocationsInternal
         {
