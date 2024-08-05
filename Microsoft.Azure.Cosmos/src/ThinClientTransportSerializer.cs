@@ -174,7 +174,10 @@ namespace Microsoft.Azure.Cosmos
                 HttpConstants.Versions.CurrentVersion,
                 ref bytesDeserializer);
 
-            HttpResponseMessage response = new HttpResponseMessage((HttpStatusCode)storeResponse.StatusCode);
+            HttpResponseMessage response = new HttpResponseMessage((HttpStatusCode)storeResponse.StatusCode)
+            {
+                RequestMessage = responseMessage.RequestMessage
+            };
 
             if (bodyStream != null)
             {
