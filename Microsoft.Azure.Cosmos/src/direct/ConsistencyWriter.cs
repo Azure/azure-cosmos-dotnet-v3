@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Documents
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
 
     /*
@@ -260,7 +261,9 @@ For globally strong write:
                     throw new InternalServerErrorException();
                 }
 
-                if (ReplicatedResourceClient.IsGlobalStrongEnabled() && this.ShouldPerformWriteBarrierForGlobalStrong(storeResult.Target))
+                CosmosAccountServiceConfiguration cosmosServiceConfiguration = serviceConfigReader as CosmosAccountServiceConfiguration;
+                if ((ReplicatedResourceClient.IsGlobalStrongEnabled() && this.ShouldPerformWriteBarrierForGlobalStrong(storeResult.Target))
+                    || (cosmosServiceConfiguration.AccountProperties.EnableNReginSynchronousCommit && storeResult.Target.NumberOfReadRegions > 0))
                 {
                     long lsn = storeResult.Target.LSN;
                     long globalCommittedLsn = storeResult.Target.GlobalCommittedLSN;
