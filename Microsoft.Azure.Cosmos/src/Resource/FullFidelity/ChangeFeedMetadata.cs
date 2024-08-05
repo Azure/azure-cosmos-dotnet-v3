@@ -26,19 +26,19 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="conflictResolutionTimestamp"></param>
         /// <param name="lsn"></param>
         /// <param name="operationType"></param>
-        /// <param name="previousLSN"></param>
+        /// <param name="previousLsn"></param>
         /// <param name="isTimeToLiveExpired"></param>
         public ChangeFeedMetadata(
             DateTime conflictResolutionTimestamp,
             long lsn,
             ChangeFeedOperationType operationType,
-            long previousLSN,
+            long previousLsn,
             bool isTimeToLiveExpired)
         {
             this.ConflictResolutionTimestamp = conflictResolutionTimestamp;
             this.Lsn = lsn;
             this.OperationType = operationType;
-            this.PreviousLSN = previousLSN;
+            this.PreviousLsn = previousLsn;
             this.IsTimeToLiveExpired = isTimeToLiveExpired;
         }
 
@@ -68,9 +68,9 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The previous logical sequence number.
         /// </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "previousImageLSN", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName = "previousImageLSN", NullValueHandling = NullValueHandling.Ignore)]
         [JsonPropertyName("previousImageLSN")]
-        public long PreviousLSN { get; }
+        public long PreviousLsn { get; }
 
         /// <summary>
         /// Used to distinquish explicit deletes (e.g. via DeleteItem) from deletes caused by TTL expiration (a collection may define time-to-live policy for documents).

@@ -177,7 +177,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                         }
 
                         ChangeFeedOperationType operationType = change.Metadata.OperationType;
-                        long previousLsn = change.Metadata.PreviousLSN;
+                        long previousLsn = change.Metadata.PreviousLsn;
                         DateTime m = change.Metadata.ConflictResolutionTimestamp;
                         long lsn = change.Metadata.Lsn;
                         bool isTimeToLiveExpired = change.Metadata.IsTimeToLiveExpired;
@@ -197,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                     Assert.AreEqual(expected: "1", actual: createChange.Current.pk.ToString());
                     Assert.AreEqual(expected: "original test", actual: createChange.Current.description.ToString());
                     Assert.AreEqual(expected: createChange.Metadata.OperationType, actual: ChangeFeedOperationType.Create);
-                    Assert.AreEqual(expected: createChange.Metadata.PreviousLSN, actual: 0);
+                    Assert.AreEqual(expected: createChange.Metadata.PreviousLsn, actual: 0);
                     Assert.IsNull(createChange.Previous);
 
                     ChangeFeedItem<dynamic> replaceChange = docs.ElementAt(1);
@@ -206,13 +206,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                     Assert.AreEqual(expected: "1", actual: replaceChange.Current.pk.ToString());
                     Assert.AreEqual(expected: "test after replace", actual: replaceChange.Current.description.ToString());
                     Assert.AreEqual(expected: replaceChange.Metadata.OperationType, actual: ChangeFeedOperationType.Replace);
-                    Assert.AreEqual(expected: createChange.Metadata.Lsn, actual: replaceChange.Metadata.PreviousLSN);
+                    Assert.AreEqual(expected: createChange.Metadata.Lsn, actual: replaceChange.Metadata.PreviousLsn);
                     Assert.IsNull(replaceChange.Previous);
 
                     ChangeFeedItem<dynamic> deleteChange = docs.ElementAt(2);
                     Assert.IsNull(deleteChange.Current.id);
                     Assert.AreEqual(expected: deleteChange.Metadata.OperationType, actual: ChangeFeedOperationType.Delete);
-                    Assert.AreEqual(expected: replaceChange.Metadata.Lsn, actual: deleteChange.Metadata.PreviousLSN);
+                    Assert.AreEqual(expected: replaceChange.Metadata.Lsn, actual: deleteChange.Metadata.PreviousLsn);
                     Assert.IsNotNull(deleteChange.Previous);
                     Assert.AreEqual(expected: "1", actual: deleteChange.Previous.id.ToString());
                     Assert.AreEqual(expected: "1", actual: deleteChange.Previous.pk.ToString());
