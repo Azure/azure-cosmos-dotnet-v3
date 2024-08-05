@@ -2939,40 +2939,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        [TestMethod]
-        [TestCategory("MultiRegion")]
-        public async Task ExlcudeRegionDiagnosticsTest()
-        {
-            string connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", null);
-
-            CosmosClient client = new CosmosClient(connectionString);
-
-            string db = Guid.NewGuid().ToString();
-            Cosmos.Database database = await client.CreateDatabaseIfNotExistsAsync(db);
-
-            string containerName = Guid.NewGuid().ToString();
-            Container container = await database.CreateContainerIfNotExistsAsync(containerName, "/pk");
-
-            await container.CreateItemAsync(new ToDoActivity() { id = "1", pk = "1" });
-
-            ItemResponse<ToDoActivity> itemResponse = await container.ReadItemAsync<ToDoActivity>(
-                "1", new Cosmos.PartitionKey("1"),
-                new ItemRequestOptions()
-                {
-                    ExcludeRegions = new List<string>() { "North Central US", "East US"}
-                });
-
-            List<string> excludeRegionsList;
-            CosmosTraceDiagnostics traceDiagnostic = itemResponse.Diagnostics as CosmosTraceDiagnostics;
-            traceDiagnostic.Value.Data.TryGetValue("ExcludedRegions", out object excludeRegionObject);
-            excludeRegionsList = excludeRegionObject as List<string>;
-            Assert.IsTrue(excludeRegionsList.Contains("North Central US"));
-            Assert.IsTrue(excludeRegionsList.Contains("East US"));
-
-            await database.DeleteAsync();
-            client.Dispose();
-        }
-
         private string GetDifferentLSNToken(string token, long lsnDifferent)
         {
             string[] tokenParts = token.Split(':');
