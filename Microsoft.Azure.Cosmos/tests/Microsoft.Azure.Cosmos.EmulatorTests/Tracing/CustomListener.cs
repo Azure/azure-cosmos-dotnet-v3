@@ -40,6 +40,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             "db.cosmosdb.connection_mode",
             "db.cosmosdb.operation_type",
             "db.cosmosdb.regions_contacted",
+            "db.cosmosdb.batch_size",
             "rntbd.sub_status_code",
             "rntbd.status_code",
             "error.type"

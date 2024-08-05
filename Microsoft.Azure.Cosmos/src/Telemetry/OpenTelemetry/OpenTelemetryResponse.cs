@@ -8,11 +8,12 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Net;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Documents;
     using Telemetry;
 
     internal sealed class OpenTelemetryResponse : OpenTelemetryAttributes
     {
-        internal OpenTelemetryResponse(TransactionalBatchResponse responseMessage)
+        internal OpenTelemetryResponse(TransactionalBatchResponse responseMessage, bool operationFlag, OperationType? operationName)
            : this(
                   statusCode: responseMessage.StatusCode,
                   requestCharge: OpenTelemetryResponse.GetHeader(responseMessage)?.RequestCharge,
@@ -24,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
                   activityId: OpenTelemetryResponse.GetHeader(responseMessage)?.ActivityId,
                   correlationId: OpenTelemetryResponse.GetHeader(responseMessage)?.CorrelatedActivityId,
                   batchSize: responseMessage.GetBatchSize(),
-                  batchOperationName: responseMessage.GetBatchOperationName())
+                  batchOperationName: operationFlag ? operationName : null )
         {
         }
 

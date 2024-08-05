@@ -401,28 +401,6 @@ namespace Microsoft.Azure.Cosmos
             return this.Operations.Count;
         }
 
-        internal OperationType? GetBatchOperationName()
-        {
-            HashSet<OperationType> operationNames = new ();
-
-            if (this.Operations == null)
-            {
-                return null;
-            }
-
-            foreach (ItemBatchOperation operation in this.Operations)
-            {
-                operationNames.Add(operation.OperationType);
-            }
-
-            if (operationNames.Count == 1)
-            {
-                return this.Operations[0].OperationType;
-            }
-
-            return null;
-        }
-
         /// <summary>
         /// Disposes the disposable members held by this class.
         /// </summary>
