@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -243,8 +244,16 @@ namespace Microsoft.Azure.Cosmos
             CancellationTokenSource cancellationTokenSource)
         {
             RequestMessage clonedRequest;
+            ITrace trace = request.Trace;
+
+            do
+            {
+                trace = trace.Parent;
+            }
+            while (trace.Name != "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler");
+
             using (clonedRequest = request.Clone(
-                request.Trace.Parent.Parent.Parent.Parent.Parent.Parent,
+                trace,
                 clonedBody))
             {
                 clonedRequest.RequestOptions ??= new RequestOptions();
