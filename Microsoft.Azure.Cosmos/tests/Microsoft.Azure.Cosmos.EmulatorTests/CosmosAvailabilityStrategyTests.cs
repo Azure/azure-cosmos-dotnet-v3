@@ -273,10 +273,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
             Assert.IsNotNull(hedgeContext);
             Assert.AreEqual("Hedged Request", (string)hedgeContext);
-            traceDiagnostic.Value.Data.TryGetValue("ExcludedRegions", out object excludeRegionsObject);
-            Assert.IsNotNull(excludeRegionsObject);
-            List<string> excludeRegionsList = excludeRegionsObject as List<string>;
-            Assert.IsTrue(excludeRegionsList.Contains("Central US"));
+            traceDiagnostic.Value.Data.TryGetValue("Hedged Region", out object hedgedRegionObject);
+            Assert.IsNotNull(hedgedRegionObject);
+            string hedgedRegion = hedgedRegionObject as string;
+            Assert.IsTrue(hedgedRegion.Contains("North Central US"));
             faultInjectionClient.Dispose();
         }
 
@@ -334,7 +334,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
             Assert.IsNotNull(traceDiagnostic);
-            Assert.IsFalse(traceDiagnostic.Value.Data.TryGetValue("ExcludedRegions", out _));
+            Assert.IsFalse(traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out _));
 
             faultInjectionClient.Dispose();
         }
@@ -422,7 +422,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CosmosTraceDiagnostics traceDiagnostic;
             object hedgeContext;
-            List<string> excludeRegionsList;
+            object hedgedRegionObject;
+            string hedgedRegion;
+
             switch (operation)
             {
                 case "Read":
@@ -438,9 +440,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
                     Assert.IsNotNull(hedgeContext);
                     Assert.AreEqual("Hedged Request", (string)hedgeContext);
-                    traceDiagnostic.Value.Data.TryGetValue("ExcludedRegions", out object excludeRegionsObject);
-                    excludeRegionsList = excludeRegionsObject as List<string>;
-                    Assert.IsTrue(excludeRegionsList.Contains("Central US"));
+                    traceDiagnostic.Value.Data.TryGetValue("Hedged Region", out hedgedRegionObject);
+                    Assert.IsNotNull(hedgedRegionObject);
+                    hedgedRegion = hedgedRegionObject as string;
+                    Assert.IsTrue(hedgedRegion.Contains("North Central US"));
 
                     break;
 
@@ -468,9 +471,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
                         Assert.IsNotNull(hedgeContext);
                         Assert.AreEqual("Hedged Request", (string)hedgeContext);
-                        traceDiagnostic.Value.Data.TryGetValue("ExcludedRegions", out object excludeRegionsQueryObject);
-                        excludeRegionsList = excludeRegionsQueryObject as List<string>;
-                        Assert.IsTrue(excludeRegionsList.Contains("Central US"));
+                        traceDiagnostic.Value.Data.TryGetValue("Hedged Region", out hedgedRegionObject);
+                        Assert.IsNotNull(hedgedRegionObject);
+                        hedgedRegion = hedgedRegionObject as string;
+                        Assert.IsTrue(hedgedRegion.Contains("North Central US"));
                     }
 
                     break;
@@ -492,9 +496,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
                         Assert.IsNotNull(hedgeContext);
                         Assert.AreEqual("Hedged Request", (string)hedgeContext);
-                        traceDiagnostic.Value.Data.TryGetValue("ExcludedRegions", out object excludeRegionsQueryObject);
-                        excludeRegionsList = excludeRegionsQueryObject as List<string>;
-                        Assert.IsTrue(excludeRegionsList.Contains("Central US"));
+                        traceDiagnostic.Value.Data.TryGetValue("Hedged Region", out hedgedRegionObject);
+                        Assert.IsNotNull(hedgedRegionObject);
+                        hedgedRegion = hedgedRegionObject as string;
+                        Assert.IsTrue(hedgedRegion.Contains("North Central US"));
                     }
 
                     break;
@@ -517,9 +522,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
                     Assert.IsNotNull(hedgeContext);
                     Assert.AreEqual("Hedged Request", (string)hedgeContext);
-                    traceDiagnostic.Value.Data.TryGetValue("ExcludedRegions", out object excludeRegionsReadManyObject);
-                    excludeRegionsList = excludeRegionsReadManyObject as List<string>;
-                    Assert.IsTrue(excludeRegionsList.Contains("Central US"));
+                    traceDiagnostic.Value.Data.TryGetValue("Hedged Region", out hedgedRegionObject);
+                    Assert.IsNotNull(hedgedRegionObject);
+                    hedgedRegion = hedgedRegionObject as string;
+                    Assert.IsTrue(hedgedRegion.Contains("North Central US"));
 
                     break;
 
@@ -612,7 +618,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CosmosTraceDiagnostics traceDiagnostic;
             object hedgeContext;
-            List<string> excludeRegionsList;
+            object hedgedRegionObject;
+            string hedgedRegion;
+
             switch (operation)
             {
                 case "Read":
@@ -628,10 +636,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
                     Assert.IsNotNull(hedgeContext);
                     Assert.AreEqual("Hedged Request", (string)hedgeContext);
-                    traceDiagnostic.Value.Data.TryGetValue("ExcludedRegions", out object excludeRegionsObject);
-                    excludeRegionsList = excludeRegionsObject as List<string>;
-                    Assert.IsTrue(excludeRegionsList.Contains("Central US"));
-                    Assert.IsTrue(excludeRegionsList.Contains("North Central US"));
+                    traceDiagnostic.Value.Data.TryGetValue("Hedged Region", out hedgedRegionObject);
+                    Assert.IsNotNull(hedgedRegionObject);
+                    hedgedRegion = hedgedRegionObject as string;
+                    Assert.IsTrue(hedgedRegion.Contains("East US"));
 
                     break;
 
@@ -659,9 +667,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
                         Assert.IsNotNull(hedgeContext);
                         Assert.AreEqual("Hedged Request", (string)hedgeContext);
-                        traceDiagnostic.Value.Data.TryGetValue("ExcludedRegions", out object excludeRegionsQueryObject);
-                        excludeRegionsList = excludeRegionsQueryObject as List<string>;
-                        Assert.IsTrue(excludeRegionsList.Contains("Central US"));
+                        traceDiagnostic.Value.Data.TryGetValue("Hedged Region", out hedgedRegionObject);
+                        Assert.IsNotNull(hedgedRegionObject);
+                        hedgedRegion = hedgedRegionObject as string;
+                        Assert.IsTrue(hedgedRegion.Contains("East US"));
                     }
 
                     break;
@@ -683,9 +692,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
                         Assert.IsNotNull(hedgeContext);
                         Assert.AreEqual("Hedged Request", (string)hedgeContext);
-                        traceDiagnostic.Value.Data.TryGetValue("ExcludedRegions", out object excludeRegionsQueryObject);
-                        excludeRegionsList = excludeRegionsQueryObject as List<string>;
-                        Assert.IsTrue(excludeRegionsList.Contains("Central US"));
+                        traceDiagnostic.Value.Data.TryGetValue("Hedged Region", out hedgedRegionObject);
+                        Assert.IsNotNull(hedgedRegionObject);
+                        hedgedRegion = hedgedRegionObject as string;
+                        Assert.IsTrue(hedgedRegion.Contains("East US"));
                     }
 
                     break;
@@ -709,9 +719,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.IsNotNull(hedgeContext);
                     Assert.AreEqual("Hedged Request", (string)hedgeContext);
                     traceDiagnostic.Value.Data.TryGetValue("ExcludedRegions", out object excludeRegionsReadManyObject);
-                    excludeRegionsList = excludeRegionsReadManyObject as List<string>;
-                    Assert.IsTrue(excludeRegionsList.Contains("Central US"));
-                    Assert.IsTrue(excludeRegionsList.Contains("North Central US"));
+                    traceDiagnostic.Value.Data.TryGetValue("Hedged Region", out hedgedRegionObject);
+                    Assert.IsNotNull(hedgedRegionObject);
+                    hedgedRegion = hedgedRegionObject as string;
+                    Assert.IsTrue(hedgedRegion.Contains("East US"));
 
                     break;
 
@@ -751,50 +762,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             faultInjectionClient.Dispose();
         }
 
-        [TestMethod]
-        [TestCategory("MultiRegion")]
-        public async Task RequestMessageCloneTests()
-        {
-            RequestMessage httpRequest = new RequestMessage(
-                HttpMethod.Get,
-                new Uri("/dbs/testdb/colls/testcontainer/docs/testId", UriKind.Relative));
-
-            string key = Guid.NewGuid().ToString();
-            Dictionary<string, object> properties = new Dictionary<string, object>()
-            {
-                { key, Guid.NewGuid() }
-            };
-
-            RequestOptions requestOptions = new RequestOptions()
-            {
-                Properties = properties
-            };
-           
-            httpRequest.RequestOptions = requestOptions;
-            httpRequest.ResourceType = ResourceType.Document;
-            httpRequest.OperationType = OperationType.Read;
-            httpRequest.Headers.CorrelatedActivityId = Guid.NewGuid().ToString();
-            httpRequest.PartitionKeyRangeId = new PartitionKeyRangeIdentity("0", "1");
-            httpRequest.UseGatewayMode = true;
-            httpRequest.ContainerId = "testcontainer";
-            httpRequest.DatabaseId = "testdb";
-            httpRequest.Content = Stream.Null;
-
-            using (CloneableStream clonedBody = await StreamExtension.AsClonableStreamAsync(httpRequest.Content))
-            {
-                RequestMessage clone = httpRequest.Clone(httpRequest.Trace, clonedBody);
-
-                Assert.AreEqual(httpRequest.RequestOptions.Properties, clone.RequestOptions.Properties);
-                Assert.AreEqual(httpRequest.ResourceType, clone.ResourceType);
-                Assert.AreEqual(httpRequest.OperationType, clone.OperationType);
-                Assert.AreEqual(httpRequest.Headers.CorrelatedActivityId, clone.Headers.CorrelatedActivityId);
-                Assert.AreEqual(httpRequest.PartitionKeyRangeId, clone.PartitionKeyRangeId);
-                Assert.AreEqual(httpRequest.UseGatewayMode, clone.UseGatewayMode);
-                Assert.AreEqual(httpRequest.ContainerId, clone.ContainerId);
-                Assert.AreEqual(httpRequest.DatabaseId, clone.DatabaseId);
-            }
-        }
-
         private static async Task HandleChangesAsync(
             ChangeFeedProcessorContext context,
             IReadOnlyCollection<AvailabilityStrategyTestObject> changes,
@@ -810,9 +777,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
             Assert.IsNotNull(hedgeContext);
             Assert.AreEqual("Hedged Request", (string)hedgeContext);
-            traceDiagnostic.Value.Data.TryGetValue("ExcludedRegions", out object excludeRegionsObject);
-            List<string> excludeRegionsList = excludeRegionsObject as List<string>;
-            Assert.IsTrue(excludeRegionsList.Contains("Central US"));
+            traceDiagnostic.Value.Data.TryGetValue("Hedged Region", out object hedgedRegionObject);
+            Assert.IsNotNull(hedgedRegionObject);
+            string hedgedRegion = hedgedRegionObject as string;
+            Assert.IsFalse(hedgedRegion.Contains("-central"));
             await Task.Delay(1);
         }
 

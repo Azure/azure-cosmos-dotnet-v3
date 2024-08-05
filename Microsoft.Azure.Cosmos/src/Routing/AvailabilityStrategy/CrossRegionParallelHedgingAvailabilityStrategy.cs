@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos
                                     cancellationTokenSource.Cancel();
                                     ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value.AddOrUpdateDatum(
                                         HedgedRegion,
-                                        HedgedRegionToString(responseMessage.Diagnostics.GetContactedRegions().First()));
+                                        HedgedRegionToString(responseMessage.Diagnostics.GetContactedRegions().FirstOrDefault()));
                                     ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value.AddOrUpdateDatum(
                                         HedgeContext,
                                         object.ReferenceEquals(primaryRequest, completedTask)
@@ -212,7 +212,7 @@ namespace Microsoft.Azure.Cosmos
                             cancellationTokenSource.Cancel();
                             ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value.AddOrUpdateDatum(
                                 HedgedRegion,
-                                HedgedRegionToString(responseMessage.Diagnostics.GetContactedRegions().First()));
+                                HedgedRegionToString(responseMessage.Diagnostics.GetContactedRegions().FirstOrDefault()));
                             ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value.AddOrUpdateDatum(
                                 HedgeContext,
                                 object.ReferenceEquals(primaryRequest, completedTask)
@@ -315,7 +315,7 @@ namespace Microsoft.Azure.Cosmos
             return statusCode == (int)HttpStatusCode.NotFound && subStatusCode == (int)SubStatusCodes.Unknown;
         }
 
-        private static string HedgedRegionToString((string, Uri) a)
+        internal static string HedgedRegionToString((string, Uri) a)
         {
             return $"{a.Item1}: {a.Item2}";
         }
