@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
     using Newtonsoft.Json.Linq;
 
     [TestClass]
-    [TestCategory("ChangeFeedProcessor.AllVersionsAndDeletes")]
+    [TestCategory("ChangeFeedProcessor")]
     public class BuilderTests : BaseChangeFeedClientHelper
     {
         [TestInitialize]
@@ -66,9 +66,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                             Assert.AreEqual(expected: ttlInSeconds, actual: change.Current.ttl);
 
                             // metadata
-                            Assert.IsTrue(DateTime.TryParse(s: change.Metadata.Crts.ToString(), out _), message: "Invalid csrt must be a datetime value.");
+                            Assert.IsTrue(DateTime.TryParse(s: change.Metadata.ConflictResolutionTimestamp.ToString(), out _), message: "Invalid csrt must be a datetime value.");
                             Assert.IsTrue(change.Metadata.Lsn > 0, message: "Invalid lsn must be a long value.");
-                            Assert.IsFalse(change.Metadata.TimeToLiveExpired);
+                            Assert.IsFalse(change.Metadata.IsTimeToLiveExpired);
 
                             // previous
                             Assert.IsNull(change.Previous);
@@ -79,9 +79,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                             Assert.IsNull(change.Current.id);
 
                             // metadata
-                            Assert.IsTrue(DateTime.TryParse(s: change.Metadata.Crts.ToString(), out _), message: "Invalid csrt must be a datetime value.");
+                            Assert.IsTrue(DateTime.TryParse(s: change.Metadata.ConflictResolutionTimestamp.ToString(), out _), message: "Invalid csrt must be a datetime value.");
                             Assert.IsTrue(change.Metadata.Lsn > 0, message: "Invalid lsn must be a long value.");
-                            Assert.IsTrue(change.Metadata.TimeToLiveExpired);
+                            Assert.IsTrue(change.Metadata.IsTimeToLiveExpired);
 
                             // previous
                             Assert.AreEqual(expected: "1", actual: change.Previous.id.ToString());
@@ -177,10 +177,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                         }
 
                         ChangeFeedOperationType operationType = change.Metadata.OperationType;
-                        long previousLsn = change.Metadata.PreviousImageLSN;
-                        long m = change.Metadata.Crts;
+                        long previousLsn = change.Metadata.PreviousLSN;
+                        DateTime m = change.Metadata.ConflictResolutionTimestamp;
                         long lsn = change.Metadata.Lsn;
-                        bool isTimeToLiveExpired = change.Metadata.TimeToLiveExpired;
+                        bool isTimeToLiveExpired = change.Metadata.IsTimeToLiveExpired;
                     }
 
                     Assert.IsNotNull(context.LeaseToken);
@@ -197,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                     Assert.AreEqual(expected: "1", actual: createChange.Current.pk.ToString());
                     Assert.AreEqual(expected: "original test", actual: createChange.Current.description.ToString());
                     Assert.AreEqual(expected: createChange.Metadata.OperationType, actual: ChangeFeedOperationType.Create);
-                    Assert.AreEqual(expected: createChange.Metadata.PreviousImageLSN, actual: 0);
+                    Assert.AreEqual(expected: createChange.Metadata.PreviousLSN, actual: 0);
                     Assert.IsNull(createChange.Previous);
 
                     ChangeFeedItem<dynamic> replaceChange = docs.ElementAt(1);
@@ -206,20 +206,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                     Assert.AreEqual(expected: "1", actual: replaceChange.Current.pk.ToString());
                     Assert.AreEqual(expected: "test after replace", actual: replaceChange.Current.description.ToString());
                     Assert.AreEqual(expected: replaceChange.Metadata.OperationType, actual: ChangeFeedOperationType.Replace);
-                    Assert.AreEqual(expected: createChange.Metadata.Lsn, actual: replaceChange.Metadata.PreviousImageLSN);
+                    Assert.AreEqual(expected: createChange.Metadata.Lsn, actual: replaceChange.Metadata.PreviousLSN);
                     Assert.IsNull(replaceChange.Previous);
 
                     ChangeFeedItem<dynamic> deleteChange = docs.ElementAt(2);
                     Assert.IsNull(deleteChange.Current.id);
                     Assert.AreEqual(expected: deleteChange.Metadata.OperationType, actual: ChangeFeedOperationType.Delete);
-                    Assert.AreEqual(expected: replaceChange.Metadata.Lsn, actual: deleteChange.Metadata.PreviousImageLSN);
+                    Assert.AreEqual(expected: replaceChange.Metadata.Lsn, actual: deleteChange.Metadata.PreviousLSN);
                     Assert.IsNotNull(deleteChange.Previous);
                     Assert.AreEqual(expected: "1", actual: deleteChange.Previous.id.ToString());
                     Assert.AreEqual(expected: "1", actual: deleteChange.Previous.pk.ToString());
                     Assert.AreEqual(expected: "test after replace", actual: deleteChange.Previous.description.ToString());
 
-                    Assert.IsTrue(condition: createChange.Metadata.Crts < replaceChange.Metadata.Crts, message: "The create operation must happen before the replace operation.");
-                    Assert.IsTrue(condition: replaceChange.Metadata.Crts < deleteChange.Metadata.Crts, message: "The replace operation must happen before the delete operation.");
+                    Assert.IsTrue(condition: createChange.Metadata.ConflictResolutionTimestamp < replaceChange.Metadata.ConflictResolutionTimestamp, message: "The create operation must happen before the replace operation.");
+                    Assert.IsTrue(condition: replaceChange.Metadata.ConflictResolutionTimestamp < deleteChange.Metadata.ConflictResolutionTimestamp, message: "The replace operation must happen before the delete operation.");
                     Assert.IsTrue(condition: createChange.Metadata.Lsn < replaceChange.Metadata.Lsn, message: "The create operation must happen before the replace operation.");
                     Assert.IsTrue(condition: createChange.Metadata.Lsn < replaceChange.Metadata.Lsn, message: "The replace operation must happen before the delete operation.");
 

@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
     using Newtonsoft.Json.Linq;
 
     [TestClass]
-    [TestCategory("ChangeFeedProcessor.AllVersionsAndDeletes")]
+    [TestCategory("ChangeFeedProcessor")]
     public class BuilderWithCustomSerializerTests : BaseChangeFeedClientHelper
     {
         private ContainerInternal MonitoredContainer = null;
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                         json: json,
                         options: new JsonSerializerOptions()
                         {
-                            PropertyNameCaseInsensitive = true,
+                            PropertyNameCaseInsensitive = false,
                             Converters = { new JsonStringEnumConverter(), }
                         }));
             }
@@ -109,11 +109,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                 Assert.AreEqual(expected: default, actual: deletedChange.Current.id); // No current id for Delete
                 Assert.AreEqual(expected: default, actual: deletedChange.Current.ttl); // No current ttl for Delete
                 Assert.IsNotNull(deletedChange.Metadata);
-                Assert.AreEqual(expected: 1722511591, actual: deletedChange.Metadata.Crts);
+                Assert.AreEqual(expected: DateTime.Parse("8/1/2024 11:26:31 AM"), actual: deletedChange.Metadata.ConflictResolutionTimestamp);
                 Assert.AreEqual(expected: 17, actual: deletedChange.Metadata.Lsn);
                 Assert.AreEqual(expected: ChangeFeedOperationType.Delete, actual: deletedChange.Metadata.OperationType);
-                Assert.AreEqual(expected: 16, actual: deletedChange.Metadata.PreviousImageLSN);
-                Assert.IsTrue(deletedChange.Metadata.TimeToLiveExpired);
+                Assert.AreEqual(expected: 16, actual: deletedChange.Metadata.PreviousLSN);
+                Assert.IsTrue(deletedChange.Metadata.IsTimeToLiveExpired);
                 Assert.IsNotNull(deletedChange.Previous);
                 Assert.AreEqual(expected: "Testing TTL on CFP.", actual: deletedChange.Previous.description);
                 Assert.AreEqual(expected: "1", actual: deletedChange.Previous.id);
@@ -177,11 +177,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                 Assert.AreEqual(expected: "1", actual: createdUpdate.Current.id);
                 Assert.AreEqual(expected: 5, actual: createdUpdate.Current.ttl);
                 Assert.IsNotNull(createdUpdate.Metadata);
-                Assert.AreEqual(expected: 1722511453, actual: createdUpdate.Metadata.Crts);
+                Assert.AreEqual(expected: DateTime.Parse("8/1/2024 11:24:13 AM"), actual: createdUpdate.Metadata.ConflictResolutionTimestamp);
                 Assert.AreEqual(expected: 16, actual: createdUpdate.Metadata.Lsn);
                 Assert.AreEqual(expected: ChangeFeedOperationType.Create, actual: createdUpdate.Metadata.OperationType);
-                Assert.AreEqual(expected: 0, actual: createdUpdate.Metadata.PreviousImageLSN);
-                Assert.IsFalse(createdUpdate.Metadata.TimeToLiveExpired);
+                Assert.AreEqual(expected: 0, actual: createdUpdate.Metadata.PreviousLSN);
+                Assert.IsFalse(createdUpdate.Metadata.IsTimeToLiveExpired);
                 Assert.IsNull(createdUpdate.Previous); // No Previous for a Create change.
             }
         }
@@ -282,11 +282,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                 Assert.AreEqual(expected: "1", actual: createdUpdate.Current.id);
                 Assert.AreEqual(expected: 0, actual: createdUpdate.Current.ttl);
                 Assert.IsNotNull(createdUpdate.Metadata);
-                Assert.AreEqual(expected: 1722455970, actual: createdUpdate.Metadata.Crts);
+                Assert.AreEqual(expected: DateTime.Parse("7/31/2024 7:59:30 PM"), actual: createdUpdate.Metadata.ConflictResolutionTimestamp);
                 Assert.AreEqual(expected: 374, actual: createdUpdate.Metadata.Lsn);
                 Assert.AreEqual(expected: ChangeFeedOperationType.Create, actual: createdUpdate.Metadata.OperationType);
-                Assert.AreEqual(expected: 0, actual: createdUpdate.Metadata.PreviousImageLSN);
-                Assert.IsFalse(createdUpdate.Metadata.TimeToLiveExpired);
+                Assert.AreEqual(expected: 0, actual: createdUpdate.Metadata.PreviousLSN);
+                Assert.IsFalse(createdUpdate.Metadata.IsTimeToLiveExpired);
                 Assert.IsNull(createdUpdate.Previous); // No Previous for a Create change.
 
                 ChangeFeedItem<ToDoActivity> replacedChange = activities.ElementAt(1);
@@ -296,11 +296,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                 Assert.AreEqual(expected: "1", actual: replacedChange.Current.id);
                 Assert.AreEqual(expected: 0, actual: replacedChange.Current.ttl);
                 Assert.IsNotNull(replacedChange.Metadata);
-                Assert.AreEqual(expected: 1722455971, actual: replacedChange.Metadata.Crts);
+                Assert.AreEqual(expected: DateTime.Parse("7/31/2024 7:59:31 PM"), actual: replacedChange.Metadata.ConflictResolutionTimestamp);
                 Assert.AreEqual(expected: 375, actual: replacedChange.Metadata.Lsn);
                 Assert.AreEqual(expected: ChangeFeedOperationType.Replace, actual: replacedChange.Metadata.OperationType);
-                Assert.AreEqual(expected: 374, actual: replacedChange.Metadata.PreviousImageLSN);
-                Assert.IsFalse(replacedChange.Metadata.TimeToLiveExpired);
+                Assert.AreEqual(expected: 374, actual: replacedChange.Metadata.PreviousLSN);
+                Assert.IsFalse(replacedChange.Metadata.IsTimeToLiveExpired);
                 Assert.IsNull(replacedChange.Previous); // No Previous for a Replace change.
 
                 ChangeFeedItem<ToDoActivity> deletedChange = activities.ElementAt(2);
@@ -310,11 +310,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                 Assert.AreEqual(expected: default, actual: deletedChange.Current.id); // No current id for Delete
                 Assert.AreEqual(expected: default, actual: deletedChange.Current.ttl); // No current ttl for Delete
                 Assert.IsNotNull(deletedChange.Metadata);
-                Assert.AreEqual(expected: 1722455972, actual: deletedChange.Metadata.Crts);
+                Assert.AreEqual(expected: DateTime.Parse("7/31/2024 7:59:32 PM"), actual: deletedChange.Metadata.ConflictResolutionTimestamp);
                 Assert.AreEqual(expected: 376, actual: deletedChange.Metadata.Lsn);
                 Assert.AreEqual(expected: ChangeFeedOperationType.Delete, actual: deletedChange.Metadata.OperationType);
-                Assert.AreEqual(expected: 375, actual: deletedChange.Metadata.PreviousImageLSN);
-                Assert.IsFalse(deletedChange.Metadata.TimeToLiveExpired);
+                Assert.AreEqual(expected: 375, actual: deletedChange.Metadata.PreviousLSN);
+                Assert.IsFalse(deletedChange.Metadata.IsTimeToLiveExpired);
                 Assert.IsNotNull(deletedChange.Previous);
                 Assert.AreEqual(expected: "test after replace", actual: deletedChange.Previous.description);
                 Assert.AreEqual(expected: "1", actual: deletedChange.Previous.id);
@@ -354,9 +354,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                             Assert.AreEqual(expected: ttlInSeconds, actual: change.Current.ttl);
 
                             // metadata
-                            Assert.IsTrue(DateTime.TryParse(s: change.Metadata.Crts.ToString(), out _), message: "Invalid csrt must be a datetime value.");
+                            Assert.IsTrue(DateTime.TryParse(s: change.Metadata.ConflictResolutionTimestamp.ToString(), out _), message: "Invalid csrt must be a datetime value.");
                             Assert.IsTrue(change.Metadata.Lsn > 0, message: "Invalid lsn must be a long value.");
-                            Assert.IsFalse(change.Metadata.TimeToLiveExpired);
+                            Assert.IsFalse(change.Metadata.IsTimeToLiveExpired);
 
                             // previous
                             Assert.IsNull(change.Previous);
@@ -367,9 +367,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                             Assert.IsNull(change.Current.id);
 
                             // metadata
-                            Assert.IsTrue(DateTime.TryParse(s: change.Metadata.Crts.ToString(), out _), message: "Invalid csrt must be a datetime value.");
+                            Assert.IsTrue(DateTime.TryParse(s: change.Metadata.ConflictResolutionTimestamp.ToString(), out _), message: "Invalid csrt must be a datetime value.");
                             Assert.IsTrue(change.Metadata.Lsn > 0, message: "Invalid lsn must be a long value.");
-                            Assert.IsTrue(change.Metadata.TimeToLiveExpired);
+                            Assert.IsTrue(change.Metadata.IsTimeToLiveExpired);
 
                             // previous
                             Assert.AreEqual(expected: "1", actual: change.Previous.id.ToString());
@@ -465,10 +465,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                         }
 
                         ChangeFeedOperationType operationType = change.Metadata.OperationType;
-                        long previousLsn = change.Metadata.PreviousImageLSN;
-                        long m = change.Metadata.Crts;
+                        long previousLsn = change.Metadata.PreviousLSN;
+                        DateTime m = change.Metadata.ConflictResolutionTimestamp;
                         long lsn = change.Metadata.Lsn;
-                        bool isTimeToLiveExpired = change.Metadata.TimeToLiveExpired;
+                        bool isTimeToLiveExpired = change.Metadata.IsTimeToLiveExpired;
                     }
 
                     Assert.IsNotNull(context.LeaseToken);
@@ -485,7 +485,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                     Assert.AreEqual(expected: "1", actual: createChange.Current.pk.ToString());
                     Assert.AreEqual(expected: "original test", actual: createChange.Current.description.ToString());
                     Assert.AreEqual(expected: createChange.Metadata.OperationType, actual: ChangeFeedOperationType.Create);
-                    Assert.AreEqual(expected: createChange.Metadata.PreviousImageLSN, actual: 0);
+                    Assert.AreEqual(expected: createChange.Metadata.PreviousLSN, actual: 0);
                     Assert.IsNull(createChange.Previous);
 
                     ChangeFeedItem<ToDoActivity> replaceChange = docs.ElementAt(1);
@@ -494,20 +494,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                     Assert.AreEqual(expected: "1", actual: replaceChange.Current.pk.ToString());
                     Assert.AreEqual(expected: "test after replace", actual: replaceChange.Current.description.ToString());
                     Assert.AreEqual(expected: replaceChange.Metadata.OperationType, actual: ChangeFeedOperationType.Replace);
-                    Assert.AreEqual(expected: createChange.Metadata.Lsn, actual: replaceChange.Metadata.PreviousImageLSN);
+                    Assert.AreEqual(expected: createChange.Metadata.Lsn, actual: replaceChange.Metadata.PreviousLSN);
                     Assert.IsNull(replaceChange.Previous);
 
                     ChangeFeedItem<ToDoActivity> deleteChange = docs.ElementAt(2);
                     Assert.IsNull(deleteChange.Current.id);
                     Assert.AreEqual(expected: deleteChange.Metadata.OperationType, actual: ChangeFeedOperationType.Delete);
-                    Assert.AreEqual(expected: replaceChange.Metadata.Lsn, actual: deleteChange.Metadata.PreviousImageLSN);
+                    Assert.AreEqual(expected: replaceChange.Metadata.Lsn, actual: deleteChange.Metadata.PreviousLSN);
                     Assert.IsNotNull(deleteChange.Previous);
                     Assert.AreEqual(expected: "1", actual: deleteChange.Previous.id.ToString());
                     Assert.AreEqual(expected: "1", actual: deleteChange.Previous.pk.ToString());
                     Assert.AreEqual(expected: "test after replace", actual: deleteChange.Previous.description.ToString());
 
-                    Assert.IsTrue(condition: createChange.Metadata.Crts < replaceChange.Metadata.Crts, message: "The create operation must happen before the replace operation.");
-                    Assert.IsTrue(condition: replaceChange.Metadata.Crts < deleteChange.Metadata.Crts, message: "The replace operation must happen before the delete operation.");
+                    Assert.IsTrue(condition: createChange.Metadata.ConflictResolutionTimestamp < replaceChange.Metadata.ConflictResolutionTimestamp, message: "The create operation must happen before the replace operation.");
+                    Assert.IsTrue(condition: replaceChange.Metadata.ConflictResolutionTimestamp < deleteChange.Metadata.ConflictResolutionTimestamp, message: "The replace operation must happen before the delete operation.");
                     Assert.IsTrue(condition: createChange.Metadata.Lsn < replaceChange.Metadata.Lsn, message: "The create operation must happen before the replace operation.");
                     Assert.IsTrue(condition: createChange.Metadata.Lsn < replaceChange.Metadata.Lsn, message: "The replace operation must happen before the delete operation.");
 
