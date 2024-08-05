@@ -1261,12 +1261,14 @@ namespace Microsoft.Azure.Cosmos
         {
             List<FeedRange> overlappingRanges = new ();
 
+            Documents.Routing.Range<string> rangeFromPartitionKey = await this.ConvertToRangeAsync(
+                partitionKey: partitionKey,
+                cancellationToken: cancellationToken);
+
             foreach (Documents.Routing.Range<string> range in ContainerCore.ConvertToRange(feedRanges))
             {
                 if (Documents.Routing.Range<string>.CheckOverlapping(
-                    range1: await this.ConvertToRangeAsync(
-                        partitionKey: partitionKey,
-                        cancellationToken: cancellationToken),
+                    range1: rangeFromPartitionKey,
                     range2: range))
                 {
                     overlappingRanges.Add(new FeedRangeEpk(range));
