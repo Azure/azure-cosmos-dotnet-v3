@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
     /// <summary>
     /// UnixDateTimeConverter for System.Text.Json
     /// </summary>
-    public class STJUnixDateTimeConverter : JsonConverter<DateTime>
+    internal class STJUnixDateTimeConverter : JsonConverter<DateTime>
     {
         /// <summary>
         /// Read.
@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
         {
             if (reader.TokenType != JsonTokenType.Number)
             {
-                throw new System.Text.Json.JsonException("Expected a number representing the Unix timestamp.");
+                throw new JsonException("Expected a number representing the Unix timestamp.");
             }
 
             long unixTime = reader.GetInt64();
