@@ -235,8 +235,8 @@ namespace Microsoft.Azure.Cosmos
                 },
                 openTelemetry: (response) => new OpenTelemetryResponse(
                     responseMessage: response, 
-                    operationFlag: this.isHomogenousOperations, 
-                    operationName: this.lastItemBatchOperation.OperationType));
+                    isHomogenousOperations: this.isHomogenousOperations, 
+                    batchOperation: this.lastItemBatchOperation.OperationType));
         }
 
         /// <summary>

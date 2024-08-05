@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class OpenTelemetryResponse : OpenTelemetryAttributes
     {
-        internal OpenTelemetryResponse(TransactionalBatchResponse responseMessage, bool operationFlag, OperationType? operationName)
+        internal OpenTelemetryResponse(TransactionalBatchResponse responseMessage, bool isHomogenousOperations, OperationType? batchOperation)
            : this(
                   statusCode: responseMessage.StatusCode,
                   requestCharge: OpenTelemetryResponse.GetHeader(responseMessage)?.RequestCharge,
@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
                   activityId: OpenTelemetryResponse.GetHeader(responseMessage)?.ActivityId,
                   correlationId: OpenTelemetryResponse.GetHeader(responseMessage)?.CorrelatedActivityId,
                   batchSize: responseMessage.GetBatchSize(),
-                  batchOperationName: operationFlag ? operationName : null )
+                  batchOperationName: isHomogenousOperations ? batchOperation : null )
         {
         }
 

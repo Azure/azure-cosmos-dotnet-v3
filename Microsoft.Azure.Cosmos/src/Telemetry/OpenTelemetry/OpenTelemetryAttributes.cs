@@ -76,8 +76,26 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal int? BatchSize { get; set; }
 
         /// <summary>
-        /// Will have value for homogeneous batch operation and will be null for heterogeneous batch operation
+        /// Gets or sets the operation type for batch operations. 
+        /// Will have a value for homogeneous batch operations and will be null for heterogeneous batch operations.
+        /// 
+        /// Operation name should be prepended with BATCH for homogeneous operations, or be just BATCH for heterogeneous operations.
         /// </summary>
+        /// <example>
+        /// For example, if you have a batch of homogeneous operations like Read:
+        /// <code>
+        /// var recorder = new OpenTelemetryCoreRecorder();
+        /// recorder.BatchOperationName = Documents.OperationType.Read; // Homogeneous batch
+        /// string operationName = "BATCH." + recorder.BatchOperationName; // Results in "BATCH.Read"
+        /// </code>
+        /// 
+        /// For a batch of heterogeneous operations:
+        /// <code>
+        /// var recorder = new OpenTelemetryCoreRecorder();
+        /// recorder.BatchOperationName = null; // Heterogeneous batch
+        /// string operationName = "BATCH"; // No specific operation type
+        /// </code>
+        /// </example>
         internal Documents.OperationType? BatchOperationName { get; set; }
     }
 }
