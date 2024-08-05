@@ -10,6 +10,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Scripts;
+    using Microsoft.Azure.Cosmos.Services.Management.Tests;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
@@ -380,7 +382,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             Assert.AreEqual("doc5.doc6.doc7.doc8.doc9.", accumulator);
         }
 
-        private void ValidateContext(ChangeFeedProcessorContext changeFeedProcessorContext)
+        private async void ValidateContext(ChangeFeedProcessorContext changeFeedProcessorContext)
         {
             Assert.IsNotNull(changeFeedProcessorContext.LeaseToken);
             Assert.IsNotNull(changeFeedProcessorContext.Diagnostics);
@@ -389,6 +391,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             Assert.IsTrue(changeFeedProcessorContext.Headers.RequestCharge > 0);
             string diagnosticsAsString = changeFeedProcessorContext.Diagnostics.ToString();
             Assert.IsTrue(diagnosticsAsString.Contains("Change Feed Processor Read Next Async"));
+
+            await this.ValidateFeedRangeAsync(changeFeedProcessorContext.FeedRange);
+        }
+
+        private async Task ValidateFeedRangeAsync(FeedRange feedRange)
+        {
+            Assert.IsNotNull(feedRange);
+            
+            IEnumerable<string> partitionKeyRanges = await this.Container.GetPartitionKeyRangesAsync(feedRange);
+
+            Assert.IsNotNull(partitionKeyRanges);
+            Assert.AreEqual(1, partitionKeyRanges.Count());
+            Assert.AreEqual(expected: "0", actual: partitionKeyRanges.FirstOrDefault());
         }
 
     }
