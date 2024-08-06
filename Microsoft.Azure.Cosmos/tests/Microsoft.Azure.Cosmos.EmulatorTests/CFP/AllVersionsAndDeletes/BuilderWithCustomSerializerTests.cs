@@ -323,6 +323,50 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
         }
 
         [TestMethod]
+        [Owner("philipthomas-MSFT")]
+        [Description("Replace and Deletes have full ChangeFeedMetadata.")]
+        public void ValidateChangeFeedMetadataSerializationReplaceAnDeleteWriteTest()
+        {
+            ChangeFeedMetadata metadata = new()
+            {
+                PreviousLsn = 15,
+                Lsn = 374,
+                OperationType = ChangeFeedOperationType.Create,
+                IsTimeToLiveExpired = true,
+                ConflictResolutionTimestamp = DateTime.Parse("7/31/2024 7:59:30 PM")
+            };
+
+            string json = System.Text.Json.JsonSerializer.Serialize<ChangeFeedMetadata>(
+                value: metadata,
+                options: new JsonSerializerOptions());
+
+            Assert.AreEqual(
+                expected: @"{""crts"":1722470370,""timeToLiveExpired"":true,""lsn"":374,""operationType"":""Create"",""previousImageLSN"":15}",
+                actual: json);
+        }
+
+        [TestMethod]
+        [Owner("philipthomas-MSFT")]
+        [Description("Creates have partial ChangeFeedMetadata.")]
+        public void ValidateChangeFeedMetadataSerializationCreateWriteTest()
+        {
+            ChangeFeedMetadata metadata = new()
+            {
+                Lsn = 374,
+                OperationType = ChangeFeedOperationType.Create,
+                ConflictResolutionTimestamp = DateTime.Parse("7/31/2024 7:59:30 PM")
+            };
+
+            string json = System.Text.Json.JsonSerializer.Serialize<ChangeFeedMetadata>(
+                value: metadata,
+                options: new JsonSerializerOptions());
+
+            Assert.AreEqual(
+                expected: @"{""crts"":1722470370,""timeToLiveExpired"":false,""lsn"":374,""operationType"":""Create"",""previousImageLSN"":0}",
+                actual: json);
+        }
+
+        [TestMethod]
         [Timeout(300000)]
         [TestCategory("LongRunning")]
         [Owner("philipthomas-MSFT")]
