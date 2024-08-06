@@ -5,14 +5,13 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System.Collections.Generic;
-    using System.IO;
-    using System.Net;
-    using System.Threading;
-    using System.Threading.Tasks;
+    using System.Linq;
     using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Represents an internal abstract class for handling transactional batches of operations.
+    /// This class is intended to be used as a base class for creating batches of operations 
+    /// that can be executed transactionally in Azure Cosmos DB.
     /// </summary>
     internal abstract class TransactionalBatchInternal : TransactionalBatch
     {
@@ -22,53 +21,41 @@ namespace Microsoft.Azure.Cosmos
         protected List<ItemBatchOperation> operations;
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="TransactionalBatchInternal"/> class.
+        /// </summary>
+        public TransactionalBatchInternal()
+        {
+            this.operations = new List<ItemBatchOperation>();
+        }
+
+        /// <summary>
         /// Indicates whether all operations in the batch are of the same type.
         /// </summary>
         internal bool isHomogenousOperations = true;
 
         /// <summary>
-        /// The last operation added to the batch.
+        /// Stores the operation type if all operations in the batch are of the same type; otherwise, null.
         /// </summary>
-        internal ItemBatchOperation lastItemBatchOperation = null;
+        internal OperationType? homogenousOperation = null;
 
         /// <summary>
-        /// Adds a new operation to the batch of operations and updates the homogeneity status of the operations.
+        /// Adds an operation to the batch.
         /// </summary>
-        /// <param name="itemBatchOperation">The operation to be added to the batch.</param>
+        /// <param name="itemBatchOperation">The operation to add to the batch.</param>
         /// <remarks>
         /// This method performs the following actions:
-        /// <list type="number">
-        /// <item>
-        /// <description>Adds the given <paramref name="itemBatchOperation"/> to the operations list.</description>
-        /// </item>
-        /// <item>
-        /// <description>If the added operation is the first operation in the batch, it sets this operation as the <see cref="lastItemBatchOperation"/>.</description>
-        /// </item>
-        /// <item>
-        /// <description>If there are existing operations in the batch and the operations are currently homogeneous, it checks if the last added operation's type matches the new operation's type:
-        /// <list type="bullet">
-        /// <item><description>If they match, the batch remains homogeneous.</description></item>
-        /// <item><description>If they do not match, the batch is no longer considered homogeneous.</description></item>
-        /// </list>
-        /// </description>
-        /// </item>
-        /// <item>
-        /// <description>Updates the <see cref="lastItemBatchOperation"/> to the newly added operation.</description>
-        /// </item>
-        /// </list>
+        /// 1. Checks if the batch is homogeneous (all operations of the same type) and if the new operation's type matches the type of the existing operations.
+        /// 2. Updates the <see cref="isHomogenousOperations"/> flag and the <see cref="homogenousOperation"/> property based on the check.
+        /// 3. Adds the operation to the list of operations.
         /// </remarks>
         protected void AddOperation(ItemBatchOperation itemBatchOperation)
         {
+            if (this.isHomogenousOperations && this.operations.Count > 0)
+            {
+                this.isHomogenousOperations = this.operations.First().OperationType == itemBatchOperation.OperationType;
+                this.homogenousOperation = this.isHomogenousOperations ? itemBatchOperation.OperationType : null;
+            }
             this.operations.Add(itemBatchOperation);
-            if (this.operations.Count == 1)
-            {
-                this.lastItemBatchOperation = itemBatchOperation;
-            }
-            else if (this.isHomogenousOperations)
-            {
-                this.isHomogenousOperations = this.lastItemBatchOperation.OperationType == itemBatchOperation.OperationType;
-                this.lastItemBatchOperation = itemBatchOperation;
-            }
         }
     }
 }

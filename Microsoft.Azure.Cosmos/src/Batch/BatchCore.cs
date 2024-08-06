@@ -29,7 +29,6 @@ namespace Microsoft.Azure.Cosmos
         {
             this.container = container;
             this.partitionKey = partitionKey;
-            this.operations = new List<ItemBatchOperation>();
         }
 
         public override TransactionalBatch CreateItem<T>(
@@ -236,7 +235,7 @@ namespace Microsoft.Azure.Cosmos
                 openTelemetry: (response) => new OpenTelemetryResponse(
                     responseMessage: response, 
                     isHomogenousOperations: this.isHomogenousOperations, 
-                    batchOperation: this.lastItemBatchOperation.OperationType));
+                    batchOperation: this.homogenousOperation));
         }
 
         /// <summary>
