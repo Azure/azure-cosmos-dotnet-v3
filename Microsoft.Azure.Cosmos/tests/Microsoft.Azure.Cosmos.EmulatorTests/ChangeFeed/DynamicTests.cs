@@ -10,8 +10,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Scripts;
-    using Microsoft.Azure.Cosmos.Services.Management.Tests;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
@@ -49,9 +47,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             int processedDocCount = 0;
             string accumulator = string.Empty;
             ChangeFeedProcessor processor = this.Container
-                .GetChangeFeedProcessorBuilder("test", (ChangeFeedProcessorContext context, IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                .GetChangeFeedProcessorBuilder("test", async (ChangeFeedProcessorContext context, IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
                 {
-                    this.ValidateContext(context);
+                    await this.ValidateContextAsync(context);
                     processedDocCount += docs.Count();
                     foreach (dynamic doc in docs)
                     {
@@ -63,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                         allDocsProcessed.Set();
                     }
 
-                    return Task.CompletedTask;
+                    return;
                 })
                 .WithInstanceName("random")
                 .WithLeaseContainer(this.LeaseContainer).Build();
@@ -97,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             ChangeFeedProcessor processor = this.Container
                 .GetChangeFeedProcessorBuilderWithManualCheckpoint("test", async (ChangeFeedProcessorContext context, IReadOnlyCollection<dynamic> docs, Func<Task> checkpointAsync, CancellationToken token) =>
                 {
-                    this.ValidateContext(context);
+                    await this.ValidateContextAsync(context);
                     processedDocCount += docs.Count();
                     foreach (dynamic doc in docs)
                     {
@@ -133,14 +131,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     leaseReleaseCount++;
                     return Task.CompletedTask;
                 })
-                .WithErrorNotification((string leaseToken, Exception exception) =>
+                .WithErrorNotification(async (string leaseToken, Exception exception) =>
                 {
                     errorCount++;
                     ChangeFeedProcessorUserException cfpException = exception as ChangeFeedProcessorUserException;
                     Assert.IsNotNull(cfpException);
                     Assert.ReferenceEquals(exceptionToPropagate, exception.InnerException);
-                    this.ValidateContext(cfpException.ChangeFeedProcessorContext);
-                    return Task.CompletedTask;
+                    await this.ValidateContextAsync(cfpException.ChangeFeedProcessorContext);
+                    return;
                 })
                 .WithLeaseContainer(this.LeaseContainer).Build();
 
@@ -181,9 +179,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 int processedDocCount = 0;
                 string accumulator = string.Empty;
                 ChangeFeedProcessor processor = this.Container
-                    .GetChangeFeedProcessorBuilder("test", (ChangeFeedProcessorContext context, IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                    .GetChangeFeedProcessorBuilder("test", async (ChangeFeedProcessorContext context, IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
                     {
-                        this.ValidateContext(context);
+                        await this.ValidateContextAsync(context);
                         processedDocCount += docs.Count();
                         foreach (dynamic doc in docs)
                         {
@@ -195,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                             allDocsProcessed.Set();
                         }
 
-                        return Task.CompletedTask;
+                        return;
                     })
                     .WithInstanceName("random")
                     .WithLeaseContainer(fixedLeasesContainer).Build();
@@ -242,9 +240,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             int processedDocCount = 0;
             string accumulator = string.Empty;
             ChangeFeedProcessor processor = this.Container
-                .GetChangeFeedProcessorBuilder("test", (ChangeFeedProcessorContext context, IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                .GetChangeFeedProcessorBuilder("test", async (ChangeFeedProcessorContext context, IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
                 {
-                    this.ValidateContext(context);
+                    await this.ValidateContextAsync(context);
                     processedDocCount += docs.Count();
                     foreach (dynamic doc in docs)
                     {
@@ -256,7 +254,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                         allDocsProcessed.Set();
                     }
 
-                    return Task.CompletedTask;
+                    return;
                 })
                 .WithStartFromBeginning()
                 .WithInstanceName("random")
@@ -298,9 +296,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             int processedDocCount = 0;
             string accumulator = string.Empty;
             ChangeFeedProcessor processor = this.Container
-                .GetChangeFeedProcessorBuilder("test", (ChangeFeedProcessorContext context, IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                .GetChangeFeedProcessorBuilder("test", async (ChangeFeedProcessorContext context, IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
                 {
-                    this.ValidateContext(context);
+                    await this.ValidateContextAsync(context);
                     Assert.IsTrue(docs.Count > 0);
                     processedDocCount += docs.Count;
                     foreach (dynamic doc in docs)
@@ -313,7 +311,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                         allDocsProcessed.Set();
                     }
 
-                    return Task.CompletedTask;
+                    return;
                 })
                 .WithStartTime(DateTime.MinValue.ToUniversalTime())
                 .WithInstanceName("random")
@@ -353,9 +351,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             int processedDocCount = 0;
             string accumulator = string.Empty;
             ChangeFeedProcessor processor = this.Container
-                .GetChangeFeedProcessorBuilder("test", (ChangeFeedProcessorContext context, IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                .GetChangeFeedProcessorBuilder("test", async (ChangeFeedProcessorContext context, IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
                 {
-                    this.ValidateContext(context);
+                    await this.ValidateContextAsync(context);
                     Assert.IsTrue(docs.Count > 0);
                     processedDocCount += docs.Count;
                     foreach (dynamic doc in docs)
@@ -368,7 +366,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                         allDocsProcessed.Set();
                     }
 
-                    return Task.CompletedTask;
+                    return;
                 })
                 .WithStartTime(now)
                 .WithInstanceName("random")
@@ -382,7 +380,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             Assert.AreEqual("doc5.doc6.doc7.doc8.doc9.", accumulator);
         }
 
-        private async void ValidateContext(ChangeFeedProcessorContext changeFeedProcessorContext)
+        private async Task ValidateContextAsync(ChangeFeedProcessorContext changeFeedProcessorContext)
         {
             Assert.IsNotNull(changeFeedProcessorContext.LeaseToken);
             Assert.IsNotNull(changeFeedProcessorContext.Diagnostics);
