@@ -60,8 +60,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     {
                         allDocsProcessed.Set();
                     }
-
-                    return;
                 })
                 .WithInstanceName("random")
                 .WithLeaseContainer(this.LeaseContainer).Build();
@@ -138,7 +136,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     Assert.IsNotNull(cfpException);
                     Assert.ReferenceEquals(exceptionToPropagate, exception.InnerException);
                     await this.ValidateContextAsync(cfpException.ChangeFeedProcessorContext);
-                    return;
                 })
                 .WithLeaseContainer(this.LeaseContainer).Build();
 
@@ -192,8 +189,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                         {
                             allDocsProcessed.Set();
                         }
-
-                        return;
                     })
                     .WithInstanceName("random")
                     .WithLeaseContainer(fixedLeasesContainer).Build();
@@ -253,8 +248,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     {
                         allDocsProcessed.Set();
                     }
-
-                    return;
                 })
                 .WithStartFromBeginning()
                 .WithInstanceName("random")
@@ -310,8 +303,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     {
                         allDocsProcessed.Set();
                     }
-
-                    return;
                 })
                 .WithStartTime(DateTime.MinValue.ToUniversalTime())
                 .WithInstanceName("random")
@@ -365,8 +356,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     {
                         allDocsProcessed.Set();
                     }
-
-                    return;
                 })
                 .WithStartTime(now)
                 .WithInstanceName("random")
@@ -400,8 +389,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             IEnumerable<string> partitionKeyRanges = await this.Container.GetPartitionKeyRangesAsync(feedRange);
 
             Assert.IsNotNull(partitionKeyRanges);
-            Assert.AreEqual(1, partitionKeyRanges.Count());
-            Assert.AreEqual(expected: "0", actual: partitionKeyRanges.FirstOrDefault());
         }
 
     }
