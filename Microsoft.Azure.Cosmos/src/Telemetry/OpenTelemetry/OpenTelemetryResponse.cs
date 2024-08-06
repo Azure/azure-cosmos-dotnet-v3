@@ -8,11 +8,12 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Net;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Documents;
     using Telemetry;
 
     internal sealed class OpenTelemetryResponse : OpenTelemetryAttributes
     {
-        internal OpenTelemetryResponse(TransactionalBatchResponse responseMessage)
+        internal OpenTelemetryResponse(TransactionalBatchResponse responseMessage, bool isHomogenousOperations, OperationType? batchOperation)
            : this(
                   statusCode: responseMessage.StatusCode,
                   requestCharge: OpenTelemetryResponse.GetHeader(responseMessage)?.RequestCharge,
@@ -22,7 +23,9 @@ namespace Microsoft.Azure.Cosmos
                   requestMessage: null,
                   subStatusCode: OpenTelemetryResponse.GetHeader(responseMessage)?.SubStatusCode,
                   activityId: OpenTelemetryResponse.GetHeader(responseMessage)?.ActivityId,
-                  correlationId: OpenTelemetryResponse.GetHeader(responseMessage)?.CorrelatedActivityId)
+                  correlationId: OpenTelemetryResponse.GetHeader(responseMessage)?.CorrelatedActivityId,
+                  batchSize: responseMessage.GetBatchSize(),
+                  batchOperationName: isHomogenousOperations ? batchOperation : null )
         {
         }
 
@@ -52,7 +55,9 @@ namespace Microsoft.Azure.Cosmos
             Documents.SubStatusCodes? subStatusCode,
             string activityId,
             string correlationId,
-            Documents.OperationType operationType = Documents.OperationType.Invalid)
+            Documents.OperationType operationType = Documents.OperationType.Invalid,
+            int? batchSize = null,
+            Documents.OperationType? batchOperationName = null)
             : base(requestMessage)
         {
             this.StatusCode = statusCode;
@@ -64,6 +69,8 @@ namespace Microsoft.Azure.Cosmos
             this.ActivityId = activityId;
             this.CorrelatedActivityId = correlationId;
             this.OperationType = operationType;
+            this.BatchSize = batchSize;
+            this.BatchOperationName = batchOperationName;
         }
 
         private static string GetPayloadSize(ResponseMessage response)

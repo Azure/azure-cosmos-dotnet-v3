@@ -1224,7 +1224,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             int endLineNumber;
 
             //----------------------------------------------------------------
-            //  Standard Batch
+            //  Standard Batch (Non Homogenous Operations)
             //----------------------------------------------------------------
             {
                 startLineNumber = GetLineNumber();
@@ -1258,6 +1258,34 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 endLineNumber = GetLineNumber();
 
                 inputs.Add(new Input("Batch Operation", trace, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
+
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
+            }
+            //----------------------------------------------------------------
+
+            //----------------------------------------------------------------
+            //  Standard Batch (Homogenous Operations)
+            //----------------------------------------------------------------
+            {
+                startLineNumber = GetLineNumber();
+                string pkValue = "DiagnosticTestPk";
+                TransactionalBatch batch = container.CreateTransactionalBatch(new PartitionKey(pkValue));
+                List<ToDoActivity> createItems = new List<ToDoActivity>();
+                for (int i = 0; i < 50; i++)
+                {
+                    ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
+                    createItems.Add(item);
+                    batch.CreateItem<ToDoActivity>(item);
+                }
+
+                TransactionalBatchRequestOptions requestOptions = null;
+                TransactionalBatchResponse response = await batch.ExecuteAsync(requestOptions);
+
+                Assert.IsNotNull(response);
+                ITrace trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
+                endLineNumber = GetLineNumber();
+
+                inputs.Add(new Input("Batch Homogenous Operation", trace, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
