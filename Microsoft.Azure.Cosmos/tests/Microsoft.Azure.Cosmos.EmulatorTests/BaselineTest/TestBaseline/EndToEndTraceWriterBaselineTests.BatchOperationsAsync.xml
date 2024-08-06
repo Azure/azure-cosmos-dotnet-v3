@@ -142,9 +142,9 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.ExecuteAsync" displayName="ExecuteAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">ExecuteAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">ExecuteAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
@@ -152,6 +152,160 @@
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Batch</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.batch.size">90</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.item_count">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="error.type">400/1001</ATTRIBUTE>
+  </ACTIVITY>
+  <EVENT name="FailedRequest" />
+</OTelActivities></Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Batch Homogenous Operation</Description>
+      <Setup><![CDATA[
+    string pkValue = "DiagnosticTestPk";
+    TransactionalBatch batch = container.CreateTransactionalBatch(new PartitionKey(pkValue));
+    List<ToDoActivity> createItems = new List<ToDoActivity>();
+    for (int i = 0; i < 50; i++)
+    {
+        ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
+        createItems.Add(item);
+        batch.CreateItem<ToDoActivity>(item);
+    }
+
+    TransactionalBatchRequestOptions requestOptions = null;
+    TransactionalBatchResponse response = await batch.ExecuteAsync(requestOptions);
+
+    Assert.IsNotNull(response);
+    ITrace trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
+]]></Setup>
+    </Input>
+    <Output>
+      <Text><![CDATA[.
+└── ExecuteAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │   (
+    │       [Client Configuration]
+    │       Redacted To Not Change The Baselines From Run To Run
+    │       [DistributedTraceId]
+    │       Redacted To Not Change The Baselines From Run To Run
+    │   )
+    └── Execute Next Batch(00000000-0000-0000-0000-000000000000)  Batch-Component  00:00:00:000  0.00 milliseconds  
+        ├── Create Batch Request(00000000-0000-0000-0000-000000000000)  Batch-Component  00:00:00:000  0.00 milliseconds  
+        └── Execute Batch Request(00000000-0000-0000-0000-000000000000)  Batch-Component  00:00:00:000  0.00 milliseconds  
+            ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+            │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+            │       │   (
+            │       │       [System Info]
+            │       │       Redacted To Not Change The Baselines From Run To Run
+            │       │   )
+            │       └── Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+            │           └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+            │               └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+            │                   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+            │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+            │                               (
+            │                                   [Client Side Request Stats]
+            │                                   Redacted To Not Change The Baselines From Run To Run
+            │                               )
+            └── Create Trace(00000000-0000-0000-0000-000000000000)  Batch-Component  00:00:00:000  0.00 milliseconds  
+]]></Text>
+      <Json><![CDATA[{
+  "Summary": {},
+  "name": "ExecuteAsync",
+  "start datetime": "0001-01-01T00:00:00Z",
+  "duration in milliseconds": 0,
+  "data": {
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
+    "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
+  },
+  "children": [
+    {
+      "name": "Execute Next Batch",
+      "duration in milliseconds": 0,
+      "children": [
+        {
+          "name": "Create Batch Request",
+          "duration in milliseconds": 0
+        },
+        {
+          "name": "Execute Batch Request",
+          "duration in milliseconds": 0,
+          "children": [
+            {
+              "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+              "duration in milliseconds": 0,
+              "children": [
+                {
+                  "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
+                  "duration in milliseconds": 0,
+                  "data": {
+                    "System Info": "Redacted To Not Change The Baselines From Run To Run"
+                  },
+                  "children": [
+                    {
+                      "name": "Microsoft.Azure.Cosmos.Handlers.TelemetryHandler",
+                      "duration in milliseconds": 0,
+                      "children": [
+                        {
+                          "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
+                          "duration in milliseconds": 0,
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
+                              "duration in milliseconds": 0,
+                              "children": [
+                                {
+                                  "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                                  "duration in milliseconds": 0,
+                                  "children": [
+                                    {
+                                      "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                      "duration in milliseconds": 0,
+                                      "data": {
+                                        "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                      }
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Create Trace",
+              "duration in milliseconds": 0
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}]]></Json><OTelActivities>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.ExecuteAsync" displayName="ExecuteAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">ExecuteAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Batch.Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.batch.size">50</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
