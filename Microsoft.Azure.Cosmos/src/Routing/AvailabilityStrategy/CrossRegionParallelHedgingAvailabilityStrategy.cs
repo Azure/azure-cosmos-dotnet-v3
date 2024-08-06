@@ -107,6 +107,8 @@ namespace Microsoft.Azure.Cosmos
             {
                 return await sender(request, cancellationToken);
             }
+            
+            ITrace trace = request.Trace;
 
             using (CancellationTokenSource cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
             {
@@ -153,6 +155,7 @@ namespace Microsoft.Azure.Cosmos
                                     clonedBody: clonedBody,
                                     hedgeRegions: hedgeRegions,
                                     requestNumber: requestNumber,
+                                    trace: trace,
                                     cancellationToken: cancellationToken,
                                     cancellationTokenSource: cancellationTokenSource);
 
@@ -240,17 +243,11 @@ namespace Microsoft.Azure.Cosmos
             CloneableStream clonedBody,
             IReadOnlyCollection<string> hedgeRegions,
             int requestNumber,
+            ITrace trace,
             CancellationToken cancellationToken,
             CancellationTokenSource cancellationTokenSource)
         {
             RequestMessage clonedRequest;
-            ITrace trace = request.Trace;
-
-            do
-            {
-                trace = trace.Parent;
-            }
-            while (trace.Name != "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler");
 
             using (clonedRequest = request.Clone(
                 trace,
