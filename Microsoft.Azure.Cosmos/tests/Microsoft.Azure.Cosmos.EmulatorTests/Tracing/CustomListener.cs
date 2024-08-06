@@ -32,23 +32,22 @@ namespace Microsoft.Azure.Cosmos.Tests
             "az.schema_url",
             "kind",
             "az.namespace",
-            "db.operation",
+            "db.operation.name",
             "db.system",
             "server.address",
-            "db.name",
-            "db.cosmosdb.container",
+            "db.namespace",
+            "db.collection.name",
             "db.cosmosdb.connection_mode",
             "db.cosmosdb.operation_type",
             "db.cosmosdb.regions_contacted",
-            "rntbd.sub_status_code",
-            "rntbd.status_code",
+            "db.operation.batch.size",
             "error.type"
         };
 
         private static readonly List<string> TagsToSkip = new List<string>
         {
-             "db.cosmosdb.request_content_length_bytes",
-             "db.cosmosdb.response_content_length_bytes"
+             "db.cosmosdb.request_content_length",
+             "db.cosmosdb.response_content_length"
         };
 
         private ConcurrentBag<IDisposable> subscriptions = new();
