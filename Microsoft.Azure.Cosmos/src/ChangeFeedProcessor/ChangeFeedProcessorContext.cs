@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Headers Headers { get; }
 
         /// <summary>
-/// The <see cref="FeedRange"/> within the monitored container from which the changes emanated.
+        /// The <see cref="FeedRange"/> within the monitored container from which the changes emanated.
         /// </summary>
         public abstract FeedRange FeedRange { get; }
     }
