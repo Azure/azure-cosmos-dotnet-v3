@@ -87,13 +87,12 @@
           ],
           "MethodInfo": "Boolean get_IsTimeToLiveExpired();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Boolean IsTimeToLiveExpired[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"timeToLiveExpired\")]-[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"timeToLiveExpired\")]": {
+        "Boolean IsTimeToLiveExpired[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"timeToLiveExpired\")]": {
           "Type": "Property",
           "Attributes": [
-            "JsonPropertyAttribute",
-            "JsonPropertyNameAttribute"
+            "JsonPropertyAttribute"
           ],
-          "MethodInfo": "Boolean IsTimeToLiveExpired;CanRead:True;CanWrite:False;Boolean get_IsTimeToLiveExpired();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Boolean IsTimeToLiveExpired;CanRead:True;CanWrite:True;Boolean get_IsTimeToLiveExpired();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Int64 get_Lsn()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -109,21 +108,19 @@
           ],
           "MethodInfo": "Int64 get_PreviousLsn();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Int64 Lsn[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"lsn\")]-[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"lsn\")]": {
+        "Int64 Lsn[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"lsn\")]": {
           "Type": "Property",
           "Attributes": [
-            "JsonPropertyAttribute",
-            "JsonPropertyNameAttribute"
+            "JsonPropertyAttribute"
           ],
-          "MethodInfo": "Int64 Lsn;CanRead:True;CanWrite:False;Int64 get_Lsn();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Int64 Lsn;CanRead:True;CanWrite:True;Int64 get_Lsn();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Int64 PreviousLsn[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"previousImageLSN\")]-[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"previousImageLSN\")]": {
+        "Int64 PreviousLsn[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"previousImageLSN\")]": {
           "Type": "Property",
           "Attributes": [
-            "JsonPropertyAttribute",
-            "JsonPropertyNameAttribute"
+            "JsonPropertyAttribute"
           ],
-          "MethodInfo": "Int64 PreviousLsn;CanRead:True;CanWrite:False;Int64 get_PreviousLsn();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Int64 PreviousLsn;CanRead:True;CanWrite:True;Int64 get_PreviousLsn();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.ChangeFeedOperationType get_OperationType()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -132,23 +129,20 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedOperationType get_OperationType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.ChangeFeedOperationType OperationType[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"operationType\")]-[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"operationType\")]": {
+        "Microsoft.Azure.Cosmos.ChangeFeedOperationType OperationType[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"operationType\")]": {
           "Type": "Property",
           "Attributes": [
-            "JsonPropertyAttribute",
-            "JsonPropertyNameAttribute"
+            "JsonPropertyAttribute"
           ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedOperationType OperationType;CanRead:True;CanWrite:False;Microsoft.Azure.Cosmos.ChangeFeedOperationType get_OperationType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedOperationType OperationType;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.ChangeFeedOperationType get_OperationType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.DateTime ConflictResolutionTimestamp[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"crts\")]-[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"crts\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]-[System.Text.Json.Serialization.JsonConverterAttribute(typeof(Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters.STJUnixDateTimeConverter))]": {
+        "System.DateTime ConflictResolutionTimestamp[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"crts\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]": {
           "Type": "Property",
           "Attributes": [
             "JsonConverterAttribute",
-            "JsonConverterAttribute",
-            "JsonPropertyAttribute",
-            "JsonPropertyNameAttribute"
+            "JsonPropertyAttribute"
           ],
-          "MethodInfo": "System.DateTime ConflictResolutionTimestamp;CanRead:True;CanWrite:False;System.DateTime get_ConflictResolutionTimestamp();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.DateTime ConflictResolutionTimestamp;CanRead:True;CanWrite:True;System.DateTime get_ConflictResolutionTimestamp();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.DateTime get_ConflictResolutionTimestamp()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -157,10 +151,10 @@
           ],
           "MethodInfo": "System.DateTime get_ConflictResolutionTimestamp();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void .ctor(System.DateTime, Int64, Microsoft.Azure.Cosmos.ChangeFeedOperationType, Int64, Boolean)": {
+        "Void .ctor()": {
           "Type": "Constructor",
           "Attributes": [],
-          "MethodInfo": "[Void .ctor(System.DateTime, Int64, Microsoft.Azure.Cosmos.ChangeFeedOperationType, Int64, Boolean), Void .ctor(System.DateTime, Int64, Microsoft.Azure.Cosmos.ChangeFeedOperationType, Int64, Boolean)]"
+          "MethodInfo": "[Void .ctor(), Void .ctor()]"
         }
       },
       "NestedTypes": {}
