@@ -10,12 +10,12 @@ SELECT VALUE root
 FROM root 
 WHERE (root["NumberValueDotNet"] = 1)]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\", \"DateTimeFieldDotNet\": null, \"DataTypeField\": null, \"DateOnlyField\": \"2024-05-09\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\", \"DateTimeFieldDotNet\": null, \"DataTypeField\": null, \"DateOnlyField\": \"2024-05-09\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\", \"DateTimeFieldDotNet\": null, \"DataTypeField\": null, \"DateOnlyField\": \"2024-05-09\"}"
 ]]]></InputData>
       <Results><![CDATA[[
-  "{NumericField:1,StringField:1,id:1-False,Pk:Test}"
+  "{NumericField:1,StringField:1,id:1-False,Pk:Test,DateOnlyField:2024-05-09}"
 ]]]></Results>
     </Output>
   </Result>
@@ -28,11 +28,11 @@ WHERE (root["NumberValueDotNet"] = 1)]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root = {"NumberValueDotNet": 1, "StringValueDotNet": "1", "id": null, "Pk": null, "DateTimeFieldDotNet": null, "DataTypeField": null})]]></SqlQuery>
+WHERE (root = {"NumberValueDotNet": 1, "StringValueDotNet": "1", "id": null, "Pk": null, "DateTimeFieldDotNet": null, "DataTypeField": null, "DateOnlyField": null})]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\", \"DateTimeFieldDotNet\": null, \"DataTypeField\": null, \"DateOnlyField\": \"2024-05-09\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\", \"DateTimeFieldDotNet\": null, \"DataTypeField\": null, \"DateOnlyField\": \"2024-05-09\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\", \"DateTimeFieldDotNet\": null, \"DataTypeField\": null, \"DateOnlyField\": \"2024-05-09\"}"
 ]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
@@ -44,12 +44,12 @@ WHERE (root = {"NumberValueDotNet": 1, "StringValueDotNet": "1", "id": null, "Pk
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"NumberValueDotNet": 1, "StringValueDotNet": "1", "id": null, "Pk": null, "DateTimeFieldDotNet": null, "DataTypeField": null} 
+SELECT VALUE {"NumberValueDotNet": 1, "StringValueDotNet": "1", "id": null, "Pk": null, "DateTimeFieldDotNet": null, "DataTypeField": null, "DateOnlyField": null} 
 FROM root]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\", \"DateTimeFieldDotNet\": null, \"DataTypeField\": null, \"DateOnlyField\": \"2024-05-09\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\", \"DateTimeFieldDotNet\": null, \"DataTypeField\": null, \"DateOnlyField\": \"2024-05-09\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\", \"DateTimeFieldDotNet\": null, \"DataTypeField\": null, \"DateOnlyField\": \"2024-05-09\"}"
 ]]]></InputData>
       <Results><![CDATA[[
   "{NumericField:1,StringField:1,id:,Pk:}",
@@ -65,12 +65,12 @@ FROM root]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE ((root["NumberValueDotNet"] > 1) ? {"NumberValueDotNet": 1, "StringValueDotNet": "1", "id": null, "Pk": null, "DateTimeFieldDotNet": null, "DataTypeField": null} : {"NumberValueDotNet": 1, "StringValueDotNet": "1", "id": null, "Pk": null, "DateTimeFieldDotNet": null, "DataTypeField": null}) 
+SELECT VALUE ((root["NumberValueDotNet"] > 1) ? {"NumberValueDotNet": 1, "StringValueDotNet": "1", "id": null, "Pk": null, "DateTimeFieldDotNet": null, "DataTypeField": null, "DateOnlyField": null} : {"NumberValueDotNet": 1, "StringValueDotNet": "1", "id": null, "Pk": null, "DateTimeFieldDotNet": null, "DataTypeField": null, "DateOnlyField": null}) 
 FROM root]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\", \"DateTimeFieldDotNet\": null, \"DataTypeField\": null, \"DateOnlyField\": \"2024-05-09\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\", \"DateTimeFieldDotNet\": null, \"DataTypeField\": null, \"DateOnlyField\": \"2024-05-09\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\", \"DateTimeFieldDotNet\": null, \"DataTypeField\": null, \"DateOnlyField\": \"2024-05-09\"}"
 ]]]></InputData>
       <Results><![CDATA[[
   "{NumericField:1,StringField:1,id:,Pk:}",
@@ -90,9 +90,9 @@ SELECT VALUE "A"
 FROM root 
 WHERE (root = {"NumberValueDotNet": root["NumberValueDotNet"], "StringValueDotNet": root["StringValueDotNet"]})]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\", \"DateTimeFieldDotNet\": null, \"DataTypeField\": null, \"DateOnlyField\": \"2024-05-09\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\", \"DateTimeFieldDotNet\": null, \"DataTypeField\": null, \"DateOnlyField\": \"2024-05-09\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\", \"DateTimeFieldDotNet\": null, \"DataTypeField\": null, \"DateOnlyField\": \"2024-05-09\"}"
 ]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
@@ -108,14 +108,14 @@ SELECT TOP 5 VALUE root
 FROM root 
 ORDER BY root["NumberValueDotNet"] ASC]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\", \"DateTimeFieldDotNet\": null, \"DataTypeField\": null, \"DateOnlyField\": \"2024-05-09\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\", \"DateTimeFieldDotNet\": null, \"DataTypeField\": null, \"DateOnlyField\": \"2024-05-09\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\", \"DateTimeFieldDotNet\": null, \"DataTypeField\": null, \"DateOnlyField\": \"2024-05-09\"}"
 ]]]></InputData>
       <Results><![CDATA[[
-  "{NumericField:0,StringField:0,id:0-False,Pk:Test}",
-  "{NumericField:1,StringField:1,id:1-False,Pk:Test}",
-  "{NumericField:2,StringField:2,id:2-False,Pk:Test}"
+  "{NumericField:0,StringField:0,id:0-False,Pk:Test,DateOnlyField:2024-05-09}",
+  "{NumericField:1,StringField:1,id:1-False,Pk:Test,DateOnlyField:2024-05-09}",
+  "{NumericField:2,StringField:2,id:2-False,Pk:Test,DateOnlyField:2024-05-09}"
 ]]]></Results>
     </Output>
   </Result>
@@ -129,9 +129,9 @@ ORDER BY root["NumberValueDotNet"] ASC]]></SqlQuery>
 SELECT VALUE ((root["NumberValueDotNet"] > 1) ? "true" : "false") 
 FROM root]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\", \"DateTimeFieldDotNet\": null, \"DataTypeField\": null, \"DateOnlyField\": \"2024-05-09\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\", \"DateTimeFieldDotNet\": null, \"DataTypeField\": null, \"DateOnlyField\": \"2024-05-09\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\", \"DateTimeFieldDotNet\": null, \"DataTypeField\": null, \"DateOnlyField\": \"2024-05-09\"}"
 ]]]></InputData>
       <Results><![CDATA[[
   "false",
@@ -151,9 +151,9 @@ SELECT VALUE root
 FROM root 
 WHERE (root["DateTimeFieldDotNet"] != null)]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\", \"DateTimeFieldDotNet\": null, \"DataTypeField\": null, \"DateOnlyField\": \"2024-05-09\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\", \"DateTimeFieldDotNet\": null, \"DataTypeField\": null, \"DateOnlyField\": \"2024-05-09\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\", \"DateTimeFieldDotNet\": null, \"DataTypeField\": null, \"DateOnlyField\": \"2024-05-09\"}"
 ]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
@@ -169,9 +169,9 @@ SELECT VALUE root
 FROM root 
 WHERE (root["DataTypeField"] != null)]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\", \"DateTimeFieldDotNet\": null, \"DataTypeField\": null, \"DateOnlyField\": \"2024-05-09\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\", \"DateTimeFieldDotNet\": null, \"DataTypeField\": null, \"DateOnlyField\": \"2024-05-09\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\", \"DateTimeFieldDotNet\": null, \"DataTypeField\": null, \"DateOnlyField\": \"2024-05-09\"}"
 ]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
@@ -187,9 +187,9 @@ SELECT VALUE root
 FROM root 
 WHERE (root["DateTimeFieldDotNet"] = "1970-01-01T00:00:00Z")]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\", \"DateTimeFieldDotNet\": null, \"DataTypeField\": null, \"DateOnlyField\": \"2024-05-09\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\", \"DateTimeFieldDotNet\": null, \"DataTypeField\": null, \"DateOnlyField\": \"2024-05-09\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\", \"DateTimeFieldDotNet\": null, \"DataTypeField\": null, \"DateOnlyField\": \"2024-05-09\"}"
 ]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
@@ -205,9 +205,9 @@ SELECT VALUE root
 FROM root 
 WHERE (root["DataTypeField"] = 2)]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\", \"DateTimeFieldDotNet\": null, \"DataTypeField\": null, \"DateOnlyField\": \"2024-05-09\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\", \"DateTimeFieldDotNet\": null, \"DataTypeField\": null, \"DateOnlyField\": \"2024-05-09\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\", \"DateTimeFieldDotNet\": null, \"DataTypeField\": null, \"DateOnlyField\": \"2024-05-09\"}"
 ]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
@@ -223,14 +223,14 @@ SELECT VALUE root
 FROM root 
 WHERE (root["StringValueDotNet"] != null)]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
-  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\", \"DateTimeFieldDotNet\": null, \"DataTypeField\": null, \"DateOnlyField\": \"2024-05-09\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\", \"DateTimeFieldDotNet\": null, \"DataTypeField\": null, \"DateOnlyField\": \"2024-05-09\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\", \"DateTimeFieldDotNet\": null, \"DataTypeField\": null, \"DateOnlyField\": \"2024-05-09\"}"
 ]]]></InputData>
       <Results><![CDATA[[
-  "{NumericField:0,StringField:0,id:0-False,Pk:Test}",
-  "{NumericField:1,StringField:1,id:1-False,Pk:Test}",
-  "{NumericField:2,StringField:2,id:2-False,Pk:Test}"
+  "{NumericField:0,StringField:0,id:0-False,Pk:Test,DateOnlyField:2024-05-09}",
+  "{NumericField:1,StringField:1,id:1-False,Pk:Test,DateOnlyField:2024-05-09}",
+  "{NumericField:2,StringField:2,id:2-False,Pk:Test,DateOnlyField:2024-05-09}"
 ]]]></Results>
     </Output>
   </Result>
