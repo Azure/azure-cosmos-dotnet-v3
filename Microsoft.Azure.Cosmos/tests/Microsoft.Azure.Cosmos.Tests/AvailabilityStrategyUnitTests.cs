@@ -1,6 +1,7 @@
 ﻿namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.IO;
     using System.Net.Http;
@@ -59,12 +60,14 @@
         }
 
         [TestMethod]
-        public void HedgedRegionToString()
+        public void HedgedRegionsToString()
         {
-            (string region, Uri regionEndpoint) = ("region", new Uri("https://regionEndpoint-region.documents.azure.com"));
-            string hedgedRegionToString = CrossRegionParallelHedgingAvailabilityStrategy.HedgedRegionToString((region, regionEndpoint));
+            ConcurrentDictionary<string, string> regions = new ConcurrentDictionary<string, string>();
+            regions.TryAdd("region", "Hedge Request Sent");
 
-            Assert.AreEqual("region: https://regionendpoint-region.documents.azure.com/", hedgedRegionToString);
+            string hedgedRegionToString = CrossRegionParallelHedgingAvailabilityStrategy.HedgedRegionsToString(regions);
+
+            Assert.AreEqual("[region, Hedge Request Sent]", hedgedRegionToString);
         }
     }
 }
