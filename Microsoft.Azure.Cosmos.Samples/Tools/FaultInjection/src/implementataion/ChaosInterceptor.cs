@@ -238,7 +238,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             return this.channelStore;
         }
 
-        public Task<(bool, StoreResponse)> OnHttpRequestCallAsync(DocumentServiceRequest request)
+        public Task<(bool, HttpResponseMessage)> OnHttpRequestCallAsync(DocumentServiceRequest request)
         {
             throw new NotImplementedException();
         }
