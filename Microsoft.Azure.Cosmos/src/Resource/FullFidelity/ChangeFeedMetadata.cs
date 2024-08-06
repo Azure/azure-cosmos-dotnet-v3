@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Converters;
 
     /// <summary>
     /// The metadata of a change feed resource with <see cref="ChangeFeedMode"/> is initialized to <see cref="ChangeFeedMode.AllVersionsAndDeletes"/>.
@@ -39,6 +40,7 @@ namespace Microsoft.Azure.Cosmos
         /// The change's feed operation type <see cref="ChangeFeedOperationType"/>.
         /// </summary>
         [JsonProperty(PropertyName = ChangeFeedMetadataFields.OperationType, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonConverter(typeof(StringEnumConverter))]
         public ChangeFeedOperationType OperationType { get; internal set; }
 
         /// <summary>
