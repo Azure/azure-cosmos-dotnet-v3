@@ -102,9 +102,9 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemStreamAsync" displayName="CreateItemStreamAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemStreamAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">CreateItemStreamAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
@@ -218,9 +218,9 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.ReadItemStreamAsync" displayName="ReadItemStreamAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">ReadItemStreamAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">ReadItemStreamAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
@@ -342,9 +342,9 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.ReplaceItemStreamAsync" displayName="ReplaceItemStreamAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">ReplaceItemStreamAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">ReplaceItemStreamAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
@@ -461,9 +461,9 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.DeleteItemStreamAsync" displayName="DeleteItemStreamAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">DeleteItemStreamAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">DeleteItemStreamAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
