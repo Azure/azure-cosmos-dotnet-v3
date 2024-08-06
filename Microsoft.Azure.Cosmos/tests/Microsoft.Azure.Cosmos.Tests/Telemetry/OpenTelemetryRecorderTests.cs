@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 
                 if (instance is TransactionalBatchResponse transactionInstance)
                 {
-                    _ = new OpenTelemetryResponse(transactionInstance);
+                    _ = new OpenTelemetryResponse(transactionInstance, false, null);
                 }
                 else if (instance is ResponseMessage responseMessageInstance)
                 {
