@@ -14,14 +14,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     /// If you are making changes in this file please make sure you are adding similar test in <see cref="ClientTelemetryTests"/> also.
     /// </summary>
     [TestClass]
-    [TestCategory("Quarantine") /* Release pipelines failing to connect to telemetry service */]
     [TestCategory("ClientTelemetryRelease")]
     public class ClientTelemetryReleaseTests : ClientTelemetryTestsBase
     {
         public override CosmosClientBuilder GetBuilder()
         {
             string connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_ACCOUNT_CONNECTION_STRING", null);
-            return new CosmosClientBuilder(connectionString: connectionString);
+
+            CosmosClientBuilder builder = new CosmosClientBuilder(connectionString: connectionString);
+
+            builder.WithHttpClientFactory (() =>
+            {
+                HttpClientHandler httpClientHandler = new()
+                {
+                    SslProtocols = System.Security.Authentication.SslProtocols.Tls12
+                };
+                return new HttpClient(httpClientHandler);
+            });
+            return builder;
         }
 
         /// <summary>
