@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
         private static long ToUnixTimeInSecondsFromDateTime(DateTime date)
         {
             DateTime unixEpoch = new (1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-            return (date.ToUniversalTime().Ticks - unixEpoch.Ticks) / TimeSpan.TicksPerSecond;
+            return (long)(date - unixEpoch).TotalSeconds;
         }
 
         private static DateTime ToDateTimeFromUnixTimeInSeconds(long unixTimeInSeconds)

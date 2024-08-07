@@ -341,7 +341,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                 options: new JsonSerializerOptions());
 
             Assert.AreEqual(
-                expected: @"{""crts"":1722470370,""timeToLiveExpired"":true,""lsn"":374,""operationType"":""Create"",""previousImageLSN"":15}",
+                expected: @"{""crts"":1722455970,""timeToLiveExpired"":true,""lsn"":374,""operationType"":""Create"",""previousImageLSN"":15}",
                 actual: json);
         }
 
@@ -362,7 +362,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                 options: new JsonSerializerOptions());
 
             Assert.AreEqual(
-                expected: @"{""crts"":1722470370,""timeToLiveExpired"":false,""lsn"":374,""operationType"":""Create"",""previousImageLSN"":0}",
+                expected: @"{""crts"":1722455970,""timeToLiveExpired"":false,""lsn"":374,""operationType"":""Create"",""previousImageLSN"":0}",
                 actual: json);
         }
 
