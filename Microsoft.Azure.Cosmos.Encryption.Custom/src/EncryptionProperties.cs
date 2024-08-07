@@ -1,8 +1,4 @@
-﻿//------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
-//------------------------------------------------------------
-
-namespace Microsoft.Azure.Cosmos.Encryption.Custom
+﻿namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
     using System.Collections.Generic;
     using Newtonsoft.Json;
@@ -24,18 +20,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         [JsonProperty(PropertyName = Constants.EncryptedPaths)]
         public IEnumerable<string> EncryptedPaths { get; }
 
+        public CompressionOption CompressionOption { get; set; }
+
         public EncryptionProperties(
             int encryptionFormatVersion,
             string encryptionAlgorithm,
             string dataEncryptionKeyId,
             byte[] encryptedData,
-            IEnumerable<string> encryptedPaths)
+            IEnumerable<string> encryptedPaths,
+            CompressionOption compressionOption)
         {
             this.EncryptionFormatVersion = encryptionFormatVersion;
             this.EncryptionAlgorithm = encryptionAlgorithm;
             this.DataEncryptionKeyId = dataEncryptionKeyId;
             this.EncryptedData = encryptedData;
             this.EncryptedPaths = encryptedPaths;
+            this.CompressionOption = compressionOption;
         }
     }
 }

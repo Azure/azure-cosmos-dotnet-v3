@@ -8,10 +8,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
+    using System.IO.Compression;
     using System.Linq;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using BrotliSharpLib;
     using Microsoft.Data.Encryption.Cryptography.Serializers;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -49,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 input,
                 encryptor,
                 encryptionOptions);
-
+            diagnosticsContext = null;
             if (!encryptionOptions.PathsToEncrypt.Any())
             {
                 return input;
@@ -87,6 +89,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
                     {
                         string propertyName = pathToEncrypt.Substring(1);
+
                         if (!itemJObj.TryGetValue(propertyName, out JToken propertyValue))
                         {
                             continue;
@@ -95,6 +98,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         if (propertyValue.Type == JTokenType.Null)
                         {
                             continue;
+                        }
+
+                        if (encryptionOptions.CompressionOption.PathsToCompress.Contains(pathToEncrypt) && encryptionOptions.CompressionOption.Algorithm != CompressionAlgorithm.None)
+                        {
+                            propertyValue = await CompressionAsync(propertyValue, encryptionOptions);
                         }
 
                         (typeMarker, plainText) = EncryptionProcessor.Serialize(propertyValue);
@@ -121,7 +129,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                           encryptionOptions.EncryptionAlgorithm,
                           encryptionOptions.DataEncryptionKeyId,
                           encryptedData: null,
-                          pathsEncrypted);
+                          pathsEncrypted,
+                          encryptionOptions.CompressionOption);
                     break;
 
                 case CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized:
@@ -161,7 +170,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                           encryptionOptions.EncryptionAlgorithm,
                           encryptionOptions.DataEncryptionKeyId,
                           encryptedData: cipherText,
-                          encryptionOptions.PathsToEncrypt);
+                          encryptionOptions.PathsToEncrypt,
+                          encryptionOptions.CompressionOption);
                     break;
 
                 default:
@@ -305,7 +315,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             List<string> pathsDecrypted = new List<string>();
             foreach (JProperty property in plainTextJObj.Properties())
             {
-                document[property.Name] = property.Value;
+                if (encryptionProperties.CompressionOption.PathsToCompress.Contains("/" + property.Name) && encryptionProperties.CompressionOption.Algorithm != CompressionAlgorithm.None)
+                {
+                    //decompression
+                    document[property.Name] = await DecompressionAsync_1(property.Value.ToString(), encryptionProperties);
+                }
+                else
+                {
+                    document[property.Name] = property.Value;
+                }
+
                 pathsDecrypted.Add("/" + property.Name);
             }
 
@@ -315,6 +334,283 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             document.Remove(Constants.EncryptedInfo);
             return decryptionContext;
+        }
+
+        public static async Task<Stream> EncryptAsync_1(
+    Stream input,
+    Encryptor encryptor,
+    EncryptionOptions encryptionOptions,
+    CosmosDiagnosticsContext diagnosticsContext,
+    CancellationToken cancellationToken)
+        {
+            EncryptionProcessor.ValidateInputForEncrypt(
+                input,
+                encryptor,
+                encryptionOptions);
+
+            diagnosticsContext = null;
+
+            if (!encryptionOptions.PathsToEncrypt.Any())
+            {
+                return input;
+            }
+
+            if (!encryptionOptions.PathsToEncrypt.Distinct().SequenceEqual(encryptionOptions.PathsToEncrypt))
+            {
+                throw new InvalidOperationException("Duplicate paths in PathsToEncrypt passed via EncryptionOptions.");
+            }
+
+            foreach (string path in encryptionOptions.PathsToEncrypt)
+            {
+                if (string.IsNullOrWhiteSpace(path) || path[0] != '/' || path.LastIndexOf('/') != 0)
+                {
+                    throw new InvalidOperationException($"Invalid path {path ?? string.Empty}, {nameof(encryptionOptions.PathsToEncrypt)}");
+                }
+
+                if (string.Equals(path.Substring(1), "id"))
+                {
+                    throw new InvalidOperationException($"{nameof(encryptionOptions.PathsToEncrypt)} includes an invalid path: '{path}'.");
+                }
+            }
+
+            JObject itemJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(input);
+            List<string> pathsEncrypted = new List<string>();
+            EncryptionProperties encryptionProperties = null;
+            byte[] plainText = null;
+            byte[] cipherText = null;
+            TypeMarker typeMarker;
+
+            switch (encryptionOptions.EncryptionAlgorithm)
+            {
+                case CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized:
+                    foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
+                    {
+                        string propertyName = pathToEncrypt;
+                        if (!itemJObj.TryGetValue(propertyName, out JToken propertyValue))
+                        {
+                            continue;
+                        }
+
+                        if (propertyValue.Type == JTokenType.Null)
+                        {
+                            continue;
+                        }
+
+                        (typeMarker, plainText) = EncryptionProcessor.Serialize(propertyValue);
+
+                        cipherText = await encryptor.EncryptAsync(
+                            plainText,
+                            encryptionOptions.DataEncryptionKeyId,
+                            encryptionOptions.EncryptionAlgorithm,
+                            cancellationToken);
+
+                        if (cipherText == null)
+                        {
+                            throw new InvalidOperationException($"{nameof(Encryptor)} returned null cipherText from {nameof(EncryptAsync)}.");
+                        }
+
+                        byte[] cipherTextWithTypeMarker = new byte[cipherText.Length + 1];
+                        cipherTextWithTypeMarker[0] = (byte)typeMarker;
+                        Buffer.BlockCopy(cipherText, 0, cipherTextWithTypeMarker, 1, cipherText.Length);
+                        itemJObj[propertyName] = cipherTextWithTypeMarker;
+                        pathsEncrypted.Add(pathToEncrypt);
+
+                        cancellationToken.ThrowIfCancellationRequested();
+                    }
+
+                    encryptionProperties = new EncryptionProperties(
+                        encryptionFormatVersion: 3,
+                        encryptionOptions.EncryptionAlgorithm,
+                        encryptionOptions.DataEncryptionKeyId,
+                        encryptedData: null,
+                        pathsEncrypted,
+                        encryptionOptions.CompressionOption);
+                    break;
+
+                default:
+                    throw new NotSupportedException($"Encryption Algorithm : {encryptionOptions.EncryptionAlgorithm} is not supported.");
+            }
+
+            itemJObj.Add(Constants.EncryptedInfo, JObject.FromObject(encryptionProperties));
+            input.Dispose();
+            return EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
+        }
+
+        public static async Task<(Stream, DecryptionContext)> DecryptAsync_1(
+            Stream input,
+            Encryptor encryptor,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            if (input == null)
+            {
+                return (input, null);
+            }
+
+            Debug.Assert(input.CanSeek);
+            Debug.Assert(encryptor != null);
+            Debug.Assert(diagnosticsContext != null);
+
+            JObject itemJObj = EncryptionProcessor.RetrieveItem(input);
+            JObject encryptionPropertiesJObj = EncryptionProcessor.RetrieveEncryptionProperties(itemJObj);
+
+            if (encryptionPropertiesJObj == null)
+            {
+                input.Position = 0;
+                return (input, null);
+            }
+
+            EncryptionProperties encryptionProperties = encryptionPropertiesJObj.ToObject<EncryptionProperties>();
+            DecryptionContext decryptionContext = encryptionProperties.EncryptionAlgorithm switch
+            {
+                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized => await EncryptionProcessor.MdeEncAlgoDecryptObjectAsync(
+                    itemJObj,
+                    encryptor,
+                    encryptionProperties,
+                    diagnosticsContext,
+                    cancellationToken),
+                _ => throw new NotSupportedException($"Encryption Algorithm : {encryptionProperties.EncryptionAlgorithm} is not supported."),
+            };
+
+            input.Dispose();
+            return (EncryptionProcessor.BaseSerializer.ToStream(itemJObj), decryptionContext);
+        }
+
+        public static async Task<JToken> CompressionAsync(JToken propertyValue, EncryptionOptions encryptionOptions)
+        {
+            byte[] plainText;
+            if (propertyValue.Type == JTokenType.Object)
+            {
+                // object to a JSON string
+                plainText = Encoding.UTF8.GetBytes(propertyValue.ToString(Formatting.None));
+            }
+            else
+            {
+                plainText = Encoding.UTF8.GetBytes(propertyValue.ToString());
+            }
+
+            byte[] compressedData = encryptionOptions.CompressionOption.Algorithm switch
+            {
+                CompressionAlgorithm.Gzip => await CompressGzipAsync(plainText),
+                CompressionAlgorithm.Brotli => await CompressBrotliAsync(plainText),
+                _ => throw new NotSupportedException($"Compression Algorithm : {encryptionOptions.CompressionOption.Algorithm} is not supported.")
+            };
+
+            return Convert.ToBase64String(compressedData);
+        }
+
+        public static async Task<byte[]> CompressGzipAsync(byte[] data)
+        {
+            using (MemoryStream ms = new MemoryStream())
+            {
+                using (GZipStream gs = new GZipStream(ms, CompressionMode.Compress))
+                {
+                    await gs.WriteAsync(data, 0, data.Length);
+                }
+
+                return ms.ToArray();
+            }
+        }
+
+        public static async Task<byte[]> CompressBrotliAsync(byte[] data)
+        {
+            using (MemoryStream ms = new MemoryStream())
+            {
+                using (BrotliStream bs = new BrotliStream(ms, CompressionMode.Compress))
+                {
+                    await bs.WriteAsync(data, 0, data.Length);
+                }
+
+                return ms.ToArray();
+            }
+        }
+
+        public static async Task<JToken> DecompressionAsync_1(string a, EncryptionProperties encryptionProperties)
+        {
+            byte[] compressedData = Convert.FromBase64String(a);
+            byte[] decompressedData = encryptionProperties.CompressionOption.Algorithm switch
+            {
+                CompressionAlgorithm.Gzip => await DecompressionGzipAsync(compressedData),
+                CompressionAlgorithm.Brotli => await DecompressionBrotliAsync(compressedData),
+                _ => throw new NotSupportedException($"Compression Algorithm: {encryptionProperties.CompressionOption.Algorithm} is not supported.")
+            };
+
+            string decompressedString = Encoding.UTF8.GetString(decompressedData);
+            try
+            {
+                return JToken.Parse(decompressedString);
+            }
+            catch (JsonReaderException)
+            {
+                return decompressedString;
+            }
+        }
+
+        public static async Task<JObject> DecompressionAsync(JObject itemJObj, EncryptionProperties encryptionProperties)
+        {
+            foreach (string pathToCompress in encryptionProperties.CompressionOption.PathsToCompress)
+            {
+                string propertyName = pathToCompress.Substring(1);
+                if (!itemJObj.TryGetValue(propertyName, out JToken propertyValue))
+                {
+                    continue;
+                }
+
+                if (propertyValue.Type == JTokenType.Null)
+                {
+                    continue;
+                }
+
+                byte[] compressedData = Convert.FromBase64String(propertyValue.ToString());
+                byte[] decompressedData = encryptionProperties.CompressionOption.Algorithm switch
+                {
+                    CompressionAlgorithm.Gzip => await DecompressionGzipAsync(compressedData),
+                    CompressionAlgorithm.Brotli => await DecompressionBrotliAsync(compressedData),
+                    _ => throw new NotSupportedException($"Compression Algorithm : {encryptionProperties.CompressionOption.Algorithm} is not supported.")
+                };
+
+                string decompressedString = Encoding.UTF8.GetString(decompressedData);
+                try
+                {
+                    itemJObj[propertyName] = JToken.Parse(decompressedString);
+                }
+                catch (JsonReaderException)
+                {
+                    itemJObj[propertyName] = decompressedString;
+                }
+            }
+
+            return itemJObj;
+        }
+
+        public static async Task<byte[]> DecompressionGzipAsync(byte[] Data)
+        {
+            using (MemoryStream inputstream = new MemoryStream(Data))
+            {
+                using (MemoryStream outputstream = new MemoryStream())
+                {
+                    using (GZipStream gs = new GZipStream(inputstream, CompressionMode.Decompress))
+                    {
+                        await gs.CopyToAsync(outputstream);
+                        return outputstream.ToArray();
+                    }
+                }
+            }
+        }
+
+        public static async Task<byte[]> DecompressionBrotliAsync(byte[] Data)
+        {
+            using (MemoryStream inputStream = new MemoryStream(Data))
+            {
+                using (MemoryStream outputStream = new MemoryStream())
+                {
+                    using (BrotliStream bs = new BrotliStream(inputStream, CompressionMode.Decompress))
+                    {
+                        await bs.CopyToAsync(outputStream);
+                        return outputStream.ToArray();
+                    }
+                }
+            }
         }
 
         private static DecryptionContext CreateDecryptionContext(
@@ -342,17 +638,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 throw new NotSupportedException($"Unknown encryption format version: {encryptionProperties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
             }
-
+            diagnosticsContext = null;
             byte[] plainText = await encryptor.DecryptAsync(
                 cipherText,
                 encryptionProperties.DataEncryptionKeyId,
                 encryptionProperties.EncryptionAlgorithm,
                 cancellationToken);
 
-            if (plainText == null)
-            {
-                throw new InvalidOperationException($"{nameof(Encryptor)} returned null plainText from {nameof(DecryptAsync)}.");
-            }
+            _ = plainText ?? throw new InvalidOperationException($"{nameof(Encryptor)} returned null plainText from {nameof(DecryptAsync)}.");
+
 
             return plainText;
         }
@@ -369,16 +663,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 throw new NotSupportedException($"Unknown encryption format version: {encryptionProperties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
             }
 
+            diagnosticsContext = null;
+
             byte[] plainText = await encryptor.DecryptAsync(
                 encryptionProperties.EncryptedData,
                 encryptionProperties.DataEncryptionKeyId,
                 encryptionProperties.EncryptionAlgorithm,
                 cancellationToken);
 
-            if (plainText == null)
-            {
-                throw new InvalidOperationException($"{nameof(Encryptor)} returned null plainText from {nameof(DecryptAsync)}.");
-            }
+            _ = plainText ?? throw new InvalidOperationException($"{nameof(Encryptor)} returned null plainText from {nameof(DecryptAsync)}.");
+
 
             JObject plainTextJObj;
             using (MemoryStream memoryStream = new MemoryStream(plainText))
