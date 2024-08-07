@@ -37,6 +37,16 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal static readonly string DistributedQueryGatewayModeEnabled = "AZURE_COSMOS_DISTRIBUTED_QUERY_GATEWAY_ENABLED";
 
+        /// <summary>
+        /// Environment variable name to enable lite client mode.
+        /// </summary>
+        internal static readonly string LiteClientModeEnabled = "AZURE_COSMOS_LITE_CLIENT_ENABLED";
+
+        /// <summary>
+        /// Environment variable name to get lite client endpoint.
+        /// </summary>
+        internal static readonly string LiteClientEndpoint = "AZURE_COSMOS_LITE_CLIENT_ENDPOINT";
+
         public static T GetEnvironmentVariable<T>(string variable, T defaultValue)
         {
             string value = Environment.GetEnvironmentVariable(variable);
@@ -123,6 +133,40 @@ namespace Microsoft.Azure.Cosmos
             return ConfigurationManager
                     .GetEnvironmentVariable(
                         variable: DistributedQueryGatewayModeEnabled,
+                        defaultValue: defaultValue);
+        }
+
+        /// <summary>
+        /// Gets the boolean value of the partition level failover environment variable. Note that, partition level failover
+        /// is disabled by default for both preview and GA releases. The user can set the  respective environment variable
+        /// 'AZURE_COSMOS_PARTITION_LEVEL_FAILOVER_ENABLED' to override the value for both preview and GA. The method will
+        /// eventually be removed, once partition level failover is enabled by default for  both preview and GA.
+        /// </summary>
+        /// <param name="defaultValue">A boolean field containing the default value for partition level failover.</param>
+        /// <returns>A boolean flag indicating if partition level failover is enabled.</returns>
+        public static bool IsLiteClientEnabled(
+            bool defaultValue)
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.LiteClientModeEnabled,
+                        defaultValue: defaultValue);
+        }
+
+        /// <summary>
+        /// Gets the boolean value of the partition level failover environment variable. Note that, partition level failover
+        /// is disabled by default for both preview and GA releases. The user can set the  respective environment variable
+        /// 'AZURE_COSMOS_PARTITION_LEVEL_FAILOVER_ENABLED' to override the value for both preview and GA. The method will
+        /// eventually be removed, once partition level failover is enabled by default for  both preview and GA.
+        /// </summary>
+        /// <param name="defaultValue">A boolean field containing the default value for partition level failover.</param>
+        /// <returns>A boolean flag indicating if partition level failover is enabled.</returns>
+        public static string GetLiteClientEndpoint(
+            string defaultValue)
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.LiteClientEndpoint,
                         defaultValue: defaultValue);
         }
     }

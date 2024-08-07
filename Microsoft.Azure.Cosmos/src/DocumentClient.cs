@@ -116,6 +116,10 @@ namespace Microsoft.Azure.Cosmos
         private readonly bool isReplicaAddressValidationEnabled;
         private readonly AvailabilityStrategy availabilityStrategy;
 
+        // Thin Client
+        private readonly bool isLiteClientEnabled;
+        private readonly string liteClientEndpoint;
+
         //Fault Injection
         private readonly IChaosInterceptorFactory chaosInterceptorFactory;
         private readonly IChaosInterceptor chaosInterceptor;
@@ -163,6 +167,8 @@ namespace Microsoft.Azure.Cosmos
         // creator of TransportClient is responsible for disposing it.
         private IStoreClientFactory storeClientFactory;
         internal CosmosHttpClient httpClient { get; private set; }
+
+        internal CosmosHttpClient liteModeHttpClient { get; private set; }
 
         // Flag that indicates whether store client factory must be disposed whenever client is disposed.
         // Setting this flag to false will result in store client factory not being disposed when client is disposed.
@@ -239,7 +245,24 @@ namespace Microsoft.Azure.Cosmos
                 this.cosmosAuthorization = new AuthorizationTokenProviderMasterKey(authKey);
             }
 
-            this.Initialize(serviceEndpoint, connectionPolicy, desiredConsistencyLevel);
+            this.isLiteClientEnabled = ConfigurationManager.IsLiteClientEnabled(defaultValue: true);
+
+            if (this.isLiteClientEnabled)
+            {
+                this.liteClientEndpoint = ConfigurationManager.GetLiteClientEndpoint(defaultValue: string.Empty);
+
+                if (this.liteClientEndpoint.Length == 0)
+                {
+                    throw new ArgumentNullException($"{nameof(this.liteClientEndpoint)} can't be empty when lite client mode is enabled.");
+                }
+            }
+
+            this.Initialize(
+                serviceEndpoint: serviceEndpoint,
+                connectionPolicy: connectionPolicy,
+                desiredConsistencyLevel: desiredConsistencyLevel,
+                enableLiteClientMode: this.isLiteClientEnabled);
+
             this.initTaskCache = new AsyncCacheNonBlocking<string, bool>(cancellationToken: this.cancellationTokenSource.Token);
             this.isReplicaAddressValidationEnabled = ConfigurationManager.IsReplicaAddressValidationEnabled(connectionPolicy);
         }
@@ -497,6 +520,17 @@ namespace Microsoft.Azure.Cosmos
             this.availabilityStrategy = availabilityStrategy;
             this.chaosInterceptorFactory = chaosInterceptorFactory;
             this.chaosInterceptor = chaosInterceptorFactory?.CreateInterceptor(this);
+            this.isLiteClientEnabled = ConfigurationManager.IsLiteClientEnabled(defaultValue: true);
+
+            if (this.isLiteClientEnabled)
+            {
+                this.liteClientEndpoint = ConfigurationManager.GetLiteClientEndpoint(defaultValue: string.Empty);
+
+                if (this.liteClientEndpoint.Length == 0)
+                {
+                    throw new ArgumentNullException($"{nameof(this.liteClientEndpoint)} can't be empty when lite client mode is enabled.");
+                }
+            }
 
             this.Initialize(
                 serviceEndpoint: serviceEndpoint,
@@ -508,7 +542,8 @@ namespace Microsoft.Azure.Cosmos
                 storeClientFactory: storeClientFactory,
                 cosmosClientId: cosmosClientId,
                 remoteCertificateValidationCallback: remoteCertificateValidationCallback,
-                cosmosClientTelemetryOptions: cosmosClientTelemetryOptions);
+                cosmosClientTelemetryOptions: cosmosClientTelemetryOptions,
+                enableLiteClientMode: this.isLiteClientEnabled);
         }
 
         /// <summary>
@@ -692,7 +727,8 @@ namespace Microsoft.Azure.Cosmos
             TokenCredential tokenCredential = null,
             string cosmosClientId = null,
             RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
-            CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null)
+            CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null,
+            bool enableLiteClientMode = false)
         {
             if (serviceEndpoint == null)
             {
@@ -951,6 +987,17 @@ namespace Microsoft.Azure.Cosmos
                 this.sendingRequest,
                 this.receivedResponse);
 
+            if (enableLiteClientMode)
+            {
+                this.liteModeHttpClient = CosmosHttpClientCore.CreateWithConnectionPolicy(
+                    this.ApiType,
+                    DocumentClientEventSource.Instance,
+                    this.ConnectionPolicy,
+                    null,
+                    this.sendingRequest,
+                    this.receivedResponse);
+            }
+
             // Loading VM Information (non blocking call and initialization won't fail if this call fails)
             VmMetadataApiHandler.TryInitialize(this.httpClient);
 
@@ -1055,6 +1102,23 @@ namespace Microsoft.Azure.Cosmos
             if (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway)
             {
                 this.StoreModel = this.GatewayStoreModel;
+            }
+            // Change it to this.ConnectionPolicy.ConnectionMode == ConnectionMode.LiteClient when LiteClient is supported.
+            else if (this.isLiteClientEnabled)
+            {
+                ThinClientStoreModel thinClientStoreModel = new (
+                    endpointManager: this.GlobalEndpointManager,
+                    this.sessionContainer,
+                    (Cosmos.ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel,
+                    this.eventSource,
+                    this.serializerSettings,
+                    this.liteModeHttpClient,
+                    new Uri(this.liteClientEndpoint),
+                    this.accountServiceConfiguration.AccountProperties.Id);
+
+                thinClientStoreModel.SetCaches(this.partitionKeyRangeCache, this.collectionCache);
+
+                this.StoreModel = thinClientStoreModel;
             }
             else
             {
@@ -6527,7 +6591,8 @@ namespace Microsoft.Azure.Cosmos
                 resourceType == ResourceType.PartitionKeyRange ||
                 resourceType == ResourceType.Snapshot ||
                 resourceType == ResourceType.ClientEncryptionKey ||
-                (resourceType == ResourceType.PartitionKey && operationType == OperationType.Delete))
+                (resourceType == ResourceType.PartitionKey && operationType == OperationType.Delete) ||
+                (this.isLiteClientEnabled && operationType == OperationType.Read && resourceType == ResourceType.Database))
             {
                 return this.GatewayStoreModel;
             }
