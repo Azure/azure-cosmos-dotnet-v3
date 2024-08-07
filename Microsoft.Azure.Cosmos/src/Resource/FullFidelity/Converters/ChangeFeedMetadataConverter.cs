@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
                 }
                 else if (property.NameEquals(ChangeFeedMetadataFields.ConflictResolutionTimestamp))
                 {
-                    metadata.ConflictResolutionTimestamp = DateTimeOffset.FromUnixTimeSeconds(property.Value.GetInt64()).UtcDateTime;
+                    metadata.ConflictResolutionTimestamp = ChangeFeedMetadataConverter.ToDateTimeFromUnixTimeInSeconds(property.Value.GetInt64());
                 }
                 else if (property.NameEquals(ChangeFeedMetadataFields.OperationType))
                 {
@@ -68,13 +68,25 @@ namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
 
             writer.WriteStartObject();
 
-            writer.WriteNumber(ChangeFeedMetadataFields.ConflictResolutionTimestamp, ((DateTimeOffset)value.ConflictResolutionTimestamp).ToUnixTimeSeconds());
+            writer.WriteNumber(ChangeFeedMetadataFields.ConflictResolutionTimestamp, ChangeFeedMetadataConverter.ToUnixTimeInSecondsFromDateTime(value.ConflictResolutionTimestamp));
             writer.WriteBoolean(ChangeFeedMetadataFields.TimeToLiveExpired, value.IsTimeToLiveExpired);
             writer.WriteNumber(ChangeFeedMetadataFields.Lsn, value.Lsn);
             writer.WriteString(ChangeFeedMetadataFields.OperationType, value.OperationType.ToString());
             writer.WriteNumber(ChangeFeedMetadataFields.PreviousImageLSN, value.PreviousLsn);
 
             writer.WriteEndObject();
+        }
+
+        private static long ToUnixTimeInSecondsFromDateTime(DateTime date)
+        {
+            DateTime unixEpoch = new (1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+            return (date.ToUniversalTime().Ticks - unixEpoch.Ticks) / TimeSpan.TicksPerSecond;
+        }
+
+        private static DateTime ToDateTimeFromUnixTimeInSeconds(long unixTimeInSeconds)
+        {
+            DateTime unixEpoch = new (1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+            return unixEpoch.AddSeconds(unixTimeInSeconds);
         }
     }
 }
