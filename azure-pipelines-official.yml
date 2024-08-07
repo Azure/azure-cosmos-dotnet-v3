@@ -17,13 +17,6 @@ stages:
         BuildConfiguration: '${{ variables.BuildConfiguration }}'
         VmImage: '${{ variables.VmImage }}'
 
-    - template:  templates/build-test.yml
-      parameters:
-        BuildConfiguration: '${{ variables.BuildConfiguration }}'
-        Arguments: '${{ variables.ReleaseArguments }}'
-        VmImage: '${{ variables.VmImage }}'
-        MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
-        
     - job:
       displayName: TelemetryToService ${{ variables.BuildConfiguration }}
       timeoutInMinutes: 120
