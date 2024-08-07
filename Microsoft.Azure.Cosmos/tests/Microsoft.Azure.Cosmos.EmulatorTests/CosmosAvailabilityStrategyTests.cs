@@ -331,6 +331,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
             Assert.IsNotNull(traceDiagnostic);
+
             Assert.IsFalse(traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out _));
 
             faultInjectionClient.Dispose();
