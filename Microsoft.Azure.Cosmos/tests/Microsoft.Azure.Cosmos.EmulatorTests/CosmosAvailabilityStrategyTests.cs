@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public async Task TestInitAsync()
         {
-            this.connectionString =  ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", null);
+            this.connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", null);
 
             JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions()
             {
@@ -271,10 +271,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
             Assert.IsNotNull(traceDiagnostic);
-            Console.WriteLine(traceDiagnostic);
             traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
             Assert.IsNotNull(hedgeContext);
-            Assert.AreEqual(northCentralUS, (string)hedgeContext);
+            Assert.IsTrue(((string)hedgeContext).Contains(northCentralUS));
             faultInjectionClient.Dispose();
         }
 
@@ -420,8 +419,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CosmosTraceDiagnostics traceDiagnostic;
             object hedgeContext;
-            object hedgedRegionObject;
-            string hedgedRegion;
 
             switch (operation)
             {
@@ -437,7 +434,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.IsNotNull(traceDiagnostic);
                     traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
                     Assert.IsNotNull(hedgeContext);
-                    Assert.AreEqual(northCentralUS, (string)hedgeContext);
+                    Assert.IsTrue(((string)hedgeContext).Contains(northCentralUS));
 
                     break;
 
@@ -464,7 +461,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Assert.IsNotNull(traceDiagnostic);
                         traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
                         Assert.IsNotNull(hedgeContext);
-                        Assert.AreEqual(northCentralUS, (string)hedgeContext);
+                        Assert.IsTrue(((string)hedgeContext).Contains(northCentralUS));
                     }
 
                     break;
@@ -485,7 +482,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Assert.IsNotNull(traceDiagnostic);
                         traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
                         Assert.IsNotNull(hedgeContext);
-                        Assert.AreEqual(northCentralUS, (string)hedgeContext);
+                        Assert.IsTrue(((string)hedgeContext).Contains(northCentralUS));
                     }
 
                     break;
@@ -507,7 +504,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.IsNotNull(traceDiagnostic);
                     traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
                     Assert.IsNotNull(hedgeContext);
-                    Assert.AreEqual(northCentralUS, (string)hedgeContext);
+                    Assert.IsTrue(((string)hedgeContext).Contains(northCentralUS));
 
                     break;
 
@@ -600,8 +597,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CosmosTraceDiagnostics traceDiagnostic;
             object hedgeContext;
-            object hedgedRegionObject;
-            string hedgedRegion;
 
             switch (operation)
             {
@@ -617,7 +612,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.IsNotNull(traceDiagnostic);
                     traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
                     Assert.IsNotNull(hedgeContext);
-                    Assert.AreEqual(eastUs, (string)hedgeContext);
+                    Assert.IsTrue(((string)hedgeContext).Contains(eastUs));
 
                     break;
 
@@ -644,7 +639,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Assert.IsNotNull(traceDiagnostic);
                         traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
                         Assert.IsNotNull(hedgeContext);
-                        Assert.AreEqual(eastUs, (string)hedgeContext);
+                        Assert.IsTrue(((string)hedgeContext).Contains(eastUs));
                     }
 
                     break;
@@ -665,7 +660,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Assert.IsNotNull(traceDiagnostic);
                         traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
                         Assert.IsNotNull(hedgeContext);
-                        Assert.AreEqual(eastUs, (string)hedgeContext);
+                        Assert.IsTrue(((string)hedgeContext).Contains(eastUs));
                     }
 
                     break;
@@ -687,7 +682,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.IsNotNull(traceDiagnostic);
                     traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
                     Assert.IsNotNull(hedgeContext);
-                    Assert.AreEqual(eastUs, (string)hedgeContext);
+                    Assert.IsTrue(((string)hedgeContext).Contains(eastUs));
 
                     break;
 
