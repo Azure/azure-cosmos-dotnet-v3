@@ -16,6 +16,8 @@ namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
     /// </summary>
     internal class ChangeFeedMetadataConverter : JsonConverter<ChangeFeedMetadata>
     {
+        private readonly static DateTime UnixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+
         public override ChangeFeedMetadata Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (reader.TokenType == JsonTokenType.Null)
@@ -79,14 +81,12 @@ namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
 
         private static long ToUnixTimeInSecondsFromDateTime(DateTime date)
         {
-            DateTime unixEpoch = new (1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-            return (long)(date - unixEpoch).TotalSeconds;
+            return (long)(date - ChangeFeedMetadataConverter.UnixEpoch).TotalSeconds;
         }
 
         private static DateTime ToDateTimeFromUnixTimeInSeconds(long unixTimeInSeconds)
         {
-            DateTime unixEpoch = new (1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-            return unixEpoch.AddSeconds(unixTimeInSeconds);
+            return ChangeFeedMetadataConverter.UnixEpoch.AddSeconds(unixTimeInSeconds);
         }
     }
 }
