@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(traceDiagnostic);
             traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
             Assert.IsNotNull(hedgeContext);
-            Assert.AreEqual("Original Request", (string)hedgeContext);
+            Assert.IsTrue(((string)hedgeContext).Contains(centralUS));
 
             faultInjectionClient.Dispose();
         }
