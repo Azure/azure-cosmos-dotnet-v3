@@ -22,5 +22,11 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// </summary>
         public abstract bool TryMarkEndpointUnavailableForPartitionKeyRange(
             DocumentServiceRequest request);
+
+        /// <summary>
+        /// Can Partition fail over on request timeouts.
+        /// </summary>
+        public abstract bool IncrementRequestTimeoutCounterAndCheckIfPartitionCanFailover(
+            DocumentServiceRequest request);
     }
 }

@@ -97,37 +97,15 @@ namespace Microsoft.Azure.Cosmos.Routing
         public override bool TryMarkEndpointUnavailableForPartitionKeyRange(
             DocumentServiceRequest request)
         {
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request));
-            }
-
-            // Only do partition level failover if it is a write operation.
-            // Write operation will throw a write forbidden if it is not the primary
-            // region.
-            if (request.IsReadOnlyRequest)
+            if (!this.IsRequestValidForPartitionFailover(
+                request,
+                out PartitionKeyRange? partitionKeyRange,
+                out Uri? failedLocation))
             {
                 return false;
             }
 
-            if (request.RequestContext == null)
-            {
-                return false;
-            }
-
-            if (!this.CanUsePartitionLevelFailoverLocations(request))
-            {
-                return false;
-            }
-
-            PartitionKeyRange? partitionKeyRange = request.RequestContext.ResolvedPartitionKeyRange;
-            if (partitionKeyRange == null)
-            {
-                return false;
-            }
-
-            Uri? failedLocation = request.RequestContext.LocationEndpointToRoute;
-            if (failedLocation == null)
+            if (partitionKeyRange == null || failedLocation == null)
             {
                 return false;
             }
@@ -168,16 +146,93 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         }
 
+        public override bool IncrementRequestTimeoutCounterAndCheckIfPartitionCanFailover(
+            DocumentServiceRequest request)
+        {
+            if (!this.IsRequestValidForPartitionFailover(
+                request,
+                out PartitionKeyRange? partitionKeyRange,
+                out Uri? failedLocation))
+            {
+                return false;
+            }
+
+            if (partitionKeyRange == null || failedLocation == null)
+            {
+                return false;
+            }
+
+            PartitionKeyRangeFailoverInfo partionFailover = this.PartitionKeyRangeToLocation.Value.GetOrAdd(
+                partitionKeyRange,
+                (_) => new PartitionKeyRangeFailoverInfo(failedLocation));
+
+            partionFailover.IncrementRequestTimeoutCounts();
+
+            return partionFailover.CanPartitionFailOverOnTimeouts();
+        }
+
+        private bool IsRequestValidForPartitionFailover(
+            DocumentServiceRequest request,
+            out PartitionKeyRange? partitionKeyRange,
+            out Uri? failedLocation)
+        {
+            partitionKeyRange = default;
+            failedLocation = default;
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
+            // Only do partition level failover if it is a write operation.
+            // Write operation will throw a write forbidden if it is not the primary
+            // region.
+            if (request.IsReadOnlyRequest)
+            {
+                return false;
+            }
+
+            if (request.RequestContext == null)
+            {
+                return false;
+            }
+
+            if (!this.CanUsePartitionLevelFailoverLocations(request))
+            {
+                return false;
+            }
+
+            partitionKeyRange = request.RequestContext.ResolvedPartitionKeyRange;
+            if (partitionKeyRange == null)
+            {
+                return false;
+            }
+
+            failedLocation = request.RequestContext.LocationEndpointToRoute;
+            if (failedLocation == null)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
         internal sealed class PartitionKeyRangeFailoverInfo
         {
             // HashSet is not thread safe and should only accessed in the lock
             private readonly HashSet<Uri> FailedLocations;
+            private readonly TimeSpan TimeoutCounterResetWindowInMinutes;
+            private readonly int MaximumRequestTimeoutPermitted;
+            private DateTime LastRequestTimeoutTime;
+            private int TotalRequestTimeoutCount;
 
             public PartitionKeyRangeFailoverInfo(
                 Uri currentLocation)
             {
                 this.Current = currentLocation;
                 this.FailedLocations = new HashSet<Uri>();
+                this.TotalRequestTimeoutCount = 0;
+                this.MaximumRequestTimeoutPermitted = 15;
+                this.TimeoutCounterResetWindowInMinutes = TimeSpan.FromMinutes(1);
             }
 
             public Uri Current { get; private set; }
@@ -219,6 +274,22 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
 
                 return false;
+            }
+
+            public bool CanPartitionFailOverOnTimeouts()
+            {
+                return this.TotalRequestTimeoutCount > this.MaximumRequestTimeoutPermitted;
+            }
+
+            public void IncrementRequestTimeoutCounts()
+            {
+                DateTime now = DateTime.UtcNow;
+                if (now - this.LastRequestTimeoutTime > this.TimeoutCounterResetWindowInMinutes)
+                {
+                    this.TotalRequestTimeoutCount = 0;
+                }
+                this.TotalRequestTimeoutCount += 1;
+                this.LastRequestTimeoutTime = now;
             }
         }
     }

@@ -198,8 +198,12 @@ namespace Microsoft.Azure.Cosmos
                     this.documentServiceRequest?.ResourceAddress ?? string.Empty);
 
                 // Mark the partition key range as unavailable to retry future request on a new region.
-                this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
-                     this.documentServiceRequest);
+                if (this.partitionKeyRangeLocationCache.IncrementRequestTimeoutCounterAndCheckIfPartitionCanFailover(
+                    this.documentServiceRequest))
+                {
+                    this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
+                         this.documentServiceRequest);
+                }
             }
 
             // Received 403.3 on write region, initiate the endpoint rediscovery
