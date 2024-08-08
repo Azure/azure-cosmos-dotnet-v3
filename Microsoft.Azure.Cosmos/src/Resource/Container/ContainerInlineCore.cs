@@ -585,8 +585,8 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            return new FeedIteratorInlineCore<T>(base.GetChangeFeedIterator<T>(changeFeedStartFrom, 
-                                                 changeFeedMode, 
+            return new FeedIteratorInlineCore<T>(base.GetChangeFeedIterator<T>(changeFeedStartFrom,
+                                                 changeFeedMode,
                                                  changeFeedRequestOptions),
                                                  this.ClientContext);
         }
@@ -659,6 +659,16 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions,
                 task: (trace) => base.DeleteAllItemsByPartitionKeyStreamAsync(partitionKey, trace, requestOptions, cancellationToken),
                 openTelemetry: (response) => new OpenTelemetryResponse(response));
+        }
+
+        public override IReadOnlyList<FeedRange> FindOverlappingRanges(FeedRange feedRange, IReadOnlyList<FeedRange> feedRanges)
+        {
+            return base.FindOverlappingRanges(feedRange, feedRanges);
+        }
+
+        public override async Task<IReadOnlyList<FeedRange>> FindOverlappingRangesAsync(PartitionKey partitionKey, IReadOnlyList<FeedRange> feedRanges, CancellationToken cancellationToken = default)
+        {
+            return await base.FindOverlappingRangesAsync(partitionKey, feedRanges, cancellationToken);
         }
     }
 }
