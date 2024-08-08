@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.Data;
     using System.IO;
+    using System.Linq;
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using System.Threading;
@@ -185,7 +186,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .WithDuration(TimeSpan.FromMinutes(90))
                 .Build();
 
-            List<FaultInjectionRule> rules = new List<FaultInjectionRule>() { responseDelay };
+            FaultInjectionRule responseDelay2 = new FaultInjectionRuleBuilder(
+                id: "responseDely",
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithRegion("North Central US")
+                        .WithOperationType(FaultInjectionOperationType.ReadItem)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
+                        .WithDelay(TimeSpan.FromMilliseconds(3000))
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(90))
+                .Build();
+
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule>() { responseDelay, responseDelay2 };
             FaultInjector faultInjector = new FaultInjector(rules);
 
             responseDelay.Disable();
@@ -195,7 +210,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ConnectionMode = ConnectionMode.Direct,
                 ApplicationPreferredRegions = new List<string>() { "Central US", "North Central US" },
                 AvailabilityStrategy = new CrossRegionParallelHedgingAvailabilityStrategy(
-                        threshold: TimeSpan.FromMilliseconds(1500),
+                        threshold: TimeSpan.FromMilliseconds(300),
                         thresholdStep: TimeSpan.FromMilliseconds(50)),
                 Serializer = this.cosmosSystemTextJsonSerializer
             };
@@ -212,10 +227,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
             Assert.IsNotNull(traceDiagnostic);
-            traceDiagnostic.Value.Data.TryGetValue("Response Region", out object hedgeContext);
-            Assert.IsNotNull(hedgeContext);
-            Assert.AreEqual(centralUS, (string)hedgeContext);
+            traceDiagnostic.Value.Data.TryGetValue("Response Region", out object responseRegion);
+            Assert.IsNotNull(responseRegion);
+            Assert.AreEqual(centralUS, (string)responseRegion);
 
+            //Should send out hedge request but original should be returned
+            traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
+            Assert.IsNotNull(hedgeContext);
+            IReadOnlyCollection<string> hedgeContextList;
+            hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
+            Assert.AreEqual(2, hedgeContextList.Count);
+            Assert.IsTrue(hedgeContextList.Contains(centralUS));
+            Assert.IsTrue(hedgeContextList.Contains(northCentralUS));
             faultInjectionClient.Dispose();
         }
 

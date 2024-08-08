@@ -27,8 +27,6 @@ namespace Microsoft.Azure.Cosmos
         private const string HedgeContext = "Hedge Context";
         private const string ResponseRegion = "Response Region";
 
-        private readonly BlockingCollection<string> hedgedRegions = new BlockingCollection<string>();
-
         /// <summary>
         /// Latency threshold which activates the first region hedging 
         /// </summary>
@@ -184,7 +182,7 @@ namespace Microsoft.Azure.Cosmos
                                     cancellationTokenSource.Cancel();
                                     ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
                                         HedgeContext,
-                                        this.hedgedRegions);
+                                        hedgeRegions.Take(requestNumber + 1));
                                     ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
                                         ResponseRegion,
                                         hedgeResponse.ResponseRegion);
@@ -212,7 +210,7 @@ namespace Microsoft.Azure.Cosmos
                             cancellationTokenSource.Cancel();
                             ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
                                 HedgeContext,
-                                this.hedgedRegions);
+                                hedgeRegions);
                             ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
                                         ResponseRegion,
                                         hedgeResponse.ResponseRegion);
@@ -268,7 +266,6 @@ namespace Microsoft.Azure.Cosmos
         {
             try
             {
-                this.hedgedRegions.Add(hedgedRegion);
                 ResponseMessage response = await sender.Invoke(request, cancellationToken);
                 if (IsFinalResult((int)response.StatusCode, (int)response.Headers.SubStatusCode))
                 {
