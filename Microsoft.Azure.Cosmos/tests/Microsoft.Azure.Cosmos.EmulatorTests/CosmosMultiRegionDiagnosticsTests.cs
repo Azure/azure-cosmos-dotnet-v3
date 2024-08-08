@@ -6,8 +6,10 @@
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.FaultInjection;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    [TestClass]
     public class CosmosMultiRegionDiagnosticsTests
     {
         CosmosClient client;
@@ -111,11 +113,31 @@
                     thresholdStep: TimeSpan.FromMilliseconds(50))
             };
 
+            //Request should be hedged to North Central US
             ItemResponse<ToDoActivity> itemResponse = await container.ReadItemAsync<ToDoActivity>(
                 "1", new PartitionKey("1"),
                 requestOptions);
 
             CosmosTraceDiagnostics traceDiagnostic = itemResponse.Diagnostics as CosmosTraceDiagnostics;
+
+            //Walthrough the diagnostics to ensure at Request Invoker Handler Level
+            //has two Diagnostics Handler Children
+            IReadOnlyList<ITrace> traceChildren = traceDiagnostic.Value.Children;
+            int diagnosticsHandlerCount = 0;
+            foreach (ITrace trace in traceChildren)
+            {
+                if (trace.Name == "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler")
+                {
+                    foreach(ITrace childTrace in trace.Children)
+                    {
+                        if (childTrace.Name == "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler")
+                        {
+                            diagnosticsHandlerCount++;
+                        }
+                    }
+                }
+            }
+            
         }
     }
 }
