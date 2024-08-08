@@ -403,7 +403,7 @@ namespace Microsoft.Azure.Cosmos
                                                          authKeyOrResourceToken,
                                                          cosmosClientOptions);
 
-            await cosmosClient.InitializeContainersAsync(containers, cancellationToken);
+            await cosmosClient.InitializeContainersInternalAsync(containers, cancellationToken);
             return cosmosClient;
         }
 
@@ -463,7 +463,7 @@ namespace Microsoft.Azure.Cosmos
                                                          authKeyOrResourceTokenCredential,
                                                          cosmosClientOptions);
 
-            await cosmosClient.InitializeContainersAsync(containers, cancellationToken);
+            await cosmosClient.InitializeContainersInternalAsync(containers, cancellationToken);
             return cosmosClient;
         }
 
@@ -516,7 +516,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosClient cosmosClient = new CosmosClient(connectionString,
                                                          cosmosClientOptions);
 
-            await cosmosClient.InitializeContainersAsync(containers, cancellationToken);
+            await cosmosClient.InitializeContainersInternalAsync(containers, cancellationToken);
             return cosmosClient;
         }
 
@@ -551,7 +551,7 @@ namespace Microsoft.Azure.Cosmos
                                                          tokenCredential,
                                                          cosmosClientOptions);
 
-            await cosmosClient.InitializeContainersAsync(containers, cancellationToken);
+            await cosmosClient.InitializeContainersInternalAsync(containers, cancellationToken);
             return cosmosClient;
         }
 
@@ -1391,26 +1391,44 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="containers">A read-only list containing the database id
         /// and their respective container id.</param>
         /// <param name="cancellationToken">An instance of <see cref="CancellationToken"/>.</param>
-        internal async Task InitializeContainersAsync(
+        /// <returns>A task to await on.</returns>
+        public async Task InitializeContainersAsync(
+            IReadOnlyList<(string databaseId, string containerId)> containers,
+            CancellationToken cancellationToken = default)
+        {
+            List<Task> tasks = new (containers.Count);
+            foreach ((string databaseId, string containerId) in containers)
+            {
+                ContainerInternal container = (ContainerInternal)this.GetContainer(
+                    databaseId,
+                    containerId);
+
+                tasks.Add(this.ClientContext.InitializeContainerUsingRntbdAsync(
+                    databaseId: databaseId,
+                    containerLinkUri: container.LinkUri,
+                    cancellationToken: cancellationToken));
+            }
+
+            await Task.WhenAll(tasks);
+        }
+
+        /// <summary>
+        /// Initializes the container by creating the Rntbd
+        /// connection to all of the backend replica nodes.
+        ///
+        /// Disposes the client if the initialization fails.
+        /// </summary>
+        /// <param name="containers">A read-only list containing the database id
+        /// and their respective container id.</param>
+        /// <param name="cancellationToken">An instance of <see cref="CancellationToken"/>.</param>
+        /// <returns>A task to await on.</returns>
+        internal async Task InitializeContainersInternalAsync(
             IReadOnlyList<(string databaseId, string containerId)> containers,
             CancellationToken cancellationToken)
         {
             try
             {
-                List<Task> tasks = new ();
-                foreach ((string databaseId, string containerId) in containers)
-                {
-                    ContainerInternal container = (ContainerInternal)this.GetContainer(
-                        databaseId,
-                        containerId);
-
-                    tasks.Add(this.ClientContext.InitializeContainerUsingRntbdAsync(
-                        databaseId: databaseId,
-                        containerLinkUri: container.LinkUri,
-                        cancellationToken: cancellationToken));
-                }
-
-                await Task.WhenAll(tasks);
+                await InitializeContainersAsync(containers, cancellationToken);
             }
             catch
             {
