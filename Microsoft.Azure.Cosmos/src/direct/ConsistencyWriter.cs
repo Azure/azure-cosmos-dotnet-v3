@@ -55,7 +55,7 @@ For globally strong write:
         private readonly TransportClient transportClient;
         private readonly AddressSelector addressSelector;
         private readonly ISessionContainer sessionContainer;
-        private readonly IServiceConfigurationReader serviceConfigReader;
+        private readonly IServiceAccountPropertiesConfigurationReader serviceConfigReader;
         private readonly IAuthorizationTokenProvider authorizationTokenProvider;
         private readonly bool useMultipleWriteLocations;
 
@@ -63,7 +63,7 @@ For globally strong write:
             AddressSelector addressSelector,
             ISessionContainer sessionContainer,
             TransportClient transportClient,
-            IServiceConfigurationReader serviceConfigReader,
+            IServiceAccountPropertiesConfigurationReader serviceConfigReader,
             IAuthorizationTokenProvider authorizationTokenProvider,
             bool useMultipleWriteLocations,
             bool enableReplicaValidation)
@@ -261,9 +261,8 @@ For globally strong write:
                     throw new InternalServerErrorException();
                 }
 
-                CosmosAccountServiceConfiguration cosmosServiceConfiguration = serviceConfigReader as CosmosAccountServiceConfiguration;
                 if ((ReplicatedResourceClient.IsGlobalStrongEnabled() && this.ShouldPerformWriteBarrierForGlobalStrong(storeResult.Target))
-                    || (cosmosServiceConfiguration.AccountProperties.EnableNReginSynchronousCommit && storeResult.Target.NumberOfReadRegions > 0))
+                    || (serviceConfigReader.EnableNRegionSynchronousCommit && storeResult.Target.NumberOfReadRegions > 0))
                 {
                     long lsn = storeResult.Target.LSN;
                     long globalCommittedLsn = storeResult.Target.GlobalCommittedLSN;

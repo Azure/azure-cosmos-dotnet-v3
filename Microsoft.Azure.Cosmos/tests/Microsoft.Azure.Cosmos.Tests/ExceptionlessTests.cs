@@ -271,7 +271,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 MaxReplicaSetSize = 1
             };
-            Mock<IServiceConfigurationReader> mockServiceConfigReader = new Mock<IServiceConfigurationReader>();
+            Mock<IServiceAccountPropertiesConfigurationReader> mockServiceConfigReader = new Mock<IServiceAccountPropertiesConfigurationReader>();
 
             Mock<IAuthorizationTokenProvider> mockAuthorizationTokenProvider = new Mock<IAuthorizationTokenProvider>();
             mockServiceConfigReader.SetupGet(x => x.UserReplicationPolicy).Returns(replicationPolicy);

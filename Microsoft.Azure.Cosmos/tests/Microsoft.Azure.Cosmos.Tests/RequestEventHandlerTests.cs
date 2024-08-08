@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos
             // setup max replica set size on the config reader
             ReplicationPolicy replicationPolicy = new ReplicationPolicy();
             replicationPolicy.MaxReplicaSetSize = 4;
-            Mock<IServiceConfigurationReader> mockServiceConfigReader = new Mock<IServiceConfigurationReader>();
+            Mock<IServiceAccountPropertiesConfigurationReader> mockServiceConfigReader = new Mock<IServiceAccountPropertiesConfigurationReader>();
             mockServiceConfigReader.SetupGet(x => x.UserReplicationPolicy).Returns(replicationPolicy);
 
             return new StoreClient(

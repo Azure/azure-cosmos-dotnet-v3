@@ -306,7 +306,7 @@ namespace Microsoft.Azure.Documents
         public StoreClient CreateStoreClient(
             IAddressResolver addressResolver,
             ISessionContainer sessionContainer,
-            IServiceConfigurationReader serviceConfigurationReader,
+            IServiceAccountPropertiesConfigurationReader serviceConfigurationReader,
             IAuthorizationTokenProvider authorizationTokenProvider,
             bool enableRequestDiagnostics = false,
             bool enableReadRequestsFallback = false,
