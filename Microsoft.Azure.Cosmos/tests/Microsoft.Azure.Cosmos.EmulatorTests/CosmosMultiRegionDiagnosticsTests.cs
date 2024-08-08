@@ -72,6 +72,9 @@
         [TestCategory("MultiRegion")]
         public async Task HedgeNestingDiagnosticsTest()
         {
+            //Wait for global replication
+            await Task.Delay(60 * 1000);
+
             FaultInjectionRule responseDelay = new FaultInjectionRuleBuilder(
                 id: "responseDely",
                 condition:
