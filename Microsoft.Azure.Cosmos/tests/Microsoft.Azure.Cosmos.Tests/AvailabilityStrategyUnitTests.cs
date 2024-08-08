@@ -58,17 +58,5 @@
                 Assert.AreEqual(httpRequest.DatabaseId, clone.DatabaseId);
             }
         }
-
-        [TestMethod]
-        public void HedgedRegionsToString()
-        {
-            BlockingCollection<string> regions = new BlockingCollection<string>();
-            regions.TryAdd("region");
-            regions.TryAdd("region2");
-
-            string hedgedRegionToString = CrossRegionParallelHedgingAvailabilityStrategy.HedgedRegionsToString(regions);
-
-            Assert.AreEqual("region, region2", hedgedRegionToString);
-        }
     }
 }

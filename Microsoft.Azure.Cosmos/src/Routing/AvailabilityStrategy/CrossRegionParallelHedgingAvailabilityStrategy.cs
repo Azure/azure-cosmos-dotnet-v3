@@ -184,7 +184,7 @@ namespace Microsoft.Azure.Cosmos
                                     cancellationTokenSource.Cancel();
                                     ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
                                         HedgeContext,
-                                        HedgedRegionsToString(this.hedgedRegions));
+                                        this.hedgedRegions);
                                     ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
                                         ResponseRegion,
                                         hedgeResponse.ResponseRegion);
@@ -212,7 +212,7 @@ namespace Microsoft.Azure.Cosmos
                             cancellationTokenSource.Cancel();
                             ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
                                 HedgeContext,
-                                HedgedRegionsToString(this.hedgedRegions));
+                                this.hedgedRegions);
                             ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
                                         ResponseRegion,
                                         hedgeResponse.ResponseRegion);
@@ -316,13 +316,6 @@ namespace Microsoft.Azure.Cosmos
             //after enforcing the consistency model
             //All other errors should be treated as possibly transient errors
             return statusCode == (int)HttpStatusCode.NotFound && subStatusCode == (int)SubStatusCodes.Unknown;
-        }
-
-        internal static string HedgedRegionsToString(BlockingCollection<string> hedgeContext)
-        {
-            return string.Join(
-                ", ",
-                hedgeContext);
         }
 
         private class HedgingResponse
