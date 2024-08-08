@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Documents
             ISessionContainer sessionContainer,
             Protocol protocol,
             TransportClient transportClient,
-            IServiceConfigurationReader serviceConfigReader,
+            IServiceAccountPropertiesConfigurationReader serviceConfigReader,
             IAuthorizationTokenProvider authorizationTokenProvider,
             bool enableReadRequestsFallback,
             bool useMultipleWriteLocations,

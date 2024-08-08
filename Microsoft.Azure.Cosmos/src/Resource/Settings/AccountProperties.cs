@@ -241,6 +241,9 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        [JsonProperty(PropertyName = Constants.Properties.EnableNRegionSynchronousCommit, NullValueHandling = NullValueHandling.Ignore)]
+        public bool EnableNReginSynchronousCommit { get; set; }
+
         /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.

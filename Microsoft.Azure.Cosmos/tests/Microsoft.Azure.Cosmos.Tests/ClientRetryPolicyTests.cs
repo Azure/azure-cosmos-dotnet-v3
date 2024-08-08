@@ -568,7 +568,7 @@
             }
         }
 
-        private class MockServiceConfigurationReader : IServiceConfigurationReader
+        private class MockServiceConfigurationReader : IServiceAccountPropertiesConfigurationReader
         {
 
             public string DatabaseAccountId
@@ -626,6 +626,11 @@
             public string SubscriptionId
             {
                 get { return Guid.Empty.ToString(); }
+            }
+
+            public bool EnableNRegionSynchronousCommit
+            {
+                get { return false; }
             }
 
             public Task InitializeAsync()

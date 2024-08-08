@@ -602,7 +602,7 @@ namespace Microsoft.Azure.Cosmos
             // create a real session container - we don't need session for this test anyway
             ISessionContainer sessionContainer = new SessionContainer(string.Empty);
 
-            Mock<IServiceConfigurationReader> mockServiceConfigReader = new Mock<IServiceConfigurationReader>();
+            Mock<IServiceAccountPropertiesConfigurationReader> mockServiceConfigReader = new Mock<IServiceAccountPropertiesConfigurationReader>();
 
             Mock<IAuthorizationTokenProvider> mockAuthorizationTokenProvider = new Mock<IAuthorizationTokenProvider>();
             mockAuthorizationTokenProvider.Setup(provider => provider.AddSystemAuthorizationHeaderAsync(

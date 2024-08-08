@@ -26,13 +26,13 @@ namespace Microsoft.Azure.Documents
         // TODO(ovplaton): Remove transportClient from this class after removing
         // AddDisableRntbdChannelCallback. The field isn't used for anything else.
         private readonly TransportClient transportClient;
-        private readonly IServiceConfigurationReader serviceConfigurationReader;
+        private readonly IServiceAccountPropertiesConfigurationReader serviceConfigurationReader;
         private readonly bool enableRequestDiagnostics;
 
         public StoreClient(
             IAddressResolver addressResolver,
             ISessionContainer sessionContainer,
-            IServiceConfigurationReader serviceConfigurationReader,
+            IServiceAccountPropertiesConfigurationReader serviceConfigurationReader,
             IAuthorizationTokenProvider userTokenProvider,
             Protocol protocol,
             TransportClient transportClient,
