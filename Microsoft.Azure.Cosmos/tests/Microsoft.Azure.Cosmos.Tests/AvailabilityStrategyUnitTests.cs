@@ -62,12 +62,13 @@
         [TestMethod]
         public void HedgedRegionsToString()
         {
-            ConcurrentDictionary<string, string> regions = new ConcurrentDictionary<string, string>();
-            regions.TryAdd("region", "Hedge Request Sent");
+            BlockingCollection<string> regions = new BlockingCollection<string>();
+            regions.TryAdd("region");
+            regions.TryAdd("region2");
 
             string hedgedRegionToString = CrossRegionParallelHedgingAvailabilityStrategy.HedgedRegionsToString(regions);
 
-            Assert.AreEqual("[region, Hedge Request Sent]", hedgedRegionToString);
+            Assert.AreEqual("region, region2", hedgedRegionToString);
         }
     }
 }

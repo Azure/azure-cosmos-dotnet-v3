@@ -26,11 +26,8 @@ namespace Microsoft.Azure.Cosmos
     {
         private const string HedgeContext = "Hedge Context";
         private const string ResponseRegion = "Response Region";
-        private const string HedgeReqeustContextSent = "Hedged Request Sent";
-        private const string HedgeReqeustContextSuccessful = "Hedged Request Successful";
-        private const string HedgeReqeustContextFailed = "Hedged Request Failed";
 
-        private readonly ConcurrentDictionary<string, string> hedgedRegions = new ConcurrentDictionary<string, string>();
+        private readonly BlockingCollection<string> hedgedRegions = new BlockingCollection<string>();
 
         /// <summary>
         /// Latency threshold which activates the first region hedging 
@@ -271,10 +268,7 @@ namespace Microsoft.Azure.Cosmos
         {
             try
             {
-                this.hedgedRegions.AddOrUpdate(
-                    hedgedRegion,
-                    HedgeReqeustContextSent,
-                    (key, oldValue) => HedgeReqeustContextSent);
+                this.hedgedRegions.Add(hedgedRegion);
                 ResponseMessage response = await sender.Invoke(request, cancellationToken);
                 if (IsFinalResult((int)response.StatusCode, (int)response.Headers.SubStatusCode))
                 {
@@ -282,17 +276,10 @@ namespace Microsoft.Azure.Cosmos
                     {
                         cancellationTokenSource.Cancel();
                     }
-                    this.hedgedRegions.AddOrUpdate(
-                        hedgedRegion,
-                        HedgeReqeustContextSuccessful,
-                        (key, oldValue) => HedgeReqeustContextSuccessful);
+
                     return new HedgingResponse(true, response, hedgedRegion);
                 }
 
-                this.hedgedRegions.AddOrUpdate(
-                    hedgedRegion,
-                    HedgeReqeustContextFailed,
-                    (key, oldValue) => HedgeReqeustContextFailed);
                 return new HedgingResponse(false, response, hedgedRegion);
             }
             catch (OperationCanceledException) when (cancellationTokenSource.IsCancellationRequested)
@@ -331,10 +318,10 @@ namespace Microsoft.Azure.Cosmos
             return statusCode == (int)HttpStatusCode.NotFound && subStatusCode == (int)SubStatusCodes.Unknown;
         }
 
-        internal static string HedgedRegionsToString(ConcurrentDictionary<string, string> hedgeContext)
+        internal static string HedgedRegionsToString(BlockingCollection<string> hedgeContext)
         {
             return string.Join(
-                ",",
+                ", ",
                 hedgeContext);
         }
 
