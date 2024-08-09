@@ -4,10 +4,8 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Dynamic;
     using System.Linq;
     using System.Net;
     using System.Threading;
