@@ -80,17 +80,21 @@ namespace Microsoft.Azure.Cosmos.Handlers
             this.FillMultiMasterContext(request);
 
             AvailabilityStrategy strategy = this.AvailabilityStrategy(request);
-            
-            if (strategy != null && strategy.Enabled())
-            {
-                return await strategy.ExecuteAvailabilityStrategyAsync(
+
+            ResponseMessage response = strategy != null && strategy.Enabled()
+                ? await strategy.ExecuteAvailabilityStrategyAsync(
                     this.BaseSendAsync,
                     this.client,
                     request,
-                    cancellationToken);
+                    cancellationToken)
+                : await this.BaseSendAsync(request, cancellationToken);
+
+            if (request.RequestOptions?.ExcludeRegions != null)
+            {
+                ((CosmosTraceDiagnostics)response.Diagnostics).Value.AddOrUpdateDatum("ExcludedRegions", request.RequestOptions.ExcludeRegions);
             }
 
-            return await this.BaseSendAsync(request, cancellationToken);
+            return response;
         }
 
         /// <summary>
@@ -109,13 +113,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             RequestMessage request,
             CancellationToken cancellationToken)
         {
-            ResponseMessage response = await base.SendAsync(request, cancellationToken);
-            if (request.RequestOptions?.ExcludeRegions != null)
-            {
-                ((CosmosTraceDiagnostics)response.Diagnostics).Value.AddOrUpdateDatum("ExcludedRegions", request.RequestOptions.ExcludeRegions);
-            }
-
-            return response;
+            return await base.SendAsync(request, cancellationToken);
         }
 
         public virtual async Task<T> SendAsync<T>(

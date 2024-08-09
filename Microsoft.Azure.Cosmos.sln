@@ -32,6 +32,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Encr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Encryption.Custom.Tests", "Microsoft.Azure.Cosmos.Encryption.Custom\tests\Microsoft.Azure.Cosmos.Encryption.Custom.Tests\Microsoft.Azure.Cosmos.Encryption.Custom.Tests.csproj", "{B5B3631D-AC2F-4257-855D-D6FE12F20B60}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FaultInjection", "Microsoft.Azure.Cosmos\FaultInjection\src\FaultInjection.csproj", "{021DDC27-02EF-42C4-9A9E-AA600833C2EE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Cover|Any CPU = Cover|Any CPU
