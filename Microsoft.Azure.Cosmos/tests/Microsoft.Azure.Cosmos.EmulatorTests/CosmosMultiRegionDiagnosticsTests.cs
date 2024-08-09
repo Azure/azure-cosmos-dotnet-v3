@@ -13,7 +13,6 @@
     public class CosmosMultiRegionDiagnosticsTests
     {
         CosmosClient client;
-        CosmosClient faultInjectionClient;
         Database database;
         Container container;
 
@@ -45,7 +44,6 @@
             }
 
             this.client.Dispose();
-            this.faultInjectionClient?.Dispose();
         }
 
 
@@ -100,47 +98,47 @@
                 ApplicationPreferredRegions = new List<string>() { "Central US", "North Central US" },
             };
 
-            this.faultInjectionClient = new CosmosClient(
+            using (CosmosClient faultInjectionClient = new CosmosClient(
                 connectionString: this.connectionString,
-                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions));
-
-            Database database = this.faultInjectionClient.GetDatabase(this.dbName);
-            Container container = database.GetContainer(this.containerName);
-
-            responseDelay.Enable();
-
-            ItemRequestOptions requestOptions = new ItemRequestOptions
+                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                AvailabilityStrategy = new CrossRegionParallelHedgingAvailabilityStrategy(
-                    threshold: TimeSpan.FromMilliseconds(100),
-                    thresholdStep: TimeSpan.FromMilliseconds(50))
-            };
+                Database database = faultInjectionClient.GetDatabase(this.dbName);
+                Container container = database.GetContainer(this.containerName);
 
-            //Request should be hedged to North Central US
-            ItemResponse<ToDoActivity> itemResponse = await container.ReadItemAsync<ToDoActivity>(
-                "1", new PartitionKey("1"),
-                requestOptions);
+                responseDelay.Enable();
 
-            CosmosTraceDiagnostics traceDiagnostic = itemResponse.Diagnostics as CosmosTraceDiagnostics;
-
-            //Walthrough the diagnostics to ensure at Request Invoker Handler Level
-            //has two Diagnostics Handler Children
-            IReadOnlyList<ITrace> traceChildren = traceDiagnostic.Value.Children;
-            int diagnosticsHandlerCount = 0;
-            foreach (ITrace trace in traceChildren)
-            {
-                if (trace.Name == "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler")
+                ItemRequestOptions requestOptions = new ItemRequestOptions
                 {
-                    foreach(ITrace childTrace in trace.Children)
+                    AvailabilityStrategy = new CrossRegionParallelHedgingAvailabilityStrategy(
+                        threshold: TimeSpan.FromMilliseconds(100),
+                        thresholdStep: TimeSpan.FromMilliseconds(50))
+                };
+
+                //Request should be hedged to North Central US
+                ItemResponse<ToDoActivity> itemResponse = await container.ReadItemAsync<ToDoActivity>(
+                    "1", new PartitionKey("1"),
+                    requestOptions);
+
+                CosmosTraceDiagnostics traceDiagnostic = itemResponse.Diagnostics as CosmosTraceDiagnostics;
+
+                //Walthrough the diagnostics to ensure at Request Invoker Handler Level
+                //has two Diagnostics Handler Children
+                IReadOnlyList<ITrace> traceChildren = traceDiagnostic.Value.Children;
+                int diagnosticsHandlerCount = 0;
+                foreach (ITrace trace in traceChildren)
+                {
+                    if (trace.Name == "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler")
                     {
-                        if (childTrace.Name == "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler")
+                        foreach (ITrace childTrace in trace.Children)
                         {
-                            diagnosticsHandlerCount++;
+                            if (childTrace.Name == "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler")
+                            {
+                                diagnosticsHandlerCount++;
+                            }
                         }
                     }
                 }
             }
-            
         }
     }
 }
