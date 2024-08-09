@@ -180,6 +180,7 @@ namespace Microsoft.Azure.Cosmos
                                 if (hedgeResponse.IsNonTransient)
                                 {
                                     cancellationTokenSource.Cancel();
+                                    //Take is not inclusive, so we need to add 1 to the request number which starts at 0
                                     ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
                                         HedgeContext,
                                         hedgeRegions.Take(requestNumber + 1));
@@ -315,11 +316,11 @@ namespace Microsoft.Azure.Cosmos
             return statusCode == (int)HttpStatusCode.NotFound && subStatusCode == (int)SubStatusCodes.Unknown;
         }
 
-        private class HedgingResponse
+        private sealed class HedgingResponse
         {
-            public bool IsNonTransient;
-            public ResponseMessage ResponseMessage;
-            public string ResponseRegion;
+            public readonly bool IsNonTransient;
+            public readonly ResponseMessage ResponseMessage;
+            public readonly string ResponseRegion;
 
             public HedgingResponse(bool isNonTransient, ResponseMessage responseMessage, string responseRegion)
             {
