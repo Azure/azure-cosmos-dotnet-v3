@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
-    using System;
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -24,11 +23,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         internal ChangeFeedObserverContextCore(
             string leaseToken, 
             ResponseMessage feedResponse, 
-            PartitionCheckpointer checkpointer)
+            PartitionCheckpointer checkpointer,
+            FeedRange feedRange)
         {
             this.LeaseToken = leaseToken;
             this.responseMessage = feedResponse;
             this.checkpointer = checkpointer;
+            this.FeedRange = feedRange;
         }
 
         public string LeaseToken { get; }
@@ -36,6 +37,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         public CosmosDiagnostics Diagnostics => this.responseMessage.Diagnostics;
 
         public Headers Headers => this.responseMessage.Headers;
+
+        public FeedRange FeedRange { get; }
 
         public async Task CheckpointAsync()
         {

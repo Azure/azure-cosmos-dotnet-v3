@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             ResponseMessage responseMessage = new ResponseMessage();
             responseMessage.Headers.ContinuationToken = Guid.NewGuid().ToString();
-            this.observerContext = new ChangeFeedObserverContextCore(Guid.NewGuid().ToString(), feedResponse: responseMessage, this.partitionCheckpointer.Object);
+            this.observerContext = new ChangeFeedObserverContextCore(Guid.NewGuid().ToString(), feedResponse: responseMessage, this.partitionCheckpointer.Object, FeedRangeEpk.FullRange);
         }
 
         [TestMethod]
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             ResponseMessage responseMessage = new ResponseMessage();
             responseMessage.Headers.ContinuationToken = Guid.NewGuid().ToString();
-            ChangeFeedObserverContextCore observerContext = new ChangeFeedObserverContextCore(Guid.NewGuid().ToString(), feedResponse: responseMessage, checkpointer.Object);
+            ChangeFeedObserverContextCore observerContext = new ChangeFeedObserverContextCore(Guid.NewGuid().ToString(), feedResponse: responseMessage, checkpointer.Object, FeedRangeEpk.FullRange);
 
             CosmosException caught = await Assert.ThrowsExceptionAsync<CosmosException>(() => this.sut.ProcessChangesAsync(observerContext, this.stream, CancellationToken.None));
             Assert.AreEqual(original, caught);

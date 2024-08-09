@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public ObserverExceptionWrappingChangeFeedObserverDecoratorTests()
         {
             this.observer = new Mock<ChangeFeedObserver>();
-            this.changeFeedObserverContext = new ChangeFeedObserverContextCore(Guid.NewGuid().ToString(), feedResponse: null, Mock.Of<PartitionCheckpointer>()); ;
+            this.changeFeedObserverContext = new ChangeFeedObserverContextCore(Guid.NewGuid().ToString(), feedResponse: null, Mock.Of<PartitionCheckpointer>(), FeedRangeEpk.FullRange); ;
             this.observerWrapper = new ObserverExceptionWrappingChangeFeedObserverDecorator(this.observer.Object);
 
             this.serializerCore = new CosmosSerializerCore();
