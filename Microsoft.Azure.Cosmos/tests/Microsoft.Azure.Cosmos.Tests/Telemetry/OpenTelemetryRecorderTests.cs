@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Diagnostics;
     using System.Linq;
     using System.Net;
     using System.Reflection;
@@ -18,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using static Microsoft.Azure.Cosmos.CrossRegionParallelHedgingAvailabilityStrategy;
 
     [TestClass]
     public class OpenTelemetryRecorderTests
@@ -86,7 +88,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 { "StoredProcedureExecuteResponse`1",new Mock<StoredProcedureExecuteResponse<object>>().Object },
                 { "StoredProcedureResponse", new Mock<StoredProcedureResponse>().Object },
                 { "TriggerResponse", new Mock<TriggerResponse>().Object },
-                { "UserDefinedFunctionResponse", new Mock<UserDefinedFunctionResponse>().Object }
+                { "UserDefinedFunctionResponse", new Mock<UserDefinedFunctionResponse>().Object },
+                { "HedgingResponse", "HedgingResponse" },
             };
 
             Assembly asm = OpenTelemetryRecorderTests.GetAssemblyLocally(DllName);
@@ -107,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 
                 if (instance is TransactionalBatchResponse transactionInstance)
                 {
-                    _ = new OpenTelemetryResponse(transactionInstance);
+                    _ = new OpenTelemetryResponse(transactionInstance, false, null);
                 }
                 else if (instance is ResponseMessage responseMessageInstance)
                 {
@@ -164,6 +167,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 else if (instance is Response<StoredProcedureExecuteResponse<object>> storedProcedureExecuteResponse)
                 {
                     _ = new OpenTelemetryResponse<StoredProcedureExecuteResponse<object>>(storedProcedureExecuteResponse);
+                }
+                else if (instance is string hedgingResponse)
+                {
+                    Assert.AreEqual(
+                        "HedgingResponse",
+                        hedgingResponse,
+                        "HedgingResponse is only used internally in the CrossRegionParallelHedgingAvailabilityStrategy and is never returned. No support Needed.");
                 }
                 else
                 {
