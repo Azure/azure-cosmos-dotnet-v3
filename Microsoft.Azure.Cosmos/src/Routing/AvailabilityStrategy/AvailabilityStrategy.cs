@@ -11,7 +11,12 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Types of availability strategies supported
     /// </summary>
-    internal abstract class AvailabilityStrategy
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+    abstract class AvailabilityStrategy
     {
         /// <summary>
         /// Execute the availability strategy
@@ -27,6 +32,10 @@ namespace Microsoft.Azure.Cosmos
             RequestMessage requestMessage,
             CancellationToken cancellationToken);
 
-        internal abstract bool Enabled();
+        /// <summary>
+        /// Checks to see if the strategy is enabled
+        /// </summary>
+        /// <returns>a bool representing if the strategy is enabled</returns>
+        public abstract bool Enabled();
     }
 }

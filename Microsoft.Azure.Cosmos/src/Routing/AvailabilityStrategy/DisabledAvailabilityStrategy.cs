@@ -10,9 +10,18 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// A Disabled availability strategy that does not do anything. Used for overriding the default global availability strategy.
     /// </summary>
-    internal class DisabledAvailabilityStrategy : AvailabilityStrategy
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+    class DisabledAvailabilityStrategy : AvailabilityStrategy
     {
-        internal override bool Enabled()
+        /// <summary>
+        /// Checks to see if the strategy is enabled
+        /// </summary>
+        /// <returns>a bool representing if the strategy is enabled, will always be false</returns>
+        public override bool Enabled()
         {
             return false;
         }
