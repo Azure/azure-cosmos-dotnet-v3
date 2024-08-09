@@ -2,277 +2,169 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Tests
 {
+    using Moq;
     using System;
-    using System.Buffers;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
+    using global::Microsoft.VisualStudio.TestTools.UnitTesting;
 
-    internal static class ThinClientTransportSerializer
+    namespace Microsoft.Azure.Cosmos.Tests
     {
-        public const string RoutedViaProxy = "x-ms-thinclient-route-via-proxy";
-        public const string ProxyStartEpk = "x-ms-thinclient-range-min";
-        public const string ProxyEndEpk = "x-ms-thinclient-range-max";
-
-        public const string ProxyOperationType = "x-ms-thinclient-proxy-operation-type";
-        public const string ProxyResourceType = "x-ms-thinclient-proxy-resource-type";
-
-        private static readonly PartitionKeyDefinition HashV2SinglePath;
-
-        static ThinClientTransportSerializer()
+        [TestClass]
+        public class ThinClientTransportSerializerTests
         {
-            HashV2SinglePath = new PartitionKeyDefinition
+            private readonly Mock<ThinClientTransportSerializer.BufferProviderWrapper> mockBufferProviderWrapper;
+            private readonly string testAccountName = "testAccount";
+            private readonly Uri testUri = new Uri("http://localhost/dbs/db1/colls/coll1/docs/doc1");
+
+            public ThinClientTransportSerializerTests()
             {
-                Kind = PartitionKind.Hash,
-                Version = Documents.PartitionKeyDefinitionVersion.V2,
-            };
-            HashV2SinglePath.Paths.Add("/id");
-        }
-
-        /// <summary>
-        /// Wrapper to expose a public buffer provider for the RNTBD stack.
-        /// </summary>
-        public sealed class BufferProviderWrapper
-        {
-            internal BufferProvider Provider { get; set; } = new();
-        }
-
-        /// <summary>
-        /// Serialize the Proxy request to the RNTBD protocol format.
-        /// Today this takes the HttprequestMessage and reconstructs the DSR.
-        /// If the SDK can push properties to the HttpRequestMessage then the handler above having
-        /// the DSR can allow us to push that directly to the serialization.
-        /// </summary>
-        public static async Task<Stream> SerializeProxyRequestAsync(
-            BufferProviderWrapper bufferProvider,
-            string accountName,
-            HttpRequestMessage requestMessage)
-        {
-            OperationType operationType = Enum.Parse<OperationType>(requestMessage.Headers.GetValues(ProxyOperationType).First());
-            ResourceType resourceType = Enum.Parse<ResourceType>(requestMessage.Headers.GetValues(ProxyResourceType).First());
-
-            Guid activityId = Guid.Parse(requestMessage.Headers.GetValues(HttpConstants.HttpHeaders.ActivityId).First());
-
-            Stream requestStream = null;
-            if (requestMessage.Content != null)
-            {
-                requestStream = await requestMessage.Content.ReadAsStreamAsync();
+                this.mockBufferProviderWrapper = new Mock<ThinClientTransportSerializer.BufferProviderWrapper>();
             }
 
-            RequestNameValueCollection dictionaryCollection = new();
-            foreach (KeyValuePair<string, IEnumerable<string>> header in requestMessage.Headers)
+            [TestMethod]
+            public async Task SerializeProxyRequestAsync_ShouldSerializeRequest()
             {
-                dictionaryCollection.Set(header.Key, string.Join(",", header.Value));
+                // Arrange
+                HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, this.testUri);
+                requestMessage.Headers.Add(HandlerConstants.ProxyOperationType, "Read");
+                requestMessage.Headers.Add(HandlerConstants.ProxyResourceType, "Document");
+                requestMessage.Headers.Add(HttpConstants.HttpHeaders.ActivityId, Guid.NewGuid().ToString());
+                requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[\"testPartitionKey\"]");
+
+                // Act
+                Stream result = await ThinClientTransportSerializer.SerializeProxyRequestAsync(
+                    this.mockBufferProviderWrapper.Object,
+                    this.testAccountName,
+                    requestMessage);
+
+                // Assert
+                Assert.IsNotNull(result);
+                Assert.IsInstanceOfType(result, typeof(Stream));
             }
 
-            using DocumentServiceRequest request = new(
-                operationType,
-                resourceType,
-                requestMessage.RequestUri.PathAndQuery,
-                requestStream,
-                AuthorizationTokenType.PrimaryMasterKey,
-                dictionaryCollection);
-
-            if (operationType.IsPointOperation())
+            [TestMethod]
+            public async Task SerializeProxyRequestAsync_ThrowsException_WhenPartitionKeyIsMissing()
             {
-                string partitionKey = request.Headers.Get(HttpConstants.HttpHeaders.PartitionKey);
+                // Arrange
+                HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, this.testUri);
+                requestMessage.Headers.Add(HandlerConstants.ProxyOperationType, "Read");
+                requestMessage.Headers.Add(HandlerConstants.ProxyResourceType, "Document");
+                requestMessage.Headers.Add(HttpConstants.HttpHeaders.ActivityId, Guid.NewGuid().ToString());
 
-                if (string.IsNullOrEmpty(partitionKey))
+                // Act & Assert
+                await Assert.ThrowsExceptionAsync<InternalServerErrorException>(() =>
+                    ThinClientTransportSerializer.SerializeProxyRequestAsync(
+                        this.mockBufferProviderWrapper.Object,
+                        this.testAccountName,
+                        requestMessage));
+            }
+
+            [TestMethod]
+            public async Task SerializeProxyRequestAsync_InvalidOperationType_ThrowsException()
+            {
+                // Arrange
+                HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, this.testUri);
+                requestMessage.Headers.Add(HandlerConstants.ProxyOperationType, "InvalidOperation");
+                requestMessage.Headers.Add(HandlerConstants.ProxyResourceType, "Document");
+                requestMessage.Headers.Add(HttpConstants.HttpHeaders.ActivityId, Guid.NewGuid().ToString());
+                requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[\"testPartitionKey\"]");
+
+                // Act & Assert
+                await Assert.ThrowsExceptionAsync<ArgumentException>(() =>
+                    ThinClientTransportSerializer.SerializeProxyRequestAsync(
+                        this.mockBufferProviderWrapper.Object,
+                        this.testAccountName,
+                        requestMessage));
+            }
+
+            [TestMethod]
+            public async Task SerializeProxyRequestAsync_WithRequestBody_ShouldSerializeRequest()
+            {
+                // Arrange
+                HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Post, this.testUri)
                 {
-                    throw new InternalServerErrorException("Partition key is missing or empty.");
-                }
+                    Content = new StringContent("{ \"key\": \"value\" }")
+                };
+                requestMessage.Headers.Add(HandlerConstants.ProxyOperationType, "Create");
+                requestMessage.Headers.Add(HandlerConstants.ProxyResourceType, "Document");
+                requestMessage.Headers.Add(HttpConstants.HttpHeaders.ActivityId, Guid.NewGuid().ToString());
+                requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[\"testPartitionKey\"]");
 
-                string epk = GetEffectivePartitionKeyHash(partitionKey);
+                // Act
+                Stream result = await ThinClientTransportSerializer.SerializeProxyRequestAsync(
+                    this.mockBufferProviderWrapper.Object,
+                    this.testAccountName,
+                    requestMessage);
 
-                request.Properties = new Dictionary<string, object>
-            {
-                { "x-ms-effective-partition-key", HexStringUtility.HexStringToBytes(epk) }
-            };
-            }
-            else if (request.Headers[ProxyStartEpk] != null)
-            {
-                // Re-add EPK headers removed by RequestInvokerHandler through Properties
-                request.Properties = new Dictionary<string, object>
-            {
-                { WFConstants.BackendHeaders.StartEpkHash, HexStringUtility.HexStringToBytes(request.Headers[ProxyStartEpk]) },
-                { WFConstants.BackendHeaders.EndEpkHash, HexStringUtility.HexStringToBytes(request.Headers[ProxyEndEpk]) }
-            };
-
-                request.Headers.Add(HttpConstants.HttpHeaders.ReadFeedKeyType, RntbdConstants.RntdbReadFeedKeyType.EffectivePartitionKeyRange.ToString());
-                request.Headers.Add(HttpConstants.HttpHeaders.StartEpk, request.Headers[ProxyStartEpk]);
-                request.Headers.Add(HttpConstants.HttpHeaders.EndEpk, request.Headers[ProxyEndEpk]);
+                // Assert
+                Assert.IsNotNull(result);
+                Assert.IsInstanceOfType(result, typeof(Stream));
+                Assert.IsTrue(result.Length > 0);
             }
 
-            await request.EnsureBufferedBodyAsync();
-
-            using Documents.Rntbd.TransportSerialization.SerializedRequest serializedRequest =
-                Documents.Rntbd.TransportSerialization.BuildRequestForProxy(
-                    request,
-                    new ResourceOperation(operationType, resourceType),
-                    activityId,
-                    bufferProvider.Provider,
-                    accountName,
-                    out _,
-                    out _);
-
-            MemoryStream memoryStream = new(serializedRequest.RequestSize);
-            await serializedRequest.CopyToStreamAsync(memoryStream);
-            memoryStream.Position = 0;
-            return memoryStream;
-        }
-
-        public static string GetEffectivePartitionKeyHash(string partitionJson)
-        {
-            return Documents.PartitionKey.FromJsonString(partitionJson).InternalKey.GetEffectivePartitionKeyString(HashV2SinglePath);
-        }
-
-        /// <summary>
-        /// Deserialize the Proxy Response from the RNTBD protocol format to the Http format needed by the caller.
-        /// Today this takes the HttpResponseMessage and reconstructs the modified Http response.
-        /// </summary>
-        public static async Task<HttpResponseMessage> ConvertProxyResponseAsync(HttpResponseMessage responseMessage)
-        {
-            using Stream responseStream = await responseMessage.Content.ReadAsStreamAsync();
-
-            (StatusCodes status, byte[] metadata) = await ReadHeaderAndMetadataAsync(responseStream);
-
-            if (responseMessage.StatusCode != (HttpStatusCode)status)
+            [TestMethod]
+            public async Task ConvertProxyResponseAsync_WithPayload_ShouldConvertResponse()
             {
-                throw new InternalServerErrorException("Status code mismatch");
-            }
+                // Arrange
+                MemoryStream content = new MemoryStream();
+                StreamWriter writer = new StreamWriter(content);
+                await writer.WriteAsync("payload content");
+                await writer.FlushAsync();
+                content.Position = 0;
 
-            Rntbd.BytesDeserializer bytesDeserializer = new(metadata, metadata.Length);
-            if (!Documents.Rntbd.HeadersTransportSerialization.TryParseMandatoryResponseHeaders(ref bytesDeserializer, out bool payloadPresent, out _))
-            {
-                throw new InternalServerErrorException("Length mismatch");
-            }
-
-            MemoryStream bodyStream = null;
-            if (payloadPresent)
-            {
-                int length = await ReadBodyLengthAsync(responseStream);
-                bodyStream = new MemoryStream(length);
-                await responseStream.CopyToAsync(bodyStream);
-                bodyStream.Position = 0;
-            }
-
-            // TODO: Clean this up.
-            bytesDeserializer = new Rntbd.BytesDeserializer(metadata, metadata.Length);
-            StoreResponse storeResponse = Documents.Rntbd.TransportSerialization.MakeStoreResponse(
-                status,
-                Guid.NewGuid(),
-                bodyStream,
-                HttpConstants.Versions.CurrentVersion,
-                ref bytesDeserializer);
-
-            HttpResponseMessage response = new((HttpStatusCode)storeResponse.StatusCode)
-            {
-                RequestMessage = responseMessage.RequestMessage
-            };
-
-            if (bodyStream != null)
-            {
-                response.Content = new StreamContent(bodyStream);
-            }
-
-            foreach (string header in storeResponse.Headers.Keys())
-            {
-                if (header == HttpConstants.HttpHeaders.SessionToken)
+                HttpResponseMessage responseMessage = new HttpResponseMessage(HttpStatusCode.OK)
                 {
-                    string newSessionToken = $"{storeResponse.PartitionKeyRangeId}:{storeResponse.Headers.Get(header)}";
-                    response.Headers.TryAddWithoutValidation(header, newSessionToken);
-                }
-                else
-                {
-                    response.Headers.TryAddWithoutValidation(header, storeResponse.Headers.Get(header));
-                }
+                    Content = new StreamContent(content)
+                };
+
+                // Act
+                HttpResponseMessage result = await ThinClientTransportSerializer.ConvertProxyResponseAsync(responseMessage);
+
+                // Assert
+                Assert.IsNotNull(result);
+                Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+                Assert.AreEqual("payload content", await result.Content.ReadAsStringAsync());
             }
 
-            response.Headers.TryAddWithoutValidation(RoutedViaProxy, "1");
-            return response;
-        }
-
-        private static async Task<(StatusCodes, byte[] metadata)> ReadHeaderAndMetadataAsync(Stream stream)
-        {
-            byte[] header = ArrayPool<byte>.Shared.Rent(24);
-            const int headerLength = 24;
-            try
+            [TestMethod]
+            public async Task ConvertProxyResponseAsync_ShouldConvertResponse()
             {
-                int headerRead = 0;
-                while (headerRead < headerLength)
+                // Arrange
+                HttpResponseMessage responseMessage = new HttpResponseMessage(HttpStatusCode.OK)
                 {
-                    int read = await stream.ReadAsync(header, headerRead, headerLength - headerRead);
+                    Content = new StreamContent(new MemoryStream())
+                };
 
-                    if (read == 0)
-                    {
-                        throw new DocumentClientException("Unexpected end of stream while reading header bytes", HttpStatusCode.Gone, SubStatusCodes.Unknown);
-                    }
+                // Act
+                HttpResponseMessage result = await ThinClientTransportSerializer.ConvertProxyResponseAsync(responseMessage);
 
-                    headerRead += read;
-                }
-
-                uint totalLength = BitConverter.ToUInt32(header, 0);
-                StatusCodes status = (StatusCodes)BitConverter.ToUInt32(header, 4);
-
-                if (totalLength < headerLength)
-                {
-                    throw new InternalServerErrorException("Header length mismatch");
-                }
-
-                int metadataLength = (int)totalLength - headerLength;
-                byte[] metadata = new byte[metadataLength];
-                int responseMetadataRead = 0;
-                while (responseMetadataRead < metadataLength)
-                {
-                    int read = await stream.ReadAsync(metadata, responseMetadataRead, metadataLength - responseMetadataRead);
-
-                    if (read == 0)
-                    {
-                        throw new DocumentClientException("Unexpected end of stream while reading metadata bytes", HttpStatusCode.Gone, SubStatusCodes.Unknown);
-                    }
-
-                    responseMetadataRead += read;
-                }
-
-                return (status, metadata);
+                // Assert
+                Assert.IsNotNull(result);
+                Assert.AreEqual(responseMessage.StatusCode, result.StatusCode);
             }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(header);
-            }
-        }
 
-        private static async Task<int> ReadBodyLengthAsync(Stream stream)
-        {
-            byte[] header = ArrayPool<byte>.Shared.Rent(4);
-            const int headerLength = 4;
-            try
+            [TestMethod]
+            public async Task ConvertProxyResponseAsync_StatusCodeMismatch_ThrowsException()
             {
-                int headerRead = 0;
-                while (headerRead < headerLength)
+                // Arrange
+                HttpResponseMessage responseMessage = new HttpResponseMessage(HttpStatusCode.BadRequest)
                 {
-                    int read = await stream.ReadAsync(header, headerRead, headerLength - headerRead);
+                    Content = new StreamContent(new MemoryStream())
+                };
 
-                    if (read == 0)
-                    {
-                        throw new DocumentClientException("Unexpected end of stream while reading body length", HttpStatusCode.Gone, SubStatusCodes.Unknown);
-                    }
-
-                    headerRead += read;
-                }
-
-                return BitConverter.ToInt32(header, 0);
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(header);
+                // Act & Assert
+                await Assert.ThrowsExceptionAsync<InternalServerErrorException>(() =>
+                    ThinClientTransportSerializer.ConvertProxyResponseAsync(responseMessage));
             }
         }
     }
