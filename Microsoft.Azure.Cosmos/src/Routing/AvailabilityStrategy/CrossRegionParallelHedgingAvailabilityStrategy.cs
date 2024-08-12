@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos
         /// Checks to see if the strategy is enabled
         /// </summary>
         /// <returns>a bool representing if the strategy is enabled</returns>
-        public override bool Enabled()
+        internal override bool Enabled()
         {
             return true;
         }
