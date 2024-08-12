@@ -17,10 +17,7 @@ namespace Microsoft.Azure.Cosmos
 #endif
     class DisabledAvailabilityStrategy : AvailabilityStrategy
     {
-        /// <summary>
-        /// Checks to see if the strategy is enabled
-        /// </summary>
-        /// <returns>a bool representing if the strategy is enabled, will always be false</returns>
+        /// <inheritdoc/>
         internal override bool Enabled()
         {
             return false;
@@ -34,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestMessage"></param>
         /// <param name="cancellationToken"></param>
         /// <returns>nothing, this will throw.</returns>
-        public override Task<ResponseMessage> ExecuteAvailabilityStrategyAsync(
+        internal override Task<ResponseMessage> ExecuteAvailabilityStrategyAsync(
             Func<RequestMessage,
             CancellationToken,
             Task<ResponseMessage>> sender,

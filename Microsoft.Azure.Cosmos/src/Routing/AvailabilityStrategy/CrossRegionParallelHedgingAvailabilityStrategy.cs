@@ -64,10 +64,7 @@ namespace Microsoft.Azure.Cosmos
             this.ThresholdStep = thresholdStep ?? TimeSpan.FromMilliseconds(-1);
         }
 
-        /// <summary>
-        /// Checks to see if the strategy is enabled
-        /// </summary>
-        /// <returns>a bool representing if the strategy is enabled</returns>
+        /// <inheritdoc/>
         internal override bool Enabled()
         {
             return true;
