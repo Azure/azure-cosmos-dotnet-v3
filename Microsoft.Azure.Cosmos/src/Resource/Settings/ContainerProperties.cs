@@ -558,9 +558,9 @@ namespace Microsoft.Azure.Cosmos
         /// It is an optional property.
         ///
         /// The unit of measurement is seconds. The maximum allowed value is 2147483647.
-        /// A valid value must be either a positive integer or '-1'.
+        /// When updating this property, a valid value must be either a positive integer or '-1'.
         ///
-        /// By default, AnalyticalStoreTimeToLiveInSeconds is set to 0 meaning analytical store is turned-off.
+        /// By default, AnalyticalStoreTimeToLiveInSeconds is <c>null</c> meaning analytical store is turned-off.
         /// </value>
         /// <remarks>
         /// <para>
@@ -581,7 +581,7 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// </remarks>
         /// <example>
-        /// The example below disables analytical store on a container.
+        /// The example below disables analytical store on a container if previously enabled.
         /// <code language="c#">
         /// <![CDATA[
         ///     container.AnalyticalStoreTimeToLiveInSeconds = 0;
