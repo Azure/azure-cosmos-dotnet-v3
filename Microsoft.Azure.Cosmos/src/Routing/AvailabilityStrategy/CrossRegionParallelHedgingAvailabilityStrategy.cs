@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="request"></param>
         /// <param name="cancellationToken"></param>
         /// <returns>The response after executing cross region hedging</returns>
-        public override async Task<ResponseMessage> ExecuteAvailabilityStrategyAsync(
+        internal override async Task<ResponseMessage> ExecuteAvailabilityStrategyAsync(
             Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender,
             CosmosClient client,
             RequestMessage request,
