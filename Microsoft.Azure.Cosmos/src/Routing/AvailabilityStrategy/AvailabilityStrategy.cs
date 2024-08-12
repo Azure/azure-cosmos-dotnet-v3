@@ -36,9 +36,6 @@ namespace Microsoft.Azure.Cosmos
         /// Checks to see if the strategy is enabled
         /// </summary>
         /// <returns>a bool representing if the strategy is enabled</returns>
-        internal virtual bool Enabled()
-        {
-            return false;
-        }
+        internal abstract bool Enabled();
     }
 }
