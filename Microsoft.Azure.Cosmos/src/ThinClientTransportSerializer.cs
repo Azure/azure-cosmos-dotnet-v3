@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Wrapper to expose a public bufferprovider for the RNTBD stack.
         /// </summary>
-        public sealed class BufferProviderWrapper
+        public class BufferProviderWrapper
         {
             internal BufferProvider Provider { get; set; } = new ();
         }
