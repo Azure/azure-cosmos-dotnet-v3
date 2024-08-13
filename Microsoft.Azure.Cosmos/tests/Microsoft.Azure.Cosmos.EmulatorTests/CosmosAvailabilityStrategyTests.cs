@@ -343,7 +343,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             responseDelay.Enable();
             ItemRequestOptions requestOptions = new ItemRequestOptions
             {
-                AvailabilityStrategy = AvailabilityStrategy.DisabledAvailabilityStrategy()
+                AvailabilityStrategy = AvailabilityStrategy.DisabledStrategy()
             };
 
             ItemResponse<AvailabilityStrategyTestObject> ir = await container.ReadItemAsync<AvailabilityStrategyTestObject>(
