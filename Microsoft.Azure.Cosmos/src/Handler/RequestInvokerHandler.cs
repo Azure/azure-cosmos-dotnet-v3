@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             await request.AssertPartitioningDetailsAsync(this.client, cancellationToken, request.Trace);
             this.FillMultiMasterContext(request);
 
-            AvailabilityStrategy strategy = this.AvailabilityStrategy(request);
+            AvailabilityStrategyInternal strategy = this.AvailabilityStrategy(request);
 
             ResponseMessage response = strategy != null && strategy.Enabled()
                 ? await strategy.ExecuteAvailabilityStrategyAsync(
@@ -103,10 +103,17 @@ namespace Microsoft.Azure.Cosmos.Handlers
         /// </summary>
         /// <param name="request"></param>
         /// <returns>whether the request should be a parallel hedging request.</returns>
-        public AvailabilityStrategy AvailabilityStrategy(RequestMessage request)
+        public AvailabilityStrategyInternal AvailabilityStrategy(RequestMessage request)
         {
-            return request.RequestOptions?.AvailabilityStrategy
+            AvailabilityStrategy strategy = request.RequestOptions?.AvailabilityStrategy
                     ?? this.client.ClientOptions.AvailabilityStrategy;
+
+            if (strategy == null)
+            {
+                return null;
+            }
+
+            return strategy as AvailabilityStrategyInternal;
         }
 
         public virtual async Task<ResponseMessage> BaseSendAsync(

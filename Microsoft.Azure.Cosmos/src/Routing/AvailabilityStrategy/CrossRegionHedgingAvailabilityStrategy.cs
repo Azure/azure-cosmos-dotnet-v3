@@ -21,12 +21,7 @@ namespace Microsoft.Azure.Cosmos
     /// if the first parallel request or the original has not returned after the step time, 
     /// additional parallel requests will be sent out there is a response or all regions are exausted.
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    class CrossRegionParallelHedgingAvailabilityStrategy : AvailabilityStrategy
+    internal class CrossRegionHedgingAvailabilityStrategy : AvailabilityStrategyInternal
     {
         private const string HedgeContext = "Hedge Context";
         private const string ResponseRegion = "Response Region";
@@ -46,7 +41,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="threshold"></param>
         /// <param name="thresholdStep"></param>
-        public CrossRegionParallelHedgingAvailabilityStrategy(
+        public CrossRegionHedgingAvailabilityStrategy(
             TimeSpan threshold,
             TimeSpan? thresholdStep)
         {
@@ -63,6 +58,8 @@ namespace Microsoft.Azure.Cosmos
             this.Threshold = threshold;
             this.ThresholdStep = thresholdStep ?? TimeSpan.FromMilliseconds(-1);
         }
+
+        public override string StrategyName => nameof(CrossRegionHedgingAvailabilityStrategy);
 
         /// <inheritdoc/>
         internal override bool Enabled()

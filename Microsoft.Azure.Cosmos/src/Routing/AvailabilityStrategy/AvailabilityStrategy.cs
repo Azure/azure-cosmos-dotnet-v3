@@ -4,9 +4,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Threading;
-    using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Handlers;
 
     /// <summary>
     /// Types of availability strategies supported
@@ -19,23 +16,26 @@ namespace Microsoft.Azure.Cosmos
     abstract class AvailabilityStrategy
     {
         /// <summary>
-        /// Execute the availability strategy
+        ///  stuff
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="client"></param>
-        /// <param name="requestMessage"></param>
-        /// <param name="cancellationToken"></param>
-        /// <returns>The response from the service after the availability strategy is executed</returns>
-        internal abstract Task<ResponseMessage> ExecuteAvailabilityStrategyAsync(
-            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender,
-            CosmosClient client,
-            RequestMessage requestMessage,
-            CancellationToken cancellationToken);
+        /// <returns>something</returns>
+        public static AvailabilityStrategy DisabledAvailabilityStrategy()
+        {
+            return new DisabledAvailabilityStrategy();
+        }
 
         /// <summary>
-        /// Checks to see if the strategy is enabled
+        /// stuff
         /// </summary>
-        /// <returns>a bool representing if the strategy is enabled</returns>
-        internal abstract bool Enabled();
+        /// <param name="threshold"></param>
+        /// <param name="thresholdStep"></param>
+        /// <returns>something</returns>
+        public static AvailabilityStrategy CrossRegionHedgingAvailabilityStrategy(TimeSpan threshold,
+            TimeSpan? thresholdStep)
+        {
+            return new CrossRegionHedgingAvailabilityStrategy(threshold, thresholdStep);
+        }
+
+        public abstract string StrategyName { get; }
     }
 }
