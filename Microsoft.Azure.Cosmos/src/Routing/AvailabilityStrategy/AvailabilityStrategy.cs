@@ -16,19 +16,22 @@ namespace Microsoft.Azure.Cosmos
     abstract class AvailabilityStrategy
     {
         /// <summary>
-        ///  stuff
+        ///  Used on a per request level to disable a client level AvailabilityStrategy
         /// </summary>
         /// <returns>something</returns>
-        public static AvailabilityStrategy DisabledAvailabilityStrategy()
+        public static AvailabilityStrategy DisabledStrategy()
         {
             return new DisabledAvailabilityStrategy();
         }
 
         /// <summary>
-        /// stuff
+        /// After a request's duration passes a threshold, this strategy will send out
+        /// hedged request to other regions. The first hedge request will be sent after the threshold. 
+        /// After that, the strategy will send out a request every thresholdStep
+        /// until the request is completed or regions are exausted
         /// </summary>
-        /// <param name="threshold"></param>
-        /// <param name="thresholdStep"></param>
+        /// <param name="threshold"> how long before SDK begins hedging</param>
+        /// <param name="thresholdStep">Period of time between first hedge and next hedging attempts</param>
         /// <returns>something</returns>
         public static AvailabilityStrategy CrossRegionHedgingAvailabilityStrategy(TimeSpan threshold,
             TimeSpan? thresholdStep)
@@ -36,6 +39,9 @@ namespace Microsoft.Azure.Cosmos
             return new CrossRegionHedgingAvailabilityStrategy(threshold, thresholdStep);
         }
 
+        /// <summary>
+        /// Name of Availability Strategy
+        /// </summary>
         public abstract string StrategyName { get; }
     }
 }
