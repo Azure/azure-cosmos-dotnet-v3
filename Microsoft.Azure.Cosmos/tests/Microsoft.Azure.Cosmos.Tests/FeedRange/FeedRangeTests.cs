@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
     using Microsoft.Azure.Cosmos.Routing;
     using Moq;
     using Microsoft.Azure.Cosmos.Tracing;
-    using System.IO;
     using System.Net.Http;
     using System.Text;
 
