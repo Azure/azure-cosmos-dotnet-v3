@@ -1763,9 +1763,9 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="partitionKey">A given list of ranges.</param>
         /// <param name="cancellationToken"></param>
         /// <returns>True or False</returns>
-        public virtual async Task<bool> IsSubsetAsync(Cosmos.FeedRange parentFeedRange, Cosmos.PartitionKey partitionKey, CancellationToken cancellationToken = default)
+        public virtual Task<bool> IsSubsetAsync(Cosmos.FeedRange parentFeedRange, Cosmos.PartitionKey partitionKey, CancellationToken cancellationToken = default)
         {
-            throw await Task.FromException<NotImplementedException>(default);
+            throw NotImplementedException>();
         }
 
         /// <summary>
