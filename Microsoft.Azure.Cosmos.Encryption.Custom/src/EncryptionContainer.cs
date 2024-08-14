@@ -1029,23 +1029,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         }
 #endif
 
-#if SDKPROJECTREF
-        public override Task<IReadOnlyList<Cosmos.FeedRange>> FindOverlappingRangesAsync(
-            Cosmos.PartitionKey partitionKey,
-            IReadOnlyList<Cosmos.FeedRange> feedRanges,
-            CancellationToken cancellationToken = default)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override IReadOnlyList<Cosmos.FeedRange> FindOverlappingRanges(
-            Cosmos.FeedRange feedRange,
-            IReadOnlyList<Cosmos.FeedRange> feedRanges)
-        {
-            throw new NotImplementedException();
-        }
-#endif
-
         private async Task<ResponseMessage> ReadManyItemsHelperAsync(
            IReadOnlyList<(string id, PartitionKey partitionKey)> items,
            ReadManyRequestOptions readManyRequestOptions = null,
