@@ -699,7 +699,16 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        AvailabilityStrategy AvailabilityStrategy { get; set; }
+        AvailabilityStrategy AvailabilityStrategy 
+        { 
+            get; 
+            set
+            {
+                if (this.ApplicationPreferredRegions == null 
+                    && this.ApplicationRegion == null)
+                {
+                    throw new ArgumentException($"{nameof(this.ApplicationPreferredRegions)} or {nameof(this.ApplicationRegion)} must be set to use {nameof(this.AvailabilityStrategy)}");
+        }
 
         /// <summary>
         /// Enable partition key level failover

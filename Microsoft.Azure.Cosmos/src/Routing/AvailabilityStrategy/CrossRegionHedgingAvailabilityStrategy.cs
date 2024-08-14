@@ -102,7 +102,8 @@ namespace Microsoft.Azure.Cosmos
             RequestMessage request,
             CancellationToken cancellationToken)
         {
-            if (!this.ShouldHedge(request))
+            if (!this.ShouldHedge(request)
+                || client.DocumentClient.GlobalEndpointManager.ReadEndpoints.Count == 1)
             {
                 return await sender(request, cancellationToken);
             }
