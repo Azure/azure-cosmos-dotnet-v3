@@ -16,10 +16,17 @@ namespace Microsoft.Azure.Cosmos
     abstract class AvailabilityStrategy
     {
         /// <summary>
+        /// Default constructor
+        /// </summary>
+        internal AvailabilityStrategy()
+        {
+        }
+
+        /// <summary>
         ///  Used on a per request level to disable a client level AvailabilityStrategy
         /// </summary>
         /// <returns>something</returns>
-        public static AvailabilityStrategy DisabledStrategy()
+        internal static AvailabilityStrategy DisabledStrategy()
         {
             return new DisabledAvailabilityStrategy();
         }
@@ -33,15 +40,10 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="threshold"> how long before SDK begins hedging</param>
         /// <param name="thresholdStep">Period of time between first hedge and next hedging attempts</param>
         /// <returns>something</returns>
-        public static AvailabilityStrategy CrossRegionHedgingAvailabilityStrategy(TimeSpan threshold,
+        public static AvailabilityStrategy CrossRegionHedgingStrategy(TimeSpan threshold,
             TimeSpan? thresholdStep)
         {
             return new CrossRegionHedgingAvailabilityStrategy(threshold, thresholdStep);
         }
-
-        /// <summary>
-        /// Name of Availability Strategy
-        /// </summary>
-        public abstract string StrategyName { get; }
     }
 }

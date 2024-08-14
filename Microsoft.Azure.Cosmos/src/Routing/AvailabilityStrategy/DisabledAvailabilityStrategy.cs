@@ -12,8 +12,6 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class DisabledAvailabilityStrategy : AvailabilityStrategyInternal
     {
-        public override string StrategyName => nameof(DisabledAvailabilityStrategy);
-
         /// <inheritdoc/>
         internal override bool Enabled()
         {

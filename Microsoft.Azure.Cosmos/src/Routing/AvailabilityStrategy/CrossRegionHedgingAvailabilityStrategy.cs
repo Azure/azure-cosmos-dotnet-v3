@@ -59,8 +59,6 @@ namespace Microsoft.Azure.Cosmos
             this.ThresholdStep = thresholdStep ?? TimeSpan.FromMilliseconds(-1);
         }
 
-        public override string StrategyName => nameof(CrossRegionHedgingAvailabilityStrategy);
-
         /// <inheritdoc/>
         internal override bool Enabled()
         {
