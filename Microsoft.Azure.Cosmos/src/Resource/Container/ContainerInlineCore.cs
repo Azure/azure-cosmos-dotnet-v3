@@ -661,14 +661,16 @@ namespace Microsoft.Azure.Cosmos
                 openTelemetry: (response) => new OpenTelemetryResponse(response));
         }
 
-        public override IReadOnlyList<FeedRange> FindOverlappingRanges(FeedRange feedRange, IReadOnlyList<FeedRange> feedRanges)
+#if PREVIEW
+        public override Task<bool> IsSubsetAsync(FeedRange parentFeedRange, PartitionKey partitionKey, CancellationToken cancellationToken = default)
         {
-            return base.FindOverlappingRanges(feedRange, feedRanges);
+            return base.IsSubsetAsync(parentFeedRange, partitionKey, cancellationToken);
         }
 
-        public override async Task<IReadOnlyList<FeedRange>> FindOverlappingRangesAsync(PartitionKey partitionKey, IReadOnlyList<FeedRange> feedRanges, CancellationToken cancellationToken = default)
+        public override bool IsSubset(FeedRange parentFeedRange, FeedRange childFeedRange)
         {
-            return await base.FindOverlappingRangesAsync(partitionKey, feedRanges, cancellationToken);
+            return base.IsSubset(parentFeedRange, childFeedRange);
         }
+#endif
     }
 }

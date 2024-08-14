@@ -299,30 +299,32 @@
     "Microsoft.Azure.Cosmos.Container;System.Object;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
+        "Boolean IsSubset(Microsoft.Azure.Cosmos.FeedRange, Microsoft.Azure.Cosmos.FeedRange)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean IsSubset(Microsoft.Azure.Cosmos.FeedRange, Microsoft.Azure.Cosmos.FeedRange);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes[T](System.String, ChangeFeedHandler`1)": {
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes[T](System.String, ChangeFeedHandler`1);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
-        },
-        "System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.FeedRange] FindOverlappingRanges(Microsoft.Azure.Cosmos.FeedRange, System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.FeedRange])": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.FeedRange] FindOverlappingRanges(Microsoft.Azure.Cosmos.FeedRange, System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.FeedRange]);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] DeleteAllItemsByPartitionKeyStreamAsync(Microsoft.Azure.Cosmos.PartitionKey, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] DeleteAllItemsByPartitionKeyStreamAsync(Microsoft.Azure.Cosmos.PartitionKey, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "System.Threading.Tasks.Task`1[System.Boolean] IsSubsetAsync(Microsoft.Azure.Cosmos.FeedRange, Microsoft.Azure.Cosmos.PartitionKey, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Container+<IsSubsetAsync>))]": {
+          "Type": "Method",
+          "Attributes": [
+            "AsyncStateMachineAttribute"
+          ],
+          "MethodInfo": "System.Threading.Tasks.Task`1[System.Boolean] IsSubsetAsync(Microsoft.Azure.Cosmos.FeedRange, Microsoft.Azure.Cosmos.PartitionKey, System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.Threading.Tasks.Task`1[System.Collections.Generic.IEnumerable`1[System.String]] GetPartitionKeyRangesAsync(Microsoft.Azure.Cosmos.FeedRange, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[System.Collections.Generic.IEnumerable`1[System.String]] GetPartitionKeyRangesAsync(Microsoft.Azure.Cosmos.FeedRange, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.Threading.Tasks.Task`1[System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.FeedRange]] FindOverlappingRangesAsync(Microsoft.Azure.Cosmos.PartitionKey, System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.FeedRange], System.Threading.CancellationToken)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.FeedRange]] FindOverlappingRangesAsync(Microsoft.Azure.Cosmos.PartitionKey, System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.FeedRange], System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}

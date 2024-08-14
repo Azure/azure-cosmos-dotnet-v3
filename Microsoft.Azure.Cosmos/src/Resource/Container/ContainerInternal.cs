@@ -151,10 +151,6 @@ namespace Microsoft.Azure.Cosmos
         public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
             string processorName,
             ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate);
-
-        public abstract Task<IReadOnlyList<Cosmos.FeedRange>> FindOverlappingRangesAsync(Cosmos.PartitionKey partitionKey, IReadOnlyList<Cosmos.FeedRange> feedRanges, CancellationToken cancellationToken = default);
-
-        public abstract IReadOnlyList<Cosmos.FeedRange> FindOverlappingRanges(Cosmos.FeedRange feedRange, IReadOnlyList<Cosmos.FeedRange> feedRanges);
 #endif
 
         public abstract class TryExecuteQueryResult

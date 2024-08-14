@@ -1755,23 +1755,29 @@ namespace Microsoft.Azure.Cosmos
         public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
             string processorName,
             ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate);
-            
-        /// <summary>
-        /// Takes a given list of ranges and find overlapping ranges for the given partition key.
-        /// </summary>
-        /// <param name="partitionKey">A given partition key.</param>
-        /// <param name="feedRanges">A given list of ranges.</param>
-        /// <param name="cancellationToken"></param>
-        /// <returns>A list of overlapping ranges for the the given partition key.</returns>
-        public abstract Task<IReadOnlyList<Cosmos.FeedRange>> FindOverlappingRangesAsync(Cosmos.PartitionKey partitionKey, IReadOnlyList<Cosmos.FeedRange> feedRanges, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Takes a given list of ranges and find overlapping ranges for the given feed range.
+        /// Takes a given parent feed range and a partition key and checks if the partition key is a subset of the parent feed range.
         /// </summary>
-        /// <param name="feedRange">A given feed range.</param>
-        /// <param name="feedRanges">A given list of ranges.</param>
-        /// <returns>A list of overlapping ranges for the the given feed range epk.</returns>
-        public abstract IReadOnlyList<Cosmos.FeedRange> FindOverlappingRanges(Cosmos.FeedRange feedRange, IReadOnlyList<Cosmos.FeedRange> feedRanges);
+        /// <param name="parentFeedRange">A given partition key.</param>
+        /// <param name="partitionKey">A given list of ranges.</param>
+        /// <param name="cancellationToken"></param>
+        /// <returns>True or False</returns>
+        public virtual async Task<bool> IsSubsetAsync(Cosmos.FeedRange parentFeedRange, Cosmos.PartitionKey partitionKey, CancellationToken cancellationToken = default)
+        {
+            throw await Task.FromException<NotImplementedException>(default);
+        }
+
+        /// <summary>
+        /// Takes 2 given feed ranges representing a parent and child feed range and checks if the child feed range is a subset of the parent feed range.
+        /// </summary>
+        /// <param name="parentFeedRange">A feed range that represents a parent range.</param>
+        /// <param name="childFeedRange">A feed range tha represents a child range.</param>
+        /// <returns>True or False</returns>
+        public virtual bool IsSubset(Cosmos.FeedRange parentFeedRange, Cosmos.FeedRange childFeedRange)
+        {
+            throw new NotImplementedException();
+        }
 #endif
     }
 }

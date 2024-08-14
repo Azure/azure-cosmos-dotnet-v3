@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
-    using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -630,7 +629,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             requestChargeHandler.TotalRequestCharges = 0;
             ContainerResponse createWithConflictResponse = await database.CreateContainerIfNotExistsAsync(
-                Guid.NewGuid().ToString(), 
+                Guid.NewGuid().ToString(),
                 "/pk");
 
             Assert.AreEqual(requestChargeHandler.TotalRequestCharges, createWithConflictResponse.RequestCharge);
@@ -750,9 +749,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(nameof(settings.PartitionKey), ex.ParamName);
                 Assert.IsTrue(ex.Message.Contains(string.Format(
                     ClientResources.PartitionKeyPathConflict,
-                    string.Join(",",partitionKeyPath2),
+                    string.Join(",", partitionKeyPath2),
                     containerName,
-                    string.Join(",",partitionKeyPath1))));
+                    string.Join(",", partitionKeyPath1))));
             }
 
             // Mismatch in the 2nd path
@@ -775,7 +774,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     string.Join(",", partitionKeyPath1))));
             }
 
-            
+
             //Create and fetch container with same paths
             List<string> partitionKeyPath4 = new List<string>();
             partitionKeyPath4.Add("/users");
@@ -1395,7 +1394,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Id = containerName,
                 PartitionKey = new Documents.PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = Documents.PartitionKind.Hash },
-                ClientEncryptionPolicy = new ClientEncryptionPolicy(includedPaths:paths,policyFormatVersion:2)
+                ClientEncryptionPolicy = new ClientEncryptionPolicy(includedPaths: paths, policyFormatVersion: 2)
             };
 
             ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(setting);
@@ -1424,7 +1423,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             ContainerResponse readResponse = await container.ReadContainerAsync();
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
-            Assert.IsNotNull(readResponse.Resource.ClientEncryptionPolicy);           
+            Assert.IsNotNull(readResponse.Resource.ClientEncryptionPolicy);
 
             // version 1 test.
             containerName = Guid.NewGuid().ToString();
@@ -1474,7 +1473,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             readResponse = await container.ReadContainerAsync();
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
-            Assert.IsNotNull(readResponse.Resource.ClientEncryptionPolicy);           
+            Assert.IsNotNull(readResponse.Resource.ClientEncryptionPolicy);
 
             // replace without updating CEP should be successful
             readResponse.Resource.IndexingPolicy = new Cosmos.IndexingPolicy()
@@ -1529,7 +1528,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 };
 
                 Assert.Fail("Creating ContainerProperties should have failed.");
-            }            
+            }
             catch (ArgumentException ex)
             {
                 Assert.IsTrue(ex.Message.Contains("EncryptionAlgorithm should be 'AEAD_AES_256_CBC_HMAC_SHA256'."), ex.Message);
@@ -1562,7 +1561,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     Id = containerName,
                     PartitionKey = new Documents.PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = Documents.PartitionKind.Hash },
-                    ClientEncryptionPolicy = new ClientEncryptionPolicy(pathsList)                    
+                    ClientEncryptionPolicy = new ClientEncryptionPolicy(pathsList)
                 };
 
                 Assert.Fail("Creating ContainerProperties should have failed.");
@@ -1787,13 +1786,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 #if PREVIEW
         [TestMethod]
         [Owner("philipthomas-MSFT")]
-        public async Task TestFindOverlappingRangesByPartitionKeyAsync()
+        public async Task GivenParentFeedRangeAndPartitionKeyIsSubsetTestAsync()
         {
             Container container = default;
 
             try
             {
-                PartitionKey partitionKey = new PartitionKey("GA");
+                PartitionKey partitionKey = new ("WA");
                 ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(
                     id: Guid.NewGuid().ToString(),
                     partitionKeyPath: "/pk");
@@ -1802,24 +1801,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 await container.CreateItemAsync<dynamic>(item: new { id = Guid.NewGuid().ToString(), pk = "GA" }, partitionKey: partitionKey);
 
-                Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("AA", "BB", true, false);
+                Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("", "AA", true, false);
                 FeedRangeEpk feedRangeEpk = new FeedRangeEpk(range);
-                string representation = feedRangeEpk.ToJsonString();
 
-                List<FeedRange> ranges = new List<FeedRange>()
-                {
-                    FeedRange.FromJsonString(representation),
-                };
+                bool actualIsSubset = await container.IsSubsetAsync(parentFeedRange: feedRangeEpk, partitionKey: partitionKey);
 
-                IReadOnlyList<FeedRange> results = await container.FindOverlappingRangesAsync(
-                    partitionKey: partitionKey,
-                    feedRanges: ranges);
-
-                Assert.IsNotNull(results);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogLine($"{ex}");
+                Assert.IsTrue(actualIsSubset);
             }
             finally
             {
@@ -1832,39 +1819,39 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [Owner("philipthomas-MSFT")]
-        public async Task TestFindOverlappingRangesByFeedRangeAsync()
+        [DataRow("", "3FFFFFFFFFFFFFFF", "", "FFFFFFFFFFFFFFFF", true)]
+        [DataRow("3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", "", "FFFFFFFFFFFFFFFF", true)]
+        [DataRow("7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", "", "FFFFFFFFFFFFFFFF", true)]
+        [DataRow("BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", "", "FFFFFFFFFFFFFFFF", true)]
+        [DataRow("", "3FFFFFFFFFFFFFFF", "", "3FFFFFFFFFFFFFFF", true)]
+        [DataRow("", "3FFFFFFFFFFFFFFF", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false)]
+        [DataRow("", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", false)]
+        [DataRow("", "3FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", false)]
+        [DataRow("", "3333333333333333", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false)]
+        [DataRow("3333333333333333", "6666666666666666", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true)]
+        public async Task GivenParentAndChildFeedRangesIsSubsetTestAsync(
+            string childMin,
+            string childMax,
+            string parentMin,
+            string parentMax,
+            bool expectedIsSubset)
         {
             Container container = default;
 
             try
             {
-                PartitionKey partitionKey = new PartitionKey("GA");
+                PartitionKey partitionKey = new("WA");
                 ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(
                     id: Guid.NewGuid().ToString(),
                     partitionKeyPath: "/pk");
 
                 container = containerResponse.Container;
 
-                await container.CreateItemAsync<dynamic>(item: new { id = Guid.NewGuid().ToString(), pk = "GA" }, partitionKey: partitionKey);
+                bool actualIsSubset = container.IsSubset(
+                    parentFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>(parentMin, parentMax, true, false)),
+                    childFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>(childMin, childMax, true, false)));
 
-                Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("AA", "BB", true, false);
-                FeedRangeEpk feedRangeEpk = new FeedRangeEpk(range);
-                string representation = feedRangeEpk.ToJsonString();
-
-                List<FeedRange> ranges = new List<FeedRange>()
-                {
-                    FeedRange.FromJsonString(representation),
-                };
-
-                IReadOnlyList<FeedRange> results = container.FindOverlappingRanges(
-                    feedRange: FeedRange.FromJsonString(FeedRangeEpk.FullRange.ToJsonString()),
-                    feedRanges: ranges);
-
-                Assert.IsNotNull(results);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogLine($"{ex}");
+                Assert.AreEqual(expected: expectedIsSubset, actual: actualIsSubset);
             }
             finally
             {

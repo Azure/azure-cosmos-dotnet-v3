@@ -1254,54 +1254,27 @@ namespace Microsoft.Azure.Cosmos
                 applyBuilderConfiguration: changeFeedProcessor.ApplyBuildConfiguration).WithChangeFeedMode(mode);
         }
 
-        public override async Task<IReadOnlyList<Cosmos.FeedRange>> FindOverlappingRangesAsync(
-            Cosmos.PartitionKey partitionKey,
-            IReadOnlyList<Cosmos.FeedRange> feedRanges,
-            CancellationToken cancellationToken = default)
+#if PREVIEW
+        public override bool IsSubset(FeedRange parentFeedRange, FeedRange childFeedRange)
         {
-            List<FeedRange> overlappingRanges = new ();
-
-            Documents.Routing.Range<string> rangeFromPartitionKey = await this.ConvertToRangeAsync(
-                partitionKey: partitionKey,
-                cancellationToken: cancellationToken);
-
-            foreach (Documents.Routing.Range<string> range in ContainerCore.ConvertToRange(feedRanges))
-            {
-                if (Documents.Routing.Range<string>.CheckOverlapping(
-                    range1: rangeFromPartitionKey,
-                    range2: range))
-                {
-                    overlappingRanges.Add(new FeedRangeEpk(range));
-                }
-            }
-
-            return overlappingRanges;
+            return Documents.Routing.Range<string>.CheckOverlapping(
+                range1: ContainerCore.ConvertToRange(parentFeedRange),
+                range2: ContainerCore.ConvertToRange(childFeedRange));
         }
 
-        public override IReadOnlyList<Cosmos.FeedRange> FindOverlappingRanges(
-            Cosmos.FeedRange feedRange,
-            IReadOnlyList<Cosmos.FeedRange> feedRanges)
+        public override async Task<bool> IsSubsetAsync(FeedRange parentFeedRange, PartitionKey partitionKey, CancellationToken cancellationToken = default)
         {
-            List<FeedRange> overlappingRanges = new ();
-
-            foreach (Documents.Routing.Range<string> range in ContainerCore.ConvertToRange(feedRanges))
-            {
-                if (Documents.Routing.Range<string>.CheckOverlapping(
-                    range1: ContainerCore.ConvertToRange(feedRange),
-                    range2: range))
-                {
-                    overlappingRanges.Add(new FeedRangeEpk(range));
-                }
-            }
-
-            return overlappingRanges;
+            return Documents.Routing.Range<string>.CheckOverlapping(
+                range1: ContainerCore.ConvertToRange(parentFeedRange),
+                range2: await this.ConvertToRangeAsync(
+                    partitionKey: partitionKey,
+                    cancellationToken: cancellationToken));
         }
-
+#endif
         private async Task<Documents.Routing.Range<string>> ConvertToRangeAsync(PartitionKey partitionKey, CancellationToken cancellationToken)
         {
             PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync(cancellationToken);
-            Documents.Routing.Range<string> range = Documents.Routing.Range<string>.GetPointRange(partitionKey.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition));
-            return range;
+            return Documents.Routing.Range<string>.GetPointRange(partitionKey.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition));
         }
 
         private static IEnumerable<Documents.Routing.Range<string>> ConvertToRange(IReadOnlyList<FeedRange> fromFeedRanges)
@@ -1312,14 +1285,6 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private static Documents.Routing.Range<string> ConvertToRange(FeedRange fromFeedRange)
-        {
-            if (fromFeedRange is not FeedRangeEpk feedRangeEpk)
-            {
-                return default;
-            }
-
-            return feedRangeEpk.Range;
-        }
+        private static Documents.Routing.Range<string> ConvertToRange(FeedRange fromFeedRange) => ((FeedRangeEpk)fromFeedRange).Range;
     }
 }
