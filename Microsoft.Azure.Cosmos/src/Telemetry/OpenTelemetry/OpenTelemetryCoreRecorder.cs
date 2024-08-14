@@ -227,17 +227,17 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 OperationType operationType
                     = (this.response == null || this.response?.OperationType == OperationType.Invalid) ? this.operationType : this.response.OperationType;
 
-                string operationName = Enum.GetName(typeof(OperationType), operationType);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.OperationType, operationName);
+                string operationTypeString = Enum.GetName(typeof(OperationType), operationType);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.OperationType, operationTypeString);
 
                 if (this.response != null)
                 {
                     if (this.response.BatchOperationName != null)
                     {
                         string batchOpsName = Enum.GetName(typeof(OperationType), this.response.BatchOperationName);
-                        operationName = $"{operationName}.{batchOpsName}";
+                        operationTypeString = $"{operationTypeString}.{batchOpsName}";
                     }
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.OperationType, operationName);
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.OperationType, operationTypeString);
 
                     if (this.response.BatchSize is not null)
                     {

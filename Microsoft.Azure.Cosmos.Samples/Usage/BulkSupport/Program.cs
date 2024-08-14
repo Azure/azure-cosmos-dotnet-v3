@@ -10,10 +10,16 @@
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Azure.Monitor.OpenTelemetry.Exporter;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Extensions.Azure;
     using Microsoft.Extensions.Configuration;
+    using Microsoft.Extensions.Logging;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
+    using OpenTelemetry;
+    using OpenTelemetry.Resources;
+    using OpenTelemetry.Trace;
 
     // ----------------------------------------------------------------------------------------------------------
     // Prerequisites - 
@@ -38,19 +44,65 @@
         private static bool shouldCleanupOnFinish;
         private static int numWorkers;
 
+        private static TracerProvider? _traceProvider;
+
         // Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute
         // <Main>
         public static async Task Main(string[] args)
         {
             try
             {
-                // Intialize container or create a new container.
-                Container container = await Program.Initialize();
+                IConfigurationRoot configuration = new ConfigurationBuilder()
+                                                            .AddJsonFile("AppSettings.json")
+                                                            .Build();
 
-                // Running bulk ingestion on a container.
-                await Program.CreateItemsConcurrentlyAsync(container);
+                // <SetUpOpenTelemetry>
+                ResourceBuilder resource = ResourceBuilder.CreateDefault().AddService(
+                            serviceName: "serviceName",
+                            serviceVersion: "1.0.0");
 
-                await Program.RemovePropertyFromAllItemsAsync(container);
+               // Set up logging to forward logs to chosen exporter
+                using ILoggerFactory loggerFactory
+                    = LoggerFactory.Create(builder => builder
+                                                        .AddConfiguration(configuration.GetSection("Logging"))
+                                                        .AddOpenTelemetry(options =>
+                                                        {
+                                                            options.IncludeFormattedMessage = true;
+                                                            options.SetResourceBuilder(resource);
+                                                            options.AddAzureMonitorLogExporter(o => o.ConnectionString = ""); // Set up exporter of your choice
+                                                        }));
+                /*.AddFilter(level => level == LogLevel.Error) // Filter  is irrespective of event type or event name*/
+
+                AzureEventSourceLogForwarder logforwader = new AzureEventSourceLogForwarder(loggerFactory);
+                logforwader.Start();
+
+                // Configure OpenTelemetry trace provider
+                AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
+                _traceProvider = Sdk.CreateTracerProviderBuilder()
+                    .AddSource("Azure.Cosmos.Operation", // Cosmos DB source for operation level telemetry
+                               "Sample.Application")
+                    .AddAzureMonitorTraceExporter(o => o.ConnectionString = "") //"" Set up exporter of your choice
+                    .AddHttpClientInstrumentation() // Added to capture HTTP telemetry
+                    .SetResourceBuilder(resource)
+                    .Build();
+                // </SetUpOpenTelemetry>
+
+                ActivitySource source = new ActivitySource("Sample.Application");
+                using (_ = source.StartActivity(".Net SDK : Azure Monitor : Open Telemetry Sample")) // Application level activity to track the entire execution of the application
+                {
+                    using (_ = source.StartActivity("GATEWAY MODE")) // Activity to track the execution of the gateway mode
+                    {
+                        // Intialize container or create a new container.
+                        Container container = await Program.Initialize();
+
+                        // Running bulk ingestion on a container.
+                        await Program.CreateItemsConcurrentlyAsync(container);
+
+                        await Program.RemovePropertyFromAllItemsAsync(container);
+                    }
+                }
+
+                
             }
             catch (CosmosException cre)
             {
@@ -67,6 +119,7 @@
                 {
                     await Program.CleanupAsync();
                 }
+                _traceProvider.Dispose();
                 client.Dispose();
 
                 Console.WriteLine("End of demo, press any key to exit.");
@@ -300,7 +353,15 @@
             string authKey)
         {
             // </Initialization>
-            return new CosmosClient(endpoint, authKey, new CosmosClientOptions() { AllowBulkExecution = true });
+            return new CosmosClient(endpoint, authKey, new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Gateway,
+                AllowBulkExecution = true,
+                CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions()
+                {
+                    DisableDistributedTracing = false
+                }
+            });
         }
 
         // </Initialization>

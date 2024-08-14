@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29123.88
+# Visual Studio Version 17
+VisualStudioVersion = 17.10.35027.167
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos", "Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj", "{36F6F6A8-CEC8-4261-9948-903495BC3C25}"
 EndProject
@@ -164,6 +164,18 @@ Global
 		{B5B3631D-AC2F-4257-855D-D6FE12F20B60}.Release|Any CPU.Build.0 = Release|Any CPU
 		{B5B3631D-AC2F-4257-855D-D6FE12F20B60}.Release|x64.ActiveCfg = Release|Any CPU
 		{B5B3631D-AC2F-4257-855D-D6FE12F20B60}.Release|x64.Build.0 = Release|Any CPU
+		{021DDC27-02EF-42C4-9A9E-AA600833C2EE}.Cover|Any CPU.ActiveCfg = Debug|Any CPU
+		{021DDC27-02EF-42C4-9A9E-AA600833C2EE}.Cover|Any CPU.Build.0 = Debug|Any CPU
+		{021DDC27-02EF-42C4-9A9E-AA600833C2EE}.Cover|x64.ActiveCfg = Debug|Any CPU
+		{021DDC27-02EF-42C4-9A9E-AA600833C2EE}.Cover|x64.Build.0 = Debug|Any CPU
+		{021DDC27-02EF-42C4-9A9E-AA600833C2EE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{021DDC27-02EF-42C4-9A9E-AA600833C2EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{021DDC27-02EF-42C4-9A9E-AA600833C2EE}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{021DDC27-02EF-42C4-9A9E-AA600833C2EE}.Debug|x64.Build.0 = Debug|Any CPU
+		{021DDC27-02EF-42C4-9A9E-AA600833C2EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{021DDC27-02EF-42C4-9A9E-AA600833C2EE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{021DDC27-02EF-42C4-9A9E-AA600833C2EE}.Release|x64.ActiveCfg = Release|Any CPU
+		{021DDC27-02EF-42C4-9A9E-AA600833C2EE}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
