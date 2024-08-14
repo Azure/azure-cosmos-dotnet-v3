@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Data;
     using System.IO;
     using System.Linq;
+    using System.Net;
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using System.Threading;
@@ -24,6 +25,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private const string centralUS = "Central US";
         private const string northCentralUS = "North Central US";
         private const string eastUs = "East US";
+        private const string dbName = "availabilityStrategyTestDb";
+        private const string containerName = "availabilityStrategyTestContainer";
+        private const string changeFeedContainerName = "availabilityStrategyTestChangeFeedContainer";
 
         private CosmosClient client;
         private Database database;
@@ -31,14 +35,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private Container changeFeedContainer;
         private CosmosSystemTextJsonSerializer cosmosSystemTextJsonSerializer;
         private string connectionString;
-        private string dbName;
-        private string containerName;
-        private string changeFeedContainerName;
+        
 
         [TestCleanup]
-        public async Task TestCleanup()
+        public void TestCleanup()
         {
-            await this.database?.DeleteAsync();
+            //Do not delete the resources, georeplication is slow and we want to reuse the resources
             this.client?.Dispose();
         }
 
@@ -152,20 +154,35 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Serializer = this.cosmosSystemTextJsonSerializer,
                 });
 
-            this.dbName = Guid.NewGuid().ToString();
-            this.containerName = Guid.NewGuid().ToString();
-            this.changeFeedContainerName = Guid.NewGuid().ToString();
-            this.database = await this.client.CreateDatabaseIfNotExistsAsync(this.dbName);
-            this.container = await this.database.CreateContainerIfNotExistsAsync(this.containerName, "/pk");
-            this.changeFeedContainer = await this.database.CreateContainerIfNotExistsAsync(this.changeFeedContainerName, "/partitionKey");
+            this.database = this.client.GetDatabase(dbName);
+            this.container = this.database.GetContainer(containerName);
+            this.changeFeedContainer = this.database.GetContainer(changeFeedContainerName);
 
-            await this.container.CreateItemAsync<AvailabilityStrategyTestObject>(new AvailabilityStrategyTestObject { Id = "testId", Pk = "pk" });
-            await this.container.CreateItemAsync<AvailabilityStrategyTestObject>(new AvailabilityStrategyTestObject { Id = "testId2", Pk = "pk2" });
-            await this.container.CreateItemAsync<AvailabilityStrategyTestObject>(new AvailabilityStrategyTestObject { Id = "testId3", Pk = "pk3" });
-            await this.container.CreateItemAsync<AvailabilityStrategyTestObject>(new AvailabilityStrategyTestObject { Id = "testId4", Pk = "pk4" });
+            try
+            {
+                //Test to see if the container exists
+                //will return a 404 1003 if it does not which inidcates we need to create test resources
+                await this.container.ReadThroughputAsync();
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                //if test db or container does not exist create them
+                this.database = await this.client.CreateDatabaseIfNotExistsAsync(dbName);
+                this.container = await this.database.CreateContainerIfNotExistsAsync(containerName, "/pk");
+                this.changeFeedContainer = await this.database.CreateContainerIfNotExistsAsync(changeFeedContainerName, "/partitionKey");
 
-            //Must Ensure the data is replicated to all regions
-            await Task.Delay(60000);
+                await this.container.CreateItemAsync<AvailabilityStrategyTestObject>(
+                    new AvailabilityStrategyTestObject { Id = "testId", Pk = "pk" });
+                await this.container.CreateItemAsync<AvailabilityStrategyTestObject>(
+                    new AvailabilityStrategyTestObject { Id = "testId2", Pk = "pk2" });
+                await this.container.CreateItemAsync<AvailabilityStrategyTestObject>(
+                    new AvailabilityStrategyTestObject { Id = "testId3", Pk = "pk3" });
+                await this.container.CreateItemAsync<AvailabilityStrategyTestObject>(
+                    new AvailabilityStrategyTestObject { Id = "testId4", Pk = "pk4" });
+
+                //Must Ensure the data is replicated to all regions
+                await Task.Delay(60000);
+            }
         }
 
         [TestMethod]
@@ -215,31 +232,31 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Serializer = this.cosmosSystemTextJsonSerializer
             };
 
-            CosmosClient faultInjectionClient = new CosmosClient(
+            using (CosmosClient faultInjectionClient = new CosmosClient(
                 connectionString: this.connectionString,
-                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions));
+                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
+            {
+                Database database = faultInjectionClient.GetDatabase(dbName);
+                Container container = database.GetContainer(containerName);
 
-            Database database = faultInjectionClient.GetDatabase(this.dbName);
-            Container container = database.GetContainer(this.containerName);
+                responseDelay.Enable();
+                ItemResponse<AvailabilityStrategyTestObject> ir = await container.ReadItemAsync<AvailabilityStrategyTestObject>("testId", new PartitionKey("pk"));
 
-            responseDelay.Enable();
-            ItemResponse<AvailabilityStrategyTestObject> ir = await container.ReadItemAsync<AvailabilityStrategyTestObject>("testId", new PartitionKey("pk"));
+                CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
+                Assert.IsNotNull(traceDiagnostic);
+                traceDiagnostic.Value.Data.TryGetValue("Response Region", out object responseRegion);
+                Assert.IsNotNull(responseRegion);
+                Assert.AreEqual(centralUS, (string)responseRegion);
 
-            CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
-            Assert.IsNotNull(traceDiagnostic);
-            traceDiagnostic.Value.Data.TryGetValue("Response Region", out object responseRegion);
-            Assert.IsNotNull(responseRegion);
-            Assert.AreEqual(centralUS, (string)responseRegion);
-
-            //Should send out hedge request but original should be returned
-            traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
-            Assert.IsNotNull(hedgeContext);
-            IReadOnlyCollection<string> hedgeContextList;
-            hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
-            Assert.AreEqual(2, hedgeContextList.Count);
-            Assert.IsTrue(hedgeContextList.Contains(centralUS));
-            Assert.IsTrue(hedgeContextList.Contains(northCentralUS));
-            faultInjectionClient.Dispose();
+                //Should send out hedge request but original should be returned
+                traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
+                Assert.IsNotNull(hedgeContext);
+                IReadOnlyCollection<string> hedgeContextList;
+                hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
+                Assert.AreEqual(2, hedgeContextList.Count);
+                Assert.IsTrue(hedgeContextList.Contains(centralUS));
+                Assert.IsTrue(hedgeContextList.Contains(northCentralUS));
+            };
         }
 
         [TestMethod]
@@ -272,31 +289,32 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Serializer = this.cosmosSystemTextJsonSerializer
             };
 
-            CosmosClient faultInjectionClient = new CosmosClient(
+            using (CosmosClient faultInjectionClient = new CosmosClient(
                 connectionString: this.connectionString,
-                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions));
-
-            Database database = faultInjectionClient.GetDatabase(this.dbName);
-            Container container = database.GetContainer(this.containerName);
-
-            responseDelay.Enable();
-
-            ItemRequestOptions requestOptions = new ItemRequestOptions
+                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                AvailabilityStrategy = new CrossRegionParallelHedgingAvailabilityStrategy(
-                    threshold: TimeSpan.FromMilliseconds(100),
-                    thresholdStep: TimeSpan.FromMilliseconds(50))
-            };
-            ItemResponse<AvailabilityStrategyTestObject> ir = await container.ReadItemAsync<AvailabilityStrategyTestObject>(
-                "testId",
-                new PartitionKey("pk"),
-                requestOptions);
+                Database database = faultInjectionClient.GetDatabase(dbName);
+                Container container = database.GetContainer(containerName);
 
-            CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
-            Assert.IsNotNull(traceDiagnostic);
-            traceDiagnostic.Value.Data.TryGetValue("Response Region", out object hedgeContext);
-            Assert.IsNotNull(hedgeContext);
-            Assert.AreEqual(northCentralUS, (string)hedgeContext);
+                responseDelay.Enable();
+
+                ItemRequestOptions requestOptions = new ItemRequestOptions
+                {
+                    AvailabilityStrategy = new CrossRegionParallelHedgingAvailabilityStrategy(
+                        threshold: TimeSpan.FromMilliseconds(100),
+                        thresholdStep: TimeSpan.FromMilliseconds(50))
+                };
+                ItemResponse<AvailabilityStrategyTestObject> ir = await container.ReadItemAsync<AvailabilityStrategyTestObject>(
+                    "testId",
+                    new PartitionKey("pk"),
+                    requestOptions);
+
+                CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
+                Assert.IsNotNull(traceDiagnostic);
+                traceDiagnostic.Value.Data.TryGetValue("Response Region", out object hedgeContext);
+                Assert.IsNotNull(hedgeContext);
+                Assert.AreEqual(northCentralUS, (string)hedgeContext);
+            }
         }
 
         [TestMethod]
@@ -333,30 +351,29 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Serializer = this.cosmosSystemTextJsonSerializer
             };
 
-            CosmosClient faultInjectionClient = new CosmosClient(
+            using (CosmosClient faultInjectionClient = new CosmosClient(
                 connectionString: this.connectionString,
-                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions));
-
-            Database database = faultInjectionClient.GetDatabase(this.dbName);
-            Container container = database.GetContainer(this.containerName);
-
-            responseDelay.Enable();
-            ItemRequestOptions requestOptions = new ItemRequestOptions
+                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                AvailabilityStrategy = new DisabledAvailabilityStrategy()
-            };
+                Database database = faultInjectionClient.GetDatabase(dbName);
+                Container container = database.GetContainer(containerName);
 
-            ItemResponse<AvailabilityStrategyTestObject> ir = await container.ReadItemAsync<AvailabilityStrategyTestObject>(
-                "testId",
-                new PartitionKey("pk"),
-                requestOptions);
+                responseDelay.Enable();
+                ItemRequestOptions requestOptions = new ItemRequestOptions
+                {
+                    AvailabilityStrategy = new DisabledAvailabilityStrategy()
+                };
 
-            CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
-            Assert.IsNotNull(traceDiagnostic);
+                ItemResponse<AvailabilityStrategyTestObject> ir = await container.ReadItemAsync<AvailabilityStrategyTestObject>(
+                    "testId",
+                    new PartitionKey("pk"),
+                    requestOptions);
 
-            Assert.IsFalse(traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out _));
+                CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
+                Assert.IsNotNull(traceDiagnostic);
 
-            faultInjectionClient.Dispose();
+                Assert.IsFalse(traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out _));
+            }
         }
 
         [DataTestMethod]
@@ -433,139 +450,142 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Serializer = this.cosmosSystemTextJsonSerializer
             };
 
-            CosmosClient faultInjectionClient = new CosmosClient(
+            using (CosmosClient faultInjectionClient = new CosmosClient(
                 connectionString: this.connectionString,
-                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions));
-
-            Database database = faultInjectionClient.GetDatabase(this.dbName);
-            Container container = database.GetContainer(this.containerName);
-
-            CosmosTraceDiagnostics traceDiagnostic;
-            object hedgeContext;
-
-            switch (operation)
+                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                case "Read":
-                    rule.Enable();
+                Database database = faultInjectionClient.GetDatabase(dbName);
+                Container container = database.GetContainer(containerName);
 
-                    ItemResponse<AvailabilityStrategyTestObject> ir = await container.ReadItemAsync<AvailabilityStrategyTestObject>(
-                        "testId", 
-                        new PartitionKey("pk"));
+                CosmosTraceDiagnostics traceDiagnostic;
+                object hedgeContext;
 
-                    Assert.IsTrue(rule.GetHitCount() > 0);
-                    traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
-                    Assert.IsNotNull(traceDiagnostic);
-                    traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
-                    Assert.IsNotNull(hedgeContext);
-                    Assert.AreEqual(northCentralUS, (string)hedgeContext);
+                switch (operation)
+                {
+                    case "Read":
+                        rule.Enable();
 
-                    break;
-
-                case "SinglePartitionQuery":
-                    string queryString = "SELECT * FROM c";
-
-                    QueryRequestOptions requestOptions = new QueryRequestOptions()
-                    {
-                        PartitionKey = new PartitionKey("pk"),
-                    };
-
-                    FeedIterator<AvailabilityStrategyTestObject> queryIterator = container.GetItemQueryIterator<AvailabilityStrategyTestObject>(
-                        new QueryDefinition(queryString),
-                        requestOptions: requestOptions);
-
-                    rule.Enable();
-
-                    while (queryIterator.HasMoreResults)
-                    {
-                        FeedResponse<AvailabilityStrategyTestObject> feedResponse = await queryIterator.ReadNextAsync();
+                        ItemResponse<AvailabilityStrategyTestObject> ir = await container.ReadItemAsync<AvailabilityStrategyTestObject>(
+                            "testId",
+                            new PartitionKey("pk"));
 
                         Assert.IsTrue(rule.GetHitCount() > 0);
-                        traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
+                        traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
                         Assert.IsNotNull(traceDiagnostic);
                         traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
                         Assert.IsNotNull(hedgeContext);
                         Assert.AreEqual(northCentralUS, (string)hedgeContext);
-                    }
 
-                    break;
+                        break;
 
-                case "CrossPartitionQuery":
-                    string crossPartitionQueryString = "SELECT * FROM c";
-                    FeedIterator<AvailabilityStrategyTestObject> crossPartitionQueryIterator = container.GetItemQueryIterator<AvailabilityStrategyTestObject>(
-                        new QueryDefinition(crossPartitionQueryString));
+                    case "SinglePartitionQuery":
+                        string queryString = "SELECT * FROM c";
 
-                    rule.Enable();
-
-                    while (crossPartitionQueryIterator.HasMoreResults)
-                    {
-                        FeedResponse<AvailabilityStrategyTestObject> feedResponse = await crossPartitionQueryIterator.ReadNextAsync();
-
-                        Assert.IsTrue(rule.GetHitCount() > 0);
-                        traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
-                        Assert.IsNotNull(traceDiagnostic);
-                        traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
-                        Assert.IsNotNull(hedgeContext);
-                        Assert.AreEqual(northCentralUS, (string)hedgeContext);
-                    }
-
-                    break;
-
-                case "ReadMany":
-                    rule.Enable();
-
-                    FeedResponse<AvailabilityStrategyTestObject> readManyResponse = await container.ReadManyItemsAsync<AvailabilityStrategyTestObject>(
-                        new List<(string, PartitionKey)>()
+                        QueryRequestOptions requestOptions = new QueryRequestOptions()
                         {
+                            PartitionKey = new PartitionKey("pk"),
+                        };
+
+                        FeedIterator<AvailabilityStrategyTestObject> queryIterator = container.GetItemQueryIterator<AvailabilityStrategyTestObject>(
+                            new QueryDefinition(queryString),
+                            requestOptions: requestOptions);
+
+                        rule.Enable();
+
+                        while (queryIterator.HasMoreResults)
+                        {
+                            FeedResponse<AvailabilityStrategyTestObject> feedResponse = await queryIterator.ReadNextAsync();
+
+                            Assert.IsTrue(rule.GetHitCount() > 0);
+                            traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
+                            Assert.IsNotNull(traceDiagnostic);
+                            traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
+                            Assert.IsNotNull(hedgeContext);
+                            Assert.AreEqual(northCentralUS, (string)hedgeContext);
+                        }
+
+                        break;
+
+                    case "CrossPartitionQuery":
+                        string crossPartitionQueryString = "SELECT * FROM c";
+                        FeedIterator<AvailabilityStrategyTestObject> crossPartitionQueryIterator = container.GetItemQueryIterator<AvailabilityStrategyTestObject>(
+                            new QueryDefinition(crossPartitionQueryString));
+
+                        rule.Enable();
+
+                        while (crossPartitionQueryIterator.HasMoreResults)
+                        {
+                            FeedResponse<AvailabilityStrategyTestObject> feedResponse = await crossPartitionQueryIterator.ReadNextAsync();
+
+                            Assert.IsTrue(rule.GetHitCount() > 0);
+                            traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
+                            Assert.IsNotNull(traceDiagnostic);
+                            traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
+                            Assert.IsNotNull(hedgeContext);
+                            Assert.AreEqual(northCentralUS, (string)hedgeContext);
+                        }
+
+                        break;
+
+                    case "ReadMany":
+                        rule.Enable();
+
+                        FeedResponse<AvailabilityStrategyTestObject> readManyResponse = await container.ReadManyItemsAsync<AvailabilityStrategyTestObject>(
+                            new List<(string, PartitionKey)>()
+                            {
                             ("testId", new PartitionKey("pk")),
                             ("testId2", new PartitionKey("pk2")),
                             ("testId3", new PartitionKey("pk3")),
                             ("testId4", new PartitionKey("pk4"))
-                        });
+                            });
 
-                    Assert.IsTrue(rule.GetHitCount() > 0);
-                    traceDiagnostic = readManyResponse.Diagnostics as CosmosTraceDiagnostics;
-                    Assert.IsNotNull(traceDiagnostic);
-                    traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
-                    Assert.IsNotNull(hedgeContext);
-                    Assert.AreEqual(northCentralUS, (string)hedgeContext);
+                        Assert.IsTrue(rule.GetHitCount() > 0);
+                        traceDiagnostic = readManyResponse.Diagnostics as CosmosTraceDiagnostics;
+                        Assert.IsNotNull(traceDiagnostic);
+                        traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
+                        Assert.IsNotNull(hedgeContext);
+                        Assert.AreEqual(northCentralUS, (string)hedgeContext);
 
-                    break;
+                        break;
 
-                case "ChangeFeed":
-                    Container leaseContainer = database.GetContainer(this.changeFeedContainerName);
-                    ChangeFeedProcessor changeFeedProcessor = container.GetChangeFeedProcessorBuilder<AvailabilityStrategyTestObject>(
-                        processorName: "AvialabilityStrategyTest",
-                        onChangesDelegate: HandleChangesAsync)
-                        .WithInstanceName("test")
-                        .WithLeaseContainer(leaseContainer)
-                        .Build();
-                    await changeFeedProcessor.StartAsync();
-                    await Task.Delay(1000);
-                    AvailabilityStrategyTestObject testObject = new AvailabilityStrategyTestObject
-                    {
-                        Id = "testId5",
-                        Pk = "pk5",
-                        Other = "other"
-                    };
-                    await container.CreateItemAsync<AvailabilityStrategyTestObject>(testObject);
+                    case "ChangeFeed":
+                        Container leaseContainer = database.GetContainer(changeFeedContainerName);
+                        ChangeFeedProcessor changeFeedProcessor = container.GetChangeFeedProcessorBuilder<AvailabilityStrategyTestObject>(
+                            processorName: "AvialabilityStrategyTest",
+                            onChangesDelegate: HandleChangesAsync)
+                            .WithInstanceName("test")
+                            .WithLeaseContainer(leaseContainer)
+                            .Build();
+                        await changeFeedProcessor.StartAsync();
+                        await Task.Delay(1000);
 
-                    rule.Enable();
+                        AvailabilityStrategyTestObject testObject = new AvailabilityStrategyTestObject
+                        {
+                            Id = "item4",
+                            Pk = "pk4",
+                            Other = Guid.NewGuid().ToString()
+                        };
+                        await container.UpsertItemAsync<AvailabilityStrategyTestObject>(testObject);
 
-                    await Task.Delay(5000);
+                        rule.Enable();
 
-                    Assert.IsTrue(rule.GetHitCount() > 0);
+                        await Task.Delay(15000);
 
-                    break;
+                        Assert.IsTrue(rule.GetHitCount() > 0);
 
-                default:
+                        rule.Disable();
+                        await changeFeedProcessor.StopAsync();
 
-                    Assert.Fail("Invalid operation");
-                    break;
+                        break;
+
+                    default:
+
+                        Assert.Fail("Invalid operation");
+                        break;
+                }
+
+                rule.Disable();
             }
-
-            rule.Disable();
-
-            faultInjectionClient.Dispose();
         }
 
         [DataTestMethod]
@@ -611,138 +631,143 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Serializer = this.cosmosSystemTextJsonSerializer
             };
 
-            CosmosClient faultInjectionClient = new CosmosClient(
+            using (CosmosClient faultInjectionClient = new CosmosClient(
                 connectionString: this.connectionString,
-                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions));
-
-            Database database = faultInjectionClient.GetDatabase(this.dbName);
-            Container container = database.GetContainer(this.containerName);
-
-            CosmosTraceDiagnostics traceDiagnostic;
-            object hedgeContext;
-
-            switch (operation)
+                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                case "Read":
-                    rule1.Enable();
-                    rule2.Enable();
+                Database database = faultInjectionClient.GetDatabase(dbName);
+                Container container = database.GetContainer(containerName);
 
-                    ItemResponse<AvailabilityStrategyTestObject> ir = await container.ReadItemAsync<AvailabilityStrategyTestObject>(
-                        "testId", 
-                        new PartitionKey("pk"));
+                CosmosTraceDiagnostics traceDiagnostic;
+                object hedgeContext;
 
-                    traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
-                    Assert.IsNotNull(traceDiagnostic);
-                    traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
-                    Assert.IsNotNull(hedgeContext);
-                    Assert.AreEqual(eastUs, (string)hedgeContext);
+                switch (operation)
+                {
+                    case "Read":
+                        rule1.Enable();
+                        rule2.Enable();
 
-                    break;
+                        ItemResponse<AvailabilityStrategyTestObject> ir = await container.ReadItemAsync<AvailabilityStrategyTestObject>(
+                            "testId",
+                            new PartitionKey("pk"));
 
-                case "SinglePartitionQuery":
-                    string queryString = "SELECT * FROM c";
-
-                    QueryRequestOptions requestOptions = new QueryRequestOptions()
-                    {
-                        PartitionKey = new PartitionKey("pk"),
-                    };
-
-                    FeedIterator<AvailabilityStrategyTestObject> queryIterator = container.GetItemQueryIterator<AvailabilityStrategyTestObject>(
-                        new QueryDefinition(queryString),
-                        requestOptions: requestOptions);
-
-                    rule1.Enable();
-                    rule2.Enable();
-
-                    while (queryIterator.HasMoreResults)
-                    {
-                        FeedResponse<AvailabilityStrategyTestObject> feedResponse = await queryIterator.ReadNextAsync();
-
-                        traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
+                        traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
                         Assert.IsNotNull(traceDiagnostic);
                         traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
                         Assert.IsNotNull(hedgeContext);
                         Assert.AreEqual(eastUs, (string)hedgeContext);
-                    }
 
-                    break;
+                        break;
 
-                case "CrossPartitionQuery":
-                    string crossPartitionQueryString = "SELECT * FROM c";
-                    FeedIterator<AvailabilityStrategyTestObject> crossPartitionQueryIterator = container.GetItemQueryIterator<AvailabilityStrategyTestObject>(
-                        new QueryDefinition(crossPartitionQueryString));
+                    case "SinglePartitionQuery":
+                        string queryString = "SELECT * FROM c";
 
-                    rule1.Enable();
-                    rule2.Enable();
-
-                    while (crossPartitionQueryIterator.HasMoreResults)
-                    {
-                        FeedResponse<AvailabilityStrategyTestObject> feedResponse = await crossPartitionQueryIterator.ReadNextAsync();
-
-                        traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
-                        Assert.IsNotNull(traceDiagnostic);
-                        traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
-                        Assert.IsNotNull(hedgeContext);
-                        Assert.AreEqual(eastUs, (string)hedgeContext);
-                    }
-
-                    break;
-
-                case "ReadMany":
-                    rule1.Enable();
-                    rule2.Enable();
-
-                    FeedResponse<AvailabilityStrategyTestObject> readManyResponse = await container.ReadManyItemsAsync<AvailabilityStrategyTestObject>(
-                        new List<(string, PartitionKey)>()
+                        QueryRequestOptions requestOptions = new QueryRequestOptions()
                         {
+                            PartitionKey = new PartitionKey("pk"),
+                        };
+
+                        FeedIterator<AvailabilityStrategyTestObject> queryIterator = container.GetItemQueryIterator<AvailabilityStrategyTestObject>(
+                            new QueryDefinition(queryString),
+                            requestOptions: requestOptions);
+
+                        rule1.Enable();
+                        rule2.Enable();
+
+                        while (queryIterator.HasMoreResults)
+                        {
+                            FeedResponse<AvailabilityStrategyTestObject> feedResponse = await queryIterator.ReadNextAsync();
+
+                            traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
+                            Assert.IsNotNull(traceDiagnostic);
+                            traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
+                            Assert.IsNotNull(hedgeContext);
+                            Assert.AreEqual(eastUs, (string)hedgeContext);
+                        }
+
+                        break;
+
+                    case "CrossPartitionQuery":
+                        string crossPartitionQueryString = "SELECT * FROM c";
+                        FeedIterator<AvailabilityStrategyTestObject> crossPartitionQueryIterator = container.GetItemQueryIterator<AvailabilityStrategyTestObject>(
+                            new QueryDefinition(crossPartitionQueryString));
+
+                        rule1.Enable();
+                        rule2.Enable();
+
+                        while (crossPartitionQueryIterator.HasMoreResults)
+                        {
+                            FeedResponse<AvailabilityStrategyTestObject> feedResponse = await crossPartitionQueryIterator.ReadNextAsync();
+
+                            traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
+                            Assert.IsNotNull(traceDiagnostic);
+                            traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
+                            Assert.IsNotNull(hedgeContext);
+                            Assert.AreEqual(eastUs, (string)hedgeContext);
+                        }
+
+                        break;
+
+                    case "ReadMany":
+                        rule1.Enable();
+                        rule2.Enable();
+
+                        FeedResponse<AvailabilityStrategyTestObject> readManyResponse = await container.ReadManyItemsAsync<AvailabilityStrategyTestObject>(
+                            new List<(string, PartitionKey)>()
+                            {
                             ("testId", new PartitionKey("pk")),
                             ("testId2", new PartitionKey("pk2")),
                             ("testId3", new PartitionKey("pk3")),
                             ("testId4", new PartitionKey("pk4"))
-                        });
+                            });
 
-                    traceDiagnostic = readManyResponse.Diagnostics as CosmosTraceDiagnostics;
-                    Assert.IsNotNull(traceDiagnostic);
-                    traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
-                    Assert.IsNotNull(hedgeContext);
-                    Assert.AreEqual(eastUs, (string)hedgeContext);
+                        traceDiagnostic = readManyResponse.Diagnostics as CosmosTraceDiagnostics;
+                        Assert.IsNotNull(traceDiagnostic);
+                        traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
+                        Assert.IsNotNull(hedgeContext);
+                        Assert.AreEqual(eastUs, (string)hedgeContext);
 
-                    break;
+                        break;
 
-                case "ChangeFeed":
-                    Container leaseContainer = database.GetContainer(this.changeFeedContainerName);
-                    ChangeFeedProcessor changeFeedProcessor = container.GetChangeFeedProcessorBuilder<AvailabilityStrategyTestObject>(
-                        processorName: "AvialabilityStrategyTest",
-                        onChangesDelegate: HandleChangesStepAsync)
-                        .WithInstanceName("test")
-                        .WithLeaseContainer(leaseContainer)
-                        .Build();
-                    await changeFeedProcessor.StartAsync();
-                    await Task.Delay(1000);
-                    AvailabilityStrategyTestObject testObject = new AvailabilityStrategyTestObject
-                    {
-                        Id = "testId5",
-                        Pk = "pk5",
-                        Other = "other"
-                    };
-                    await container.CreateItemAsync<AvailabilityStrategyTestObject>(testObject);
+                    case "ChangeFeed":
+                        Container leaseContainer = database.GetContainer(changeFeedContainerName);
+                        ChangeFeedProcessor changeFeedProcessor = container.GetChangeFeedProcessorBuilder<AvailabilityStrategyTestObject>(
+                            processorName: "AvialabilityStrategyTest",
+                            onChangesDelegate: HandleChangesStepAsync)
+                            .WithInstanceName("test")
+                            .WithLeaseContainer(leaseContainer)
+                            .Build();
+                        await changeFeedProcessor.StartAsync();
+                        await Task.Delay(1000);
 
-                    rule1.Enable();
-                    rule2.Enable();
+                        AvailabilityStrategyTestObject testObject = new AvailabilityStrategyTestObject
+                        {
+                            Id = "item4",
+                            Pk = "pk4",
+                            Other = Guid.NewGuid().ToString()
+                        };
+                        await container.UpsertItemAsync<AvailabilityStrategyTestObject>(testObject);
 
-                    await Task.Delay(5000);
+                        rule1.Enable();
+                        rule2.Enable();
 
-                    break;
+                        await Task.Delay(5000);
 
-                default: 
-                    Assert.Fail("Invalid operation");
-                    break;
+                        rule1.Disable();
+                        rule2.Disable();
+
+                        await changeFeedProcessor.StopAsync();
+
+                        break;
+
+                    default:
+                        Assert.Fail("Invalid operation");
+                        break;
+                }
+
+                rule1.Disable();
+                rule2.Disable();
             }
-
-            rule1.Disable();
-            rule2.Disable();
-
-            faultInjectionClient.Dispose();
         }
 
         private static async Task HandleChangesAsync(
@@ -772,7 +797,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Assert.Fail("Change Feed Processor took too long");
             }
-
+            
             CosmosTraceDiagnostics traceDiagnostic = context.Diagnostics as CosmosTraceDiagnostics;
             Assert.IsNotNull(traceDiagnostic);
             traceDiagnostic.Value.Data.TryGetValue("Response Region", out object hedgeContext);
