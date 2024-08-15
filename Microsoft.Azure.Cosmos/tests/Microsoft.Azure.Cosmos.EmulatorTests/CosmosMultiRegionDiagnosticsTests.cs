@@ -2,23 +2,26 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.FaultInjection;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.CosmosAvailabilityStrategyTests;
 
     [TestClass]
     public class CosmosMultiRegionDiagnosticsTests
     {
+        private const string dbName = "availabilityStrategyTestDb";
+        private const string containerName = "availabilityStrategyTestContainer";
+
         CosmosClient client;
         Database database;
         Container container;
 
         string connectionString;
-        string dbName;
-        string containerName;
 
         [TestInitialize]
         public async Task TestInitialize()
@@ -26,23 +29,40 @@
             this.connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", null);
             this.client = new CosmosClient(this.connectionString);
 
-            this.dbName = Guid.NewGuid().ToString();
-            this.database = await this.client.CreateDatabaseIfNotExistsAsync(this.dbName);
+            this.database = this.client.GetDatabase(dbName);
+            this.container = this.database.GetContainer(containerName);
 
-            this.containerName = Guid.NewGuid().ToString();
-            this.container = await this.database.CreateContainerIfNotExistsAsync(this.containerName, "/pk");
+            try
+            {
+                //Test to see if the container exists
+                //will return a 404 1003 if it does not which inidcates we need to create test resources
+                await this.container.ReadThroughputAsync();
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                //if test db or container does not exist create them
+                this.database = await this.client.CreateDatabaseIfNotExistsAsync(dbName);
+                this.container = await this.database.CreateContainerIfNotExistsAsync(containerName, "/pk");
+                await this.database.CreateContainerIfNotExistsAsync("availabilityStrategyTestChangeFeedContainer", "/partitionKey");
 
-            await this.container.CreateItemAsync(new ToDoActivity() { id = "1", pk = "1" });
+                await this.container.CreateItemAsync<AvailabilityStrategyTestObject>(
+                    new AvailabilityStrategyTestObject { Id = "testId", Pk = "pk" });
+                await this.container.CreateItemAsync<AvailabilityStrategyTestObject>(
+                    new AvailabilityStrategyTestObject { Id = "testId2", Pk = "pk2" });
+                await this.container.CreateItemAsync<AvailabilityStrategyTestObject>(
+                    new AvailabilityStrategyTestObject { Id = "testId3", Pk = "pk3" });
+                await this.container.CreateItemAsync<AvailabilityStrategyTestObject>(
+                    new AvailabilityStrategyTestObject { Id = "testId4", Pk = "pk4" });
+
+                //Must Ensure the data is replicated to all regions
+                await Task.Delay(60000);
+            }
         }
 
         [TestCleanup]
-        public async Task TestCleanup()
+        public void TestCleanup()
         {
-            if (this.database != null)
-            {
-                await this.database.DeleteAsync();
-            }
-
+            //Do not delete the resources, georeplication is slow and we want to reuse the resources
             this.client.Dispose();
         }
 
@@ -51,8 +71,8 @@
         [TestCategory("MultiRegion")]
         public async Task ExlcudeRegionDiagnosticsTest()
         {
-            ItemResponse<ToDoActivity> itemResponse = await this.container.ReadItemAsync<ToDoActivity>(
-                "1", new Cosmos.PartitionKey("1"),
+            ItemResponse<AvailabilityStrategyTestObject> itemResponse = await this.container.ReadItemAsync<AvailabilityStrategyTestObject>(
+                "testId", new Cosmos.PartitionKey("pk"),
                 new ItemRequestOptions()
                 {
                     ExcludeRegions = new List<string>() { "North Central US", "East US" }
@@ -70,9 +90,6 @@
         [TestCategory("MultiRegion")]
         public async Task HedgeNestingDiagnosticsTest()
         {
-            //Wait for global replication
-            await Task.Delay(60 * 1000);
-
             FaultInjectionRule responseDelay = new FaultInjectionRuleBuilder(
                 id: "responseDely",
                 condition:
@@ -102,8 +119,8 @@
                 connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                Database database = faultInjectionClient.GetDatabase(this.dbName);
-                Container container = database.GetContainer(this.containerName);
+                Database database = faultInjectionClient.GetDatabase(dbName);
+                Container container = database.GetContainer(containerName);
 
                 responseDelay.Enable();
 
@@ -115,8 +132,8 @@
                 };
 
                 //Request should be hedged to North Central US
-                ItemResponse<ToDoActivity> itemResponse = await container.ReadItemAsync<ToDoActivity>(
-                    "1", new PartitionKey("1"),
+                ItemResponse<AvailabilityStrategyTestObject> itemResponse = await container.ReadItemAsync<AvailabilityStrategyTestObject>(
+                    "testId", new PartitionKey("pk"),
                     requestOptions);
 
                 CosmosTraceDiagnostics traceDiagnostic = itemResponse.Diagnostics as CosmosTraceDiagnostics;

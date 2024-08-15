@@ -807,7 +807,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await Task.Delay(1);
         }
 
-        private class AvailabilityStrategyTestObject
+        internal class AvailabilityStrategyTestObject
         {
 
             [JsonPropertyName("id")]
