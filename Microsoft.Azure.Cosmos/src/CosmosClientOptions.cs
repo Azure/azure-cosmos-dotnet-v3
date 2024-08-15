@@ -709,6 +709,8 @@ namespace Microsoft.Azure.Cosmos
                 {
                     throw new ArgumentException($"{nameof(this.ApplicationPreferredRegions)} or {nameof(this.ApplicationRegion)} must be set to use {nameof(this.AvailabilityStrategy)}");
                 }
+
+                this.AvailabilityStrategy = value;
             }
         }
 
