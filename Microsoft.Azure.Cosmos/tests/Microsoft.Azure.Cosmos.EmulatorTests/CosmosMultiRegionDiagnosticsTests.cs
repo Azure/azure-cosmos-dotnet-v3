@@ -109,7 +109,7 @@
 
                 ItemRequestOptions requestOptions = new ItemRequestOptions
                 {
-                    AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingAvailabilityStrategy(
+                    AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
                         threshold: TimeSpan.FromMilliseconds(100),
                         thresholdStep: TimeSpan.FromMilliseconds(50))
                 };
