@@ -700,14 +700,16 @@ namespace Microsoft.Azure.Cosmos
         internal
 #endif
         AvailabilityStrategy AvailabilityStrategy 
-        { 
-            get; 
+        {
+            get => this.AvailabilityStrategy;
             set
             {
-                if (this.ApplicationPreferredRegions == null 
+                if (this.ApplicationPreferredRegions == null
                     && this.ApplicationRegion == null)
                 {
                     throw new ArgumentException($"{nameof(this.ApplicationPreferredRegions)} or {nameof(this.ApplicationRegion)} must be set to use {nameof(this.AvailabilityStrategy)}");
+                }
+            }
         }
 
         /// <summary>
