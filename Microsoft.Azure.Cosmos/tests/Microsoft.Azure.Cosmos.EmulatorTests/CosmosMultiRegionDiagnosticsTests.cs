@@ -29,21 +29,21 @@
             this.connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", null);
             this.client = new CosmosClient(this.connectionString);
 
-            this.database = this.client.GetDatabase(dbName);
-            this.container = this.database.GetContainer(containerName);
+            DatabaseResponse db = await this.client.CreateDatabaseIfNotExistsAsync(
+                id: CosmosMultiRegionDiagnosticsTests.dbName,
+                throughput: 400);
+            this.database = db.Database;
 
-            try
+            if (db.StatusCode == HttpStatusCode.Created)
             {
-                //Test to see if the container exists
-                //will return a 404 1003 if it does not which inidcates we need to create test resources
-                await this.container.ReadThroughputAsync();
-            }
-            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-            {
-                //if test db or container does not exist create them
-                this.database = await this.client.CreateDatabaseIfNotExistsAsync(dbName);
-                this.container = await this.database.CreateContainerIfNotExistsAsync(containerName, "/pk");
-                await this.database.CreateContainerIfNotExistsAsync("availabilityStrategyTestChangeFeedContainer", "/partitionKey");
+                this.container = await this.database.CreateContainerIfNotExistsAsync(
+                    id: CosmosMultiRegionDiagnosticsTests.containerName,
+                    partitionKeyPath: "/pk",
+                    throughput: 400);
+                await this.database.CreateContainerIfNotExistsAsync(
+                    id: "availabilityStrategyTestChangeFeedContainer",
+                    partitionKeyPath: "/partitionKey",
+                    throughput: 400);
 
                 await this.container.CreateItemAsync<AvailabilityStrategyTestObject>(
                     new AvailabilityStrategyTestObject { Id = "testId", Pk = "pk" });
@@ -119,8 +119,8 @@
                 connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                Database database = faultInjectionClient.GetDatabase(dbName);
-                Container container = database.GetContainer(containerName);
+                Database database = faultInjectionClient.GetDatabase(CosmosMultiRegionDiagnosticsTests.dbName);
+                Container container = database.GetContainer(CosmosMultiRegionDiagnosticsTests.containerName);
 
                 responseDelay.Enable();
 

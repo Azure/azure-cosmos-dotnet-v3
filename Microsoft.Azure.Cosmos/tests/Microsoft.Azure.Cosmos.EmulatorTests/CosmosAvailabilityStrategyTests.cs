@@ -154,22 +154,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Serializer = this.cosmosSystemTextJsonSerializer,
                 });
 
-            this.database = this.client.GetDatabase(dbName);
-            this.container = this.database.GetContainer(containerName);
-            this.changeFeedContainer = this.database.GetContainer(changeFeedContainerName);
+            DatabaseResponse db = await this.client.CreateDatabaseIfNotExistsAsync(
+                id: CosmosAvailabilityStrategyTests.dbName,
+                throughput: 400);
+            this.database = db.Database;
 
-            try
+            if (db.StatusCode == HttpStatusCode.Created)
             {
-                //Test to see if the container exists
-                //will return a 404 1003 if it does not which inidcates we need to create test resources
-                await this.container.ReadThroughputAsync();
-            }
-            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-            {
-                //if test db or container does not exist create them
-                this.database = await this.client.CreateDatabaseIfNotExistsAsync(dbName);
-                this.container = await this.database.CreateContainerIfNotExistsAsync(containerName, "/pk");
-                this.changeFeedContainer = await this.database.CreateContainerIfNotExistsAsync(changeFeedContainerName, "/partitionKey");
+                this.container = await this.database.CreateContainerIfNotExistsAsync(
+                    id: CosmosAvailabilityStrategyTests.containerName, 
+                    partitionKeyPath: "/pk",
+                    throughput: 400);
+                this.changeFeedContainer = await this.database.CreateContainerIfNotExistsAsync(
+                    id: CosmosAvailabilityStrategyTests.changeFeedContainerName, 
+                    partitionKeyPath: "/partitionKey",
+                    throughput: 400);
 
                 await this.container.CreateItemAsync<AvailabilityStrategyTestObject>(
                     new AvailabilityStrategyTestObject { Id = "testId", Pk = "pk" });
@@ -236,8 +235,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                Database database = faultInjectionClient.GetDatabase(dbName);
-                Container container = database.GetContainer(containerName);
+                Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
+                Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
 
                 responseDelay.Enable();
                 ItemResponse<AvailabilityStrategyTestObject> ir = await container.ReadItemAsync<AvailabilityStrategyTestObject>("testId", new PartitionKey("pk"));
@@ -246,7 +245,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(traceDiagnostic);
                 traceDiagnostic.Value.Data.TryGetValue("Response Region", out object responseRegion);
                 Assert.IsNotNull(responseRegion);
-                Assert.AreEqual(centralUS, (string)responseRegion);
+                Assert.AreEqual(CosmosAvailabilityStrategyTests.centralUS, (string)responseRegion);
 
                 //Should send out hedge request but original should be returned
                 traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
@@ -254,8 +253,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 IReadOnlyCollection<string> hedgeContextList;
                 hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
                 Assert.AreEqual(2, hedgeContextList.Count);
-                Assert.IsTrue(hedgeContextList.Contains(centralUS));
-                Assert.IsTrue(hedgeContextList.Contains(northCentralUS));
+                Assert.IsTrue(hedgeContextList.Contains(CosmosAvailabilityStrategyTests.centralUS));
+                Assert.IsTrue(hedgeContextList.Contains(CosmosAvailabilityStrategyTests.northCentralUS));
             };
         }
 
@@ -293,8 +292,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                Database database = faultInjectionClient.GetDatabase(dbName);
-                Container container = database.GetContainer(containerName);
+                Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
+                Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
 
                 responseDelay.Enable();
 
@@ -313,7 +312,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(traceDiagnostic);
                 traceDiagnostic.Value.Data.TryGetValue("Response Region", out object hedgeContext);
                 Assert.IsNotNull(hedgeContext);
-                Assert.AreEqual(northCentralUS, (string)hedgeContext);
+                Assert.AreEqual(CosmosAvailabilityStrategyTests.northCentralUS, (string)hedgeContext);
             }
         }
 
@@ -355,8 +354,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                Database database = faultInjectionClient.GetDatabase(dbName);
-                Container container = database.GetContainer(containerName);
+                Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
+                Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
 
                 responseDelay.Enable();
                 ItemRequestOptions requestOptions = new ItemRequestOptions
@@ -454,8 +453,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                Database database = faultInjectionClient.GetDatabase(dbName);
-                Container container = database.GetContainer(containerName);
+                Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
+                Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
 
                 CosmosTraceDiagnostics traceDiagnostic;
                 object hedgeContext;
@@ -474,7 +473,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Assert.IsNotNull(traceDiagnostic);
                         traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
                         Assert.IsNotNull(hedgeContext);
-                        Assert.AreEqual(northCentralUS, (string)hedgeContext);
+                        Assert.AreEqual(CosmosAvailabilityStrategyTests.northCentralUS, (string)hedgeContext);
 
                         break;
 
@@ -501,7 +500,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             Assert.IsNotNull(traceDiagnostic);
                             traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
                             Assert.IsNotNull(hedgeContext);
-                            Assert.AreEqual(northCentralUS, (string)hedgeContext);
+                            Assert.AreEqual(CosmosAvailabilityStrategyTests.northCentralUS, (string)hedgeContext);
                         }
 
                         break;
@@ -522,7 +521,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             Assert.IsNotNull(traceDiagnostic);
                             traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
                             Assert.IsNotNull(hedgeContext);
-                            Assert.AreEqual(northCentralUS, (string)hedgeContext);
+                            Assert.AreEqual(CosmosAvailabilityStrategyTests.northCentralUS, (string)hedgeContext);
                         }
 
                         break;
@@ -544,12 +543,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Assert.IsNotNull(traceDiagnostic);
                         traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
                         Assert.IsNotNull(hedgeContext);
-                        Assert.AreEqual(northCentralUS, (string)hedgeContext);
+                        Assert.AreEqual(CosmosAvailabilityStrategyTests.northCentralUS, (string)hedgeContext);
 
                         break;
 
                     case "ChangeFeed":
-                        Container leaseContainer = database.GetContainer(changeFeedContainerName);
+                        Container leaseContainer = database.GetContainer(CosmosAvailabilityStrategyTests.changeFeedContainerName);
                         ChangeFeedProcessor changeFeedProcessor = container.GetChangeFeedProcessorBuilder<AvailabilityStrategyTestObject>(
                             processorName: "AvialabilityStrategyTest",
                             onChangesDelegate: HandleChangesAsync)
@@ -635,8 +634,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                Database database = faultInjectionClient.GetDatabase(dbName);
-                Container container = database.GetContainer(containerName);
+                Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
+                Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
 
                 CosmosTraceDiagnostics traceDiagnostic;
                 object hedgeContext;
@@ -655,7 +654,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Assert.IsNotNull(traceDiagnostic);
                         traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
                         Assert.IsNotNull(hedgeContext);
-                        Assert.AreEqual(eastUs, (string)hedgeContext);
+                        Assert.AreEqual(CosmosAvailabilityStrategyTests.eastUs, (string)hedgeContext);
 
                         break;
 
@@ -682,7 +681,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             Assert.IsNotNull(traceDiagnostic);
                             traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
                             Assert.IsNotNull(hedgeContext);
-                            Assert.AreEqual(eastUs, (string)hedgeContext);
+                            Assert.AreEqual(CosmosAvailabilityStrategyTests.eastUs, (string)hedgeContext);
                         }
 
                         break;
@@ -703,7 +702,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             Assert.IsNotNull(traceDiagnostic);
                             traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
                             Assert.IsNotNull(hedgeContext);
-                            Assert.AreEqual(eastUs, (string)hedgeContext);
+                            Assert.AreEqual(CosmosAvailabilityStrategyTests.eastUs, (string)hedgeContext);
                         }
 
                         break;
@@ -725,12 +724,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Assert.IsNotNull(traceDiagnostic);
                         traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
                         Assert.IsNotNull(hedgeContext);
-                        Assert.AreEqual(eastUs, (string)hedgeContext);
+                        Assert.AreEqual(CosmosAvailabilityStrategyTests.eastUs, (string)hedgeContext);
 
                         break;
 
                     case "ChangeFeed":
-                        Container leaseContainer = database.GetContainer(changeFeedContainerName);
+                        Container leaseContainer = database.GetContainer(CosmosAvailabilityStrategyTests.changeFeedContainerName);
                         ChangeFeedProcessor changeFeedProcessor = container.GetChangeFeedProcessorBuilder<AvailabilityStrategyTestObject>(
                             processorName: "AvialabilityStrategyTest",
                             onChangesDelegate: HandleChangesStepAsync)
@@ -784,7 +783,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(traceDiagnostic);
             traceDiagnostic.Value.Data.TryGetValue("Response Region", out object hedgeContext);
             Assert.IsNotNull(hedgeContext);
-            Assert.AreNotEqual(centralUS, (string)hedgeContext);
+            Assert.AreNotEqual(CosmosAvailabilityStrategyTests.centralUS, (string)hedgeContext);
             await Task.Delay(1);
         }
 
@@ -802,8 +801,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(traceDiagnostic);
             traceDiagnostic.Value.Data.TryGetValue("Response Region", out object hedgeContext);
             Assert.IsNotNull(hedgeContext);
-            Assert.AreNotEqual(centralUS, (string)hedgeContext);
-            Assert.AreNotEqual(northCentralUS, (string)hedgeContext);
+            Assert.AreNotEqual(CosmosAvailabilityStrategyTests.centralUS, (string)hedgeContext);
+            Assert.AreNotEqual(CosmosAvailabilityStrategyTests.northCentralUS, (string)hedgeContext);
             await Task.Delay(1);
         }
 
