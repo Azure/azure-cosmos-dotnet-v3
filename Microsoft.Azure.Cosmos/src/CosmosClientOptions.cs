@@ -73,6 +73,7 @@ namespace Microsoft.Azure.Cosmos
         private IWebProxy webProxy;
         private Func<HttpClient> httpClientFactory;
         private string applicationName;
+        private AvailabilityStrategy availabilityStrategy;
 
         /// <summary>
         /// Creates a new CosmosClientOptions
@@ -701,7 +702,7 @@ namespace Microsoft.Azure.Cosmos
 #endif
         AvailabilityStrategy AvailabilityStrategy 
         {
-            get => this.AvailabilityStrategy;
+            get => this.availabilityStrategy;
             set
             {
                 if (this.ApplicationPreferredRegions == null
@@ -710,7 +711,7 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentException($"{nameof(this.ApplicationPreferredRegions)} or {nameof(this.ApplicationRegion)} must be set to use {nameof(this.AvailabilityStrategy)}");
                 }
 
-                this.AvailabilityStrategy = value;
+                this.availabilityStrategy = value;
             }
         }
 
