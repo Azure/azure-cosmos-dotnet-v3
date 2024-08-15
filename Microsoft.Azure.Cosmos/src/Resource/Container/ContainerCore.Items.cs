@@ -1261,21 +1261,7 @@ namespace Microsoft.Azure.Cosmos
                 range1: ContainerCore.ConvertToRange(parentFeedRange),
                 range2: ContainerCore.ConvertToRange(childFeedRange));
         }
-
-        public override async Task<bool> IsSubsetAsync(FeedRange parentFeedRange, PartitionKey partitionKey, CancellationToken cancellationToken = default)
-        {
-            return Documents.Routing.Range<string>.CheckOverlapping(
-                range1: ContainerCore.ConvertToRange(parentFeedRange),
-                range2: await this.ConvertToRangeAsync(
-                    partitionKey: partitionKey,
-                    cancellationToken: cancellationToken));
-        }
 #endif
-        private async Task<Documents.Routing.Range<string>> ConvertToRangeAsync(PartitionKey partitionKey, CancellationToken cancellationToken)
-        {
-            PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync(cancellationToken);
-            return Documents.Routing.Range<string>.GetPointRange(partitionKey.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition));
-        }
 
         private static IEnumerable<Documents.Routing.Range<string>> ConvertToRange(IReadOnlyList<FeedRange> fromFeedRanges)
         {

@@ -1786,39 +1786,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 #if PREVIEW
         [TestMethod]
         [Owner("philipthomas-MSFT")]
-        public async Task GivenParentFeedRangeAndPartitionKeyIsSubsetTestAsync()
-        {
-            Container container = default;
-
-            try
-            {
-                PartitionKey partitionKey = new ("WA");
-                ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(
-                    id: Guid.NewGuid().ToString(),
-                    partitionKeyPath: "/pk");
-
-                container = containerResponse.Container;
-
-                await container.CreateItemAsync<dynamic>(item: new { id = Guid.NewGuid().ToString(), pk = "GA" }, partitionKey: partitionKey);
-
-                Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("", "AA", true, false);
-                FeedRangeEpk feedRangeEpk = new FeedRangeEpk(range);
-
-                bool actualIsSubset = await container.IsSubsetAsync(parentFeedRange: feedRangeEpk, partitionKey: partitionKey);
-
-                Assert.IsTrue(actualIsSubset);
-            }
-            finally
-            {
-                if (container != null)
-                {
-                    await container.DeleteContainerAsync();
-                }
-            }
-        }
-
-        [TestMethod]
-        [Owner("philipthomas-MSFT")]
         [DataRow("", "3FFFFFFFFFFFFFFF", "", "FFFFFFFFFFFFFFFF", true)]
         [DataRow("3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", "", "FFFFFFFFFFFFFFFF", true)]
         [DataRow("7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", "", "FFFFFFFFFFFFFFFF", true)]

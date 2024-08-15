@@ -1757,18 +1757,6 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate);
 
         /// <summary>
-        /// Takes a given parent feed range and a partition key and checks if the partition key is a subset of the parent feed range.
-        /// </summary>
-        /// <param name="parentFeedRange">A given partition key.</param>
-        /// <param name="partitionKey">A given list of ranges.</param>
-        /// <param name="cancellationToken"></param>
-        /// <returns>True or False</returns>
-        public virtual Task<bool> IsSubsetAsync(Cosmos.FeedRange parentFeedRange, Cosmos.PartitionKey partitionKey, CancellationToken cancellationToken = default)
-        {
-            throw NotImplementedException>();
-        }
-
-        /// <summary>
         /// Takes 2 given feed ranges representing a parent and child feed range and checks if the child feed range is a subset of the parent feed range.
         /// </summary>
         /// <param name="parentFeedRange">A feed range that represents a parent range.</param>
