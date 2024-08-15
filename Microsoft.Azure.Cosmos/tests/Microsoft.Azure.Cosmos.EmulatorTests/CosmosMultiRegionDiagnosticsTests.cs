@@ -71,6 +71,7 @@
         [TestCategory("MultiRegion")]
         public async Task ExlcudeRegionDiagnosticsTest()
         {
+            this.container = this.database.GetContainer(CosmosMultiRegionDiagnosticsTests.containerName);
             ItemResponse<AvailabilityStrategyTestObject> itemResponse = await this.container.ReadItemAsync<AvailabilityStrategyTestObject>(
                 "testId", new Cosmos.PartitionKey("pk"),
                 new ItemRequestOptions()
