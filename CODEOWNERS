@@ -5,19 +5,19 @@
 # the repo. Unless a later match takes precedence,
 # @global-owner1 and @global-owner2 will be requested for
 # review when someone opens a pull request.
-*       @kirankumarkolli @ealsur @FabianMeiswinkel @kirillg @sboshra
+*       @kirankumarkolli @FabianMeiswinkel @kirillg @sboshra
 Microsoft.Azure.Cosmos/src/Json @adityasa @neildsh @kirankumarkolli @sboshra
 Microsoft.Azure.Cosmos/src/Query @adityasa @neildsh @kirankumarkolli @sboshra
 Microsoft.Azure.Cosmos/src/CosmosElements @adityasa @neildsh @kirankumarkolli @sboshra
 Microsoft.Azure.Cosmos/src/SqlObjects @leminh98 @adityasa @kirankumarkolli @sboshra
 Microsoft.Azure.Cosmos/src/Linq @khdang @adityasa @sboshra @kirankumarkolli
 Microsoft.Azure.Cosmos/src/Spatial @neildsh @adityasa @sboshra @kirankumarkolli
-Microsoft.Azure.Cosmos/tests @khdang @sboshra @adityasa @neildsh @kirankumarkolli @ealsur @FabianMeiswinkel @kirillg
-Microsoft.Azure.Cosmos.Samples @khdang @sboshra @adityasa @neildsh @kirankumarkolli @ealsur @FabianMeiswinkel @kirillg
+Microsoft.Azure.Cosmos/tests @khdang @sboshra @adityasa @neildsh @kirankumarkolli @FabianMeiswinkel @kirillg
+Microsoft.Azure.Cosmos.Samples @khdang @sboshra @adityasa @neildsh @kirankumarkolli @FabianMeiswinkel @kirillg
 
 # Order is important; the last matching pattern takes the most precedence
-Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Contracts @kirillg @kirankumarkolli @ealsur @FabianMeiswinkel
-Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/Contracts @kirillg @kirankumarkolli @ealsur @FabianMeiswinkel
+Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Contracts @kirillg @kirankumarkolli @FabianMeiswinkel
+Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/Contracts @kirillg @kirankumarkolli @FabianMeiswinkel
 Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Contracts/DotNetSDKAPI.json @Azure/azure-cosmosdb-lt
 Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Contracts/DotNetPreviewSDKAPI.json @Azure/azure-cosmosdb-lt
 Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Contracts/DotNetSDKTelemetryAPI.json @Azure/azure-cosmosdb-lt
