@@ -1,6 +1,14 @@
 namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 {
     using System;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.FaultInjection.Tests.Utils;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Microsoft.VisualStudio.TestTools.UnitTesting.Logging;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class FaultInjectionUnitTests
@@ -20,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                     new FaultInjectionEndpointBuilder(
                         databaseName: "db", 
                         containerName: "col",
-                        feedRange: FeedRange.FromPartitionKey(new PartitionKey("test")))
+                        feedRange: FeedRange.FromPartitionKey(new Cosmos.PartitionKey("test")))
                     .WithReplicaCount(3)
                     .WithIncludePrimary(true)
                     .Build())
@@ -59,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             Assert.AreEqual("East US", faultInjectionRule.GetCondition().GetRegion());
 
             //Test FaultInjectionEndpoint
-            PartitionKey test = new PartitionKey("test");
+            Cosmos.PartitionKey test = new Cosmos.PartitionKey("test");
             Assert.AreEqual(FeedRange.FromPartitionKey(test).ToString(), faultInjectionRule.GetCondition().GetEndpoint().GetFeedRange().ToString());
             Assert.AreEqual("dbs/db/colls/col", faultInjectionRule.GetCondition().GetEndpoint().GetResoureName());
             Assert.AreEqual(3, faultInjectionRule.GetCondition().GetEndpoint().GetReplicaCount());
@@ -72,6 +80,74 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             Assert.AreEqual(1, ((FaultInjectionServerErrorResult)faultInjectionRule.GetResult()).GetTimes());
             Assert.IsTrue(((FaultInjectionServerErrorResult)faultInjectionRule.GetResult()).GetSuppressServiceRequests());
 
+        }
+
+        [TestMethod]
+        public async Task MyTestMethod()
+        {
+            string tooManyRequestsRuleId = "tooManyRequestsRule-" + Guid.NewGuid().ToString();
+            FaultInjectionRule tooManyRequestsRule = new FaultInjectionRuleBuilder(
+                id: tooManyRequestsRuleId,
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithOperationType(FaultInjectionOperationType.ReadItem)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.TooManyRequests)
+                        .WithResponseHeaders(new Dictionary<string, string> { { WFConstants.BackendHeaders.LSN, "-1" }, { WFConstants.BackendHeaders.LocalLSN, "-1" } })
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(5))
+                .Build();
+
+            List<FaultInjectionRule> ruleList = new List<FaultInjectionRule> { tooManyRequestsRule };
+            FaultInjector faultInjector = new FaultInjector(ruleList);
+
+            tooManyRequestsRule.Disable();
+
+            using CosmosClient client = TestCommon.CreateCosmosClient(false, faultInjector, false);
+
+            Container container = client.GetContainer("database", "col");
+
+            JObject item = JObject.FromObject(new { id = Guid.NewGuid().ToString(), _partitionKey = Guid.NewGuid().ToString() });
+            await container.CreateItemAsync(item);
+
+            try
+            {
+                List<Task> tasks = new List<Task>();
+                for (int i = 0; i < 30000; i++)
+                {
+                    tasks.Add(container.ReadItemAsync<JObject>((string)item["id"], new Cosmos.PartitionKey((string)item["_partitionKey"])));
+                }
+
+                await Task.WhenAll(tasks);
+            }
+            catch (CosmosException ex)
+            {
+                Logger.LogMessage("{0}", ex.Message);
+                Logger.LogMessage("{0}", ex.Diagnostics);
+                Assert.AreEqual(System.Net.HttpStatusCode.TooManyRequests, ex.StatusCode);
+            }
+
+            //DatabaseResponse database = await client.CreateDatabaseIfNotExistsAsync("testDb");
+
+            //Container container = await database.Database.CreateContainerIfNotExistsAsync("test", "/pk");
+
+            //JObject item = JObject.FromObject(new { id = Guid.NewGuid().ToString(), pk = Guid.NewGuid().ToString() });
+            //await container.CreateItemAsync(item);
+
+            //try
+            //{
+            //    tooManyRequestsRule.Enable();
+
+            //    await container.ReadItemAsync<JObject>((string)item["id"], new Cosmos.PartitionKey((string)item["pk"]));
+            //    Assert.Fail("Should have failed");
+            //}
+            //catch (CosmosException ex)
+            //{
+            //    Logger.LogMessage("{0}", ex.Message);
+            //    Logger.LogMessage("{0}", ex.Diagnostics);
+            //    Assert.AreEqual(System.Net.HttpStatusCode.TooManyRequests, ex.StatusCode);
+            //}
         }
     }
 }
