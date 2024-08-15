@@ -1028,7 +1028,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 onChangesDelegate);
         }
 #endif
-
         private async Task<ResponseMessage> ReadManyItemsHelperAsync(
            IReadOnlyList<(string id, PartitionKey partitionKey)> items,
            ReadManyRequestOptions readManyRequestOptions = null,
