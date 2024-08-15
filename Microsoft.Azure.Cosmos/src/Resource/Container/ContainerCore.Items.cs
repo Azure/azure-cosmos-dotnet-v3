@@ -26,6 +26,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.ReadFeed;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -1255,22 +1256,33 @@ namespace Microsoft.Azure.Cosmos
         }
 
 #if PREVIEW
-        public override bool IsSubset(FeedRange parentFeedRange, FeedRange childFeedRange)
+        public override async Task<bool> IsSubsetAsync(FeedRange parentFeedRange, FeedRange childFeedRange, CancellationToken cancellationToken = default)
         {
-            return Documents.Routing.Range<string>.CheckOverlapping(
-                range1: ContainerCore.ConvertToRange(parentFeedRange),
-                range2: ContainerCore.ConvertToRange(childFeedRange));
+            FeedRangeInternal parentFeedRangeInternal = (FeedRangeInternal)parentFeedRange;
+            FeedRangeInternal childFeedRangeInternal = (FeedRangeInternal)childFeedRange;
+            PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync(cancellationToken);
+            ContainerResponse containerResponse = await this.ReadContainerAsync();
+            IRoutingMapProvider routingMapProvider = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
+            
+            List<Documents.Routing.Range<string>> parentRanges = await parentFeedRangeInternal.GetEffectiveRangesAsync(
+                routingMapProvider: routingMapProvider,
+                containerRid: containerResponse.Resource.ResourceId,
+                partitionKeyDefinition: partitionKeyDefinition,
+                trace: NoOpTrace.Singleton);
+
+            List<Documents.Routing.Range<string>> childRanges = await childFeedRangeInternal.GetEffectiveRangesAsync(
+                routingMapProvider: routingMapProvider,
+                containerRid: containerResponse.Resource.ResourceId,
+                partitionKeyDefinition: partitionKeyDefinition,
+                trace: NoOpTrace.Singleton);
+
+            return parentRanges
+                .SelectMany(parentRange => childRanges, (parentRange, childRange) => new { parentRange, childRange })
+                .Where(pair => Documents.Routing.Range<string>.CheckOverlapping(
+                    range1: pair.parentRange,
+                    range2: pair.childRange))
+                .FirstOrDefault() != null;
         }
 #endif
-
-        private static IEnumerable<Documents.Routing.Range<string>> ConvertToRange(IReadOnlyList<FeedRange> fromFeedRanges)
-        {
-            foreach (FeedRange fromFeedRange in fromFeedRanges)
-            {
-                yield return ContainerCore.ConvertToRange(fromFeedRange);
-            }
-        }
-
-        private static Documents.Routing.Range<string> ConvertToRange(FeedRange fromFeedRange) => ((FeedRangeEpk)fromFeedRange).Range;
     }
 }

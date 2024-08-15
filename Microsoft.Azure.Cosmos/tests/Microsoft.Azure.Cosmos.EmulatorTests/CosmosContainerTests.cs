@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -1786,6 +1787,94 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 #if PREVIEW
         [TestMethod]
         [Owner("philipthomas-MSFT")]
+        [DataRow("", "FFFFFFFFFFFFFFFF", true)] // Full range.
+        [DataRow("3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false)] // Some made up range.
+        [Description("Given a parent feed range and a partition key, when the partition key is converted to a feed range, then that feed range is checked" +
+            "against the parent feed range to determine if it is a subset of the parent feed range.")]
+        public async Task GivenParentFeedRangeAndChildPartitionKeyIsSubsetTestAsync(
+            string parentMin,
+            string parentMax,
+            bool expectedIsSubset)
+        {
+            Container container = default;
+
+            try
+            {
+                ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(
+                    id: Guid.NewGuid().ToString(),
+                    partitionKeyPath: "/pk");
+
+                container = containerResponse.Container;
+
+                PartitionKey partitionKey = new("WA");
+                FeedRange feedRange = FeedRange.FromPartitionKey(partitionKey);
+
+                bool actualIsSubset = await container.IsSubsetAsync(
+                    parentFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>(parentMin, parentMax, true, false)),
+                    childFeedRange: feedRange,
+                    cancellationToken: CancellationToken.None);
+
+                Assert.AreEqual(expected: expectedIsSubset, actual: actualIsSubset);
+            }
+            finally
+            {
+                if (container != null)
+                {
+                    await container.DeleteContainerAsync();
+                }
+            }
+        }
+
+        [TestMethod]
+        [Owner("philipthomas-MSFT")]
+        [DataRow("", "FFFFFFFFFFFFFFFF", true)] // Full range.
+        [DataRow("3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false)] // Some made up range.
+        [Description("Given a parent feed range and a hierarchical partition key, when the hierarchical partition key is converted to a feed range, " +
+            "then that feed range is checked against the parent feed range to determine if it is a subset of the parent feed range.")]
+        public async Task GivenParentFeedRangeAndChildHierarchicalPartitionKeyIsSubsetTestAsync(
+            string parentMin,
+            string parentMax,
+            bool expectedIsSubset)
+        {
+            Container container = default;
+
+            try
+            {
+                ContainerProperties containerProperties = new ContainerProperties()
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    PartitionKeyPaths = new Collection<string> { "/pk", "/id" }
+                };
+
+                ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(containerProperties);
+
+                container = containerResponse.Container;
+
+                PartitionKey partitionKey = new PartitionKeyBuilder()
+                    .Add("WA")
+                    .Add(Guid.NewGuid().ToString())
+                    .Build();
+
+                FeedRange feedRange = FeedRange.FromPartitionKey(partitionKey);
+
+                bool actualIsSubset = await container.IsSubsetAsync(
+                    parentFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>(parentMin, parentMax, true, false)),
+                    childFeedRange: feedRange,
+                    cancellationToken: CancellationToken.None);
+
+                Assert.AreEqual(expected: expectedIsSubset, actual: actualIsSubset);
+            }
+            finally
+            {
+                if (container != null)
+                {
+                    await container.DeleteContainerAsync();
+                }
+            }
+        }
+
+        [TestMethod]
+        [Owner("philipthomas-MSFT")]
         [DataRow("", "3FFFFFFFFFFFFFFF", "", "FFFFFFFFFFFFFFFF", true)]
         [DataRow("3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", "", "FFFFFFFFFFFFFFFF", true)]
         [DataRow("7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", "", "FFFFFFFFFFFFFFFF", true)]
@@ -1796,6 +1885,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow("", "3FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", false)]
         [DataRow("", "3333333333333333", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false)]
         [DataRow("3333333333333333", "6666666666666666", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true)]
+        [Description("Given a parent feed range, when a child feed range is provided, then that feed range is checked against the parent feed range" +
+            "to determine if it is a subset of the parent feed range.")]
         public async Task GivenParentAndChildFeedRangesIsSubsetTestAsync(
             string childMin,
             string childMax,
@@ -1807,16 +1898,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             try
             {
-                PartitionKey partitionKey = new("WA");
                 ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(
                     id: Guid.NewGuid().ToString(),
                     partitionKeyPath: "/pk");
 
                 container = containerResponse.Container;
 
-                bool actualIsSubset = container.IsSubset(
+                bool actualIsSubset = await container.IsSubsetAsync(
                     parentFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>(parentMin, parentMax, true, false)),
-                    childFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>(childMin, childMax, true, false)));
+                    childFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>(childMin, childMax, true, false)),
+                    cancellationToken: CancellationToken.None);
 
                 Assert.AreEqual(expected: expectedIsSubset, actual: actualIsSubset);
             }

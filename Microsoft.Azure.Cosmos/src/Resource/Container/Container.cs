@@ -1761,8 +1761,9 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="parentFeedRange">A feed range that represents a parent range.</param>
         /// <param name="childFeedRange">A feed range tha represents a child range.</param>
+        /// <param name="cancellationToken">A cancellation token.</param>
         /// <returns>True or False</returns>
-        public virtual bool IsSubset(Cosmos.FeedRange parentFeedRange, Cosmos.FeedRange childFeedRange)
+        public virtual Task<bool> IsSubsetAsync(Cosmos.FeedRange parentFeedRange, Cosmos.FeedRange childFeedRange, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }
