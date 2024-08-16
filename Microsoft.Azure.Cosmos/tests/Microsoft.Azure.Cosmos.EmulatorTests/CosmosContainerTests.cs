@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
@@ -1875,16 +1876,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [Owner("philipthomas-MSFT")]
-        [DataRow("", "3FFFFFFFFFFFFFFF", "", "FFFFFFFFFFFFFFFF", true)]
-        [DataRow("3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", "", "FFFFFFFFFFFFFFFF", true)]
-        [DataRow("7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", "", "FFFFFFFFFFFFFFFF", true)]
-        [DataRow("BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", "", "FFFFFFFFFFFFFFFF", true)]
-        [DataRow("", "3FFFFFFFFFFFFFFF", "", "3FFFFFFFFFFFFFFF", true)]
-        [DataRow("", "3FFFFFFFFFFFFFFF", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false)]
-        [DataRow("", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", false)]
-        [DataRow("", "3FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", false)]
-        [DataRow("", "3333333333333333", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false)]
-        [DataRow("3333333333333333", "6666666666666666", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true)]
+        [DataRow("", "3FFFFFFFFFFFFFFF", "", "FFFFFFFFFFFFFFFF", true)] // child is subset of the parent
+        [DataRow("3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", "", "FFFFFFFFFFFFFFFF", true)] // child is subset of the parent
+        [DataRow("7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", "", "FFFFFFFFFFFFFFFF", true)] // child is subset of the parent
+        [DataRow("BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", "", "FFFFFFFFFFFFFFFF", true)] // child is subset of the parent
+        [DataRow("", "3FFFFFFFFFFFFFFF", "", "3FFFFFFFFFFFFFFF", true)] // child is same of the parent, which makes it a subset
+        [DataRow("", "3FFFFFFFFFFFFFFF", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false)] // child is not a subset of parent
+        [DataRow("", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", false)] // child is not a subset of parent
+        [DataRow("", "3FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", false)] // child is not a subset of parent
+        [DataRow("", "3333333333333333", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false)] // child is not a subset of parent
+        [DataRow("3333333333333333", "6666666666666666", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false)] // child is not a subset of parent
+        [DataRow("3FFFFFFFFFFFFFFF", "4CCCCCCCCCCCCCCC", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true)] // child is subset of the parent
+        [DataRow("4CCCCCCCCCCCCCCC", "5999999999999999", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true)] // child is subset of the parent
+        [DataRow("5999999999999999", "6666666666666666", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true)] // child is subset of the parent
+        [DataRow("6666666666666666", "7333333333333333", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true)] // child is subset of the parent
+        [DataRow("7333333333333333", "7FFFFFFFFFFFFFFF", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true)] // child is subset of the parent
+        [DataRow("7333333333333333", "FFFFFFFFFFFFFFFF", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false)] // child is overlap, but not a subset of the parent
+        [DataRow("", "7333333333333333", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false)] // child is overlap, but not a subset of the parent
         [Description("Given a parent feed range, when a child feed range is provided, then that feed range is checked against the parent feed range" +
             "to determine if it is a subset of the parent feed range.")]
         public async Task GivenParentAndChildFeedRangesIsSubsetTestAsync(
@@ -1910,6 +1918,37 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     cancellationToken: CancellationToken.None);
 
                 Assert.AreEqual(expected: expectedIsSubset, actual: actualIsSubset);
+            }
+            finally
+            {
+                if (container != null)
+                {
+                    await container.DeleteContainerAsync();
+                }
+            }
+        }
+
+        [TestMethod]
+        [Owner("philipthomas-MSFT")]
+        public async Task GivenMockedFeedRangeExpectsArgumentExceptionIsSubsetTestAsync()
+        {
+            Container container = default;
+
+            try
+            {
+                ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(
+                    id: Guid.NewGuid().ToString(),
+                    partitionKeyPath: "/pk");
+
+                container = containerResponse.Container;
+
+                ArgumentException argumentException = await Assert.ThrowsExceptionAsync<ArgumentException>(
+                    async () => await container.IsSubsetAsync(
+                        parentFeedRange: Mock.Of<FeedRange>(),
+                        childFeedRange: Mock.Of<FeedRange>(),
+                        cancellationToken: CancellationToken.None));
+
+                Assert.IsNotNull(argumentException);
             }
             finally
             {
