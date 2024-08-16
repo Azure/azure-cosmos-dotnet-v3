@@ -154,34 +154,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Serializer = this.cosmosSystemTextJsonSerializer,
                 });
 
-            DatabaseResponse db = await this.client.CreateDatabaseIfNotExistsAsync(
-                id: CosmosAvailabilityStrategyTests.dbName,
-                throughput: 400);
-            this.database = db.Database;
-
-            if (db.StatusCode == HttpStatusCode.Created)
-            {
-                this.container = await this.database.CreateContainerIfNotExistsAsync(
-                    id: CosmosAvailabilityStrategyTests.containerName, 
-                    partitionKeyPath: "/pk",
-                    throughput: 400);
-                this.changeFeedContainer = await this.database.CreateContainerIfNotExistsAsync(
-                    id: CosmosAvailabilityStrategyTests.changeFeedContainerName, 
-                    partitionKeyPath: "/partitionKey",
-                    throughput: 400);
-
-                await this.container.CreateItemAsync<AvailabilityStrategyTestObject>(
-                    new AvailabilityStrategyTestObject { Id = "testId", Pk = "pk" });
-                await this.container.CreateItemAsync<AvailabilityStrategyTestObject>(
-                    new AvailabilityStrategyTestObject { Id = "testId2", Pk = "pk2" });
-                await this.container.CreateItemAsync<AvailabilityStrategyTestObject>(
-                    new AvailabilityStrategyTestObject { Id = "testId3", Pk = "pk3" });
-                await this.container.CreateItemAsync<AvailabilityStrategyTestObject>(
-                    new AvailabilityStrategyTestObject { Id = "testId4", Pk = "pk4" });
-
-                //Must Ensure the data is replicated to all regions
-                await Task.Delay(60000);
-            }
+            (this.database, this.container, this.changeFeedContainer) = await MultiRegionSetupHelpers.GetOrCreateMultiRegionDatabaseAndContainers(this.client);
         }
 
         [TestMethod]
