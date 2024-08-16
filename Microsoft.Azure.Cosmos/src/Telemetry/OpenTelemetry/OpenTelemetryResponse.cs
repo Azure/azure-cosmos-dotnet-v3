@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class OpenTelemetryResponse : OpenTelemetryAttributes
     {
-        internal OpenTelemetryResponse(TransactionalBatchResponse responseMessage, bool isHomogenousOperations, OperationType? batchOperation)
+        internal OpenTelemetryResponse(TransactionalBatchResponse responseMessage)
            : this(
                   statusCode: responseMessage.StatusCode,
                   requestCharge: OpenTelemetryResponse.GetHeader(responseMessage)?.RequestCharge,
@@ -24,8 +24,7 @@ namespace Microsoft.Azure.Cosmos
                   subStatusCode: OpenTelemetryResponse.GetHeader(responseMessage)?.SubStatusCode,
                   activityId: OpenTelemetryResponse.GetHeader(responseMessage)?.ActivityId,
                   correlationId: OpenTelemetryResponse.GetHeader(responseMessage)?.CorrelatedActivityId,
-                  batchSize: responseMessage.GetBatchSize(),
-                  batchOperationName: isHomogenousOperations ? batchOperation : null )
+                  batchSize: responseMessage.GetBatchSize() )
         {
         }
 
@@ -56,8 +55,7 @@ namespace Microsoft.Azure.Cosmos
             string activityId,
             string correlationId,
             Documents.OperationType operationType = Documents.OperationType.Invalid,
-            int? batchSize = null,
-            Documents.OperationType? batchOperationName = null)
+            int? batchSize = null)
             : base(requestMessage)
         {
             this.StatusCode = statusCode;
@@ -70,7 +68,6 @@ namespace Microsoft.Azure.Cosmos
             this.CorrelatedActivityId = correlationId;
             this.OperationType = operationType;
             this.BatchSize = batchSize;
-            this.BatchOperationName = batchOperationName;
         }
 
         private static string GetPayloadSize(ResponseMessage response)

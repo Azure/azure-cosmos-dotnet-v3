@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -18,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     {
         private static ItemBatchOperation CreateItemBatchOperation(string id = "")
         {
-            return new ItemBatchOperation(OperationType.Create, 0, Cosmos.PartitionKey.Null, id, new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true));
+            return new ItemBatchOperation(operationName: OpenTelemetryConstants.Operations.CreateItem, OperationType.Create, 0, Cosmos.PartitionKey.Null, id, new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true));
         }
 
         [TestMethod]
@@ -167,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             random.NextBytes(body);
             for (int i = 0; i < operationCount; i++)
             {
-                operations.Add(new ItemBatchOperation(OperationType.Create, 0, Cosmos.PartitionKey.Null, string.Empty, new MemoryStream(body)));
+                operations.Add(new ItemBatchOperation(operationName: OpenTelemetryConstants.Operations.CreateItem, OperationType.Create, 0, Cosmos.PartitionKey.Null, string.Empty, new MemoryStream(body)));
             }
 
             return await PartitionKeyRangeServerBatchRequest.CreateAsync("0",

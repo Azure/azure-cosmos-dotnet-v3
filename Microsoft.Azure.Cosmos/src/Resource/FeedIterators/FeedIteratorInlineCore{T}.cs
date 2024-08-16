@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class FeedIteratorInlineCore<T> : FeedIteratorInternal<T>
@@ -47,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default)
         {
             return this.clientContext.OperationHelperAsync(
-                        operationName: "Typed FeedIterator ReadNextAsync",
+                        operationName: OpenTelemetryConstants.Operations.TypedQueryItems,
                         containerName: this.container?.Id,
                         databaseName: this.container?.Database.Id ?? this.databaseName,
                         operationType: Documents.OperationType.ReadFeed,

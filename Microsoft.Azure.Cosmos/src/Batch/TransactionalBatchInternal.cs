@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Stores the operation type if all operations in the batch are of the same type; otherwise, null.
         /// </summary>
-        internal OperationType? homogenousOperation = null;
+        internal string homogenousOperation = null;
 
         /// <summary>
         /// Adds an operation to the batch.
@@ -52,8 +52,8 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.isHomogenousOperations && this.operations.Count > 0)
             {
-                this.isHomogenousOperations = this.operations.First().OperationType == itemBatchOperation.OperationType;
-                this.homogenousOperation = this.isHomogenousOperations ? itemBatchOperation.OperationType : null;
+                this.isHomogenousOperations = this.operations.First().OperationName == itemBatchOperation.OperationName;
+                this.homogenousOperation = this.isHomogenousOperations ? itemBatchOperation.OperationName : null;
             }
             this.operations.Add(itemBatchOperation);
         }

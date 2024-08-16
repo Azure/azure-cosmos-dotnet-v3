@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
 
     // This class acts as a wrapper for environments that use SynchronizationContext.
     internal sealed class PermissionInlineCore : PermissionCore
@@ -27,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(ReadAsync),
+                operationName: OpenTelemetryConstants.Operations.ReadPermission,
                 containerName: null,
                 databaseName: this.Id,
                 operationType: Documents.OperationType.Read,
@@ -43,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(ReplaceAsync),
+                operationName: OpenTelemetryConstants.Operations.ReplacePermission,
                 containerName: null,
                 databaseName: this.Id,
                 operationType: Documents.OperationType.Replace,
@@ -57,7 +58,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(DeleteAsync),
+                operationName: OpenTelemetryConstants.Operations.DeletePermission,
                 containerName: null,
                 databaseName: this.Id,
                 operationType: Documents.OperationType.Delete,

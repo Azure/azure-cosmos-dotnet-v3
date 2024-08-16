@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
 
     // This class acts as a wrapper for environments that use SynchronizationContext.
     internal sealed class ConflictsInlineCore : ConflictsCore
@@ -25,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(DeleteAsync),
+                operationName: OpenTelemetryConstants.Operations.DeleteConflict,
                 containerName: null,
                 databaseName: null,
                 operationType: Documents.OperationType.Delete,
@@ -88,7 +89,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(ReadCurrentAsync),
+                operationName: OpenTelemetryConstants.Operations.ReadConflict,
                 containerName: null,
                 databaseName: null,
                 operationType: Documents.OperationType.Read,

@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -220,7 +221,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-                return await this.clientContext.OperationHelperAsync("Change Feed Iterator Read Next Async",
+                return await this.clientContext.OperationHelperAsync(OpenTelemetryConstants.Operations.QueryChangeFeed,
                                                 containerName: this.container?.Id,
                                                 databaseName: this.container?.Database?.Id ?? this.databaseName,
                                                 operationType: OperationType.ReadFeed,

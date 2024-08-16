@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -650,7 +651,7 @@ namespace Microsoft.Azure.Cosmos
         public virtual Task<AccountProperties> ReadAccountAsync()
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(ReadAccountAsync),
+                operationName: OpenTelemetryConstants.Operations.ReadAccount,
                 containerName: null,
                 databaseName: null,
                 operationType: OperationType.Read,
@@ -739,7 +740,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(CreateDatabaseAsync),
+                operationName: OpenTelemetryConstants.Operations.CreateDatabase,
                 containerName: null,
                 databaseName: id,
                 operationType: OperationType.Create,
@@ -789,7 +790,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(CreateDatabaseAsync),
+                operationName: OpenTelemetryConstants.Operations.CreateDatabase,
                 containerName: null,
                 databaseName: id,
                 operationType: OperationType.Create,
@@ -848,7 +849,7 @@ namespace Microsoft.Azure.Cosmos
             return string.IsNullOrEmpty(id)
                 ? throw new ArgumentNullException(nameof(id))
                 : this.ClientContext.OperationHelperAsync(
-                    operationName: nameof(CreateDatabaseIfNotExistsAsync),
+                    operationName: OpenTelemetryConstants.Operations.CreateDatabaseIfNotExists,
                     containerName: null,
                     databaseName: id,
                     operationType: OperationType.Create,
@@ -1190,7 +1191,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return this.ClientContext.OperationHelperAsync(
-                 operationName: nameof(CreateDatabaseStreamAsync),
+                 operationName: OpenTelemetryConstants.Operations.CreateDatabaseStream,
                  containerName: null,
                  databaseName: databaseProperties.Id,
                  operationType: OperationType.Create,
@@ -1288,7 +1289,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(CreateDatabaseIfNotExistsAsync),
+                operationName: OpenTelemetryConstants.Operations.CreateDatabaseIfNotExists,
                 containerName: null,
                 databaseName: databaseProperties.Id,
                 operationType: OperationType.Create,

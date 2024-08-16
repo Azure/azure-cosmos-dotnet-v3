@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tracing;
 
     // This class acts as a wrapper for environments that use SynchronizationContext.
@@ -27,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(CreateStoredProcedureAsync),
+                operationName: OpenTelemetryConstants.Operations.CreateStoredProcedure,
                 containerName: this.container.Id,
                 databaseName: this.container.Database.Id,
                 operationType: Documents.OperationType.Create,
@@ -90,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(ReadStoredProcedureAsync),
+                operationName: OpenTelemetryConstants.Operations.ReadStoredProcedure,
                 containerName: this.container.Id,
                 databaseName: this.container.Database.Id,
                 operationType: Documents.OperationType.Read,
@@ -105,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(ReplaceStoredProcedureAsync),
+                operationName: OpenTelemetryConstants.Operations.ReplaceStoredProcedure,
                 containerName: this.container.Id,
                 databaseName: this.container.Database.Id,
                 operationType: Documents.OperationType.Replace,
@@ -120,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(DeleteStoredProcedureAsync),
+                operationName: OpenTelemetryConstants.Operations.DeleteStoreProcedure,
                 containerName: this.container.Id,
                 databaseName: this.container.Database.Id,
                 operationType: Documents.OperationType.Delete,
@@ -137,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(ExecuteStoredProcedureAsync),
+                operationName: OpenTelemetryConstants.Operations.ExecuteStoredProcedure,
                 containerName: this.container.Id,
                 databaseName: this.container.Database.Id,
                 operationType: Documents.OperationType.Execute,
@@ -154,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(ExecuteStoredProcedureStreamAsync),
+                operationName: OpenTelemetryConstants.Operations.ExecuteStoredProcedureStream,
                 containerName: this.container.Id,
                 databaseName: this.container.Database.Id,
                 operationType: Documents.OperationType.Execute,
@@ -171,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(ExecuteStoredProcedureStreamAsync),
+                operationName: OpenTelemetryConstants.Operations.ExecuteStoredProcedureStream,
                 containerName: this.container.Id,
                 databaseName: this.container.Database.Id,
                 operationType: Documents.OperationType.Execute,
@@ -186,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(CreateTriggerAsync),
+                operationName: OpenTelemetryConstants.Operations.CreateTrigger,
                 containerName: this.container.Id,
                 databaseName: this.container.Database.Id,
                 operationType: Documents.OperationType.Create,
@@ -249,7 +250,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(ReadTriggerAsync),
+                operationName: OpenTelemetryConstants.Operations.ReadTrigger,
                 containerName: this.container.Id,
                 databaseName: this.container.Database.Id,
                 operationType: Documents.OperationType.Read,
@@ -264,7 +265,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(ReplaceTriggerAsync),
+                operationName: OpenTelemetryConstants.Operations.ReplaceTrigger,
                 containerName: this.container.Id,
                 databaseName: this.container.Database.Id,
                 operationType: Documents.OperationType.Replace,
@@ -279,7 +280,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(DeleteTriggerAsync),
+                operationName: OpenTelemetryConstants.Operations.DeleteTrigger,
                 containerName: this.container.Id,
                 databaseName: this.container.Database.Id,
                 operationType: Documents.OperationType.Delete,
@@ -294,7 +295,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(CreateUserDefinedFunctionAsync),
+                operationName: OpenTelemetryConstants.Operations.CreateUserDefinedFunction,
                 containerName: this.container.Id,
                 databaseName: this.container.Database.Id,
                 operationType: Documents.OperationType.Create,
@@ -357,7 +358,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(ReadUserDefinedFunctionAsync),
+                operationName: OpenTelemetryConstants.Operations.ReadUserDefinedFunction,
                 containerName: this.container.Id,
                 databaseName: this.container.Database.Id,
                 operationType: Documents.OperationType.Read,
@@ -372,7 +373,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(ReplaceUserDefinedFunctionAsync),
+                operationName: OpenTelemetryConstants.Operations.ReplaceUserDefinedFunctions,
                 containerName: this.container.Id,
                 databaseName: this.container.Database.Id,
                 operationType: Documents.OperationType.Replace,
@@ -387,7 +388,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(DeleteUserDefinedFunctionAsync),
+                operationName: OpenTelemetryConstants.Operations.DeleteUserDefinedFunctions,
                 containerName: this.container.Id,
                 databaseName: this.container.Database.Id,
                 operationType: Documents.OperationType.Delete,

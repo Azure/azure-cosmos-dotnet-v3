@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Serialization.HybridRow;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow.IO;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow.RecordIO;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -237,6 +238,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             operation = new ItemBatchOperation(
+                operationName: OpenTelemetryConstants.Operations.CreateItem,
                 operationType: operationType,
                 operationIndex: operationIndex,
                 partitionKey: Cosmos.PartitionKey.Null, // ParsedPartitionKey is used for validation

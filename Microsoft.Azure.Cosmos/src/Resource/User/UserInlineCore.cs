@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
 
     // This class acts as a wrapper for environments that use SynchronizationContext.
     internal sealed class UserInlineCore : UserCore
@@ -26,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(ReadAsync),
+                operationName: OpenTelemetryConstants.Operations.ReadUser,
                 containerName: null,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Read,
@@ -41,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(ReplaceAsync),
+                operationName: OpenTelemetryConstants.Operations.ReplaceUser,
                 containerName: null,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Replace,
@@ -55,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(DeleteAsync),
+                operationName: OpenTelemetryConstants.Operations.DeleteUser,
                 containerName: null,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Delete,
@@ -76,7 +77,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(CreatePermissionAsync),
+                operationName: OpenTelemetryConstants.Operations.CreatePermission,
                 containerName: null,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Create,
@@ -92,7 +93,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(UpsertPermissionAsync),
+                operationName: OpenTelemetryConstants.Operations.UpsertPermission,
                 containerName: null,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Upsert,

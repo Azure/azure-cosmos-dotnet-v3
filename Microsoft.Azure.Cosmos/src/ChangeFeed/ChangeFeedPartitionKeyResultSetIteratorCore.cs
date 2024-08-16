@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -93,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
             return this.clientContext.OperationHelperAsync(
-                                operationName: "Change Feed Processor Read Next Async",
+                                operationName: OpenTelemetryConstants.Operations.QueryChangeFeedForPartitionKeyRange,
                                 containerName: this.container?.Id,
                                 databaseName: this.container?.Database?.Id ?? this.databaseName,
                                 operationType: Documents.OperationType.ReadFeed,

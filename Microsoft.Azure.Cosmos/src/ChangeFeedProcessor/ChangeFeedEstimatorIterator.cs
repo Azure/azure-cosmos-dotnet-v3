@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Newtonsoft.Json.Linq;
 
@@ -113,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         public override Task<FeedResponse<ChangeFeedProcessorState>> ReadNextAsync(CancellationToken cancellationToken = default)
         {
             return this.monitoredContainer.ClientContext.OperationHelperAsync(
-                operationName: "Change Feed Estimator Read Next Async",
+                operationName: OpenTelemetryConstants.Operations.QueryChangeFeedEstimator,
                 containerName: this.monitoredContainer?.Id,
                 databaseName: this.monitoredContainer?.Database?.Id,
                 operationType: Documents.OperationType.ReadFeed,

@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
     using Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Scripts;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -108,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 
                 if (instance is TransactionalBatchResponse transactionInstance)
                 {
-                    _ = new OpenTelemetryResponse(transactionInstance, false, null);
+                    _ = new OpenTelemetryResponse(transactionInstance);
                 }
                 else if (instance is ResponseMessage responseMessageInstance)
                 {
@@ -221,7 +222,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
             if(arrayOperations == null)
             {
                 arrayOperations = new ItemBatchOperation[1];
-                arrayOperations[0] = new ItemBatchOperation(Documents.OperationType.Read, 0, new PartitionKey("0"));
+                arrayOperations[0] = new ItemBatchOperation(operationName: OpenTelemetryConstants.Operations.ReadItem, Documents.OperationType.Read, 0, new PartitionKey("0"));
             }
 
             SinglePartitionKeyServerBatchRequest batchRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
@@ -244,7 +245,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
         {
             ItemBatchOperation[] arrayOperations = new ItemBatchOperation[1];
 
-            arrayOperations[0] = new ItemBatchOperation(Documents.OperationType.Read, 0, new PartitionKey("0"));
+            arrayOperations[0] = new ItemBatchOperation(operationName: OpenTelemetryConstants.Operations.ReadItem, Documents.OperationType.Read, 0, new PartitionKey("0"));
             PartitionKeyRangeBatchResponse partitionKeyRangeBatchResponse = new PartitionKeyRangeBatchResponse(
                 arrayOperations.Length,
                 await OpenTelemetryRecorderTests.GetTransactionalBatchResponse(arrayOperations), 

@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.ReadFeed;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tracing;
 
     // This class acts as a wrapper for environments that use SynchronizationContext.
@@ -36,7 +37,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(ReadContainerAsync),
+                operationName: OpenTelemetryConstants.Operations.ReadContainer,
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Read,
@@ -50,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(ReadContainerStreamAsync),
+                operationName: OpenTelemetryConstants.Operations.ReadContainerStream,
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Read,
@@ -65,7 +66,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(ReplaceContainerAsync),
+                operationName: OpenTelemetryConstants.Operations.ReplaceContainer,
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Replace,
@@ -80,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(ReplaceContainerStreamAsync),
+                operationName: OpenTelemetryConstants.Operations.ReplaceContainerStream,
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Replace,
@@ -94,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(DeleteContainerAsync),
+                operationName: OpenTelemetryConstants.Operations.DeleteContainer,
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Delete,
@@ -108,7 +109,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(DeleteContainerStreamAsync),
+                operationName: OpenTelemetryConstants.Operations.DeleteContainerStream,
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Delete,
@@ -120,7 +121,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<int?> ReadThroughputAsync(CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(ReadThroughputAsync),
+                operationName: OpenTelemetryConstants.Operations.ReadThroughput,
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Read,
@@ -133,7 +134,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(ReadThroughputAsync),
+                operationName: OpenTelemetryConstants.Operations.ReadThroughput,
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Read,
@@ -148,7 +149,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(ReplaceThroughputAsync),
+                operationName: OpenTelemetryConstants.Operations.ReplaceThroughput,
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Replace,
@@ -163,7 +164,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(ReplaceThroughputAsync),
+                operationName: OpenTelemetryConstants.Operations.ReplaceThroughput,
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Replace,
@@ -175,7 +176,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<ThroughputResponse> ReadThroughputIfExistsAsync(RequestOptions requestOptions, CancellationToken cancellationToken)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(ReadThroughputIfExistsAsync),
+                operationName: OpenTelemetryConstants.Operations.ReadThroughputIfExists,
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Read,
@@ -187,7 +188,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<ThroughputResponse> ReplaceThroughputIfExistsAsync(ThroughputProperties throughput, RequestOptions requestOptions, CancellationToken cancellationToken)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(ReplaceThroughputIfExistsAsync),
+                operationName: OpenTelemetryConstants.Operations.ReplaceThroughputIfExists,
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Replace,
@@ -213,7 +214,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return this.ClientContext.OperationHelperAsync<ResponseMessage>(
-                operationName: nameof(CreateItemStreamAsync),
+                operationName: OpenTelemetryConstants.Operations.CreateItemStream,
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Create,
@@ -228,7 +229,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(CreateItemAsync),
+                operationName: OpenTelemetryConstants.Operations.CreateItem,
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Create,
@@ -244,7 +245,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(ReadItemStreamAsync),
+                operationName: OpenTelemetryConstants.Operations.ReadItemStream,
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Read,
@@ -260,7 +261,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(ReadItemAsync),
+                operationName: OpenTelemetryConstants.Operations.ReadItem,
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Read,
@@ -276,7 +277,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(UpsertItemStreamAsync),
+                operationName: OpenTelemetryConstants.Operations.UpsertItemStream,
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Upsert,
@@ -292,7 +293,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(UpsertItemAsync),
+                operationName: OpenTelemetryConstants.Operations.UpsertItem,
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Upsert,
@@ -309,7 +310,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(ReplaceItemStreamAsync),
+                operationName: OpenTelemetryConstants.Operations.ReplaceItemStream,
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Replace,
@@ -326,7 +327,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(ReplaceItemAsync),
+                operationName: OpenTelemetryConstants.Operations.ReplaceItem,
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Replace,
@@ -342,7 +343,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(DeleteItemStreamAsync),
+                operationName: OpenTelemetryConstants.Operations.DeleteItemStream,
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Delete,
@@ -358,7 +359,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(DeleteItemAsync),
+                operationName: OpenTelemetryConstants.Operations.DeleteItem,
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Delete,
@@ -375,7 +376,7 @@ namespace Microsoft.Azure.Cosmos
                 CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(PatchItemStreamAsync),
+                operationName: OpenTelemetryConstants.Operations.PatchItemStream,
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Patch,
@@ -392,7 +393,7 @@ namespace Microsoft.Azure.Cosmos
                 CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(PatchItemStreamAsync),
+                operationName: OpenTelemetryConstants.Operations.PatchItemStream,
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Patch,
@@ -409,7 +410,7 @@ namespace Microsoft.Azure.Cosmos
                 CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(PatchItemAsync),
+                operationName: OpenTelemetryConstants.Operations.PatchItem,
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Patch,
@@ -424,7 +425,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(ReadManyItemsStreamAsync),
+                operationName: OpenTelemetryConstants.Operations.ReadManyItemsStream,
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Read,
@@ -439,7 +440,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(ReadManyItemsAsync),
+                operationName: OpenTelemetryConstants.Operations.ReadManyItems,
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Read,
@@ -564,7 +565,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(GetFeedRangesAsync),
+                operationName: OpenTelemetryConstants.Operations.ReadFeedRanges,
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.ReadFeed,
@@ -596,7 +597,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(GetPartitionKeyRangesAsync),
+                operationName: OpenTelemetryConstants.Operations.ReadPartitionKeyRanges,
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Read,
@@ -652,7 +653,7 @@ namespace Microsoft.Azure.Cosmos
           CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(DeleteAllItemsByPartitionKeyStreamAsync),
+                operationName: OpenTelemetryConstants.Operations.DeleteAllItemsByPartitionKeyStream,
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Delete,

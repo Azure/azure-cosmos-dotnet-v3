@@ -28,6 +28,7 @@ namespace Microsoft.Azure.Cosmos
         private bool isDisposed;
 
         public ItemBatchOperation(
+            string operationName,
             OperationType operationType,
             int operationIndex,
             PartitionKey partitionKey,
@@ -43,9 +44,11 @@ namespace Microsoft.Azure.Cosmos
             this.ResourceStream = resourceStream;
             this.RequestOptions = requestOptions;
             this.ClientContext = cosmosClientContext;
+            this.OperationName = operationName;
         }
 
         public ItemBatchOperation(
+            string operationName,
             OperationType operationType,
             int operationIndex,
             ContainerInternal containerCore,
@@ -53,6 +56,7 @@ namespace Microsoft.Azure.Cosmos
             Stream resourceStream = null,
             TransactionalBatchItemRequestOptions requestOptions = null)
         {
+            this.OperationName = operationName;
             this.OperationType = operationType;
             this.OperationIndex = operationIndex;
             this.ContainerInternal = containerCore;
@@ -61,6 +65,8 @@ namespace Microsoft.Azure.Cosmos
             this.RequestOptions = requestOptions;
             this.ClientContext = containerCore.ClientContext;
         }
+
+        public string OperationName { get; internal set; }
 
         public PartitionKey? PartitionKey { get; internal set; }
 
@@ -304,6 +310,7 @@ namespace Microsoft.Azure.Cosmos
 #pragma warning restore SA1402 // File may only contain a single type
     {
         public ItemBatchOperation(
+            string operationName,
             OperationType operationType,
             int operationIndex,
             PartitionKey partitionKey,
@@ -311,19 +318,20 @@ namespace Microsoft.Azure.Cosmos
             string id = null,
             TransactionalBatchItemRequestOptions requestOptions = null,
             CosmosClientContext cosmosClientContext = null)
-            : base(operationType, operationIndex, partitionKey: partitionKey, id: id, requestOptions: requestOptions, cosmosClientContext: cosmosClientContext)
+            : base(operationName, operationType, operationIndex, partitionKey: partitionKey, id: id, requestOptions: requestOptions, cosmosClientContext: cosmosClientContext)
         {
             this.Resource = resource;
         }
 
         public ItemBatchOperation(
+            string operationName,
             OperationType operationType,
             int operationIndex,
             T resource,
             ContainerInternal containerCore,
             string id = null,
             TransactionalBatchItemRequestOptions requestOptions = null)
-            : base(operationType, operationIndex, containerCore: containerCore, id: id, requestOptions: requestOptions)
+            : base(operationName, operationType, operationIndex, containerCore: containerCore, id: id, requestOptions: requestOptions)
         {
             this.Resource = resource;
         }

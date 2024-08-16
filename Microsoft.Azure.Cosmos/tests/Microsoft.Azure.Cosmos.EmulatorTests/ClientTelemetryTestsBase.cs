@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using Cosmos.Util;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
 
     public abstract class ClientTelemetryTestsBase : BaseCosmosClientHelper
     {
@@ -1018,7 +1019,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static ItemBatchOperation CreateItem(string itemId)
         {
             var testItem = new { id = itemId, Status = itemId };
-            return new ItemBatchOperation(Documents.OperationType.Create, 0, new Cosmos.PartitionKey(itemId), itemId, TestCommon.SerializerCore.ToStream(testItem));
+            return new ItemBatchOperation(operationName: OpenTelemetryConstants.Operations.CreateItem, Documents.OperationType.Create, 0, new Cosmos.PartitionKey(itemId), itemId, TestCommon.SerializerCore.ToStream(testItem));
         }
 
         private async Task<Container> CreateClientAndContainer(ConnectionMode mode,
