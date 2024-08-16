@@ -73,7 +73,6 @@ namespace Microsoft.Azure.Cosmos
         private IWebProxy webProxy;
         private Func<HttpClient> httpClientFactory;
         private string applicationName;
-        private AvailabilityStrategy availabilityStrategy;
 
         /// <summary>
         /// Creates a new CosmosClientOptions
@@ -695,25 +694,35 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Availability Strategy to be used for periods of high latency
         /// </summary>
+        /// /// <example>
+        /// An example on how to set an availability strategy custom serializer.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosClient client = new CosmosClientBuilder("connection string")
+        /// .WithApplicationPreferredRegions(
+        ///    new List<string> { "East US", "Central US", "West US" } )
+        /// .WithAvailabilityStrategy(
+        ///    AvailabilityStrategy.CrossRegionHedgingStrategy(
+        ///    threshold: TimeSpan.FromMilliseconds(500),
+        ///    thresholdStep: TimeSpan.FromMilliseconds(100)
+        /// ))
+        /// .Build();
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <remarks> 
+        /// The availability strategy in the example is a Cross Region Hedging Strategy.
+        /// These strategies take two values, a threshold and a threshold step.When a request that is sent 
+        /// out takes longer than the threshold time, the SDK will hedge to the second region in the application preferred regions list.
+        /// If a response from either the primary request or the first hedged request is not received 
+        /// after the threshold step time, the SDK will hedge to the third region and so on.
+        /// </remarks>
 #if PREVIEW
         public
 #else
         internal
 #endif
-        AvailabilityStrategy AvailabilityStrategy 
-        {
-            get => this.availabilityStrategy;
-            set
-            {
-                if (this.ApplicationPreferredRegions == null
-                    && this.ApplicationRegion == null)
-                {
-                    throw new ArgumentException($"{nameof(this.ApplicationPreferredRegions)} or {nameof(this.ApplicationRegion)} must be set to use {nameof(this.AvailabilityStrategy)}");
-                }
-
-                this.availabilityStrategy = value;
-            }
-        }
+        AvailabilityStrategy AvailabilityStrategy { get; set; }
 
         /// <summary>
         /// Enable partition key level failover
@@ -907,6 +916,7 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateDirectTCPSettings();
             this.ValidateLimitToEndpointSettings();
             this.ValidatePartitionLevelFailoverSettings();
+            this.ValidateAvailabilityStrategy();
 
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
@@ -1082,6 +1092,15 @@ namespace Microsoft.Azure.Cosmos
                 && (this.ApplicationPreferredRegions == null || this.ApplicationPreferredRegions.Count == 0))
             {
                 throw new ArgumentException($"{nameof(this.ApplicationPreferredRegions)} is required when {nameof(this.EnablePartitionLevelFailover)} is enabled.");
+            }
+        }
+
+        private void ValidateAvailabilityStrategy()
+        {
+            if (this.ApplicationPreferredRegions == null
+            && this.ApplicationRegion == null)
+            {
+                throw new ArgumentException($"{nameof(this.ApplicationPreferredRegions)} or {nameof(this.ApplicationRegion)} must be set to use {nameof(this.AvailabilityStrategy)}");
             }
         }
 
