@@ -34,29 +34,7 @@
                 throughput: 400);
             this.database = db.Database;
 
-            if (db.StatusCode == HttpStatusCode.Created)
-            {
-                this.container = await this.database.CreateContainerIfNotExistsAsync(
-                    id: CosmosMultiRegionDiagnosticsTests.containerName,
-                    partitionKeyPath: "/pk",
-                    throughput: 400);
-                await this.database.CreateContainerIfNotExistsAsync(
-                    id: "availabilityStrategyTestChangeFeedContainer",
-                    partitionKeyPath: "/partitionKey",
-                    throughput: 400);
-
-                await this.container.CreateItemAsync<AvailabilityStrategyTestObject>(
-                    new AvailabilityStrategyTestObject { Id = "testId", Pk = "pk" });
-                await this.container.CreateItemAsync<AvailabilityStrategyTestObject>(
-                    new AvailabilityStrategyTestObject { Id = "testId2", Pk = "pk2" });
-                await this.container.CreateItemAsync<AvailabilityStrategyTestObject>(
-                    new AvailabilityStrategyTestObject { Id = "testId3", Pk = "pk3" });
-                await this.container.CreateItemAsync<AvailabilityStrategyTestObject>(
-                    new AvailabilityStrategyTestObject { Id = "testId4", Pk = "pk4" });
-
-                //Must Ensure the data is replicated to all regions
-                await Task.Delay(60000);
-            }
+            (this.database, this.container, _) = await MultiRegionSetupHelpers.GetOrCreateMultiRegionDatabaseAndContainers(this.client);
         }
 
         [TestCleanup]
