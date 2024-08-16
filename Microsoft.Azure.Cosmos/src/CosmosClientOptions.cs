@@ -1097,8 +1097,8 @@ namespace Microsoft.Azure.Cosmos
 
         private void ValidateAvailabilityStrategy()
         {
-            if (this.ApplicationPreferredRegions == null
-            && this.ApplicationRegion == null)
+            if (this.AvailabilityStrategy != null
+                && (this.ApplicationPreferredRegions == null || this.ApplicationRegion == null))
             {
                 throw new ArgumentException($"{nameof(this.ApplicationPreferredRegions)} or {nameof(this.ApplicationRegion)} must be set to use {nameof(this.AvailabilityStrategy)}");
             }
