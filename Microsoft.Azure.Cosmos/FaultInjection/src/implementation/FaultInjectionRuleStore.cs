@@ -162,6 +162,51 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             return null;
         }
 
+        public FaultInjectionServerErrorRule? FindHttpServerResponseErrorRule(ChannelCallArguments args)
+        {
+            foreach (FaultInjectionServerErrorRule rule in this.serverResponseErrorRuleSet.Keys)
+            {
+                if ((rule.GetConnectionType() == FaultInjectionConnectionType.Gateway
+                    || rule.GetConnectionType() == FaultInjectionConnectionType.All)
+                    && rule.IsApplicable(args))
+                {
+                    return rule;
+                }
+            }
+
+            return null;
+        }
+
+        public FaultInjectionServerErrorRule? FindHttpServerResponseDelayRule(ChannelCallArguments args)
+        {
+            foreach (FaultInjectionServerErrorRule rule in this.serverResponseDelayRuleSet.Keys)
+            {
+                if ((rule.GetConnectionType() == FaultInjectionConnectionType.Gateway
+                    || rule.GetConnectionType() == FaultInjectionConnectionType.All)
+                    && rule.IsApplicable(args))
+                {
+                    return rule;
+                }
+            }
+
+            return null;
+        }
+
+        public FaultInjectionServerErrorRule? FindHttpServerSendDelayRule(ChannelCallArguments args)
+        {
+            foreach (FaultInjectionServerErrorRule rule in this.serverSendDelayRuleSet.Keys)
+            {
+                if ((rule.GetConnectionType() == FaultInjectionConnectionType.Gateway
+                    || rule.GetConnectionType() == FaultInjectionConnectionType.All)
+                    && rule.IsApplicable(args))
+                {
+                    return rule;
+                }
+            }
+
+            return null;
+        }
+
         public bool ContainsRule(FaultInjectionConnectionErrorRule rule)
         {
             return this.connectionErrorRuleSet.ContainsKey(rule);

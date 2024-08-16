@@ -26,9 +26,9 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly HttpClient httpClient;
         private readonly ICommunicationEventSource eventSource;
+        private readonly IChaosInterceptor chaosInterceptor;
 
         private bool disposedValue;
-        private static IChaosInterceptor chaosInterceptor;
 
         private CosmosHttpClientCore(
             HttpClient httpClient,
@@ -306,7 +306,8 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             HttpTimeoutPolicy timeoutPolicy,
             IClientSideRequestStatistics clientSideRequestStatistics,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            DocumentServiceRequest documentServiceRequest = null)
         {
             if (createRequestMessageAsync == null)
             {
@@ -318,7 +319,8 @@ namespace Microsoft.Azure.Cosmos
                 resourceType,
                 timeoutPolicy,
                 clientSideRequestStatistics,
-                cancellationToken);
+                cancellationToken,
+                documentServiceRequest);
         }
 
         private async Task<HttpResponseMessage> SendHttpHelperAsync(
@@ -326,7 +328,8 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             HttpTimeoutPolicy timeoutPolicy,
             IClientSideRequestStatistics clientSideRequestStatistics,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            DocumentServiceRequest documentServiceRequest)
         {
             DateTime startDateTimeUtc = DateTime.UtcNow;
             IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> timeoutEnumerator = timeoutPolicy.GetTimeoutEnumerator();
@@ -344,10 +347,26 @@ namespace Microsoft.Azure.Cosmos
                     DateTime requestStartTime = DateTime.UtcNow;
                     try
                     {
+                        if (this.chaosInterceptor != null && documentServiceRequest != null)
+                        {
+                            await this.chaosInterceptor.OnBeforeHttpSendAsync(documentServiceRequest);
+
+                            (bool hasFault, HttpResponseMessage fiResponseMessage) = await this.chaosInterceptor.OnHttpRequestCallAsync(documentServiceRequest);
+                            if (hasFault)
+                            {
+                                return fiResponseMessage;
+                            }
+                        }
+
                         HttpResponseMessage responseMessage = await this.ExecuteHttpHelperAsync(
                             requestMessage,
                             resourceType,
                             cancellationTokenSource.Token);
+
+                        if (this.chaosInterceptor != null && documentServiceRequest != null)
+                        {
+                            await this.chaosInterceptor.OnAfterHttpSendAsync(documentServiceRequest);
+                        }
 
                         if (clientSideRequestStatistics is ClientSideRequestStatisticsTraceDatum datum)
                         {
