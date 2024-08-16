@@ -453,7 +453,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
 
             try
             {
-                await Task.Delay(ChangeFeedSetupTime);
+                await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
                 await monitoredContainer.CreateItemAsync<ToDoActivity>(new ToDoActivity { id = "1", pk = "1", description = "Testing TTL on CFP.", ttl = ttlInSeconds }, partitionKey: new PartitionKey("1"));
 
                 // NOTE(philipthomas-MSFT): Please allow these Logger.LogLine because TTL on items will purge at random times so I am using this to test when ran locally using emulator.
@@ -571,7 +571,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
             // 1 second delay between operations to get different timestamps.
 
             await processor.StartAsync();
-            await Task.Delay(ChangeFeedSetupTime);
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
 
             await monitoredContainer.CreateItemAsync<ToDoActivity>(new ToDoActivity { id = "1", pk = "1", description = "original test", ttl = -1 }, partitionKey: new PartitionKey("1"));
             await Task.Delay(1000);
@@ -581,7 +581,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
 
             await monitoredContainer.DeleteItemAsync<ToDoActivity>(id: "1", partitionKey: new PartitionKey("1"));
 
-            bool isStartOk = allDocsProcessed.WaitOne(10 * ChangeFeedSetupTime);
+            bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
 
             await processor.StopAsync();
 
@@ -658,8 +658,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
             Interlocked.Exchange(ref latestVersionProcessorAtomic, processor);
 
             await processor.StartAsync();
-            await Task.Delay(ChangeFeedSetupTime);
-            bool isStartOk = allDocsProcessed.WaitOne(10 * ChangeFeedSetupTime);
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+            bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
 
             if (exception != default)
             {
@@ -691,8 +691,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
             Interlocked.Exchange(ref allVersionsAndDeletesProcessorAtomic, processor);
 
             await processor.StartAsync();
-            await Task.Delay(ChangeFeedSetupTime);
-            bool isStartOk = allDocsProcessed.WaitOne(10 * ChangeFeedSetupTime);
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+            bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
 
             if (exception != default)
             {
