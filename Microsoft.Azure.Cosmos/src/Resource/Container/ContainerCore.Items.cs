@@ -1283,12 +1283,11 @@ namespace Microsoft.Azure.Cosmos
                         partitionKeyDefinition: partitionKeyDefinition,
                         trace: trace);
 
-                    Overlaps overlaps = parentRanges
-                        .SelectMany(parentRange => childRanges, (parentRange, childRange) => Overlaps.Create(parentRange, childRange))
+                    IEnumerable<Overlap> overlaps = parentRanges
+                        .SelectMany(parentRange => childRanges, (parentRange, childRange) => Overlap.Create(parentRange, childRange))
                         .Where(pair => Documents.Routing.Range<string>.CheckOverlapping(
                             range1: pair.ParentRange,
-                            range2: pair.ChildRange))
-                        .FirstOrDefault();
+                            range2: pair.ChildRange));
 
                     return ContainerCore.IsSubset(overlaps);
                 }
@@ -1299,14 +1298,22 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private static bool IsSubset(Overlaps overlaps)
+        private static bool IsSubset(IEnumerable<Overlap> overlaps)
         {
             if (overlaps == null) return false;
 
-            return String.Compare(overlaps.ChildRange.Min, overlaps.ParentRange.Min) >= 0
-                && String.Compare(overlaps.ChildRange.Min, overlaps.ParentRange.Max) <= 0
-                && String.Compare(overlaps.ChildRange.Max, overlaps.ParentRange.Min) >= 0
-                && String.Compare(overlaps.ChildRange.Max, overlaps.ParentRange.Max) <= 0;
+            foreach (Overlap overlap in overlaps)
+            {
+                if (String.Compare(overlap.ChildRange.Min, overlap.ParentRange.Min) >= 0
+                    && String.Compare(overlap.ChildRange.Min, overlap.ParentRange.Max) <= 0
+                    && String.Compare(overlap.ChildRange.Max, overlap.ParentRange.Min) >= 0
+                    && String.Compare(overlap.ChildRange.Max, overlap.ParentRange.Max) <= 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 #endif
     }

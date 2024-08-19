@@ -7,18 +7,18 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// A type that represents a parent range and a child range that overlaps, not a subset.
     /// </summary>
-    internal class Overlaps
+    internal class Overlap
     {
         public Documents.Routing.Range<string> ParentRange { get; }
 
         public Documents.Routing.Range<string> ChildRange { get; }
 
-        public static Overlaps Create(Documents.Routing.Range<string> parentRange, Documents.Routing.Range<string> childRange)
+        public static Overlap Create(Documents.Routing.Range<string> parentRange, Documents.Routing.Range<string> childRange)
         {
-            return new Overlaps(parentRange, childRange);
+            return new Overlap(parentRange, childRange);
         }
 
-        private Overlaps(Documents.Routing.Range<string> parentRange, Documents.Routing.Range<string> childRange)
+        private Overlap(Documents.Routing.Range<string> parentRange, Documents.Routing.Range<string> childRange)
         {
             this.ParentRange = parentRange;
             this.ChildRange = childRange;
