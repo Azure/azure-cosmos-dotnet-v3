@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
 
     [TestClass]
     [TestCategory("ChangeFeedProcessor")]
-    public class BuilderWithCustomSerializerTests : BaseChangeFeedClientHelper
+    public class BuilderWithCustomSerializerPropertyNameCaseInsensitiveTrueTests : BaseChangeFeedClientHelper
     {
         private ContainerInternal MonitoredContainer = null;
 
@@ -718,17 +718,5 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
 
             return (ContainerInternal)response;
         }
-    }
-
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "<Pending>")]
-    public class ToDoActivity
-    {
-        public string id { get; set; }
-
-        public string pk { get; set; }
-
-        public string description { get; set; }
-
-        public int ttl { get; set; }
     }
 }
