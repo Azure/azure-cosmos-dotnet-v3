@@ -22,73 +22,50 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
 
     [TestClass]
     [TestCategory("ChangeFeedProcessor")]
-    public partial class BuilderWithCustomSerializerPropertyNameCaseInsensitiveFalseTests : BaseChangeFeedClientHelper
+    public class BuilderWithCustomSerializerTests
     {
-        private ContainerInternal MonitoredContainer = null;
-
-        [TestInitialize]
-        public async Task TestInitialize()
-        {
-            CosmosClient cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) =>
-                cosmosClientBuilder.WithSystemTextJsonSerializerOptions(
-                    new JsonSerializerOptions()
-                    {
-                        PropertyNameCaseInsensitive = false,
-                        Converters = { new JsonStringEnumConverter() }
-                    }),
-                    useCustomSeralizer: false);
-
-            base.database = await cosmosClient.CreateDatabaseIfNotExistsAsync(id: Guid.NewGuid().ToString());
-            this.LeaseContainer = await this.database.CreateContainerIfNotExistsAsync(containerProperties: new ContainerProperties(id: "leases", partitionKeyPath: "/id"));
-            this.MonitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes);
-        }
-
-        [TestCleanup]
-        public async Task Cleanup()
-        {
-            await this.TestCleanup();
-        }
-
         [TestMethod]
         [Owner("philipthomas")]
         [Description("Validating to deserization of ChangeFeedItem with a Delete payload with TimeToLiveExpired set to true.")]
-        public void ValidateNSJAndSTJSerializationOfChangeFeedItemDeleteTimeToLiveExpiredIsTrueTest()
+        [DataRow(true)]
+        [DataRow(false)]
+        public void ValidateNSJAndSTJSerializationOfChangeFeedItemDeleteTimeToLiveExpiredIsTrueTest(bool propertyNameCaseInsensitive)
         {
             string json = @"[
-	            {
-		            ""current"": {},
-		            ""metadata"": {
-			            ""lsn"": 17,
-			            ""crts"": 1722511591,
-			            ""operationType"": ""delete"",
-			            ""timeToLiveExpired"": true,
-			            ""previousImageLSN"": 16
-		            },
-		            ""previous"": {
-			            ""id"": ""1"",
-			            ""pk"": ""1"",
-			            ""description"": ""Testing TTL on CFP."",
-			            ""ttl"": 5,
-			            ""_rid"": ""SnxPAOM2VfMBAAAAAAAAAA=="",
-			            ""_self"": ""dbs/SnxPAA==/colls/SnxPAOM2VfM=/docs/SnxPAOM2VfMBAAAAAAAAAA==/"",
-			            ""_etag"": ""\""00000000-0000-0000-e405-5632b83c01da\"""",
-			            ""_attachments"": ""attachments/"",
-			            ""_ts"": 1722511453
-		            }
-	            }
+             {
+              ""current"": {},
+              ""metadata"": {
+               ""lsn"": 17,
+               ""crts"": 1722511591,
+               ""operationType"": ""delete"",
+               ""timeToLiveExpired"": true,
+               ""previousImageLSN"": 16
+              },
+              ""previous"": {
+               ""id"": ""1"",
+               ""pk"": ""1"",
+               ""description"": ""Testing TTL on CFP."",
+               ""ttl"": 5,
+               ""_rid"": ""SnxPAOM2VfMBAAAAAAAAAA=="",
+               ""_self"": ""dbs/SnxPAA==/colls/SnxPAOM2VfM=/docs/SnxPAOM2VfMBAAAAAAAAAA==/"",
+               ""_etag"": ""\""00000000-0000-0000-e405-5632b83c01da\"""",
+               ""_attachments"": ""attachments/"",
+               ""_ts"": 1722511453
+              }
+             }
             ]";
 
-            ValidateSystemTextJsonDeserialization(json);
+            ValidateSystemTextJsonDeserialization(json, propertyNameCaseInsensitive);
             ValidateNewtonsoftJsonDeserialization(json);
 
-            static void ValidateSystemTextJsonDeserialization(string json)
+            static void ValidateSystemTextJsonDeserialization(string json, bool propertyNameCaseInsensitive)
             {
                 ValidateDeserialization(
                     System.Text.Json.JsonSerializer.Deserialize<List<ChangeFeedItem<ToDoActivity>>>(
                         json: json,
                         options: new JsonSerializerOptions()
                         {
-                            PropertyNameCaseInsensitive = false,
+                            PropertyNameCaseInsensitive = propertyNameCaseInsensitive,
                             Converters = { new JsonStringEnumConverter(), }
                         }));
             }
@@ -124,39 +101,41 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
         [TestMethod]
         [Owner("philipthomas-MSFT")]
         [Description("Validating to deserization using NSJ and STJ of ChangeFeedItem with a Create payload with TTL set to a non-default value.")]
-        public void ValidateNSJAndSTJSerializationOfChangeFeedItemCreateTTLTest()
+        [DataRow(true)]
+        [DataRow(false)]
+        public void ValidateNSJAndSTJSerializationOfChangeFeedItemCreateTTLTest(bool propertyNameCaseInsensitive)
         {
             string json = @"[
-	            {
-		            ""current"": {
-			            ""id"": ""1"",
-			            ""pk"": ""1"",
-			            ""description"": ""Testing TTL on CFP."",
-			            ""ttl"": 5,
-			            ""_rid"": ""SnxPAOM2VfMBAAAAAAAAAA=="",
-			            ""_self"": ""dbs/SnxPAA==/colls/SnxPAOM2VfM=/docs/SnxPAOM2VfMBAAAAAAAAAA==/"",
-			            ""_etag"": ""\""00000000-0000-0000-e405-5632b83c01da\"""",
-			            ""_attachments"": ""attachments/"",
-			            ""_ts"": 1722511453
-		            },
-		            ""metadata"": {
-			            ""lsn"": 16,
-			            ""crts"": 1722511453,
-			            ""operationType"": ""create""
-		            }
-	            }
+             {
+              ""current"": {
+               ""id"": ""1"",
+               ""pk"": ""1"",
+               ""description"": ""Testing TTL on CFP."",
+               ""ttl"": 5,
+               ""_rid"": ""SnxPAOM2VfMBAAAAAAAAAA=="",
+               ""_self"": ""dbs/SnxPAA==/colls/SnxPAOM2VfM=/docs/SnxPAOM2VfMBAAAAAAAAAA==/"",
+               ""_etag"": ""\""00000000-0000-0000-e405-5632b83c01da\"""",
+               ""_attachments"": ""attachments/"",
+               ""_ts"": 1722511453
+              },
+              ""metadata"": {
+               ""lsn"": 16,
+               ""crts"": 1722511453,
+               ""operationType"": ""create""
+              }
+             }
             ]";
 
-            ValidateSystemTextJsonDeserialization(json);
+            ValidateSystemTextJsonDeserialization(json, propertyNameCaseInsensitive);
             ValidateNewtonsoftJsonDeserialization(json);
 
-            static void ValidateSystemTextJsonDeserialization(string json)
+            static void ValidateSystemTextJsonDeserialization(string json, bool propertyNameCaseInsensitive)
             {
                 ValidateDeserialization(System.Text.Json.JsonSerializer.Deserialize<List<ChangeFeedItem<ToDoActivity>>>(
                     json: json,
                     options: new JsonSerializerOptions()
                     {
-                        PropertyNameCaseInsensitive = false,
+                        PropertyNameCaseInsensitive = propertyNameCaseInsensitive,
                         Converters = { new JsonStringEnumConverter(), }
                     }));
             }
@@ -189,70 +168,72 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
         [TestMethod]
         [Owner("philipthomas-MSFT")]
         [Description("Validating to deserization using NSJ and STJ of ChangeFeedItem with a Create, Replace, and Delete payload.")]
-        public void ValidateNSJAndSTJSerializationOfChangeFeedItemTest()
-        {            
+        [DataRow(true)]
+        [DataRow(false)]
+        public void ValidateNSJAndSTJSerializationOfChangeFeedItemTest(bool propertyNameCaseInsensitive)
+        {
             string json = @"[
-	            {
-		            ""current"": {
-			            ""id"": ""1"",
-			            ""pk"": ""1"",
-			            ""description"": ""original test"",
-			            ""_rid"": ""HpxDAL+dzLQBAAAAAAAAAA=="",
-			            ""_self"": ""dbs/HpxDAA==/colls/HpxDAL+dzLQ=/docs/HpxDAL+dzLQBAAAAAAAAAA==/"",
-			            ""_etag"": ""\""00000000-0000-0000-e384-28095c1a01da\"""",
-			            ""_attachments"": ""attachments/"",
-			            ""_ts"": 1722455970
-		            },
-		            ""metadata"": {
-			            ""crts"": 1722455970,
-			            ""lsn"": 374,
-			            ""operationType"": ""create"",
-			            ""previousImageLSN"": 0,
-			            ""timeToLiveExpired"": false
-		            }
-	            },
-	            {
-		            ""current"": {
-			            ""id"": ""1"",
-			            ""pk"": ""1"",
-			            ""description"": ""test after replace"",
-			            ""_rid"": ""HpxDAL+dzLQBAAAAAAAAAA=="",
-			            ""_self"": ""dbs/HpxDAA==/colls/HpxDAL+dzLQ=/docs/HpxDAL+dzLQBAAAAAAAAAA==/"",
-			            ""_etag"": ""\""00000000-0000-0000-e384-28a5abdd01da\"""",
-			            ""_attachments"": ""attachments/"",
-			            ""_ts"": 1722455971
-		            },
-		            ""metadata"": {
-			            ""crts"": 1722455971,
-			            ""lsn"": 375,
-			            ""operationType"": ""replace"",
-			            ""previousImageLSN"": 374,
-			            ""timeToLiveExpired"": false
-		            }
-	            },
-	            {
-		            ""current"": {},
-		            ""metadata"": {
-			            ""crts"": 1722455972,
-			            ""lsn"": 376,
-			            ""operationType"": ""delete"",
-			            ""previousImageLSN"": 375,
-			            ""timeToLiveExpired"": false
-		            },
-		            ""previous"": {
-			            ""id"": ""1"",
-			            ""pk"": ""1"",
-			            ""description"": ""test after replace"",
-			            ""_rid"": ""HpxDAL+dzLQBAAAAAAAAAA=="",
-			            ""_self"": ""dbs/HpxDAA==/colls/HpxDAL+dzLQ=/docs/HpxDAL+dzLQBAAAAAAAAAA==/"",
-			            ""_etag"": ""\""00000000-0000-0000-e384-28a5abdd01da\"""",
-			            ""_attachments"": ""attachments/"",
-			            ""_ts"": 1722455971
-		            }
-	            }
+             {
+              ""current"": {
+               ""id"": ""1"",
+               ""pk"": ""1"",
+               ""description"": ""original test"",
+               ""_rid"": ""HpxDAL+dzLQBAAAAAAAAAA=="",
+               ""_self"": ""dbs/HpxDAA==/colls/HpxDAL+dzLQ=/docs/HpxDAL+dzLQBAAAAAAAAAA==/"",
+               ""_etag"": ""\""00000000-0000-0000-e384-28095c1a01da\"""",
+               ""_attachments"": ""attachments/"",
+               ""_ts"": 1722455970
+              },
+              ""metadata"": {
+               ""crts"": 1722455970,
+               ""lsn"": 374,
+               ""operationType"": ""create"",
+               ""previousImageLSN"": 0,
+               ""timeToLiveExpired"": false
+              }
+             },
+             {
+              ""current"": {
+               ""id"": ""1"",
+               ""pk"": ""1"",
+               ""description"": ""test after replace"",
+               ""_rid"": ""HpxDAL+dzLQBAAAAAAAAAA=="",
+               ""_self"": ""dbs/HpxDAA==/colls/HpxDAL+dzLQ=/docs/HpxDAL+dzLQBAAAAAAAAAA==/"",
+               ""_etag"": ""\""00000000-0000-0000-e384-28a5abdd01da\"""",
+               ""_attachments"": ""attachments/"",
+               ""_ts"": 1722455971
+              },
+              ""metadata"": {
+               ""crts"": 1722455971,
+               ""lsn"": 375,
+               ""operationType"": ""replace"",
+               ""previousImageLSN"": 374,
+               ""timeToLiveExpired"": false
+              }
+             },
+             {
+              ""current"": {},
+              ""metadata"": {
+               ""crts"": 1722455972,
+               ""lsn"": 376,
+               ""operationType"": ""delete"",
+               ""previousImageLSN"": 375,
+               ""timeToLiveExpired"": false
+              },
+              ""previous"": {
+               ""id"": ""1"",
+               ""pk"": ""1"",
+               ""description"": ""test after replace"",
+               ""_rid"": ""HpxDAL+dzLQBAAAAAAAAAA=="",
+               ""_self"": ""dbs/HpxDAA==/colls/HpxDAL+dzLQ=/docs/HpxDAL+dzLQBAAAAAAAAAA==/"",
+               ""_etag"": ""\""00000000-0000-0000-e384-28a5abdd01da\"""",
+               ""_attachments"": ""attachments/"",
+               ""_ts"": 1722455971
+              }
+             }
             ]";
 
-            ValidateSystemTextJsonDeserialization(json);
+            ValidateSystemTextJsonDeserialization(json, propertyNameCaseInsensitive);
             ValidateNewtonsoftJsonDeserialization(json);
 
             static void ValidateNewtonsoftJsonDeserialization(string json)
@@ -260,13 +241,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                 ValidateDeserialization(JsonConvert.DeserializeObject<List<ChangeFeedItem<ToDoActivity>>>(json));
             }
 
-            static void ValidateSystemTextJsonDeserialization(string json)
+            static void ValidateSystemTextJsonDeserialization(string json, bool propertyNameCaseInsensitive)
             {
                 ValidateDeserialization(System.Text.Json.JsonSerializer.Deserialize<List<ChangeFeedItem<ToDoActivity>>>(
                     json: json,
                     options: new JsonSerializerOptions()
                     {
-                        PropertyNameCaseInsensitive = false,
+                        PropertyNameCaseInsensitive = propertyNameCaseInsensitive,
                         Converters = { new JsonStringEnumConverter(), }
                     }));
             }
@@ -325,7 +306,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
         [TestMethod]
         [Owner("philipthomas-MSFT")]
         [Description("Replace and Deletes have full ChangeFeedMetadata.")]
-        public void ValidateChangeFeedMetadataSerializationReplaceAnDeleteWriteTest()
+        [DataRow(true)]
+        [DataRow(false)]
+        public void ValidateChangeFeedMetadataSerializationReplaceAnDeleteWriteTest(bool propertyNameCaseInsensitive)
         {
             ChangeFeedMetadata metadata = new()
             {
@@ -338,7 +321,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
 
             string json = System.Text.Json.JsonSerializer.Serialize<ChangeFeedMetadata>(
                 value: metadata,
-                options: new JsonSerializerOptions());
+                options: new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = propertyNameCaseInsensitive
+                });
 
             Assert.AreEqual(
                 expected: @"{""crts"":1722455970,""timeToLiveExpired"":true,""lsn"":374,""operationType"":""Create"",""previousImageLSN"":15}",
@@ -348,7 +334,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
         [TestMethod]
         [Owner("philipthomas-MSFT")]
         [Description("Creates have partial ChangeFeedMetadata.")]
-        public void ValidateChangeFeedMetadataSerializationCreateWriteTest()
+        [DataRow(true)]
+        [DataRow(false)]
+        public void ValidateChangeFeedMetadataSerializationCreateWriteTest(bool propertyNameCaseInsensitive)
         {
             ChangeFeedMetadata metadata = new()
             {
@@ -359,7 +347,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
 
             string json = System.Text.Json.JsonSerializer.Serialize<ChangeFeedMetadata>(
                 value: metadata,
-                options: new JsonSerializerOptions());
+                options: new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = propertyNameCaseInsensitive
+                });
 
             Assert.AreEqual(
                 expected: @"{""crts"":1722455970,""timeToLiveExpired"":false,""lsn"":374,""operationType"":""Create"",""previousImageLSN"":0}",
@@ -372,9 +363,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
         [Owner("philipthomas-MSFT")]
         [Description("Scenario: When a document is created with ttl set, there should be 1 create and 1 delete that will appear for that " +
             "document when using ChangeFeedProcessor with AllVersionsAndDeletes set as the ChangeFeedMode.")]
-        public async Task WhenADocumentIsCreatedWithTtlSetThenTheDocumentIsDeletedTestsAsync()
+        [DataRow(true)]
+        [DataRow(false)]
+        public async Task WhenADocumentIsCreatedWithTtlSetThenTheDocumentIsDeletedTestsAsync(bool propertyNameCaseInsensitive)
         {
-            ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes);
+            CosmosClient cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) =>
+                cosmosClientBuilder.WithSystemTextJsonSerializerOptions(
+                    new JsonSerializerOptions()
+                    {
+                        PropertyNameCaseInsensitive = propertyNameCaseInsensitive,
+                        Converters = { new JsonStringEnumConverter() }
+                    }),
+                    useCustomSeralizer: false);
+
+            Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync(id: Guid.NewGuid().ToString());
+            Container leaseContainer = await database.CreateContainerIfNotExistsAsync(containerProperties: new ContainerProperties(id: "leases", partitionKeyPath: "/id"));
+            ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes, database);
             Exception exception = default;
             int ttlInSeconds = 5;
             Stopwatch stopwatch = new();
@@ -434,7 +438,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                     return Task.CompletedTask;
                 })
                 .WithInstanceName(Guid.NewGuid().ToString())
-                .WithLeaseContainer(this.LeaseContainer)
+                .WithLeaseContainer(leaseContainer)
                 .WithErrorNotification((leaseToken, error) =>
                 {
                     exception = error.InnerException;
@@ -472,15 +476,35 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
             {
                 await processor.StopAsync();
             }
+
+            if (database != null)
+            {
+                await database.DeleteAsync();
+            }
+
+            cosmosClient?.Dispose();
         }
 
         [TestMethod]
         [Owner("philipthomas-MSFT")]
         [Description("Scenario: When a document is created, then updated, and finally deleted, there should be 3 changes that will appear for that " +
             "document when using ChangeFeedProcessor with AllVersionsAndDeletes set as the ChangeFeedMode.")]
-        public async Task WhenADocumentIsCreatedThenUpdatedThenDeletedTestsAsync()
+        [DataRow(true)]
+        [DataRow(false)]
+        public async Task WhenADocumentIsCreatedThenUpdatedThenDeletedTestsAsync(bool propertyNameCaseInsensitive)
         {
-            ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes);
+            CosmosClient cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) =>
+                cosmosClientBuilder.WithSystemTextJsonSerializerOptions(
+                    new JsonSerializerOptions()
+                    {
+                        PropertyNameCaseInsensitive = propertyNameCaseInsensitive,
+                        Converters = { new JsonStringEnumConverter() }
+                    }),
+                    useCustomSeralizer: false);
+
+            Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync(id: Guid.NewGuid().ToString());
+            Container leaseContainer = await database.CreateContainerIfNotExistsAsync(containerProperties: new ContainerProperties(id: "leases", partitionKeyPath: "/id"));
+            ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes, database);
             ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
             Exception exception = default;
 
@@ -558,7 +582,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                     return Task.CompletedTask;
                 })
                 .WithInstanceName(Guid.NewGuid().ToString())
-                .WithLeaseContainer(this.LeaseContainer)
+                .WithLeaseContainer(leaseContainer)
                 .WithErrorNotification((leaseToken, error) =>
                 {
                     exception = error.InnerException;
@@ -589,6 +613,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
             {
                 Assert.Fail(exception.ToString());
             }
+
+            if (database != null)
+            {
+                await database.DeleteAsync();
+            }
+
+            cosmosClient?.Dispose();
         }
 
         private static async Task RevertLeaseDocumentsToLegacyWithNoMode(
@@ -700,7 +731,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
             }
         }
 
-        private async Task<ContainerInternal> CreateMonitoredContainer(ChangeFeedMode changeFeedMode)
+        private async Task<ContainerInternal> CreateMonitoredContainer(
+            ChangeFeedMode changeFeedMode,
+            Database database)
         {
             string PartitionKey = "/pk";
             ContainerProperties properties = new ContainerProperties(id: Guid.NewGuid().ToString(),
@@ -712,9 +745,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                 properties.DefaultTimeToLive = -1;
             }
 
-            ContainerResponse response = await this.database.CreateContainerAsync(properties,
+            ContainerResponse response = await database.CreateContainerAsync(properties,
                 throughput: 10000,
-                cancellationToken: this.cancellationToken);
+                cancellationToken: CancellationToken.None);
 
             return (ContainerInternal)response;
         }
