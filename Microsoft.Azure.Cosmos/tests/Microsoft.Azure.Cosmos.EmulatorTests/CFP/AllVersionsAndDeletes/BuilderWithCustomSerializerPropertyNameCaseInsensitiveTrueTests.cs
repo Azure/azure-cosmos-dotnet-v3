@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                         json: json,
                         options: new JsonSerializerOptions()
                         {
-                            PropertyNameCaseInsensitive = false,
+                            PropertyNameCaseInsensitive = true,
                             Converters = { new JsonStringEnumConverter(), }
                         }));
             }
