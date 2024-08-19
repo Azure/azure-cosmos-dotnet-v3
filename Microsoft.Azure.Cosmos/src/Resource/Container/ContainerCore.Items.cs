@@ -27,6 +27,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.ReadFeed;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Serialization.HybridRow.Schemas;
     using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -1254,6 +1255,7 @@ namespace Microsoft.Azure.Cosmos
                 changeFeedProcessor: changeFeedProcessor,
                 applyBuilderConfiguration: changeFeedProcessor.ApplyBuildConfiguration).WithChangeFeedMode(mode);
         }
+
 #if PREVIEW
         public override async Task<bool> IsSubsetAsync(FeedRange parentFeedRange, FeedRange childFeedRange, CancellationToken cancellationToken = default)
         {
@@ -1281,11 +1283,11 @@ namespace Microsoft.Azure.Cosmos
                         partitionKeyDefinition: partitionKeyDefinition,
                         trace: trace);
 
-                    var overlaps = parentRanges
-                        .SelectMany(parentRange => childRanges, (parentRange, childRange) => new { parentRange, childRange })
+                    Overlaps overlaps = parentRanges
+                        .SelectMany(parentRange => childRanges, (parentRange, childRange) => Overlaps.Create(parentRange, childRange))
                         .Where(pair => Documents.Routing.Range<string>.CheckOverlapping(
-                            range1: pair.parentRange,
-                            range2: pair.childRange))
+                            range1: pair.ParentRange,
+                            range2: pair.ChildRange))
                         .FirstOrDefault();
 
                     return ContainerCore.IsSubset(overlaps);
@@ -1297,14 +1299,14 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private static bool IsSubset(dynamic overlaps)
+        private static bool IsSubset(Overlaps overlaps)
         {
             if (overlaps == null) return false;
 
-            return String.Compare(overlaps.childRange.Min, overlaps.parentRange.Min) > 0
-                && String.Compare(overlaps.childRange.Min, overlaps.parentRange.Max) < 0
-                && String.Compare(overlaps.childRange.Max, overlaps.parentRange.Min) > 0
-                && String.Compare(overlaps.childRange.Max, overlaps.parentRange.Max) < 0;
+            return String.Compare(overlaps.ChildRange.Min, overlaps.ParentRange.Min) >= 0
+                && String.Compare(overlaps.ChildRange.Min, overlaps.ParentRange.Max) <= 0
+                && String.Compare(overlaps.ChildRange.Max, overlaps.ParentRange.Min) >= 0
+                && String.Compare(overlaps.ChildRange.Max, overlaps.ParentRange.Max) <= 0;
         }
 #endif
     }
