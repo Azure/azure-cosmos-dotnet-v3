@@ -1295,7 +1295,7 @@ namespace Microsoft.Azure.Cosmos
                         isMaxInclusive: true,
                         isMinInclusive: false);
 
-                    return ContainerCore.IsSubset(Overlap.Create(parentRange: parentRange, childRange: childRange));
+                    return ContainerCore.IsSubset(parentRange: parentRange, childRange: childRange);
                 }
             }
             else
@@ -1304,14 +1304,12 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private static bool IsSubset(Overlap overlap)
+        private static bool IsSubset(Documents.Routing.Range<string> parentRange, Documents.Routing.Range<string> childRange)
         {
-            if (overlap == null) return false;
-
-            return String.Compare(overlap.ChildRange.Min, overlap.ParentRange.Min) >= 0
-                && String.Compare(overlap.ChildRange.Min, overlap.ParentRange.Max) <= 0
-                && String.Compare(overlap.ChildRange.Max, overlap.ParentRange.Min) >= 0
-                && String.Compare(overlap.ChildRange.Max, overlap.ParentRange.Max) <= 0;
+            return String.Compare(childRange.Min, parentRange.Min) >= 0
+                && String.Compare(childRange.Min, parentRange.Max) <= 0
+                && String.Compare(childRange.Max, parentRange.Min) >= 0
+                && String.Compare(childRange.Max, parentRange.Max) <= 0;
         }
 #endif
     }
