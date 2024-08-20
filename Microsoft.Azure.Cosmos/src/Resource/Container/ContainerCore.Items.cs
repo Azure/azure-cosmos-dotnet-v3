@@ -1277,19 +1277,25 @@ namespace Microsoft.Azure.Cosmos
                         partitionKeyDefinition: partitionKeyDefinition,
                         trace: trace);
 
+                    Documents.Routing.Range<string> parentRange = new Documents.Routing.Range<string>(
+                        min: parentRanges.FirstOrDefault().Min,
+                        max: parentRanges.LastOrDefault().Max,
+                        isMaxInclusive: true,
+                        isMinInclusive: false);
+
                     List<Documents.Routing.Range<string>> childRanges = await childFeedRangeInternal.GetEffectiveRangesAsync(
                         routingMapProvider: routingMapProvider,
                         containerRid: containerRId,
                         partitionKeyDefinition: partitionKeyDefinition,
                         trace: trace);
 
-                    IEnumerable<Overlap> overlaps = parentRanges
-                        .SelectMany(parentRange => childRanges, (parentRange, childRange) => Overlap.Create(parentRange, childRange))
-                        .Where(pair => Documents.Routing.Range<string>.CheckOverlapping(
-                            range1: pair.ParentRange,
-                            range2: pair.ChildRange));
+                    Documents.Routing.Range<string> childRange = new Documents.Routing.Range<string>(
+                        min: childRanges.FirstOrDefault().Min,
+                        max: childRanges.LastOrDefault().Max,
+                        isMaxInclusive: true,
+                        isMinInclusive: false);
 
-                    return ContainerCore.IsSubset(overlaps);
+                    return ContainerCore.IsSubset(Overlap.Create(parentRange: parentRange, childRange: childRange));
                 }
             }
             else
@@ -1298,22 +1304,14 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private static bool IsSubset(IEnumerable<Overlap> overlaps)
+        private static bool IsSubset(Overlap overlap)
         {
-            if (overlaps == null) return false;
+            if (overlap == null) return false;
 
-            foreach (Overlap overlap in overlaps)
-            {
-                if (String.Compare(overlap.ChildRange.Min, overlap.ParentRange.Min) >= 0
-                    && String.Compare(overlap.ChildRange.Min, overlap.ParentRange.Max) <= 0
-                    && String.Compare(overlap.ChildRange.Max, overlap.ParentRange.Min) >= 0
-                    && String.Compare(overlap.ChildRange.Max, overlap.ParentRange.Max) <= 0)
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return String.Compare(overlap.ChildRange.Min, overlap.ParentRange.Min) >= 0
+                && String.Compare(overlap.ChildRange.Min, overlap.ParentRange.Max) <= 0
+                && String.Compare(overlap.ChildRange.Max, overlap.ParentRange.Min) >= 0
+                && String.Compare(overlap.ChildRange.Max, overlap.ParentRange.Max) <= 0;
         }
 #endif
     }
