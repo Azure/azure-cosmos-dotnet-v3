@@ -1762,6 +1762,24 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="parentFeedRange">A feed range that represents a parent range.</param>
         /// <param name="childFeedRange">A feed range tha represents a child range.</param>
         /// <param name="cancellationToken">A cancellation token.</param>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CancellationToken cancellationToken = ...;
+        /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(...);
+        /// CosmosClient cosmosClient = cosmosClientBuilder.Build();
+        /// Database cosmosDatabase = cosmosClient.GetDatabase(...);
+        /// Container container = cosmosDatabase.GetContainer(...);
+        /// FeedRange parentFeedRange = ...;
+        /// FeedRange childFeedRange = ...;
+        ///
+        /// bool isSubset = await container.IsSubsetAsync(
+        ///    parentFeedRange,
+        ///    childFeedRange,
+        ///    cancellationToken);
+        /// ]]>
+        /// </code>
+        /// </example>
         /// <returns>True or False</returns>
         public virtual Task<bool> IsSubsetAsync(Cosmos.FeedRange parentFeedRange, Cosmos.FeedRange childFeedRange, CancellationToken cancellationToken)
         {
