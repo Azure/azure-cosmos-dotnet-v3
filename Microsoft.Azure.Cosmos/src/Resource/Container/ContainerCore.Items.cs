@@ -1286,8 +1286,8 @@ namespace Microsoft.Azure.Cosmos
                     trace: trace);
 
                 Documents.Routing.Range<string> parentRange = new Documents.Routing.Range<string>(
-                    min: parentRanges.First().Min,
-                    max: parentRanges.Last().Max,
+                    min: parentRanges.Min(range => range.Min), // NOTE(philipthomas-MSFT): using System.Linq.Enumerable.Min to discover the smallest Documents.Routing.Range<string>.Min.
+                    max: parentRanges.Max(range => range.Max), // NOTE(philipthomas-MSFT): using System.Linq.Enumerable.Max to discover the largest Documents.Routing.Range<string>.Max.
                     isMaxInclusive: true,
                     isMinInclusive: false);
 
@@ -1298,8 +1298,8 @@ namespace Microsoft.Azure.Cosmos
                     trace: trace);
 
                 Documents.Routing.Range<string> childRange = new Documents.Routing.Range<string>(
-                    min: childRanges.First().Min,
-                    max: childRanges.Last().Max,
+                    min: childRanges.Min(range => range.Min), // NOTE(philipthomas-MSFT): using System.Linq.Enumerable.Min to discover the smallest Documents.Routing.Range<string>.Min.
+                    max: childRanges.Max(range => range.Max), // NOTE(philipthomas-MSFT): using System.Linq.Enumerable.Max to discover the largest Documents.Routing.Range<string>.Max.
                     isMaxInclusive: true,
                     isMinInclusive: false);
 
