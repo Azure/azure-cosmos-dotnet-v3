@@ -5,6 +5,9 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Text.Json;
+    using Microsoft.Azure.Cosmos.Resource.FullFidelity;
+    using Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
@@ -12,43 +15,44 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The metadata of a change feed resource with <see cref="ChangeFeedMode"/> is initialized to <see cref="ChangeFeedMode.AllVersionsAndDeletes"/>.
     /// </summary>
+    [System.Text.Json.Serialization.JsonConverter(typeof(ChangeFeedMetadataConverter))]
 #if PREVIEW
     public
 #else
     internal
-#endif 
+#endif
         class ChangeFeedMetadata
     {
         /// <summary>
-        /// The conflict resolution timestamp.
+        /// The change's conflict resolution timestamp.
         /// </summary>
-        [JsonProperty(PropertyName = "crts", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName = ChangeFeedMetadataFields.ConflictResolutionTimestamp, NullValueHandling = NullValueHandling.Ignore)]
         [JsonConverter(typeof(UnixDateTimeConverter))]
         public DateTime ConflictResolutionTimestamp { get; internal set; }
 
         /// <summary>
-        /// The current logical sequence number.
+        /// The current change's logical sequence number.
         /// </summary>
-        [JsonProperty(PropertyName = "lsn", NullValueHandling = NullValueHandling.Ignore)]
-        public long Lsn { get; internal set;  }
+        [JsonProperty(PropertyName = ChangeFeedMetadataFields.Lsn, NullValueHandling = NullValueHandling.Ignore)]
+        public long Lsn { get; internal set; }
 
         /// <summary>
-        /// The change feed operation type.
+        /// The change's feed operation type <see cref="ChangeFeedOperationType"/>.
         /// </summary>
-        [JsonProperty(PropertyName = "operationType")]
+        [JsonProperty(PropertyName = ChangeFeedMetadataFields.OperationType, NullValueHandling = NullValueHandling.Ignore)]
         [JsonConverter(typeof(StringEnumConverter))]
         public ChangeFeedOperationType OperationType { get; internal set; }
 
         /// <summary>
-        /// The previous logical sequence number.
+        /// The previous change's logical sequence number.
         /// </summary>
-        [JsonProperty(PropertyName = "previousImageLSN", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName = ChangeFeedMetadataFields.PreviousImageLSN, NullValueHandling = NullValueHandling.Ignore)]
         public long PreviousLsn { get; internal set; }
 
         /// <summary>
         /// Used to distinquish explicit deletes (e.g. via DeleteItem) from deletes caused by TTL expiration (a collection may define time-to-live policy for documents).
         /// </summary>
-        [JsonProperty(PropertyName = "timeToLiveExpired", NullValueHandling= NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName = ChangeFeedMetadataFields.TimeToLiveExpired, NullValueHandling = NullValueHandling.Ignore)]
         public bool IsTimeToLiveExpired { get; internal set; }
     }
 }
