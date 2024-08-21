@@ -662,7 +662,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
 #if PREVIEW
-        public override async Task<bool> IsSubsetAsync(FeedRange parentFeedRange, FeedRange childFeedRange, CancellationToken cancellationToken)
+        public override async Task<bool> IsSubsetAsync(FeedRange parentFeedRange, FeedRange childFeedRange, CancellationToken cancellationToken = default)
         {
             return await base.IsSubsetAsync(parentFeedRange, childFeedRange, cancellationToken);
         }
