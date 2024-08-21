@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json;
@@ -1930,7 +1931,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [Owner("philipthomas-MSFT")]
-        public async Task GivenMockedFeedRangeExpectsArgumentExceptionIsSubsetTestAsync()
+        public async Task GivenMockedParentFeedRangeExpectsArgumentExceptionIsSubsetTestAsync()
+        {
+            await this.GivenInvalidParentFeedRangeExpectsArgumentExceptionIsSubsetTestAsync(Mock.Of<FeedRange>());
+        }
+
+        [TestMethod]
+        [Owner("philipthomas-MSFT")]
+        public async Task GivenNullParentFeedRangeExpectsArgumentExceptionIsSubsetTestAsync()
+        {
+            await this.GivenInvalidParentFeedRangeExpectsArgumentExceptionIsSubsetTestAsync(default);
+        }
+
+        private async Task GivenInvalidParentFeedRangeExpectsArgumentExceptionIsSubsetTestAsync(FeedRange feedRange)
         {
             Container container = default;
 
@@ -1944,11 +1957,58 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 ArgumentException argumentException = await Assert.ThrowsExceptionAsync<ArgumentException>(
                     async () => await container.IsSubsetAsync(
-                        parentFeedRange: Mock.Of<FeedRange>(),
-                        childFeedRange: Mock.Of<FeedRange>(),
+                        parentFeedRange: feedRange,
+                        childFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>("", "3FFFFFFFFFFFFFFF", true, false)),
                         cancellationToken: CancellationToken.None));
 
                 Assert.IsNotNull(argumentException);
+                Logger.LogLine(argumentException.Message);
+                Assert.IsTrue(argumentException.Message.Contains($"The argument for 'parentFeedRange' must be of type Microsoft.Azure.Cosmos.FeedRange but was {feedRange?.GetType().Name ?? "null"}"));
+            }
+            finally
+            {
+                if (container != null)
+                {
+                    await container.DeleteContainerAsync();
+                }
+            }
+        }
+
+        [TestMethod]
+        [Owner("philipthomas-MSFT")]
+        public async Task GivenMockedChildFeedRangeExpectsArgumentExceptionIsSubsetTestAsync()
+        {
+            await this.GivenInvalidChildFeedRangeExpectsArgumentExceptionIsSubsetTestAsync(Mock.Of<FeedRange>());
+        }
+
+        [TestMethod]
+        [Owner("philipthomas-MSFT")]
+        public async Task GivenNullChildFeedRangeExpectsArgumentExceptionIsSubsetTestAsync()
+        {
+            await this.GivenInvalidChildFeedRangeExpectsArgumentExceptionIsSubsetTestAsync(default);
+        }
+
+        private async Task GivenInvalidChildFeedRangeExpectsArgumentExceptionIsSubsetTestAsync(FeedRange feedRange)
+        {
+            Container container = default;
+
+            try
+            {
+                ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(
+                    id: Guid.NewGuid().ToString(),
+                    partitionKeyPath: "/pk");
+
+                container = containerResponse.Container;
+
+                ArgumentException argumentException = await Assert.ThrowsExceptionAsync<ArgumentException>(
+                    async () => await container.IsSubsetAsync(
+                        parentFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>("", "FFFFFFFFFFFFFFFF", true, false)),
+                        childFeedRange: feedRange,
+                        cancellationToken: CancellationToken.None));
+
+                Assert.IsNotNull(argumentException);
+                Logger.LogLine(argumentException.Message);
+                Assert.IsTrue(argumentException.Message.Contains($"The argument for 'childFeedRange' must be of type Microsoft.Azure.Cosmos.FeedRange but was {feedRange?.GetType().Name ?? "null"}"));
             }
             finally
             {

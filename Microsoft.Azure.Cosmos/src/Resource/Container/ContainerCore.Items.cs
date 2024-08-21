@@ -1259,48 +1259,51 @@ namespace Microsoft.Azure.Cosmos
 #if PREVIEW
         public override async Task<bool> IsSubsetAsync(FeedRange parentFeedRange, FeedRange childFeedRange, CancellationToken cancellationToken = default)
         {
-            if (parentFeedRange is FeedRangeInternal parentFeedRangeInternal && childFeedRange is FeedRangeInternal childFeedRangeInternal)
+            if (parentFeedRange is not FeedRangeInternal parentFeedRangeInternal)
             {
-                using (ITrace trace = Tracing.Trace.GetRootTrace("ContainerCore FeedRange IsSubset Async", TraceComponent.Unknown, Tracing.TraceLevel.Info))
-                {
-                    PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync(cancellationToken);
-                    string containerRId = await this.GetCachedRIDAsync(
-                        forceRefresh: false,
-                        trace: trace,
-                        cancellationToken: cancellationToken);
-
-                    IRoutingMapProvider routingMapProvider = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
-
-                    List<Documents.Routing.Range<string>> parentRanges = await parentFeedRangeInternal.GetEffectiveRangesAsync(
-                        routingMapProvider: routingMapProvider,
-                        containerRid: containerRId,
-                        partitionKeyDefinition: partitionKeyDefinition,
-                        trace: trace);
-
-                    Documents.Routing.Range<string> parentRange = new Documents.Routing.Range<string>(
-                        min: parentRanges.FirstOrDefault().Min,
-                        max: parentRanges.LastOrDefault().Max,
-                        isMaxInclusive: true,
-                        isMinInclusive: false);
-
-                    List<Documents.Routing.Range<string>> childRanges = await childFeedRangeInternal.GetEffectiveRangesAsync(
-                        routingMapProvider: routingMapProvider,
-                        containerRid: containerRId,
-                        partitionKeyDefinition: partitionKeyDefinition,
-                        trace: trace);
-
-                    Documents.Routing.Range<string> childRange = new Documents.Routing.Range<string>(
-                        min: childRanges.FirstOrDefault().Min,
-                        max: childRanges.LastOrDefault().Max,
-                        isMaxInclusive: true,
-                        isMinInclusive: false);
-
-                    return ContainerCore.IsSubset(parentRange: parentRange, childRange: childRange);
-                }
+                throw new ArgumentException($"The argument for '{nameof(parentFeedRange)}' must be of type {typeof(FeedRange)} but was {parentFeedRange?.GetType().Name ?? "null"}");
             }
-            else
+
+            if (childFeedRange is not FeedRangeInternal childFeedRangeInternal)
             {
-                throw new ArgumentException($"Arguments for '{nameof(parentFeedRange)}' and '{nameof(childFeedRange)}' are not supported.");
+                throw new ArgumentException($"The argument for '{nameof(childFeedRange)}' must be of type {typeof(FeedRange)} but was {childFeedRange?.GetType().Name ?? "null"}");
+            }
+
+            using (ITrace trace = Tracing.Trace.GetRootTrace("ContainerCore FeedRange IsSubset Async", TraceComponent.Unknown, Tracing.TraceLevel.Info))
+            {
+                PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync(cancellationToken);
+                string containerRId = await this.GetCachedRIDAsync(
+                    forceRefresh: false,
+                    trace: trace,
+                    cancellationToken: cancellationToken);
+
+                IRoutingMapProvider routingMapProvider = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
+
+                List<Documents.Routing.Range<string>> parentRanges = await parentFeedRangeInternal.GetEffectiveRangesAsync(
+                    routingMapProvider: routingMapProvider,
+                    containerRid: containerRId,
+                    partitionKeyDefinition: partitionKeyDefinition,
+                    trace: trace);
+
+                Documents.Routing.Range<string> parentRange = new Documents.Routing.Range<string>(
+                    min: parentRanges.First().Min,
+                    max: parentRanges.Last().Max,
+                    isMaxInclusive: true,
+                    isMinInclusive: false);
+
+                List<Documents.Routing.Range<string>> childRanges = await childFeedRangeInternal.GetEffectiveRangesAsync(
+                    routingMapProvider: routingMapProvider,
+                    containerRid: containerRId,
+                    partitionKeyDefinition: partitionKeyDefinition,
+                    trace: trace);
+
+                Documents.Routing.Range<string> childRange = new Documents.Routing.Range<string>(
+                    min: childRanges.First().Min,
+                    max: childRanges.Last().Max,
+                    isMaxInclusive: true,
+                    isMinInclusive: false);
+
+                return ContainerCore.IsSubset(parentRange: parentRange, childRange: childRange);
             }
         }
 
