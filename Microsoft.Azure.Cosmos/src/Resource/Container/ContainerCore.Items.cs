@@ -1277,7 +1277,7 @@ namespace Microsoft.Azure.Cosmos
                     trace: trace,
                     cancellationToken: cancellationToken);
 
-                IRoutingMapProvider routingMapProvider = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
+                IRoutingMapProvider routingMapProvider = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(trace);
 
                 List<Documents.Routing.Range<string>> parentRanges = await parentFeedRangeInternal.GetEffectiveRangesAsync(
                     routingMapProvider: routingMapProvider,
