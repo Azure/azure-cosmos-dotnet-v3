@@ -1781,7 +1781,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>True or False</returns>
-        public virtual Task<bool> IsSubsetAsync(Cosmos.FeedRange parentFeedRange, Cosmos.FeedRange childFeedRange, CancellationToken cancellationToken)
+        public virtual Task<bool> IsSubsetAsync(Cosmos.FeedRange parentFeedRange, Cosmos.FeedRange childFeedRange, CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
         }
