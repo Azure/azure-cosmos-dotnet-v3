@@ -1285,48 +1285,27 @@ namespace Microsoft.Azure.Cosmos
                 IRoutingMapProvider routingMapProvider = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(trace);
 
                 return ContainerCore.IsSubset(
-                    range1: await this.GetRangeAsync(
-                        feedRangeInternal: parentFeedRangeInternal,
-                        partitionKeyDefinition: partitionKeyDefinition,
-                        containerRId: containerRId,
+                    range1: ContainerCore.GetRange(
                         feedRange: parentFeedRange,
                         ranges: await parentFeedRangeInternal.GetEffectiveRangesAsync(
                             routingMapProvider: routingMapProvider,
                             containerRid: containerRId,
                             partitionKeyDefinition: partitionKeyDefinition,
-                            trace: trace),
-                        routingMapProvider: routingMapProvider,
-                        trace: trace),
-                    range2: await this.GetRangeAsync(
-                        feedRangeInternal: childFeedRangeInternal,
-                        partitionKeyDefinition: partitionKeyDefinition,
-                        containerRId: containerRId,
+                            trace: trace)),
+                    range2: ContainerCore.GetRange(
                         feedRange: childFeedRange,
                         ranges: await childFeedRangeInternal.GetEffectiveRangesAsync(
                             routingMapProvider: routingMapProvider,
                             containerRid: containerRId,
                             partitionKeyDefinition: partitionKeyDefinition,
-                            trace: trace),
-                        routingMapProvider: routingMapProvider,
-                        trace: trace));
+                            trace: trace)));
             }
         }
 
-        private async Task<Documents.Routing.Range<string>> GetRangeAsync(
-            Cosmos.FeedRangeInternal feedRangeInternal,
-            PartitionKeyDefinition partitionKeyDefinition,
-            string containerRId,
+        private static Documents.Routing.Range<string> GetRange(
             Cosmos.FeedRange feedRange,
-            List<Documents.Routing.Range<string>> ranges,
-            IRoutingMapProvider routingMapProvider,
-            ITrace trace)
+            List<Documents.Routing.Range<string>> ranges)
         {
-            List<Documents.Routing.Range<string>> parentRanges = await feedRangeInternal.GetEffectiveRangesAsync(
-                routingMapProvider: routingMapProvider,
-                containerRid: containerRId,
-                partitionKeyDefinition: partitionKeyDefinition,
-                trace: trace);
-
             // NOTE(philipthomas-MSFT): If FeedRangePartitionKey, it's Min and Max are the same, set minInclusive and maxInclusive is both set to True.
 
             return feedRange is FeedRangePartitionKey

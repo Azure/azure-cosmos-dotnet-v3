@@ -1756,7 +1756,7 @@ namespace Microsoft.Azure.Cosmos
             string processorName,
             ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate);
 
-         /// <summary>
+        /// <summary>
         /// Takes 2 given feed ranges representing a parent and child feed range and checks if the child feed range is a subset of the parent feed range.
         /// </summary>
         /// <param name="parentFeedRange">A feed range that represents a parent range.</param>
