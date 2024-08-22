@@ -11,8 +11,11 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Pagination;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
@@ -267,57 +270,50 @@ namespace Microsoft.Azure.Cosmos
                 trace,
                 cancellationToken);
 
-            try
+            IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
+                containerRId,
+                ContainerCore.allRanges,
+                trace,
+                forceRefresh: true);
+
+            if (partitionKeyRanges == null)
             {
-                IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
-                        containerRId,
-                        ContainerCore.allRanges,
-                        trace,
-                        forceRefresh: true);
+                string refreshedContainerRId;
+                refreshedContainerRId = await this.GetCachedRIDAsync(
+                    forceRefresh: true,
+                    trace,
+                    cancellationToken);
+
+                if (string.Equals(containerRId, refreshedContainerRId))
+                {
+                    throw CosmosExceptionFactory.CreateInternalServerErrorException(
+                        $"Container rid {containerRId} did not have a partition key range after refresh",
+                        headers: new Headers(),
+                        trace: trace);
+                }
+
+                partitionKeyRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
+                    refreshedContainerRId,
+                    ContainerCore.allRanges,
+                    trace,
+                    forceRefresh: true);
 
                 if (partitionKeyRanges == null)
                 {
-                    string refreshedContainerRId;
-                    refreshedContainerRId = await this.GetCachedRIDAsync(
-                        forceRefresh: true,
-                        trace,
-                        cancellationToken);
-
-                    if (string.Equals(containerRId, refreshedContainerRId))
-                    {
-                        throw CosmosExceptionFactory.CreateInternalServerErrorException(
-                            $"Container rid {containerRId} did not have a partition key range after refresh",
-                            headers: new Headers(),
-                            trace: trace);
-                    }
-
-                    partitionKeyRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
-                        refreshedContainerRId,
-                        ContainerCore.allRanges,
-                        trace,
-                        forceRefresh: true);
-
-                    if (partitionKeyRanges == null)
-                    {
-                        throw CosmosExceptionFactory.CreateInternalServerErrorException(
-                            $"Container rid {containerRId} returned partitionKeyRanges null after Container RID refresh",
-                            headers: new Headers(),
-                            trace: trace);
-                    }
+                    throw CosmosExceptionFactory.CreateInternalServerErrorException(
+                        $"Container rid {containerRId} returned partitionKeyRanges null after Container RID refresh",
+                        headers: new Headers(),
+                        trace: trace);
                 }
-
-                List<FeedRange> feedTokens = new List<FeedRange>(partitionKeyRanges.Count);
-                foreach (PartitionKeyRange partitionKeyRange in partitionKeyRanges)
-                {
-                    feedTokens.Add(new FeedRangeEpk(partitionKeyRange.ToRange()));
-                }
-
-                return feedTokens;
             }
-            catch (DocumentClientException dce)
+
+            List<FeedRange> feedTokens = new List<FeedRange>(partitionKeyRanges.Count);
+            foreach (PartitionKeyRange partitionKeyRange in partitionKeyRanges)
             {
-                throw CosmosExceptionFactory.Create(dce, trace);
+                feedTokens.Add(new FeedRangeEpk(partitionKeyRange.ToRange()));
             }
+
+            return feedTokens;
         }
 
         public override FeedIterator GetChangeFeedStreamIterator(
