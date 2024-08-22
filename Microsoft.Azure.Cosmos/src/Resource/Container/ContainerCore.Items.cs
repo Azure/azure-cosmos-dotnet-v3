@@ -31,6 +31,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
     /// Used to perform operations on items. There are two different types of operations.
@@ -1257,7 +1258,10 @@ namespace Microsoft.Azure.Cosmos
         }
 
 #if PREVIEW
-        public override async Task<bool> IsSubsetAsync(FeedRange parentFeedRange, FeedRange childFeedRange, CancellationToken cancellationToken = default)
+        public override async Task<bool> IsSubsetAsync(
+            FeedRange parentFeedRange,
+            FeedRange childFeedRange,
+            CancellationToken cancellationToken = default)
         {
             if (parentFeedRange is not FeedRangeInternal parentFeedRangeInternal)
             {
@@ -1272,6 +1276,7 @@ namespace Microsoft.Azure.Cosmos
             using (ITrace trace = Tracing.Trace.GetRootTrace("ContainerCore FeedRange IsSubset Async", TraceComponent.Unknown, Tracing.TraceLevel.Info))
             {
                 PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync(cancellationToken);
+
                 string containerRId = await this.GetCachedRIDAsync(
                     forceRefresh: false,
                     trace: trace,
@@ -1279,40 +1284,68 @@ namespace Microsoft.Azure.Cosmos
 
                 IRoutingMapProvider routingMapProvider = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(trace);
 
-                List<Documents.Routing.Range<string>> parentRanges = await parentFeedRangeInternal.GetEffectiveRangesAsync(
-                    routingMapProvider: routingMapProvider,
-                    containerRid: containerRId,
-                    partitionKeyDefinition: partitionKeyDefinition,
-                    trace: trace);
-
-                Documents.Routing.Range<string> parentRange = new Documents.Routing.Range<string>(
-                    min: parentRanges.Min(range => range.Min), // NOTE(philipthomas-MSFT): using System.Linq.Enumerable.Min to discover the smallest Documents.Routing.Range<string>.Min.
-                    max: parentRanges.Max(range => range.Max), // NOTE(philipthomas-MSFT): using System.Linq.Enumerable.Max to discover the largest Documents.Routing.Range<string>.Max.
-                    isMaxInclusive: true,
-                    isMinInclusive: false);
-
-                List<Documents.Routing.Range<string>> childRanges = await childFeedRangeInternal.GetEffectiveRangesAsync(
-                    routingMapProvider: routingMapProvider,
-                    containerRid: containerRId,
-                    partitionKeyDefinition: partitionKeyDefinition,
-                    trace: trace);
-
-                Documents.Routing.Range<string> childRange = new Documents.Routing.Range<string>(
-                    min: childRanges.Min(range => range.Min), // NOTE(philipthomas-MSFT): using System.Linq.Enumerable.Min to discover the smallest Documents.Routing.Range<string>.Min.
-                    max: childRanges.Max(range => range.Max), // NOTE(philipthomas-MSFT): using System.Linq.Enumerable.Max to discover the largest Documents.Routing.Range<string>.Max.
-                    isMaxInclusive: true,
-                    isMinInclusive: false);
-
-                return ContainerCore.IsSubset(parentRange: parentRange, childRange: childRange);
+                return ContainerCore.IsSubset(
+                    range1: await this.GetRangeAsync(
+                        feedRangeInternal: parentFeedRangeInternal,
+                        partitionKeyDefinition: partitionKeyDefinition,
+                        containerRId: containerRId,
+                        feedRange: parentFeedRange,
+                        ranges: await parentFeedRangeInternal.GetEffectiveRangesAsync(
+                            routingMapProvider: routingMapProvider,
+                            containerRid: containerRId,
+                            partitionKeyDefinition: partitionKeyDefinition,
+                            trace: trace),
+                        routingMapProvider: routingMapProvider,
+                        trace: trace),
+                    range2: await this.GetRangeAsync(
+                        feedRangeInternal: childFeedRangeInternal,
+                        partitionKeyDefinition: partitionKeyDefinition,
+                        containerRId: containerRId,
+                        feedRange: childFeedRange,
+                        ranges: await childFeedRangeInternal.GetEffectiveRangesAsync(
+                            routingMapProvider: routingMapProvider,
+                            containerRid: containerRId,
+                            partitionKeyDefinition: partitionKeyDefinition,
+                            trace: trace),
+                        routingMapProvider: routingMapProvider,
+                        trace: trace));
             }
         }
 
-        private static bool IsSubset(Documents.Routing.Range<string> parentRange, Documents.Routing.Range<string> childRange)
+        private async Task<Documents.Routing.Range<string>> GetRangeAsync(
+            Cosmos.FeedRangeInternal feedRangeInternal,
+            PartitionKeyDefinition partitionKeyDefinition,
+            string containerRId,
+            Cosmos.FeedRange feedRange,
+            List<Documents.Routing.Range<string>> ranges,
+            IRoutingMapProvider routingMapProvider,
+            ITrace trace)
         {
-            return String.Compare(childRange.Min, parentRange.Min) >= 0
-                && String.Compare(childRange.Min, parentRange.Max) <= 0
-                && String.Compare(childRange.Max, parentRange.Min) >= 0
-                && String.Compare(childRange.Max, parentRange.Max) <= 0;
+            List<Documents.Routing.Range<string>> parentRanges = await feedRangeInternal.GetEffectiveRangesAsync(
+                routingMapProvider: routingMapProvider,
+                containerRid: containerRId,
+                partitionKeyDefinition: partitionKeyDefinition,
+                trace: trace);
+
+            // NOTE(philipthomas-MSFT): If FeedRangePartitionKey, it's Min and Max are the same, set minInclusive and maxInclusive is both set to True.
+
+            return feedRange is FeedRangePartitionKey
+                ? Documents.Routing.Range<string>.GetPointRange(ranges.Min(range => range.Min))
+                : new Documents.Routing.Range<string>(
+                    min: ranges.Min(range => range.Min), // NOTE(philipthomas-MSFT): using System.Linq.Enumerable.Min to discover the smallest Documents.Routing.Range<string>.Min because no gaurantee of sorting.
+                    max: ranges.Max(range => range.Max), // NOTE(philipthomas-MSFT): using System.Linq.Enumerable.Max to discover the largest Documents.Routing.Range<string>.Max because no gaurantee of sorting.
+                    isMinInclusive: true,
+                    isMaxInclusive: false);
+        }
+
+        private static bool IsSubset(
+            Documents.Routing.Range<string> range1,
+            Documents.Routing.Range<string> range2)
+        {
+            // NOTE(philipthomas-MSFT: May want to add this to Range.cs within Microsoft.Azure.Cosmos.Direct in the future.
+
+            return range1.Contains(range2.Min)
+                && (range1.Max == range2.Max || range1.Contains(range2.Max));
         }
 #endif
     }
