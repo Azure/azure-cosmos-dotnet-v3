@@ -272,7 +272,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 ItemRequestOptions requestOptions = new ItemRequestOptions
                 {
-                    AvailabilityStrategy = new CrossRegionParallelHedgingAvailabilityStrategy(
+                    AvailabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
                         threshold: TimeSpan.FromMilliseconds(100),
                         thresholdStep: TimeSpan.FromMilliseconds(50))
                 };
