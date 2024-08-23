@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
+    using System.Collections.Generic;
     using System.Net;
     using System.Threading.Tasks;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.CosmosAvailabilityStrategyTests;
@@ -36,14 +37,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     partitionKeyPath: "/partitionKey",
                     throughput: 400);
 
-                await container.CreateItemAsync<AvailabilityStrategyTestObject>(
-                    new AvailabilityStrategyTestObject { Id = "testId", Pk = "pk" });
-                await container.CreateItemAsync<AvailabilityStrategyTestObject>(
-                    new AvailabilityStrategyTestObject { Id = "testId2", Pk = "pk2" });
-                await container.CreateItemAsync<AvailabilityStrategyTestObject>(
-                    new AvailabilityStrategyTestObject { Id = "testId3", Pk = "pk3" });
-                await container.CreateItemAsync<AvailabilityStrategyTestObject>(
-                    new AvailabilityStrategyTestObject { Id = "testId4", Pk = "pk4" });
+                List<Task> tasks = new List<Task>()
+                {
+                    container.CreateItemAsync<AvailabilityStrategyTestObject>(
+                        new AvailabilityStrategyTestObject { Id = "testId", Pk = "pk" }),
+                    container.CreateItemAsync<AvailabilityStrategyTestObject>(
+                        new AvailabilityStrategyTestObject { Id = "testId2", Pk = "pk2" }),
+                    container.CreateItemAsync<AvailabilityStrategyTestObject>(
+                        new AvailabilityStrategyTestObject { Id = "testId3", Pk = "pk3" }),
+                    container.CreateItemAsync<AvailabilityStrategyTestObject>(
+                        new AvailabilityStrategyTestObject { Id = "testId4", Pk = "pk4" })
+                };
+
+                await Task.WhenAll(tasks);
 
                 //Must Ensure the data is replicated to all regions
                 await Task.Delay(60000);
