@@ -128,6 +128,26 @@ namespace Microsoft.Azure.Cosmos
         public DedicatedGatewayRequestOptions DedicatedGatewayRequestOptions { get; set; }
 
         /// <summary>
+        /// Gets or sets the boolean to enable binary response for point operations like Create, Upsert, Read, Patch, and Replace.
+        /// Setting this option to true will cause the response to be in binary format, which can reduce networking and CPU load
+        /// by not sending the resource back over the network and serializing it on the client.
+        /// </summary>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// ItemRequestOptions requestOptions = new ItemRequestOptions() { EnableBinaryResponseOnPointOperations = true };
+        /// ItemResponse itemResponse = await this.container.CreateItemAsync<ToDoActivity>(tests, new PartitionKey(test.status), requestOptions);
+        /// Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
+        /// Assert.IsNotNull(itemResponse.Resource);
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <remarks>
+        /// This is optimal for workloads where the returned resource can be processed in binary format.
+        /// </remarks>
+        internal bool EnableBinaryResponseOnPointOperations { get; set; }
+
+        /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
         /// <param name="request">The <see cref="RequestMessage"/></param>

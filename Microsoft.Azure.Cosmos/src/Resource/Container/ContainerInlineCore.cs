@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.ReadFeed;
@@ -391,7 +392,7 @@ namespace Microsoft.Azure.Cosmos
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Patch,
                 requestOptions: requestOptions,
-                task: (trace) => base.PatchItemStreamAsync(id, partitionKey, patchOperations, trace, requestOptions, cancellationToken),
+                task: (trace) => base.PatchItemStreamAsync(id, partitionKey, patchOperations, trace, requestOptions, cancellationToken, targetResponseSerializationFormat: JsonSerializationFormat.Text),
                 openTelemetry: new (OpenTelemetryConstants.Operations.PatchItem, (response) => new OpenTelemetryResponse(response)),
                 resourceType: Documents.ResourceType.Document);
         }

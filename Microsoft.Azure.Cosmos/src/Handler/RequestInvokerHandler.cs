@@ -67,6 +67,17 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 request.Headers.Add(HttpConstants.HttpHeaders.Prefer, HttpConstants.HttpHeaderValues.PreferReturnMinimal);
             }
 
+            if (ConfigurationManager.IsBinaryEncodingEnabled()
+                && request.OperationType.IsPointOperation()
+                && request.ResourceType == ResourceType.Document)
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.SupportedSerializationFormats, SupportedSerializationFormats.CosmosBinary.ToString());
+                if (request.Content != null)
+                {
+                    request.Headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, SupportedSerializationFormats.CosmosBinary.ToString());
+                }
+            }
+
             await this.ValidateAndSetConsistencyLevelAsync(request);
             this.SetPriorityLevel(request);
 
