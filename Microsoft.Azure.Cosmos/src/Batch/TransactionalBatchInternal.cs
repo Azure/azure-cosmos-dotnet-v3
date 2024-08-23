@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.isHomogenousOperations && this.operations.Count > 0)
             {
-                this.isHomogenousOperations = this.operations.First().OperationName == itemBatchOperation.OperationName;
+                this.isHomogenousOperations = this.operations.First()?.OperationName == itemBatchOperation.OperationName;
                 this.homogenousOperation = this.isHomogenousOperations ? itemBatchOperation.OperationName : null;
             }
             this.operations.Add(itemBatchOperation);

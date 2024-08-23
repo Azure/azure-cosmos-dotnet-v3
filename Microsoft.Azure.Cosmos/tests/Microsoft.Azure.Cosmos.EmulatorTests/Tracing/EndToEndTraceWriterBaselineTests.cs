@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -1621,13 +1622,13 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
 
         private static void AssertTraceProperites(ITrace trace)
         {
-            if (trace.Name == "ReadManyItemsStreamAsync" || 
-                trace.Name == "ReadManyItemsAsync")
+            if (trace.Name == OpenTelemetryConstants.Operations.ReadManyItemsStream || 
+                trace.Name == OpenTelemetryConstants.Operations.ReadManyItems)
             {
                 return; // skip test for read many as the queries are done in parallel
             }
 
-            if (trace.Name == "Change Feed Estimator Read Next Async")
+            if (trace.Name == OpenTelemetryConstants.Operations.QueryChangeFeedEstimator)
             {
                 return; // Change Feed Estimator issues parallel requests
             }
