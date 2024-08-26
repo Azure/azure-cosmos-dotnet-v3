@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -539,7 +540,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                     Assert.IsNotNull(context.Headers);
                     Assert.IsNotNull(context.Headers.Session);
                     Assert.IsTrue(context.Headers.RequestCharge > 0);
-                    Assert.IsTrue(context.Diagnostics.ToString().Contains("Change Feed Processor Read Next Async"));
+                    Assert.IsTrue(context.Diagnostics.ToString().Contains(OpenTelemetryConstants.Operations.QueryChangeFeedForPartitionKeyRange));
                     Assert.AreEqual(expected: 3, actual: docs.Count);
 
                     ChangeFeedItem<ToDoActivity> createChange = docs.ElementAt(0);

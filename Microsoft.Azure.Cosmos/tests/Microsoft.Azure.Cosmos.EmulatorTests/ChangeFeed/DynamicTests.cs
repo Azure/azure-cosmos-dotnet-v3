@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Scripts;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
@@ -377,7 +378,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             Assert.IsNotNull(changeFeedProcessorContext.Headers.Session);
             Assert.IsTrue(changeFeedProcessorContext.Headers.RequestCharge > 0);
             string diagnosticsAsString = changeFeedProcessorContext.Diagnostics.ToString();
-            Assert.IsTrue(diagnosticsAsString.Contains("Change Feed Processor Read Next Async"));
+            Assert.IsTrue(diagnosticsAsString.Contains(OpenTelemetryConstants.Operations.QueryChangeFeedForPartitionKeyRange));
 
             await this.ValidateFeedRangeAsync(changeFeedProcessorContext.FeedRange);
         }

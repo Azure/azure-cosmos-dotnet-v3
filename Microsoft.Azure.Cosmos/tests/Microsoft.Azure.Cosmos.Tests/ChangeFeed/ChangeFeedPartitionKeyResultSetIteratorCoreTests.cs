@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -40,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<ContainerInternal> containerMock = new Mock<ContainerInternal>();
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
-                It.Is<string>(str => str.Contains("Change Feed Processor")),
+                It.Is<string>(str => str.Contains(OpenTelemetryConstants.Operations.QueryChangeFeedForPartitionKeyRange)),
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 It.IsAny<Documents.OperationType>(),
@@ -120,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<ContainerInternal> containerMock = new Mock<ContainerInternal>();
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
-                It.Is<string>(str => str.Contains("Change Feed Processor")),
+                It.Is<string>(str => str.Contains(OpenTelemetryConstants.Operations.QueryChangeFeedForPartitionKeyRange)),
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 It.IsAny<Documents.OperationType>(),
@@ -190,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<ContainerInternal> containerMock = new Mock<ContainerInternal>();
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
-                It.Is<string>(str => str.Contains("Change Feed Processor")),
+                It.Is<string>(str => str.Contains(OpenTelemetryConstants.Operations.QueryChangeFeedForPartitionKeyRange)),
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 It.IsAny<Documents.OperationType>(),
@@ -272,7 +273,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<ContainerInternal> containerMock = new Mock<ContainerInternal>();
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
-                It.Is<string>(str => str.Contains("Change Feed Processor")),
+                It.Is<string>(str => str.Contains(OpenTelemetryConstants.Operations.QueryChangeFeedForPartitionKeyRange)),
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 It.IsAny<Documents.OperationType>(),
