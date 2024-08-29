@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Security.Cryptography;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
@@ -53,12 +54,15 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly SemaphoreSlim semaphore;
         private readonly CosmosHttpClient httpClient;
         private readonly bool isReplicaAddressValidationEnabled;
+        
 
         private Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> masterPartitionAddressCache;
         private DateTime suboptimalMasterPartitionTimestamp;
         private bool disposedValue;
         private bool validateUnknownReplicas;
         private IOpenConnectionsHandler openConnectionsHandler;
+        private PrimaryReplicaAddressFinder primaryReplicaAddressFinder;
+
 
         public GatewayAddressCache(
             Uri serviceEndpoint,
@@ -67,6 +71,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             IServiceConfigurationReader serviceConfigReader,
             CosmosHttpClient httpClient,
             IOpenConnectionsHandler openConnectionsHandler,
+            PrimaryReplicaAddressFinder primaryReplicaAddressFinder,
             long suboptimalPartitionForceRefreshIntervalInSeconds = 600,
             bool enableTcpConnectionEndpointRediscovery = false,
             bool replicaAddressValidationEnabled = false)
@@ -96,6 +101,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.openConnectionsHandler = openConnectionsHandler;
             this.isReplicaAddressValidationEnabled = replicaAddressValidationEnabled;
             this.validateUnknownReplicas = false;
+            this.primaryReplicaAddressFinder = primaryReplicaAddressFinder;
         }
 
         public Uri ServiceEndpoint => this.serviceEndpoint;
@@ -195,9 +201,11 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         /// <inheritdoc/>
-        public void SetOpenConnectionsHandler(IOpenConnectionsHandler openConnectionsHandler)
+        public void SetOpenConnectionsHandler(IOpenConnectionsHandler openConnectionsHandler,
+            PrimaryReplicaAddressFinder primaryReplicaAddressFinder)
         {
             this.openConnectionsHandler = openConnectionsHandler;
+            this.primaryReplicaAddressFinder = primaryReplicaAddressFinder;
         }
 
         /// <inheritdoc/>
@@ -240,35 +248,27 @@ namespace Microsoft.Azure.Cosmos.Routing
                 PartitionAddressInformation staleAddressInfo = null;
                 if (forceRefreshPartitionAddresses || request.ForceCollectionRoutingMapRefresh)
                 {
-                    addresses = await this.serverPartitionAddressCache.GetAsync(
-                        key: partitionKeyRangeIdentity,
-                        singleValueInitFunc: (currentCachedValue) =>
-                        {
-                            staleAddressInfo = currentCachedValue;
-
-                            GatewayAddressCache.SetTransportAddressUrisToUnhealthy(
-                               currentCachedValue,
-                               request?.RequestContext?.FailedEndpoints);
-
-                            return this.GetAddressesForRangeIdAsync(
-                                request,
-                                cachedAddresses: currentCachedValue,
-                                partitionKeyRangeIdentity.CollectionRid,
-                                partitionKeyRangeIdentity.PartitionKeyRangeId,
-                                forceRefresh: forceRefreshPartitionAddresses);
-                        },
-                        forceRefresh: (currentCachedValue) =>
-                        {
-                            int cachedHashCode = request?.RequestContext?.LastPartitionAddressInformationHashCode ?? 0;
-                            if (cachedHashCode == 0)
-                            {
-                                return true;
-                            }
-
-                            // The cached value is different then the previous access hash then assume
-                            // another request already updated the cache since there is a new value in the cache
-                            return currentCachedValue.GetHashCode() == cachedHashCode;
-                        });
+                    int lastPartitionAddressInformationHashCode = request.RequestContext?.LastPartitionAddressInformationHashCode ?? 0;
+                    if (lastPartitionAddressInformationHashCode != 0 &&
+                        this.primaryReplicaAddressFinder != null &&
+                        this.primaryReplicaAddressFinder.IsBackendApiFanoutSupported(partitionKeyRangeIdentity, request))
+                    {
+                        (PartitionAddressInformation refreshResult, PartitionAddressInformation cachedAddress) = await this.GatewayAndPrimaryReplicaFinderAsync(
+                            request: request,
+                            partitionKeyRangeIdentity: partitionKeyRangeIdentity,
+                            forceRefreshPartitionAddresses: forceRefreshPartitionAddresses);
+                        addresses = refreshResult;
+                        staleAddressInfo = cachedAddress;
+                    }
+                    else
+                    {
+                        (PartitionAddressInformation refreshResult, PartitionAddressInformation cachedAddress) = await GatewayCacheReshAsync(
+                            request, 
+                            partitionKeyRangeIdentity, 
+                            forceRefreshPartitionAddresses);
+                        addresses = refreshResult;
+                        staleAddressInfo = cachedAddress;
+                    }
 
                     if (staleAddressInfo != null)
                     {
@@ -371,6 +371,85 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
+        private async Task<(PartitionAddressInformation newAddresses, PartitionAddressInformation staleAddresses)> GatewayAndPrimaryReplicaFinderAsync(
+            DocumentServiceRequest request, 
+            PartitionKeyRangeIdentity partitionKeyRangeIdentity,
+            bool forceRefreshPartitionAddresses)
+        {
+            PartitionAddressInformation cachedAddressInfo = await this.serverPartitionAddressCache.GetAsync(
+                                       key: partitionKeyRangeIdentity,
+                                       singleValueInitFunc: (currentCachedValue) =>
+                                       {
+                                           throw new InvalidOperationException("The cache should have been populated by the time this method is called.");
+                                       },
+                                       forceRefresh: (currentCachedValue) => false);
+
+            // Address was already updated. Return the updated address.
+            if (cachedAddressInfo.GetHashCode() != request.RequestContext.LastPartitionAddressInformationHashCode)
+            {
+                return (cachedAddressInfo, null);
+            }
+
+            Task<(PartitionAddressInformation newAddress, PartitionAddressInformation stale)> gatewayRefresh = GatewayCacheReshAsync(request, partitionKeyRangeIdentity, forceRefreshPartitionAddresses);
+            Task<(bool isValid, PartitionAddressInformation newAddress)> replicaRefresh = this.primaryReplicaAddressFinder.TryGetAddressesFromBackendAsync(
+                pkId: partitionKeyRangeIdentity,
+                cachedAddressInfo);
+
+            Task first = await Task.WhenAny(gatewayRefresh, replicaRefresh);
+            if (first == replicaRefresh)
+            {
+                // The task is already completed. 
+                (bool isValid, PartitionAddressInformation newAddress) = replicaRefresh.Result;
+                if (isValid)
+                {
+                    // TODO: Investigate a better way to update the cache. 
+                    this.serverPartitionAddressCache.Set(partitionKeyRangeIdentity, newAddress);
+                    return (newAddress, cachedAddressInfo);
+                }
+            }
+
+            return await gatewayRefresh;
+        }
+
+        private async Task<(PartitionAddressInformation newAddressInfo, PartitionAddressInformation staleAddressInfo)> GatewayCacheReshAsync(
+            DocumentServiceRequest request, 
+            PartitionKeyRangeIdentity partitionKeyRangeIdentity, 
+            bool forceRefreshPartitionAddresses)
+        {
+            PartitionAddressInformation staleAddressInfo = null;
+            PartitionAddressInformation newAddressInfo = await this.serverPartitionAddressCache.GetAsync(
+                key: partitionKeyRangeIdentity,
+                singleValueInitFunc: (currentCachedValue) =>
+                {
+                    staleAddressInfo = currentCachedValue;
+
+                    GatewayAddressCache.SetTransportAddressUrisToUnhealthy(
+                       currentCachedValue,
+                       request?.RequestContext?.FailedEndpoints);
+
+                    return this.GetAddressesForRangeIdAsync(
+                        request,
+                        cachedAddresses: currentCachedValue,
+                        partitionKeyRangeIdentity.CollectionRid,
+                        partitionKeyRangeIdentity.PartitionKeyRangeId,
+                        forceRefresh: forceRefreshPartitionAddresses);
+                },
+                forceRefresh: (currentCachedValue) =>
+                {
+                    int cachedHashCode = request?.RequestContext?.LastPartitionAddressInformationHashCode ?? 0;
+                    if (cachedHashCode == 0)
+                    {
+                        return true;
+                    }
+
+                    // The cached value is different then the previous access hash then assume
+                    // another request already updated the cache since there is a new value in the cache
+                    return currentCachedValue.GetHashCode() == cachedHashCode;
+                });
+
+            return (newAddressInfo, staleAddressInfo);
+        }
+
         /// <summary>
         /// Gets the address information from the gateway using the partition key range ids, and warms up the async non blocking cache
         /// by inserting them as a key value pair for later lookup. Additionally attempts to establish Rntbd connections to the backend
@@ -413,7 +492,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                             .GroupBy(address => address.PartitionKeyRangeId, StringComparer.Ordinal)
                             .Select(group => this.ToPartitionAddressAndRange(containerProperties.ResourceId, @group.ToList(), inNetworkRequest));
 
-                    List<Task> openConnectionTasks = new ();
+                    List<Task> openConnectionTasks = new();
                     foreach (Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> addressInfo in addressInfos)
                     {
                         if (cancellationToken.IsCancellationRequested)
@@ -600,7 +679,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             string collectionRid,
             string partitionKeyRangeId,
             bool forceRefresh)
-        {
+            {
             using (DocumentServiceResponse response =
                 await this.GetServerAddressesViaGatewayAsync(request, collectionRid, new[] { partitionKeyRangeId }, forceRefresh))
             {
@@ -997,7 +1076,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             PerProtocolPartitionAddressInformation currentAddressInfo = newAddresses.Get(Protocol.Tcp);
             PerProtocolPartitionAddressInformation cachedAddressInfo = cachedAddresses.Get(Protocol.Tcp);
-            Dictionary<string, TransportAddressUri> cachedAddressDict = new ();
+            Dictionary<string, TransportAddressUri> cachedAddressDict = new();
 
             foreach (TransportAddressUri transportAddressUri in cachedAddressInfo.ReplicaTransportAddressUris)
             {

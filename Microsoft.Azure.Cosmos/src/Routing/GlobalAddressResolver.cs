@@ -40,6 +40,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly bool enableTcpConnectionEndpointRediscovery;
         private readonly bool isReplicaAddressValidationEnabled;
         private IOpenConnectionsHandler openConnectionsHandler;
+        private PrimaryReplicaAddressFinder primaryReplicaAddressFinder;
 
         public GlobalAddressResolver(
             GlobalEndpointManager endpointManager,
@@ -199,8 +200,10 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         /// <inheritdoc/>
-        public void SetOpenConnectionsHandler(IOpenConnectionsHandler openConnectionsHandler)
+        public void SetOpenConnectionsHandler(IOpenConnectionsHandler openConnectionsHandler,
+            PrimaryReplicaAddressFinder primaryReplicaAddressFinder)
         {
+            this.primaryReplicaAddressFinder = primaryReplicaAddressFinder;
             this.openConnectionsHandler = openConnectionsHandler;
 
             // Sets the openConnectionsHandler for the existing address cache.
@@ -208,7 +211,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             // will be set through the constructor.
             foreach (EndpointCache endpointCache in this.addressCacheByEndpoint.Values)
             {
-                endpointCache.AddressCache.SetOpenConnectionsHandler(openConnectionsHandler);
+                endpointCache.AddressCache.SetOpenConnectionsHandler(openConnectionsHandler, primaryReplicaAddressFinder);
             }
         }
 
@@ -283,6 +286,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         this.serviceConfigReader,
                         this.httpClient,
                         this.openConnectionsHandler,
+                        this.primaryReplicaAddressFinder,
                         enableTcpConnectionEndpointRediscovery: this.enableTcpConnectionEndpointRediscovery,
                         replicaAddressValidationEnabled: this.isReplicaAddressValidationEnabled);
 

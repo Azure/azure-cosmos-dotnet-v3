@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Documents
 {
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Routing;
 
     /// <summary>
     /// Contain the method to open connection to the backend replicas, using Rntbd context negotiation.
@@ -31,6 +32,7 @@ namespace Microsoft.Azure.Documents
         /// </summary>
         /// <param name="openConnectionHandler">An instance of <see cref="IOpenConnectionsHandler"/></param>
         void SetOpenConnectionsHandler(
-            IOpenConnectionsHandler openConnectionHandler);
+            IOpenConnectionsHandler openConnectionHandler,
+            PrimaryReplicaAddressFinder primaryReplicaAddressFinder);
     }
 }

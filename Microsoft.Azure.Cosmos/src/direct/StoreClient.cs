@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Documents
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Rntbd;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
     using Newtonsoft.Json;
@@ -55,7 +56,11 @@ namespace Microsoft.Azure.Documents
             {
                 addressResolverExtension.SetOpenConnectionsHandler(
                     openConnectionHandler: new RntbdOpenConnectionHandler(
-                        transportClient: transportClient));
+                        transportClient: transportClient),
+                    primaryReplicaAddressFinder: PrimaryReplicaAddressFinder.TryCreatePrimaryReplicaAddressFinder(
+                        userTokenProvider,
+                        transportClient,
+                        protocol));
             }
 
             this.replicatedResourceClient = new ReplicatedResourceClient(

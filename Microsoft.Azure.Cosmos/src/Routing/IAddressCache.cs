@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Common
 {
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
 
     internal interface IAddressCache
@@ -35,6 +36,6 @@ namespace Microsoft.Azure.Cosmos.Common
         /// field for invoking the open connection request at a later point of time.
         /// </summary>
         /// <param name="openConnectionsHandler">An instance of <see cref="IOpenConnectionsHandler"/>.</param>
-        void SetOpenConnectionsHandler(IOpenConnectionsHandler openConnectionsHandler);
+        void SetOpenConnectionsHandler(IOpenConnectionsHandler openConnectionsHandler, PrimaryReplicaAddressFinder primaryReplicaAddressFinder);
     }
 }
