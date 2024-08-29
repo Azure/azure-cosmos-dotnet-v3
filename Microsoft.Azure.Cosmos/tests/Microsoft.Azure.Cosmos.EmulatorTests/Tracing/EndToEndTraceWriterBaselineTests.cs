@@ -1531,7 +1531,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 oTelActivitiesString.Append("</OTelActivities>");
             }
           
-            AssertTraceProperites(input.Trace);
+            AssertTraceProperties(input.Trace);
             Assert.IsTrue(text.Contains("Client Side Request Stats"), $"All diagnostics should have request stats: {text}");
             Assert.IsTrue(json.Contains("Client Side Request Stats"), $"All diagnostics should have request stats: {json}");
             Assert.IsTrue(text.Contains("Client Configuration"), $"All diagnostics should have Client Configuration: {text}");
@@ -1620,23 +1620,13 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
         }
 
 
-        private static void AssertTraceProperites(ITrace trace)
+        private static void AssertTraceProperties(ITrace trace)
         {
-            if (trace.Name == OpenTelemetryConstants.Operations.ReadManyItemsStream || 
-                trace.Name == OpenTelemetryConstants.Operations.ReadManyItems)
+            if (trace.Name == OpenTelemetryConstants.Operations.ReadManyItems || // skip test for read many as the queries are done in parallel
+                trace.Name == OpenTelemetryConstants.Operations.QueryChangeFeedEstimator || // Change Feed Estimator issues parallel requests
+                trace.Children.Count == 0) // Base case
             {
-                return; // skip test for read many as the queries are done in parallel
-            }
-
-            if (trace.Name == OpenTelemetryConstants.Operations.QueryChangeFeedEstimator)
-            {
-                return; // Change Feed Estimator issues parallel requests
-            }
-
-            if (trace.Children.Count == 0)
-            {
-                // Base case
-                return;
+                return; 
             }
 
             // Trace stopwatch should be greater than the sum of all children's stop watches
@@ -1645,7 +1635,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             foreach (ITrace child in trace.Children)
             {
                 sumOfChildrenTimeSpan += child.Duration;
-                AssertTraceProperites(child);
+                AssertTraceProperties(child);
             }
 
             if (rootTimeSpan < sumOfChildrenTimeSpan)

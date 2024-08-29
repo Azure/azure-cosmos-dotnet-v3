@@ -74,11 +74,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (NullReferenceException nre)
             {
                 Assert.AreEqual(typeof(CosmosNullReferenceException), nre.GetType());
-                Assert.IsTrue(nre.Message.Contains(OpenTelemetryConstants.Operations.TypedQueryItems));
+                Assert.IsTrue(nre.Message.Contains(OpenTelemetryConstants.Operations.QueryItems));
                 string cosmosToString = nre.ToString();
                 Assert.IsFalse(cosmosToString.Contains("Microsoft.Azure.Cosmos.CosmosNullReferenceException"), $"The internal wrapper exception should not be exposed to users. {cosmosToString}");
                 Assert.IsTrue(cosmosToString.Contains(errorMessage));
-                Assert.IsTrue(cosmosToString.Contains(OpenTelemetryConstants.Operations.TypedQueryItems));
+                Assert.IsTrue(cosmosToString.Contains(OpenTelemetryConstants.Operations.QueryItems));
             }
         }
     }

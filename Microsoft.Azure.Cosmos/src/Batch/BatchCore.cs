@@ -20,6 +20,11 @@ namespace Microsoft.Azure.Cosmos
         private readonly ContainerInternal container;
 
         /// <summary>
+        /// The list of operations in the batch.
+        /// </summary>
+        protected List<ItemBatchOperation> operations;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="BatchCore"/> class.
         /// </summary>
         /// <param name="container">Container that has items on which batch operations are to be performed.</param>
@@ -30,6 +35,8 @@ namespace Microsoft.Azure.Cosmos
         {
             this.container = container;
             this.partitionKey = partitionKey;
+
+            this.operations = new List<ItemBatchOperation>();
         }
 
         public override TransactionalBatch CreateItem<T>(
@@ -41,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(item));
             }
 
-            this.AddOperation(new ItemBatchOperation<T>(
+            this.operations.Add(new ItemBatchOperation<T>(
                     operationName: OpenTelemetryConstants.Operations.CreateItem,
                     operationType: OperationType.Create,
                     operationIndex: this.operations.Count,
@@ -61,8 +68,8 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(streamPayload));
             }
 
-            this.AddOperation(new ItemBatchOperation(
-                    operationName: OpenTelemetryConstants.Operations.CreateItemStream,
+            this.operations.Add(new ItemBatchOperation(
+                    operationName: OpenTelemetryConstants.Operations.CreateItem,
                     operationType: OperationType.Create,
                     operationIndex: this.operations.Count,
                     resourceStream: streamPayload,
@@ -81,7 +88,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(id));
             }
 
-            this.AddOperation(new ItemBatchOperation(
+            this.operations.Add(new ItemBatchOperation(
                     operationName: OpenTelemetryConstants.Operations.ReadItem,
                     operationType: OperationType.Read,
                     operationIndex: this.operations.Count,
@@ -101,7 +108,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(item));
             }
 
-            this.AddOperation(new ItemBatchOperation<T>(
+            this.operations.Add(new ItemBatchOperation<T>(
                     operationName: OpenTelemetryConstants.Operations.UpsertItem,
                     operationType: OperationType.Upsert,
                     operationIndex: this.operations.Count,
@@ -121,8 +128,8 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(streamPayload));
             }
 
-            this.AddOperation(new ItemBatchOperation(
-                    operationName: OpenTelemetryConstants.Operations.UpsertItemStream,
+            this.operations.Add(new ItemBatchOperation(
+                    operationName: OpenTelemetryConstants.Operations.UpsertItem,
                     operationType: OperationType.Upsert,
                     operationIndex: this.operations.Count,
                     resourceStream: streamPayload,
@@ -147,7 +154,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(item));
             }
 
-            this.AddOperation(new ItemBatchOperation<T>(
+            this.operations.Add(new ItemBatchOperation<T>(
                     operationName: OpenTelemetryConstants.Operations.ReplaceItem,
                     operationType: OperationType.Replace,
                     operationIndex: this.operations.Count,
@@ -174,8 +181,8 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(streamPayload));
             }
 
-            this.AddOperation(new ItemBatchOperation(
-                    operationName: OpenTelemetryConstants.Operations.ReplaceItemStream,
+            this.operations.Add(new ItemBatchOperation(
+                    operationName: OpenTelemetryConstants.Operations.ReplaceItem,
                     operationType: OperationType.Replace,
                     operationIndex: this.operations.Count,
                     id: id,
@@ -195,7 +202,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(id));
             }
 
-            this.AddOperation(new ItemBatchOperation(
+            this.operations.Add(new ItemBatchOperation(
                     operationName: OpenTelemetryConstants.Operations.DeleteItem,
                     operationType: OperationType.Delete,
                     operationIndex: this.operations.Count,
@@ -224,14 +231,8 @@ namespace Microsoft.Azure.Cosmos
             TransactionalBatchRequestOptions requestOptions,
             CancellationToken cancellationToken = default)
         {
-            string operationName = OpenTelemetryConstants.Operations.ExecuteBatch;
-            if (this.isHomogenousOperations)
-            {
-                operationName = OpenTelemetryConstants.Operations.ExecuteBatchPrefix + this.homogenousOperation;
-            }
-
             return this.container.ClientContext.OperationHelperAsync(
-                operationName: operationName,
+                operationName: OpenTelemetryConstants.Operations.ExecuteBatch,
                 containerName: this.container.Id,
                 databaseName: this.container.Database.Id,
                 operationType: Documents.OperationType.Batch,
@@ -263,8 +264,8 @@ namespace Microsoft.Azure.Cosmos
             Stream patchStream,
             TransactionalBatchPatchItemRequestOptions requestOptions = null)
         {
-            this.AddOperation(new ItemBatchOperation(
-                operationName: OpenTelemetryConstants.Operations.PatchItemStream,
+            this.operations.Add(new ItemBatchOperation(
+                operationName: OpenTelemetryConstants.Operations.PatchItem,
                 operationType: OperationType.Patch,
                 operationIndex: this.operations.Count,
                 id: id,
@@ -300,7 +301,7 @@ namespace Microsoft.Azure.Cosmos
 
             PatchSpec patchSpec = new PatchSpec(patchOperations, requestOptions);
 
-            this.AddOperation(new ItemBatchOperation<PatchSpec>(
+            this.operations.Add(new ItemBatchOperation<PatchSpec>(
                 operationName: OpenTelemetryConstants.Operations.PatchItem,
                 operationType: OperationType.Patch,
                 operationIndex: this.operations.Count,

@@ -10,8 +10,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry
         {
             // Batch/Bulk Operations
             public const string ExecuteBatch = "execute_batch";
-            public const string ExecuteBatchPrefix = "batch_";
-            public const string ExecuteBulk = "execute_bulk";
             public const string ExecuteBulkPrefix = "bulk_";
 
             // Change feed operations
@@ -30,44 +28,29 @@ namespace Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry
 
             //Container Operations
             public const string CreateContainer = "create_container";
-            public const string CreateContainerStream = "create_container_stream";
             public const string CreateContainerIfNotExists = "create_container_if_not_exists";
             public const string DeleteContainer = "delete_container";
-            public const string DeleteContainerStream = "delete_container_stream";
             public const string ReadContainer = "read_container";
-            public const string ReadContainerStream = "read_container_stream";
             public const string ReplaceContainer = "replace_container";
-            public const string ReplaceContainerStream = "replace_container_stream";
             public const string ReadFeedRanges = "read_feed_ranges";
             public const string ReadPartitionKeyRanges = "read_partition_key_ranges";
 
             // Database Operations
             public const string CreateDatabase = "create_database";
-            public const string CreateDatabaseStream = "create_database_stream";
             public const string CreateDatabaseIfNotExists = "create_database_if_not_exists";
             public const string DeleteDatabase = "delete_database";
-            public const string DeleteDatabaseStream = "delete_database_stream";
             public const string ReadDatabase = "read_database";
-            public const string ReadDatabaseStream = "read_database_stream";
 
             // Item Operations
             public const string CreateItem = "create_item";
-            public const string CreateItemStream = "create_item_stream";
             public const string DeleteAllItemsByPartitionKeyStream = "delete_all_items_by_partition_key_stream";
             public const string DeleteItem = "delete_item";
-            public const string DeleteItemStream = "delete_item_stream";
             public const string PatchItem = "patch_item";
-            public const string PatchItemStream = "patch_item_stream";
             public const string QueryItems = "query_items";
-            public const string TypedQueryItems = "typed_query_items";
             public const string ReadManyItems = "read_many_items";
-            public const string ReadManyItemsStream = "read_many_items_stream";
             public const string ReadItem = "read_item";
-            public const string ReadItemStream = "read_item_stream";
             public const string ReplaceItem = "replace_item";
-            public const string ReplaceItemStream = "replace_item_stream";
             public const string UpsertItem = "upsert_item";
-            public const string UpsertItemStream = "upsert_item_stream";
 
             // Permission operations
             public const string CreatePermission = "create_permission";

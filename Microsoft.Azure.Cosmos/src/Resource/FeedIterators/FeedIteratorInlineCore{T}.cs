@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default)
         {
             return this.clientContext.OperationHelperAsync(
-                        operationName: OpenTelemetryConstants.Operations.TypedQueryItems,
+                        operationName: OpenTelemetryConstants.Operations.QueryItems,
                         containerName: this.container?.Id,
                         databaseName: this.container?.Database.Id ?? this.databaseName,
                         operationType: Documents.OperationType.ReadFeed,

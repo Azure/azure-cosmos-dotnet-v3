@@ -1191,7 +1191,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return this.ClientContext.OperationHelperAsync(
-                 operationName: OpenTelemetryConstants.Operations.CreateDatabaseStream,
+                 operationName: OpenTelemetryConstants.Operations.CreateDatabase,
                  containerName: null,
                  databaseName: databaseProperties.Id,
                  operationType: OperationType.Create,
