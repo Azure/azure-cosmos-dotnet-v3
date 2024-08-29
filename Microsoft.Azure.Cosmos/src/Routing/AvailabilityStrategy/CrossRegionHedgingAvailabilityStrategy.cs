@@ -16,12 +16,12 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
 
     /// <summary>
-    /// Parallel hedging availability strategy. Once threshold time is reached, 
+    /// Hedging availability strategy. Once threshold time is reached, 
     /// the SDK will send out an additional request to a remote region in parallel
-    /// if the first parallel request or the original has not returned after the step time, 
-    /// additional parallel requests will be sent out there is a response or all regions are exausted.
+    /// if the first hedging request or the original has not returned after the step time, 
+    /// additional hedged requests will be sent out there is a response or all regions are exausted.
     /// </summary>
-    internal class CrossRegionParallelHedgingAvailabilityStrategy : AvailabilityStrategy
+    internal class CrossRegionHedgingAvailabilityStrategy : AvailabilityStrategyInternal
     {
         private const string HedgeContext = "Hedge Context";
         private const string ResponseRegion = "Response Region";
@@ -37,11 +37,11 @@ namespace Microsoft.Azure.Cosmos
         public TimeSpan ThresholdStep { get; private set; }
 
         /// <summary>
-        /// Constructor for parallel hedging availability strategy
+        /// Constructor for hedging availability strategy
         /// </summary>
         /// <param name="threshold"></param>
         /// <param name="thresholdStep"></param>
-        public CrossRegionParallelHedgingAvailabilityStrategy(
+        public CrossRegionHedgingAvailabilityStrategy(
             TimeSpan threshold,
             TimeSpan? thresholdStep)
         {
@@ -59,17 +59,18 @@ namespace Microsoft.Azure.Cosmos
             this.ThresholdStep = thresholdStep ?? TimeSpan.FromMilliseconds(-1);
         }
 
+        /// <inheritdoc/>
         internal override bool Enabled()
         {
             return true;
         }
 
         /// <summary>
-        /// This method determines if the request should be sent with a parallel hedging availability strategy.
+        /// This method determines if the request should be sent with a hedging availability strategy.
         /// This availability strategy can only be used if the request is a read-only request on a document request.
         /// </summary>
         /// <param name="request"></param>
-        /// <returns>whether the request should be a parallel hedging request.</returns>
+        /// <returns>whether the request should be a hedging request.</returns>
         internal bool ShouldHedge(RequestMessage request)
         {
             //Only use availability strategy for document point operations
@@ -88,20 +89,21 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Execute the parallel hedging availability strategy
+        /// Execute the hedging availability strategy
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="client"></param>
         /// <param name="request"></param>
         /// <param name="cancellationToken"></param>
         /// <returns>The response after executing cross region hedging</returns>
-        public override async Task<ResponseMessage> ExecuteAvailabilityStrategyAsync(
+        internal override async Task<ResponseMessage> ExecuteAvailabilityStrategyAsync(
             Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender,
             CosmosClient client,
             RequestMessage request,
             CancellationToken cancellationToken)
         {
-            if (!this.ShouldHedge(request))
+            if (!this.ShouldHedge(request)
+                || client.DocumentClient.GlobalEndpointManager.ReadEndpoints.Count == 1)
             {
                 return await sender(request, cancellationToken);
             }
