@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
     using Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Scripts;
-    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
