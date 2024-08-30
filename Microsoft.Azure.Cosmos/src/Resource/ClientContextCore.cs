@@ -565,7 +565,6 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions itemRequestOptions = requestOptions as ItemRequestOptions;
             TransactionalBatchItemRequestOptions batchItemRequestOptions = TransactionalBatchItemRequestOptions.FromItemRequestOptions(itemRequestOptions);
             ItemBatchOperation itemBatchOperation = new ItemBatchOperation(
-                operationName: OpenTelemetryConstants.Operations.ExecuteBatch,
                 operationType: operationType,
                 operationIndex: 0,
                 partitionKey: partitionKey,
@@ -588,7 +587,12 @@ namespace Microsoft.Azure.Cosmos
             OperationType operationType)
         {
             this.ThrowIfDisposed();
-            if (!this.ClientOptions.AllowBulkExecution)
+            return IsBulk(this.ClientOptions.AllowBulkExecution, resourceType, operationType);
+        }
+
+        public static bool IsBulk(bool isBulkConfigured, ResourceType resourceType, OperationType operationType)
+        {
+            if (!isBulkConfigured)
             {
                 return false;
             }

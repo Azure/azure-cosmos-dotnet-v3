@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
             ItemBatchOperation[] arrayOperations = new ItemBatchOperation[1];
 
-            ItemBatchOperation operation = new ItemBatchOperation(operationName: OpenTelemetryConstants.Operations.ReplaceItem, OperationType.Read, 0, Cosmos.PartitionKey.Null, "0");
+            ItemBatchOperation operation = new ItemBatchOperation(OperationType.Read, 0, Cosmos.PartitionKey.Null, "0");
 
             results.Add(
                     new TransactionalBatchOperationResult(HttpStatusCode.OK)
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
             ItemBatchOperation[] arrayOperations = new ItemBatchOperation[1];
 
-            ItemBatchOperation operation = new ItemBatchOperation(operationName: OpenTelemetryConstants.Operations.ReadItem, OperationType.Read, 0, Cosmos.PartitionKey.Null, "0");
+            ItemBatchOperation operation = new ItemBatchOperation(OperationType.Read, 0, Cosmos.PartitionKey.Null, "0");
 
             results.Add(
                     new TransactionalBatchOperationResult(HttpStatusCode.OK)

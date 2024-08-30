@@ -28,7 +28,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         private ItemBatchOperation CreateItemBatchOperation(bool withContext = false)
         {
             ItemBatchOperation operation = new ItemBatchOperation(
-                operationName: OpenTelemetryConstants.Operations.CreateItem,
                 operationType: OperationType.Create,
                 operationIndex: 0,
                 partitionKey: Cosmos.PartitionKey.Null,
@@ -459,7 +458,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             for (int i = 0; i < 10; i++)
             {
                 ItemBatchOperation operation = new ItemBatchOperation(
-                    operationName: OpenTelemetryConstants.Operations.CreateItem,
                     operationType: OperationType.Create,
                     operationIndex: i,
                     partitionKey: new Cosmos.PartitionKey(i.ToString()),
@@ -490,7 +488,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             List<ItemBatchOperation> operations = new List<ItemBatchOperation>(10);
             for (int i = 0; i < 10; i++)
             {
-                ItemBatchOperation operation = new ItemBatchOperation(OpenTelemetryConstants.Operations.CreateItem, OperationType.Create, i, Cosmos.PartitionKey.Null, i.ToString());
+                ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, i, Cosmos.PartitionKey.Null, i.ToString());
                 ItemBatchOperationContext context = new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton);
                 operation.AttachContext(context);
                 operations.Add(operation);

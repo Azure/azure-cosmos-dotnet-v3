@@ -33,7 +33,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             ItemBatchOperation[] operations = new ItemBatchOperation[]
             {
                 new ItemBatchOperation(
-                    operationName: OpenTelemetryConstants.Operations.CreateItem,
                     operationType: OperationType.Create,
                     operationIndex: 0,
                     containerCore:containerCore)
@@ -41,7 +40,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                     ResourceBody = new byte[] { 0x41, 0x42 }
                 },
                 new ItemBatchOperation(
-                    operationName: OpenTelemetryConstants.Operations.ReplaceItem,
                     id: "id2",
                     operationType: OperationType.Replace,
                     operationIndex: 1,
@@ -90,7 +88,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             TransactionalBatchItemRequestOptions transactionalBatchItemRequestOptions =
                 TransactionalBatchItemRequestOptions.FromItemRequestOptions(requestOptions);
             ItemBatchOperation operation = new ItemBatchOperation(
-                operationName: OpenTelemetryConstants.Operations.PatchItem,
                 operationType: OperationType.Patch,
                 operationIndex: 0,
                 partitionKey: Cosmos.PartitionKey.Null,
@@ -146,8 +143,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 operations: new ArraySegment<ItemBatchOperation>(
                     new ItemBatchOperation[]
                     {
-                        new ItemBatchOperation(operationName: OpenTelemetryConstants.Operations.ReadItem,OperationType.Read, operationIndex: 0, id: "someId", containerCore: containerCore),
-                        new ItemBatchOperation(operationName: OpenTelemetryConstants.Operations.ReadItem,OperationType.Read, operationIndex: 0, id: "someId", containerCore: containerCore)
+                        new ItemBatchOperation(OperationType.Read, operationIndex: 0, id: "someId", containerCore: containerCore),
+                        new ItemBatchOperation(OperationType.Read, operationIndex: 0, id: "someId", containerCore: containerCore)
                     }),
                 serializerCore: MockCosmosUtil.Serializer,
                 trace: NoOpTrace.Singleton,

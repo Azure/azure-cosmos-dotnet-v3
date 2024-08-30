@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Diagnostics;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -26,7 +27,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private readonly OperationType operationType = OperationType.Invalid;
         private readonly string connectionModeCache = null;
 
+        private readonly bool isBulkEnabled = false;
+
         private OpenTelemetryAttributes response = null;
+
+        private string operationName = null;
 
         /// <summary>
         /// Maps exception types to actions that record their OpenTelemetry attributes.
@@ -64,15 +69,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.scope = scope;
             this.config = config;
 
+            this.operationName = operationName;
             this.operationType = operationType;
             this.connectionModeCache = Enum.GetName(typeof(ConnectionMode), clientContext.ClientOptions.ConnectionMode);
+            this.isBulkEnabled = clientContext.ClientOptions.AllowBulkExecution;
 
             if (scope.IsEnabled)
             {
                 this.scope.Start();
 
                 this.Record(
-                        operationName: operationName,
                         containerName: containerName,
                         databaseName: databaseName,
                         clientContext: clientContext);
@@ -132,19 +138,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Recording information
         /// </summary>
-        /// <param name="operationName"></param>
         /// <param name="containerName"></param>
         /// <param name="databaseName"></param>
         /// <param name="clientContext"></param>
         public void Record(
-            string operationName,
             string containerName,
             string databaseName,
             CosmosClientContext clientContext)
         {
             if (this.IsEnabled)
             {
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbOperation, operationName);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbName, databaseName);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ContainerName, containerName);
                 
@@ -227,11 +230,17 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 OperationType operationType
                     = (this.response == null || this.response?.OperationType == OperationType.Invalid) ? this.operationType : this.response.OperationType;
 
-                string operationName = Enum.GetName(typeof(OperationType), operationType);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.OperationType, operationName);
+                string operationTypeName = Enum.GetName(typeof(OperationType), operationType);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.OperationType, operationTypeName);
 
                 if (this.response != null)
                 {
+                    if (this.response.ResourceType is not null && ClientContextCore.IsBulk(this.isBulkEnabled, this.response.ResourceType.Value, this.operationType))
+                    {
+                        this.operationName = OpenTelemetryConstants.Operations.ExecuteBulkPrefix + this.operationName;
+                    }
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbOperation, this.operationName);
+
                     if (this.response.BatchSize is not null)
                     {
                         this.scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.BatchSize, (int)this.response.BatchSize);

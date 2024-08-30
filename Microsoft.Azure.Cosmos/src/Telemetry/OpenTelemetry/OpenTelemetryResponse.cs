@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos
                   subStatusCode: OpenTelemetryResponse.GetHeader(responseMessage)?.SubStatusCode,
                   activityId: OpenTelemetryResponse.GetHeader(responseMessage)?.ActivityId,
                   correlationId: OpenTelemetryResponse.GetHeader(responseMessage)?.CorrelatedActivityId,
-                  batchSize: responseMessage.GetBatchSize() )
+                  batchSize: responseMessage.GetBatchSize())
         {
         }
 
@@ -39,8 +39,7 @@ namespace Microsoft.Azure.Cosmos
                   subStatusCode: OpenTelemetryResponse.GetHeader(responseMessage)?.SubStatusCode,
                   activityId: OpenTelemetryResponse.GetHeader(responseMessage)?.ActivityId,
                   correlationId: OpenTelemetryResponse.GetHeader(responseMessage)?.CorrelatedActivityId,
-                  operationType: responseMessage is QueryResponse ? Documents.OperationType.Query : Documents.OperationType.Invalid
-                 )
+                  operationType: responseMessage is QueryResponse ? Documents.OperationType.Query : Documents.OperationType.Invalid)
         {
         }
 

@@ -71,6 +71,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal Documents.OperationType OperationType { get; set; }
 
         /// <summary>
+        /// ResourceType
+        /// </summary>
+        internal Documents.ResourceType? ResourceType { get; set; }
+
+        /// <summary>
         /// Batch Size
         /// </summary>
         internal int? BatchSize { get; set; }

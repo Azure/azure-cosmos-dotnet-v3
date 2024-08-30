@@ -334,7 +334,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             MyDocument myDocument = new MyDocument() { id = id, Status = id };
             return new ItemBatchOperation(
-                operationName: OpenTelemetryConstants.Operations.CreateItem,
                 operationType: OperationType.Create,
                 operationIndex: 0,
                 partitionKey: new Cosmos.PartitionKey(id),

@@ -238,7 +238,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             operation = new ItemBatchOperation(
-                operationName: OpenTelemetryConstants.Operations.CreateItem,
                 operationType: operationType,
                 operationIndex: operationIndex,
                 partitionKey: Cosmos.PartitionKey.Null, // ParsedPartitionKey is used for validation

@@ -80,19 +80,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string id = Guid.NewGuid().ToString();
             MyDocument myDocument = new MyDocument() { id = id, Status = id };
 
-            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => executor.ValidateOperationAsync(new ItemBatchOperation(operationName: OpenTelemetryConstants.Operations.ReplaceItem, OperationType.Replace, 0, new Cosmos.PartitionKey(id), id, cosmosDefaultJsonSerializer.ToStream(myDocument)), new ItemRequestOptions() { SessionToken = "something" }));
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => executor.ValidateOperationAsync(new ItemBatchOperation(OperationType.Replace, 0, new Cosmos.PartitionKey(id), id, cosmosDefaultJsonSerializer.ToStream(myDocument)), new ItemRequestOptions() { SessionToken = "something" }));
             await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => executor.ValidateOperationAsync(
-                new ItemBatchOperation(operationName: OpenTelemetryConstants.Operations.ReplaceItem, OperationType.Replace, 0, new Cosmos.PartitionKey(id), id, cosmosDefaultJsonSerializer.ToStream(myDocument)), 
+                new ItemBatchOperation(OperationType.Replace, 0, new Cosmos.PartitionKey(id), id, cosmosDefaultJsonSerializer.ToStream(myDocument)), 
                 new ItemRequestOptions() { Properties = new Dictionary<string, object>() { { "test", "test" } } }));
             await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => executor.ValidateOperationAsync(
-                new ItemBatchOperation(operationName: OpenTelemetryConstants.Operations.ReplaceItem, OperationType.Replace, 0, new Cosmos.PartitionKey(id), id, cosmosDefaultJsonSerializer.ToStream(myDocument)), 
+                new ItemBatchOperation(OperationType.Replace, 0, new Cosmos.PartitionKey(id), id, cosmosDefaultJsonSerializer.ToStream(myDocument)), 
                 new ItemRequestOptions() { DedicatedGatewayRequestOptions = new DedicatedGatewayRequestOptions { MaxIntegratedCacheStaleness = TimeSpan.FromMinutes(3) }  }));
         }
 
         private static ItemBatchOperation CreateItem(string id)
         {
             MyDocument myDocument = new MyDocument() { id = id, Status = id };
-            return new ItemBatchOperation(operationName: OpenTelemetryConstants.Operations.CreateItem, OperationType.Create, 0, new Cosmos.PartitionKey(id), id, cosmosDefaultJsonSerializer.ToStream(myDocument));
+            return new ItemBatchOperation(OperationType.Create, 0, new Cosmos.PartitionKey(id), id, cosmosDefaultJsonSerializer.ToStream(myDocument));
         }
 
         private class MyDocument

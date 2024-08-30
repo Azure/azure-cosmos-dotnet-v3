@@ -222,7 +222,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
             if(arrayOperations == null)
             {
                 arrayOperations = new ItemBatchOperation[1];
-                arrayOperations[0] = new ItemBatchOperation(operationName: OpenTelemetryConstants.Operations.ReadItem, Documents.OperationType.Read, 0, new PartitionKey("0"));
+                arrayOperations[0] = new ItemBatchOperation(Documents.OperationType.Read, 0, new PartitionKey("0"));
             }
 
             SinglePartitionKeyServerBatchRequest batchRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
@@ -245,7 +245,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
         {
             ItemBatchOperation[] arrayOperations = new ItemBatchOperation[1];
 
-            arrayOperations[0] = new ItemBatchOperation(operationName: OpenTelemetryConstants.Operations.ReadItem, Documents.OperationType.Read, 0, new PartitionKey("0"));
+            arrayOperations[0] = new ItemBatchOperation(Documents.OperationType.Read, 0, new PartitionKey("0"));
             PartitionKeyRangeBatchResponse partitionKeyRangeBatchResponse = new PartitionKeyRangeBatchResponse(
                 arrayOperations.Length,
                 await OpenTelemetryRecorderTests.GetTransactionalBatchResponse(arrayOperations), 
