@@ -717,6 +717,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<ResponseMessage>>>(),
                 It.IsAny<Func<ResponseMessage, OpenTelemetryAttributes>>(),
+                It.IsAny<ResourceType>(),
                 It.IsAny<TraceComponent>(),
                 It.IsAny<TraceLevel>()))
                .Returns<string, string, string, OperationType, RequestOptions, Func<ITrace, Task<ResponseMessage>>, Func<ResponseMessage, OpenTelemetryAttributes>, TraceComponent, TraceLevel>(
@@ -730,6 +731,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<ItemResponse<dynamic>>>>(),
                 It.IsAny<Func<ItemResponse<dynamic>, OpenTelemetryAttributes>>(),
+                It.IsAny<ResourceType>(),
                 It.IsAny<TraceComponent>(),
                 It.IsAny<TraceLevel>()))
                .Returns<string, string, string, OperationType, RequestOptions, Func<ITrace, Task<ItemResponse<dynamic>>>, Func<ItemResponse<dynamic>, OpenTelemetryAttributes>, TraceComponent, TraceLevel>(

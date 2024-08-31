@@ -613,6 +613,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -622,7 +623,6 @@
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -634,6 +634,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -643,7 +644,6 @@
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -655,6 +655,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -664,7 +665,6 @@
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -676,6 +676,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -685,7 +686,6 @@
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -1334,6 +1334,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -1343,7 +1344,6 @@
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -1355,6 +1355,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -1364,7 +1365,6 @@
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -1376,6 +1376,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -1385,7 +1386,6 @@
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -1397,6 +1397,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -1406,7 +1407,6 @@
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -2036,6 +2036,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -2045,7 +2046,6 @@
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -2057,6 +2057,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -2066,7 +2067,6 @@
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -2078,6 +2078,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -2087,7 +2088,6 @@
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -2099,6 +2099,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -2108,7 +2109,6 @@
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -2758,6 +2758,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -2767,7 +2768,6 @@
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -2779,6 +2779,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -2788,7 +2789,6 @@
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -2800,6 +2800,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -2809,7 +2810,6 @@
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -2821,6 +2821,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -2830,7 +2831,6 @@
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -3554,6 +3554,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -3563,7 +3564,6 @@
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -3575,6 +3575,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -3584,7 +3585,6 @@
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -3596,6 +3596,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -3605,7 +3606,6 @@
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -3617,6 +3617,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -3626,7 +3627,6 @@
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -4265,6 +4265,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -4274,7 +4275,6 @@
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -4286,6 +4286,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -4295,7 +4296,6 @@
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -4307,6 +4307,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -4316,7 +4317,6 @@
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -4328,6 +4328,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -4337,7 +4338,6 @@
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -4996,6 +4996,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -5005,7 +5006,6 @@
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -5017,6 +5017,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -5026,7 +5027,6 @@
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -5038,6 +5038,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -5047,7 +5048,6 @@
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -5059,6 +5059,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -5068,7 +5069,6 @@
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Query</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>

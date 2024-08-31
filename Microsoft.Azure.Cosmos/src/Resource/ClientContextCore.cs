@@ -212,6 +212,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task,
             Func<TResult, OpenTelemetryAttributes> openTelemetry,
+            ResourceType? resourceType = null,
             TraceComponent traceComponent = TraceComponent.Transport,
             Tracing.TraceLevel traceLevel = Tracing.TraceLevel.Info)
         {
@@ -224,7 +225,8 @@ namespace Microsoft.Azure.Cosmos
                                                        task,
                                                        openTelemetry,
                                                        traceComponent,
-                                                       traceLevel) :
+                                                       traceLevel,
+                                                       resourceType) :
                 this.OperationHelperWithRootTraceWithSynchronizationContextAsync(
                                                                   operationName,
                                                                   containerName,
@@ -234,7 +236,8 @@ namespace Microsoft.Azure.Cosmos
                                                                   task,
                                                                   openTelemetry,
                                                                   traceComponent,
-                                                                  traceLevel);
+                                                                  traceLevel,
+                                                                  resourceType);
         }
 
         private async Task<TResult> OperationHelperWithRootTraceAsync<TResult>(
@@ -246,7 +249,8 @@ namespace Microsoft.Azure.Cosmos
             Func<ITrace, Task<TResult>> task,
             Func<TResult, OpenTelemetryAttributes> openTelemetry,
             TraceComponent traceComponent,
-            Tracing.TraceLevel traceLevel)
+            Tracing.TraceLevel traceLevel,
+            ResourceType? resourceType)
         {
             bool disableDiagnostics = requestOptions != null && requestOptions.DisablePointOperationDiagnostics;
 
@@ -262,7 +266,8 @@ namespace Microsoft.Azure.Cosmos
                     task,
                     openTelemetry,
                     operationName,
-                    requestOptions);
+                    requestOptions,
+                    resourceType);
             }
         }
 
@@ -275,7 +280,8 @@ namespace Microsoft.Azure.Cosmos
             Func<ITrace, Task<TResult>> task,
             Func<TResult, OpenTelemetryAttributes> openTelemetry,
             TraceComponent traceComponent,
-            Tracing.TraceLevel traceLevel)
+            Tracing.TraceLevel traceLevel,
+            ResourceType? resourceType)
         {
             Debug.Assert(SynchronizationContext.Current != null, "This should only be used when a SynchronizationContext is specified");
 
@@ -299,7 +305,8 @@ namespace Microsoft.Azure.Cosmos
                         task,
                         openTelemetry,
                         operationName,
-                        requestOptions);
+                        requestOptions,
+                        resourceType);
                 }
             });
         }
@@ -491,17 +498,23 @@ namespace Microsoft.Azure.Cosmos
             Func<ITrace, Task<TResult>> task,
             Func<TResult, OpenTelemetryAttributes> openTelemetry,
             string operationName,
-            RequestOptions requestOptions)
+            RequestOptions requestOptions,
+            ResourceType? resourceType = null)
         {
+            if (resourceType is not null && this.IsBulkOperationSupported(resourceType.Value, operationType))
+            {
+                operationName = OpenTelemetryConstants.Operations.ExecuteBulkPrefix + operationName;
+            }
+
             using (OpenTelemetryCoreRecorder recorder = 
-                                OpenTelemetryRecorderFactory.CreateRecorder(
-                                    operationName: operationName,
-                                    containerName: containerName,
-                                    databaseName: databaseName,
-                                    operationType: operationType,
-                                    requestOptions: requestOptions,
-                                    trace: trace,
-                                    clientContext: this.isDisposed ? null : this))
+                            OpenTelemetryRecorderFactory.CreateRecorder(
+                                operationName: operationName,
+                                containerName: containerName,
+                                databaseName: databaseName,
+                                operationType: operationType,
+                                requestOptions: requestOptions,
+                                trace: trace,
+                                clientContext: this.isDisposed ? null : this))
             using (new ActivityScope(Guid.NewGuid()))
             {
                 try
@@ -587,12 +600,8 @@ namespace Microsoft.Azure.Cosmos
             OperationType operationType)
         {
             this.ThrowIfDisposed();
-            return IsBulk(this.ClientOptions.AllowBulkExecution, resourceType, operationType);
-        }
 
-        public static bool IsBulk(bool isBulkConfigured, ResourceType resourceType, OperationType operationType)
-        {
-            if (!isBulkConfigured)
+            if (!this.ClientOptions.AllowBulkExecution)
             {
                 return false;
             }

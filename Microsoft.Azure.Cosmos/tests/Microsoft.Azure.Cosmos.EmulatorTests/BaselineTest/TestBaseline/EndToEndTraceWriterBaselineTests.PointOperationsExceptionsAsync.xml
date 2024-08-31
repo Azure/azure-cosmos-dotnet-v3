@@ -161,6 +161,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.create_item" displayName="create_item containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">create_item</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -437,6 +438,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.create_item" displayName="create_item containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">create_item</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -691,6 +693,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.create_item" displayName="create_item containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">create_item</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -977,6 +980,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.create_item" displayName="create_item containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">create_item</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -1327,6 +1331,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.create_item" displayName="create_item containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">create_item</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -1510,6 +1515,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.create_item" displayName="create_item containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">create_item</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
