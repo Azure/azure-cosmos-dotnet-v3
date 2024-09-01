@@ -392,10 +392,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<FeedResponse<ChangeFeedProcessorState>>>>(),
                 It.IsAny<Func<FeedResponse<ChangeFeedProcessorState>, OpenTelemetryAttributes>>(),
-                It.IsAny<ResourceType>(),
+                It.IsAny<ResourceType?>(),
                 It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, string, string, Documents.OperationType, RequestOptions, Func<ITrace, Task<FeedResponse<ChangeFeedProcessorState>>>, Func<FeedResponse<ChangeFeedProcessorState>, OpenTelemetryAttributes>, ResourceType, TraceComponent, TraceLevel>(
+               .Returns<string, string, string, Documents.OperationType, RequestOptions, Func<ITrace, Task<FeedResponse<ChangeFeedProcessorState>>>, Func<FeedResponse<ChangeFeedProcessorState>, OpenTelemetryAttributes>, ResourceType?, TraceComponent, TraceLevel>(
                 (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, resourceType, comp, level) =>
                 {
                     using (ITrace trace = Trace.GetRootTrace(operationName, comp, level))
@@ -504,10 +504,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<FeedResponse<ChangeFeedProcessorState>>>>(),
                 It.IsAny<Func<FeedResponse<ChangeFeedProcessorState>, OpenTelemetryAttributes>>(),
-                It.IsAny<ResourceType>(),
+                It.IsAny<ResourceType?>(),
                 It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, string, string, Documents.OperationType, RequestOptions, Func<ITrace, Task<FeedResponse<ChangeFeedProcessorState>>>, Func<FeedResponse<ChangeFeedProcessorState>, OpenTelemetryAttributes>, ResourceType, TraceComponent, TraceLevel>(
+               .Returns<string, string, string, Documents.OperationType, RequestOptions, Func<ITrace, Task<FeedResponse<ChangeFeedProcessorState>>>, Func<FeedResponse<ChangeFeedProcessorState>, OpenTelemetryAttributes>, ResourceType?, TraceComponent, TraceLevel>(
                 (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, resourceType, comp, level) =>
                 {
                     using (ITrace trace = Trace.GetRootTrace(operationName, comp, level))

@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Net;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Documents;
     using Telemetry;
 
     internal sealed class OpenTelemetryResponse : OpenTelemetryAttributes

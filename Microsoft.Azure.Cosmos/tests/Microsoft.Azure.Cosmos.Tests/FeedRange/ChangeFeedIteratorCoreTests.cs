@@ -483,11 +483,11 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<ResponseMessage>>>(),
                 It.IsAny<Func<ResponseMessage, OpenTelemetryAttributes>>(),
-                It.IsAny<ResourceType>(),
+                It.IsAny<ResourceType?>(),
                 It.IsAny<TraceComponent>(),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, string, string, OperationType, RequestOptions, Func<ITrace, Task<ResponseMessage>>, Func<ResponseMessage, OpenTelemetryAttributes>, TraceComponent, TraceLevel>(
-                (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, comp, level) => func(NoOpTrace.Singleton));
+               .Returns<string, string, string, OperationType, RequestOptions, Func<ITrace, Task<ResponseMessage>>, Func<ResponseMessage, OpenTelemetryAttributes>, ResourceType?, TraceComponent, TraceLevel>(
+                (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, resourceType, comp, level) => func(NoOpTrace.Singleton));
 
             return mockContext.Object;
         }

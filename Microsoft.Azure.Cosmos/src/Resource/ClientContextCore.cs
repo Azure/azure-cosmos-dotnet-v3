@@ -501,65 +501,71 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             ResourceType? resourceType = null)
         {
-            if (resourceType is not null && this.IsBulkOperationSupported(resourceType.Value, operationType))
-            {
-                operationName = OpenTelemetryConstants.Operations.ExecuteBulkPrefix + operationName;
-            }
+            using (OpenTelemetryCoreRecorder recorder =
+                        OpenTelemetryRecorderFactory.CreateRecorder(
+                            getOperationName: () =>
+                            {
+                                if (resourceType is not null && this.IsBulkOperationSupported(resourceType.Value, operationType))
+                                {
+                                    operationName = OpenTelemetryConstants.Operations.ExecuteBulkPrefix + operationName;
+                                }
 
-            using (OpenTelemetryCoreRecorder recorder = 
-                            OpenTelemetryRecorderFactory.CreateRecorder(
-                                operationName: operationName,
-                                containerName: containerName,
-                                databaseName: databaseName,
-                                operationType: operationType,
-                                requestOptions: requestOptions,
-                                trace: trace,
-                                clientContext: this.isDisposed ? null : this))
-            using (new ActivityScope(Guid.NewGuid()))
+                                return operationName;
+                            },
+                            containerName: containerName,
+                            databaseName: databaseName,
+                            operationType: operationType,
+                            requestOptions: requestOptions,
+                            trace: trace,
+                            clientContext: this.isDisposed ? null : this))
             {
-                try
+                using (new ActivityScope(Guid.NewGuid()))
                 {
-                    TResult result = await task(trace).ConfigureAwait(false);
-                    if (openTelemetry != null && recorder.IsEnabled)
+                    try
                     {
-                        // Record request response information
-                        OpenTelemetryAttributes response = openTelemetry(result);
-                        recorder.Record(response);
+                        TResult result = await task(trace).ConfigureAwait(false);
+                        if (openTelemetry != null && recorder.IsEnabled)
+                        {
+                            // Record request response information
+                            OpenTelemetryAttributes response = openTelemetry(result);
+                            recorder.Record(response);
+                        }
+
+                        return result;
+                    }
+                    catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
+                    {
+                        CosmosOperationCanceledException operationCancelledException = new CosmosOperationCanceledException(oe, trace);
+                        recorder.MarkFailed(operationCancelledException);
+
+                        throw operationCancelledException;
+                    }
+                    catch (ObjectDisposedException objectDisposed) when (!(objectDisposed is CosmosObjectDisposedException))
+                    {
+                        CosmosObjectDisposedException objectDisposedException = new CosmosObjectDisposedException(
+                            objectDisposed,
+                            this.client,
+                            trace);
+                        recorder.MarkFailed(objectDisposedException);
+
+                        throw objectDisposedException;
+                    }
+                    catch (NullReferenceException nullRefException) when (!(nullRefException is CosmosNullReferenceException))
+                    {
+                        CosmosNullReferenceException nullException = new CosmosNullReferenceException(
+                            nullRefException,
+                            trace);
+                        recorder.MarkFailed(nullException);
+
+                        throw nullException;
+                    }
+                    catch (Exception ex)
+                    {
+                        recorder.MarkFailed(ex);
+
+                        throw;
                     }
 
-                    return result;
-                }
-                catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
-                {
-                    CosmosOperationCanceledException operationCancelledException = new CosmosOperationCanceledException(oe, trace);
-                    recorder.MarkFailed(operationCancelledException);
-                    
-                    throw operationCancelledException;
-                }
-                catch (ObjectDisposedException objectDisposed) when (!(objectDisposed is CosmosObjectDisposedException))
-                {
-                    CosmosObjectDisposedException objectDisposedException = new CosmosObjectDisposedException(
-                        objectDisposed,
-                        this.client,
-                        trace);
-                    recorder.MarkFailed(objectDisposedException);
-
-                    throw objectDisposedException;
-                }
-                catch (NullReferenceException nullRefException) when (!(nullRefException is CosmosNullReferenceException))
-                {
-                    CosmosNullReferenceException nullException = new CosmosNullReferenceException(
-                        nullRefException,
-                        trace);
-                    recorder.MarkFailed(nullException);
-
-                    throw nullException;
-                }
-                catch (Exception ex)
-                {
-                    recorder.MarkFailed(ex);
-
-                    throw;
                 }
             }
         }
@@ -585,7 +591,6 @@ namespace Microsoft.Azure.Cosmos
                 resourceStream: streamPayload,
                 requestOptions: batchItemRequestOptions,
                 cosmosClientContext: this);
-
             TransactionalBatchOperationResult batchOperationResult = await cosmosContainerCore.BatchExecutor.AddAsync(
                 itemBatchOperation,
                 trace,

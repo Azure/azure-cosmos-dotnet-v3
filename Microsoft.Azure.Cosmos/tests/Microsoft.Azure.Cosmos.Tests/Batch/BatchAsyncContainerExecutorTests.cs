@@ -351,10 +351,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<object>>>(),
                 It.IsAny<Func<object, OpenTelemetryAttributes>>(),
-                It.IsAny<ResourceType>(),
+                It.IsAny<ResourceType?>(),
                 It.IsAny<TraceComponent>(),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, string, string, OperationType, RequestOptions, Func<ITrace, Task<object>>, Func<object, OpenTelemetryAttributes>, ResourceType, TraceComponent, TraceLevel>(
+               .Returns<string, string, string, OperationType, RequestOptions, Func<ITrace, Task<object>>, Func<object, OpenTelemetryAttributes>, ResourceType?, TraceComponent, TraceLevel>(
                 (operationName,containerName, databaseName, operationType, requestOptions, func, oTelFunc, resourceType, comp, level) => func(NoOpTrace.Singleton));
 
             mockContext.Setup(x => x.Client).Returns(MockCosmosUtil.CreateMockCosmosClient());
