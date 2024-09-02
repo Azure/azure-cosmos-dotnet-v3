@@ -16,13 +16,13 @@
     public class Program
     {
 
-        private static CommonConfiguration configuration;
+        private CommonConfiguration configuration;
 
-        private static DataSource dataSource;
+        private DataSource dataSource;
 
-        private static IDriver driver;
+        private IDriver driver;
 
-        private static readonly JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions()
+        private readonly JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions()
         {
             WriteIndented = true,
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
@@ -30,11 +30,16 @@
 
         public static async Task Main(string[] args)
         {
+            await new Program().MainAsync(args);
+        }
+
+        private async Task MainAsync(string[] args)
+        {
             try
             {
-                Program.driver = new Mongo();
-                await Program.InitializeAsync(args);
-                await Program.PerformOperationsAsync();
+                this.driver = new CosmosDBNoSql();
+                await this.InitializeAsync(args);
+                await this.PerformOperationsAsync();
             }
             catch (Exception ex)
             {
@@ -42,46 +47,44 @@
             }
             finally
             {
-                await Program.driver.CleanupAsync();
+                await this.driver.CleanupAsync();
             }
         }
 
-
-
-        private static async Task InitializeAsync(string[] args)
+        private async Task InitializeAsync(string[] args)
         {
             IConfigurationRoot configurationRoot = new ConfigurationBuilder()
                     .AddJsonFile("appSettings.json")
                     .AddCommandLine(args)
                     .Build();
 
-            (Program.configuration, Program.dataSource) = await Program.driver.InitializeAsync(configurationRoot);
-            if(Program.configuration.ConnectionStringForLogging == null)
+            (this.configuration, this.dataSource) = await this.driver.InitializeAsync(configurationRoot);
+            if(this.configuration.ConnectionStringForLogging == null)
             {
                 throw new Exception("ConnectionStringForLogging is not set in the driver's InitializeAsync method.");
             }
         }
 
-        private static DateTime runStartTime;
+        private DateTime runStartTime;
 
-        private static int warmupNonFailedRequestCount = 0;
+        private int warmupNonFailedRequestCount = 0;
 
-        private static readonly ConcurrentDictionary<HttpStatusCode, int> countsByStatus = new ConcurrentDictionary<HttpStatusCode, int>();
+        private readonly ConcurrentDictionary<HttpStatusCode, int> countsByStatus = new ConcurrentDictionary<HttpStatusCode, int>();
 
-        private static readonly ConcurrentBag<TimeSpan> latencies = new ConcurrentBag<TimeSpan>();
+        private readonly ConcurrentBag<TimeSpan> latencies = new ConcurrentBag<TimeSpan>();
 
-        private static long totalRequestCharge = 0;
+        private long totalRequestCharge = 0;
 
-        private static readonly Stopwatch latencyStopwatch = new Stopwatch();
+        private readonly Stopwatch latencyStopwatch = new Stopwatch();
 
-        private static readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+        private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
 
-        private static Task mainTask;
+        private Task mainTask;
 
-        private static async Task PerformOperationsAsync()
+        private async Task PerformOperationsAsync()
         {
-            WriteConfiguration();
-            Console.WriteLine($"Starting to make requests with partition key prefix {dataSource.PartitionKeyValuePrefix} and initial ItemId {dataSource.InitialItemId}");
+            this.WriteConfiguration();
+            Console.WriteLine($"Starting to make requests with partition key prefix {this.dataSource.PartitionKeyValuePrefix} and initial ItemId {this.dataSource.InitialItemId}");
 
             ConcurrentBag<TimeSpan> oddBucketLatencies = new ConcurrentBag<TimeSpan>();
             ConcurrentBag<TimeSpan> evenBucketLatencies = new ConcurrentBag<TimeSpan>();
@@ -92,23 +95,23 @@
 
             const int ticksPerMillisecond = 10000;
             const int ticksPerSecond = 1000 * ticksPerMillisecond;
-            int ticksPerRequest = configuration.RequestsPerSecond.HasValue ? (int)(ticksPerSecond / configuration.RequestsPerSecond) : 0;
+            int ticksPerRequest = this.configuration.RequestsPerSecond.HasValue ? (int)(ticksPerSecond / this.configuration.RequestsPerSecond) : 0;
             long usageTicks = 0;
 
-            int totalRequestCount = configuration.TotalRequestCount ?? int.MaxValue;
+            int totalRequestCount = this.configuration.TotalRequestCount ?? int.MaxValue;
 
-            if (configuration.MaxRuntimeInSeconds.HasValue)
+            if (this.configuration.MaxRuntimeInSeconds.HasValue)
             {
-                cancellationTokenSource.CancelAfter(configuration.MaxRuntimeInSeconds.Value * 1000);
+                this.cancellationTokenSource.CancelAfter(this.configuration.MaxRuntimeInSeconds.Value * 1000);
             }
 
-            CancellationToken cancellationToken = cancellationTokenSource.Token;
-            runStartTime = DateTime.UtcNow;
+            CancellationToken cancellationToken = this.cancellationTokenSource.Token;
+            this.runStartTime = DateTime.UtcNow;
             Stopwatch stopwatch = Stopwatch.StartNew();
             int isOddBucketForLatencyTracing = 1;
             long lastLatencyEmittedSeconds = 0;
 
-            mainTask = Task.Run(async () =>
+            this.mainTask = Task.Run(async () =>
             {
                 int docCounter = 0;
                 bool isErrorPrinted = false;
@@ -129,7 +132,7 @@
                         await Task.Delay((int)((usageTicks - elapsedTicks - ticksPerSecond) / ticksPerMillisecond));
                     }
 
-                    while (taskTriggeredCounter - taskCompleteCounter > configuration.MaxInFlightRequestCount)
+                    while (taskTriggeredCounter - taskCompleteCounter > this.configuration.MaxInFlightRequestCount)
                     {
                         // adding a delay > 0 msec introduces 15 msec delay due to system clock resolution which is too much; so we instead have a tight loop.
                     }
@@ -138,19 +141,19 @@
 
                     // While we could have passed cancellationToken below, we pass None to not fail in-progress requests
                     // when the time ends or upon Ctrl+C.
-                    _ = Program.driver.MakeRequestAsync(CancellationToken.None, out object context).ContinueWith((Task task) =>
+                    _ = this.driver.MakeRequestAsync(CancellationToken.None, out object context).ContinueWith((Task task) =>
                     {
                         TimeSpan requestLatency = TimeSpan.FromTicks(stopwatch.ElapsedTicks - requestStartTicks);
-                        ResponseAttributes responseAttributes = Program.driver.HandleResponse(task, context);
+                        ResponseAttributes responseAttributes = this.driver.HandleResponse(task, context);
 
-                        countsByStatus.AddOrUpdate(responseAttributes.StatusCode, 1, (_, old) => old + 1);
+                        this.countsByStatus.AddOrUpdate(responseAttributes.StatusCode, 1, (_, old) => old + 1);
 
                         if (responseAttributes.StatusCode < HttpStatusCode.BadRequest)
                         {
-                            Interlocked.Add(ref totalRequestCharge, (int)(responseAttributes.RequestCharge * 100));
-                            if (latencyStopwatch.IsRunning)
+                            Interlocked.Add(ref this.totalRequestCharge, (int)(responseAttributes.RequestCharge * 100));
+                            if (this.latencyStopwatch.IsRunning)
                             {
-                                latencies.Add(requestLatency);
+                                this.latencies.Add(requestLatency);
                                 if (Interlocked.Add(ref isOddBucketForLatencyTracing, 0) == 1)
                                 {
                                     oddBucketLatencies.Add(requestLatency);
@@ -176,7 +179,7 @@
                         if (Interlocked.Increment(ref taskCompleteCounter) >= totalRequestCount)
                         {
                             stopwatch.Stop();
-                            latencyStopwatch.Stop();
+                            this.latencyStopwatch.Stop();
                         }
                     });
 
@@ -184,18 +187,18 @@
                 }
             });
 
-            Console.CancelKeyPress += Console_CancelKeyPress;
+            Console.CancelKeyPress += this.Console_CancelKeyPress;
 
             while (!cancellationToken.IsCancellationRequested && taskCompleteCounter < totalRequestCount)
             {
                 Console.Write($"{DateTime.UtcNow.ToLongTimeString()}> In progress for {stopwatch.Elapsed}. Triggered: {taskTriggeredCounter} Processed: {taskCompleteCounter}");
-                if (configuration.TotalRequestCount.HasValue)
+                if (this.configuration.TotalRequestCount.HasValue)
                 {
                     Console.Write(", Pending: {totalRequestCount - taskCompleteCounter}");
                 }
 
                 int nonFailedCount = 0;
-                foreach (KeyValuePair<HttpStatusCode, int> countForStatus in countsByStatus)
+                foreach (KeyValuePair<HttpStatusCode, int> countForStatus in this.countsByStatus)
                 {
                     Console.Write(", " + countForStatus.Key + ": " + countForStatus.Value);
                     if (countForStatus.Key < HttpStatusCode.BadRequest)
@@ -204,16 +207,16 @@
                     }
                 }
 
-                if (warmupNonFailedRequestCount == 0 && stopwatch.ElapsedMilliseconds > configuration.WarmupSeconds * 1000)
+                if (this.warmupNonFailedRequestCount == 0 && stopwatch.ElapsedMilliseconds > this.configuration.WarmupSeconds * 1000)
                 {
-                    warmupNonFailedRequestCount = nonFailedCount;
-                    latencyStopwatch.Start();
+                    this.warmupNonFailedRequestCount = nonFailedCount;
+                    this.latencyStopwatch.Start();
                 }
 
-                long elapsedSeconds = latencyStopwatch.ElapsedMilliseconds / 1000;
-                Console.Write($", SuccessRPS: {(elapsedSeconds == 0 ? -1 : (nonFailedCount - warmupNonFailedRequestCount) / elapsedSeconds)}");
+                long elapsedSeconds = this.latencyStopwatch.ElapsedMilliseconds / 1000;
+                Console.Write($", SuccessRPS: {(elapsedSeconds == 0 ? -1 : (nonFailedCount - this.warmupNonFailedRequestCount) / elapsedSeconds)}");
 
-                if (elapsedSeconds - lastLatencyEmittedSeconds > configuration.LatencyTracingIntervalInSeconds)
+                if (elapsedSeconds - lastLatencyEmittedSeconds > this.configuration.LatencyTracingIntervalInSeconds)
                 {
                     List<TimeSpan> lastBucketLatencies;
                     if (Interlocked.Add(ref isOddBucketForLatencyTracing, 0) == 0)
@@ -231,7 +234,7 @@
 
                     lastBucketLatencies.Sort();
                     Console.Write($", Latency Avg: {Math.Round(lastBucketLatencies.Average(t => t.TotalMilliseconds), 1, MidpointRounding.AwayFromZero)}"
-                        + $" P99: {GetRoundedLatency(lastBucketLatencies, lastBucketLatencies.Count * 0.99)}");
+                        + $" P99: {this.GetRoundedLatency(lastBucketLatencies, lastBucketLatencies.Count * 0.99)}");
                     lastLatencyEmittedSeconds = elapsedSeconds;
                 }
 
@@ -239,26 +242,26 @@
                 await Task.Delay(1000);
             }
 
-            OnEnd();
+            this.OnEnd();
         }
 
-        private static void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
+        private void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
         {
-            cancellationTokenSource.Cancel();
-            OnEnd();
+            this.cancellationTokenSource.Cancel();
+            this.OnEnd();
         }
 
-        private static void OnEnd()
+        private void OnEnd()
         {
-            while (!mainTask.IsCompleted) { }
+            while (!this.mainTask.IsCompleted) { }
 
-            long runtimeSeconds = latencyStopwatch.ElapsedMilliseconds / 1000;
+            long runtimeSeconds = this.latencyStopwatch.ElapsedMilliseconds / 1000;
             DateTime runEndTime = DateTime.UtcNow;
-            int nonFailedCountFinal = countsByStatus.Where(x => x.Key < HttpStatusCode.BadRequest).Sum(p => p.Value);
-            int nonFailedCountFinalForLatency = nonFailedCountFinal - warmupNonFailedRequestCount;
+            int nonFailedCountFinal = this.countsByStatus.Where(x => x.Key < HttpStatusCode.BadRequest).Sum(p => p.Value);
+            int nonFailedCountFinalForLatency = nonFailedCountFinal - this.warmupNonFailedRequestCount;
 
             RunResult.LatencyValues latencyValues = null;
-            List<TimeSpan> latenciesList = latencies.ToList();
+            List<TimeSpan> latenciesList = this.latencies.ToList();
             latenciesList.Sort();
             int nonWarmupRequestCount = latenciesList.Count;
             if (nonWarmupRequestCount > 0)
@@ -266,49 +269,49 @@
                 latencyValues = new()
                 {
                     Avg = Math.Round((decimal)latenciesList.Average(t => t.TotalMilliseconds), 1, MidpointRounding.AwayFromZero),
-                    P50 = GetRoundedLatency(latenciesList, nonWarmupRequestCount * 0.50),
-                    P95 = GetRoundedLatency(latenciesList, nonWarmupRequestCount * 0.95),
-                    P99 = GetRoundedLatency(latenciesList, nonWarmupRequestCount * 0.99),
-                    P999 = GetRoundedLatency(latenciesList, nonWarmupRequestCount * 0.999),
-                    Max = GetRoundedLatency(latenciesList, nonWarmupRequestCount - 1)
+                    P50 = this.GetRoundedLatency(latenciesList, nonWarmupRequestCount * 0.50),
+                    P95 = this.GetRoundedLatency(latenciesList, nonWarmupRequestCount * 0.95),
+                    P99 = this.GetRoundedLatency(latenciesList, nonWarmupRequestCount * 0.99),
+                    P999 = this.GetRoundedLatency(latenciesList, nonWarmupRequestCount * 0.999),
+                    Max = this.GetRoundedLatency(latenciesList, nonWarmupRequestCount - 1)
                 };
             }
 
             RunResult runResult = new()
             {
-                RunStartTime = runStartTime,
+                RunStartTime = this.runStartTime,
                 RunEndTime = runEndTime,
-                Configuration = configuration,
-                PartitionKeyValuePrefix = dataSource.PartitionKeyValuePrefix,
-                InitialItemId = dataSource.InitialItemId,
-                ItemId = dataSource.ItemId,
+                Configuration = this.configuration,
+                PartitionKeyValuePrefix = this.dataSource.PartitionKeyValuePrefix,
+                InitialItemId = this.dataSource.InitialItemId,
+                ItemId = this.dataSource.ItemId,
                 NonFailedRequests = nonFailedCountFinal,
                 NonFailedRequestsAfterWarmup = nonFailedCountFinalForLatency,
                 RunDuration = runtimeSeconds,
-                AverageRUs = totalRequestCharge / (100.0 * nonFailedCountFinal),
-                CountsByStatus = countsByStatus.ToDictionary(x => x.Key, x => x.Value),
+                AverageRUs = this.totalRequestCharge / (100.0 * nonFailedCountFinal),
+                CountsByStatus = this.countsByStatus.ToDictionary(x => x.Key, x => x.Value),
                 Latencies = latencyValues,
                 AchievedRequestsPerSecond = runtimeSeconds == 0 ? -1 : (nonFailedCountFinalForLatency / runtimeSeconds)
             };
 
-            LogRunResultToConsole(runResult);
-            using (StreamWriter writer = new StreamWriter(String.Format("runresult-{0}.json", runStartTime.ToString("yyyyMMdd-HHmmss"))))
+            this.LogRunResultToConsole(runResult);
+            using (StreamWriter writer = new StreamWriter(String.Format("runresult-{0}.json", this.runStartTime.ToString("yyyyMMdd-HHmmss"))))
             {
-                writer.Write(JsonSerializer.Serialize(runResult, jsonSerializerOptions));
+                writer.Write(JsonSerializer.Serialize(runResult, this.jsonSerializerOptions));
             }
         }
 
-        private static decimal GetRoundedLatency(List<TimeSpan> latencyList, double index)
+        private decimal GetRoundedLatency(List<TimeSpan> latencyList, double index)
         {
             return Math.Round((decimal)latencyList[(int)index].TotalMilliseconds, 1, MidpointRounding.AwayFromZero);
         }
 
-        private static void LogRunResultToConsole(RunResult runResult)
+        private void LogRunResultToConsole(RunResult runResult)
         {
             Console.WriteLine();
             Console.WriteLine($"Machine name: {runResult.MachineName}");
             Console.WriteLine($"Run duration: {runResult.RunStartTime} to {runResult.RunEndTime} UTC");
-            WriteConfiguration();
+            this.WriteConfiguration();
 
             Console.WriteLine($"Partition key prefix: {runResult.PartitionKeyValuePrefix} Initial ItemId: {runResult.InitialItemId} ItemId: {runResult.ItemId}");
             Console.WriteLine($"Successful requests: Total {runResult.NonFailedRequests}; post-warm up {runResult.NonFailedRequestsAfterWarmup} requests in {runResult.RunDuration} seconds at {runResult.AchievedRequestsPerSecond} items/sec.");
@@ -329,9 +332,9 @@
             Console.WriteLine(string.Join(", ", runResult.CountsByStatus.Select(countForStatus => countForStatus.Key + ": " + countForStatus.Value)));
         }
 
-        private static void WriteConfiguration()
+        private void WriteConfiguration()
         {
-            Console.WriteLine("Configuration: " + JsonSerializer.Serialize(configuration, jsonSerializerOptions));
+            Console.WriteLine("Configuration: " + JsonSerializer.Serialize(this.configuration, this.jsonSerializerOptions));
         }
     }
 }
