@@ -23,7 +23,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry
             // Conflict Operations
             public const string DeleteConflict = "delete_conflict";
             public const string QueryConflicts = "query_conflicts";
-            //public const string ReadAllConflicts = "read_all_conflicts";
             public const string ReadConflict = "read_conflict";
 
             //Container Operations
