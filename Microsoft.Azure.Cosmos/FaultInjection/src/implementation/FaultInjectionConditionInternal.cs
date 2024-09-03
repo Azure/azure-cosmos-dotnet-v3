@@ -92,6 +92,19 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             return true;
         }
 
+        public bool IsApplicable(string ruleId, DocumentServiceRequest request)
+        {
+            foreach (IFaultInjectionConditionValidator validator in this.validators)
+            {
+                if (!validator.IsApplicable(ruleId, request))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         //Used for connection delay
         public bool IsApplicable(Uri callUri, DocumentServiceRequest request)
         {
@@ -141,6 +154,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private interface IFaultInjectionConditionValidator
         {
             public bool IsApplicable(string ruleId, ChannelCallArguments args);
+
+            public bool IsApplicable(string ruleId, DocumentServiceRequest request);
         }
 
         private class RegionEndpointValidator : IFaultInjectionConditionValidator
@@ -155,6 +170,16 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             public bool IsApplicable(string ruleId, ChannelCallArguments args)
             {
                 bool isApplicable = this.regionEndpoints.Any(uri => args.LocationEndpointToRouteTo.AbsoluteUri.StartsWith(uri.AbsoluteUri));
+
+                return isApplicable;
+            }
+
+            //Used for Gateway Requestrs
+            public bool IsApplicable(string ruleId, DocumentServiceRequest request)
+            {
+                bool isApplicable = this.regionEndpoints.Any(uri => 
+                    request.RequestContext.LocationEndpointToRoute.AbsoluteUri
+                    .StartsWith(uri.AbsoluteUri));
 
                 return isApplicable;
             }
@@ -180,6 +205,12 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 return args.OperationType == this.operationType;
             }
 
+            //Used for Gateway Requests
+            public bool IsApplicable(string ruleId, DocumentServiceRequest request)
+            {
+                return request.OperationType == this.operationType;
+            }
+
             //Used for Connection Delay
             public bool IsApplicable(DocumentServiceRequest request)
             {
@@ -199,6 +230,12 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             public bool IsApplicable(string ruleId, ChannelCallArguments args)
             {
                 return String.Equals(this.containerResourceId, args.ResolvedCollectionRid);
+            }
+
+            //Used for Gateway Requests
+            public bool IsApplicable(string ruleId, DocumentServiceRequest request)
+            {
+                return String.Equals(this.containerResourceId, request.RequestContext.ResolvedCollectionRid);
             }
 
             //Used for Connection Delay
@@ -222,6 +259,14 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 bool isApplicable = this.addresses.Exists(uri => args.PreparedCall.Uri.AbsoluteUri.StartsWith(uri.AbsoluteUri));
 
                 return isApplicable;
+            }
+
+            //Used for Gateway Requests
+
+            public bool IsApplicable(string ruleId, DocumentServiceRequest request)
+            {
+                //Address validator not relevant for gateway calls as gw routes to specific partitions
+                return false;
             }
 
             //Used for Connection Delay

@@ -162,13 +162,13 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             return null;
         }
 
-        public FaultInjectionServerErrorRule? FindHttpServerResponseErrorRule(ChannelCallArguments args)
+        public FaultInjectionServerErrorRule? FindHttpServerResponseErrorRule(DocumentServiceRequest dsr)
         {
             foreach (FaultInjectionServerErrorRule rule in this.serverResponseErrorRuleSet.Keys)
             {
                 if ((rule.GetConnectionType() == FaultInjectionConnectionType.Gateway
                     || rule.GetConnectionType() == FaultInjectionConnectionType.All)
-                    && rule.IsApplicable(args))
+                    && rule.IsApplicable(dsr))
                 {
                     return rule;
                 }
@@ -177,13 +177,13 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             return null;
         }
 
-        public FaultInjectionServerErrorRule? FindHttpServerResponseDelayRule(ChannelCallArguments args)
+        public FaultInjectionServerErrorRule? FindHttpServerResponseDelayRule(DocumentServiceRequest dsr)
         {
             foreach (FaultInjectionServerErrorRule rule in this.serverResponseDelayRuleSet.Keys)
             {
                 if ((rule.GetConnectionType() == FaultInjectionConnectionType.Gateway
                     || rule.GetConnectionType() == FaultInjectionConnectionType.All)
-                    && rule.IsApplicable(args))
+                    && rule.IsApplicable(dsr))
                 {
                     return rule;
                 }
@@ -192,13 +192,13 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             return null;
         }
 
-        public FaultInjectionServerErrorRule? FindHttpServerSendDelayRule(ChannelCallArguments args)
+        public FaultInjectionServerErrorRule? FindHttpServerSendDelayRule(DocumentServiceRequest dsr)
         {
             foreach (FaultInjectionServerErrorRule rule in this.serverSendDelayRuleSet.Keys)
             {
                 if ((rule.GetConnectionType() == FaultInjectionConnectionType.Gateway
                     || rule.GetConnectionType() == FaultInjectionConnectionType.All)
-                    && rule.IsApplicable(args))
+                    && rule.IsApplicable(dsr))
                 {
                     return rule;
                 }
