@@ -480,10 +480,5 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 return true;
             }
         }
-
-        internal class FaultInjectionHttpHeaders : HttpResponseHeaders
-        {
-
-        }
     }
 }
