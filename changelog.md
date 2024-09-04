@@ -13,6 +13,27 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.44.0-preview.0"/> [3.44.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.44.0-preview.0) - 2024-09-04
+
+#### Added
+
+- [4598](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4598) Adds: Parallel Request Hedging for cross region read requests
+
+### <a name="3.43.0"/> [3.43.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.43.0) - 2024-09-04
+
+#### Added
+
+- [4589](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4589) SystemTextJsonSerializer: Add UseSystemTextJsonSerializerWithOptions to support SystemTextJsonSerializer
+- [4622](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4622) Open Telemetry: Adds Batchsize and Rename Batch Operation name in Operation Trace
+- [4621](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4621) CFP AVAD: Adds new FeedRange to ChangeFeedProcessorContext
+
+#### Fixed
+
+- [4619](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4619) CFP AVAD: Fixes throws when customers use WithStartTime and WithStartFromBeginning with CFP AVAD
+- [4638](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4638) Documentation: Fixes AnalyticalStoreTimeToLiveInSeconds API documentation to list correct values
+- [4640](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4640) FeedRanges: Fixes GetFeedRangesAsync throwing DocumentClientException
+- [4618](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4618) CF/P AVAD: Fixes Deserialization of ChangeFeedItem and ChangeFeedMetadata to support System.Text.Json and Newtonsoft.Json
+
 ### <a name="3.43.0-preview.0"/> [3.43.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.43.0-preview.0) - 2024-07-24
 
 
