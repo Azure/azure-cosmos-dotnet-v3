@@ -29,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Fixed
 
-- [4619](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4619) CFP AVAD: Fixes issue where customers are allowed to use WithStartTime and WithStartFromBeginning with CFP AVAD
+- [4619](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4619) CFP AVAD: Fixes throws when customers use WithStartTime and WithStartFromBeginning with CFP AVAD
 - [4638](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4638) Documentation: Fixes AnalyticalStoreTimeToLiveInSeconds API documentation to list correct values
 - [4640](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4640) FeedRanges: Fixes GetFeedRangesAsync throwing DocumentClientException
 - [4618](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4618) CF/P AVAD: Fixes Deserialization of ChangeFeedItem and ChangeFeedMetadata to support System.Text.Json and Newtonsoft.Json
