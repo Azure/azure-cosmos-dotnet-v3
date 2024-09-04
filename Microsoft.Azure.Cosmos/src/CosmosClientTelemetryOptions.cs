@@ -4,6 +4,8 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
+
     /// <summary>
     /// Telemetry Options for Cosmos Client to enable/disable telemetry and distributed tracing along with corresponding threshold values.
     /// </summary>
@@ -46,5 +48,12 @@ namespace Microsoft.Azure.Cosmos
         /// These values decides whether to generate an <see cref="System.Diagnostics.Tracing.EventSource"/> with request diagnostics or not.
         /// </summary>
         public CosmosThresholdOptions CosmosThresholdOptions { get; set; } = new CosmosThresholdOptions();
+
+        /// <summary>
+        /// Enables printing query in Traces db.query.text attribute. By default, query is not printed.
+        /// Users have the option to enable printing parameterized or all queries, 
+        /// but has to beware that customer data may be shown when the later option is chosen. It's the user's responsibility to sanitize the queries if necessary.
+        /// </summary>
+        public ShowQueryMode ShowQueryMode { get; set; } = ShowQueryMode.NONE;
     }
 }

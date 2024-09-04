@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query.Core;
 
     /// <summary>
     /// Cosmos Result set iterator that keeps track of the continuation token when retrieving results form a query.
@@ -145,5 +146,10 @@ namespace Microsoft.Azure.Cosmos
         /// Operation Type used for open telemetry traces, it will set optionally, otherwise default operation type will be used in traces
         /// </summary>
         internal Documents.OperationType? operationType;
+
+        /// <summary>
+        /// collect SQL query Specs
+        /// </summary>
+        internal SqlQuerySpec querySpec;
     }
 }

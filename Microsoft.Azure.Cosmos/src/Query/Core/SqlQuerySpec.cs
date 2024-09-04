@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         /// <summary>
         /// Returns a value that indicates whether the Azure Cosmos DB database <see cref="Parameters"/> property should be serialized.
         /// </summary>
-        public bool ShouldSerializeParameters()
+        public bool IsParameterized()
         {
             return this.parameters.Count > 0;
         }

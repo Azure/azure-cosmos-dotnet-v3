@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Net;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Documents;
     using Telemetry;
 
     internal sealed class OpenTelemetryResponse : OpenTelemetryAttributes
@@ -27,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
         {
         }
 
-        internal OpenTelemetryResponse(ResponseMessage responseMessage)
+        internal OpenTelemetryResponse(ResponseMessage responseMessage, SqlQuerySpec querySpec = null)
            : this(
                   statusCode: responseMessage.StatusCode,
                   requestCharge: OpenTelemetryResponse.GetHeader(responseMessage)?.RequestCharge,
@@ -37,7 +39,8 @@ namespace Microsoft.Azure.Cosmos
                   requestMessage: responseMessage.RequestMessage,
                   subStatusCode: OpenTelemetryResponse.GetHeader(responseMessage)?.SubStatusCode,
                   activityId: OpenTelemetryResponse.GetHeader(responseMessage)?.ActivityId,
-                  correlationId: OpenTelemetryResponse.GetHeader(responseMessage)?.CorrelatedActivityId)
+                  correlationId: OpenTelemetryResponse.GetHeader(responseMessage)?.CorrelatedActivityId,
+                  querySpec: querySpec)
         {
         }
 
@@ -51,7 +54,8 @@ namespace Microsoft.Azure.Cosmos
             Documents.SubStatusCodes? subStatusCode,
             string activityId,
             string correlationId,
-            int? batchSize = null)
+            int? batchSize = null,
+            SqlQuerySpec querySpec = null)
             : base(requestMessage)
         {
             this.StatusCode = statusCode;
@@ -63,6 +67,7 @@ namespace Microsoft.Azure.Cosmos
             this.ActivityId = activityId;
             this.CorrelatedActivityId = correlationId;
             this.BatchSize = batchSize;
+            this.QuerySpec = querySpec;
         }
 
         private static string GetPayloadSize(ResponseMessage response)

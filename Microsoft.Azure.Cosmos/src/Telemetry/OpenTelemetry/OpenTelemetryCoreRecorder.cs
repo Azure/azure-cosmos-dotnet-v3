@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Diagnostics;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -26,6 +27,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private readonly OperationType operationType = OperationType.Invalid;
         private readonly string connectionModeCache = null;
 
+        private readonly ShowQueryMode showQueryMode = ShowQueryMode.NONE;
         private OpenTelemetryAttributes response = null;
 
         /// <summary>
@@ -66,6 +68,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             this.operationType = operationType;
             this.connectionModeCache = Enum.GetName(typeof(ConnectionMode), clientContext.ClientOptions.ConnectionMode);
+            this.showQueryMode = clientContext.ClientOptions?.CosmosClientTelemetryOptions?.ShowQueryMode ?? ShowQueryMode.NONE;
 
             if (scope.IsEnabled)
             {
@@ -245,6 +248,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.ActivityId, this.response.ActivityId);
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.CorrelatedActivityId, this.response.CorrelatedActivityId);
 
+                    if (this.response.QuerySpec is not null)
+                    {
+                        Console.WriteLine(" ===> " + this.showQueryMode + " " + this.response.QuerySpec?.QueryText + this.response.QuerySpec?.IsParameterized());
+                        if (this.showQueryMode == ShowQueryMode.ALL || (this.showQueryMode != ShowQueryMode.NONE && this.response.QuerySpec.IsParameterized() && this.showQueryMode == ShowQueryMode.PARAMETERIZED_ONLY))
+                        {
+                            this.scope.AddAttribute(OpenTelemetryAttributeKeys.QueryText, this.response.QuerySpec?.QueryText);
+                        }
+                    }
+                    
                     if (this.response.Diagnostics != null)
                     {
                         this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(this.response.Diagnostics.GetContactedRegions()));

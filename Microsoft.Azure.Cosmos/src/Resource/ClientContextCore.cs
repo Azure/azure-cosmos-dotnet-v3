@@ -564,6 +564,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     recorder.MarkFailed(ex);
 
+                    Console.WriteLine(ex.ToString());
                     throw;
                 }
             }
