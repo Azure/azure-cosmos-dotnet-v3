@@ -54,5 +54,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         {
             return this.QueryText.Length > 0;
         }
+
+        /// <summary>
+        /// Returns if query is parameterized
+        /// </summary>
+        public bool IsParameterized()
+        {
+            return false;
+        }
     }
 }
