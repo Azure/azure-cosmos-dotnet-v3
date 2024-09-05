@@ -14,8 +14,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry
 
             // Change feed operations
             public const string QueryChangeFeed = "query_change_feed";
-            public const string QueryChangeFeedForPartitionKeyRange = "query_change_feed_for_partition_key_range";
-            public const string QueryChangeFeedEstimator = "query_change_feed_estimator";
+            public const string QueryChangeFeedEstimator = "get_change_feed_processor_estimate";
 
             // Account Operations
             public const string ReadAccount = "read_account";
