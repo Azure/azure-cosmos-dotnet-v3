@@ -189,7 +189,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                     Assert.IsNotNull(context.Headers);
                     Assert.IsNotNull(context.Headers.Session);
                     Assert.IsTrue(context.Headers.RequestCharge > 0);
-                    Assert.IsTrue(context.Diagnostics.ToString().Contains(OpenTelemetryConstants.Operations.QueryChangeFeedForPartitionKeyRange));
+                    Assert.IsTrue(context.Diagnostics.ToString().Contains("Change Feed Processor Read Next Async"));
                     Assert.AreEqual(expected: 3, actual: docs.Count);
 
                     ChangeFeedItem<dynamic> createChange = docs.ElementAt(0);

@@ -30,13 +30,13 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: OpenTelemetryConstants.Operations.ReadClientEncryptionKey,
+                operationName: nameof(ReadAsync),
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Read,
                 requestOptions: requestOptions,
                 task: (trace) => base.ReadAsync(requestOptions, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<ClientEncryptionKeyProperties>(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.ReadClientEncryptionKey, (response) => new OpenTelemetryResponse<ClientEncryptionKeyProperties>(response)));
         }
 
         public override Task<ClientEncryptionKeyResponse> ReplaceAsync(
@@ -45,13 +45,13 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: OpenTelemetryConstants.Operations.ReplaceClientEncryptionKey,
+                operationName: nameof(ReplaceAsync),
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Replace,
                 requestOptions: requestOptions,
                 task: (trace) => base.ReplaceAsync(clientEncryptionKeyProperties, requestOptions, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<ClientEncryptionKeyProperties>(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.ReplaceClientEncryptionKey, (response) => new OpenTelemetryResponse<ClientEncryptionKeyProperties>(response)));
         }
     }
 }

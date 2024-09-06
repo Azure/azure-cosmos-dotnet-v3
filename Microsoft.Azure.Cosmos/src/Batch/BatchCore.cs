@@ -224,7 +224,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.container.ClientContext.OperationHelperAsync(
-                operationName: OpenTelemetryConstants.Operations.ExecuteBatch,
+                operationName: nameof(ExecuteAsync),
                 containerName: this.container.Id,
                 databaseName: this.container.Database.Id,
                 operationType: Documents.OperationType.Batch,
@@ -240,8 +240,7 @@ namespace Microsoft.Azure.Cosmos
                     this.operations = new List<ItemBatchOperation>();
                     return executor.ExecuteAsync(trace,  cancellationToken);
                 },
-                openTelemetry: (response) => new OpenTelemetryResponse(
-                    responseMessage: response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.ExecuteBatch, (response) => new OpenTelemetryResponse(responseMessage: response)));
         }
 
         /// <summary>

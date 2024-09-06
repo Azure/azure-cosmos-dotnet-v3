@@ -61,7 +61,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry
             public const string CreateStoredProcedure = "create_stored_procedure";
             public const string DeleteStoreProcedure = "delete_stored_procedure";
             public const string ExecuteStoredProcedure = "execute_stored_procedure";
-            public const string ExecuteStoredProcedureStream = "execute_stored_procedure_stream";
             public const string ReadStoredProcedure = "read_stored_procedure";
             public const string ReplaceStoredProcedure = "replace_stored_procedure";
 

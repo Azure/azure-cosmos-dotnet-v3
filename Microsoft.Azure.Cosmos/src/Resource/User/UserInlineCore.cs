@@ -27,13 +27,13 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: OpenTelemetryConstants.Operations.ReadUser,
+                operationName: nameof(ReadAsync),
                 containerName: null,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Read,
                 requestOptions: requestOptions,
                 task: (trace) => base.ReadAsync(requestOptions, trace, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<UserProperties>(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.ReadUser, (response) => new OpenTelemetryResponse<UserProperties>(response)));
         }
 
         public override Task<UserResponse> ReplaceAsync(
@@ -42,13 +42,13 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: OpenTelemetryConstants.Operations.ReplaceUser,
+                operationName: nameof(ReplaceAsync),
                 containerName: null,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Replace,
                 requestOptions: requestOptions,
                 task: (trace) => base.ReplaceAsync(userProperties, requestOptions, trace, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<UserProperties>(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.ReplaceUser, (response) => new OpenTelemetryResponse<UserProperties>(response)));
         }
 
         public override Task<UserResponse> DeleteAsync(
@@ -56,13 +56,13 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: OpenTelemetryConstants.Operations.DeleteUser,
+                operationName: nameof(DeleteAsync),
                 containerName: null,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Delete,
                 requestOptions: requestOptions,
                 task: (trace) => base.DeleteAsync(requestOptions, trace, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<UserProperties>(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.DeleteUser, (response) => new OpenTelemetryResponse<UserProperties>(response)));
         }
 
         public override Permission GetPermission(string id)
@@ -77,13 +77,13 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: OpenTelemetryConstants.Operations.CreatePermission,
+                operationName: nameof(CreatePermissionAsync),
                 containerName: null,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Create,
                 requestOptions: requestOptions,
                 task: (trace) => base.CreatePermissionAsync(permissionProperties, tokenExpiryInSeconds, requestOptions, trace, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<PermissionProperties>(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.CreatePermission, (response) => new OpenTelemetryResponse<PermissionProperties>(response)));
         }
 
         public override Task<PermissionResponse> UpsertPermissionAsync(
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Upsert,
                 requestOptions: requestOptions,
                 task: (trace) => base.UpsertPermissionAsync(permissionProperties, tokenExpiryInSeconds, requestOptions, trace, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<PermissionProperties>(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.UpsertPermission, (response) => new OpenTelemetryResponse<PermissionProperties>(response)));
         }
 
         public override FeedIterator<T> GetPermissionQueryIterator<T>(

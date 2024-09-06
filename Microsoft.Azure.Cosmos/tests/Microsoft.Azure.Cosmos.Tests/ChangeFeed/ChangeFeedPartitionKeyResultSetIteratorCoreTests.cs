@@ -42,17 +42,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<ContainerInternal> containerMock = new Mock<ContainerInternal>();
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
-                It.Is<string>(str => str.Contains(OpenTelemetryConstants.Operations.QueryChangeFeedForPartitionKeyRange)),
+                It.Is<string>(str => str.Contains("Change Feed Processor")),
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<ResponseMessage>>>(),
-                It.IsAny<Func<ResponseMessage, OpenTelemetryAttributes>>(),
+                It.IsAny<Tuple<string, Func<ResponseMessage, OpenTelemetryAttributes>>>(),
                 It.IsAny<Documents.ResourceType?>(),
                 It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, string, string, Documents.OperationType, RequestOptions, Func<ITrace, Task<ResponseMessage>>,Func<ResponseMessage, OpenTelemetryAttributes>, ResourceType?, TraceComponent, TraceLevel>(
+               .Returns<string, string, string, Documents.OperationType, RequestOptions, Func<ITrace, Task<ResponseMessage>>,Tuple<string, Func<ResponseMessage, OpenTelemetryAttributes>>, ResourceType?, TraceComponent, TraceLevel>(
                 (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, resourceType, comp, level) =>
                 {
                     using (ITrace trace = Trace.GetRootTrace(operationName, comp, level))
@@ -123,17 +123,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<ContainerInternal> containerMock = new Mock<ContainerInternal>();
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
-                It.Is<string>(str => str.Contains(OpenTelemetryConstants.Operations.QueryChangeFeedForPartitionKeyRange)),
+                It.Is<string>(str => str.Contains("Change Feed Processor")),
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<ResponseMessage>>>(),
-                It.IsAny<Func<ResponseMessage, OpenTelemetryAttributes>>(),
+                It.IsAny<Tuple<string, Func<ResponseMessage, OpenTelemetryAttributes>>>(),
                 It.IsAny<Documents.ResourceType?>(),
                 It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, string, string, Documents.OperationType, RequestOptions, Func<ITrace, Task<ResponseMessage>>, Func<ResponseMessage, OpenTelemetryAttributes>, ResourceType?, TraceComponent, TraceLevel>(
+               .Returns<string, string, string, Documents.OperationType, RequestOptions, Func<ITrace, Task<ResponseMessage>>, Tuple<string, Func<ResponseMessage, OpenTelemetryAttributes>>, ResourceType?, TraceComponent, TraceLevel>(
                 (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, resourceType, comp, level) =>
                 {
                     using (ITrace trace = Trace.GetRootTrace(operationName, comp, level))
@@ -194,17 +194,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<ContainerInternal> containerMock = new Mock<ContainerInternal>();
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
-                It.Is<string>(str => str.Contains(OpenTelemetryConstants.Operations.QueryChangeFeedForPartitionKeyRange)),
+                It.Is<string>(str => str.Contains("Change Feed Processor")),
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<ResponseMessage>>>(),
-                It.IsAny<Func<ResponseMessage, OpenTelemetryAttributes>>(),
+                It.IsAny<Tuple<string, Func<ResponseMessage, OpenTelemetryAttributes>>>(),
                 It.IsAny<Documents.ResourceType?>(),
                 It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, string, string, Documents.OperationType, RequestOptions, Func<ITrace, Task<ResponseMessage>>, Func<ResponseMessage, OpenTelemetryAttributes>, ResourceType?, TraceComponent, TraceLevel>(
+               .Returns<string, string, string, Documents.OperationType, RequestOptions, Func<ITrace, Task<ResponseMessage>>, Tuple<string, Func<ResponseMessage, OpenTelemetryAttributes>>, ResourceType?, TraceComponent, TraceLevel>(
                 (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, resourceType, comp, level) =>
                 {
                     using (ITrace trace = Trace.GetRootTrace(operationName, comp, level))
@@ -277,17 +277,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<ContainerInternal> containerMock = new Mock<ContainerInternal>();
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
-                It.Is<string>(str => str.Contains(OpenTelemetryConstants.Operations.QueryChangeFeedForPartitionKeyRange)),
+                It.Is<string>(str => str.Contains("Change Feed Processor")),
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<ResponseMessage>>>(),
-                It.IsAny<Func<ResponseMessage, OpenTelemetryAttributes>>(),
+                It.IsAny<Tuple<string, Func<ResponseMessage, OpenTelemetryAttributes>>>(),
                 It.IsAny<Documents.ResourceType?>(),
                 It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, string, string, Documents.OperationType, RequestOptions, Func<ITrace, Task<ResponseMessage>>, Func<ResponseMessage, OpenTelemetryAttributes>, Documents.ResourceType?, TraceComponent, TraceLevel>(
+               .Returns<string, string, string, Documents.OperationType, RequestOptions, Func<ITrace, Task<ResponseMessage>>, Tuple<string, Func<ResponseMessage, OpenTelemetryAttributes>>, Documents.ResourceType?, TraceComponent, TraceLevel>(
                 (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, resourceType, comp, level) =>
                 {
                     using (ITrace trace = Trace.GetRootTrace(operationName, comp, level))

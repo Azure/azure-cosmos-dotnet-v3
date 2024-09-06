@@ -221,13 +221,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-                return await this.clientContext.OperationHelperAsync(OpenTelemetryConstants.Operations.QueryChangeFeed,
+                return await this.clientContext.OperationHelperAsync("Change Feed Iterator Read Next Async",
                                                 containerName: this.container?.Id,
                                                 databaseName: this.container?.Database?.Id ?? this.databaseName,
                                                 operationType: OperationType.ReadFeed,
                                                 requestOptions: this.changeFeedRequestOptions,
                                                 task: (trace) => this.ReadNextInternalAsync(trace, cancellationToken),
-                                                openTelemetry: (response) => new OpenTelemetryResponse(responseMessage: response),
+                                                openTelemetry: new (OpenTelemetryConstants.Operations.QueryChangeFeed, (response) => new OpenTelemetryResponse(responseMessage: response)),
                                                 traceComponent: TraceComponent.ChangeFeed,
                                                 traceLevel: TraceLevel.Info);
         }

@@ -26,13 +26,13 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: OpenTelemetryConstants.Operations.DeleteConflict,
+                operationName: nameof(DeleteAsync),
                 containerName: null,
                 databaseName: null,
                 operationType: Documents.OperationType.Delete,
                 requestOptions: null,
                 task: (trace) => base.DeleteAsync(conflict, partitionKey, trace, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.DeleteConflict, (response) => new OpenTelemetryResponse(response)));
         }
 
         public override FeedIterator GetConflictQueryStreamIterator(
@@ -89,13 +89,13 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: OpenTelemetryConstants.Operations.ReadConflict,
+                operationName: nameof(ReadCurrentAsync),
                 containerName: null,
                 databaseName: null,
                 operationType: Documents.OperationType.Read,
                 requestOptions: null,
                 task: (trace) => base.ReadCurrentAsync<T>(cosmosConflict, partitionKey, trace, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<T>(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.ReadConflict, (response) => new OpenTelemetryResponse<T>(response)));
         }
 
         public override T ReadConflictContent<T>(ConflictProperties cosmosConflict)
