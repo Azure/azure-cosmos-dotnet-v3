@@ -507,10 +507,10 @@ namespace Microsoft.Azure.Cosmos
                             {
                                 if (resourceType is not null && this.IsBulkOperationSupported(resourceType.Value, operationType))
                                 {
-                                    operationName = OpenTelemetryConstants.Operations.ExecuteBulkPrefix + openTelemetry.Item1;
+                                    operationName = OpenTelemetryConstants.Operations.ExecuteBulkPrefix + openTelemetry?.Item1;
                                 }
 
-                                return openTelemetry.Item1;
+                                return openTelemetry?.Item1;
                             },
                             containerName: containerName,
                             databaseName: databaseName,

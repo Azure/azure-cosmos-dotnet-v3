@@ -734,7 +734,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<ResourceType?>(),
                 It.IsAny<TraceComponent>(),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, string, string, OperationType, RequestOptions, Func<ITrace, Task<ItemResponse<dynamic>>>, Func<ItemResponse<dynamic>, OpenTelemetryAttributes>, ResourceType?, TraceComponent, TraceLevel>(
+               .Returns<string, string, string, OperationType, RequestOptions, Func<ITrace, Task<ItemResponse<dynamic>>>, Tuple<string, Func<ItemResponse<dynamic>, OpenTelemetryAttributes>>, ResourceType?, TraceComponent, TraceLevel>(
                 (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, resourceType, comp, level) => func(NoOpTrace.Singleton));
 
             mockContext.Setup(x => x.ProcessResourceOperationStreamAsync(

@@ -26,7 +26,7 @@
     <Output>
       <Text><![CDATA[.
 └── Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
-    ├── query_change_feed(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    ├── Change Feed Iterator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
@@ -71,7 +71,7 @@
     │   │                                               )
     │   ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    ├── query_change_feed(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    ├── Change Feed Iterator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
@@ -101,7 +101,7 @@
     │   │                                           )
     │   ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    ├── query_change_feed(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    ├── Change Feed Iterator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
@@ -131,7 +131,7 @@
     │   │                                           )
     │   ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    ├── query_change_feed(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    ├── Change Feed Iterator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
@@ -161,7 +161,7 @@
     │   │                                           )
     │   ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    └── query_change_feed(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    └── Change Feed Iterator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
         │   (
         │       [Client Configuration]
         │       Redacted To Not Change The Baselines From Run To Run
@@ -260,7 +260,7 @@
   "duration in milliseconds": 0,
   "children": [
     {
-      "name": "query_change_feed",
+      "name": "Change Feed Iterator Read Next Async",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
@@ -430,7 +430,7 @@
       ]
     },
     {
-      "name": "query_change_feed",
+      "name": "Change Feed Iterator Read Next Async",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
@@ -524,7 +524,7 @@
       ]
     },
     {
-      "name": "query_change_feed",
+      "name": "Change Feed Iterator Read Next Async",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
@@ -618,7 +618,7 @@
       ]
     },
     {
-      "name": "query_change_feed",
+      "name": "Change Feed Iterator Read Next Async",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
@@ -712,7 +712,7 @@
       ]
     },
     {
-      "name": "query_change_feed",
+      "name": "Change Feed Iterator Read Next Async",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
@@ -1023,10 +1023,10 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_change_feed" displayName="query_change_feed containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Change Feed Iterator Read Next Async" displayName="Change Feed Iterator Read Next Async containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_change_feed</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">Change Feed Iterator Read Next Async</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -1042,10 +1042,10 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_change_feed" displayName="query_change_feed containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Change Feed Iterator Read Next Async" displayName="Change Feed Iterator Read Next Async containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_change_feed</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">Change Feed Iterator Read Next Async</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -1061,10 +1061,10 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_change_feed" displayName="query_change_feed containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Change Feed Iterator Read Next Async" displayName="Change Feed Iterator Read Next Async containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_change_feed</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">Change Feed Iterator Read Next Async</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -1080,10 +1080,10 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_change_feed" displayName="query_change_feed containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Change Feed Iterator Read Next Async" displayName="Change Feed Iterator Read Next Async containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_change_feed</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">Change Feed Iterator Read Next Async</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -1099,10 +1099,10 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_change_feed" displayName="query_change_feed containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Change Feed Iterator Read Next Async" displayName="Change Feed Iterator Read Next Async containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_change_feed</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">Change Feed Iterator Read Next Async</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -1153,7 +1153,7 @@
     <Output>
       <Text><![CDATA[.
 └── Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
-    ├── query_items(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
@@ -1199,7 +1199,7 @@
     │   ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   └── ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    ├── query_items(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
@@ -1230,7 +1230,7 @@
     │   ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   └── ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    ├── query_items(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
@@ -1261,7 +1261,7 @@
     │   ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   └── ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    └── query_items(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    └── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
         │   (
         │       [Client Configuration]
         │       Redacted To Not Change The Baselines From Run To Run
@@ -1300,7 +1300,7 @@
   "duration in milliseconds": 0,
   "children": [
     {
-      "name": "query_items",
+      "name": "Typed FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
@@ -1474,7 +1474,7 @@
       ]
     },
     {
-      "name": "query_items",
+      "name": "Typed FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
@@ -1572,7 +1572,7 @@
       ]
     },
     {
-      "name": "query_items",
+      "name": "Typed FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
@@ -1670,7 +1670,7 @@
       ]
     },
     {
-      "name": "query_items",
+      "name": "Typed FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
@@ -1769,10 +1769,10 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -1788,10 +1788,10 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -1807,10 +1807,10 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -1826,10 +1826,10 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -1845,10 +1845,10 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -1900,7 +1900,7 @@
     <Output>
       <Text><![CDATA[.
 └── Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
-    ├── query_change_feed(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    ├── Change Feed Iterator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
@@ -1945,7 +1945,7 @@
     │   │                                               )
     │   ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    ├── query_change_feed(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    ├── Change Feed Iterator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
@@ -1975,7 +1975,7 @@
     │   │                                           )
     │   ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    ├── query_change_feed(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    ├── Change Feed Iterator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
@@ -2005,7 +2005,7 @@
     │   │                                           )
     │   ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    └── query_change_feed(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    └── Change Feed Iterator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
         │   (
         │       [Client Configuration]
         │       Redacted To Not Change The Baselines From Run To Run
@@ -2043,7 +2043,7 @@
   "duration in milliseconds": 0,
   "children": [
     {
-      "name": "query_change_feed",
+      "name": "Change Feed Iterator Read Next Async",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
@@ -2213,7 +2213,7 @@
       ]
     },
     {
-      "name": "query_change_feed",
+      "name": "Change Feed Iterator Read Next Async",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
@@ -2307,7 +2307,7 @@
       ]
     },
     {
-      "name": "query_change_feed",
+      "name": "Change Feed Iterator Read Next Async",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
@@ -2401,7 +2401,7 @@
       ]
     },
     {
-      "name": "query_change_feed",
+      "name": "Change Feed Iterator Read Next Async",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
@@ -2496,10 +2496,10 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_change_feed" displayName="query_change_feed containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Change Feed Iterator Read Next Async" displayName="Change Feed Iterator Read Next Async containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_change_feed</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">Change Feed Iterator Read Next Async</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -2515,10 +2515,10 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_change_feed" displayName="query_change_feed containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Change Feed Iterator Read Next Async" displayName="Change Feed Iterator Read Next Async containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_change_feed</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">Change Feed Iterator Read Next Async</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -2534,10 +2534,10 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_change_feed" displayName="query_change_feed containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Change Feed Iterator Read Next Async" displayName="Change Feed Iterator Read Next Async containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_change_feed</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">Change Feed Iterator Read Next Async</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -2553,10 +2553,10 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_change_feed" displayName="query_change_feed containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Change Feed Iterator Read Next Async" displayName="Change Feed Iterator Read Next Async containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_change_feed</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">Change Feed Iterator Read Next Async</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -2572,10 +2572,10 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_change_feed" displayName="query_change_feed containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Change Feed Iterator Read Next Async" displayName="Change Feed Iterator Read Next Async containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_change_feed</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">Change Feed Iterator Read Next Async</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -2627,7 +2627,7 @@
     <Output>
       <Text><![CDATA[.
 └── Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
-    ├── query_items(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
@@ -2673,7 +2673,7 @@
     │   ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   └── ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    ├── query_items(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
@@ -2704,7 +2704,7 @@
     │   ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   └── ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    ├── query_items(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
@@ -2735,7 +2735,7 @@
     │   ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   └── ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    └── query_items(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    └── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
         │   (
         │       [Client Configuration]
         │       Redacted To Not Change The Baselines From Run To Run
@@ -2774,7 +2774,7 @@
   "duration in milliseconds": 0,
   "children": [
     {
-      "name": "query_items",
+      "name": "Typed FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
@@ -2948,7 +2948,7 @@
       ]
     },
     {
-      "name": "query_items",
+      "name": "Typed FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
@@ -3046,7 +3046,7 @@
       ]
     },
     {
-      "name": "query_items",
+      "name": "Typed FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
@@ -3144,7 +3144,7 @@
       ]
     },
     {
-      "name": "query_items",
+      "name": "Typed FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
@@ -3243,10 +3243,10 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -3262,10 +3262,10 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -3281,10 +3281,10 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -3300,10 +3300,10 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -3319,10 +3319,10 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -3369,7 +3369,7 @@
     <Output>
       <Text><![CDATA[.
 └── Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
-    └── query_change_feed_estimator(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    └── Change Feed Estimator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
         │   (
         │       [Client Configuration]
         │       Redacted To Not Change The Baselines From Run To Run
@@ -3445,7 +3445,7 @@
   "duration in milliseconds": 0,
   "children": [
     {
-      "name": "query_change_feed_estimator",
+      "name": "Change Feed Estimator Read Next Async",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
@@ -3644,10 +3644,10 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_change_feed_estimator" displayName="query_change_feed_estimator containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Change Feed Estimator Read Next Async" displayName="Change Feed Estimator Read Next Async containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_change_feed_estimator</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">Change Feed Estimator Read Next Async</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>

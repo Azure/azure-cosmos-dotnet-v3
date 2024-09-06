@@ -20,7 +20,7 @@
     <Output>
       <Text><![CDATA[.
 └── Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
-    ├── query_items(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
@@ -63,7 +63,7 @@
     │                                                       [Client Side Request Stats]
     │                                                       Redacted To Not Change The Baselines From Run To Run
     │                                                   )
-    ├── query_items(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
@@ -91,7 +91,7 @@
     │                                                   [Client Side Request Stats]
     │                                                   Redacted To Not Change The Baselines From Run To Run
     │                                               )
-    ├── query_items(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
@@ -119,7 +119,7 @@
     │                                                   [Client Side Request Stats]
     │                                                   Redacted To Not Change The Baselines From Run To Run
     │                                               )
-    └── query_items(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    └── FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
         │   (
         │       [Client Configuration]
         │       Redacted To Not Change The Baselines From Run To Run
@@ -155,7 +155,7 @@
   "duration in milliseconds": 0,
   "children": [
     {
-      "name": "query_items",
+      "name": "FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
@@ -317,7 +317,7 @@
       ]
     },
     {
-      "name": "query_items",
+      "name": "FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
@@ -403,7 +403,7 @@
       ]
     },
     {
-      "name": "query_items",
+      "name": "FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
@@ -489,7 +489,7 @@
       ]
     },
     {
-      "name": "query_items",
+      "name": "FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
@@ -683,7 +683,7 @@
     <Output>
       <Text><![CDATA[.
 └── Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
-    ├── query_items(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
@@ -727,7 +727,7 @@
     │   │                                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                               )
     │   └── Feed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    ├── query_items(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
@@ -756,7 +756,7 @@
     │   │                                               Redacted To Not Change The Baselines From Run To Run
     │   │                                           )
     │   └── Feed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    ├── query_items(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
@@ -785,7 +785,7 @@
     │   │                                               Redacted To Not Change The Baselines From Run To Run
     │   │                                           )
     │   └── Feed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    └── query_items(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    └── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
         │   (
         │       [Client Configuration]
         │       Redacted To Not Change The Baselines From Run To Run
@@ -822,7 +822,7 @@
   "duration in milliseconds": 0,
   "children": [
     {
-      "name": "query_items",
+      "name": "Typed FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
@@ -988,7 +988,7 @@
       ]
     },
     {
-      "name": "query_items",
+      "name": "Typed FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
@@ -1078,7 +1078,7 @@
       ]
     },
     {
-      "name": "query_items",
+      "name": "Typed FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
@@ -1168,7 +1168,7 @@
       ]
     },
     {
-      "name": "query_items",
+      "name": "Typed FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
@@ -1367,7 +1367,7 @@
     <Output>
       <Text><![CDATA[.
 └── Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
-    ├── query_items(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
@@ -1410,7 +1410,7 @@
     │                                                       [Client Side Request Stats]
     │                                                       Redacted To Not Change The Baselines From Run To Run
     │                                                   )
-    ├── query_items(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
@@ -1438,7 +1438,7 @@
     │                                                   [Client Side Request Stats]
     │                                                   Redacted To Not Change The Baselines From Run To Run
     │                                               )
-    ├── query_items(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
@@ -1466,7 +1466,7 @@
     │                                                   [Client Side Request Stats]
     │                                                   Redacted To Not Change The Baselines From Run To Run
     │                                               )
-    └── query_items(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    └── FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
         │   (
         │       [Client Configuration]
         │       Redacted To Not Change The Baselines From Run To Run
@@ -1502,7 +1502,7 @@
   "duration in milliseconds": 0,
   "children": [
     {
-      "name": "query_items",
+      "name": "FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
@@ -1664,7 +1664,7 @@
       ]
     },
     {
-      "name": "query_items",
+      "name": "FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
@@ -1750,7 +1750,7 @@
       ]
     },
     {
-      "name": "query_items",
+      "name": "FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
@@ -1836,7 +1836,7 @@
       ]
     },
     {
-      "name": "query_items",
+      "name": "FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
@@ -2031,7 +2031,7 @@
     <Output>
       <Text><![CDATA[.
 └── Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
-    ├── query_items(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
@@ -2075,7 +2075,7 @@
     │   │                                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                               )
     │   └── Feed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    ├── query_items(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
@@ -2104,7 +2104,7 @@
     │   │                                               Redacted To Not Change The Baselines From Run To Run
     │   │                                           )
     │   └── Feed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    ├── query_items(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
@@ -2133,7 +2133,7 @@
     │   │                                               Redacted To Not Change The Baselines From Run To Run
     │   │                                           )
     │   └── Feed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    └── query_items(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    └── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
         │   (
         │       [Client Configuration]
         │       Redacted To Not Change The Baselines From Run To Run
@@ -2170,7 +2170,7 @@
   "duration in milliseconds": 0,
   "children": [
     {
-      "name": "query_items",
+      "name": "Typed FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
@@ -2336,7 +2336,7 @@
       ]
     },
     {
-      "name": "query_items",
+      "name": "Typed FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
@@ -2426,7 +2426,7 @@
       ]
     },
     {
-      "name": "query_items",
+      "name": "Typed FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
@@ -2516,7 +2516,7 @@
       ]
     },
     {
-      "name": "query_items",
+      "name": "Typed FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",

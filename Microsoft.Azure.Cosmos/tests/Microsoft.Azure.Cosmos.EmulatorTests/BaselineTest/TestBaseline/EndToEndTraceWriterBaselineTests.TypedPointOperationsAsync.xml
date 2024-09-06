@@ -16,7 +16,7 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── create_item(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+└── CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   (
     │       [Client Configuration]
     │       Redacted To Not Change The Baselines From Run To Run
@@ -45,7 +45,7 @@
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
-  "name": "create_item",
+  "name": "CreateItemAsync",
   "start datetime": "0001-01-01T00:00:00Z",
   "duration in milliseconds": 0,
   "data": {
@@ -154,7 +154,7 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── read_item(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+└── ReadItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   (
     │       [Client Configuration]
     │       Redacted To Not Change The Baselines From Run To Run
@@ -180,7 +180,7 @@
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
-  "name": "read_item",
+  "name": "ReadItemAsync",
   "start datetime": "0001-01-01T00:00:00Z",
   "duration in milliseconds": 0,
   "data": {
@@ -283,7 +283,7 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── replace_item(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+└── ReplaceItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   (
     │       [Client Configuration]
     │       Redacted To Not Change The Baselines From Run To Run
@@ -310,7 +310,7 @@
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
-  "name": "replace_item",
+  "name": "ReplaceItemAsync",
   "start datetime": "0001-01-01T00:00:00Z",
   "duration in milliseconds": 0,
   "data": {
@@ -411,7 +411,7 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── delete_item(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+└── DeleteItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   (
     │       [Client Configuration]
     │       Redacted To Not Change The Baselines From Run To Run
@@ -437,7 +437,7 @@
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
-  "name": "delete_item",
+  "name": "DeleteItemAsync",
   "start datetime": "0001-01-01T00:00:00Z",
   "duration in milliseconds": 0,
   "data": {
