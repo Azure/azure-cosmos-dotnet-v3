@@ -791,7 +791,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(CreateDatabaseAsync), 
+                operationName: nameof(CreateDatabaseAsync),
                 containerName: null,
                 databaseName: id,
                 operationType: OperationType.Create,

@@ -605,7 +605,6 @@ namespace Microsoft.Azure.Cosmos
             OperationType operationType)
         {
             this.ThrowIfDisposed();
-
             if (!this.ClientOptions.AllowBulkExecution)
             {
                 return false;

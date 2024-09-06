@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(DeleteContainerAsync),
+                operationName: nameof(DeleteContainerStreamAsync),
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Delete,
@@ -298,7 +298,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(UpsertItemStreamAsync),
+                operationName: nameof(UpsertItemAsync),
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Upsert,
@@ -316,7 +316,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(ReplaceItemAsync),
+                operationName: nameof(ReplaceItemStreamAsync),
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Replace,

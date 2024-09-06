@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                operationName: OpenTelemetryConstants.Operations.UpsertPermission,
+                operationName: nameof(UpsertPermissionAsync),
                 containerName: null,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Upsert,

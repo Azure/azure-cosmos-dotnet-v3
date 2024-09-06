@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -58,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch(NullReferenceException nre)
             {
                 Assert.AreEqual(typeof(CosmosNullReferenceException), nre.GetType());
-                Assert.IsTrue(nre.Message.Contains(OpenTelemetryConstants.Operations.CreateItem));
+                Assert.IsTrue(nre.Message.Contains("CreateItemAsync"));
                 string cosmosToString = nre.ToString();
                 Assert.IsFalse(cosmosToString.Contains("Microsoft.Azure.Cosmos.CosmosNullReferenceException"), $"The internal wrapper exception should not be exposed to users. {cosmosToString}");
                 Assert.IsTrue(cosmosToString.Contains(errorMessage));
@@ -74,11 +73,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (NullReferenceException nre)
             {
                 Assert.AreEqual(typeof(CosmosNullReferenceException), nre.GetType());
-                Assert.IsTrue(nre.Message.Contains(OpenTelemetryConstants.Operations.QueryItems));
+                Assert.IsTrue(nre.Message.Contains("Typed FeedIterator ReadNextAsync"));
                 string cosmosToString = nre.ToString();
                 Assert.IsFalse(cosmosToString.Contains("Microsoft.Azure.Cosmos.CosmosNullReferenceException"), $"The internal wrapper exception should not be exposed to users. {cosmosToString}");
                 Assert.IsTrue(cosmosToString.Contains(errorMessage));
-                Assert.IsTrue(cosmosToString.Contains(OpenTelemetryConstants.Operations.QueryItems));
+                Assert.IsTrue(cosmosToString.Contains("Typed FeedIterator ReadNextAsync"));
             }
         }
     }

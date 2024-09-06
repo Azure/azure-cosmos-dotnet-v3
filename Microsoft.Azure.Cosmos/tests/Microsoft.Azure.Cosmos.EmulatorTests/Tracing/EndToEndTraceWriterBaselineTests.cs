@@ -20,7 +20,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
-    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -1531,7 +1530,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 oTelActivitiesString.Append("</OTelActivities>");
             }
           
-            AssertTraceProperties(input.Trace);
+            AssertTraceProperites(input.Trace);
             Assert.IsTrue(text.Contains("Client Side Request Stats"), $"All diagnostics should have request stats: {text}");
             Assert.IsTrue(json.Contains("Client Side Request Stats"), $"All diagnostics should have request stats: {json}");
             Assert.IsTrue(text.Contains("Client Configuration"), $"All diagnostics should have Client Configuration: {text}");
@@ -1620,13 +1619,23 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
         }
 
 
-        private static void AssertTraceProperties(ITrace trace)
+        private static void AssertTraceProperites(ITrace trace)
         {
-            if (trace.Name == OpenTelemetryConstants.Operations.ReadManyItems || // skip test for read many as the queries are done in parallel
-                trace.Name == OpenTelemetryConstants.Operations.QueryChangeFeedEstimator || // Change Feed Estimator issues parallel requests
-                trace.Children.Count == 0) // Base case
+            if (trace.Name == "ReadManyItemsStreamAsync" || 
+                trace.Name == "ReadManyItemsAsync")
             {
-                return; 
+                return; // skip test for read many as the queries are done in parallel
+            }
+
+            if (trace.Name == "Change Feed Estimator Read Next Async")
+            {
+                return; // Change Feed Estimator issues parallel requests
+            }
+
+            if (trace.Children.Count == 0)
+            {
+                // Base case
+                return;
             }
 
             // Trace stopwatch should be greater than the sum of all children's stop watches
@@ -1635,7 +1644,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             foreach (ITrace child in trace.Children)
             {
                 sumOfChildrenTimeSpan += child.Duration;
-                AssertTraceProperties(child);
+                AssertTraceProperites(child);
             }
 
             if (rootTimeSpan < sumOfChildrenTimeSpan)
