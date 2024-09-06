@@ -26,6 +26,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.ReadFeed;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow.Schemas;
     using Microsoft.Azure.Cosmos.Serializer;
@@ -1258,47 +1259,57 @@ namespace Microsoft.Azure.Cosmos
         }
 
 #if PREVIEW
-        public override async Task<bool> IsSubsetAsync(
+        public override async Task<bool> IsFeedRangePartOfAsync(
             FeedRange parentFeedRange,
             FeedRange childFeedRange,
             CancellationToken cancellationToken = default)
         {
-            if (parentFeedRange is not FeedRangeInternal parentFeedRangeInternal)
-            {
-                throw new ArgumentException($"The argument for '{nameof(parentFeedRange)}' must be of type {typeof(FeedRange)} but was {parentFeedRange?.GetType().Name ?? "null"}");
-            }
-
-            if (childFeedRange is not FeedRangeInternal childFeedRangeInternal)
-            {
-                throw new ArgumentException($"The argument for '{nameof(childFeedRange)}' must be of type {typeof(FeedRange)} but was {childFeedRange?.GetType().Name ?? "null"}");
-            }
-
             using (ITrace trace = Tracing.Trace.GetRootTrace("ContainerCore FeedRange IsSubset Async", TraceComponent.Unknown, Tracing.TraceLevel.Info))
             {
-                PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync(cancellationToken);
+                if (parentFeedRange == null)
+                {
+                    throw new ArgumentNullException($"The argument for '{nameof(parentFeedRange)}' cannot be null.");
+                }
 
-                string containerRId = await this.GetCachedRIDAsync(
-                    forceRefresh: false,
-                    trace: trace,
-                    cancellationToken: cancellationToken);
+                if (childFeedRange == null)
+                {
+                    throw new ArgumentNullException($"The argument for '{nameof(childFeedRange)}' cannot be null.");
+                }
 
-                IRoutingMapProvider routingMapProvider = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(trace);
+                try
+                {
+                    _ = FeedRangeInternal.TryParse(parentFeedRange?.ToJsonString(), out FeedRangeInternal parentFeedRangeInternal);
+                    _ = FeedRangeInternal.TryParse(childFeedRange?.ToJsonString(), out FeedRangeInternal childFeedRangeInternal);
 
-                return ContainerCore.IsSubset(
-                    range1: ContainerCore.GetRange(
-                        feedRange: parentFeedRange,
-                        ranges: await parentFeedRangeInternal.GetEffectiveRangesAsync(
-                            routingMapProvider: routingMapProvider,
-                            containerRid: containerRId,
-                            partitionKeyDefinition: partitionKeyDefinition,
-                            trace: trace)),
-                    range2: ContainerCore.GetRange(
-                        feedRange: childFeedRange,
-                        ranges: await childFeedRangeInternal.GetEffectiveRangesAsync(
-                            routingMapProvider: routingMapProvider,
-                            containerRid: containerRId,
-                            partitionKeyDefinition: partitionKeyDefinition,
-                            trace: trace)));
+                    PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync(cancellationToken);
+
+                    string containerRId = await this.GetCachedRIDAsync(
+                        forceRefresh: false,
+                        trace: trace,
+                        cancellationToken: cancellationToken);
+
+                    IRoutingMapProvider routingMapProvider = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(trace);
+
+                    return ContainerCore.IsSubset(
+                        range1: ContainerCore.GetRange(
+                            feedRange: parentFeedRange,
+                            ranges: await parentFeedRangeInternal.GetEffectiveRangesAsync(
+                                routingMapProvider: routingMapProvider,
+                                containerRid: containerRId,
+                                partitionKeyDefinition: partitionKeyDefinition,
+                                trace: trace)),
+                        range2: ContainerCore.GetRange(
+                            feedRange: childFeedRange,
+                            ranges: await childFeedRangeInternal.GetEffectiveRangesAsync(
+                                routingMapProvider: routingMapProvider,
+                                containerRid: containerRId,
+                                partitionKeyDefinition: partitionKeyDefinition,
+                                trace: trace)));
+                }
+                catch (DocumentClientException dce)
+                {
+                    throw CosmosExceptionFactory.Create(dce, trace);
+                }
             }
         }
 

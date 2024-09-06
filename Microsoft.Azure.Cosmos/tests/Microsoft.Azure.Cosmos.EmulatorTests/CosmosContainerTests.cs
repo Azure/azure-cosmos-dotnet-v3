@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
@@ -1811,7 +1810,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 PartitionKey partitionKey = new("WA");
                 FeedRange feedRange = FeedRange.FromPartitionKey(partitionKey);
 
-                bool actualIsSubset = await container.IsSubsetAsync(
+                bool actualIsSubset = await container.IsFeedRangePartOfAsync(
                     parentFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>(parentMin, parentMax, true, false)),
                     childFeedRange: feedRange,
                     cancellationToken: CancellationToken.None);
@@ -1859,7 +1858,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 FeedRange feedRange = FeedRange.FromPartitionKey(partitionKey);
 
-                bool actualIsSubset = await container.IsSubsetAsync(
+                bool actualIsSubset = await container.IsFeedRangePartOfAsync(
                     parentFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>(parentMin, parentMax, true, false)),
                     childFeedRange: feedRange,
                     cancellationToken: CancellationToken.None);
@@ -1913,7 +1912,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 container = containerResponse.Container;
 
-                bool actualIsSubset = await container.IsSubsetAsync(
+                bool actualIsSubset = await container.IsFeedRangePartOfAsync(
                     parentFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>(parentMin, parentMax, true, false)),
                     childFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>(childMin, childMax, true, false)),
                     cancellationToken: CancellationToken.None);
@@ -1927,13 +1926,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     await container.DeleteContainerAsync();
                 }
             }
-        }
-
-        [TestMethod]
-        [Owner("philipthomas-MSFT")]
-        public async Task GivenMockedParentFeedRangeExpectsArgumentExceptionIsSubsetTestAsync()
-        {
-            await this.GivenInvalidParentFeedRangeExpectsArgumentExceptionIsSubsetTestAsync(Mock.Of<FeedRange>());
         }
 
         [TestMethod]
@@ -1955,15 +1947,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 container = containerResponse.Container;
 
-                ArgumentException argumentException = await Assert.ThrowsExceptionAsync<ArgumentException>(
-                    async () => await container.IsSubsetAsync(
+                ArgumentNullException argumentException = await Assert.ThrowsExceptionAsync<ArgumentNullException>(
+                    async () => await container.IsFeedRangePartOfAsync(
                         parentFeedRange: feedRange,
                         childFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>("", "3FFFFFFFFFFFFFFF", true, false)),
                         cancellationToken: CancellationToken.None));
 
                 Assert.IsNotNull(argumentException);
                 Logger.LogLine(argumentException.Message);
-                Assert.IsTrue(argumentException.Message.Contains($"The argument for 'parentFeedRange' must be of type Microsoft.Azure.Cosmos.FeedRange but was {feedRange?.GetType().Name ?? "null"}"));
+                Assert.IsTrue(argumentException.Message.Contains($"The argument for 'parentFeedRange' cannot be null."));
             }
             finally
             {
@@ -1972,13 +1964,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     await container.DeleteContainerAsync();
                 }
             }
-        }
-
-        [TestMethod]
-        [Owner("philipthomas-MSFT")]
-        public async Task GivenMockedChildFeedRangeExpectsArgumentExceptionIsSubsetTestAsync()
-        {
-            await this.GivenInvalidChildFeedRangeExpectsArgumentExceptionIsSubsetTestAsync(Mock.Of<FeedRange>());
         }
 
         [TestMethod]
@@ -2000,15 +1985,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 container = containerResponse.Container;
 
-                ArgumentException argumentException = await Assert.ThrowsExceptionAsync<ArgumentException>(
-                    async () => await container.IsSubsetAsync(
+                ArgumentNullException argumentException = await Assert.ThrowsExceptionAsync<ArgumentNullException>(
+                    async () => await container.IsFeedRangePartOfAsync(
                         parentFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>("", "FFFFFFFFFFFFFFFF", true, false)),
                         childFeedRange: feedRange,
                         cancellationToken: CancellationToken.None));
 
                 Assert.IsNotNull(argumentException);
                 Logger.LogLine(argumentException.Message);
-                Assert.IsTrue(argumentException.Message.Contains($"The argument for 'childFeedRange' must be of type Microsoft.Azure.Cosmos.FeedRange but was {feedRange?.GetType().Name ?? "null"}"));
+                Assert.IsTrue(argumentException.Message.Contains($"The argument for 'childFeedRange' cannot be null."));
             }
             finally
             {

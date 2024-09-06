@@ -1773,7 +1773,7 @@ namespace Microsoft.Azure.Cosmos
         /// FeedRange parentFeedRange = ...;
         /// FeedRange childFeedRange = ...;
         ///
-        /// bool isSubset = await container.IsSubsetAsync(
+        /// bool isSubset = await container.IsFeedRangePartOfAsync(
         ///    parentFeedRange,
         ///    childFeedRange,
         ///    cancellationToken);
@@ -1781,7 +1781,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>True or False</returns>
-        public virtual Task<bool> IsSubsetAsync(
+        public virtual Task<bool> IsFeedRangePartOfAsync(
             Cosmos.FeedRange parentFeedRange,
             Cosmos.FeedRange childFeedRange,
             CancellationToken cancellationToken = default)
