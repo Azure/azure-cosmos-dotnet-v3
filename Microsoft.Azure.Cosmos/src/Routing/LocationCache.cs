@@ -126,6 +126,14 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
+        public ReadOnlyCollection<string> EffectivePreferredLocations
+        {
+            get
+            {
+                return this.locationInfo.EffectivePreferredLocations;
+            }
+        }
+
         /// <summary>
         /// Returns the location corresponding to the endpoint if location specific endpoint is provided.
         /// For the defaultEndPoint, we will return the first available write location.
@@ -480,6 +488,11 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             string mostPreferredLocation = currentLocationInfo.PreferredLocations.FirstOrDefault();
             
+            if (currentLocationInfo.PreferredLocations == null || currentLocationInfo.PreferredLocations.Count == 0)
+            {
+                mostPreferredLocation = currentLocationInfo.EffectivePreferredLocations.FirstOrDefault();
+            }
+
             // we should schedule refresh in background if we are unable to target the user's most preferredLocation.
             if (this.enableEndpointDiscovery)
             {

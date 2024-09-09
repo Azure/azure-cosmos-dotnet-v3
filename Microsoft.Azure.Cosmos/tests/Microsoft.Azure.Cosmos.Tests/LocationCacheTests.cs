@@ -975,12 +975,14 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                         { new AccountRegion() { Name = "default", Endpoint = LocationCacheTests.DefaultEndpoint.ToString() } },
                         { new AccountRegion() { Name = "location1", Endpoint = LocationCacheTests.Location1Endpoint.ToString() } },
                         { new AccountRegion() { Name = "location2", Endpoint = LocationCacheTests.Location2Endpoint.ToString() } },
+                        { new AccountRegion() { Name = "location3", Endpoint = LocationCacheTests.Location3Endpoint.ToString() } },
                         { new AccountRegion() { Name = "location4", Endpoint = LocationCacheTests.Location4Endpoint.ToString() } },
                     } :
                     new Collection<AccountRegion>()
                     {
                         { new AccountRegion() { Name = "location1", Endpoint = LocationCacheTests.Location1Endpoint.ToString() } },
                         { new AccountRegion() { Name = "location2", Endpoint = LocationCacheTests.Location2Endpoint.ToString() } },
+                        { new AccountRegion() { Name = "location3", Endpoint = LocationCacheTests.Location3Endpoint.ToString() } },
                         { new AccountRegion() { Name = "location4", Endpoint = LocationCacheTests.Location4Endpoint.ToString() } },
                     },
                 WriteLocationsInternal = writeLocations
@@ -1056,9 +1058,13 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             bool endpointDiscoveryEnabled,
             bool isPreferredListEmpty)
         {
-            for (int writeLocationIndex = 0; writeLocationIndex < 3; writeLocationIndex++)
+
+            int maxWriteLocationIndex = 3;
+            int maxReadLocationIndex = isPreferredListEmpty ? 3 : 4;
+
+            for (int writeLocationIndex = 0; writeLocationIndex < maxWriteLocationIndex; writeLocationIndex++)
             {
-                for (int readLocationIndex = 0; readLocationIndex < 2; readLocationIndex++)
+                for (int readLocationIndex = 0; readLocationIndex < maxReadLocationIndex; readLocationIndex++)
                 {
                     using GlobalEndpointManager endpointManager = this.Initialize(
                         useMultipleWriteLocations,
@@ -1089,19 +1095,51 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                         location => location.Name,
                         location => new Uri(location.Endpoint));
 
-                    Uri[] preferredAvailableWriteEndpoints = this.preferredLocations.Skip(writeLocationIndex)
-                        .Where(location => writeEndpointByLocation.ContainsKey(location))
-                        .Select(location => writeEndpointByLocation[location]).ToArray();
+                    List<Uri> accountLevelReadEndpoints = this.databaseAccount.ReadableRegions
+                        .Where(accountRegion => readEndpointByLocation.ContainsKey(accountRegion.Name))
+                        .Select(accountRegion => readEndpointByLocation[accountRegion.Name])
+                        .ToList();
 
-                    Uri[] preferredAvailableReadEndpoints = this.preferredLocations.Skip(readLocationIndex)
-                        .Where(location => readEndpointByLocation.ContainsKey(location))
-                        .Select(location => readEndpointByLocation[location]).ToArray();
+                    List<Uri> accountLevelWriteEndpoints = this.databaseAccount.WritableRegions
+                        .Where(accountRegion => writeEndpointByLocation.ContainsKey(accountRegion.Name))
+                        .Select(accountRegion => writeEndpointByLocation[accountRegion.Name])
+                        .ToList();
+
+                    ReadOnlyCollection<string> preferredLocationsWhenClientLevelPreferredLocationsIsEmpty = this.cache.EffectivePreferredLocations;
+
+                    Uri[] preferredAvailableWriteEndpoints, preferredAvailableReadEndpoints;
+
+                    if (isPreferredListEmpty)
+                    {
+                        preferredAvailableWriteEndpoints = preferredLocationsWhenClientLevelPreferredLocationsIsEmpty.Skip(writeLocationIndex)
+                            .Where(location => writeEndpointByLocation.ContainsKey(location))
+                            .Select(location => writeEndpointByLocation[location]).ToArray();
+
+                        preferredAvailableReadEndpoints = preferredLocationsWhenClientLevelPreferredLocationsIsEmpty.Skip(readLocationIndex)
+                            .Where(location => readEndpointByLocation.ContainsKey(location))
+                            .Select(location => readEndpointByLocation[location]).ToArray();
+                    }
+                    else
+                    {
+                        preferredAvailableWriteEndpoints = this.preferredLocations.Skip(writeLocationIndex)
+                            .Where(location => writeEndpointByLocation.ContainsKey(location))
+                            .Select(location => writeEndpointByLocation[location]).ToArray();
+
+                        preferredAvailableReadEndpoints = this.preferredLocations.Skip(readLocationIndex)
+                            .Where(location => readEndpointByLocation.ContainsKey(location))
+                            .Select(location => readEndpointByLocation[location]).ToArray();
+                    }
 
                     this.ValidateEndpointRefresh(
                         useMultipleWriteLocations,
                         endpointDiscoveryEnabled,
+                        isPreferredListEmpty,
                         preferredAvailableWriteEndpoints,
                         preferredAvailableReadEndpoints,
+                        preferredLocationsWhenClientLevelPreferredLocationsIsEmpty,
+                        preferredLocationsWhenClientLevelPreferredLocationsIsEmpty,
+                        accountLevelWriteEndpoints,
+                        accountLevelReadEndpoints,
                         writeLocationIndex > 0,
                         readLocationIndex > 0 &&
                         currentReadEndpoints[0] != LocationCacheTests.DefaultEndpoint,
@@ -1151,8 +1189,13 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         private void ValidateEndpointRefresh(
             bool useMultipleWriteLocations,
             bool endpointDiscoveryEnabled,
+            bool isPreferredListEmpty,
             Uri[] preferredAvailableWriteEndpoints,
             Uri[] preferredAvailableReadEndpoints,
+            ReadOnlyCollection<string> preferredAvailableWriteRegions,
+            ReadOnlyCollection<string> preferredAvailableReadRegions,
+            List<Uri> accountLevelWriteEndpoints,
+            List<Uri> accountLevelReadEndpoints,
             bool isFirstWriteEndpointUnavailable,
             bool isFirstReadEndpointUnavailable,
             bool hasMoreThanOneWriteEndpoints,
@@ -1163,18 +1206,28 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
             bool isMostPreferredLocationUnavailableForRead = isFirstReadEndpointUnavailable;
             bool isMostPreferredLocationUnavailableForWrite = useMultipleWriteLocations ? false : isFirstWriteEndpointUnavailable;
-            if (this.preferredLocations.Count > 0)
+            if (this.preferredLocations.Count > 0 || isPreferredListEmpty)
             {
-                string mostPreferredReadLocationName = this.preferredLocations.First(location => databaseAccount.ReadableRegions.Any(readLocation => readLocation.Name == location));
+                string mostPreferredReadLocationName = (isPreferredListEmpty && endpointDiscoveryEnabled) ? preferredAvailableReadRegions[0] : this.preferredLocations.FirstOrDefault(location => databaseAccount.ReadableRegions.Any(readLocation => readLocation.Name == location), "");
                 Uri mostPreferredReadEndpoint = LocationCacheTests.EndpointByLocation[mostPreferredReadLocationName];
                 isMostPreferredLocationUnavailableForRead = preferredAvailableReadEndpoints.Length == 0 ? true : (preferredAvailableReadEndpoints[0] != mostPreferredReadEndpoint);
 
-                string mostPreferredWriteLocationName = this.preferredLocations.First(location => databaseAccount.WritableRegions.Any(writeLocation => writeLocation.Name == location));
+                if (isPreferredListEmpty && endpointDiscoveryEnabled)
+                {
+                    isMostPreferredLocationUnavailableForRead = preferredAvailableReadEndpoints[0] != accountLevelReadEndpoints[0];
+                }
+
+                string mostPreferredWriteLocationName = (isPreferredListEmpty && endpointDiscoveryEnabled) ? preferredAvailableWriteRegions[0] : this.preferredLocations.FirstOrDefault(location => databaseAccount.WritableRegions.Any(writeLocation => writeLocation.Name == location), "");
                 Uri mostPreferredWriteEndpoint = LocationCacheTests.EndpointByLocation[mostPreferredWriteLocationName];
 
                 if (useMultipleWriteLocations)
                 {
                     isMostPreferredLocationUnavailableForWrite = preferredAvailableWriteEndpoints.Length == 0 ? true : (preferredAvailableWriteEndpoints[0] != mostPreferredWriteEndpoint);
+                }
+
+                if (isPreferredListEmpty && endpointDiscoveryEnabled)
+                {
+                    isMostPreferredLocationUnavailableForWrite = preferredAvailableWriteEndpoints[0] != accountLevelWriteEndpoints[0];
                 }
             }
 
@@ -1261,10 +1314,6 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             if (!endpointDiscoveryEnabled)
             {
                 firstAvailableReadEndpoint = LocationCacheTests.DefaultEndpoint;
-            }
-            else if (this.preferredLocations.Count == 0)
-            {
-                firstAvailableReadEndpoint = firstAvailableWriteEndpoint;
             }
             else if (availableReadEndpoints.Length > 0)
             {
