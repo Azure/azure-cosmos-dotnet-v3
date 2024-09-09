@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Documents
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents.Routing;
 
@@ -143,6 +144,7 @@ namespace Microsoft.Azure.Documents
 
             bool isRetryWith = false;
             if (!GoneAndRetryWithRequestRetryPolicy<TResponse>.IsBaseGone(response, exception) &&
+                !GoneAndRetryWithRequestRetryPolicy<TResponse>.IsGoneWithLeaseNotFound(response, exception) &&
                 !(exception is RetryWithException) &&
                 !(GoneAndRetryWithRequestRetryPolicy<TResponse>.IsPartitionIsMigrating(response, exception) && (request.ServiceIdentity == null || request.ServiceIdentity.IsMasterService)) &&
                 !(GoneAndRetryWithRequestRetryPolicy<TResponse>.IsInvalidPartition(response, exception) && (request.PartitionKeyRangeIdentity == null || request.PartitionKeyRangeIdentity.CollectionRid == null)) &&
@@ -170,6 +172,17 @@ namespace Microsoft.Azure.Documents
                 isRetryWith = true;
                 this.lastRetryWithException = exception as RetryWithException;
             }
+            else if (GoneAndRetryWithRequestRetryPolicy<TResponse>.IsGoneWithLeaseNotFound(response, exception))
+            {
+                exceptionToThrow = ServiceUnavailableException.Create(
+                    SubStatusCodes.LeaseNotFound,
+                    innerException: exception);
+
+                this.durationTimer.Stop();
+
+                shouldRetryResult = ShouldRetryResult.NoRetry(exceptionToThrow);
+                return true;
+            }
 
             int remainingMilliseconds;
             if (isRetryWith)
@@ -194,7 +207,7 @@ namespace Microsoft.Azure.Documents
                         GoneAndRetryWithRequestRetryPolicy<TResponse>.IsPartitionKeyRangeGone(response, exception) ||
                         GoneAndRetryWithRequestRetryPolicy<TResponse>.IsPartitionKeySplitting(response, exception))
                     {
-                        string message = string.Format("Received {0} after backoff/retry", exception?.GetType().Name ?? response?.StatusCode.ToString());
+                        string message = string.Format("Received {0} after backoff/retry. Total time taken: {1}", exception?.GetType().Name ?? response?.StatusCode.ToString(), this.durationTimer.Elapsed.TotalMilliseconds);
 
                         if (this.lastRetryWithException != null)
                         {
@@ -426,6 +439,13 @@ namespace Microsoft.Azure.Documents
         {
             return exception is PartitionKeyRangeGoneException
                 || (response?.StatusCode == HttpStatusCode.Gone && response?.SubStatusCode == SubStatusCodes.PartitionKeyRangeGone);
+        }
+
+        private static bool IsGoneWithLeaseNotFound(TResponse response, Exception exception)
+        {
+            return exception is LeaseLostException
+                || (response?.StatusCode == HttpStatusCode.Gone &&
+                   (response?.SubStatusCode == SubStatusCodes.LeaseNotFound));
         }
 
         private static void ClearRequestContext(DocumentServiceRequest request)

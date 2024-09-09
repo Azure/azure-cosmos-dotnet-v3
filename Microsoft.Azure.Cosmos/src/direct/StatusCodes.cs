@@ -212,6 +212,7 @@ namespace Microsoft.Azure.Documents
         GatewayThrottled = 3201,
         StoredProcedureConcurrency = 3084,
         ThottleDueToSplit = 3088,
+        SystemResourceUnavailable = 3092,
 
         // Key Vault Access Client Error Code
         AadClientCredentialsGrantFailure = 4000, // Indicated access to AAD failed to get a token

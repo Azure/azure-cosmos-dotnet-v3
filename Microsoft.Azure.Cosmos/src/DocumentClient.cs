@@ -985,6 +985,7 @@ namespace Microsoft.Azure.Cosmos
                     () => this.GetInitializationTaskAsync(storeClientFactory: storeClientFactory),
                     new ResourceThrottleRetryPolicy(
                         this.ConnectionPolicy.RetryOptions.MaxRetryAttemptsOnThrottledRequests,
+                        this.GlobalEndpointManager,
                         this.ConnectionPolicy.RetryOptions.MaxRetryWaitTimeInSeconds));
 
             // Create the task to start the initialize task

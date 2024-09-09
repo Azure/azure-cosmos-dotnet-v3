@@ -21,10 +21,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task NotRetryOnSuccess()
         {
+            Mock<IDocumentClientInternal> mockedClient = new();
+            GlobalEndpointManager endpointManager = new(mockedClient.Object, new ConnectionPolicy());
+
             IDocumentClientRetryPolicy retryPolicy = new BulkExecutionRetryPolicy(
                 Mock.Of<ContainerInternal>(),
                 OperationType.Read,
-                new ResourceThrottleRetryPolicy(1));
+                new ResourceThrottleRetryPolicy(1, endpointManager));
 
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.OK);
             ShouldRetryResult shouldRetryResult = await retryPolicy.ShouldRetryAsync(result.ToResponseMessage(), default);
@@ -34,10 +37,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task RetriesOn429()
         {
+            Mock<IDocumentClientInternal> mockedClient = new();
+            GlobalEndpointManager endpointManager = new(mockedClient.Object, new ConnectionPolicy());
+
             IDocumentClientRetryPolicy retryPolicy = new BulkExecutionRetryPolicy(
                 Mock.Of<ContainerInternal>(),
                 OperationType.Read,
-                new ResourceThrottleRetryPolicy(1));
+                new ResourceThrottleRetryPolicy(1, endpointManager));
 
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult((HttpStatusCode)StatusCodes.TooManyRequests);
             ShouldRetryResult shouldRetryResult = await retryPolicy.ShouldRetryAsync(result.ToResponseMessage(), default);
@@ -47,10 +53,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task RetriesOn413_3204()
         {
+            Mock<IDocumentClientInternal> mockedClient = new();
+            GlobalEndpointManager endpointManager = new(mockedClient.Object, new ConnectionPolicy());
+
             IDocumentClientRetryPolicy retryPolicy = new BulkExecutionRetryPolicy(
                 Mock.Of<ContainerInternal>(),
                 OperationType.Read,
-                new ResourceThrottleRetryPolicy(1));
+                new ResourceThrottleRetryPolicy(1, endpointManager));
 
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.RequestEntityTooLarge) { SubStatusCode = (SubStatusCodes)3402 };
             ShouldRetryResult shouldRetryResult = await retryPolicy.ShouldRetryAsync(result.ToResponseMessage(), default);
@@ -60,10 +69,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task RetriesOn413_0()
         {
+            Mock<IDocumentClientInternal> mockedClient = new();
+            GlobalEndpointManager endpointManager = new(mockedClient.Object, new ConnectionPolicy());
+
             IDocumentClientRetryPolicy retryPolicy = new BulkExecutionRetryPolicy(
                 Mock.Of<ContainerInternal>(),
                 OperationType.Create,
-                new ResourceThrottleRetryPolicy(1));
+                new ResourceThrottleRetryPolicy(1, endpointManager));
 
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.RequestEntityTooLarge);
             ShouldRetryResult shouldRetryResult = await retryPolicy.ShouldRetryAsync(result.ToResponseMessage(), default);
@@ -73,10 +85,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task RetriesOnSplits()
         {
+            Mock<IDocumentClientInternal> mockedClient = new();
+            GlobalEndpointManager endpointManager = new(mockedClient.Object, new ConnectionPolicy());
+
             IDocumentClientRetryPolicy retryPolicy = new BulkExecutionRetryPolicy(
                 GetSplitEnabledContainer(),
                 OperationType.Read,
-                new ResourceThrottleRetryPolicy(1));
+                new ResourceThrottleRetryPolicy(1, endpointManager));
 
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.Gone) { SubStatusCode = SubStatusCodes.PartitionKeyRangeGone };
             ShouldRetryResult shouldRetryResult = await retryPolicy.ShouldRetryAsync(result.ToResponseMessage(), default);
@@ -86,10 +101,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task RetriesOnSplits_UpToMax()
         {
+            Mock<IDocumentClientInternal> mockedClient = new();
+            GlobalEndpointManager endpointManager = new(mockedClient.Object, new ConnectionPolicy());
+
             IDocumentClientRetryPolicy retryPolicy = new BulkExecutionRetryPolicy(
                 GetSplitEnabledContainer(),
                 OperationType.Read,
-                new ResourceThrottleRetryPolicy(1));
+                new ResourceThrottleRetryPolicy(1, endpointManager));
 
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.Gone) { SubStatusCode = SubStatusCodes.PartitionKeyRangeGone };
             ShouldRetryResult shouldRetryResult;
@@ -106,10 +124,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task RetriesOnCompletingSplits()
         {
+            Mock<IDocumentClientInternal> mockedClient = new();
+            GlobalEndpointManager endpointManager = new(mockedClient.Object, new ConnectionPolicy());
+
             IDocumentClientRetryPolicy retryPolicy = new BulkExecutionRetryPolicy(
                 GetSplitEnabledContainer(),
                 OperationType.Read,
-                new ResourceThrottleRetryPolicy(1));
+                new ResourceThrottleRetryPolicy(1, endpointManager));
 
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.Gone) { SubStatusCode = SubStatusCodes.CompletingSplit };
             ShouldRetryResult shouldRetryResult = await retryPolicy.ShouldRetryAsync(result.ToResponseMessage(), default);
@@ -119,10 +140,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task RetriesOnCompletingPartitionMigrationSplits()
         {
+            Mock<IDocumentClientInternal> mockedClient = new();
+            GlobalEndpointManager endpointManager = new(mockedClient.Object, new ConnectionPolicy());
+
             IDocumentClientRetryPolicy retryPolicy = new BulkExecutionRetryPolicy(
                 GetSplitEnabledContainer(),
                 OperationType.Read,
-                new ResourceThrottleRetryPolicy(1));
+                new ResourceThrottleRetryPolicy(1, endpointManager));
 
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.Gone) { SubStatusCode = SubStatusCodes.CompletingPartitionMigration };
             ShouldRetryResult shouldRetryResult = await retryPolicy.ShouldRetryAsync(result.ToResponseMessage(), default);

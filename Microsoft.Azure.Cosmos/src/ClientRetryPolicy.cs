@@ -47,8 +47,9 @@ namespace Microsoft.Azure.Cosmos
             bool isPertitionLevelFailoverEnabled)
         {
             this.throttlingRetry = new ResourceThrottleRetryPolicy(
-                retryOptions.MaxRetryAttemptsOnThrottledRequests,
-                retryOptions.MaxRetryWaitTimeInSeconds);
+                maxAttemptCount: retryOptions.MaxRetryAttemptsOnThrottledRequests,
+                endpointManager: globalEndpointManager,
+                maxWaitTimeInSeconds: retryOptions.MaxRetryWaitTimeInSeconds);
 
             this.globalEndpointManager = globalEndpointManager;
             this.partitionKeyRangeLocationCache = partitionKeyRangeLocationCache;

@@ -9,7 +9,9 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Diagnostics;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
 
     [TestClass]
     public class ResourceThrottleRetryPolicyTests
@@ -44,8 +46,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task DoesNotSerializeExceptionOnTracingDisabled()
         {
+            Mock<IDocumentClientInternal> mockedClient = new ();
+            GlobalEndpointManager endpointManager = new(mockedClient.Object, new ConnectionPolicy());
+
             // No listeners
-            ResourceThrottleRetryPolicy policy = new ResourceThrottleRetryPolicy(0);
+            ResourceThrottleRetryPolicy policy = new ResourceThrottleRetryPolicy(0, endpointManager);
             CustomException exception = new CustomException();
             await policy.ShouldRetryAsync(exception, default);
             Assert.AreEqual(0, exception.ToStringCount, "Exception was serialized");
@@ -54,10 +59,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task DoesSerializeExceptionOnTracingEnabled()
         {
+            Mock<IDocumentClientInternal> mockedClient = new ();
+            GlobalEndpointManager endpointManager = new(mockedClient.Object, new ConnectionPolicy());
+
             // Let the default trace listener
             DefaultTrace.TraceSource.Switch = new SourceSwitch("ClientSwitch", "Error");
             DefaultTrace.TraceSource.Listeners.Add(new DefaultTraceListener());
-            ResourceThrottleRetryPolicy policy = new ResourceThrottleRetryPolicy(0);
+            ResourceThrottleRetryPolicy policy = new ResourceThrottleRetryPolicy(0, endpointManager);
             CustomException exception = new CustomException();
             await policy.ShouldRetryAsync(exception, default);
             Assert.AreEqual(1, exception.ToStringCount, "Exception was not serialized");
