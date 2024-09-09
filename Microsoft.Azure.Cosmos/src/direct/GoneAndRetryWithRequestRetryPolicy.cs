@@ -174,6 +174,10 @@ namespace Microsoft.Azure.Documents
             }
             else if (GoneAndRetryWithRequestRetryPolicy<TResponse>.IsGoneWithLeaseNotFound(response, exception))
             {
+                DefaultTrace.TraceWarning(
+                    "The GoneAndRetryWithRequestRetryPolicy has hit 410 with lease not found. This is by design to do a cross regional failover to handle the exception: {0}",
+                    new ErrorOrResponse(exception));
+
                 exceptionToThrow = ServiceUnavailableException.Create(
                     SubStatusCodes.LeaseNotFound,
                     innerException: exception);
@@ -207,7 +211,7 @@ namespace Microsoft.Azure.Documents
                         GoneAndRetryWithRequestRetryPolicy<TResponse>.IsPartitionKeyRangeGone(response, exception) ||
                         GoneAndRetryWithRequestRetryPolicy<TResponse>.IsPartitionKeySplitting(response, exception))
                     {
-                        string message = string.Format("Received {0} after backoff/retry. Total time taken: {1}", exception?.GetType().Name ?? response?.StatusCode.ToString(), this.durationTimer.Elapsed.TotalMilliseconds);
+                        string message = string.Format("Received {0} after backoff/retry", exception?.GetType().Name ?? response?.StatusCode.ToString());
 
                         if (this.lastRetryWithException != null)
                         {
