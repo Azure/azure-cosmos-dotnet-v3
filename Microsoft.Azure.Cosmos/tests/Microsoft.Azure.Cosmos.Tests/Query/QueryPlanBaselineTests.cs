@@ -1620,7 +1620,7 @@
                 xmlWriter.WriteElementString("GeospatialType", this.GeospatialType.Value.ToString());
             }
 
-            if (this.SqlQuerySpec.IsParameterized())
+            if (this.SqlQuerySpec.ShouldSerializeParameters())
             {
                 xmlWriter.WriteStartElement("QueryParameters");
                 xmlWriter.WriteCData(JsonConvert.SerializeObject(

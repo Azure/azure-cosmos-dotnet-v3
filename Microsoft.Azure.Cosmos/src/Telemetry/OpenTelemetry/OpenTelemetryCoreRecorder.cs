@@ -250,8 +250,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                     if (this.response.QuerySpec is not null)
                     {
-                        Console.WriteLine(" ===> " + this.showQueryMode + " " + this.response.QuerySpec?.QueryText + this.response.QuerySpec?.IsParameterized());
-                        if (this.showQueryMode == ShowQueryMode.ALL || (this.showQueryMode != ShowQueryMode.NONE && this.response.QuerySpec.IsParameterized() && this.showQueryMode == ShowQueryMode.PARAMETERIZED_ONLY))
+                        Console.WriteLine(" ===> " + this.showQueryMode + " " + this.response.QuerySpec?.QueryText + this.response.QuerySpec?.ShouldSerializeParameters());
+                        if (this.showQueryMode == ShowQueryMode.ALL || (this.showQueryMode != ShowQueryMode.NONE && this.response.QuerySpec.ShouldSerializeParameters() && this.showQueryMode == ShowQueryMode.PARAMETERIZED_ONLY))
                         {
                             this.scope.AddAttribute(OpenTelemetryAttributeKeys.QueryText, this.response.QuerySpec?.QueryText);
                         }

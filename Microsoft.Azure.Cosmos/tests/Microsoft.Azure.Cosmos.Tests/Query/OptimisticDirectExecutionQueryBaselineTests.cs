@@ -1261,7 +1261,7 @@
                         this.PartitionKeyDefinition.Kind == PartitionKind.MultiHash ? "MultiHash" : "Range"));
             }
 
-            if (this.SqlQuerySpec.IsParameterized())
+            if (this.SqlQuerySpec.ShouldSerializeParameters())
             {
                 xmlWriter.WriteStartElement("QueryParameters");
                 xmlWriter.WriteCData(JsonConvert.SerializeObject(
