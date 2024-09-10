@@ -1818,6 +1818,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 Assert.AreEqual(expected: expectedIsSubset, actual: actualIsSubset);
             }
+            catch (Exception exception)
+            {
+                Assert.Fail(exception.Message);
+            }
             finally
             {
                 if (container != null)
@@ -1866,6 +1870,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 Assert.AreEqual(expected: expectedIsSubset, actual: actualIsSubset);
             }
+            catch (Exception exception)
+            {
+                Assert.Fail(exception.Message);
+            }
             finally
             {
                 if (container != null)
@@ -1896,7 +1904,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow("", "7333333333333333", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false)] // child is overlap, but not a subset of the parent
         [Description("Given a parent feed range, when a child feed range is provided, then that feed range is checked against the parent feed range" +
             "to determine if it is a subset of the parent feed range.")]
-        public async Task GivenParentAndChildFeedRangesIsFeedRangePartOfAsyncTestAsync(
+        public async Task GivenParentAndChildFeedRangesTrueIsMinInclusiveIsFeedRangePartOfAsyncTestAsync(
             string childMin,
             string childMax,
             string parentMin,
@@ -1919,6 +1927,68 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     cancellationToken: CancellationToken.None);
 
                 Assert.AreEqual(expected: expectedIsSubset, actual: actualIsSubset);
+            }
+            catch (Exception exception)
+            {
+                Assert.Fail(exception.Message);
+            }
+            finally
+            {
+                if (container != null)
+                {
+                    await container.DeleteContainerAsync();
+                }
+            }
+        }
+
+        [TestMethod]
+        [Owner("philipthomas-MSFT")]
+        [DataRow("", "3FFFFFFFFFFFFFFF", "", "FFFFFFFFFFFFFFFF", true)] // child is subset of the parent
+        [DataRow("3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", "", "FFFFFFFFFFFFFFFF", true)] // child is subset of the parent
+        [DataRow("7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", "", "FFFFFFFFFFFFFFFF", true)] // child is subset of the parent
+        [DataRow("BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", "", "FFFFFFFFFFFFFFFF", true)] // child is subset of the parent
+        [DataRow("", "3FFFFFFFFFFFFFFF", "", "3FFFFFFFFFFFFFFF", true)] // child is same of the parent, which makes it a subset
+        [DataRow("", "3FFFFFFFFFFFFFFF", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false)] // child is not a subset of parent
+        [DataRow("", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", false)] // child is not a subset of parent
+        [DataRow("", "3FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", false)] // child is not a subset of parent
+        [DataRow("", "3333333333333333", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false)] // child is not a subset of parent
+        [DataRow("3333333333333333", "6666666666666666", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false)] // child is not a subset of parent
+        [DataRow("3FFFFFFFFFFFFFFF", "4CCCCCCCCCCCCCCC", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true)] // child is subset of the parent
+        [DataRow("4CCCCCCCCCCCCCCC", "5999999999999999", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true)] // child is subset of the parent
+        [DataRow("5999999999999999", "6666666666666666", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true)] // child is subset of the parent
+        [DataRow("6666666666666666", "7333333333333333", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true)] // child is subset of the parent
+        [DataRow("7333333333333333", "7FFFFFFFFFFFFFFF", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true)] // child is subset of the parent
+        [DataRow("7333333333333333", "FFFFFFFFFFFFFFFF", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false)] // child is overlap, but not a subset of the parent
+        [DataRow("", "7333333333333333", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false)] // child is overlap, but not a subset of the parent
+        [Description("Given a parent feed range, when a child feed range is provided, then that feed range is checked against the parent feed range" +
+            "to determine if it is a subset of the parent feed range.")]
+        public async Task GivenParentAndChildFeedRangesFalseIsMinInclusiveIsFeedRangePartOfAsyncTestAsync(
+            string childMin,
+            string childMax,
+            string parentMin,
+            string parentMax,
+            bool expectedIsSubset)
+        {
+            Container container = default;
+
+            try
+            {
+                ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(
+                    id: Guid.NewGuid().ToString(),
+                    partitionKeyPath: "/pk");
+
+                container = containerResponse.Container;
+
+                bool actualIsSubset = await container.IsFeedRangePartOfAsync(
+                    parentFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>(parentMin, parentMax, false, true)),
+                    childFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>(childMin, childMax, false, true)),
+                    cancellationToken: CancellationToken.None);
+
+                Assert.AreEqual(expected: expectedIsSubset, actual: actualIsSubset);
+            }
+            catch (Exception exception)
+            {
+                Assert.Fail(exception.Message);
             }
             finally
             {
@@ -1988,6 +2058,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(exception);
                 Assert.IsTrue(exception.Message.Contains(expectedMessage));
             }
+            catch (Exception exception)
+            {
+                Assert.Fail(exception.Message);
+            }
             finally
             {
                 if (container != null)
@@ -2053,6 +2127,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 Assert.IsNotNull(exception);
                 Assert.IsTrue(exception.Message.Contains(expectedMessage));
+            }
+            catch (Exception exception)
+            {
+                Assert.Fail(exception.Message);
             }
             finally
             {
