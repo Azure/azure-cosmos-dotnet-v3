@@ -505,11 +505,17 @@ namespace Microsoft.Azure.Cosmos
                                 OpenTelemetryRecorderFactory.CreateRecorder(
                                     getOperationName: () =>
                                     {
+                                        // If opentelemetry is not enabled then return null operation name, so that no activity is created.
+                                        if (openTelemetry == null)
+                                        {
+                                            return null;
+                                        }
+
                                         if (resourceType is not null && this.IsBulkOperationSupported(resourceType.Value, operationType))
                                         {
-                                            operationName = OpenTelemetryConstants.Operations.ExecuteBulkPrefix + openTelemetry?.Item1;
+                                            operationName = OpenTelemetryConstants.Operations.ExecuteBulkPrefix + openTelemetry.Item1;
                                         }
-                                        return openTelemetry?.Item1;
+                                        return openTelemetry.Item1;
                                     },
                                     containerName: containerName,
                                     databaseName: databaseName,
