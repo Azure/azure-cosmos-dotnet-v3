@@ -75,8 +75,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                     {
                         PointOperationLatencyThreshold = TimeSpan.Zero,
                         NonPointOperationLatencyThreshold = TimeSpan.Zero
-                    }
-                 }));
+                    },
+                    ShowQueryMode = ShowQueryMode.ALL
+                }));
 
             // Set a small retry count to reduce test time
             miscCosmosClient = TestCommon.CreateCosmosClient(builder =>
@@ -89,8 +90,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                         {
                             PointOperationLatencyThreshold = TimeSpan.Zero,
                             NonPointOperationLatencyThreshold = TimeSpan.Zero
-                        }
-                     }));
+                        },
+                        ShowQueryMode = ShowQueryMode.ALL
+                    }));
 
             EndToEndTraceWriterBaselineTests.database = await client.CreateDatabaseAsync(
                     "databaseName",
