@@ -1278,8 +1278,15 @@ namespace Microsoft.Azure.Cosmos
 
                 try
                 {
-                    _ = FeedRangeInternal.TryParse(parentFeedRange?.ToJsonString(), out FeedRangeInternal parentFeedRangeInternal);
-                    _ = FeedRangeInternal.TryParse(childFeedRange?.ToJsonString(), out FeedRangeInternal childFeedRangeInternal);
+                    if (!FeedRangeInternal.TryParse(parentFeedRange.ToJsonString(), out FeedRangeInternal parentFeedRangeInternal))
+                    {
+                        throw new ArgumentException(string.Format(ClientResources.FeedToken_UnknownFormat, parentFeedRange.ToJsonString()));
+                    }
+
+                    if (!FeedRangeInternal.TryParse(childFeedRange.ToJsonString(), out FeedRangeInternal childFeedRangeInternal))
+                    {
+                        throw new ArgumentException(string.Format(ClientResources.FeedToken_UnknownFormat, childFeedRange.ToJsonString()));
+                    }
 
                     PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync(cancellationToken);
 

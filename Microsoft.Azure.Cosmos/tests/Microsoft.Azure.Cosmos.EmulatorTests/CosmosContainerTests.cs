@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
@@ -86,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             while (true)
             {
                 ContainerResponse readResponse = await container.ReadContainerAsync(requestOptions);
-                string indexTransformationStatus = readResponse.Headers["x-ms-documentdb-collection-index-transformation-progress"];
+                string indexTransformationStatus = readResponse.Headers["feedRange-ms-documentdb-collection-index-transformation-progress"];
                 Assert.IsNotNull(indexTransformationStatus);
 
                 if (int.Parse(indexTransformationStatus) == 100)
@@ -1792,7 +1793,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow("3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false)] // Some made up range.
         [Description("Given a parent feed range and a partition key, when the partition key is converted to a feed range, then that feed range is checked" +
             "against the parent feed range to determine if it is a subset of the parent feed range.")]
-        public async Task GivenParentFeedRangeAndChildPartitionKeyIsSubsetTestAsync(
+        public async Task GivenParentFeedRangeAndChildPartitionKeyIsFeedRangePartOfAsyncTestAsync(
             string parentMin,
             string parentMax,
             bool expectedIsSubset)
@@ -1832,7 +1833,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow("3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false)] // Some made up range.
         [Description("Given a parent feed range and a hierarchical partition key, when the hierarchical partition key is converted to a feed range, " +
             "then that feed range is checked against the parent feed range to determine if it is a subset of the parent feed range.")]
-        public async Task GivenParentFeedRangeAndChildHierarchicalPartitionKeyIsSubsetTestAsync(
+        public async Task GivenParentFeedRangeAndChildHierarchicalPartitionKeyIsFeedRangePartOfAsyncTestAsync(
             string parentMin,
             string parentMax,
             bool expectedIsSubset)
@@ -1895,7 +1896,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow("", "7333333333333333", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false)] // child is overlap, but not a subset of the parent
         [Description("Given a parent feed range, when a child feed range is provided, then that feed range is checked against the parent feed range" +
             "to determine if it is a subset of the parent feed range.")]
-        public async Task GivenParentAndChildFeedRangesIsSubsetTestAsync(
+        public async Task GivenParentAndChildFeedRangesIsFeedRangePartOfAsyncTestAsync(
             string childMin,
             string childMax,
             string parentMin,
@@ -1930,12 +1931,43 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [Owner("philipthomas-MSFT")]
-        public async Task GivenNullParentFeedRangeExpectsArgumentExceptionIsSubsetTestAsync()
+        public async Task GivenNullChildFeedRangeExpectsArgumentNullExceptionIsFeedRangePartOfAsyncTestAsync()
         {
-            await this.GivenInvalidParentFeedRangeExpectsArgumentExceptionIsSubsetTestAsync(default);
+            FeedRange feedRange = default;
+
+            await this.GivenInvalidChildFeedRangeExpectsArgumentExceptionIsFeedRangePartOfAsyncTestAsync<ArgumentNullException>(
+                feedRange: feedRange,
+                expectedMessage: $"The argument for 'childFeedRange' cannot be null.");
         }
 
-        private async Task GivenInvalidParentFeedRangeExpectsArgumentExceptionIsSubsetTestAsync(FeedRange feedRange)
+        [TestMethod]
+        [Owner("philipthomas-MSFT")]
+        public async Task GivenChildFeedRangeWithNoJsonExpectsArgumentNullExceptionIsFeedRangePartOfAsyncTestAsync()
+        {
+            FeedRange feedRange = Mock.Of<FeedRange>();
+
+            await this.GivenInvalidChildFeedRangeExpectsArgumentExceptionIsFeedRangePartOfAsyncTestAsync<ArgumentNullException>(
+                feedRange: feedRange,
+                expectedMessage: $"Value cannot be null. (Parameter 'value')");
+        }
+
+        [TestMethod]
+        [Owner("philipthomas-MSFT")]
+        public async Task GivenChildFeedRangeWithInvalidJsonExpectsArgumentExceptionIsFeedRangePartOfAsyncTestAsync()
+        {
+            Mock<FeedRange> mockFeedRange = new Mock<FeedRange>(MockBehavior.Strict);
+            mockFeedRange.Setup(feedRange => feedRange.ToJsonString()).Returns("<xml />");
+            FeedRange feedRange = mockFeedRange.Object;
+
+            await this.GivenInvalidChildFeedRangeExpectsArgumentExceptionIsFeedRangePartOfAsyncTestAsync<ArgumentException>(
+                feedRange: feedRange,
+                expectedMessage: $"The provided string '<xml />' does not represent any known format.");
+        }
+
+        private async Task GivenInvalidChildFeedRangeExpectsArgumentExceptionIsFeedRangePartOfAsyncTestAsync<TExceeption>(
+            FeedRange feedRange,
+            string expectedMessage)
+            where TExceeption : Exception
         {
             Container container = default;
 
@@ -1947,15 +1979,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 container = containerResponse.Container;
 
-                ArgumentNullException argumentException = await Assert.ThrowsExceptionAsync<ArgumentNullException>(
+                TExceeption exception = await Assert.ThrowsExceptionAsync<TExceeption>(
                     async () => await container.IsFeedRangePartOfAsync(
-                        parentFeedRange: feedRange,
-                        childFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>("", "3FFFFFFFFFFFFFFF", true, false)),
+                        parentFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>("", "FFFFFFFFFFFFFFFF", true, false)),
+                        childFeedRange: feedRange,
                         cancellationToken: CancellationToken.None));
 
-                Assert.IsNotNull(argumentException);
-                Logger.LogLine(argumentException.Message);
-                Assert.IsTrue(argumentException.Message.Contains($"The argument for 'parentFeedRange' cannot be null."));
+                Assert.IsNotNull(exception);
+                Assert.IsTrue(exception.Message.Contains(expectedMessage));
             }
             finally
             {
@@ -1968,12 +1999,41 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [Owner("philipthomas-MSFT")]
-        public async Task GivenNullChildFeedRangeExpectsArgumentExceptionIsSubsetTestAsync()
+        public async Task GivenNullParentFeedRangeExpectsArgumentNullExceptionIsFeedRangePartOfAsyncTestAsync()
         {
-            await this.GivenInvalidChildFeedRangeExpectsArgumentExceptionIsSubsetTestAsync(default);
+            FeedRange feedRange = default;
+
+            await this.GivenInvalidParentFeedRangeExpectsArgumentExceptionIsFeedRangePartOfAsyncTestAsync<ArgumentNullException>(
+                feedRange: feedRange,
+                expectedMessage: $"The argument for 'parentFeedRange' cannot be null.");
         }
 
-        private async Task GivenInvalidChildFeedRangeExpectsArgumentExceptionIsSubsetTestAsync(FeedRange feedRange)
+        [TestMethod]
+        [Owner("philipthomas-MSFT")]
+        public async Task GivenParentFeedRangeWithNoJsonExpectsArgumentNullExceptionIsFeedRangePartOfAsyncTestAsync()
+        {
+            FeedRange feedRange = Mock.Of<FeedRange>();
+
+            await this.GivenInvalidParentFeedRangeExpectsArgumentExceptionIsFeedRangePartOfAsyncTestAsync<ArgumentNullException>(
+                feedRange: feedRange,
+                expectedMessage: $"Value cannot be null. (Parameter 'value')");
+        }
+
+        [TestMethod]
+        [Owner("philipthomas-MSFT")]
+        public async Task GivenParentFeedRangeWithInvalidJsonExpectsArgumentExceptionIsFeedRangePartOfAsyncTestAsync()
+        {
+            Mock<FeedRange> mockFeedRange = new Mock<FeedRange>(MockBehavior.Strict);
+            mockFeedRange.Setup(feedRange => feedRange.ToJsonString()).Returns("<xml />");
+            FeedRange feedRange = mockFeedRange.Object;
+
+            await this.GivenInvalidParentFeedRangeExpectsArgumentExceptionIsFeedRangePartOfAsyncTestAsync<ArgumentException>(
+                feedRange: feedRange,
+                expectedMessage: $"The provided string '<xml />' does not represent any known format.");
+        }
+
+        private async Task GivenInvalidParentFeedRangeExpectsArgumentExceptionIsFeedRangePartOfAsyncTestAsync<TException>(FeedRange feedRange, string expectedMessage)
+            where TException : Exception
         {
             Container container = default;
 
@@ -1985,15 +2045,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 container = containerResponse.Container;
 
-                ArgumentNullException argumentException = await Assert.ThrowsExceptionAsync<ArgumentNullException>(
+                TException exception = await Assert.ThrowsExceptionAsync<TException>(
                     async () => await container.IsFeedRangePartOfAsync(
-                        parentFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>("", "FFFFFFFFFFFFFFFF", true, false)),
-                        childFeedRange: feedRange,
+                        parentFeedRange: feedRange,
+                        childFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>("", "3FFFFFFFFFFFFFFF", true, false)),
                         cancellationToken: CancellationToken.None));
 
-                Assert.IsNotNull(argumentException);
-                Logger.LogLine(argumentException.Message);
-                Assert.IsTrue(argumentException.Message.Contains($"The argument for 'childFeedRange' cannot be null."));
+                Assert.IsNotNull(exception);
+                Assert.IsTrue(exception.Message.Contains(expectedMessage));
             }
             finally
             {
