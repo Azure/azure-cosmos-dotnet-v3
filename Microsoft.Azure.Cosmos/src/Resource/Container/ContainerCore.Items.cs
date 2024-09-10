@@ -1325,21 +1325,15 @@ namespace Microsoft.Azure.Cosmos
 
             Documents.Routing.Range<string> normalizedRange = normalizedRanges.First();
 
-            // NOTE(philipthomas-MSFT): If only one rangee exists, return it immediately.
             if (normalizedRanges.Count == 1)
             {
                 return normalizedRange;
             }
 
-            // NOTE(philipthomas-MSFT): Sort to find the smallest min.
             normalizedRanges.Sort(Documents.Routing.Range<string>.MinComparer.Instance);
             string min = normalizedRanges.First().Min;
+            string max = normalizedRanges.Last().Max;
 
-            // NOTE(philipthomas-MSFT): Sort to find the largest max.
-            normalizedRanges.Sort(Documents.Routing.Range<string>.MaxComparer.Instance);
-            string max = normalizedRanges.First().Max;
-
-            // NOTE(philipthomas-MSFT): Creating a new range based on the new min, max, isMinclusive, isMaxInclusive from normalized range.
             return new Documents.Routing.Range<string>(
                 min: min,
                 max: max,
