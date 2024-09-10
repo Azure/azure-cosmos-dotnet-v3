@@ -4,8 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
-
     /// <summary>
     /// Telemetry Options for Cosmos Client to enable/disable telemetry and distributed tracing along with corresponding threshold values.
     /// </summary>

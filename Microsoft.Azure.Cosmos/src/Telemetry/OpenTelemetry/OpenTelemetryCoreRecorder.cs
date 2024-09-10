@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Diagnostics;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
-    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Documents;
 
     /// <summary>

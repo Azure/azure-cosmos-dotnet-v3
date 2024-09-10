@@ -3237,17 +3237,17 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.CosmosThresholdOptions get_CosmosThresholdOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry.ShowQueryMode get_ShowQueryMode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Microsoft.Azure.Cosmos.ShowQueryMode get_ShowQueryMode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry.ShowQueryMode get_ShowQueryMode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.ShowQueryMode get_ShowQueryMode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry.ShowQueryMode ShowQueryMode": {
+        "Microsoft.Azure.Cosmos.ShowQueryMode ShowQueryMode": {
           "Type": "Property",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry.ShowQueryMode ShowQueryMode;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry.ShowQueryMode get_ShowQueryMode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_ShowQueryMode(Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry.ShowQueryMode);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.ShowQueryMode ShowQueryMode;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.ShowQueryMode get_ShowQueryMode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_ShowQueryMode(Microsoft.Azure.Cosmos.ShowQueryMode);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void .ctor()": {
           "Type": "Constructor",
@@ -3275,12 +3275,12 @@
           ],
           "MethodInfo": "Void set_DisableSendingMetricsToService(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void set_ShowQueryMode(Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry.ShowQueryMode)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Void set_ShowQueryMode(Microsoft.Azure.Cosmos.ShowQueryMode)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Void set_ShowQueryMode(Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry.ShowQueryMode);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Void set_ShowQueryMode(Microsoft.Azure.Cosmos.ShowQueryMode);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -9732,6 +9732,32 @@
       },
       "NestedTypes": {}
     },
+    "Microsoft.Azure.Cosmos.ShowQueryMode;System.Enum;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:True;IsClass:False;IsValueType:True;IsNested:False;IsGenericType:False;IsSerializable:True": {
+      "Subclasses": {},
+      "Members": {
+        "Int32 value__": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Int32 value__;IsInitOnly:False;IsStatic:False;"
+        },
+        "Microsoft.Azure.Cosmos.ShowQueryMode ALL": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ShowQueryMode ALL;IsInitOnly:False;IsStatic:True;"
+        },
+        "Microsoft.Azure.Cosmos.ShowQueryMode NONE": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ShowQueryMode NONE;IsInitOnly:False;IsStatic:True;"
+        },
+        "Microsoft.Azure.Cosmos.ShowQueryMode PARAMETERIZED_ONLY": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ShowQueryMode PARAMETERIZED_ONLY;IsInitOnly:False;IsStatic:True;"
+        }
+      },
+      "NestedTypes": {}
+    },
     "Microsoft.Azure.Cosmos.Spatial.BoundingBox;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
@@ -10981,32 +11007,6 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.SpatialType Polygon;IsInitOnly:False;IsStatic:True;"
-        }
-      },
-      "NestedTypes": {}
-    },
-    "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry.ShowQueryMode;System.Enum;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:True;IsClass:False;IsValueType:True;IsNested:False;IsGenericType:False;IsSerializable:True": {
-      "Subclasses": {},
-      "Members": {
-        "Int32 value__": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "Int32 value__;IsInitOnly:False;IsStatic:False;"
-        },
-        "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry.ShowQueryMode ALL": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry.ShowQueryMode ALL;IsInitOnly:False;IsStatic:True;"
-        },
-        "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry.ShowQueryMode NONE": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry.ShowQueryMode NONE;IsInitOnly:False;IsStatic:True;"
-        },
-        "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry.ShowQueryMode PARAMETERIZED_ONLY": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry.ShowQueryMode PARAMETERIZED_ONLY;IsInitOnly:False;IsStatic:True;"
         }
       },
       "NestedTypes": {}
