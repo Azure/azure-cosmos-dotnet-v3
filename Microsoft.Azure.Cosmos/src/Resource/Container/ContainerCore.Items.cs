@@ -26,6 +26,8 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.ReadFeed;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -391,7 +393,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 linqSerializerOptions ??= new CosmosLinqSerializerOptions
                 {
-                    PropertyNamingPolicy = this.ClientContext.ClientOptions.SerializerOptions?.PropertyNamingPolicy ?? CosmosPropertyNamingPolicy.Default             
+                    PropertyNamingPolicy = this.ClientContext.ClientOptions.SerializerOptions?.PropertyNamingPolicy ?? CosmosPropertyNamingPolicy.Default
                 };
             }
 
@@ -612,7 +614,7 @@ namespace Microsoft.Azure.Cosmos
             DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
 
             Dictionary<string, string> additionalHeaders;
-            
+
             if ((changeFeedRequestOptions?.Properties != null) && changeFeedRequestOptions.Properties.Any())
             {
                 Dictionary<string, object> additionalNonStringHeaders = new Dictionary<string, object>();
@@ -1295,14 +1297,12 @@ namespace Microsoft.Azure.Cosmos
 
                     return ContainerCore.IsSubset(
                         parentRange: ContainerCore.GetRange(
-                            feedRange: parentFeedRange,
                             ranges: await parentFeedRangeInternal.GetEffectiveRangesAsync(
                                 routingMapProvider: routingMapProvider,
                                 containerRid: containerRId,
                                 partitionKeyDefinition: partitionKeyDefinition,
                                 trace: trace)),
                         childRange: ContainerCore.GetRange(
-                            feedRange: childFeedRange,
                             ranges: await childFeedRangeInternal.GetEffectiveRangesAsync(
                                 routingMapProvider: routingMapProvider,
                                 containerRid: containerRId,
@@ -1317,26 +1317,40 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private static Documents.Routing.Range<string> GetRange(
-            Cosmos.FeedRange feedRange,
             List<Documents.Routing.Range<string>> ranges)
         {
-            // NOTE(philipthomas-MSFT): If FeedRangePartitionKey, it's Min and Max are the same, set minInclusive and maxInclusive is both set to True.
+            List<Documents.Routing.Range<string>> normalizedRanges = ranges
+                .Select(range => FeedRangeInternal.NormalizeRange(range))
+                .ToList();
 
-            return feedRange is FeedRangePartitionKey
-                ? Documents.Routing.Range<string>.GetPointRange(ranges.Min(range => range.Min))
-                : new Documents.Routing.Range<string>(
-                    min: ranges.Min(range => range.Min), // NOTE(philipthomas-MSFT): using System.Linq.Enumerable.Min to discover the smallest Documents.Routing.Range<string>.Min because no gaurantee of sorting.
-                    max: ranges.Max(range => range.Max), // NOTE(philipthomas-MSFT): using System.Linq.Enumerable.Max to discover the largest Documents.Routing.Range<string>.Max because no gaurantee of sorting.
-                    isMinInclusive: true,
-                    isMaxInclusive: false);
+            Documents.Routing.Range<string> normalizedRange = normalizedRanges.First();
+
+            // NOTE(philipthomas-MSFT): If only one rangee exists, return it immediately.
+            if (normalizedRanges.Count == 1)
+            {
+                return normalizedRange;
+            }
+
+            // NOTE(philipthomas-MSFT): Sort to find the smallest min.
+            normalizedRanges.Sort(Documents.Routing.Range<string>.MinComparer.Instance);
+            string min = normalizedRanges.First().Min;
+
+            // NOTE(philipthomas-MSFT): Sort to find the largest max.
+            normalizedRanges.Sort(Documents.Routing.Range<string>.MaxComparer.Instance);
+            string max = normalizedRanges.First().Max;
+
+            // NOTE(philipthomas-MSFT): Creating a new range based on the new min, max, isMinclusive, isMaxInclusive from normalized range.
+            return new Documents.Routing.Range<string>(
+                min: min,
+                max: max,
+                isMinInclusive: normalizedRange.IsMinInclusive,
+                isMaxInclusive: normalizedRange.IsMaxInclusive);
         }
 
         private static bool IsSubset(
             Documents.Routing.Range<string> parentRange,
             Documents.Routing.Range<string> childRange)
         {
-            // NOTE(philipthomas-MSFT: May want to add this to Range.cs within Microsoft.Azure.Cosmos.Direct in the future.
-
             return parentRange.Contains(childRange.Min)
                 && (parentRange.Max == childRange.Max || parentRange.Contains(childRange.Max));
         }
