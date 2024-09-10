@@ -1298,14 +1298,14 @@ namespace Microsoft.Azure.Cosmos
                     IRoutingMapProvider routingMapProvider = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(trace);
 
                     return ContainerCore.IsSubset(
-                        range1: ContainerCore.GetRange(
+                        parentRange: ContainerCore.GetRange(
                             feedRange: parentFeedRange,
                             ranges: await parentFeedRangeInternal.GetEffectiveRangesAsync(
                                 routingMapProvider: routingMapProvider,
                                 containerRid: containerRId,
                                 partitionKeyDefinition: partitionKeyDefinition,
                                 trace: trace)),
-                        range2: ContainerCore.GetRange(
+                        childRange: ContainerCore.GetRange(
                             feedRange: childFeedRange,
                             ranges: await childFeedRangeInternal.GetEffectiveRangesAsync(
                                 routingMapProvider: routingMapProvider,
@@ -1336,13 +1336,13 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private static bool IsSubset(
-            Documents.Routing.Range<string> range1,
-            Documents.Routing.Range<string> range2)
+            Documents.Routing.Range<string> parentRange,
+            Documents.Routing.Range<string> childRange)
         {
             // NOTE(philipthomas-MSFT: May want to add this to Range.cs within Microsoft.Azure.Cosmos.Direct in the future.
 
-            return range1.Contains(range2.Min)
-                && (range1.Max == range2.Max || range1.Contains(range2.Max));
+            return parentRange.Contains(childRange.Min)
+                && (parentRange.Max == childRange.Max || parentRange.Contains(childRange.Max));
         }
 #endif
     }
