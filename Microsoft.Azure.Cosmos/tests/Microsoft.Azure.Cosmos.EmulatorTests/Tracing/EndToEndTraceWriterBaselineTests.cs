@@ -388,42 +388,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             //---------------------------------------------------------------- 
 
             //----------------------------------------------------------------
-            //  ChangeFeed Public API Typed (With Query)
-            //----------------------------------------------------------------
-            {
-                ChangeFeedQuerySpec querySpec = new ChangeFeedQuerySpec("Select * from c");
-
-                startLineNumber = GetLineNumber();
-                ContainerInternal containerInternal = (ContainerInternal)container;
-                FeedIterator<JToken> feedIterator = containerInternal.GetChangeFeedIteratorWithQuery<JToken>(
-                    ChangeFeedStartFrom.Beginning(),
-                    ChangeFeedMode.Incremental,
-                    querySpec);
-
-                List<ITrace> traces = new List<ITrace>();
-
-                while (feedIterator.HasMoreResults)
-                {
-                    FeedResponse<JToken> responseMessage = await feedIterator.ReadNextAsync(cancellationToken: default);
-                    if (responseMessage.StatusCode == System.Net.HttpStatusCode.NotModified)
-                    {
-                        break;
-                    }
-
-                    ITrace trace = ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value;
-                    traces.Add(trace);
-                }
-
-                ITrace traceForest = TraceJoiner.JoinTraces(traces);
-                endLineNumber = GetLineNumber();
-
-                inputs.Add(new Input("ChangeFeed API With Query", traceForest, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
-
-                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
-            }
-            //---------------------------------------------------------------- 
-
-            //----------------------------------------------------------------
             //  ChangeFeed Public API Typed
             //----------------------------------------------------------------
             {
