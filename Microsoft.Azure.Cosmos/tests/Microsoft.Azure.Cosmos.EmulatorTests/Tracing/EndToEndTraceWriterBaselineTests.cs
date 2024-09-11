@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
     using System.Xml;
     using System.Xml.Linq;
     using global::Azure;
+    using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
@@ -387,6 +388,42 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             //---------------------------------------------------------------- 
 
             //----------------------------------------------------------------
+            //  ChangeFeed Public API Typed (With Query)
+            //----------------------------------------------------------------
+            {
+                ChangeFeedQuerySpec querySpec = new ChangeFeedQuerySpec("Select * from c");
+
+                startLineNumber = GetLineNumber();
+                ContainerInternal containerInternal = (ContainerInternal)container;
+                FeedIterator<JToken> feedIterator = containerInternal.GetChangeFeedIteratorWithQuery<JToken>(
+                    ChangeFeedStartFrom.Beginning(),
+                    ChangeFeedMode.Incremental,
+                    querySpec);
+
+                List<ITrace> traces = new List<ITrace>();
+
+                while (feedIterator.HasMoreResults)
+                {
+                    FeedResponse<JToken> responseMessage = await feedIterator.ReadNextAsync(cancellationToken: default);
+                    if (responseMessage.StatusCode == System.Net.HttpStatusCode.NotModified)
+                    {
+                        break;
+                    }
+
+                    ITrace trace = ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value;
+                    traces.Add(trace);
+                }
+
+                ITrace traceForest = TraceJoiner.JoinTraces(traces);
+                endLineNumber = GetLineNumber();
+
+                inputs.Add(new Input("ChangeFeed API With Query", traceForest, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
+
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
+            }
+            //---------------------------------------------------------------- 
+
+            //----------------------------------------------------------------
             //  ChangeFeed Public API Typed
             //----------------------------------------------------------------
             {
@@ -522,6 +559,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             //  Query Typed
             //----------------------------------------------------------------
             {
+                requestOptions.ShowQueryMode = ShowQueryMode.NONE;
+
                 startLineNumber = GetLineNumber();
                 FeedIteratorInternal<JToken> feedIterator = (FeedIteratorInternal<JToken>)container.GetItemQueryIterator<JToken>(
                     queryText: "SELECT * FROM c",
@@ -541,6 +580,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 inputs.Add(new Input("Query Typed", traceForest, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
+
+                requestOptions.ShowQueryMode = null; //Reset request Option
             }
             //----------------------------------------------------------------
 
@@ -548,6 +589,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             //  Query Public API
             //----------------------------------------------------------------
             {
+                requestOptions.ShowQueryMode = ShowQueryMode.PARAMETERIZED_ONLY;
+
                 startLineNumber = GetLineNumber();
                 FeedIterator feedIterator = container.GetItemQueryStreamIterator(
                     queryText: "SELECT * FROM c",
@@ -568,6 +611,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 inputs.Add(new Input("Query Public API", traceForest, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
+
+                requestOptions.ShowQueryMode = null; //Reset request Option
             }
             //----------------------------------------------------------------
 
@@ -575,9 +620,16 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             //  Query Public API Typed
             //----------------------------------------------------------------
             {
+                requestOptions.ShowQueryMode = ShowQueryMode.PARAMETERIZED_ONLY;
+
+                QueryDefinition parameterizedQuery = new QueryDefinition(
+                    query: "SELECT * FROM c WHERE c.id != @customIdentifier"
+                )
+                .WithParameter("@customIdentifier", "anyRandomId");
+
                 startLineNumber = GetLineNumber();
                 FeedIterator<JToken> feedIterator = container.GetItemQueryIterator<JToken>(
-                    queryText: "SELECT * FROM c",
+                    queryDefinition: parameterizedQuery,
                     requestOptions: requestOptions);
 
                 List<ITrace> traces = new List<ITrace>();

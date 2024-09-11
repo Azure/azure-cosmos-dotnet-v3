@@ -56,6 +56,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 {
                     scope.SetDisplayName($"{operationName} {containerName}");
 
+                    ShowQueryMode showQueryMode = GetShowQueryMode(requestOptions, clientContext);
+
                     openTelemetryRecorder = OpenTelemetryCoreRecorder.CreateOperationLevelParentActivity(
                         operationScope: scope,
                         operationName: operationName,
@@ -63,7 +65,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         databaseName: databaseName,
                         operationType: operationType,
                         clientContext: clientContext,
-                        config: requestOptions?.CosmosThresholdOptions ?? clientContext.ClientOptions?.CosmosClientTelemetryOptions.CosmosThresholdOptions);
+                        config: requestOptions?.CosmosThresholdOptions ?? clientContext.ClientOptions?.CosmosClientTelemetryOptions.CosmosThresholdOptions,
+                        showQueryMode: showQueryMode);
                 }
 #if !INTERNAL
                 // If there are no listeners at operation level and no parent activity created.
@@ -82,6 +85,23 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 }
             }
             return openTelemetryRecorder;
+        }
+
+        private static ShowQueryMode GetShowQueryMode(RequestOptions requestOptions, CosmosClientContext clientContext)
+        {
+            ShowQueryMode? showQueryMode = null;
+            if (requestOptions is QueryRequestOptions queryRequestOptions && queryRequestOptions.ShowQueryMode.HasValue)
+            {
+                showQueryMode = queryRequestOptions.ShowQueryMode.Value;
+
+            }
+            else if (requestOptions is ChangeFeedRequestOptions changeFeedRequestOptions && changeFeedRequestOptions.ShowQueryMode.HasValue)
+            {
+                showQueryMode = changeFeedRequestOptions.ShowQueryMode.Value;
+
+            }
+            showQueryMode ??= clientContext.ClientOptions?.CosmosClientTelemetryOptions?.ShowQueryMode ?? ShowQueryMode.NONE;
+            return showQueryMode.Value;
         }
     }
 }

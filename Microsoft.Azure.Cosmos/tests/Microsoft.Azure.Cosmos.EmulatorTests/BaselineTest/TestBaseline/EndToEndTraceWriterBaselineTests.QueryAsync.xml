@@ -2136,7 +2136,7 @@
       <Description>Query Public API Typed</Description>
       <Setup><![CDATA[
     FeedIterator<JToken> feedIterator = container.GetItemQueryIterator<JToken>(
-        queryText: "SELECT * FROM c",
+        queryDefinition: parameterizedQuery,
         requestOptions: requestOptions);
 
     List<ITrace> traces = new List<ITrace>();

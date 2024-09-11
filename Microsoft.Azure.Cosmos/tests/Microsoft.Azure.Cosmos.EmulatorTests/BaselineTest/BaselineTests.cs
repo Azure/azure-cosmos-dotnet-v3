@@ -63,10 +63,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
             List<BaselineTestResult> baselineTestResults = new List<BaselineTestResult>();
             int inputId = 0;
             int totalInputs = inputs.Count();
-            Debug.WriteLine($"Total inputs: {totalInputs}");
+            Console.WriteLine($"Total inputs: {totalInputs}");
             foreach (TInput input in inputs)
             {
-                Debug.WriteLine($"Execute input {++inputId}: {input.Description}..");
+                Console.WriteLine($"Execute input {++inputId}: {input.Description}..");
                 TOutput output = this.ExecuteTest(input);
                 baselineTestResults.Add(new BaselineTestResult(input, output));
             }
