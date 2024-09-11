@@ -88,6 +88,59 @@
         }
 
         /// <summary>
+        /// Tests behavior of Multimaster Accounts on metadata writes where the default location is not the hub region
+        /// </summary>
+        [TestMethod]
+        public async Task MultimasterWith4293029WriteRetryTest()
+        {
+            const bool enableEndpointDiscovery = true;
+
+            //Creates GlobalEndpointManager where enableEndpointDiscovery is False and
+            //Default location is false
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: true,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                multimasterMetadataWriteRetryTest: true);
+
+            await endpointManager.RefreshLocationAsync();
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+
+            //Creates a metadata write request
+            DocumentServiceRequest request = this.CreateRequest(false, false);
+
+            //On first attempt should get incorrect (default/non hub) location
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.AreEqual(request.RequestContext.LocationEndpointToRoute, ClientRetryPolicyTests.Location1Endpoint);
+
+            //Creation of 403.3 Error
+            HttpStatusCode throttleException = HttpStatusCode.TooManyRequests;
+            SubStatusCodes resourceNotAvailable = SubStatusCodes.AadTokenExpired;
+            Exception forbiddenWriteFail = new Exception();
+            Mock<INameValueCollection> nameValueCollection = new Mock<INameValueCollection>();
+
+            DocumentClientException documentClientException = new DocumentClientException(
+                message: "Multimaster Metadata Write Fail",
+                innerException: forbiddenWriteFail,
+                statusCode: throttleException,
+                substatusCode: resourceNotAvailable,
+                requestUri: request.RequestContext.LocationEndpointToRoute,
+                responseHeaders: nameValueCollection.Object);
+
+            CancellationToken cancellationToken = new CancellationToken();
+
+            //Tests behavior of should retry
+            Task<ShouldRetryResult> shouldRetry = retryPolicy.ShouldRetryAsync(documentClientException, cancellationToken);
+
+            Assert.IsTrue(shouldRetry.Result.ShouldRetry);
+
+            //Now since the retry context is not null, should route to the hub region
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.AreEqual(request.RequestContext.LocationEndpointToRoute, ClientRetryPolicyTests.Location2Endpoint);
+        }
+
+        /// <summary>
         /// Tests to see if different 503 substatus codes are handeled correctly
         /// </summary>
         /// <param name="testCode">The substatus code being Tested.</param>

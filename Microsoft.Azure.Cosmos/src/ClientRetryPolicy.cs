@@ -121,7 +121,24 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            return await this.throttlingRetry.ShouldRetryAsync(exception, cancellationToken);
+            ShouldRetryResult throttleRetryResult = await this.throttlingRetry.ShouldRetryAsync(exception, cancellationToken);
+
+            // Received 503 due to client connect timeout or Gateway
+            if (throttleRetryResult.ExceptionToThrow is ServiceUnavailableException)
+            {
+                DefaultTrace.TraceWarning("ClientRetryPolicy: ServiceUnavailable. Refresh cache and retry. Failed Location: {0}; ResourceAddress: {1}",
+                    this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
+                    this.documentServiceRequest?.ResourceAddress ?? string.Empty);
+
+                // Mark the partition as unavailable.
+                // Let the ClientRetry logic decide if the request should be retried
+                this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
+                     this.documentServiceRequest);
+
+                return this.ShouldRetryOnServiceUnavailable();
+            }
+
+            return throttleRetryResult;
         }
 
         /// <summary> 
@@ -144,7 +161,24 @@ namespace Microsoft.Azure.Cosmos
                 return shouldRetryResult;
             }
 
-            return await this.throttlingRetry.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
+            ShouldRetryResult throttleRetryResult = await this.throttlingRetry.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
+
+            // Received 503 due to client connect timeout or Gateway
+            if (throttleRetryResult.ExceptionToThrow is ServiceUnavailableException)
+            {
+                DefaultTrace.TraceWarning("ClientRetryPolicy: ServiceUnavailable. Refresh cache and retry. Failed Location: {0}; ResourceAddress: {1}",
+                    this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
+                    this.documentServiceRequest?.ResourceAddress ?? string.Empty);
+
+                // Mark the partition as unavailable.
+                // Let the ClientRetry logic decide if the request should be retried
+                this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
+                     this.documentServiceRequest);
+
+                return this.ShouldRetryOnServiceUnavailable();
+            }
+
+            return throttleRetryResult;
         }
 
         /// <summary>
@@ -178,6 +212,7 @@ namespace Microsoft.Azure.Cosmos
             // This enables marking the endpoint unavailability on endpoint failover/unreachability
             this.locationEndpoint = this.globalEndpointManager.ResolveServiceEndpoint(request);
             request.RequestContext.RouteToLocation(this.locationEndpoint);
+            this.throttlingRetry.OnBeforeSendRequest(request);
         }
 
         private async Task<ShouldRetryResult> ShouldRetryInternalAsync(
