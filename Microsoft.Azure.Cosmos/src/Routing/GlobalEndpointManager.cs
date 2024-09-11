@@ -38,6 +38,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly int backgroundRefreshLocationTimeIntervalInMS = GlobalEndpointManager.DefaultBackgroundRefreshLocationTimeIntervalInMS;
         private readonly object backgroundAccountRefreshLock = new object();
         private readonly object isAccountRefreshInProgressLock = new object();
+        private readonly ReaderWriterLock locationCacheReadWriteLock = new ReaderWriterLock();
         private bool isAccountRefreshInProgress = false;
         private bool isBackgroundAccountRefreshActive = false;
         private DateTime LastBackgroundRefreshUtc = DateTime.MinValue;
@@ -95,7 +96,15 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public ReadOnlyCollection<Uri> WriteEndpoints => this.locationCache.WriteEndpoints;
 
-        public int PreferredLocationCount => this.connectionPolicy.PreferredLocations != null ? this.connectionPolicy.PreferredLocations.Count : 0;
+        public int PreferredLocationCount
+        {
+            get
+            {
+                Collection<string> effectivePreferredLocations = this.GetEffectivePreferredLocations();
+                
+                return effectivePreferredLocations.Count;
+            }
+        }
 
         public bool IsMultimasterMetadataWriteRequest(DocumentServiceRequest request)
         {
@@ -497,8 +506,16 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return;
             }
 
-            this.locationCache.OnDatabaseAccountRead(databaseAccount);
-
+            this.locationCacheReadWriteLock.AcquireWriterLock(TimeSpan.FromMilliseconds(10));
+            try
+            {
+                this.locationCache.OnDatabaseAccountRead(databaseAccount);
+            }
+            finally
+            {
+                this.locationCacheReadWriteLock.ReleaseWriterLock();
+            }
+            
             if (this.isBackgroundAccountRefreshActive)
             {
                 return;
@@ -633,7 +650,19 @@ namespace Microsoft.Azure.Cosmos.Routing
             try
             {
                 this.LastBackgroundRefreshUtc = DateTime.UtcNow;
-                this.locationCache.OnDatabaseAccountRead(await this.GetDatabaseAccountAsync(true));
+
+                AccountProperties accountProperties = await this.GetDatabaseAccountAsync(true);
+                
+                this.locationCacheReadWriteLock.AcquireWriterLock(TimeSpan.FromMilliseconds(10));
+
+                try
+                {
+                    this.locationCache.OnDatabaseAccountRead(accountProperties);
+                }
+                finally
+                {
+                    this.locationCacheReadWriteLock.ReleaseWriterLock();
+                }
             }
             catch (Exception ex)
             {
@@ -675,6 +704,30 @@ namespace Microsoft.Azure.Cosmos.Routing
             TimeSpan timeSinceLastRefresh = DateTime.UtcNow - this.LastBackgroundRefreshUtc;
             return (this.isAccountRefreshInProgress || this.MinTimeBetweenAccountRefresh > timeSinceLastRefresh)
                 && !forceRefresh;
+        }
+
+        private Collection<string> GetEffectivePreferredLocations()
+        {
+            if (this.connectionPolicy.PreferredLocations != null && this.connectionPolicy.PreferredLocations.Count > 0)
+            {
+                return this.connectionPolicy.PreferredLocations;
+            }
+
+            this.locationCacheReadWriteLock.AcquireReaderLock(TimeSpan.FromMilliseconds(10));
+
+            try
+            {
+                if (this.databaseAccountCache.Keys == null || this.databaseAccountCache.Keys.Count == 0)
+                {
+                    return new Collection<string>();
+                }
+
+                return new Collection<string>(this.locationCache.EffectivePreferredLocations);
+            }
+            finally
+            {
+                this.locationCacheReadWriteLock.ReleaseReaderLock();
+            }
         }
     }
 }

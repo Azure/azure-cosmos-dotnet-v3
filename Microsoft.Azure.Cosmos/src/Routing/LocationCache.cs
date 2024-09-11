@@ -126,13 +126,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
-        public ReadOnlyCollection<string> EffectivePreferredLocations
-        {
-            get
-            {
-                return this.locationInfo.EffectivePreferredLocations;
-            }
-        }
+        public ReadOnlyCollection<string> EffectivePreferredLocations => this.locationInfo.EffectivePreferredLocations;
 
         /// <summary>
         /// Returns the location corresponding to the endpoint if location specific endpoint is provided.
@@ -726,7 +720,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     expectedAvailableOperation: OperationType.Read,
                     fallbackEndpoint: nextLocationInfo.WriteEndpoints[0]);
 
-                if (preferenceList == null || preferenceList.Count == 0)
+                if (nextLocationInfo.PreferredLocations == null || nextLocationInfo.PreferredLocations.Count == 0)
                 {
                     if (!nextLocationInfo.AvailableReadLocationByEndpoint.TryGetValue(this.defaultEndpoint, out string regionForDefaultEndpoint))
                     {

@@ -1059,8 +1059,12 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             bool isPreferredListEmpty)
         {
 
+            // hardcoded to represent - (location1, location2, location3) as the write regions (with and without preferred regions set)
             int maxWriteLocationIndex = 3;
-            int maxReadLocationIndex = isPreferredListEmpty ? 3 : 4;
+            
+            // hardcoded to represent - (location1, location2, location3, location4) as the account regions and (location1, location2, location3)
+            // as the read regions (with preferred regions set)
+            int maxReadLocationIndex = isPreferredListEmpty ? 4 : 3;
 
             for (int writeLocationIndex = 0; writeLocationIndex < maxWriteLocationIndex; writeLocationIndex++)
             {
@@ -1091,16 +1095,16 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                         location => location.Name,
                         location => new Uri(location.Endpoint));
 
-                    Dictionary<string, Uri> readEndpointByLocation = this.databaseAccount.ReadableRegions.ToDictionary(
+                    Dictionary<string, Uri> readEndpointByLocation = this.databaseAccount.ReadLocationsInternal.ToDictionary(
                         location => location.Name,
                         location => new Uri(location.Endpoint));
 
-                    List<Uri> accountLevelReadEndpoints = this.databaseAccount.ReadableRegions
+                    List<Uri> accountLevelReadEndpoints = this.databaseAccount.ReadLocationsInternal
                         .Where(accountRegion => readEndpointByLocation.ContainsKey(accountRegion.Name))
                         .Select(accountRegion => readEndpointByLocation[accountRegion.Name])
                         .ToList();
 
-                    List<Uri> accountLevelWriteEndpoints = this.databaseAccount.WritableRegions
+                    List<Uri> accountLevelWriteEndpoints = this.databaseAccount.WriteLocationsInternal
                         .Where(accountRegion => writeEndpointByLocation.ContainsKey(accountRegion.Name))
                         .Select(accountRegion => writeEndpointByLocation[accountRegion.Name])
                         .ToList();
@@ -1206,9 +1210,10 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
             bool isMostPreferredLocationUnavailableForRead = isFirstReadEndpointUnavailable;
             bool isMostPreferredLocationUnavailableForWrite = useMultipleWriteLocations ? false : isFirstWriteEndpointUnavailable;
-            if (this.preferredLocations.Count > 0 || isPreferredListEmpty)
+
+            if (this.preferredLocations.Count > 0 || (isPreferredListEmpty && endpointDiscoveryEnabled))
             {
-                string mostPreferredReadLocationName = (isPreferredListEmpty && endpointDiscoveryEnabled) ? preferredAvailableReadRegions[0] : this.preferredLocations.FirstOrDefault(location => databaseAccount.ReadableRegions.Any(readLocation => readLocation.Name == location), "");
+                string mostPreferredReadLocationName = (isPreferredListEmpty && endpointDiscoveryEnabled) ? preferredAvailableReadRegions[0] : this.preferredLocations.FirstOrDefault(location => this.databaseAccount.ReadableRegions.Any(readLocation => readLocation.Name == location), "");
                 Uri mostPreferredReadEndpoint = LocationCacheTests.EndpointByLocation[mostPreferredReadLocationName];
                 isMostPreferredLocationUnavailableForRead = preferredAvailableReadEndpoints.Length == 0 ? true : (preferredAvailableReadEndpoints[0] != mostPreferredReadEndpoint);
 
@@ -1217,7 +1222,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                     isMostPreferredLocationUnavailableForRead = preferredAvailableReadEndpoints[0] != accountLevelReadEndpoints[0];
                 }
 
-                string mostPreferredWriteLocationName = (isPreferredListEmpty && endpointDiscoveryEnabled) ? preferredAvailableWriteRegions[0] : this.preferredLocations.FirstOrDefault(location => databaseAccount.WritableRegions.Any(writeLocation => writeLocation.Name == location), "");
+                string mostPreferredWriteLocationName = (isPreferredListEmpty && endpointDiscoveryEnabled) ? preferredAvailableWriteRegions[0] : this.preferredLocations.FirstOrDefault(location => this.databaseAccount.WritableRegions.Any(writeLocation => writeLocation.Name == location), "");
                 Uri mostPreferredWriteEndpoint = LocationCacheTests.EndpointByLocation[mostPreferredWriteLocationName];
 
                 if (useMultipleWriteLocations)
@@ -1324,11 +1329,11 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 firstAvailableReadEndpoint = LocationCacheTests.EndpointByLocation[this.preferredLocations[0]];
             }
 
-            Uri firstWriteEnpoint = !endpointDiscoveryEnabled ?
+            Uri firstWriteEndpoint = !endpointDiscoveryEnabled ?
                 LocationCacheTests.DefaultEndpoint :
                 new Uri(this.databaseAccount.WriteLocationsInternal[0].Endpoint);
 
-            Uri secondWriteEnpoint = !endpointDiscoveryEnabled ?
+            Uri secondWriteEndpoint = !endpointDiscoveryEnabled ?
                 LocationCacheTests.DefaultEndpoint :
                 new Uri(this.databaseAccount.WriteLocationsInternal[1].Endpoint);
 
@@ -1340,10 +1345,11 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             Assert.AreEqual(firstAvailableWriteEndpoint, this.ResolveEndpointForWriteRequest(ResourceType.Document, false));
 
             // Writes to other resource types should be directed to first/second write endpoint
-            Assert.AreEqual(firstWriteEnpoint, this.ResolveEndpointForWriteRequest(ResourceType.Database, false));
-            Assert.AreEqual(secondWriteEnpoint, this.ResolveEndpointForWriteRequest(ResourceType.Database, true));
+            Assert.AreEqual(firstWriteEndpoint, this.ResolveEndpointForWriteRequest(ResourceType.Database, false));
+            Assert.AreEqual(secondWriteEndpoint, this.ResolveEndpointForWriteRequest(ResourceType.Database, true));
 
             // Reads should be directed to available read endpoints regardless of resource type
+            //Console.WriteLine("Expected firstAvailableReadEndpoint : " + firstAvailableReadEndpoint + " Actual firstAvailableReadEndpoint : " + this.ResolveEndpointForReadRequest(true));
             Assert.AreEqual(firstAvailableReadEndpoint, this.ResolveEndpointForReadRequest(true));
             Assert.AreEqual(firstAvailableReadEndpoint, this.ResolveEndpointForReadRequest(false));
         }
