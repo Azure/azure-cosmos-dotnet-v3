@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos
     internal abstract class HttpTimeoutPolicy
     {
         public abstract string TimeoutPolicyName { get; }
-        public abstract TimeSpan MaximumRetryTimeLimit { get; }
         public abstract int TotalRetryCount { get; }
         public abstract IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> GetTimeoutEnumerator();
         public abstract bool IsSafeToRetry(HttpMethod httpMethod);
@@ -30,8 +29,15 @@ namespace Microsoft.Azure.Cosmos
                 return HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout;
             }
 
-            //Partition Key Requests
-            if (documentServiceRequest.ResourceType == ResourceType.PartitionKeyRange)
+            //Get Partition Key Range Requests
+            if (documentServiceRequest.ResourceType == ResourceType.PartitionKeyRange
+                && documentServiceRequest.OperationType == OperationType.ReadFeed)
+            {
+                return HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout;
+            }
+
+            //Get Addresses Requests
+            if (documentServiceRequest.ResourceType == ResourceType.Address)
             {
                 return HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance;
             }
@@ -45,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
             //Meta Data Read
             if (HttpTimeoutPolicy.IsMetaData(documentServiceRequest) && documentServiceRequest.IsReadOnlyRequest)
             {
-                return HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout;
+                return HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout;
             }
 
             //Default behavior

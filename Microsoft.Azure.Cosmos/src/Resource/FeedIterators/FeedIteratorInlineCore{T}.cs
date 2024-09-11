@@ -61,11 +61,6 @@ namespace Microsoft.Azure.Cosmos
             return TaskHelper.RunInlineIfNeededAsync(() => this.feedIteratorInternal.ReadNextAsync(trace, cancellationToken));
         }
 
-        public override CosmosElement GetCosmosElementContinuationToken()
-        {
-            return this.feedIteratorInternal.GetCosmosElementContinuationToken();
-        }
-
         protected override void Dispose(bool disposing)
         {
             this.feedIteratorInternal.Dispose();

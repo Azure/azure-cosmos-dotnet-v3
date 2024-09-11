@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TransportInterceptorContractTest()
         {
-            CosmosClient cosmosClient = TestCommon.CreateCosmosClient(
+            using CosmosClient cosmosClient = TestCommon.CreateCosmosClient(
                 builder =>
                 {
                     builder.WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(transportClient, TransportWrapperTests.Interceptor));
@@ -31,12 +31,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string id1 = Guid.NewGuid().ToString();
             TestPayload payload1 = await container.CreateItemAsync<TestPayload>(new TestPayload { id = id1 });
             payload1 = await container.ReadItemAsync<TestPayload>(id1, new Cosmos.PartitionKey(id1));
+            await database.DeleteStreamAsync();
         }
 
         [TestMethod]
         public async Task TransportExceptionValidationTest()
         {
-            CosmosClient cosmosClient = TestCommon.CreateCosmosClient(
+            using CosmosClient cosmosClient = TestCommon.CreateCosmosClient(
                 builder =>
                 {
                     builder.WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
@@ -79,7 +80,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             using (ResponseMessage responseMessage = await streamIterator.ReadNextAsync())
             {
                 this.ValidateTransportException(responseMessage);
-            }   
+            }
+
+            await database.DeleteStreamAsync();
         }
 
         private void ValidateTransportException(CosmosException cosmosException)
@@ -144,33 +147,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     userPayload: true,
                     payloadSent: false);
 
-                DocumentClientException documentClientException = new DocumentClientException(
-                    message: "Exception",
-                    innerException: transportException,
-                    statusCode: System.Net.HttpStatusCode.Gone);
                 IClientSideRequestStatistics requestStatistics = request.RequestContext.ClientRequestStatistics;
                 requestStatistics.RecordResponse(
                     request, 
-                    new StoreResult(
-                        storeResponse: null,
-                        exception: documentClientException,
-                        partitionKeyRangeId: "PkRange",
-                        lsn: 42,
-                        quorumAckedLsn: 4242,
-                        requestCharge: 9000.42,
-                        currentReplicaSetSize: 3,
-                        currentWriteQuorum: 4,
-                        isValid: true,
-                        storePhysicalAddress: physicalAddress,
-                        globalCommittedLSN: 2,
-                        numberOfReadRegions: 1,
-                        itemLSN: 5,
-                        sessionToken: null,
-                        usingLocalLSN: true,
-                        activityId: Guid.NewGuid().ToString(),
-                        backendRequestDurationInMs: "0",
-                        retryAfterInMs: "42",
-                        transportRequestStats: new TransportRequestStats()),
+                    StoreResult.CreateForTesting(transportRequestStats: new TransportRequestStats()).Target,
                     DateTime.MinValue,
                     DateTime.MaxValue);
 

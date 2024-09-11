@@ -24,8 +24,6 @@ namespace Microsoft.Azure.Cosmos
 
         public override string TimeoutPolicyName => HttpTimeoutPolicyNoRetry.Name;
 
-        public override TimeSpan MaximumRetryTimeLimit => TimeSpan.Zero;
-
         public override int TotalRetryCount => 0;
 
         public override IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> GetTimeoutEnumerator()

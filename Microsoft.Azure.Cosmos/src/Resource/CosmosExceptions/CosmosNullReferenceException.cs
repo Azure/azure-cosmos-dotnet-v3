@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections;
-    using global::Azure.Core.Pipeline;
+    using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -25,9 +25,10 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal CosmosNullReferenceException(
             NullReferenceException originalException,
-            ITrace trace)
+            ITrace trace) 
+            : base(originalException?.Message ?? throw new ArgumentNullException(nameof(originalException)), originalException ?? throw new ArgumentNullException(nameof(originalException)))
         {
-            this.originalException = originalException ?? throw new ArgumentNullException(nameof(originalException));
+            this.originalException = originalException;
 
             if (trace == null)
             {

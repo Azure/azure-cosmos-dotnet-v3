@@ -220,6 +220,41 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Assert.IsInstanceOfType(builder.Build(), typeof(ChangeFeedProcessor));
         }
 
+        [TestMethod]
+        public void ConvertsToUTC()
+        {
+            DateTime localTime = DateTime.Now;
+
+            Assert.AreEqual(DateTimeKind.Local, localTime.Kind);
+
+            Action<DocumentServiceLeaseStoreManager,
+                Container,
+                string,
+                ChangeFeedLeaseOptions,
+                ChangeFeedProcessorOptions,
+                Container> verifier = (DocumentServiceLeaseStoreManager leaseStoreManager,
+                Container leaseContainer,
+                string instanceName,
+                ChangeFeedLeaseOptions changeFeedLeaseOptions,
+                ChangeFeedProcessorOptions changeFeedProcessorOptions,
+                Container monitoredContainer) =>
+                {
+                    Assert.AreEqual(DateTimeKind.Utc, changeFeedProcessorOptions.StartTime.Value.Kind);
+                    Assert.AreEqual(localTime.ToUniversalTime(), changeFeedProcessorOptions.StartTime.Value);
+                };
+
+            ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder("workflowName",
+                ChangeFeedProcessorBuilderTests.GetMockedContainer(),
+                ChangeFeedProcessorBuilderTests.GetMockedProcessor(),
+                verifier);
+
+            builder.WithLeaseContainer(ChangeFeedProcessorBuilderTests.GetMockedContainer());
+
+            builder.WithStartTime(localTime);
+
+            Assert.IsInstanceOfType(builder.Build(), typeof(ChangeFeedProcessor));
+        }
+
         private static ContainerInternal GetMockedContainer(string containerName = null)
         {
             Mock<ContainerInternal> mockedContainer = MockCosmosUtil.CreateMockContainer(containerName: containerName);

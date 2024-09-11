@@ -31,6 +31,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
     {
         private readonly ContainerInternal container;
         private readonly CosmosQueryClient cosmosQueryClient;
+        private readonly ICosmosDistributedQueryClient distributedQueryClient;
         private readonly QueryRequestOptions queryRequestOptions;
         private readonly ChangeFeedRequestOptions changeFeedRequestOptions;
         private readonly string resourceLink;
@@ -45,9 +46,31 @@ namespace Microsoft.Azure.Cosmos.Pagination
             ChangeFeedRequestOptions changeFeedRequestOptions = null,
             string resourceLink = null,
             ResourceType resourceType = ResourceType.Document)
+            : this(
+                  container,
+                  cosmosQueryClient,
+                  distributedQueryClient: null,
+                  correlatedActivityId,
+                  queryRequestOptions,
+                  changeFeedRequestOptions,
+                  resourceLink,
+                  resourceType)
+        {
+        }
+
+        public NetworkAttachedDocumentContainer(
+            ContainerInternal container,
+            CosmosQueryClient cosmosQueryClient,
+            ICosmosDistributedQueryClient distributedQueryClient,
+            Guid correlatedActivityId,
+            QueryRequestOptions queryRequestOptions = null,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null,
+            string resourceLink = null,
+            ResourceType resourceType = ResourceType.Document)
         {
             this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.cosmosQueryClient = cosmosQueryClient ?? throw new ArgumentNullException(nameof(cosmosQueryClient));
+            this.distributedQueryClient = distributedQueryClient; // optional
             this.queryRequestOptions = queryRequestOptions;
             this.changeFeedRequestOptions = changeFeedRequestOptions;
             this.resourceLink = resourceLink ?? this.container.LinkUri;
@@ -172,11 +195,11 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public async Task<TryCatch<ReadFeedPage>> MonadicReadFeedAsync(
             FeedRangeState<ReadFeedState> feedRangeState,
-            ReadFeedPaginationOptions readFeedPaginationOptions,
+            ReadFeedExecutionOptions readFeedPaginationOptions,
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            readFeedPaginationOptions ??= ReadFeedPaginationOptions.Default;
+            readFeedPaginationOptions ??= ReadFeedExecutionOptions.Default;
 
             ResponseMessage responseMessage = await this.container.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: this.resourceLink,
@@ -190,11 +213,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     if (feedRangeState.State is ReadFeedContinuationState readFeedContinuationState)
                     {
                         request.Headers.ContinuationToken = ((CosmosString)readFeedContinuationState.ContinuationToken).Value;
-                    }
-
-                    if (readFeedPaginationOptions.JsonSerializationFormat.HasValue)
-                    {
-                        request.Headers.ContentSerializationFormat = readFeedPaginationOptions.JsonSerializationFormat.Value.ToContentSerializationFormatString();
                     }
 
                     foreach (KeyValuePair<string, string> kvp in readFeedPaginationOptions.AdditionalHeaders)
@@ -212,6 +230,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             {
                 double requestCharge = responseMessage.Headers.RequestCharge;
                 string activityId = responseMessage.Headers.ActivityId;
+                int itemCount = int.Parse(responseMessage.Headers.ItemCount);
                 ReadFeedState state = responseMessage.Headers.ContinuationToken != null ? ReadFeedState.Continuation(CosmosString.Create(responseMessage.Headers.ContinuationToken)) : null;
                 Dictionary<string, string> additionalHeaders = GetAdditionalHeaders(
                     responseMessage.Headers.CosmosMessageHeaders,
@@ -220,6 +239,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 ReadFeedPage readFeedPage = new ReadFeedPage(
                     responseMessage.Content,
                     requestCharge,
+                    itemCount,
                     activityId,
                     additionalHeaders,
                     state);
@@ -235,10 +255,10 @@ namespace Microsoft.Azure.Cosmos.Pagination
             return monadicReadFeedPage;
         }
 
-        public async Task<TryCatch<QueryPage>> MonadicQueryAsync(
+        public Task<TryCatch<QueryPage>> MonadicQueryAsync(
             SqlQuerySpec sqlQuerySpec,
             FeedRangeState<QueryState> feedRangeState,
-            QueryPaginationOptions queryPaginationOptions,
+            QueryExecutionOptions queryPaginationOptions,
             ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -257,27 +277,45 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 throw new ArgumentNullException(nameof(trace));
             }
 
-            QueryRequestOptions queryRequestOptions = this.queryRequestOptions == null ? new QueryRequestOptions() : this.queryRequestOptions;
-            TryCatch<QueryPage> monadicQueryPage = await this.cosmosQueryClient.ExecuteItemQueryAsync(
-                this.resourceLink,
-                this.resourceType,
-                Documents.OperationType.Query,
-                this.correlatedActivityId,
-                feedRangeState.FeedRange,
-                queryRequestOptions,
-                sqlQuerySpec,
-                feedRangeState.State == null ? null : ((CosmosString)feedRangeState.State.Value).Value,
-                isContinuationExpected: false,
-                queryPaginationOptions.PageSizeLimit ?? int.MaxValue,
-                trace,
-                cancellationToken);
+            QueryRequestOptions queryRequestOptions = this.queryRequestOptions ?? new QueryRequestOptions();
+            AdditionalRequestHeaders additionalRequestHeaders = new AdditionalRequestHeaders(this.correlatedActivityId, isContinuationExpected: false, optimisticDirectExecute: queryPaginationOptions.OptimisticDirectExecute);
+
+            Task<TryCatch<QueryPage>> monadicQueryPage;
+            if (this.distributedQueryClient != null &&
+                queryPaginationOptions.EnableDistributedQueryGatewayMode && 
+                this.resourceType == Documents.ResourceType.Document)
+            {
+                monadicQueryPage = this.distributedQueryClient.MonadicQueryAsync(
+                    queryRequestOptions.PartitionKey,
+                    feedRangeState.FeedRange,
+                    sqlQuerySpec,
+                    feedRangeState.State == null ? null : ((CosmosString)feedRangeState.State.Value).Value,
+                    queryPaginationOptions,
+                    trace,
+                    cancellationToken);
+            }
+            else
+            {
+                monadicQueryPage = this.cosmosQueryClient.ExecuteItemQueryAsync(
+                    this.resourceLink,
+                    this.resourceType,
+                    Documents.OperationType.Query,
+                    feedRangeState.FeedRange,
+                    queryRequestOptions,
+                    additionalRequestHeaders,
+                    sqlQuerySpec,
+                    feedRangeState.State == null ? null : ((CosmosString)feedRangeState.State.Value).Value,
+                    queryPaginationOptions.PageSizeLimit ?? int.MaxValue,
+                    trace,
+                    cancellationToken);
+            }
 
             return monadicQueryPage;
         }
 
         public async Task<TryCatch<ChangeFeedPage>> MonadicChangeFeedAsync(
             FeedRangeState<ChangeFeedState> feedRangeState,
-            ChangeFeedPaginationOptions changeFeedPaginationOptions,
+            ChangeFeedExecutionOptions changeFeedPaginationOptions,
             ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -332,6 +370,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             {
                 double requestCharge = responseMessage.Headers.RequestCharge;
                 string activityId = responseMessage.Headers.ActivityId;
+                int itemCount = int.Parse(responseMessage.Headers.ItemCount);
                 ChangeFeedState state = ChangeFeedState.Continuation(CosmosString.Create(responseMessage.Headers.ETag));
                 Dictionary<string, string> additionalHeaders = GetAdditionalHeaders(
                     responseMessage.Headers.CosmosMessageHeaders,
@@ -343,6 +382,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     changeFeedPage = new ChangeFeedSuccessPage(
                         responseMessage.Content,
                         requestCharge,
+                        itemCount,
                         activityId,
                         additionalHeaders,
                         state);

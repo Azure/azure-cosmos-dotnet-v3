@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
@@ -14,10 +15,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
-
-#if PREVIEW
-    using System.Collections.Generic;
-#endif
 
     /// <summary>
     /// Operations for reading or deleting an existing database.
@@ -219,7 +216,6 @@ namespace Microsoft.Azure.Cosmos
                                 nameof(containerProperties.PartitionKey));
                         }
                     }
-#if PREVIEW
                     else
                     {
                         IReadOnlyList<string> retrivedPartitionKeyPaths = retrivedContainerResponse.Resource.PartitionKeyPaths;
@@ -236,7 +232,7 @@ namespace Microsoft.Azure.Cosmos
                                 nameof(containerProperties.PartitionKey));
                         }
                     }
-#endif
+
                     return retrivedContainerResponse;
                 }
             }

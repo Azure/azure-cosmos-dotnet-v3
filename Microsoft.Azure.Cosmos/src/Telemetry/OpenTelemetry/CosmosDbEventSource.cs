@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     internal sealed class CosmosDbEventSource : AzureEventSource
     {
         internal const string EventSourceName = "Azure-Cosmos-Operation-Request-Diagnostics";
-        
+
         private static CosmosDbEventSource Singleton { get; } = new CosmosDbEventSource();
 
         private CosmosDbEventSource()
@@ -31,16 +31,30 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         [NonEvent]
         public static void RecordDiagnosticsForRequests(
-            DistributedTracingOptions config,
+            CosmosThresholdOptions config,
             Documents.OperationType operationType,
             OpenTelemetryAttributes response)
         {
-            if (DiagnosticsFilterHelper.IsTracingNeeded(
-                    config: config,
-                    operationType: operationType,
-                    response: response) && CosmosDbEventSource.IsEnabled(EventLevel.Warning))
+            if (CosmosDbEventSource.IsEnabled(EventLevel.Warning))
             {
-                CosmosDbEventSource.Singleton.WriteWarningEvent(response.Diagnostics.ToString());
+                if (!DiagnosticsFilterHelper.IsSuccessfulResponse(
+                                        response.StatusCode, response.SubStatusCode))
+                {
+                    CosmosDbEventSource.Singleton.FailedRequest(response.Diagnostics.ToString());
+                }
+                else if (DiagnosticsFilterHelper.IsLatencyThresholdCrossed(
+                            config: config,
+                            operationType: operationType,
+                            response: response) ||
+                        (config.RequestChargeThreshold is not null &&
+                            config.RequestChargeThreshold <= response.RequestCharge) ||
+                        (config.PayloadSizeThresholdInBytes is not null &&
+                            DiagnosticsFilterHelper.IsPayloadSizeThresholdCrossed(
+                                config: config,
+                                response: response)))
+                {
+                    CosmosDbEventSource.Singleton.ThresholdViolation(response.Diagnostics.ToString());
+                }
             }
         }
 
@@ -49,24 +63,24 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             if (CosmosDbEventSource.IsEnabled(EventLevel.Error))
             {
-                CosmosDbEventSource.Singleton.WriteErrorEvent(diagnostics.ToString());
+                CosmosDbEventSource.Singleton.Exception(diagnostics.ToString());
             }
         }
 
         [Event(1, Level = EventLevel.Error)]
-        private void WriteErrorEvent(string message)
+        private void Exception(string message)
         {
             this.WriteEvent(1, message);
         }
 
         [Event(2, Level = EventLevel.Warning)]
-        private void WriteWarningEvent(string message)
+        private void ThresholdViolation(string message)
         {
             this.WriteEvent(2, message);
         }
 
-        [Event(3, Level = EventLevel.Informational)]
-        private void WriteInfoEvent(string message)
+        [Event(3, Level = EventLevel.Error)]
+        private void FailedRequest(string message)
         {
             this.WriteEvent(3, message);
         }

@@ -33,6 +33,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
         }
 
+        [TestCleanup]
+        public async Task Cleanup()
+        {
+            await this.client.GetDatabase(DatabaseName).DeleteStreamAsync();
+            this.client?.Dispose();
+        }
+
         /// <summary>
         /// Test for the existence of native assembly dependencies
         /// </summary>
@@ -68,13 +75,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task DocumentInsertsTest_DirectHttps()
-        {
-            this.client = this.GetDocumentClient(ConnectionMode.Direct, Documents.Client.Protocol.Https);
-            await this.DocumentInsertsTest();
-        }
-
-        [TestMethod]
         public async Task DocumentInsertsTest_DirectTcp()
         {
             this.client = this.GetDocumentClient(ConnectionMode.Direct, Documents.Client.Protocol.Tcp);
@@ -104,13 +104,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task QueryWithPaginationTest_GatewayHttps()
         {
             this.client = this.GetDocumentClient(ConnectionMode.Gateway, Documents.Client.Protocol.Https);
-            await this.QueryWithPagination();
-        }
-
-        [TestMethod]
-        public async Task QueryWithPaginationTest_DirectHttps()
-        {
-            this.client = this.GetDocumentClient(ConnectionMode.Direct, Documents.Client.Protocol.Https);
             await this.QueryWithPagination();
         }
 
@@ -174,13 +167,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task CrossPartitionQueries_DirectHttps()
-        {
-            this.client = this.GetDocumentClient(ConnectionMode.Direct, Documents.Client.Protocol.Https);
-            await this.CrossPartitionQueries();
-        }
-
-        [TestMethod]
         public async Task CrossPartitionQueries_DirectTcp()
         {
             this.client = this.GetDocumentClient(ConnectionMode.Direct, Documents.Client.Protocol.Tcp);
@@ -221,13 +207,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task CreateDatabaseIfNotExists_DirectHttps()
-        {
-            this.client = this.GetDocumentClient(ConnectionMode.Direct, Documents.Client.Protocol.Https);
-            await this.CreateDatabaseIfNotExists(this.client);
-        }
-
-        [TestMethod]
         public async Task CreateDatabaseIfNotExists_DirectTcp()
         {
             this.client = this.GetDocumentClient(ConnectionMode.Direct, Documents.Client.Protocol.Tcp);
@@ -263,13 +242,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task CreateDocumentCollectionIfNotExists_GatewayHttps()
         {
             this.client = this.GetDocumentClient(ConnectionMode.Gateway, Documents.Client.Protocol.Https);
-            await this.CreateDocumentCollectionIfNotExists();
-        }
-
-        [TestMethod]
-        public async Task CreateDocumentCollectionIfNotExists_DirectHttps()
-        {
-            this.client = this.GetDocumentClient(ConnectionMode.Direct, Documents.Client.Protocol.Https);
             await this.CreateDocumentCollectionIfNotExists();
         }
 

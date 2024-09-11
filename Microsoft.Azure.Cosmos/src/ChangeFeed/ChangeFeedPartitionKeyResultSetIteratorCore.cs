@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     {
         public static ChangeFeedPartitionKeyResultSetIteratorCore Create(
             DocumentServiceLease lease,
+            ChangeFeedMode mode,
             string continuationToken,
             int? maxItemCount,
             ContainerInternal container,
@@ -56,6 +57,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             return new ChangeFeedPartitionKeyResultSetIteratorCore(
                 container: container,
+                mode: mode,
                 changeFeedStartFrom: startFrom,
                 options: requestOptions);
         }
@@ -63,26 +65,25 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private readonly CosmosClientContext clientContext;
 
         private readonly ChangeFeedRequestOptions changeFeedOptions;
+        private readonly ChangeFeedMode mode;
+
         private ChangeFeedStartFrom changeFeedStartFrom;
         private bool hasMoreResultsInternal;
 
         private ChangeFeedPartitionKeyResultSetIteratorCore(
             ContainerInternal container,
+            ChangeFeedMode mode,
             ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedRequestOptions options)
         {
             this.container = container ?? throw new ArgumentNullException(nameof(container));
+            this.mode = mode;
             this.changeFeedStartFrom = changeFeedStartFrom ?? throw new ArgumentNullException(nameof(changeFeedStartFrom));
             this.clientContext = this.container.ClientContext;
             this.changeFeedOptions = options;
         }
 
         public override bool HasMoreResults => this.hasMoreResultsInternal;
-
-        public override CosmosElement GetCosmosElementContinuationToken()
-        {
-            throw new NotImplementedException();
-        }
 
         /// <summary>
         /// Get the next set of results from the cosmos service
@@ -125,9 +126,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                             this.changeFeedOptions.PageSizeHint.Value.ToString(CultureInfo.InvariantCulture));
                     }
 
-                    requestMessage.Headers.Add(
-                        HttpConstants.HttpHeaders.A_IM,
-                        HttpConstants.A_IMHeaderValues.IncrementalFeed);
+                    // Add the necessary mode headers
+                    this.mode.Accept(requestMessage);
                 },
                 feedRange: this.changeFeedStartFrom.FeedRange,
                 streamPayload: default,

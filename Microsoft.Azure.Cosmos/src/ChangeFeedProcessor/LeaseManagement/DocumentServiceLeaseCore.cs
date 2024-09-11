@@ -95,6 +95,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         [JsonProperty("_ts")]
         private long TS { get; set; }
 
+        [JsonProperty("Mode", NullValueHandling = NullValueHandling.Ignore)]
+        public override string Mode { get; set; }
+
         public override string ToString()
         {
             return string.Format(

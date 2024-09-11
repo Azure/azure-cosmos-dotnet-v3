@@ -21,26 +21,7 @@
         private static readonly HttpRequestMessage request = new HttpRequestMessage();
         private static readonly Uri uri = new Uri("http://someUri1.com");
         private static readonly DocumentServiceRequest requestDsr = DocumentServiceRequest.Create(OperationType.Read, resourceType: ResourceType.Document, authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
-        private static readonly StoreResult storeResult = new Documents.StoreResult(
-            storeResponse: new StoreResponse(),
-            exception: null,
-            partitionKeyRangeId: 42.ToString(),
-            lsn: 1337,
-            quorumAckedLsn: 23,
-            requestCharge: 3.14,
-            currentReplicaSetSize: 4,
-            currentWriteQuorum: 3,
-            isValid: true,
-            storePhysicalAddress: new Uri("http://storephysicaladdress.com"),
-            globalCommittedLSN: 1234,
-            numberOfReadRegions: 13,
-            itemLSN: 15,
-            sessionToken: new SimpleSessionToken(42),
-            usingLocalLSN: true,
-            activityId: Guid.Empty.ToString(),
-            backendRequestDurationInMs: "4.2",
-            retryAfterInMs: "42",
-            transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats());
+        private static readonly StoreResult storeResult = StoreResult.CreateForTesting(storeResponse: new StoreResponse()).Target;
 
         /// <summary>
         /// This test is needed because different parts of the SDK use the same ClientSideRequestStatisticsTraceDatum across multiple
@@ -67,7 +48,7 @@
         [TestMethod]
         public void DuplicateContactedReplicasTests()
         {
-            ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary());
+            ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, Trace.GetRootTrace(nameof(DuplicateContactedReplicasTests)));
             clientSideRequestStatisticsTraceDatum.ContactedReplicas.Add(new TransportAddressUri(new Uri("http://storephysicaladdress1.com")));
             clientSideRequestStatisticsTraceDatum.ContactedReplicas.Add(new TransportAddressUri(new Uri("http://storephysicaladdress2.com")));
             clientSideRequestStatisticsTraceDatum.ContactedReplicas.Add(new TransportAddressUri(new Uri("http://storephysicaladdress2.com")));
@@ -108,7 +89,7 @@
         [TestMethod]
         public void VerifyIClientSideRequestStatisticsNullTests()
         {
-            IClientSideRequestStatistics clientSideRequestStatistics = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new Cosmos.Tracing.TraceSummary());
+            IClientSideRequestStatistics clientSideRequestStatistics = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, Trace.GetRootTrace(nameof(VerifyIClientSideRequestStatisticsNullTests)));
             Assert.IsNotNull(clientSideRequestStatistics.ContactedReplicas);
             Assert.IsNotNull(clientSideRequestStatistics.FailedReplicas);
             Assert.IsNotNull(clientSideRequestStatistics.RegionsContacted);
@@ -120,7 +101,7 @@
         {
             using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
 
-            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new Cosmos.Tracing.TraceSummary());
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, Trace.GetRootTrace(nameof(ConcurrentUpdateTestHelper)));
 
             Task backgroundTask = Task.Run(() => backgroundUpdater(datum, cancellationTokenSource.Token));
 

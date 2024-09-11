@@ -46,6 +46,8 @@ namespace CosmosBenchmark
             this.sampleJObject[this.partitionKeyPath] = this.executionItemPartitionKey;
         }
 
+        public BenchmarkOperationType OperationType => BenchmarkOperationType.Query;
+
         public async Task<OperationResult> ExecuteOnceAsync()
         {
             IDocumentQuery<Dictionary<string, object>> query = this.documentClient.CreateDocumentQuery<Dictionary<string, object>>(
@@ -88,6 +90,7 @@ namespace CosmosBenchmark
             {
                 DatabseName = databsaeName,
                 ContainerName = containerName,
+                OperationType = this.OperationType,
                 RuCharges = totalCharge,
                 LazyDiagnostics = lastDiagnostics,
             };
@@ -107,7 +110,7 @@ namespace CosmosBenchmark
                     new RequestOptions() { PartitionKey = new PartitionKey(this.executionItemPartitionKey) });
             if (itemResponse.StatusCode != HttpStatusCode.Created)
             {
-                throw new Exception($"Create failed with statuscode: {itemResponse.StatusCode}");
+                throw new Exception($"Create failed with status code: {itemResponse.StatusCode}");
             }
 
             this.initialized = true;

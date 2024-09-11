@@ -21,11 +21,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
         [TestMethod]
         public void TestAccumulator()
         {
-            ClientSideMetrics.Accumulator accumulator = new ClientSideMetrics.Accumulator();
-            accumulator = accumulator.Accumulate(MockClientSideMetrics);
-            accumulator = accumulator.Accumulate(MockClientSideMetrics);
+            ClientSideMetricsAccumulator accumulator = new ClientSideMetricsAccumulator();
+            accumulator.Accumulate(MockClientSideMetrics);
+            accumulator.Accumulate(MockClientSideMetrics);
 
-            ClientSideMetrics doubleMetrics = ClientSideMetrics.Accumulator.ToClientSideMetrics(accumulator);
+            ClientSideMetrics doubleMetrics = accumulator.GetClientSideMetrics();
             Assert.AreEqual(2 * MockClientSideMetrics.Retries, doubleMetrics.Retries);
             Assert.AreEqual(2 * MockClientSideMetrics.RequestCharge, doubleMetrics.RequestCharge);
             Assert.AreEqual(2 * MockClientSideMetrics.FetchExecutionRanges.Count(), doubleMetrics.FetchExecutionRanges.Count());

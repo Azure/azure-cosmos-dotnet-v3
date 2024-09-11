@@ -1183,6 +1183,58 @@
                 indexV2Policy);
         }
 
+        [TestMethod]
+        public async Task TestBadOrderByQueriesAsync()
+        {
+            const string NoCompositeIndex = "The order by query does not have a corresponding composite index that it can be served from.";
+            const string OrderByOverCorrelatedPath = "Order-by over correlated collections is not supported.";
+
+            static async Task ImplementationAsync(
+                Container container,
+                IReadOnlyList<CosmosObject> documents)
+            {
+                IReadOnlyList<(string query, string error)> queries = new List<(string query, string error)>
+                {
+                    ("SELECT * FROM c ORDER BY c.id, c.name", NoCompositeIndex),
+                    ("SELECT * FROM c ORDER BY c.id DESC, c._ts DESC", NoCompositeIndex),
+                    (
+                        @"SELECT DISTINCT VALUE v2 
+                        FROM root 
+                        JOIN (
+                            SELECT DISTINCT VALUE v0 
+                            FROM root 
+                            JOIN v0 IN root.Parents) AS v2 
+                        WHERE (LENGTH(v2.FamilyName) > 10) 
+                        ORDER BY v2 ASC",
+                        OrderByOverCorrelatedPath
+                    ),
+                };
+
+                foreach (bool enableOptmisticDirectExecution in new []{ false, true })
+                {
+                    QueryRequestOptions options = new QueryRequestOptions()
+                    {
+                        EnableOptimisticDirectExecution = enableOptmisticDirectExecution,
+                    };
+
+                    foreach ((string query, string error) in queries)
+                    {
+                        using FeedIterator feedIterator = container.GetItemQueryStreamIterator(query, continuationToken: null, options);
+                        ResponseMessage response = await feedIterator.ReadNextAsync();
+                        Assert.AreEqual(System.Net.HttpStatusCode.BadRequest, response.StatusCode); 
+                        Assert.IsNotNull(response.CosmosException);
+                        Assert.IsTrue(response.CosmosException.Message.Contains(error));
+                    }
+                }
+            }
+
+            await this.CreateIngestQueryDeleteAsync(
+                ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                new List<string>(),
+                ImplementationAsync);
+        }
+
         private sealed class MixedTypedDocument
         {
             public CosmosElement MixedTypeField { get; set; }
@@ -1226,7 +1278,6 @@
             {
                 return ItemComparer.Instance.Compare(element1, element2);
             }
-
         }
 
         [Flags]
@@ -1295,34 +1346,6 @@
                             FROM c
                             WHERE {filter}
                             ORDER BY c.{nameof(MixedTypedDocument.MixedTypeField)} {orderString}";
-
-                    QueryRequestOptions feedOptions = new QueryRequestOptions()
-                    {
-                        MaxBufferedItemCount = 1000,
-                        MaxItemCount = 16,
-                        MaxConcurrency = 10,
-                    };
-
-#if false
-                        For now we can not serve the query through continuation tokens correctly.
-                        This is because we allow order by on mixed types but not comparisions across types
-                        For example suppose the following query:
-                            SELECT c.MixedTypeField FROM c ORDER BY c.MixedTypeField
-                        returns:
-                        [
-                            {"MixedTypeField":[]},
-                            {"MixedTypeField":[1, 2, 3]},
-                            {"MixedTypeField":{}},
-                        ]
-                        and we left off on [1, 2, 3] then at some point the cross partition code resumes the query by running the following:
-                            SELECT c.MixedTypeField FROM c WHERE c.MixedTypeField > [1, 2, 3] ORDER BY c.MixedTypeField
-                        And comparison on arrays and objects is undefined.
-#endif
-
-                    List<CosmosElement> actual = await QueryTestsBase.QueryWithoutContinuationTokensAsync<CosmosElement>(
-                        container,
-                        query,
-                        queryRequestOptions: feedOptions);
 
                     IEnumerable<CosmosObject> insertedDocs = documents
                         .Select(document => CosmosElement.CreateFromBuffer<CosmosObject>(Encoding.UTF8.GetBytes(document.ToString())))
@@ -1403,11 +1426,26 @@
                         }, MockOrderByComparer.Value);
                     }
 
-                    Assert.IsTrue(
-                        expected.SequenceEqual(actual),
-                        $@" queryWithoutContinuations: {query},
+                    foreach (int pageSize in new int[] { 1, documents.Count / 2, documents.Count })
+                    {
+                        QueryRequestOptions feedOptions = new QueryRequestOptions()
+                        {
+                            MaxBufferedItemCount = 1000,
+                            MaxItemCount = pageSize,
+                            MaxConcurrency = 10,
+                        };
+
+                        List<CosmosElement> actual = await RunQueryAsync(
+                            container,
+                            query,
+                            queryRequestOptions: feedOptions);
+
+                        Assert.IsTrue(
+                            expected.SequenceEqual(actual),
+                            $@" queryWithoutContinuations: {query},
                             expected:{JsonConvert.SerializeObject(expected)},
                             actual: {JsonConvert.SerializeObject(actual)}");
+                    }
                 }
             }
         }

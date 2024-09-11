@@ -154,6 +154,14 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             this.WriteEndContext(")");
         }
 
+        public override void Visit(SqlFirstScalarExpression sqlFirstScalarExpression)
+        {
+            this.writer.Write("FIRST");
+            this.WriteStartContext("(");
+            sqlFirstScalarExpression.Subquery.Accept(this);
+            this.WriteEndContext(")");
+        }
+
         public override void Visit(SqlFromClause sqlFromClause)
         {
             this.writer.Write("FROM ");
@@ -282,6 +290,14 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             this.WriteTab();
             this.writer.Write(" JOIN ");
             sqlJoinCollectionExpression.Right.Accept(this);
+        }
+
+        public override void Visit(SqlLastScalarExpression sqlLastScalarExpression)
+        {
+            this.writer.Write("LAST");
+            this.WriteStartContext("(");
+            sqlLastScalarExpression.Subquery.Accept(this);
+            this.WriteEndContext(")");
         }
 
         public override void Visit(SqlLimitSpec sqlObject)
@@ -479,6 +495,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
 
             if (sqlQuery.GroupByClause != null)
             {
+                this.WriteDelimiter(string.Empty);
                 sqlQuery.GroupByClause.Accept(this);
                 this.writer.Write(" ");
             }

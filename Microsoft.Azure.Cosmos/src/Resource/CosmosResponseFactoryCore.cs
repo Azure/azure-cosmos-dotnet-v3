@@ -276,6 +276,12 @@ namespace Microsoft.Azure.Cosmos
                 return default;
             }
 
+            if (responseMessage.Content.Length == 0)
+            {
+                responseMessage.Content.Dispose();
+                return default;
+            }
+
             return this.serializerCore.FromStream<T>(responseMessage.Content);
         }
     }

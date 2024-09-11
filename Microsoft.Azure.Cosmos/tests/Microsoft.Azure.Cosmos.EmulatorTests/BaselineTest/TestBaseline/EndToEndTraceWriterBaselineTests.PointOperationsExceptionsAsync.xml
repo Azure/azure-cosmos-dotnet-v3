@@ -37,6 +37,8 @@
     │   (
     │       [Client Configuration]
     │       Redacted To Not Change The Baselines From Run To Run
+    │       [DistributedTraceId]
+    │       Redacted To Not Change The Baselines From Run To Run
     │   )
     ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     ├── Get PkValue From Stream(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
@@ -53,25 +55,27 @@
     │       │       [System Info]
     │       │       Redacted To Not Change The Baselines From Run To Run
     │       │   )
-    │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │                   └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │                           (
-    │                               [Client Side Request Stats]
-    │                               Redacted To Not Change The Baselines From Run To Run
-    │                               [Point Operation Statistics]
-    │                               Redacted To Not Change The Baselines From Run To Run
-    │                           )
+    │       └── Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │                   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │                               (
+    │                                   [Client Side Request Stats]
+    │                                   Redacted To Not Change The Baselines From Run To Run
+    │                                   [Point Operation Statistics]
+    │                                   Redacted To Not Change The Baselines From Run To Run
+    │                               )
     └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
   "name": "CreateItemAsync",
-  "start time": "00:00:00:000",
+  "start datetime": "0001-01-01T00:00:00Z",
   "duration in milliseconds": 0,
   "data": {
-    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
+    "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
   },
   "children": [
     {
@@ -113,24 +117,30 @@
           },
           "children": [
             {
-              "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
+              "name": "Microsoft.Azure.Cosmos.Handlers.TelemetryHandler",
               "duration in milliseconds": 0,
               "children": [
                 {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
+                  "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
                   "duration in milliseconds": 0,
                   "children": [
                     {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                       "duration in milliseconds": 0,
                       "children": [
                         {
-                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                           "duration in milliseconds": 0,
-                          "data": {
-                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
-                            "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
-                          }
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
+                                "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
                         }
                       ]
                     }
@@ -147,11 +157,31 @@
       "duration in milliseconds": 0
     }
   ]
-}]]></Json>
-      <OTelActivities><ACTIVITY><OPERATION>Operation.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>CreateItemAsync</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>127.0.0.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Direct</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>exception.stacktrace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>exception.type</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>exception.message</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Create</ATTRIBUTE-VALUE></ACTIVITY>
-<EVENT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT>
-</OTelActivities>
-    </Output>
+}]]></Json><OTelActivities>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="exception.stacktrace">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="exception.type">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="exception.message">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="error.type">Microsoft.Azure.Cosmos.CosmosException</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+  </ACTIVITY>
+  <EVENT name="Exception" />
+</OTelActivities></Output>
   </Result>
   <Result>
     <Input>
@@ -160,7 +190,17 @@
     string errorMessage = "Mock throttle exception" + Guid.NewGuid().ToString();
     Guid exceptionActivityId = Guid.NewGuid();
     using CosmosClient throttleClient = TestCommon.CreateCosmosClient(builder =>
-        builder.WithThrottlingRetryOptions(
+        builder
+        .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
+         {
+            DisableDistributedTracing = false,
+            CosmosThresholdOptions = new CosmosThresholdOptions()
+            {
+                PointOperationLatencyThreshold = TimeSpan.Zero,
+                NonPointOperationLatencyThreshold = TimeSpan.Zero
+            }
+         })
+        .WithThrottlingRetryOptions(
             maxRetryWaitTimeOnThrottledRequests: TimeSpan.FromSeconds(1),
             maxRetryAttemptsOnThrottledRequests: 3)
             .WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
@@ -171,13 +211,7 @@
                     request,
                     exceptionActivityId,
                     errorMessage))));
-
-    throttleClient.ClientOptions.EnableDistributedTracing = true;
-    throttleClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
-    {
-        DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(0)
-    };
-
+    
     ItemRequestOptions requestOptions = new ItemRequestOptions();
     Container containerWithThrottleException = throttleClient.GetContainer(
         database.Id,
@@ -205,6 +239,8 @@
     │   (
     │       [Client Configuration]
     │       Redacted To Not Change The Baselines From Run To Run
+    │       [DistributedTraceId]
+    │       Redacted To Not Change The Baselines From Run To Run
     │   )
     ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     ├── Get PkValue From Stream(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
@@ -221,44 +257,46 @@
     │       │       [System Info]
     │       │       Redacted To Not Change The Baselines From Run To Run
     │       │   )
-    │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │           │               (
-    │           │                   [Client Side Request Stats]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │               )
-    │           ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │           │               (
-    │           │                   [Client Side Request Stats]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │               )
-    │           ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │           │               (
-    │           │                   [Client Side Request Stats]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │               )
-    │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │                   └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │                           (
-    │                               [Client Side Request Stats]
-    │                               Redacted To Not Change The Baselines From Run To Run
-    │                           )
+    │       └── Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │               │               (
+    │               │                   [Client Side Request Stats]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │               )
+    │               ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │               │               (
+    │               │                   [Client Side Request Stats]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │               )
+    │               ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │               │               (
+    │               │                   [Client Side Request Stats]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │               )
+    │               └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │                   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │                               (
+    │                                   [Client Side Request Stats]
+    │                                   Redacted To Not Change The Baselines From Run To Run
+    │                               )
     └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
   "name": "CreateItemAsync",
-  "start time": "00:00:00:000",
+  "start datetime": "0001-01-01T00:00:00Z",
   "duration in milliseconds": 0,
   "data": {
-    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
+    "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
   },
   "children": [
     {
@@ -300,80 +338,86 @@
           },
           "children": [
             {
-              "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
+              "name": "Microsoft.Azure.Cosmos.Handlers.TelemetryHandler",
               "duration in milliseconds": 0,
               "children": [
                 {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
+                  "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
                   "duration in milliseconds": 0,
                   "children": [
                     {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                       "duration in milliseconds": 0,
                       "children": [
                         {
-                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                           "duration in milliseconds": 0,
-                          "data": {
-                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                          }
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
                         }
                       ]
-                    }
-                  ]
-                },
-                {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                  "duration in milliseconds": 0,
-                  "children": [
+                    },
                     {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                       "duration in milliseconds": 0,
                       "children": [
                         {
-                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                           "duration in milliseconds": 0,
-                          "data": {
-                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                          }
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
                         }
                       ]
-                    }
-                  ]
-                },
-                {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                  "duration in milliseconds": 0,
-                  "children": [
+                    },
                     {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                       "duration in milliseconds": 0,
                       "children": [
                         {
-                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                           "duration in milliseconds": 0,
-                          "data": {
-                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                          }
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
                         }
                       ]
-                    }
-                  ]
-                },
-                {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                  "duration in milliseconds": 0,
-                  "children": [
+                    },
                     {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                       "duration in milliseconds": 0,
                       "children": [
                         {
-                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                           "duration in milliseconds": 0,
-                          "data": {
-                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                          }
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
                         }
                       ]
                     }
@@ -390,11 +434,31 @@
       "duration in milliseconds": 0
     }
   ]
-}]]></Json>
-      <OTelActivities><ACTIVITY><OPERATION>Operation.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>CreateItemAsync</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>127.0.0.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Direct</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>exception.stacktrace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>exception.type</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>exception.message</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Create</ATTRIBUTE-VALUE></ACTIVITY>
-<EVENT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT>
-</OTelActivities>
-    </Output>
+}]]></Json><OTelActivities>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="exception.stacktrace">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="exception.type">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="exception.message">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="error.type">Microsoft.Azure.Cosmos.CosmosException</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+  </ACTIVITY>
+  <EVENT name="Exception" />
+</OTelActivities></Output>
   </Result>
   <Result>
     <Input>
@@ -473,6 +537,8 @@
     │   (
     │       [Client Configuration]
     │       Redacted To Not Change The Baselines From Run To Run
+    │       [DistributedTraceId]
+    │       Redacted To Not Change The Baselines From Run To Run
     │   )
     ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     ├── Get PkValue From Stream(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
@@ -489,36 +555,38 @@
     │       │       [System Info]
     │       │       Redacted To Not Change The Baselines From Run To Run
     │       │   )
-    │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │           │               (
-    │           │                   [Client Side Request Stats]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │                   [AuthProvider LifeSpan InSec]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │                   [Point Operation Statistics]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │               )
-    │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │                   └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │                           (
-    │                               [Client Side Request Stats]
-    │                               Redacted To Not Change The Baselines From Run To Run
-    │                               [Point Operation Statistics]
-    │                               Redacted To Not Change The Baselines From Run To Run
-    │                           )
+    │       └── Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │               │               (
+    │               │                   [Client Side Request Stats]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │                   [AuthProvider LifeSpan InSec]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │                   [Point Operation Statistics]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │               )
+    │               └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │                   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │                               (
+    │                                   [Client Side Request Stats]
+    │                                   Redacted To Not Change The Baselines From Run To Run
+    │                                   [Point Operation Statistics]
+    │                                   Redacted To Not Change The Baselines From Run To Run
+    │                               )
     └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
   "name": "CreateItemAsync",
-  "start time": "00:00:00:000",
+  "start datetime": "0001-01-01T00:00:00Z",
   "duration in milliseconds": 0,
   "data": {
-    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
+    "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
   },
   "children": [
     {
@@ -560,45 +628,51 @@
           },
           "children": [
             {
-              "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
+              "name": "Microsoft.Azure.Cosmos.Handlers.TelemetryHandler",
               "duration in milliseconds": 0,
               "children": [
                 {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
+                  "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
                   "duration in milliseconds": 0,
                   "children": [
                     {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                       "duration in milliseconds": 0,
                       "children": [
                         {
-                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                           "duration in milliseconds": 0,
-                          "data": {
-                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
-                            "AuthProvider LifeSpan InSec": "Redacted To Not Change The Baselines From Run To Run",
-                            "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
-                          }
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
+                                "AuthProvider LifeSpan InSec": "Redacted To Not Change The Baselines From Run To Run",
+                                "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
                         }
                       ]
-                    }
-                  ]
-                },
-                {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                  "duration in milliseconds": 0,
-                  "children": [
+                    },
                     {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                       "duration in milliseconds": 0,
                       "children": [
                         {
-                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                           "duration in milliseconds": 0,
-                          "data": {
-                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
-                            "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
-                          }
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
+                                "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
                         }
                       ]
                     }
@@ -615,11 +689,31 @@
       "duration in milliseconds": 0
     }
   ]
-}]]></Json>
-      <OTelActivities><ACTIVITY><OPERATION>Operation.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>CreateItemAsync</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>127.0.0.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Direct</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>exception.stacktrace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>exception.type</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>exception.message</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Create</ATTRIBUTE-VALUE></ACTIVITY>
-<EVENT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT>
-</OTelActivities>
-    </Output>
+}]]></Json><OTelActivities>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="exception.stacktrace">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="exception.type">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="exception.message">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="error.type">Microsoft.Azure.Cosmos.CosmosException</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+  </ACTIVITY>
+  <EVENT name="Exception" />
+</OTelActivities></Output>
   </Result>
   <Result>
     <Input>
@@ -698,6 +792,8 @@
     │   (
     │       [Client Configuration]
     │       Redacted To Not Change The Baselines From Run To Run
+    │       [DistributedTraceId]
+    │       Redacted To Not Change The Baselines From Run To Run
     │   )
     ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     ├── Get PkValue From Stream(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
@@ -714,47 +810,49 @@
     │       │       [System Info]
     │       │       Redacted To Not Change The Baselines From Run To Run
     │       │   )
-    │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │           │               (
-    │           │                   [Client Side Request Stats]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │                   [AuthProvider LifeSpan InSec]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │                   [Point Operation Statistics]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │               )
-    │           ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │           │               (
-    │           │                   [Client Side Request Stats]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │                   [AuthProvider LifeSpan InSec]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │                   [Point Operation Statistics]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │               )
-    │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │                   └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │                           (
-    │                               [Client Side Request Stats]
-    │                               Redacted To Not Change The Baselines From Run To Run
-    │                               [Point Operation Statistics]
-    │                               Redacted To Not Change The Baselines From Run To Run
-    │                           )
+    │       └── Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │               │               (
+    │               │                   [Client Side Request Stats]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │                   [AuthProvider LifeSpan InSec]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │                   [Point Operation Statistics]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │               )
+    │               ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │               │               (
+    │               │                   [Client Side Request Stats]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │                   [AuthProvider LifeSpan InSec]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │                   [Point Operation Statistics]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │               )
+    │               └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │                   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │                               (
+    │                                   [Client Side Request Stats]
+    │                                   Redacted To Not Change The Baselines From Run To Run
+    │                                   [Point Operation Statistics]
+    │                                   Redacted To Not Change The Baselines From Run To Run
+    │                               )
     └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
   "name": "CreateItemAsync",
-  "start time": "00:00:00:000",
+  "start datetime": "0001-01-01T00:00:00Z",
   "duration in milliseconds": 0,
   "data": {
-    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
+    "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
   },
   "children": [
     {
@@ -796,66 +894,72 @@
           },
           "children": [
             {
-              "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
+              "name": "Microsoft.Azure.Cosmos.Handlers.TelemetryHandler",
               "duration in milliseconds": 0,
               "children": [
                 {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
+                  "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
                   "duration in milliseconds": 0,
                   "children": [
                     {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                       "duration in milliseconds": 0,
                       "children": [
                         {
-                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                           "duration in milliseconds": 0,
-                          "data": {
-                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
-                            "AuthProvider LifeSpan InSec": "Redacted To Not Change The Baselines From Run To Run",
-                            "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
-                          }
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
+                                "AuthProvider LifeSpan InSec": "Redacted To Not Change The Baselines From Run To Run",
+                                "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
                         }
                       ]
-                    }
-                  ]
-                },
-                {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                  "duration in milliseconds": 0,
-                  "children": [
+                    },
                     {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                       "duration in milliseconds": 0,
                       "children": [
                         {
-                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                           "duration in milliseconds": 0,
-                          "data": {
-                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
-                            "AuthProvider LifeSpan InSec": "Redacted To Not Change The Baselines From Run To Run",
-                            "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
-                          }
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
+                                "AuthProvider LifeSpan InSec": "Redacted To Not Change The Baselines From Run To Run",
+                                "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
                         }
                       ]
-                    }
-                  ]
-                },
-                {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                  "duration in milliseconds": 0,
-                  "children": [
+                    },
                     {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                       "duration in milliseconds": 0,
                       "children": [
                         {
-                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                           "duration in milliseconds": 0,
-                          "data": {
-                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
-                            "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
-                          }
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
+                                "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
                         }
                       ]
                     }
@@ -872,11 +976,31 @@
       "duration in milliseconds": 0
     }
   ]
-}]]></Json>
-      <OTelActivities><ACTIVITY><OPERATION>Operation.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>CreateItemAsync</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>127.0.0.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Direct</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>exception.stacktrace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>exception.type</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>exception.message</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Create</ATTRIBUTE-VALUE></ACTIVITY>
-<EVENT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT>
-</OTelActivities>
-    </Output>
+}]]></Json><OTelActivities>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="exception.stacktrace">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="exception.type">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="exception.message">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="error.type">Microsoft.Azure.Cosmos.CosmosException</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+  </ACTIVITY>
+  <EVENT name="Exception" />
+</OTelActivities></Output>
   </Result>
   <Result>
     <Input>
@@ -955,6 +1079,8 @@
     │   (
     │       [Client Configuration]
     │       Redacted To Not Change The Baselines From Run To Run
+    │       [DistributedTraceId]
+    │       Redacted To Not Change The Baselines From Run To Run
     │   )
     ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     ├── Get PkValue From Stream(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
@@ -971,69 +1097,71 @@
     │       │       [System Info]
     │       │       Redacted To Not Change The Baselines From Run To Run
     │       │   )
-    │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │           │               (
-    │           │                   [Client Side Request Stats]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │                   [AuthProvider LifeSpan InSec]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │                   [Point Operation Statistics]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │               )
-    │           ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │           │               (
-    │           │                   [Client Side Request Stats]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │                   [AuthProvider LifeSpan InSec]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │                   [Point Operation Statistics]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │               )
-    │           ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │           │               (
-    │           │                   [Client Side Request Stats]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │                   [AuthProvider LifeSpan InSec]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │                   [Point Operation Statistics]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │               )
-    │           ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │           │               (
-    │           │                   [Client Side Request Stats]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │                   [AuthProvider LifeSpan InSec]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │                   [Point Operation Statistics]
-    │           │                   Redacted To Not Change The Baselines From Run To Run
-    │           │               )
-    │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │                   └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │                           (
-    │                               [Client Side Request Stats]
-    │                               Redacted To Not Change The Baselines From Run To Run
-    │                               [Point Operation Statistics]
-    │                               Redacted To Not Change The Baselines From Run To Run
-    │                           )
+    │       └── Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │               │               (
+    │               │                   [Client Side Request Stats]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │                   [AuthProvider LifeSpan InSec]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │                   [Point Operation Statistics]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │               )
+    │               ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │               │               (
+    │               │                   [Client Side Request Stats]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │                   [AuthProvider LifeSpan InSec]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │                   [Point Operation Statistics]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │               )
+    │               ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │               │               (
+    │               │                   [Client Side Request Stats]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │                   [AuthProvider LifeSpan InSec]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │                   [Point Operation Statistics]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │               )
+    │               ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │               │               (
+    │               │                   [Client Side Request Stats]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │                   [AuthProvider LifeSpan InSec]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │                   [Point Operation Statistics]
+    │               │                   Redacted To Not Change The Baselines From Run To Run
+    │               │               )
+    │               └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │                   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │                               (
+    │                                   [Client Side Request Stats]
+    │                                   Redacted To Not Change The Baselines From Run To Run
+    │                                   [Point Operation Statistics]
+    │                                   Redacted To Not Change The Baselines From Run To Run
+    │                               )
     └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
   "name": "CreateItemAsync",
-  "start time": "00:00:00:000",
+  "start datetime": "0001-01-01T00:00:00Z",
   "duration in milliseconds": 0,
   "data": {
-    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
+    "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
   },
   "children": [
     {
@@ -1075,108 +1203,114 @@
           },
           "children": [
             {
-              "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
+              "name": "Microsoft.Azure.Cosmos.Handlers.TelemetryHandler",
               "duration in milliseconds": 0,
               "children": [
                 {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
+                  "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
                   "duration in milliseconds": 0,
                   "children": [
                     {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                       "duration in milliseconds": 0,
                       "children": [
                         {
-                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                           "duration in milliseconds": 0,
-                          "data": {
-                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
-                            "AuthProvider LifeSpan InSec": "Redacted To Not Change The Baselines From Run To Run",
-                            "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
-                          }
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
+                                "AuthProvider LifeSpan InSec": "Redacted To Not Change The Baselines From Run To Run",
+                                "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
                         }
                       ]
-                    }
-                  ]
-                },
-                {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                  "duration in milliseconds": 0,
-                  "children": [
+                    },
                     {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                       "duration in milliseconds": 0,
                       "children": [
                         {
-                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                           "duration in milliseconds": 0,
-                          "data": {
-                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
-                            "AuthProvider LifeSpan InSec": "Redacted To Not Change The Baselines From Run To Run",
-                            "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
-                          }
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
+                                "AuthProvider LifeSpan InSec": "Redacted To Not Change The Baselines From Run To Run",
+                                "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
                         }
                       ]
-                    }
-                  ]
-                },
-                {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                  "duration in milliseconds": 0,
-                  "children": [
+                    },
                     {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                       "duration in milliseconds": 0,
                       "children": [
                         {
-                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                           "duration in milliseconds": 0,
-                          "data": {
-                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
-                            "AuthProvider LifeSpan InSec": "Redacted To Not Change The Baselines From Run To Run",
-                            "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
-                          }
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
+                                "AuthProvider LifeSpan InSec": "Redacted To Not Change The Baselines From Run To Run",
+                                "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
                         }
                       ]
-                    }
-                  ]
-                },
-                {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                  "duration in milliseconds": 0,
-                  "children": [
+                    },
                     {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                       "duration in milliseconds": 0,
                       "children": [
                         {
-                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                           "duration in milliseconds": 0,
-                          "data": {
-                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
-                            "AuthProvider LifeSpan InSec": "Redacted To Not Change The Baselines From Run To Run",
-                            "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
-                          }
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
+                                "AuthProvider LifeSpan InSec": "Redacted To Not Change The Baselines From Run To Run",
+                                "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
                         }
                       ]
-                    }
-                  ]
-                },
-                {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                  "duration in milliseconds": 0,
-                  "children": [
+                    },
                     {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                       "duration in milliseconds": 0,
                       "children": [
                         {
-                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                           "duration in milliseconds": 0,
-                          "data": {
-                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
-                            "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
-                          }
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
+                                "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
                         }
                       ]
                     }
@@ -1193,11 +1327,31 @@
       "duration in milliseconds": 0
     }
   ]
-}]]></Json>
-      <OTelActivities><ACTIVITY><OPERATION>Operation.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>CreateItemAsync</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>127.0.0.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Direct</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>exception.stacktrace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>exception.type</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>exception.message</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Create</ATTRIBUTE-VALUE></ACTIVITY>
-<EVENT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT>
-</OTelActivities>
-    </Output>
+}]]></Json><OTelActivities>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="exception.stacktrace">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="exception.type">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="exception.message">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="error.type">Microsoft.Azure.Cosmos.CosmosException</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+  </ACTIVITY>
+  <EVENT name="Exception" />
+</OTelActivities></Output>
   </Result>
   <Result>
     <Input>
@@ -1237,6 +1391,8 @@
     │   (
     │       [Client Configuration]
     │       Redacted To Not Change The Baselines From Run To Run
+    │       [DistributedTraceId]
+    │       Redacted To Not Change The Baselines From Run To Run
     │   )
     ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     ├── Get PkValue From Stream(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
@@ -1253,25 +1409,27 @@
     │       │       [System Info]
     │       │       Redacted To Not Change The Baselines From Run To Run
     │       │   )
-    │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │                   └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │                           (
-    │                               [Client Side Request Stats]
-    │                               Redacted To Not Change The Baselines From Run To Run
-    │                               [Point Operation Statistics]
-    │                               Redacted To Not Change The Baselines From Run To Run
-    │                           )
+    │       └── Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │                   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │                               (
+    │                                   [Client Side Request Stats]
+    │                                   Redacted To Not Change The Baselines From Run To Run
+    │                                   [Point Operation Statistics]
+    │                                   Redacted To Not Change The Baselines From Run To Run
+    │                               )
     └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
   "name": "CreateItemAsync",
-  "start time": "00:00:00:000",
+  "start datetime": "0001-01-01T00:00:00Z",
   "duration in milliseconds": 0,
   "data": {
-    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
+    "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
   },
   "children": [
     {
@@ -1313,24 +1471,30 @@
           },
           "children": [
             {
-              "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
+              "name": "Microsoft.Azure.Cosmos.Handlers.TelemetryHandler",
               "duration in milliseconds": 0,
               "children": [
                 {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
+                  "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
                   "duration in milliseconds": 0,
                   "children": [
                     {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                       "duration in milliseconds": 0,
                       "children": [
                         {
-                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                           "duration in milliseconds": 0,
-                          "data": {
-                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
-                            "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
-                          }
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
+                                "Point Operation Statistics": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
                         }
                       ]
                     }
@@ -1347,10 +1511,30 @@
       "duration in milliseconds": 0
     }
   ]
-}]]></Json>
-      <OTelActivities><ACTIVITY><OPERATION>Operation.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>CreateItemAsync</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>127.0.0.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Direct</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>exception.stacktrace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>exception.type</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>exception.message</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Create</ATTRIBUTE-VALUE></ACTIVITY>
-<EVENT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT>
-</OTelActivities>
-    </Output>
+}]]></Json><OTelActivities>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="exception.stacktrace">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="exception.type">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="exception.message">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="error.type">Microsoft.Azure.Cosmos.CosmosException</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+  </ACTIVITY>
+  <EVENT name="Exception" />
+</OTelActivities></Output>
   </Result>
 </Results>

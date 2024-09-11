@@ -4,9 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQuery
 {
-    using System;
     using System.Collections.Generic;
-    using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -30,6 +28,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
 
         public Range<string> Range => this.Token.Range;
 
+        public static bool IsOptimisticDirectExecutionContinuationToken(CosmosElement continuationToken)
+        {
+            CosmosObject cosmosObjectContinuationToken = continuationToken as CosmosObject;
+            return !(cosmosObjectContinuationToken == null || !cosmosObjectContinuationToken.ContainsKey(OptimisticDirectExecutionToken));
+        }
+
         public static CosmosElement ToCosmosElement(OptimisticDirectExecutionContinuationToken continuationToken)
         {
             CosmosElement inner = ParallelContinuationToken.ToCosmosElement(continuationToken.Token);
@@ -42,14 +46,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
 
         public static TryCatch<OptimisticDirectExecutionContinuationToken> TryCreateFromCosmosElement(CosmosElement cosmosElement)
         {
-            CosmosObject cosmosObjectContinuationToken = cosmosElement as CosmosObject;
-            if (cosmosObjectContinuationToken == null)
+            if (!IsOptimisticDirectExecutionContinuationToken(cosmosElement))
             {
                 return TryCatch<OptimisticDirectExecutionContinuationToken>.FromException(
-                                    new MalformedChangeFeedContinuationTokenException(
-                                        message: $"Malformed Continuation Token"));
+                                        new MalformedContinuationTokenException(
+                                            message: $"Malformed Continuation Token: Expected OptimisticDirectExecutionToken\r\n"));
             }
 
+            CosmosObject cosmosObjectContinuationToken = (CosmosObject)cosmosElement;
             TryCatch<ParallelContinuationToken> inner = ParallelContinuationToken.TryCreateFromCosmosElement(cosmosObjectContinuationToken[OptimisticDirectExecutionToken]);
 
             return inner.Succeeded ?

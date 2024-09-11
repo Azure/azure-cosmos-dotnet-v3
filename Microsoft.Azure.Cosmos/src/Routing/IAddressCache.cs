@@ -29,5 +29,12 @@ namespace Microsoft.Azure.Cosmos.Common
             ServiceIdentity serviceIdentity,
             bool forceRefreshPartitionAddresses,
             CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Sets the <see cref="IOpenConnectionsHandler"/> instance to a global readonly
+        /// field for invoking the open connection request at a later point of time.
+        /// </summary>
+        /// <param name="openConnectionsHandler">An instance of <see cref="IOpenConnectionsHandler"/>.</param>
+        void SetOpenConnectionsHandler(IOpenConnectionsHandler openConnectionsHandler);
     }
 }

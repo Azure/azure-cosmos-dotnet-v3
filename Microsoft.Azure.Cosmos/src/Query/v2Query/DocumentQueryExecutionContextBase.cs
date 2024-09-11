@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
     using System.Collections.Generic;
+    using System.ComponentModel;
     using System.Globalization;
     using System.IO;
     using System.Linq;
@@ -31,6 +32,8 @@ namespace Microsoft.Azure.Cosmos.Query
 
     internal abstract class DocumentQueryExecutionContextBase : IDocumentQueryExecutionContext
     {
+        public static readonly string DefaultSupportedSerializationFormats = string.Join(",", SupportedSerializationFormats.JsonText, SupportedSerializationFormats.CosmosBinary);
+        
         public readonly struct InitParams
         {
             public IDocumentQueryClient Client { get; }
@@ -131,7 +134,14 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (!this.isExpressionEvaluated)
                 {
-                    this.querySpec = DocumentQueryEvaluator.Evaluate(this.expression);
+                    LinqQueryOperation linqQuery = DocumentQueryEvaluator.Evaluate(this.expression);
+
+                    if (linqQuery.ScalarOperationKind != ScalarOperationKind.None)
+                    {
+                        throw new NotSupportedException($"This operation does not support the supplied LINQ expression since it involves client side operation : {linqQuery.ScalarOperationKind}");
+                    }
+
+                    this.querySpec = linqQuery.SqlQuerySpec;
                     this.isExpressionEvaluated = true;
                 }
 
@@ -155,6 +165,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public async Task<PartitionedQueryExecutionInfo> GetPartitionedQueryExecutionInfoAsync(
             PartitionKeyDefinition partitionKeyDefinition,
+            Cosmos.VectorEmbeddingPolicy vectorEmbeddingPolicy,
             bool requireFormattableOrderByQuery,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
@@ -170,6 +181,7 @@ namespace Microsoft.Azure.Cosmos.Query
             TryCatch<PartitionedQueryExecutionInfo> tryGetPartitionedQueryExecutionInfo = queryPartitionProvider.TryGetPartitionedQueryExecutionInfo(
                 querySpecJsonString: JsonConvert.SerializeObject(this.QuerySpec),
                 partitionKeyDefinition: partitionKeyDefinition,
+                vectorEmbeddingPolicy: vectorEmbeddingPolicy,
                 requireFormattableOrderByQuery: requireFormattableOrderByQuery,
                 isContinuationExpected: isContinuationExpected,
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
@@ -326,14 +338,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 requestHeaders.Set(HttpConstants.HttpHeaders.MergeStaticId, this.feedOptions.MergeStaticId);
             }
 
-            if (this.feedOptions.CosmosSerializationFormatOptions != null)
-            {
-                requestHeaders[HttpConstants.HttpHeaders.ContentSerializationFormat] = this.feedOptions.CosmosSerializationFormatOptions.ContentSerializationFormat;
-            }
-            else if (this.feedOptions.ContentSerializationFormat.HasValue)
-            {
-                requestHeaders[HttpConstants.HttpHeaders.ContentSerializationFormat] = this.feedOptions.ContentSerializationFormat.Value.ToString();
-            }
+            requestHeaders[HttpConstants.HttpHeaders.SupportedSerializationFormats] = this.feedOptions.SupportedSerializationFormats?.ToString() ?? DefaultSupportedSerializationFormats;
 
             return requestHeaders;
         }
@@ -688,23 +693,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 content = memoryStream.ToArray();
             }
-
-            IJsonNavigator jsonNavigator = null;
-
-            // Use the users custom navigator first. If it returns null back try the
-            // internal navigator.
-            if (this.feedOptions.CosmosSerializationFormatOptions != null)
-            {
-                jsonNavigator = this.feedOptions.CosmosSerializationFormatOptions.CreateCustomNavigatorCallback(content);
-                if (jsonNavigator == null)
-                {
-                    throw new InvalidOperationException("The CosmosSerializationOptions did not return a JSON navigator.");
-                }
-            }
-            else
-            {
-                jsonNavigator = JsonNavigator.Create(content);
-            }
+            IJsonNavigator jsonNavigator = JsonNavigator.Create(content);
 
             string resourceName = this.GetRootNodeName(documentServiceRequest.ResourceType);
 

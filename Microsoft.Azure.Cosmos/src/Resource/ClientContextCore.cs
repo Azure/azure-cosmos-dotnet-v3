@@ -8,11 +8,11 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.IO;
     using System.Net.Http;
+    using System.Net.Security;
+    using System.Security.Cryptography.X509Certificates;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
@@ -65,7 +65,8 @@ namespace Microsoft.Azure.Cosmos
             clientOptions = ClientContextCore.CreateOrCloneClientOptions(clientOptions);
             HttpMessageHandler httpMessageHandler = CosmosHttpClientCore.CreateHttpClientHandler(
                 clientOptions.GatewayModeMaxConnectionLimit,
-                clientOptions.WebProxy);
+                clientOptions.WebProxy,
+                clientOptions.GetServerCertificateCustomValidationCallback());
 
             DocumentClient documentClient = new DocumentClient(
                cosmosClient.Endpoint,
@@ -79,12 +80,21 @@ namespace Microsoft.Azure.Cosmos
                desiredConsistencyLevel: clientOptions.GetDocumentsConsistencyLevel(),
                handler: httpMessageHandler,
                sessionContainer: clientOptions.SessionContainer,
-               cosmosClientId: cosmosClient.Id);
+               cosmosClientId: cosmosClient.Id,
+               remoteCertificateValidationCallback: ClientContextCore.SslCustomValidationCallBack(clientOptions.GetServerCertificateCustomValidationCallback()),
+               cosmosClientTelemetryOptions: clientOptions.CosmosClientTelemetryOptions,
+               availabilityStrategy: clientOptions.AvailabilityStrategy,
+               chaosInterceptorFactory: clientOptions.ChaosInterceptorFactory);
 
             return ClientContextCore.Create(
                 cosmosClient,
                 documentClient,
                 clientOptions);
+        }
+
+        private static RemoteCertificateValidationCallback SslCustomValidationCallBack(Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)
+        {
+            return serverCertificateCustomValidationCallback == null ? null : (_, cert, chain, policy) => serverCertificateCustomValidationCallback((X509Certificate2)cert, chain, policy);
         }
 
         internal static CosmosClientContext Create(
@@ -111,8 +121,9 @@ namespace Microsoft.Azure.Cosmos
                 ClientPipelineBuilder clientPipelineBuilder = new ClientPipelineBuilder(
                     cosmosClient,
                     clientOptions.ConsistencyLevel,
+                    clientOptions.PriorityLevel,
                     clientOptions.CustomHandlers,
-                    telemetry: documentClient.clientTelemetry);
+                    telemetryToServiceHelper: documentClient.telemetryToServiceHelper);
 
                 requestInvokerHandler = clientPipelineBuilder.Build();
             }
@@ -276,6 +287,7 @@ namespace Microsoft.Azure.Cosmos
 
                 using (ITrace trace = disableDiagnostics ? NoOpTrace.Singleton : (ITrace)Tracing.Trace.GetRootTrace(operationName, traceComponent, traceLevel))
                 {
+                    trace.AddDatum("Client Configuration", this.client.ClientConfigurationTraceDatum);
                     trace.AddDatum("Synchronization Context", syncContextVirtualAddress);
 
                     return await this.RunWithDiagnosticsHelperAsync(
@@ -487,6 +499,7 @@ namespace Microsoft.Azure.Cosmos
                                     databaseName: databaseName,
                                     operationType: operationType,
                                     requestOptions: requestOptions,
+                                    trace: trace,
                                     clientContext: this.isDisposed ? null : this))
             using (new ActivityScope(Guid.NewGuid()))
             {

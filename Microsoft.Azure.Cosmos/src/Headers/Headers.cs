@@ -171,6 +171,18 @@ namespace Microsoft.Azure.Cosmos
             set => this.CosmosMessageHeaders.PartitionKey = value;
         }
 
+        internal virtual string OptimisticDirectExecute
+        {
+            get => this.CosmosMessageHeaders.OptimisticDirectExecute;
+            set => this.CosmosMessageHeaders.OptimisticDirectExecute = value;
+        }
+
+        internal virtual string RequiresDistribution
+        {
+            get => this.CosmosMessageHeaders.RequiresDistribution;
+            set => this.CosmosMessageHeaders.RequiresDistribution = value;
+        }
+
         internal virtual string PartitionKeyRangeId
         {
             get => this.CosmosMessageHeaders.PartitionKeyRangeId;
@@ -273,6 +285,11 @@ namespace Microsoft.Azure.Cosmos
                 HttpResponseHeadersWrapper httpResponseHeaders => httpResponseHeaders,
                 _ => new NameValueResponseHeaders(nameValueCollection),
             };
+        }
+
+        internal Headers(CosmosMessageHeadersInternal cosmosMessageHeaders)
+        {
+            this.CosmosMessageHeaders = cosmosMessageHeaders;
         }
 
         /// <summary>
@@ -391,6 +408,21 @@ namespace Microsoft.Azure.Cosmos
         public virtual T GetHeaderValue<T>(string headerName)
         {
             return this.CosmosMessageHeaders.GetHeaderValue<T>(headerName);
+        }
+
+        /// <summary>
+        /// Clones the current <see cref="Headers"/>.
+        /// </summary>
+        /// <returns>a cloned copy of the current <see cref="Headers"/></returns>
+        internal Headers Clone()
+        {
+            Headers clone = new Headers();
+            foreach (string key in this.CosmosMessageHeaders.AllKeys())
+            {
+                clone.Add(key, this.CosmosMessageHeaders.Get(key));
+            }
+
+            return clone;
         }
 
         /// <summary>

@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
+    using System.Collections.Generic;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping;
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
@@ -14,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Documents;
 
     internal sealed class ChangeFeedProcessorCore : ChangeFeedProcessor
     {
@@ -75,19 +77,36 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private async Task InitializeAsync()
         {
             string containerRid = await this.monitoredContainer.GetCachedRIDAsync(
-                forceRefresh: false, 
-                NoOpTrace.Singleton, 
+                forceRefresh: false,
+                NoOpTrace.Singleton,
                 default);
+
             string monitoredDatabaseAndContainerRid = await this.monitoredContainer.GetMonitoredDatabaseAndContainerRidAsync();
             string leaseContainerPrefix = this.monitoredContainer.GetLeasePrefix(this.changeFeedLeaseOptions.LeasePrefix, monitoredDatabaseAndContainerRid);
             Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.monitoredContainer.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
             if (this.documentServiceLeaseStoreManager == null)
             {
-                this.documentServiceLeaseStoreManager = await DocumentServiceLeaseStoreManagerBuilder.InitializeAsync(this.monitoredContainer, this.leaseContainer, leaseContainerPrefix, this.instanceName).ConfigureAwait(false);
+                this.documentServiceLeaseStoreManager = await DocumentServiceLeaseStoreManagerBuilder
+                    .InitializeAsync(
+                        this.monitoredContainer,
+                        this.leaseContainer,
+                        leaseContainerPrefix,
+                        this.instanceName,
+                        changeFeedMode: this.changeFeedProcessorOptions.Mode)
+                    .ConfigureAwait(false);
             }
 
+            this.documentServiceLeaseStoreManager
+                .LeaseManager
+                .ChangeFeedModeSwitchingCheck(
+                    documentServiceLeases: await this.documentServiceLeaseStoreManager
+                        .LeaseContainer
+                            .GetAllLeasesAsync()
+                            .ConfigureAwait(false),
+                    changeFeedLeaseOptionsMode: this.changeFeedLeaseOptions.Mode);
+
             this.partitionManager = this.BuildPartitionManager(
-                containerRid, 
+                containerRid,
                 partitionKeyRangeCache);
             this.initialized = true;
         }

@@ -140,6 +140,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                     return sqlExistsScalarExpression;
                 }
 
+                public override SqlScalarExpression Visit(SqlFirstScalarExpression sqlFirstScalarExpression)
+                {
+                    // No need to worry about aggregates within the subquery (they will recursively get rewritten).
+                    return sqlFirstScalarExpression;
+                }
+
                 public override SqlScalarExpression Visit(SqlFunctionCallScalarExpression sqlFunctionCallScalarExpression)
                 {
                     SqlScalarExpression rewrittenExpression;
@@ -291,6 +297,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                         sqlInScalarExpression.Needle.Accept(this),
                         sqlInScalarExpression.Not,
                         items);
+                }
+
+                public override SqlScalarExpression Visit(SqlLastScalarExpression sqlLastScalarExpression)
+                {
+                    // No need to worry about aggregates within the subquery (they will recursively get rewritten).
+                    return sqlLastScalarExpression;
                 }
 
                 public override SqlScalarExpression Visit(SqlLikeScalarExpression sqlLikeScalarExpression)

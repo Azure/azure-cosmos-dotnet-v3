@@ -73,6 +73,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return (endpoint, authKey);
         }
 
+        internal static string GetMultiRegionConnectionString()
+        {
+            return Cosmos.ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", string.Empty);
+        }
+
         internal static CosmosClientBuilder GetDefaultConfiguration(
             bool useCustomSeralizer = true,
             bool validatePartitionKeyRangeCalls = false,
@@ -155,8 +160,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             RetryOptions retryOptions = null,
             ApiType apiType = ApiType.None,
             EventHandler<ReceivedResponseEventArgs> recievedResponseEventHandler = null,
-            bool useMultipleWriteLocations = false,
-            bool enableClientTelemetry = false)
+            bool useMultipleWriteLocations = false)
         {
             string authKey = ConfigurationManager.AppSettings["MasterKey"];
 

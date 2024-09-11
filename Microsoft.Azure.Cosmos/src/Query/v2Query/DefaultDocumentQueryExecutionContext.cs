@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Query
                                     partitionIdentifier,
                                     new QueryMetrics(
                                         response.ResponseHeaders[HttpConstants.HttpHeaders.QueryMetrics],
-                                        IndexUtilizationInfo.CreateFromString(response.ResponseHeaders[HttpConstants.HttpHeaders.IndexUtilization], true),
+                                        IndexUtilizationInfo.CreateFromString(response.ResponseHeaders[HttpConstants.HttpHeaders.IndexUtilization]),
                                         new ClientSideMetrics(
                                             this.retries,
                                             response.RequestCharge,
@@ -317,6 +317,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         allowNonValueAggregates: false,
                         useSystemPrefix: false,
                         partitionKeyDefinition: partitionKeyDefinition,
+                        vectorEmbeddingPolicy: collection.VectorEmbeddingPolicy,
                         queryPartitionProvider: queryPartitionProvider,
                         clientApiVersion: version,
                         geospatialType: collection.GeospatialConfig.GeospatialType,

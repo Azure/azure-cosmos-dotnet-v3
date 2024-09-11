@@ -7,7 +7,6 @@ export PL=18
 #These must be configured
 export ACCOUNT_ENDPOINT=
 export ACCOUNT_KEY=
-export TELEMETRY_ENDPOINT=
 
 #Loop forever
 i=0

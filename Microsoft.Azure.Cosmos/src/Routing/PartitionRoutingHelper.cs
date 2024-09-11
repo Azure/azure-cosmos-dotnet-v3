@@ -35,6 +35,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             bool allowNonValueAggregates,
             bool useSystemPrefix,
             PartitionKeyDefinition partitionKeyDefinition,
+            Cosmos.VectorEmbeddingPolicy vectorEmbeddingPolicy,
             QueryPartitionProvider queryPartitionProvider,
             string clientApiVersion,
             Cosmos.GeospatialType geospatialType,
@@ -58,6 +59,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             TryCatch<PartitionedQueryExecutionInfo> tryGetPartitionQueryExecutionInfo = queryPartitionProvider.TryGetPartitionedQueryExecutionInfo(
                 querySpecJsonString: querySpecJsonString,
                 partitionKeyDefinition: partitionKeyDefinition,
+                vectorEmbeddingPolicy: vectorEmbeddingPolicy,
                 requireFormattableOrderByQuery: VersionUtility.IsLaterThan(clientApiVersion, HttpConstants.VersionDates.v2016_11_14),
                 isContinuationExpected: isContinuationExpected,
                 allowNonValueAggregateQuery: allowNonValueAggregates,

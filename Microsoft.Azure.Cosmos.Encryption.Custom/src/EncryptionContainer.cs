@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos;
     using Newtonsoft.Json.Linq;
 
     internal sealed class EncryptionContainer : Container
@@ -791,13 +790,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return this.container.GetFeedRangesAsync(cancellationToken);
         }
 
-        public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
-            FeedRange feedRange,
-            CancellationToken cancellationToken = default)
-        {
-            return this.container.GetPartitionKeyRangesAsync(feedRange, cancellationToken);
-        }
-
         public override FeedIterator GetItemQueryStreamIterator(
             FeedRange feedRange,
             QueryDefinition queryDefinition,
@@ -1010,6 +1002,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return this.ResponseFactory.CreateItemFeedResponse<T>(responseMessage);
         }
 
+#if ENCRYPTIONPREVIEW
+        public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
+            FeedRange feedRange,
+            CancellationToken cancellationToken = default)
+        {
+            return this.container.GetPartitionKeyRangesAsync(feedRange, cancellationToken);
+        }
+
         public override Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
                Cosmos.PartitionKey partitionKey,
                RequestOptions requestOptions = null,
@@ -1021,6 +1021,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 cancellationToken);
         }
 
+        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(string processorName, ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate)
+        {
+            return this.container.GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(
+                processorName,
+                onChangesDelegate);
+        }
+#endif
         private async Task<ResponseMessage> ReadManyItemsHelperAsync(
            IReadOnlyList<(string id, PartitionKey partitionKey)> items,
            ReadManyRequestOptions readManyRequestOptions = null,

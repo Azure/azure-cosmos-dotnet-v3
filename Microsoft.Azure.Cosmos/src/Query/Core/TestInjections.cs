@@ -13,15 +13,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             OptimisticDirectExecution,
         }
 
-        public TestInjections(bool simulate429s, bool simulateEmptyPages, bool enableOptimisticDirectExecution = false, ResponseStats responseStats = null)
+        public TestInjections(bool simulate429s, bool simulateEmptyPages, ResponseStats responseStats = null)
         {
             this.SimulateThrottles = simulate429s;
             this.SimulateEmptyPages = simulateEmptyPages;
             this.Stats = responseStats;
-            this.EnableOptimisticDirectExecution = enableOptimisticDirectExecution;
         }
-
-        public bool EnableOptimisticDirectExecution { get; }
 
         public bool SimulateThrottles { get; }
 

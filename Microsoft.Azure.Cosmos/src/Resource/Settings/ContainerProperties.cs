@@ -78,6 +78,12 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = "clientEncryptionPolicy", NullValueHandling = NullValueHandling.Ignore)]
         private ClientEncryptionPolicy clientEncryptionPolicyInternal;
 
+        [JsonProperty(PropertyName = "vectorEmbeddingPolicy", NullValueHandling = NullValueHandling.Ignore)]
+        private VectorEmbeddingPolicy vectorEmbeddingPolicyInternal;
+
+        [JsonProperty(PropertyName = "computedProperties", NullValueHandling = NullValueHandling.Ignore)]
+        private Collection<ComputedProperty> computedProperties;
+
         /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
@@ -112,14 +118,8 @@ namespace Microsoft.Azure.Cosmos
         /// Initializes a new instance of the <see cref="ContainerProperties"/> class for the Azure Cosmos DB service.
         /// </summary>
         /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
-        /// <param name="partitionKeyPaths">The path to the partition key. Example: /location</param>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-
-        ContainerProperties(string id, IReadOnlyList<string> partitionKeyPaths)
+        /// <param name="partitionKeyPaths">The paths of the hierarchical partition keys. Example: ["/tenantId", "/userId"]</param>
+        public ContainerProperties(string id, IReadOnlyList<string> partitionKeyPaths)
         {
             this.Id = id;
 
@@ -293,6 +293,74 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Gets or sets the vector embedding policy containing paths for embeddings along with path-specific settings for the item
+        /// used in performing vector search on the items in a collection in the Azure CosmosDB database service.
+        /// </summary>
+        /// <value>
+        /// It is an optional property.
+        /// By default, VectorEmbeddingPolicy is set to null meaning the feature is turned off for the container.
+        /// </value>
+        /// <remarks>
+        /// <para>
+        /// The <see cref="Cosmos.VectorEmbeddingPolicy"/> will be applied to all the items in the container as the default policy.
+        /// </para>
+        /// </remarks>
+        [JsonIgnore]
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        VectorEmbeddingPolicy VectorEmbeddingPolicy
+        {
+            get => this.vectorEmbeddingPolicyInternal;
+
+            set => this.vectorEmbeddingPolicyInternal = value;
+        }
+
+        /// <summary>
+        /// Gets or sets the collection containing <see cref="ComputedProperty"/> objects in the container.
+        /// </summary>
+        /// <value>
+        /// The collection containing <see cref="ComputedProperty"/> objects associated with the container.
+        /// </value>
+
+        /// <summary>
+        /// Gets or sets the collection containing <see cref="ComputedProperty"/> objects in the container.
+        /// </summary>
+        /// <value>
+        /// The collection containing <see cref="ComputedProperty"/> objects associated with the container.
+        /// </value>
+        [JsonIgnore]
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        Collection<ComputedProperty> ComputedProperties
+        {
+            get
+            {
+                if (this.computedProperties == null)
+                {
+                    this.computedProperties = new Collection<ComputedProperty>();
+                }
+
+                return this.computedProperties;
+            }
+
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentException($"{nameof(value)}");
+                }
+
+                this.computedProperties = value;
+            }
+        }
+
+        /// <summary>
         /// Gets the <see cref="ChangeFeedPolicy"/> associated with the container from the Azure Cosmos DB service.
         /// </summary>
         /// <value>
@@ -347,12 +415,11 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
-#if PREVIEW
                 if (this.PartitionKey?.Kind == PartitionKind.MultiHash && this.PartitionKey?.Paths.Count > 1)
                 {
-                    throw new NotImplementedException($"This MultiHash collection has more than 1 partition key path please use `PartitionKeyPaths`");
+                    throw new NotImplementedException($"This subpartitioned container has more than 1 partition key path please use `PartitionKeyPaths`");
                 }
-#endif
+
                 return this.PartitionKey?.Paths != null && this.PartitionKey.Paths.Count > 0 ? this.PartitionKey?.Paths[0] : null;
             }
             set
@@ -377,15 +444,10 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// JSON path used for containers partitioning
+        /// List of JSON paths used for containers with hierarchical partition keys
         /// </summary>
         [JsonIgnore]
-#if PREVIEW
-        public
-#else 
-        internal
-#endif
-        IReadOnlyList<string> PartitionKeyPaths
+        public IReadOnlyList<string> PartitionKeyPaths
         {
             get => this.PartitionKey?.Paths;
             set
@@ -496,9 +558,9 @@ namespace Microsoft.Azure.Cosmos
         /// It is an optional property.
         ///
         /// The unit of measurement is seconds. The maximum allowed value is 2147483647.
-        /// A valid value must be either a nonzero positive integer, '-1' or <c>null</c>.
+        /// When updating this property, a valid value must be either a positive integer or '-1'.
         ///
-        /// By default, AnalyticalStoreTimeToLiveInSeconds is set to null meaning analytical store is turned-off.
+        /// By default, AnalyticalStoreTimeToLiveInSeconds is <c>null</c> meaning analytical store is turned-off.
         /// </value>
         /// <remarks>
         /// <para>
@@ -506,7 +568,7 @@ namespace Microsoft.Azure.Cosmos
         /// It cannot be overriden or customizable per item.
         /// </para>
         /// <para>
-        /// When the <see cref="AnalyticalStoreTimeToLiveInSeconds"/> is <c>null</c> analytical store is turned-off.
+        /// When the <see cref="AnalyticalStoreTimeToLiveInSeconds"/> is 0 analytical store is turned-off.
         /// It means all the item changes in the container are disregarded.
         /// </para>
         /// <para>
@@ -519,10 +581,10 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// </remarks>
         /// <example>
-        /// The example below disables analytical store on a container.
+        /// The example below disables analytical store on a container if previously enabled.
         /// <code language="c#">
         /// <![CDATA[
-        ///     container.AnalyticalStoreTimeToLiveInSeconds = null;
+        ///     container.AnalyticalStoreTimeToLiveInSeconds = 0;
         /// ]]>
         /// </code>
         /// </example>
@@ -657,12 +719,10 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentOutOfRangeException($"Container {this.Id} is not partitioned");
                 }
 
-#if PREVIEW
                 if (this.PartitionKey.Kind == Documents.PartitionKind.MultiHash && this.PartitionKeyPaths == null)
                 {
                     throw new ArgumentOutOfRangeException($"Container {this.Id} is not partitioned");
                 }
-#endif
 
                 List<IReadOnlyList<string>> partitionKeyPathTokensList = new List<IReadOnlyList<string>>();
                 foreach (string path in this.PartitionKey?.Paths)

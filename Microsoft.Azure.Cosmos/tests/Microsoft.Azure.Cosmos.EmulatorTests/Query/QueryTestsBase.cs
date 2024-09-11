@@ -40,12 +40,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         internal CosmosClient Client;
         internal Cosmos.Database database;
 
-        public QueryTestsBase()
-        {
-            this.GatewayClient = TestCommon.CreateCosmosClient(true, builder => builder.AddCustomHandlers(this.GatewayRequestChargeHandler));
-            this.Client = TestCommon.CreateCosmosClient(false, builder => builder.AddCustomHandlers(this.DirectRequestChargeHandler));
-        }
-
         [FlagsAttribute]
         internal enum ConnectionModes
         {
@@ -63,17 +57,11 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             MultiPartition = 0x4,
         }
 
-        [ClassInitialize]
-        [ClassCleanup]
-        public static void ClassSetup(TestContext testContext = null)
-        {
-            CosmosClient client = TestCommon.CreateCosmosClient(false);
-            QueryTestsBase.CleanUp(client).Wait();
-        }
-
         [TestInitialize]
         public async Task Initialize()
         {
+            this.GatewayClient = TestCommon.CreateCosmosClient(true, builder => builder.AddCustomHandlers(this.GatewayRequestChargeHandler));
+            this.Client = TestCommon.CreateCosmosClient(false, builder => builder.AddCustomHandlers(this.DirectRequestChargeHandler));
             this.database = await this.Client.CreateDatabaseAsync(Guid.NewGuid().ToString() + "db");
         }
 
@@ -81,6 +69,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         public async Task Cleanup()
         {
             await this.database.DeleteStreamAsync();
+            this.Client.Dispose();
+            this.GatewayClient.Dispose();
         }
 
         private static string GetApiVersion()
@@ -359,6 +349,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             }
             finally
             {
+                this.Client.Dispose();
+                this.GatewayClient.Dispose();
                 this.Client = originalCosmosClient;
                 this.GatewayClient = originalGatewayClient;
                 this.database = originalDatabase;
@@ -566,74 +558,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             };
         }
 
-        internal static async Task<List<T>> QueryWithCosmosElementContinuationTokenAsync<T>(
-            Container container,
-            string query,
-            QueryRequestOptions queryRequestOptions = null)
-        {
-            if (queryRequestOptions == null)
-            {
-                queryRequestOptions = new QueryRequestOptions();
-            }
-
-            List<T> resultsFromCosmosElementContinuationToken = new List<T>();
-            CosmosElement continuationToken = null;
-            do
-            {
-                QueryRequestOptions computeRequestOptions = new QueryRequestOptions
-                {
-                    IfMatchEtag = queryRequestOptions.IfMatchEtag,
-                    IfNoneMatchEtag = queryRequestOptions.IfNoneMatchEtag,
-                    MaxItemCount = queryRequestOptions.MaxItemCount,
-                    ResponseContinuationTokenLimitInKb = queryRequestOptions.ResponseContinuationTokenLimitInKb,
-                    EnableScanInQuery = queryRequestOptions.EnableScanInQuery,
-                    EnableLowPrecisionOrderBy = queryRequestOptions.EnableLowPrecisionOrderBy,
-                    MaxBufferedItemCount = queryRequestOptions.MaxBufferedItemCount,
-                    SessionToken = queryRequestOptions.SessionToken,
-                    ConsistencyLevel = queryRequestOptions.ConsistencyLevel,
-                    MaxConcurrency = queryRequestOptions.MaxConcurrency,
-                    PartitionKey = queryRequestOptions.PartitionKey,
-                    CosmosSerializationFormatOptions = queryRequestOptions.CosmosSerializationFormatOptions,
-                    Properties = queryRequestOptions.Properties,
-                    IsEffectivePartitionKeyRouting = queryRequestOptions.IsEffectivePartitionKeyRouting,
-                    CosmosElementContinuationToken = queryRequestOptions.CosmosElementContinuationToken,
-                    TestSettings = queryRequestOptions.TestSettings,
-                };
-
-                computeRequestOptions.ExecutionEnvironment = ExecutionEnvironment.Compute;
-                computeRequestOptions.CosmosElementContinuationToken = continuationToken;
-
-                using (FeedIteratorInternal<T> itemQuery = (FeedIteratorInternal<T>)container.GetItemQueryIterator<T>(
-                   queryText: query,
-                   requestOptions: computeRequestOptions))
-                {
-                    try
-                    {
-                        FeedResponse<T> cosmosQueryResponse = await itemQuery.ReadNextAsync();
-                        if (queryRequestOptions.MaxItemCount.HasValue)
-                        {
-                            Assert.IsTrue(
-                                cosmosQueryResponse.Count <= queryRequestOptions.MaxItemCount.Value,
-                                $"Max Item Count is not being honored. Got {cosmosQueryResponse.Count} documents when {queryRequestOptions.MaxItemCount.Value} is the max.");
-                        }
-
-                        resultsFromCosmosElementContinuationToken.AddRange(cosmosQueryResponse);
-
-                        // Force a rewrite of the continuation token, so that we test the case where we roundtrip it over the wire.
-                        // There was a bug where resuming from double.NaN lead to an exception,
-                        // since we parsed the type assuming it was always a double and not a string.
-                        CosmosElement originalContinuationToken = itemQuery.GetCosmosElementContinuationToken();
-                        continuationToken = originalContinuationToken != null ? CosmosElement.Parse(originalContinuationToken.ToString()) : null;
-                    }
-                    catch (CosmosException cosmosException) when (cosmosException.StatusCode == (HttpStatusCode)429)
-                    {
-                    }
-                }
-            } while (continuationToken != null);
-
-            return resultsFromCosmosElementContinuationToken;
-        }
-
         internal static async Task<List<T>> QueryWithContinuationTokensAsync<T>(
             Container container,
             string query,
@@ -787,7 +711,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 container,
                 query,
                 queryRequestOptions,
-                QueryDrainingMode.ContinuationToken | QueryDrainingMode.HoldState | QueryDrainingMode.CosmosElementContinuationToken);
+                QueryDrainingMode.ContinuationToken | QueryDrainingMode.HoldState);
         }
 
         [Flags]
@@ -796,7 +720,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             None = 0,
             HoldState = 1,
             ContinuationToken = 2,
-            CosmosElementContinuationToken = 4,
         }
 
         internal static Task<List<CosmosElement>> RunQueryCombinationsAsync(
@@ -839,16 +762,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     queryRequestOptions);
 
                 queryExecutionResults[QueryDrainingMode.ContinuationToken] = queryResultsWithContinuationTokens;
-            }
-
-            if (queryDrainingMode.HasFlag(QueryDrainingMode.CosmosElementContinuationToken))
-            {
-                List<T> queryResultsWithCosmosElementContinuationToken = await QueryWithCosmosElementContinuationTokenAsync<T>(
-                    container,
-                    query,
-                    queryRequestOptions);
-
-                queryExecutionResults[QueryDrainingMode.CosmosElementContinuationToken] = queryResultsWithCosmosElementContinuationToken;
             }
 
             foreach (QueryDrainingMode queryDrainingMode1 in queryExecutionResults.Keys)

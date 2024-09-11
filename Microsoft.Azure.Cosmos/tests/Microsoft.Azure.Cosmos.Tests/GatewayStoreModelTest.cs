@@ -161,6 +161,69 @@ namespace Microsoft.Azure.Cosmos
 
         }
 
+        /// <summary>
+        /// Verifies that if the DCE has Properties set, the HttpRequestMessage has them too. Used on ThinClient.
+        /// </summary>
+        [TestMethod]
+        public async Task PassesPropertiesFromDocumentServiceRequest()
+        {
+            IDictionary<string, object> properties = new Dictionary<string, object>()
+            {
+                {"property1", Guid.NewGuid() },
+                {"property2", Guid.NewGuid().ToString() }
+            };
+
+            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = request =>
+            {
+#pragma warning disable CS0618 // Type or member is obsolete
+                Assert.AreEqual(properties.Count, request.Properties.Count);
+                foreach (KeyValuePair<string, object> item in properties)
+                {
+                    Assert.AreEqual(item.Value, request.Properties[item.Key]);
+                }
+#pragma warning restore CS0618 // Type or member is obsolete
+
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) );
+            };
+
+            Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
+            mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
+
+            using GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+            ISessionContainer sessionContainer = new SessionContainer(string.Empty);
+            DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
+            HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
+            using GatewayStoreModel storeModel = new GatewayStoreModel(
+                endpointManager,
+                sessionContainer,
+                ConsistencyLevel.Eventual,
+                eventSource,
+                null,
+                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
+
+            using (new ActivityScope(Guid.NewGuid()))
+            {
+                using (DocumentServiceRequest request =
+                DocumentServiceRequest.Create(
+                    Documents.OperationType.Query,
+                    Documents.ResourceType.Document,
+                    new Uri("https://foo.com/dbs/db1/colls/coll1", UriKind.Absolute),
+                    new MemoryStream(Encoding.UTF8.GetBytes("content1")),
+                    AuthorizationTokenType.PrimaryMasterKey,
+                    null))
+                {
+                    // Add properties to the DCE
+                    request.Properties = new Dictionary<string, object>();
+                    foreach (KeyValuePair<string, object> property in properties)
+                    {
+                        request.Properties.Add(property.Key, property.Value);
+                    }
+
+                    await storeModel.ProcessMessageAsync(request);
+                }
+            }
+        }
+
         [TestMethod]
         public async Task TestApplySessionForMasterOperation()
         {
@@ -211,7 +274,7 @@ namespace Microsoft.Azure.Cosmos
                            dsr,
                            ConsistencyLevel.Session,
                            new Mock<ISessionContainer>().Object,
-                           partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null).Object,
+                           partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null).Object,
                            clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null, null).Object,
                            globalEndpointManager: Mock.Of<IGlobalEndpointManager>());
 
@@ -238,7 +301,7 @@ namespace Microsoft.Azure.Cosmos
                     dsrQueryPlan,
                     ConsistencyLevel.Session,
                     new Mock<ISessionContainer>().Object,
-                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null).Object,
+                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null).Object,
                     clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null, null).Object,
                     globalEndpointManager: Mock.Of<IGlobalEndpointManager>());
 
@@ -292,7 +355,7 @@ namespace Microsoft.Azure.Cosmos
                                 dsr,
                                 ConsistencyLevel.Session,
                                 new Mock<ISessionContainer>().Object,
-                                partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null).Object,
+                                partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null).Object,
                                 clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null, null).Object,
                                 globalEndpointManager: Mock.Of<IGlobalEndpointManager>());
 
@@ -322,7 +385,7 @@ namespace Microsoft.Azure.Cosmos
                                 dsrNoSessionToken,
                                 ConsistencyLevel.Session,
                                 sessionContainer,
-                                partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null).Object,
+                                partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null).Object,
                                 clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null, null).Object,
                                 globalEndpointManager: globalEndpointManager.Object);
 
@@ -363,7 +426,7 @@ namespace Microsoft.Azure.Cosmos
                             It.IsAny<CancellationToken>(),
                             NoOpTrace.Singleton)).Returns(Task.FromResult(containerProperties));
 
-                        Mock<PartitionKeyRangeCache> mockPartitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(MockBehavior.Strict, null, null, null);
+                        Mock<PartitionKeyRangeCache> mockPartitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(MockBehavior.Strict, null, null, null, null);
                         mockPartitionKeyRangeCache.Setup(x => x.TryGetPartitionKeyRangeByIdAsync(
                             containerProperties.ResourceId,
                             partitionKeyRangeId,
@@ -410,7 +473,7 @@ namespace Microsoft.Azure.Cosmos
                     dsrSprocExecute,
                     ConsistencyLevel.Session,
                     new Mock<ISessionContainer>().Object,
-                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null).Object,
+                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null).Object,
                     clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null, null).Object,
                     globalEndpointManager: Mock.Of<IGlobalEndpointManager>());
 
@@ -449,7 +512,7 @@ namespace Microsoft.Azure.Cosmos
                     dsrNoSessionToken,
                     ConsistencyLevel.Session,
                     sessionContainer,
-                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null).Object,
+                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null).Object,
                     clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null, null).Object,
                     globalEndpointManager: globalEndpointManager.Object);
 
@@ -804,21 +867,26 @@ namespace Microsoft.Azure.Cosmos
             HttpMessageHandler mockMessageHandler = new MockMessageHandler(sendFunc);
             CosmosHttpClient cosmosHttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(mockMessageHandler),
                                                                                     DocumentClientEventSource.Instance);
-            Tracing.TraceData.ClientSideRequestStatisticsTraceDatum clientSideRequestStatistics = new Tracing.TraceData.ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary());
+            
+            using(ITrace trace = Tracing.Trace.GetRootTrace(nameof(GatewayStatsDurationTest)))
+            {
 
-            await cosmosHttpClient.SendHttpAsync(() => new ValueTask<HttpRequestMessage>(new HttpRequestMessage(HttpMethod.Get, "http://someuri.com")),
-                                                  ResourceType.Document,
-                                                  HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout,
-                                                  clientSideRequestStatistics,
-                                                  CancellationToken.None);
+                Tracing.TraceData.ClientSideRequestStatisticsTraceDatum clientSideRequestStatistics = new Tracing.TraceData.ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace);
 
-            Assert.AreEqual(clientSideRequestStatistics.HttpResponseStatisticsList.Count, 2);
-            // The duration is calculated using date times which can cause the duration to be slightly off. This allows for up to 15 Ms of variance.
-            // https://stackoverflow.com/questions/2143140/c-sharp-datetime-now-precision#:~:text=The%20precision%20is%20related%20to,35%2D40%20ms%20accuracy
-            Assert.IsTrue(clientSideRequestStatistics.HttpResponseStatisticsList[0].Duration.TotalMilliseconds >= 985, $"First request did was not delayed by at least 1 second. {JsonConvert.SerializeObject(clientSideRequestStatistics.HttpResponseStatisticsList[0])}");
-            Assert.IsTrue(clientSideRequestStatistics.HttpResponseStatisticsList[1].Duration.TotalMilliseconds >= 985, $"Second request did was not delayed by at least 1 second. {JsonConvert.SerializeObject(clientSideRequestStatistics.HttpResponseStatisticsList[1])}");
-            Assert.IsTrue(clientSideRequestStatistics.HttpResponseStatisticsList[0].RequestStartTime < 
-                          clientSideRequestStatistics.HttpResponseStatisticsList[1].RequestStartTime);
+                await cosmosHttpClient.SendHttpAsync(() => new ValueTask<HttpRequestMessage>(new HttpRequestMessage(HttpMethod.Get, "http://someuri.com")),
+                                                      ResourceType.Document,
+                                                      HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout,
+                                                      clientSideRequestStatistics,
+                                                      CancellationToken.None);
+
+                Assert.AreEqual(clientSideRequestStatistics.HttpResponseStatisticsList.Count, 2);
+                // The duration is calculated using date times which can cause the duration to be slightly off. This allows for up to 15 Ms of variance.
+                // https://stackoverflow.com/questions/2143140/c-sharp-datetime-now-precision#:~:text=The%20precision%20is%20related%20to,35%2D40%20ms%20accuracy
+                Assert.IsTrue(clientSideRequestStatistics.HttpResponseStatisticsList[0].Duration.TotalMilliseconds >= 985, $"First request did was not delayed by at least 1 second. {JsonConvert.SerializeObject(clientSideRequestStatistics.HttpResponseStatisticsList[0])}");
+                Assert.IsTrue(clientSideRequestStatistics.HttpResponseStatisticsList[1].Duration.TotalMilliseconds >= 985, $"Second request did was not delayed by at least 1 second. {JsonConvert.SerializeObject(clientSideRequestStatistics.HttpResponseStatisticsList[1])}");
+                Assert.IsTrue(clientSideRequestStatistics.HttpResponseStatisticsList[0].RequestStartTime <
+                              clientSideRequestStatistics.HttpResponseStatisticsList[1].RequestStartTime);
+            }
         }
 
         [TestMethod]
@@ -904,7 +972,7 @@ namespace Microsoft.Azure.Cosmos
                 null,
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient()));
             Mock<ClientCollectionCache> clientCollectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), storeModel, null, null, null);
-            Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, storeModel, clientCollectionCache.Object);
+            Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, storeModel, clientCollectionCache.Object, endpointManager);
 
             sessionContainer.SetSessionToken(
                     ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString(),
@@ -1000,7 +1068,7 @@ namespace Microsoft.Azure.Cosmos
 
             Mock<ClientCollectionCache> clientCollectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), storeModel, null, null, null);
 
-            Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, storeModel, clientCollectionCache.Object);
+            Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, storeModel, clientCollectionCache.Object, endpointManager);
             storeModel.SetCaches(partitionKeyRangeCache.Object, clientCollectionCache.Object);
 
             INameValueCollection headers = new RequestNameValueCollection();
@@ -1068,7 +1136,7 @@ namespace Microsoft.Azure.Cosmos
                     documentServiceRequestToChild,
                     ConsistencyLevel.Session,
                     sessionContainer,
-                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null).Object,
+                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null).Object,
                     clientCollectionCache: new Mock<ClientCollectionCache>(sessionContainer, gatewayStoreModel, null, null, null).Object,
                     globalEndpointManager: globalEndpointManager.Object);
 
@@ -1134,7 +1202,7 @@ namespace Microsoft.Azure.Cosmos
                     documentServiceRequestToChild,
                     ConsistencyLevel.Session,
                     sessionContainer,
-                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null).Object,
+                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null).Object,
                     clientCollectionCache: new Mock<ClientCollectionCache>(sessionContainer, gatewayStoreModel, null, null, null).Object,
                     globalEndpointManager: globalEndpointManager.Object);
 
@@ -1205,7 +1273,7 @@ namespace Microsoft.Azure.Cosmos
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(httpMessageHandler)));
 
             ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), storeModel, null, null, null).Object;
-            PartitionKeyRangeCache partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, storeModel, clientCollectionCache).Object;
+            PartitionKeyRangeCache partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, storeModel, clientCollectionCache, endpointManager).Object;
             storeModel.SetCaches(partitionKeyRangeCache, clientCollectionCache);
 
             await executeWithGatewayStoreModel(storeModel);

@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Documents;
@@ -42,6 +43,14 @@ namespace Microsoft.Azure.Cosmos
         /// The option to enable low-precision order by.
         /// </value>
         public bool? EnableLowPrecisionOrderBy { get; set; }
+
+        /// <summary>
+        /// Gets or sets the option for customers to opt in for direct (optimistic) execution of the query.
+        /// </summary>
+        /// <value>
+        /// Direct (optimistic) execution offers improved performance for several kinds of queries such as a single partition streaming query.
+        /// </value>
+        public bool EnableOptimisticDirectExecution { get; set; } = ConfigurationManager.IsOptimisticDirectExecutionEnabled(defaultValue: false);
 
         /// <summary>
         /// Gets or sets the maximum number of items that can be buffered client side during 
@@ -172,13 +181,20 @@ namespace Microsoft.Azure.Cosmos
 
         internal CosmosSerializationFormatOptions CosmosSerializationFormatOptions { get; set; }
 
-        internal ExecutionEnvironment? ExecutionEnvironment { get; set; }
+        internal SupportedSerializationFormats? SupportedSerializationFormats { get; set; }
 
         internal bool? ReturnResultsInDeterministicOrder { get; set; }
 
         internal TestInjections TestSettings { get; set; }
 
         internal FeedRange FeedRange { get; set; }
+
+        internal bool IsNonStreamingOrderByQueryFeatureDisabled { get; set; } = ConfigurationManager.IsNonStreamingOrderByQueryFeatureDisabled(defaultValue: false);
+
+        // This is a temporary flag to enable the distributed query gateway mode.
+        // This flag will be removed once we have a way for the client to determine
+        // that we are talking to a distributed query gateway.
+        internal bool EnableDistributedQueryGatewayMode { get; set; } = ConfigurationManager.IsDistributedQueryGatewayModeEnabled(defaultValue: false);
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
@@ -225,9 +241,12 @@ namespace Microsoft.Azure.Cosmos
                 request.Headers.Add(HttpConstants.HttpHeaders.ResponseContinuationTokenLimitInKB, this.ResponseContinuationTokenLimitInKb.ToString());
             }
 
-            if (this.CosmosSerializationFormatOptions != null)
+            // All query APIs (GetItemQueryIterator, GetItemLinqQueryable and GetItemQueryStreamIterator) turn into ReadFeed operation if query text is null.
+            // In such a case, query pipelines are still involved (including QueryRequestOptions). In general backend only honors SupportedSerializationFormats
+            //  for OperationType Query but has a bug where it returns a binary response for ReadFeed API when partition key is also specified in the request.
+            if (request.OperationType == OperationType.Query)
             {
-                request.Headers.CosmosMessageHeaders.ContentSerializationFormat = this.CosmosSerializationFormatOptions.ContentSerializationFormat;
+                request.Headers.CosmosMessageHeaders.SupportedSerializationFormats = this.SupportedSerializationFormats?.ToString() ?? DocumentQueryExecutionContextBase.DefaultSupportedSerializationFormats;
             }
 
             if (this.StartId != null)
@@ -252,10 +271,11 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.PopulateIndexMetrics.HasValue)
             {
-                request.Headers.CosmosMessageHeaders.Add(HttpConstants.HttpHeaders.PopulateIndexMetrics, this.PopulateIndexMetrics.ToString());
+                request.Headers.CosmosMessageHeaders.Add(HttpConstants.HttpHeaders.PopulateIndexMetricsV2, this.PopulateIndexMetrics.ToString());
             }
 
             DedicatedGatewayRequestOptions.PopulateMaxIntegratedCacheStalenessOption(this.DedicatedGatewayRequestOptions, request);
+            DedicatedGatewayRequestOptions.PopulateBypassIntegratedCacheOption(this.DedicatedGatewayRequestOptions, request);
 
             request.Headers.Add(HttpConstants.HttpHeaders.PopulateQueryMetrics, bool.TrueString);
 

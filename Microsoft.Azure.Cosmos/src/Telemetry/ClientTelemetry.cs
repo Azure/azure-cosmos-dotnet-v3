@@ -7,21 +7,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Net;
-    using System.Net.Http;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Handler;
     using HdrHistogram;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Telemetry.Collector;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Collections;
-    using Microsoft.Azure.Documents.Rntbd;
-    using Newtonsoft.Json;
     using Util;
+    using static Microsoft.Azure.Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum;
 
     /// <summary>
     /// This class collects and send all the telemetry information.
@@ -31,18 +26,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     /// </summary>
     internal class ClientTelemetry : IDisposable
     {
-        private const int allowedNumberOfFailures = 3;
-
-        private static readonly Uri endpointUrl = ClientTelemetryOptions.GetClientTelemetryEndpoint();
-        private static readonly TimeSpan observingWindow = ClientTelemetryOptions.GetScheduledTimeSpan();
+        private static readonly TimeSpan observingWindow = ClientTelemetryOptions.DefaultIntervalForTelemetryJob;
 
         private readonly ClientTelemetryProperties clientTelemetryInfo;
-        private readonly CosmosHttpClient httpClient;
-        private readonly AuthorizationTokenProvider tokenProvider;
+        private readonly ClientTelemetryProcessor processor;
         private readonly DiagnosticsHandlerHelper diagnosticsHelper;
-
+        private readonly string endpointUrl;
+        private readonly NetworkDataRecorder networkDataRecorder;
+        
         private readonly CancellationTokenSource cancellationTokenSource;
-
         private readonly GlobalEndpointManager globalEndpointManager;
 
         private Task telemetryTask;
@@ -52,8 +44,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoMap 
             = new ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram>();
-
-        private int numberOfFailures = 0;
 
         /// <summary>
         /// Only for Mocking in tests
@@ -74,6 +64,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="diagnosticsHelper"></param>
         /// <param name="preferredRegions"></param>
         /// <param name="globalEndpointManager"></param>
+        /// <param name="endpointUrl"></param>
         /// <returns>ClientTelemetry</returns>
         public static ClientTelemetry CreateAndStartBackgroundTelemetry(
             string clientId,
@@ -83,7 +74,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             AuthorizationTokenProvider authorizationTokenProvider,
             DiagnosticsHandlerHelper diagnosticsHelper,
             IReadOnlyList<string> preferredRegions,
-            GlobalEndpointManager globalEndpointManager)
+            GlobalEndpointManager globalEndpointManager,
+            string endpointUrl )
         {
             DefaultTrace.TraceInformation("Initiating telemetry with background task.");
 
@@ -95,14 +87,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 authorizationTokenProvider,
                 diagnosticsHelper,
                 preferredRegions,
-                globalEndpointManager);
+                globalEndpointManager,
+                endpointUrl);
 
             clientTelemetry.StartObserverTask();
 
             return clientTelemetry;
         }
 
-        private ClientTelemetry(
+        internal ClientTelemetry(
             string clientId,
             CosmosHttpClient httpClient,
             string userAgent,
@@ -110,11 +103,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             AuthorizationTokenProvider authorizationTokenProvider,
             DiagnosticsHandlerHelper diagnosticsHelper,
             IReadOnlyList<string> preferredRegions,
-            GlobalEndpointManager globalEndpointManager)
+            GlobalEndpointManager globalEndpointManager,
+            string endpointUrl)
         {
-            this.httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             this.diagnosticsHelper = diagnosticsHelper ?? throw new ArgumentNullException(nameof(diagnosticsHelper));
-            this.tokenProvider = authorizationTokenProvider ?? throw new ArgumentNullException(nameof(authorizationTokenProvider));
+            this.endpointUrl = endpointUrl ?? throw new ArgumentNullException(nameof(endpointUrl));
+
+            this.globalEndpointManager = globalEndpointManager;
+            
+            this.processor = new ClientTelemetryProcessor(httpClient, authorizationTokenProvider);
 
             this.clientTelemetryInfo = new ClientTelemetryProperties(
                 clientId: clientId, 
@@ -124,8 +121,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 preferredRegions: preferredRegions,
                 aggregationIntervalInSec: (int)observingWindow.TotalSeconds);
 
+            this.networkDataRecorder = new NetworkDataRecorder();
             this.cancellationTokenSource = new CancellationTokenSource();
-            this.globalEndpointManager = globalEndpointManager;
         }
 
         /// <summary>
@@ -138,9 +135,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         /// <summary>
         /// Task which does below operations , periodically
-        ///  1. Set Account information (one time at the time of initialization)
-        ///  2. Load VM metedata information (one time at the time of initialization)
-        ///  3. Calculate and Send telemetry Information to juno service (never ending task)/// </summary>
+        ///  1. Set Account information (one time during initialization)
+        ///  2. Load VM metedata information (one time during initialization)
+        ///  3. Calculate and Send telemetry Information to Client Telemetry Service (never ending task)/// </summary>
         /// <returns>Async Task</returns>
         private async Task EnrichAndSendAsync()
         {
@@ -150,20 +147,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 while (!this.cancellationTokenSource.IsCancellationRequested)
                 {
-                    if (this.numberOfFailures == allowedNumberOfFailures)
-                    {
-                        this.Dispose();
-                        break;
-                    }
-
                     if (string.IsNullOrEmpty(this.clientTelemetryInfo.GlobalDatabaseAccountName))
                     {
                         AccountProperties accountProperties = await ClientTelemetryHelper.SetAccountNameAsync(this.globalEndpointManager);
                         this.clientTelemetryInfo.GlobalDatabaseAccountName = accountProperties.Id;
                     }
-                    
+
                     await Task.Delay(observingWindow, this.cancellationTokenSource.Token);
 
+                    this.clientTelemetryInfo.DateTimeUtc = DateTime.UtcNow.ToString(ClientTelemetryOptions.DateFormat);
                     this.clientTelemetryInfo.MachineId = VmMetadataApiHandler.GetMachineId();
 
                     // Load host information from cache
@@ -171,73 +163,107 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     this.clientTelemetryInfo.ApplicationRegion = vmInformation?.Location;
                     this.clientTelemetryInfo.HostEnvInfo = ClientTelemetryOptions.GetHostInformation(vmInformation);
 
-                    // If cancellation is requested after the delay then return from here.
-                    if (this.cancellationTokenSource.IsCancellationRequested)
-                    {
-                        DefaultTrace.TraceInformation("Observer Task Cancelled.");
+                    this.clientTelemetryInfo.SystemInfo = ClientTelemetryHelper.RecordSystemUtilization(this.diagnosticsHelper,
+                        this.clientTelemetryInfo.IsDirectConnectionMode);
 
-                        break;
-                    }
-
-                    this.RecordSystemUtilization();
-
-                    this.clientTelemetryInfo.DateTimeUtc = DateTime.UtcNow.ToString(ClientTelemetryOptions.DateFormat);
-
-                    ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot 
+                    // Take the copy for further processing i.e. serializing and dividing into chunks
+                    ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot
                         = Interlocked.Exchange(ref this.operationInfoMap, new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>());
 
                     ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot
-                       = Interlocked.Exchange(ref this.cacheRefreshInfoMap, new ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram>());
+                        = Interlocked.Exchange(ref this.cacheRefreshInfoMap, new ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram>());
 
-                    this.clientTelemetryInfo.OperationInfo = ClientTelemetryHelper.ToListWithMetricsInfo(operationInfoSnapshot);
-                    this.clientTelemetryInfo.CacheRefreshInfo = ClientTelemetryHelper.ToListWithMetricsInfo(cacheRefreshInfoSnapshot);
+                    List<RequestInfo> requestInfoSnapshot = this.networkDataRecorder.GetRequests();
 
-                    await this.SendAsync();
+                    try
+                    {
+                        CancellationTokenSource cancellationToken = new CancellationTokenSource(ClientTelemetryOptions.ClientTelemetryProcessorTimeOut);
+                        Task processorTask = Task.Run(() => this.processor
+                                                                    .ProcessAndSendAsync(
+                                                                            clientTelemetryInfo: this.clientTelemetryInfo,
+                                                                            operationInfoSnapshot: operationInfoSnapshot,
+                                                                            cacheRefreshInfoSnapshot: cacheRefreshInfoSnapshot,
+                                                                            requestInfoSnapshot: requestInfoSnapshot,
+                                                                            endpointUrl: this.endpointUrl,
+                                                                            cancellationToken: cancellationToken.Token), cancellationToken.Token);
+
+                        // Initiating Telemetry Data Processor task which will serialize and send telemetry information to Client Telemetry Service
+                        // Not disposing this task. If we dispose a client then, telemetry job(telemetryTask) should stop but processor task(processorTask) should make best effort to finish the job in background.
+                        _ = ClientTelemetry.RunProcessorTaskAsync(this.clientTelemetryInfo.DateTimeUtc, processorTask, ClientTelemetryOptions.ClientTelemetryProcessorTimeOut);
+
+                    }
+                    catch (Exception ex)
+                    {
+                        DefaultTrace.TraceError("Exception while initiating processing task : {0} with telemetry date as {1}", ex.Message, this.clientTelemetryInfo.DateTimeUtc);
+                    }
                 }
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError("Exception in EnrichAndSendAsync() : {0}", ex.Message);
+                DefaultTrace.TraceError("Exception in EnrichAndSendAsync() : {0}", ex);
             }
 
             DefaultTrace.TraceInformation("Telemetry Job Stopped.");
         }
 
         /// <summary>
+        /// This Task makes sure, processing task is timing out after 5 minute of timeout
+        /// </summary>
+        /// <param name="telemetryDate"></param>
+        /// <param name="processingTask"></param>
+        /// <param name="timeout"></param>
+        internal static async Task RunProcessorTaskAsync(string telemetryDate, Task processingTask, TimeSpan timeout)
+        {
+            using (CancellationTokenSource tokenForDelayTask = new CancellationTokenSource())
+            {
+                Task delayTask = Task.Delay(timeout, tokenForDelayTask.Token);
+                
+                Task resultTask = await Task.WhenAny(processingTask, delayTask);
+                if (resultTask == delayTask)
+                {
+                    DefaultTrace.TraceError("Processor task with date as {0} is cancelled as it did not finish in {1} milliseconds", telemetryDate, timeout.TotalMilliseconds);
+                }
+                else
+                {
+                    // Cancel the timer task so that it does not fire
+                    tokenForDelayTask.Cancel();
+                }
+            }
+        }
+
+        /// <summary>
         /// Collects Cache Telemetry Information.
         /// </summary>
-        internal void CollectCacheInfo(string cacheRefreshSource,
-                            HashSet<(string regionName, Uri uri)> regionsContactedList,
-                            TimeSpan? requestLatency,
-                            HttpStatusCode statusCode,
-                            string containerId,
-                            OperationType operationType,
-                            ResourceType resourceType,
-                            SubStatusCodes subStatusCode,
-                            string databaseId,
-                            long responseSizeInBytes = 0,
-                            string consistencyLevel = null )
+        internal void PushCacheDatapoint(string cacheName, TelemetryInformation data)
         {
-            if (string.IsNullOrEmpty(cacheRefreshSource))
+            if (string.IsNullOrEmpty(cacheName))
             {
-                throw new ArgumentNullException(nameof(cacheRefreshSource));
+                throw new ArgumentNullException(nameof(cacheName));
             }
 
-            DefaultTrace.TraceVerbose($"Collecting cacheRefreshSource {cacheRefreshSource} data for Telemetry.");
+            // If latency information is not available. Ignore this datapoint. It is not expected but putting this safety check
+            if (!data.RequestLatency.HasValue)
+            {
+                DefaultTrace.TraceWarning("Latency data point is not available for {0} cache call", cacheName);
 
-            string regionsContacted = ClientTelemetryHelper.GetContactedRegions(regionsContactedList);
+                return;
+            }
+
+            DefaultTrace.TraceVerbose("Collecting cacheRefreshSource {0} data for Telemetry.", cacheName);
+
+            string regionsContacted = ClientTelemetryHelper.GetContactedRegions(data.RegionsContactedList);
 
             // Recording Request Latency
-            CacheRefreshInfo payloadKey = new CacheRefreshInfo(cacheRefreshSource: cacheRefreshSource,
+            CacheRefreshInfo payloadKey = new CacheRefreshInfo(cacheRefreshSource: cacheName,
                                             regionsContacted: regionsContacted?.ToString(),
-                                            responseSizeInBytes: responseSizeInBytes,
-                                            consistency: consistencyLevel,
-                                            databaseName: databaseId,
-                                            containerName: containerId,
-                                            operation: operationType,
-                                            resource: resourceType,
-                                            statusCode: (int)statusCode,
-                                            subStatusCode: (int)subStatusCode);
+                                            responseSizeInBytes: data.ResponseSizeInBytes,
+                                            consistency: data.ConsistencyLevel,
+                                            databaseName: data.DatabaseId,
+                                            containerName: data.ContainerId,
+                                            operation: data.OperationType,
+                                            resource: data.ResourceType,
+                                            statusCode: (int)data.StatusCode,
+                                            subStatusCode: (int)data.SubStatusCode);
 
             LongConcurrentHistogram latency = this.cacheRefreshInfoMap
                     .GetOrAdd(payloadKey, new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
@@ -245,57 +271,33 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                                         ClientTelemetryOptions.RequestLatencyPrecision));
             try
             {
-                latency.RecordValue(requestLatency.Value.Ticks);
+                latency.RecordValue(data.RequestLatency.Value.Ticks);
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Exception : {0}", ex.Message);
+                DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Exception : {0}", ex);
             }
         }
 
         /// <summary>
         /// Collects Telemetry Information.
         /// </summary>
-        /// <param name="cosmosDiagnostics"></param>
-        /// <param name="statusCode"></param>
-        /// <param name="responseSizeInBytes"></param>
-        /// <param name="containerId"></param>
-        /// <param name="databaseId"></param>
-        /// <param name="operationType"></param>
-        /// <param name="resourceType"></param>
-        /// <param name="consistencyLevel"></param>
-        /// <param name="requestCharge"></param>
-        /// <param name="subStatusCode"></param>
-        internal void CollectOperationInfo(CosmosDiagnostics cosmosDiagnostics,
-                            HttpStatusCode statusCode,
-                            long responseSizeInBytes,
-                            string containerId,
-                            string databaseId,
-                            OperationType operationType,
-                            ResourceType resourceType,
-                            string consistencyLevel,
-                            double requestCharge,
-                            SubStatusCodes subStatusCode)
+        internal void PushOperationDatapoint(TelemetryInformation data)
         {
             DefaultTrace.TraceVerbose("Collecting Operation data for Telemetry.");
 
-            if (cosmosDiagnostics == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosDiagnostics));
-            }
-
-            string regionsContacted = ClientTelemetryHelper.GetContactedRegions(cosmosDiagnostics.GetContactedRegions());
+            string regionsContacted = ClientTelemetryHelper.GetContactedRegions(data.RegionsContactedList);
 
             // Recording Request Latency and Request Charge
             OperationInfo payloadKey = new OperationInfo(regionsContacted: regionsContacted?.ToString(),
-                                            responseSizeInBytes: responseSizeInBytes,
-                                            consistency: consistencyLevel,
-                                            databaseName: databaseId,
-                                            containerName: containerId,
-                                            operation: operationType,
-                                            resource: resourceType,
-                                            statusCode: (int)statusCode,
-                                            subStatusCode: (int)subStatusCode);
+                                            responseSizeInBytes: data.ResponseSizeInBytes,
+                                            consistency: data.ConsistencyLevel,
+                                            databaseName: data.DatabaseId,
+                                            containerName: data.ContainerId,
+                                            operation: data.OperationType,
+                                            resource: data.ResourceType,
+                                            statusCode: (int)data.StatusCode,
+                                            subStatusCode: (int)data.SubStatusCode);
 
             (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge) = this.operationInfoMap
                     .GetOrAdd(payloadKey, x => (latency: new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
@@ -304,144 +306,47 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                             requestcharge: new LongConcurrentHistogram(ClientTelemetryOptions.RequestChargeMin,
                                                         ClientTelemetryOptions.RequestChargeMax,
                                                         ClientTelemetryOptions.RequestChargePrecision)));
-            try
-            {
-                latency.RecordValue(cosmosDiagnostics.GetClientElapsedTime().Ticks);
-            } 
-            catch (Exception ex)
-            {
-                DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Exception : {0}", ex.Message);
-            }
 
-            long requestChargeToRecord = (long)(requestCharge * ClientTelemetryOptions.HistogramPrecisionFactor);
+            // If latency information is not available. Ignore this datapoint. It is not expected but putting this safety check
+            if (data.RequestLatency.HasValue)
+            {
+                try
+                {
+                    latency.RecordValue(data.RequestLatency.Value.Ticks);
+                }
+                catch (Exception ex)
+                {
+                    DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Exception : {0}", ex);
+                }
+
+            }
+            else
+            {
+                DefaultTrace.TraceWarning("Latency data point is not available for an operation");
+            }
+             
+            long requestChargeToRecord = (long)(data.RequestCharge * ClientTelemetryOptions.HistogramPrecisionFactor);
             try
             {
                 requestcharge.RecordValue(requestChargeToRecord);
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError("Request Charge Recording Failed by Telemetry. Request Charge Value : {0}  Exception : {1} ", requestChargeToRecord, ex.Message);
+                DefaultTrace.TraceError("Request Charge Recording Failed by Telemetry. Request Charge Value : {0}  Exception : {1} ", requestChargeToRecord, ex);
             }
         }
 
         /// <summary>
-        /// Record CPU and memory usage which will be sent as part of telemetry information
+        /// Record Network Request Telemetry Information
         /// </summary>
-        private void RecordSystemUtilization()
+        /// <param name="storeResponseStatistics"></param>
+        /// <param name="databaseId"></param>
+        /// <param name="containerId"></param>
+        public void PushNetworkDataPoint(List<StoreResponseStatistics> storeResponseStatistics, string databaseId, string containerId)
         {
-            try
-            {
-                DefaultTrace.TraceVerbose("Started Recording System Usage for telemetry.");
+            // Record Network/Replica Information
+            this.networkDataRecorder.Record(storeResponseStatistics, databaseId, containerId);
 
-                SystemUsageHistory systemUsageHistory = this.diagnosticsHelper.GetClientTelemetrySystemHistory();
-
-                if (systemUsageHistory != null )
-                {
-                    ClientTelemetryHelper.RecordSystemUsage(
-                        systemUsageHistory: systemUsageHistory, 
-                        systemInfoCollection: this.clientTelemetryInfo.SystemInfo,
-                        isDirectConnectionMode: this.clientTelemetryInfo.IsDirectConnectionMode);
-                } 
-                else
-                {
-                    DefaultTrace.TraceWarning("System Usage History not available");
-                }
-            }
-            catch (Exception ex)
-            {
-                DefaultTrace.TraceError("System Usage Recording Error : {0}", ex.Message);
-            }
-        }
-
-        /// <summary>
-        /// Task to send telemetry information to configured Juno endpoint. 
-        /// If endpoint is not configured then it won't even try to send information. It will just trace an error message.
-        /// In any case it resets the telemetry information to collect the latest one.
-        /// </summary>
-        /// <returns>Async Task</returns>
-        private async Task SendAsync()
-        {
-            if (endpointUrl == null)
-            {
-                DefaultTrace.TraceError("Telemetry is enabled but endpoint is not configured");
-                return;
-            }
-
-            try
-            {
-                DefaultTrace.TraceInformation("Sending Telemetry Data to {0}", endpointUrl.AbsoluteUri);
-
-                string json = JsonConvert.SerializeObject(this.clientTelemetryInfo, ClientTelemetryOptions.JsonSerializerSettings);
-
-                using HttpRequestMessage request = new HttpRequestMessage
-                {
-                    Method = HttpMethod.Post,
-                    RequestUri = endpointUrl,
-                    Content = new StringContent(json, Encoding.UTF8, "application/json")
-                };
-
-                async ValueTask<HttpRequestMessage> CreateRequestMessage()
-                {
-                    INameValueCollection headersCollection = new StoreResponseNameValueCollection();
-                    await this.tokenProvider.AddAuthorizationHeaderAsync(
-                            headersCollection,
-                            endpointUrl,
-                            "POST",
-                            AuthorizationTokenType.PrimaryMasterKey);
-
-                    foreach (string key in headersCollection.AllKeys())
-                    {
-                        request.Headers.Add(key, headersCollection[key]);
-                    }
-
-                    request.Headers.Add(HttpConstants.HttpHeaders.DatabaseAccountName, this.clientTelemetryInfo.GlobalDatabaseAccountName);
-                    String envName = ClientTelemetryOptions.GetEnvironmentName();
-                    if (!String.IsNullOrEmpty(envName))
-                    {
-                        request.Headers.Add(HttpConstants.HttpHeaders.EnvironmentName, envName);
-                    }
-
-                    return request;
-                }
-
-                using HttpResponseMessage response = await this.httpClient.SendHttpAsync(CreateRequestMessage,
-                                                    ResourceType.Telemetry,
-                                                    HttpTimeoutPolicyNoRetry.Instance,
-                                                    null,
-                                                    this.cancellationTokenSource.Token);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    this.numberOfFailures++;
-
-                    DefaultTrace.TraceError("Juno API response not successful. Status Code : {0},  Message : {1}", response.StatusCode, response.ReasonPhrase);
-                } 
-                else
-                {
-                    this.numberOfFailures = 0; // Ressetting failure counts on success call.
-                    DefaultTrace.TraceInformation("Telemetry data sent successfully.");
-                }
-
-            }
-            catch (Exception ex)
-            {
-                this.numberOfFailures++;
-
-                DefaultTrace.TraceError("Exception while sending telemetry data : {0}", ex.Message);
-            }
-            finally
-            {
-                // Reset SystemInfo Dictionary for new data.
-                this.Reset();
-            }
-        }
-
-        /// <summary>
-        /// Reset all the operation, System Utilization and Cache refresh related collections
-        /// </summary>
-        private void Reset()
-        {
-            this.clientTelemetryInfo.SystemInfo.Clear();
         }
 
         /// <summary>

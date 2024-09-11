@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Serializer;
 
     /// <summary>
     /// Operations for reading, replacing, or deleting a specific, existing container or item in a container by id.
@@ -433,6 +432,7 @@ namespace Microsoft.Azure.Cosmos
         /// * "_ts": Gets the last modified time stamp associated with the item from the Azure Cosmos DB service.
         /// * "_etag": Gets the entity tag associated with the item from the Azure Cosmos DB service.
         /// * "ttl": Gets the time to live in seconds of the item in the Azure Cosmos DB service.
+        /// Note that, this API does not support the usage of <see cref="RequestOptions.IfMatchEtag"/> property at the moment.
         /// </remarks>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
         /// <example>
@@ -470,6 +470,13 @@ namespace Microsoft.Azure.Cosmos
         /// Check the HTTP status code on the response to check if the operation failed.
         /// </remarks>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#stream-api</exception>
+        /// <remarks>
+        /// <para>
+        /// Upsert result i.e. creation or replace can be identified by the status code:
+        /// 201 - item created
+        /// 200 - item replaced
+        /// </para>
+        /// </remarks>
         /// <example>
         /// Upsert a Stream containing the item to Cosmos
         /// <code language="c#">
@@ -506,6 +513,13 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The <see cref="ItemResponse{T}"/> that was upserted contained within a <see cref="System.Threading.Tasks.Task"/> object representing the service response for the asynchronous operation.</returns>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
+        /// <remarks>
+        /// <para>
+        /// Upsert result i.e. creation or replace can be identified by the status code:
+        /// 201 - item created
+        /// 200 - item replaced
+        /// </para>
+        /// </remarks>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
@@ -705,6 +719,7 @@ namespace Microsoft.Azure.Cosmos
         /// To change an item's partition key value you must delete the original item and insert a new item.
         /// The patch operations are atomic and are executed sequentially.
         /// By default, resource body will be returned as part of the response. User can request no content by setting <see cref="ItemRequestOptions.EnableContentResponseOnWrite"/> flag to false.
+        /// Note that, this API does not support the usage of <see cref="RequestOptions.IfMatchEtag"/> property at the moment.
         /// </remarks>
         /// <param name="id">The Cosmos item id of the item to be patched.</param>
         /// <param name="partitionKey"><see cref="PartitionKey"/> for the item</param>
@@ -751,6 +766,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <seealso href="https://learn.microsoft.com/azure/cosmos-db/partial-document-update#supported-modes">Supported partial document update modes</seealso>
         public abstract Task<ItemResponse<T>> PatchItemAsync<T>(
             string id,
             PartitionKey partitionKey,
@@ -783,6 +799,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <see cref="Container.PatchItemAsync"/>
         /// </example>
+        /// <seealso href="https://learn.microsoft.com/azure/cosmos-db/partial-document-update#supported-modes">Supported partial document update modes</seealso>
         public abstract Task<ResponseMessage> PatchItemStreamAsync(
             string id,
             PartitionKey partitionKey,
@@ -802,6 +819,8 @@ namespace Microsoft.Azure.Cosmos
         /// </returns>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#stream-api</exception>
         /// <remarks>
+        /// For delete operations, the <see cref="ResponseMessage.Content"/> will be null. Item content is not expected in the response.
+        /// 
         /// The Stream operation only throws on client side exceptions. This is to increase performance and prevent the overhead of throwing exceptions. Check the HTTP status code on the response to check if the operation failed.
         /// </remarks>
         /// <example>
@@ -836,6 +855,8 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// <see cref="ItemResponse{T}.Resource"/> is <see href="https://docs.microsoft.com/rest/api/cosmos-db/delete-a-document#body">always null</see>
         /// </remarks>
+        /// For delete operations, the <see cref="ItemResponse{T}.Resource"/> will be null. Item content is not expected in the response.
+        /// 
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
         /// <example>
         /// <code language="c#">
@@ -950,9 +971,6 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to go through the items.</returns>
-        /// <remarks>
-        /// Query as a stream only supports single partition queries 
-        /// </remarks>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#stream-api</exception>
         /// <example>
         /// 1. Create a query to get all the ToDoActivity that have a cost greater than 9000 for the specified partition
@@ -1093,9 +1111,6 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to go through the items.</returns>
-        /// <remarks>
-        /// Query as a stream only supports single partition queries 
-        /// </remarks>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#stream-api</exception>
         /// <example>
         /// Create a query to get all the ToDoActivity that have a cost greater than 9000 for the specified partition
@@ -1146,9 +1161,6 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to go through the items.</returns>
-        /// <remarks>
-        /// Query as a stream only supports single partition queries 
-        /// </remarks>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
         /// <example>
         /// Create a query to get all the ToDoActivity that have a cost greater than 9000 for the specified partition
@@ -1342,6 +1354,9 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="partitionKey">The partition key for all items in the batch.</param>
         /// <returns>A new instance of <see cref="TransactionalBatch"/>.</returns>
+        /// <remarks>
+        /// <seealso href="https://learn.microsoft.com/azure/cosmos-db/concepts-limits#per-request-limits">Limits on TransactionalBatch requests</seealso>
+        /// </remarks>
         public abstract TransactionalBatch CreateTransactionalBatch(PartitionKey partitionKey);
 
         /// <summary>
@@ -1666,6 +1681,80 @@ namespace Microsoft.Azure.Cosmos
             FeedRange feedRange,
             CancellationToken cancellationToken = default);
 
+        /// <summary>
+        /// Initializes a <see cref="GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes"/> for change feed processing with all versions and deletes.
+        /// </summary>
+        /// <typeparam name="T">Document type</typeparam>
+        /// <param name="processorName">A name that identifies the Processor and the particular work it will do.</param>
+        /// <param name="onChangesDelegate">Delegate to receive all changes and deletes</param>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// Container leaseContainer = await this.database.CreateContainerAsync(
+        ///     new ContainerProperties(id: "leases", partitionKeyPath: "/id"),
+        ///     cancellationToken: this.cancellationToken);
+        ///     
+        /// ManualResetEvent allProcessedDocumentsEvent = new ManualResetEvent(false);
+        /// 
+        /// ChangeFeedProcessor changeFeedProcessor = this.Container
+        ///     .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: "processor", onChangesDelegate: (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItem<dynamic>> documents, CancellationToken token) =>
+        /// {
+        ///     Console.WriteLine($"number of documents processed: {documents.Count}");
+        ///     
+        ///     string id = default;
+        ///     string pk = default;
+        ///     string description = default;
+        ///     
+        ///     foreach (ChangeFeedItem<dynamic> changeFeedItem in documents)
+        ///     {
+        ///         if (changeFeedItem.Metadata.OperationType != ChangeFeedOperationType.Delete)
+        ///         {
+        ///             id = changeFeedItem.Current.id.ToString();
+        ///             pk = changeFeedItem.Current.pk.ToString();
+        ///             description = changeFeedItem.Current.description.ToString();
+        ///         }
+        ///         else
+        ///         {
+        ///             id = changeFeedItem.Previous.id.ToString();
+        ///             pk = changeFeedItem.Previous.pk.ToString();
+        ///             description = changeFeedItem.Previous.description.ToString();
+        ///         }
+        ///         
+        ///         ChangeFeedOperationType operationType = changeFeedItem.Metadata.OperationType;
+        ///         long previousLsn = changeFeedItem.Metadata.PreviousLsn;
+        ///         DateTime conflictResolutionTimestamp = changeFeedItem.Metadata.ConflictResolutionTimestamp;
+        ///         long lsn = changeFeedItem.Metadata.Lsn;
+        ///         bool isTimeToLiveExpired = changeFeedItem.Metadata.IsTimeToLiveExpired;
+        ///     }
+        ///     
+        ///     return Task.CompletedTask;
+        /// })
+        /// .WithInstanceName(Guid.NewGuid().ToString())
+        /// .WithLeaseContainer(leaseContainer)
+        /// .WithErrorNotification((leaseToken, error) =>
+        /// {
+        ///     Console.WriteLine(error.ToString());
+        ///     
+        ///     return Task.CompletedTask;
+        /// })
+        /// .Build();
+        /// 
+        /// await changeFeedProcessor.StartAsync();
+        /// await Task.Delay(1000);
+        /// await this.Container.CreateItemAsync<dynamic>(new { id = "1", pk = "1", description = "original test" }, partitionKey: new PartitionKey("1"));
+        /// await this.Container.UpsertItemAsync<dynamic>(new { id = "1", pk = "1", description = "test after replace" }, partitionKey: new PartitionKey("1"));
+        /// await this.Container.DeleteItemAsync<dynamic>(id: "1", partitionKey: new PartitionKey("1"));
+        /// 
+        /// allProcessedDocumentsEvent.WaitOne(10 * 1000);
+        /// 
+        /// await changeFeedProcessor.StopAsync();
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
+            string processorName,
+            ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate);
 #endif
     }
 }

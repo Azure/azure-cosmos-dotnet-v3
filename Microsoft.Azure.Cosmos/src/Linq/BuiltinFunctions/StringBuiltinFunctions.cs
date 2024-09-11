@@ -327,6 +327,43 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
         }
 
+        private class RegexMatchVisitor : SqlBuiltinFunctionVisitor
+        {
+            public RegexMatchVisitor()
+                : base(SqlFunctionCallScalarExpression.Names.RegexMatch,
+                    isStatic: true,
+                    new List<Type[]>()
+                    {
+                        new Type[]{ typeof(object), typeof(string)}, // search string, regex pattern
+                        new Type[]{ typeof(object), typeof(string), typeof(string)} // search string, regex pattern, search modifier
+                    })
+            {
+            }
+
+            protected override SqlScalarExpression VisitImplicit(MethodCallExpression methodCallExpression, TranslationContext context)
+            {
+                int argumentCount = methodCallExpression.Arguments.Count;
+                if (argumentCount == 0 || argumentCount > 3 || (methodCallExpression.Arguments[1].NodeType != ExpressionType.Constant))
+                {
+                    return null;
+                }
+
+                List<SqlScalarExpression> arguments = new List<SqlScalarExpression>
+                {
+                    // Argument 0 and the Method object is the same, since Regex is an extension method 
+                    ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Arguments[0], context),
+                    ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Arguments[1], context)
+                };
+
+                if (argumentCount > 2 && (methodCallExpression.Arguments[2].NodeType == ExpressionType.Constant))
+                {
+                    arguments.Add(ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Arguments[2], context));
+                }
+
+                return SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.RegexMatch, arguments.ToArray());
+            }
+        }
+
         private class StringVisitToString : SqlBuiltinFunctionVisitor
         {
             public StringVisitToString()
@@ -342,6 +379,45 @@ namespace Microsoft.Azure.Cosmos.Linq
                 {
                     SqlScalarExpression str = ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Object, context);
                     return SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.ToString, str);
+                }
+
+                return null;
+            }
+        }
+
+        private class StringVisitTrim : SqlBuiltinFunctionVisitor
+        {
+            public StringVisitTrim()
+                : base("TRIM",
+                    false,
+                    null)
+            {
+            }
+
+            protected override SqlScalarExpression VisitImplicit(MethodCallExpression methodCallExpression, TranslationContext context)
+            {
+                bool validInNet = false;
+                bool validInNetCore = false;
+
+                if (methodCallExpression.Arguments.Count == 1 &&
+                    methodCallExpression.Arguments[0].NodeType == ExpressionType.Constant &&
+                    methodCallExpression.Arguments[0].Type == typeof(char[]))
+                {
+                    char[] argumentsExpressions = (char[])((ConstantExpression)methodCallExpression.Arguments[0]).Value;
+                    if (argumentsExpressions.Length == 0)
+                    {
+                        validInNet = true;
+                    }
+                }
+                else if (methodCallExpression.Arguments.Count == 0)
+                {
+                    validInNetCore = true;
+                }
+
+                if (validInNet || validInNetCore)
+                {
+                    SqlScalarExpression str = ExpressionToSql.VisitScalarExpression(methodCallExpression.Object, context);
+                    return SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.Trim, str);
                 }
 
                 return null;
@@ -394,6 +470,10 @@ namespace Microsoft.Azure.Cosmos.Linq
                     new StringVisitTrimStart()
                 },
                 {
+                    nameof(CosmosLinqExtensions.RegexMatch),
+                    new RegexMatchVisitor()
+                },
+                {
                     "Replace",
                     new SqlBuiltinFunctionVisitor(SqlFunctionCallScalarExpression.Names.Replace,
                     false,
@@ -414,6 +494,10 @@ namespace Microsoft.Azure.Cosmos.Linq
                 {
                     "TrimEnd",
                     new StringVisitTrimEnd()
+                },
+                {
+                    "Trim",
+                    new StringVisitTrim()
                 },
                 {
                     "StartsWith",

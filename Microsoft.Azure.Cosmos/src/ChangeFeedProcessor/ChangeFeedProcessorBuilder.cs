@@ -70,6 +70,19 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Sets the mode for the change feed processor.
+        /// </summary>
+        /// <param name="changeFeedMode"></param>
+        /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
+        internal ChangeFeedProcessorBuilder WithChangeFeedMode(ChangeFeedMode changeFeedMode)
+        {
+            this.changeFeedProcessorOptions.Mode = changeFeedMode;
+            this.changeFeedLeaseOptions.Mode = changeFeedMode;
+
+            return this;
+        }
+
+        /// <summary>
         /// Sets a custom configuration to be used by this instance of <see cref="ChangeFeedProcessor"/> to control how leases are maintained in a container when using <see cref="WithLeaseContainer"/>.
         /// </summary>
         /// <param name="acquireInterval">Interval to kick off a task to verify if leases are distributed evenly among known host instances.</param>
@@ -119,6 +132,11 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
         internal virtual ChangeFeedProcessorBuilder WithStartFromBeginning()
         {
+            if (this.changeFeedProcessorOptions.Mode == ChangeFeedMode.AllVersionsAndDeletes)
+            {
+                throw new InvalidOperationException($"Using the '{nameof(WithStartFromBeginning)}' option with ChangeFeedProcessor is not supported with {ChangeFeedMode.AllVersionsAndDeletes} mode.");
+            }
+
             this.changeFeedProcessorOptions.StartFromBeginning = true;
             return this;
         }
@@ -136,6 +154,11 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
         public ChangeFeedProcessorBuilder WithStartTime(DateTime startTime)
         {
+            if (this.changeFeedProcessorOptions.Mode == ChangeFeedMode.AllVersionsAndDeletes)
+            {
+                throw new InvalidOperationException($"Using the '{nameof(WithStartTime)}' option with ChangeFeedProcessor is not supported with {ChangeFeedMode.AllVersionsAndDeletes} mode.");
+            }
+
             if (startTime == null)
             {
                 throw new ArgumentNullException(nameof(startTime));

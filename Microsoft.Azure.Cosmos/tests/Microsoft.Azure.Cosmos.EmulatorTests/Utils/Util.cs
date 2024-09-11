@@ -14,11 +14,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Tests;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-
+    using OpenTelemetry;
+    using OpenTelemetry.Trace;
+    using AzureCore = global::Azure.Core;
+    
     internal enum DocumentClientType
     {
         Gateway,
@@ -108,8 +113,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 new Dictionary<DocumentClientType, DocumentClient>
             {
                 {DocumentClientType.Gateway, TestCommon.CreateClient(true, tokenType: authTokenType, defaultConsistencyLevel: consistencyLevel)},
-                {DocumentClientType.DirectTcp, TestCommon.CreateClient(false, Protocol.Tcp, tokenType: authTokenType, defaultConsistencyLevel: consistencyLevel)},
-                {DocumentClientType.DirectHttps, TestCommon.CreateClient(false, Protocol.Https, tokenType: authTokenType, defaultConsistencyLevel: consistencyLevel)}
+                {DocumentClientType.DirectTcp, TestCommon.CreateClient(false, Protocol.Tcp, tokenType: authTokenType, defaultConsistencyLevel: consistencyLevel)}
             };
 
             foreach (KeyValuePair<DocumentClientType, DocumentClient> clientEntry in clients)
@@ -145,8 +149,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 new Dictionary<DocumentClientType, DocumentClient>
             {
                 {DocumentClientType.Gateway, TestCommon.CreateClient(true, tokenType: authTokenType, defaultConsistencyLevel: consistencyLevel)},
-                {DocumentClientType.DirectTcp, TestCommon.CreateClient(false, Protocol.Tcp, tokenType: authTokenType, defaultConsistencyLevel: consistencyLevel)},
-                {DocumentClientType.DirectHttps, TestCommon.CreateClient(false, Protocol.Https, tokenType: authTokenType, defaultConsistencyLevel: consistencyLevel)}
+                {DocumentClientType.DirectTcp, TestCommon.CreateClient(false, Protocol.Tcp, tokenType: authTokenType, defaultConsistencyLevel: consistencyLevel)}
             };
 
             int seed = (int)DateTime.Now.Ticks;
@@ -519,18 +522,42 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 options.OfferThroughput);
         }
 
-        internal static void EnableClientTelemetryEnvironmentVariables()
+        private static TracerProvider OTelTracerProvider;
+        private static CustomListener TestListener;
+        
+        internal static CustomListener ConfigureOpenTelemetryAndCustomListeners()
         {
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, "true");
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "1");
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, "http://dummy.telemetry.endpoint/");
+            AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
+
+            AzureCore.ActivityExtensions.ResetFeatureSwitch();
+            
+            // Open Telemetry Listener
+            Util.OTelTracerProvider = Sdk.CreateTracerProviderBuilder()
+                .AddCustomOtelExporter() // use any exporter here
+                .AddSource($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.*")
+                .Build();
+
+            // Custom Listener
+            Util.TestListener = new CustomListener($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.*", "Azure-Cosmos-Operation-Request-Diagnostics");
+
+            return Util.TestListener;
+
         }
 
-        internal static void DisableClientTelemetryEnvironmentVariables()
+        internal static void DisposeOpenTelemetryAndCustomListeners()
         {
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, null);
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, null);
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, null);
+            // Open Telemetry Listener
+            Util.OTelTracerProvider?.Dispose();
+
+            // Custom Listener
+            Util.TestListener?.Dispose();
+
+            Util.OTelTracerProvider = null;
+            Util.TestListener = null;
+
+            AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", false);
+
+            AzureCore.ActivityExtensions.ResetFeatureSwitch();
         }
 
         /// <summary>
