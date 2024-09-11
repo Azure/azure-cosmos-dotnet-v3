@@ -48,6 +48,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.throttlingRetry = new ResourceThrottleRetryPolicy(
                 retryOptions.MaxRetryAttemptsOnThrottledRequests,
+                endpointManager: globalEndpointManager,
                 retryOptions.MaxRetryWaitTimeInSeconds);
 
             this.globalEndpointManager = globalEndpointManager;
