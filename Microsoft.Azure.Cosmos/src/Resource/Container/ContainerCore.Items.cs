@@ -1319,26 +1319,20 @@ namespace Microsoft.Azure.Cosmos
         private static Documents.Routing.Range<string> GetRange(
             List<Documents.Routing.Range<string>> ranges)
         {
-            List<Documents.Routing.Range<string>> normalizedRanges = ranges
-                .Select(range => FeedRangeInternal.NormalizeRange(range))
-                .ToList();
-
-            Documents.Routing.Range<string> normalizedRange = normalizedRanges.First();
-
-            if (normalizedRanges.Count == 1)
+            if (ranges.Count == 1)
             {
-                return normalizedRange;
+                return ranges.First();
             }
 
-            normalizedRanges.Sort(Documents.Routing.Range<string>.MinComparer.Instance);
-            string min = normalizedRanges.First().Min;
-            string max = normalizedRanges.Last().Max;
+            ranges.Sort(Documents.Routing.Range<string>.MinComparer.Instance);
+
+            Documents.Routing.Range<string> range = ranges.First();
 
             return new Documents.Routing.Range<string>(
-                min: min,
-                max: max,
-                isMinInclusive: normalizedRange.IsMinInclusive,
-                isMaxInclusive: normalizedRange.IsMaxInclusive);
+                min: range.Min,
+                max: ranges.Last().Max,
+                isMinInclusive: range.IsMinInclusive,
+                isMaxInclusive: range.IsMaxInclusive);
         }
 
         private static bool IsSubset(

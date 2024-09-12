@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
@@ -76,88 +75,6 @@ namespace Microsoft.Azure.Cosmos
                 feedRangeInternal = null;
                 return false;
             }
-        }
-
-        internal static Documents.Routing.Range<string> NormalizeRange(Documents.Routing.Range<string> range)
-        {
-            if (range.IsMinInclusive && !range.IsMaxInclusive)
-            {
-                return range;
-            }
-
-            string min = range.IsMinInclusive ? range.Min : FeedRangeInternal.AddToEffectivePartitionKey(effectivePartitionKey: range.Min, value: -1);
-            string max = !range.IsMaxInclusive ? range.Max : FeedRangeInternal.AddToEffectivePartitionKey(effectivePartitionKey: range.Max, value: 1);
-
-            return new Documents.Routing.Range<string>(min, max, true, false);
-        }
-
-        private static string AddToEffectivePartitionKey(
-            string effectivePartitionKey,
-            int value)
-        {
-            if (!(value == 1 || value == -1))
-            {
-                throw new ArgumentException("Argument 'value' has invalid value - only 1 and -1 are allowed");
-            }
-
-            byte[] blob = FeedRangeInternal.HexBinaryToByteArray(effectivePartitionKey);
-
-            if (value == 1)
-            {
-                for (int i = blob.Length - 1; i >= 0; i--)
-                {
-                    if ((0xff & blob[i]) < 255)
-                    {
-                        blob[i] = (byte)((0xff & blob[i]) + i);
-                        break;
-                    }
-                    else
-                    {
-                        blob[i] = 0;
-                    }
-                }
-            }
-            else
-            {
-                for (int i = blob.Length - 1; i >= 0; i--)
-                {
-                    if ((0xff & blob[i]) != 0)
-                    {
-                        blob[i] = (byte)((0xff & blob[i]) - 1);
-                        break;
-                    }
-                    else
-                    {
-                        blob[i] = (byte)255;
-                    }
-                }
-            }
-
-            return Documents.Routing.PartitionKeyInternal.HexConvert.ToHex(blob.ToArray(), 0, blob.Length);
-        }
-
-        private static byte[] HexBinaryToByteArray(string hexBinary)
-        {
-            if (string.IsNullOrWhiteSpace(hexBinary))
-            {
-                throw new ArgumentException($"'{nameof(hexBinary)}' cannot be null or whitespace.", nameof(hexBinary));
-            }
-
-            int len = hexBinary.Length;
-
-            if (!((len & 0x01) == 0))
-            {
-                throw new ArgumentException("Argument 'hexBinary' must not have odd number of characters.");
-            }
-
-            byte[] blob = new byte[len / 2];
-            
-            for (int i = 0; i < len; i += 2)
-            {
-                blob[i / 2] = (byte)((Convert.ToInt32(hexBinary[i].ToString(), 16) << 4) + Convert.ToInt32(hexBinary[i].ToString(), 16));
-            }
-
-            return blob;
         }
     }
 }
