@@ -82,7 +82,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         [DataRow(true, DisplayName = "Validate retry policy with multi master write account.")]
         [DataRow(false, DisplayName = "Validate retry policy with single master write account.")]
-        public async Task ShouldRetryAsync_WhenResourceNotAvailableThrown_ShouldThrow503OnMultiMasterWrite(bool isMultiMasterAccount)
+        public async Task ShouldRetryAsync_WhenResourceNotAvailableThrown_ShouldThrow503OnMultiMasterWrite(
+            bool isMultiMasterAccount)
         {
             Documents.Collections.INameValueCollection requestHeaders = new Documents.Collections.DictionaryNameValueCollection();
 
@@ -105,9 +106,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             policy.OnBeforeSendRequest(request);
 
             DocumentClientException dce = new (
-                "429 with 3092 occurred.",
+                "SystemResourceUnavailable: 429 with 3092 occurred.",
                 HttpStatusCode.TooManyRequests,
-                SubStatusCodes.AadTokenExpired);
+                SubStatusCodes.SystemResourceUnavailable);
 
             ShouldRetryResult shouldRetryResult = await policy.ShouldRetryAsync(dce, default);
 

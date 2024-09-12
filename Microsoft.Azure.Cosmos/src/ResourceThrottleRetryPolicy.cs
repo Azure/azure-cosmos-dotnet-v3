@@ -109,14 +109,14 @@ namespace Microsoft.Azure.Cosmos
             if (this.isMultiMasterWriteRegion.HasValue
                 && this.isMultiMasterWriteRegion.Value
                 && subStatusCode != null
-                && subStatusCode == SubStatusCodes.AadTokenExpired)
+                && subStatusCode == SubStatusCodes.SystemResourceUnavailable)
             {
                 DefaultTrace.TraceError(
-                    "Operation will NOT be retried. Converting 429/3092 to 503. Current attempt {0} sub status code: {1}.",
-                    this.currentAttemptCount, SubStatusCodes.AadTokenExpired);
+                    "Operation will NOT be retried. Converting SystemResourceUnavailable (429/3092) to ServiceUnavailable (503). Current attempt {0} sub status code: {1}.",
+                    this.currentAttemptCount, SubStatusCodes.SystemResourceUnavailable);
 
                 ServiceUnavailableException exceptionToThrow = ServiceUnavailableException.Create(
-                    SubStatusCodes.AadTokenExpired,
+                    SubStatusCodes.SystemResourceUnavailable,
                     innerException: exception);
 
                 return Task.FromResult(

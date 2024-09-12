@@ -88,56 +88,79 @@
         }
 
         /// <summary>
-        /// Tests behavior of Multimaster Accounts on metadata writes where the default location is not the hub region
+        /// Test to validate that when 429.3092 is thrown from the service, write requests on
+        /// a multi master account should be converted to 503 and retried to the next region.
         /// </summary>
         [TestMethod]
-        public async Task MultimasterWith4293029WriteRetryTest()
+        [DataRow(true, DisplayName = "Validate retry policy with multi master write account.")]
+        [DataRow(false, DisplayName = "Validate retry policy with single master write account.")]
+        public async Task ShouldRetryAsync_WhenRequestThrottledWithResourceNotAvailable_ShouldThrow503OnMultiMasterWriteAndRetryOnNextRegion(
+            bool isMultiMasterAccount)
         {
+            // Arrange.
             const bool enableEndpointDiscovery = true;
-
-            //Creates GlobalEndpointManager where enableEndpointDiscovery is False and
-            //Default location is false
             using GlobalEndpointManager endpointManager = this.Initialize(
-                useMultipleWriteLocations: true,
+                useMultipleWriteLocations: isMultiMasterAccount,
                 enableEndpointDiscovery: enableEndpointDiscovery,
                 isPreferredLocationsListEmpty: false,
                 multimasterMetadataWriteRetryTest: true);
 
             await endpointManager.RefreshLocationAsync();
 
-            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+            ClientRetryPolicy retryPolicy = new (
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new RetryOptions(),
+                enableEndpointDiscovery,
+                false);
 
-            //Creates a metadata write request
-            DocumentServiceRequest request = this.CreateRequest(false, false);
+            // Creates a sample write request.
+            DocumentServiceRequest request = this.CreateRequest(
+                isReadRequest: false,
+                isMasterResourceType: false);
 
-            //On first attempt should get incorrect (default/non hub) location
+            // On first attempt should get (default/non hub) location.
             retryPolicy.OnBeforeSendRequest(request);
             Assert.AreEqual(request.RequestContext.LocationEndpointToRoute, ClientRetryPolicyTests.Location1Endpoint);
 
-            //Creation of 403.3 Error
+            // Creation of 429.3092 Error.
             HttpStatusCode throttleException = HttpStatusCode.TooManyRequests;
-            SubStatusCodes resourceNotAvailable = SubStatusCodes.AadTokenExpired;
-            Exception forbiddenWriteFail = new Exception();
-            Mock<INameValueCollection> nameValueCollection = new Mock<INameValueCollection>();
+            SubStatusCodes resourceNotAvailable = SubStatusCodes.SystemResourceUnavailable;
 
-            DocumentClientException documentClientException = new DocumentClientException(
-                message: "Multimaster Metadata Write Fail",
-                innerException: forbiddenWriteFail,
+            Exception innerException = new ();
+            Mock<INameValueCollection> nameValueCollection = new ();
+            DocumentClientException documentClientException = new (
+                message: "SystemResourceUnavailable: 429 with 3092 occurred.",
+                innerException: innerException,
                 statusCode: throttleException,
                 substatusCode: resourceNotAvailable,
                 requestUri: request.RequestContext.LocationEndpointToRoute,
                 responseHeaders: nameValueCollection.Object);
 
-            CancellationToken cancellationToken = new CancellationToken();
+            // Act.
+            Task<ShouldRetryResult> shouldRetry = retryPolicy.ShouldRetryAsync(
+                documentClientException,
+                new CancellationToken());
 
-            //Tests behavior of should retry
-            Task<ShouldRetryResult> shouldRetry = retryPolicy.ShouldRetryAsync(documentClientException, cancellationToken);
-
+            // Assert.
             Assert.IsTrue(shouldRetry.Result.ShouldRetry);
-
-            //Now since the retry context is not null, should route to the hub region
             retryPolicy.OnBeforeSendRequest(request);
-            Assert.AreEqual(request.RequestContext.LocationEndpointToRoute, ClientRetryPolicyTests.Location2Endpoint);
+
+            if (isMultiMasterAccount)
+            {
+                Assert.AreEqual(
+                    expected: ClientRetryPolicyTests.Location2Endpoint,
+                    actual: request.RequestContext.LocationEndpointToRoute,
+                    message: "The request should be routed to the next region, since the accound is a multi master write account and the request" +
+                    "failed with 429.309 which got converted into 503 internally. This should trigger another retry attempt to the next region.");
+            }
+            else
+            {
+                Assert.AreEqual(
+                    expected: ClientRetryPolicyTests.Location1Endpoint,
+                    actual: request.RequestContext.LocationEndpointToRoute,
+                    message: "Since this is asingle master account, the write request should not be retried on the next region.");
+            }
         }
 
         /// <summary>
