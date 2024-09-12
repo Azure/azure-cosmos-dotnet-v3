@@ -123,19 +123,13 @@ namespace Microsoft.Azure.Cosmos
 
             ShouldRetryResult throttleRetryResult = await this.throttlingRetry.ShouldRetryAsync(exception, cancellationToken);
 
-            // Received 503 due to client connect timeout or Gateway
+            // Today, the only scenario where we would receive a ServiceUnavailableException from the Throttling Retry Policy
+            // is when we get 410 (Gone) with sub status code 3092 (System Resource Not Available). Note that this is applicable
+            // for write requests targeted to a multiple master account. In such case, the 410/3092 will get converted into 503.
             if (throttleRetryResult.ExceptionToThrow is ServiceUnavailableException)
             {
-                DefaultTrace.TraceWarning("ClientRetryPolicy: ServiceUnavailable. Refresh cache and retry. Failed Location: {0}; ResourceAddress: {1}",
-                    this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
-                    this.documentServiceRequest?.ResourceAddress ?? string.Empty);
-
-                // Mark the partition as unavailable.
-                // Let the ClientRetry logic decide if the request should be retried
-                this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
-                     this.documentServiceRequest);
-
-                return this.ShouldRetryOnServiceUnavailable();
+                return this.TryMarkEndpointUnavailableForPkRangeAndRetryOnServiceUnavailable(
+                    shouldMarkEndpointUnavailableForPkRange: true);
             }
 
             return throttleRetryResult;
@@ -163,19 +157,13 @@ namespace Microsoft.Azure.Cosmos
 
             ShouldRetryResult throttleRetryResult = await this.throttlingRetry.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
 
-            // Received 503 due to client connect timeout or Gateway
+            // Today, the only scenario where we would receive a ServiceUnavailableException from the Throttling Retry Policy
+            // is when we get 410 (Gone) with sub status code 3092 (System Resource Not Available). Note that this is applicable
+            // for write requests targeted to a multiple master account. In such case, the 410/3092 will get converted into 503.
             if (throttleRetryResult.ExceptionToThrow is ServiceUnavailableException)
             {
-                DefaultTrace.TraceWarning("ClientRetryPolicy: ServiceUnavailable. Refresh cache and retry. Failed Location: {0}; ResourceAddress: {1}",
-                    this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
-                    this.documentServiceRequest?.ResourceAddress ?? string.Empty);
-
-                // Mark the partition as unavailable.
-                // Let the ClientRetry logic decide if the request should be retried
-                this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
-                     this.documentServiceRequest);
-
-                return this.ShouldRetryOnServiceUnavailable();
+                return this.TryMarkEndpointUnavailableForPkRangeAndRetryOnServiceUnavailable(
+                    shouldMarkEndpointUnavailableForPkRange: true);
             }
 
             return throttleRetryResult;
@@ -310,16 +298,8 @@ namespace Microsoft.Azure.Cosmos
             // Received 503 due to client connect timeout or Gateway
             if (statusCode == HttpStatusCode.ServiceUnavailable)
             {
-                DefaultTrace.TraceWarning("ClientRetryPolicy: ServiceUnavailable. Refresh cache and retry. Failed Location: {0}; ResourceAddress: {1}",
-                    this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
-                    this.documentServiceRequest?.ResourceAddress ?? string.Empty);
-
-                // Mark the partition as unavailable.
-                // Let the ClientRetry logic decide if the request should be retried
-                this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
-                     this.documentServiceRequest);
-
-                return this.ShouldRetryOnServiceUnavailable();
+                return this.TryMarkEndpointUnavailableForPkRangeAndRetryOnServiceUnavailable(
+                    shouldMarkEndpointUnavailableForPkRange: true);
             }
 
             return null;
@@ -440,6 +420,33 @@ namespace Microsoft.Azure.Cosmos
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Attempts to mark the endpoint associated with the current partition key range as unavailable and determines if
+        /// a retry should be performed due to a ServiceUnavailable (503) response. This method is invoked when a 503
+        /// Service Unavailable response is received, indicating that the service might be temporarily unavailable.
+        /// It optionally marks the partition key range as unavailable, which will influence future routing decisions.
+        /// </summary>
+        /// <param name="shouldMarkEndpointUnavailableForPkRange">A boolean flag indicating whether the endpoint for the
+        /// current partition key range should be marked as unavailable.</param>
+        /// <returns>An instance of <see cref="ShouldRetryResult"/> indicating whether the operation should be retried.</returns>
+        private ShouldRetryResult TryMarkEndpointUnavailableForPkRangeAndRetryOnServiceUnavailable(
+            bool shouldMarkEndpointUnavailableForPkRange)
+        {
+            DefaultTrace.TraceWarning("ClientRetryPolicy: ServiceUnavailable. Refresh cache and retry. Failed Location: {0}; ResourceAddress: {1}",
+                this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
+                this.documentServiceRequest?.ResourceAddress ?? string.Empty);
+
+            if (shouldMarkEndpointUnavailableForPkRange)
+            {
+                // Mark the partition as unavailable.
+                // Let the ClientRetry logic decide if the request should be retried
+                this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
+                     this.documentServiceRequest);
+            }
+
+            return this.ShouldRetryOnServiceUnavailable();
         }
 
         /// <summary>
