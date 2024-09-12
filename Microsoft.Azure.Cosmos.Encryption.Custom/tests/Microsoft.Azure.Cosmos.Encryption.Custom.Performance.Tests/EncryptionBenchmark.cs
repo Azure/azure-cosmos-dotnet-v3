@@ -16,7 +16,6 @@
                 new EncryptionKeyWrapMetadata("name", "value"), DateTime.UtcNow);
         private static readonly Mock<EncryptionKeyStoreProvider> StoreProvider = new();
 
-        private TestDoc? testDoc;
         private CosmosEncryptor? encryptor;
 
         private EncryptionOptions? encryptionOptions;
@@ -39,11 +38,8 @@
                 .ReturnsAsync(() => new MdeEncryptionAlgorithm(DekProperties, EncryptionType.Deterministic, StoreProvider.Object, cacheTimeToLive: TimeSpan.MaxValue));
 
             this.encryptor = new(keyProvider.Object);
-            this.testDoc = TestDoc.Create(approximateSize: this.DocumentSizeInKb * 1024);
-
             this.encryptionOptions = CreateEncryptionOptions();
-
-            this.plaintext = EncryptionProcessor.BaseSerializer.ToStream(this.testDoc).ToArray();
+            this.plaintext = this.LoadTestDoc();
 
             Stream encryptedStream = await EncryptionProcessor.EncryptAsync(
                  new MemoryStream(this.plaintext),
@@ -88,6 +84,17 @@
             };
 
             return options;
+        }
+
+        private byte[] LoadTestDoc()
+        {
+            string name = $"Microsoft.Azure.Cosmos.Encryption.Custom.Performance.Tests.sampledata.testdoc-{this.DocumentSizeInKb}kb.json";
+            using Stream resourceStream = typeof(EncryptionBenchmark).Assembly.GetManifestResourceStream(name)!;
+            
+            byte[] buffer = new byte[resourceStream!.Length];
+            resourceStream.Read(buffer, 0, buffer.Length);
+
+            return buffer;
         }
     }
 }
