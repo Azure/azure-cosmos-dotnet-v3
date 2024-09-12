@@ -7,13 +7,10 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Collections.Specialized;
     using System.Diagnostics;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using global::Azure.Core;
-    using Microsoft.Azure.Cosmos.Client.Tests;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
