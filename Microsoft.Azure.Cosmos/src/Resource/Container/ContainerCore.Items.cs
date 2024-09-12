@@ -1264,14 +1264,11 @@ namespace Microsoft.Azure.Cosmos
         {
             using (ITrace trace = Tracing.Trace.GetRootTrace("ContainerCore FeedRange IsSubset Async", TraceComponent.Unknown, Tracing.TraceLevel.Info))
             {
-                if (parentFeedRange == null)
+                if (parentFeedRange == null || childFeedRange == null)
                 {
-                    throw new ArgumentNullException($"The argument for '{nameof(parentFeedRange)}' cannot be null.");
-                }
-
-                if (childFeedRange == null)
-                {
-                    throw new ArgumentNullException($"The argument for '{nameof(childFeedRange)}' cannot be null.");
+                    throw new ArgumentNullException(parentFeedRange == null
+                        ? nameof(parentFeedRange)
+                        : nameof(childFeedRange), $"Argument cannot be null.");
                 }
 
                 try
@@ -1296,13 +1293,13 @@ namespace Microsoft.Azure.Cosmos
                     IRoutingMapProvider routingMapProvider = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(trace);
 
                     return ContainerCore.IsSubset(
-                        parentRange: ContainerCore.GetRange(
+                        parentRange: ContainerCore.MergeRanges(
                             ranges: await parentFeedRangeInternal.GetEffectiveRangesAsync(
                                 routingMapProvider: routingMapProvider,
                                 containerRid: containerRId,
                                 partitionKeyDefinition: partitionKeyDefinition,
                                 trace: trace)),
-                        childRange: ContainerCore.GetRange(
+                        childRange: ContainerCore.MergeRanges(
                             ranges: await childFeedRangeInternal.GetEffectiveRangesAsync(
                                 routingMapProvider: routingMapProvider,
                                 containerRid: containerRId,
@@ -1316,7 +1313,16 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private static Documents.Routing.Range<string> GetRange(
+        /// <summary>
+        /// Merges a list of feed ranges into a single range by taking the minimum of the first range and the maximum of the last range.
+        /// If only one range exists, it returns that range.
+        /// </summary>
+        /// <param name="ranges">The list of feed ranges to merge.</param>
+        /// <returns>
+        /// A new merged range with the minimum value from the first range and the maximum value from the last range.
+        /// If the list contains a single range, it returns that range.
+        /// </returns>
+        private static Documents.Routing.Range<string> MergeRanges(
             List<Documents.Routing.Range<string>> ranges)
         {
             if (ranges.Count == 1)
@@ -1326,21 +1332,30 @@ namespace Microsoft.Azure.Cosmos
 
             ranges.Sort(Documents.Routing.Range<string>.MinComparer.Instance);
 
-            Documents.Routing.Range<string> range = ranges.First();
+            Documents.Routing.Range<string> firstRange = ranges.First();
+            Documents.Routing.Range<string> lastRange = ranges.Last();
 
             return new Documents.Routing.Range<string>(
-                min: range.Min,
-                max: ranges.Last().Max,
-                isMinInclusive: range.IsMinInclusive,
-                isMaxInclusive: range.IsMaxInclusive);
+                min: firstRange.Min,
+                max: lastRange.Max,
+                isMinInclusive: firstRange.IsMinInclusive,
+                isMaxInclusive: firstRange.IsMaxInclusive);
         }
 
+        /// <summary>
+        /// Determines whether the child range is a subset of the parent range.
+        /// </summary>
+        /// <param name="parentRange">The parent range to check against.</param>
+        /// <param name="childRange">The child range that is being evaluated.</param>
+        /// <returns>True if the child range is a subset of the parent range; otherwise, false.</returns>
         private static bool IsSubset(
             Documents.Routing.Range<string> parentRange,
             Documents.Routing.Range<string> childRange)
         {
-            return parentRange.Contains(childRange.Min)
-                && (parentRange.Max == childRange.Max || parentRange.Contains(childRange.Max));
+            bool isMinWithinParent = parentRange.Contains(childRange.Min);
+            bool isMaxWithinParent = parentRange.Max == childRange.Max || parentRange.Contains(childRange.Max);
+
+            return isMinWithinParent && isMaxWithinParent;
         }
 #endif
     }

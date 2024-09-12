@@ -13,10 +13,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
+    using static Antlr4.Runtime.Atn.SemanticContext;
 
     [TestClass]
     public class CosmosContainerTests
@@ -1786,16 +1788,29 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
 #if PREVIEW
+        /// <summary>
+        /// <![CDATA[
+        /// Feature: Is Feed Range PartOf Validation
+        ///
+        /// Scenario: Validate if the child partition key is part of the parent feed range
+        ///   Given the parent feed range
+        ///   And a child partition key
+        ///   When the child partition key is compared to the parent feed range
+        ///   Then determine whether the child partition key is part of the parent feed range
+        /// ]]>
+        /// </summary>
+        /// <param name="parentMinimum">The starting value of the parent feed range.</param>
+        /// <param name="parentMaximum">The ending value of the parent feed range.</param>
+        /// <param name="expectedIsFeedRangePartOfAsync">Indicates whether the child partition key is expected to be part of the parent feed range (true if it is, false if it is not).</param>
         [TestMethod]
         [Owner("philipthomas-MSFT")]
-        [DataRow("", "FFFFFFFFFFFFFFFF", true)] // Full range.
-        [DataRow("3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false)] // Some made up range.
-        [Description("Given a parent feed range and a partition key, when the partition key is converted to a feed range, then that feed range is checked" +
-            "against the parent feed range to determine if it is a subset of the parent feed range.")]
-        public async Task GivenParentFeedRangeAndChildPartitionKeyIsFeedRangePartOfAsyncTestAsync(
-            string parentMin,
-            string parentMax,
-            bool expectedIsSubset)
+        [DataRow("", "FFFFFFFFFFFFFFFF", true)]
+        [DataRow("3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false)]
+        [Description("Validate if the child partition key is part of the parent feed range.")]
+        public async Task GivenFeedRangeChildPartitionKeyIsPartOfParentFeedRange(
+            string parentMinimum,
+            string parentMaximum,
+            bool expectedIsFeedRangePartOfAsync)
         {
             Container container = default;
 
@@ -1810,12 +1825,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 PartitionKey partitionKey = new("WA");
                 FeedRange feedRange = FeedRange.FromPartitionKey(partitionKey);
 
-                bool actualIsSubset = await container.IsFeedRangePartOfAsync(
-                    parentFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>(parentMin, parentMax, true, false)),
+                bool actualIsFeedRangePartOfAsync = await container.IsFeedRangePartOfAsync(
+                    parentFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>(parentMinimum, parentMaximum, true, false)),
                     childFeedRange: feedRange,
                     cancellationToken: CancellationToken.None);
 
-                Assert.AreEqual(expected: expectedIsSubset, actual: actualIsSubset);
+                Assert.AreEqual(expected: expectedIsFeedRangePartOfAsync, actual: actualIsFeedRangePartOfAsync);
             }
             catch (Exception exception)
             {
@@ -1830,16 +1845,29 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        /// <summary>
+        /// <![CDATA[
+        /// Feature: Is Feed Range PartOf Validation
+        ///
+        /// Scenario: Validate if the child hierarchical partition key is part of the parent feed range
+        ///   Given the parent feed range
+        ///   And a child hierarchical partition key
+        ///   When the child hierarchical partition key is compared to the parent feed range
+        ///   Then determine whether the child hierarchical partition key is part of the parent feed range
+        /// ]]>
+        /// </summary>
+        /// <param name="parentMinimum">The starting value of the parent feed range.</param>
+        /// <param name="parentMaximum">The ending value of the parent feed range.</param>
+        /// <param name="expectedIsFeedRangePartOfAsync">A boolean value indicating whether the child hierarchical partition key is expected to be part of the parent feed range (true if it is, false if it is not).</param>
         [TestMethod]
         [Owner("philipthomas-MSFT")]
         [DataRow("", "FFFFFFFFFFFFFFFF", true)] // Full range.
         [DataRow("3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false)] // Some made up range.
-        [Description("Given a parent feed range and a hierarchical partition key, when the hierarchical partition key is converted to a feed range, " +
-            "then that feed range is checked against the parent feed range to determine if it is a subset of the parent feed range.")]
-        public async Task GivenParentFeedRangeAndChildHierarchicalPartitionKeyIsFeedRangePartOfAsyncTestAsync(
-            string parentMin,
-            string parentMax,
-            bool expectedIsSubset)
+        [Description("Validate if the child hierarchical partition key is part of the parent feed range.")]
+        public async Task GivenFeedRangeChildHierarchicalPartitionKeyIsPartOfParentFeedRange(
+            string parentMinimum,
+            string parentMaximum,
+            bool expectedIsFeedRangePartOfAsync)
         {
             Container container = default;
 
@@ -1862,12 +1890,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 FeedRange feedRange = FeedRange.FromPartitionKey(partitionKey);
 
-                bool actualIsSubset = await container.IsFeedRangePartOfAsync(
-                    parentFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>(parentMin, parentMax, true, false)),
+                bool actualIsFeedRangePartOfAsync = await container.IsFeedRangePartOfAsync(
+                    parentFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>(parentMinimum, parentMaximum, true, false)),
                     childFeedRange: feedRange,
                     cancellationToken: CancellationToken.None);
 
-                Assert.AreEqual(expected: expectedIsSubset, actual: actualIsSubset);
+                Assert.AreEqual(expected: expectedIsFeedRangePartOfAsync, actual: actualIsFeedRangePartOfAsync);
             }
             catch (Exception exception)
             {
@@ -1882,152 +1910,42 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        /// <summary>
+        /// <![CDATA[
+        /// Feature: Is Feed Range PartOf Validation ArgumentNullException
+        ///
+        /// Scenario: Validate that an ArgumentNullException is thrown when the child feed range is null
+        ///   Given the parent feed range is defined
+        ///   And the child feed range is null
+        ///   When the child feed range is compared to the parent feed range
+        ///   Then an ArgumentNullException should be thrown
+        /// ]]>
+        /// </summary>
         [TestMethod]
         [Owner("philipthomas-MSFT")]
-        [DataRow("", "3FFFFFFFFFFFFFFF", "", "FFFFFFFFFFFFFFFF", true)] // child is subset of the parent
-        [DataRow("3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", "", "FFFFFFFFFFFFFFFF", true)] // child is subset of the parent
-        [DataRow("7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", "", "FFFFFFFFFFFFFFFF", true)] // child is subset of the parent
-        [DataRow("BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", "", "FFFFFFFFFFFFFFFF", true)] // child is subset of the parent
-        [DataRow("", "3FFFFFFFFFFFFFFF", "", "3FFFFFFFFFFFFFFF", true)] // child is same of the parent, which makes it a subset
-        [DataRow("", "3FFFFFFFFFFFFFFF", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false)] // child is not a subset of parent
-        [DataRow("", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", false)] // child is not a subset of parent
-        [DataRow("", "3FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", false)] // child is not a subset of parent
-        [DataRow("", "3333333333333333", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false)] // child is not a subset of parent
-        [DataRow("3333333333333333", "6666666666666666", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false)] // child is not a subset of parent
-        [DataRow("3FFFFFFFFFFFFFFF", "4CCCCCCCCCCCCCCC", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true)] // child is subset of the parent
-        [DataRow("4CCCCCCCCCCCCCCC", "5999999999999999", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true)] // child is subset of the parent
-        [DataRow("5999999999999999", "6666666666666666", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true)] // child is subset of the parent
-        [DataRow("6666666666666666", "7333333333333333", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true)] // child is subset of the parent
-        [DataRow("7333333333333333", "7FFFFFFFFFFFFFFF", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true)] // child is subset of the parent
-        [DataRow("7333333333333333", "FFFFFFFFFFFFFFFF", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false)] // child is overlap, but not a subset of the parent
-        [DataRow("", "7333333333333333", "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false)] // child is overlap, but not a subset of the parent
-        [Description("Given a parent feed range, when a child feed range is provided, then that feed range is checked against the parent feed range" +
-            "to determine if it is a subset of the parent feed range.")]
-        public async Task GivenParentAndChildFeedRangesTrueIsMinInclusiveIsFeedRangePartOfAsyncTestAsync(
-            string childMin,
-            string childMax,
-            string parentMin,
-            string parentMax,
-            bool expectedIsSubset)
-        {
-            Container container = default;
-
-            try
-            {
-                ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(
-                    id: Guid.NewGuid().ToString(),
-                    partitionKeyPath: "/pk");
-
-                container = containerResponse.Container;
-
-                bool actualIsSubset = await container.IsFeedRangePartOfAsync(
-                    parentFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>(parentMin, parentMax, true, false)),
-                    childFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>(childMin, childMax, true, false)),
-                    cancellationToken: CancellationToken.None);
-
-                Assert.AreEqual(expected: expectedIsSubset, actual: actualIsSubset);
-            }
-            catch (Exception exception)
-            {
-                Assert.Fail(exception.Message);
-            }
-            finally
-            {
-                if (container != null)
-                {
-                    await container.DeleteContainerAsync();
-                }
-            }
-        }
-
-        [TestMethod]
-        [Owner("philipthomas-MSFT")]
-        public async Task GivenParentFeedRangesFalseIsMinInclusiveIsFeedRangePartOfAsyncTestAsync()
-        {
-            Container container = default;
-
-            try
-            {
-                ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(
-                    id: Guid.NewGuid().ToString(),
-                    partitionKeyPath: "/pk");
-
-                container = containerResponse.Container;
-
-                ArgumentOutOfRangeException exception = await Assert.ThrowsExceptionAsync<ArgumentOutOfRangeException>(
-                    async () => await container
-                        .IsFeedRangePartOfAsync(
-                            parentFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>("", "3FFFFFFFFFFFFFFF", false, true)),
-                            childFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>("", "FFFFFFFFFFFFFFFF", true, false)),
-                            cancellationToken: CancellationToken.None));
-
-                Assert.IsNotNull(exception);
-                Assert.IsTrue(exception.Message.Contains("IsMinInclusive must be true."));
-            }
-            catch (Exception exception)
-            {
-                Assert.Fail(exception.Message);
-            }
-            finally
-            {
-                if (container != null)
-                {
-                    await container.DeleteContainerAsync();
-                }
-            }
-        }
-
-        [TestMethod]
-        [Owner("philipthomas-MSFT")]
-        public async Task GivenChildFeedRangesFalseIsMinInclusiveIsFeedRangePartOfAsyncTestAsync()
-        {
-            Container container = default;
-
-            try
-            {
-                ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(
-                    id: Guid.NewGuid().ToString(),
-                    partitionKeyPath: "/pk");
-
-                container = containerResponse.Container;
-
-                ArgumentOutOfRangeException exception = await Assert.ThrowsExceptionAsync<ArgumentOutOfRangeException>(
-                    async () => await container
-                        .IsFeedRangePartOfAsync(
-                            parentFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>("", "3FFFFFFFFFFFFFFF", true, false)),
-                            childFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>("", "FFFFFFFFFFFFFFFF", false, true)),
-                            cancellationToken: CancellationToken.None));
-
-                Assert.IsNotNull(exception);
-                Assert.IsTrue(exception.Message.Contains("IsMinInclusive must be true."));
-            }
-            catch (Exception exception)
-            {
-                Assert.Fail(exception.Message);
-            }
-            finally
-            {
-                if (container != null)
-                {
-                    await container.DeleteContainerAsync();
-                }
-            }
-        }
-
-        [TestMethod]
-        [Owner("philipthomas-MSFT")]
-        public async Task GivenNullChildFeedRangeExpectsArgumentNullExceptionIsFeedRangePartOfAsyncTestAsync()
+        public async Task GivenFeedRangeThrowsArgumentNullExceptionWhenChildFeedRangeIsNull()
         {
             FeedRange feedRange = default;
 
             await this.GivenInvalidChildFeedRangeExpectsArgumentExceptionIsFeedRangePartOfAsyncTestAsync<ArgumentNullException>(
                 feedRange: feedRange,
-                expectedMessage: $"The argument for 'childFeedRange' cannot be null.");
+                expectedMessage: $"Argument cannot be null.");
         }
 
+        /// <summary>
+        /// <![CDATA[
+        /// Feature: Is Feed Range PartOf Validation ArgumentNullException
+        ///
+        /// Scenario: Validate that an ArgumentNullException is thrown when the child feed range has no JSON representation
+        ///   Given the parent feed range is defined
+        ///   And the child feed range has no JSON representation
+        ///   When the child feed range is compared to the parent feed range
+        ///   Then an ArgumentNullException should be thrown
+        /// ]]>
+        /// </summary>
         [TestMethod]
         [Owner("philipthomas-MSFT")]
-        public async Task GivenChildFeedRangeWithNoJsonExpectsArgumentNullExceptionIsFeedRangePartOfAsyncTestAsync()
+        public async Task GivenFeedRangeThrowsArgumentNullExceptionWhenChildFeedRangeHasNoJson()
         {
             FeedRange feedRange = Mock.Of<FeedRange>();
 
@@ -2036,9 +1954,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 expectedMessage: $"Value cannot be null. (Parameter 'value')");
         }
 
+        /// <summary>
+        /// <![CDATA[
+        /// Feature: Is Feed Range PartOf Validation ArgumentException
+        ///
+        /// Scenario: Validate that an ArgumentException is thrown when the child feed range has invalid JSON representation
+        ///   Given the parent feed range is defined
+        ///   And the child feed range has an invalid JSON representation
+        ///   When the child feed range is compared to the parent feed range
+        ///   Then an ArgumentException should be thrown
+        /// ]]>
+        /// </summary>
         [TestMethod]
         [Owner("philipthomas-MSFT")]
-        public async Task GivenChildFeedRangeWithInvalidJsonExpectsArgumentExceptionIsFeedRangePartOfAsyncTestAsync()
+        public async Task GivenFeedRangeThrowsArgumentExceptionWhenChildFeedRangeHasInvalidJson()
         {
             Mock<FeedRange> mockFeedRange = new Mock<FeedRange>(MockBehavior.Strict);
             mockFeedRange.Setup(feedRange => feedRange.ToJsonString()).Returns("<xml />");
@@ -2086,20 +2015,42 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        /// <summary>
+        /// <![CDATA[
+        /// Feature: Is Feed Range PartOf Validation ArgumentNullException
+        ///
+        /// Scenario: Validate that an ArgumentNullException is thrown when the parent feed range is null
+        ///   Given the parent feed range is null
+        ///   And the child feed range is defined
+        ///   When the child feed range is compared to the parent feed range
+        ///   Then an ArgumentNullException should be thrown
+        /// ]]>
+        /// </summary>
         [TestMethod]
         [Owner("philipthomas-MSFT")]
-        public async Task GivenNullParentFeedRangeExpectsArgumentNullExceptionIsFeedRangePartOfAsyncTestAsync()
+        public async Task GivenFeedRangeThrowsArgumentNullExceptionWhenParentFeedRangeIsNull()
         {
             FeedRange feedRange = default;
 
             await this.GivenInvalidParentFeedRangeExpectsArgumentExceptionIsFeedRangePartOfAsyncTestAsync<ArgumentNullException>(
                 feedRange: feedRange,
-                expectedMessage: $"The argument for 'parentFeedRange' cannot be null.");
+                expectedMessage: $"Argument cannot be null.");
         }
 
+        /// <summary>
+        /// <![CDATA[
+        /// Feature: Is Feed Range PartOf Validation ArgumentNullException
+        ///
+        /// Scenario: Validate that an ArgumentNullException is thrown when the parent feed range has no JSON representation
+        ///   Given the parent feed range has no JSON representation
+        ///   And the child feed range is defined
+        ///   When the child feed range is compared to the parent feed range
+        ///   Then an ArgumentNullException should be thrown
+        /// ]]>
+        /// </summary>
         [TestMethod]
         [Owner("philipthomas-MSFT")]
-        public async Task GivenParentFeedRangeWithNoJsonExpectsArgumentNullExceptionIsFeedRangePartOfAsyncTestAsync()
+        public async Task GivenFeedRangeThrowsArgumentNullExceptionWhenParentFeedRangeHasNoJson()
         {
             FeedRange feedRange = Mock.Of<FeedRange>();
 
@@ -2108,9 +2059,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 expectedMessage: $"Value cannot be null. (Parameter 'value')");
         }
 
+        /// <summary>
+        /// <![CDATA[
+        /// Feature: Is Feed Range PartOf Validation ArgumentException
+        ///
+        /// Scenario: Validate that an ArgumentException is thrown when the parent feed range has an invalid JSON representation
+        ///   Given the parent feed range has an invalid JSON representation
+        ///   And the child feed range is defined
+        ///   When the child feed range is compared to the parent feed range
+        ///   Then an ArgumentException should be thrown
+        /// ]]>
+        /// </summary>
         [TestMethod]
         [Owner("philipthomas-MSFT")]
-        public async Task GivenParentFeedRangeWithInvalidJsonExpectsArgumentExceptionIsFeedRangePartOfAsyncTestAsync()
+        public async Task GivenFeedRangeThrowsArgumentExceptionWhenParentFeedRangeHasInvalidJson()
         {
             Mock<FeedRange> mockFeedRange = new Mock<FeedRange>(MockBehavior.Strict);
             mockFeedRange.Setup(feedRange => feedRange.ToJsonString()).Returns("<xml />");
@@ -2142,6 +2104,342 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 Assert.IsNotNull(exception);
                 Assert.IsTrue(exception.Message.Contains(expectedMessage));
+            }
+            catch (Exception exception)
+            {
+                Assert.Fail(exception.Message);
+            }
+            finally
+            {
+                if (container != null)
+                {
+                    await container.DeleteContainerAsync();
+                }
+            }
+        }
+
+        /// <summary>
+        /// <![CDATA[
+        /// Feature: Is Feed Range PartOf Validation
+        ///
+        /// Scenario: Child feed range is or is not part of the parent feed range when both child's and parent's isMaxInclusive can be set to true or false
+        ///   Given the parent feed range with isMaxInclusive set to true or false
+        ///   And the child feed range with isMaxInclusive set to true or false
+        ///   When the child feed range is compared to the parent feed range
+        ///   Then the child feed range is either part of or not part of the parent feed range
+        /// ]]>
+        /// </summary>
+        /// <param name="childMinimum">The starting value of the child feed range.</param>
+        /// <param name="childMaximum">The ending value of the child feed range.</param>
+        /// <param name="childIsMaxInclusive">Specifies whether the maximum value of the child feed range is inclusive.</param>
+        /// <param name="parentMinimum">The starting value of the parent feed range.</param>
+        /// <param name="parentMaximum">The ending value of the parent feed range.</param>
+        /// <param name="parentIsMaxInclusive">Specifies whether the maximum value of the parent feed range is inclusive.</param>
+        /// <param name="expectedIsFeedRangePartOfAsync">Indicates whether the child feed range is expected to be a subset of the parent feed range.</param>
+        /// <returns></returns>
+        [TestMethod]
+        [Owner("philipthomas-MSFT")]
+        [DynamicData(nameof(CosmosContainerTests.FeedRangeChildPartOfParentWhenBothChildAndParentIsMaxInclusiveTrue), DynamicDataSourceType.Method)]
+        [DynamicData(nameof(CosmosContainerTests.FeedRangeChildNotPartOfParentWhenBothChildAndParentIsMaxInclusiveTrue), DynamicDataSourceType.Method)]
+        [DynamicData(nameof(CosmosContainerTests.FeedRangeChildPartOfParentWhenChildIsMaxInclusiveFalseAndParentIsMaxInclusiveTrue), DynamicDataSourceType.Method)]
+        [DynamicData(nameof(CosmosContainerTests.FeedRangeChildNotPartOfParentWhenChildIsMaxInclusiveFalseAndParentIsMaxInclusiveTrue), DynamicDataSourceType.Method)]
+        [DynamicData(nameof(CosmosContainerTests.FeedRangeChildNotPartOfParentWhenBothIsMaxInclusiveAreFalse), DynamicDataSourceType.Method)]
+        [DynamicData(nameof(CosmosContainerTests.FeedRangeChildNotPartOfParentWhenChildAndParentIsMaxInclusiveAreFalse), DynamicDataSourceType.Method)]
+        [DynamicData(nameof(CosmosContainerTests.FeedRangeChildPartOfParentWhenChildIsMaxInclusiveTrueAndParentIsMaxInclusiveFalse), DynamicDataSourceType.Method)]
+        [DynamicData(nameof(CosmosContainerTests.FeedRangeChildNotPartOfParentWhenChildIsMaxInclusiveTrueAndParentIsMaxInclusiveFalse), DynamicDataSourceType.Method)]
+        [Description("Child feed range is or is not part of the parent feed range when both child's and parent's isMaxInclusive can be set to true or false.")]
+        public async Task GivenFeedRangeChildPartOfOrNotPartOfParentWhenBothIsMaxInclusiveCanBeTrueOrFalseTestAsync(
+            string childMinimum,
+            string childMaximum,
+            bool childIsMaxInclusive,
+            string parentMinimum,
+            string parentMaximum,
+            bool parentIsMaxInclusive,
+            bool expectedIsFeedRangePartOfAsync)
+        {
+            Container container = default;
+
+            try
+            {
+                ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(
+                    id: Guid.NewGuid().ToString(),
+                    partitionKeyPath: "/pk");
+
+                container = containerResponse.Container;
+
+                bool actualIsFeedRangePartOfAsync = await container.IsFeedRangePartOfAsync(
+                    parentFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>(parentMinimum, parentMaximum, true, parentIsMaxInclusive)),
+                    childFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>(childMinimum, childMaximum, true, childIsMaxInclusive)),
+                    cancellationToken: CancellationToken.None);
+
+                Assert.AreEqual(expected: expectedIsFeedRangePartOfAsync, actual: actualIsFeedRangePartOfAsync);
+            }
+            catch (Exception exception)
+            {
+                Assert.Fail(exception.Message);
+            }
+            finally
+            {
+                if (container != null)
+                {
+                    await container.DeleteContainerAsync();
+                }
+            }
+        }
+
+        /// <summary>
+        /// <![CDATA[
+        /// Feature: Is Feed Range PartOf Validation
+        ///
+        /// Scenario: Child feed range is not part of the parent feed range with both isMaxInclusive set to false
+        ///   Given the parent feed range with isMaxInclusive set to false
+        ///   And the child feed range with isMaxInclusive set to false
+        ///   When the child feed range is compared to the parent feed range
+        ///   Then the child feed range is part of the parent feed range
+        ///   
+        /// Arguments: string childMinimum, string childMaximum, bool childIsMaxInclusive, string parentMinimum, string parentMaximum, bool parentIsMaxInclusive, bool expectedIsFeedRangePartOfAsync
+        /// ]]>
+        /// </summary>
+        private static IEnumerable<object[]> FeedRangeChildNotPartOfParentWhenBothIsMaxInclusiveAreFalse()
+        {
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", false, "", "FFFFFFFFFFFFFFFF", false, true }; // child is subset of the parent
+            yield return new object[] { "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, "", "FFFFFFFFFFFFFFFF", false, true }; // child is subset of the parent
+            yield return new object[] { "7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", false, "", "FFFFFFFFFFFFFFFF", false, true }; // child is subset of the parent
+            yield return new object[] { "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", false, "", "FFFFFFFFFFFFFFFF", false, true }; // child is subset of the parent
+            yield return new object[] { "3FFFFFFFFFFFFFFF", "4CCCCCCCCCCCCCCC", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true }; // child is subset of the parent
+            yield return new object[] { "4CCCCCCCCCCCCCCC", "5999999999999999", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true }; // child is subset of the parent
+            yield return new object[] { "5999999999999999", "6666666666666666", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true }; // child is subset of the parent
+            yield return new object[] { "6666666666666666", "7333333333333333", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true }; // child is subset of the parent
+            yield return new object[] { "7333333333333333", "7FFFFFFFFFFFFFFF", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true }; // child is subset of the parent
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", false, "", "3FFFFFFFFFFFFFFF", false, true }; // child is same as the parent, which makes it a subset
+        }
+
+        /// <summary>
+        /// <![CDATA[
+        /// Feature: Is Feed Range PartOf Validation
+        ///
+        /// Scenario: Child feed range is not part of the parent feed range with both child’s and parent’s isMaxInclusive set to false
+        ///   Given the parent feed range with isMaxInclusive set to false
+        ///   And the child feed range with isMaxInclusive set to false
+        ///   When the child feed range is compared to the parent feed range
+        ///   Then the child feed range is not part of the parent feed range
+        /// ]]>
+        /// </summary>
+        private static IEnumerable<object[]> FeedRangeChildNotPartOfParentWhenChildAndParentIsMaxInclusiveAreFalse()
+        {
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, false }; // child is not a subset of parent
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", false, "7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", false, false }; // child is not a subset of parent
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", false, "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", false, false }; // child is not a subset of parent
+            yield return new object[] { "", "3333333333333333", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, false }; // child is not a subset of parent
+            yield return new object[] { "3333333333333333", "6666666666666666", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, false }; // child is not a subset of parent
+            yield return new object[] { "7333333333333333", "FFFFFFFFFFFFFFFF", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, false }; // child is overlap, but not a subset of the parent
+            yield return new object[] { "", "7333333333333333", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, false }; // child is overlap, but not a subset of the parent
+        }
+
+        /// <summary>
+        /// <![CDATA[
+        /// Feature: Is Feed Range PartOf Validation
+        ///
+        /// Scenario: Child feed range is part of the parent feed range with the child’s isMaxInclusive set to true and the parent’s isMaxInclusive set to false
+        ///   Given the parent feed range with isMaxInclusive set to false
+        ///   And the child feed range with isMaxInclusive set to true
+        ///   When the child feed range is compared to the parent feed range
+        ///   Then the child feed range is part of the parent feed range
+        /// ]]>
+        /// </summary>
+        private static IEnumerable<object[]> FeedRangeChildPartOfParentWhenChildIsMaxInclusiveTrueAndParentIsMaxInclusiveFalse()
+        {
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "", "FFFFFFFFFFFFFFFF", false, true };
+            yield return new object[] { "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, "", "FFFFFFFFFFFFFFFF", false, true };
+            yield return new object[] { "7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", true, "", "FFFFFFFFFFFFFFFF", false, true };
+            yield return new object[] { "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", true, "", "FFFFFFFFFFFFFFFF", false, true };
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "", "3FFFFFFFFFFFFFFF", false, true };
+            yield return new object[] { "3FFFFFFFFFFFFFFF", "4CCCCCCCCCCCCCCC", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true };
+            yield return new object[] { "4CCCCCCCCCCCCCCC", "5999999999999999", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true };
+            yield return new object[] { "5999999999999999", "6666666666666666", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true };
+            yield return new object[] { "6666666666666666", "7333333333333333", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true };
+            yield return new object[] { "7333333333333333", "7FFFFFFFFFFFFFFF", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true };
+        }
+
+        /// <summary>
+        /// <![CDATA[
+        /// Feature: Is Feed Range PartOf Validation
+        ///
+        /// Scenario: Child feed range is not part of the parent feed range with the child’s isMaxInclusive set to true and the parent’s isMaxInclusive set to false
+        ///   Given the parent feed range with isMaxInclusive set to false
+        ///   And the child feed range with isMaxInclusive set to true
+        ///   When the child feed range is compared to the parent feed range
+        ///   Then the child feed range is not part of the parent feed range
+        /// ]]>
+        /// </summary>
+        private static IEnumerable<object[]> FeedRangeChildNotPartOfParentWhenChildIsMaxInclusiveTrueAndParentIsMaxInclusiveFalse()
+        {
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, false };
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", false, false };
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", false, false };
+            yield return new object[] { "", "3333333333333333", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, false };
+            yield return new object[] { "3333333333333333", "6666666666666666", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, false };
+            yield return new object[] { "7333333333333333", "FFFFFFFFFFFFFFFF", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, false };
+            yield return new object[] { "", "7333333333333333", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, false };
+        }
+
+        /// <summary>
+        /// <![CDATA[
+        /// Feature: Is Feed Range PartOf Validation
+        ///
+        /// Scenario: Child feed range is part of the parent feed range with the child’s isMaxInclusive set to false and the parent’s isMaxInclusive set to true
+        ///   Given the parent feed range with isMaxInclusive set to true
+        ///   And the child feed range with isMaxInclusive set to false
+        ///   When the child feed range is compared to the parent feed range
+        ///   Then the child feed range is part of the parent feed range
+        /// ]]>
+        /// </summary>
+        private static IEnumerable<object[]> FeedRangeChildPartOfParentWhenChildIsMaxInclusiveFalseAndParentIsMaxInclusiveTrue()
+        {
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", false, "", "FFFFFFFFFFFFFFFF", true, true }; // child is subset of the parent
+            yield return new object[] { "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, "", "FFFFFFFFFFFFFFFF", true, true }; // child is subset of the parent
+            yield return new object[] { "7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", false, "", "FFFFFFFFFFFFFFFF", true, true }; // child is subset of the parent
+            yield return new object[] { "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", false, "", "FFFFFFFFFFFFFFFF", true, true }; // child is subset of the parent
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", false, "", "3FFFFFFFFFFFFFFF", true, true }; // child is same as the parent, which makes it a subset
+            yield return new object[] { "3FFFFFFFFFFFFFFF", "4CCCCCCCCCCCCCCC", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true }; // child is subset of the parent
+            yield return new object[] { "4CCCCCCCCCCCCCCC", "5999999999999999", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true }; // child is subset of the parent
+            yield return new object[] { "5999999999999999", "6666666666666666", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true }; // child is subset of the parent
+            yield return new object[] { "6666666666666666", "7333333333333333", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true }; // child is subset of the parent
+            yield return new object[] { "7333333333333333", "7FFFFFFFFFFFFFFF", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true }; // child is subset of the parent
+        }
+
+        /// <summary>
+        /// <![CDATA[
+        /// Feature: Is Feed Range PartOf Validation
+        ///
+        /// Scenario: Child feed range is not part of the parent feed range with the child’s isMaxInclusive set to false and the parent’s isMaxInclusive set to true
+        ///   Given the parent feed range with isMaxInclusive set to true
+        ///   And the child feed range with isMaxInclusive set to false
+        ///   When the child feed range is compared to the parent feed range
+        ///   Then the child feed range is not part of the parent feed range
+        /// ]]>
+        /// </summary>
+        private static IEnumerable<object[]> FeedRangeChildNotPartOfParentWhenChildIsMaxInclusiveFalseAndParentIsMaxInclusiveTrue()
+        {
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, false }; // child is not a subset of parent
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", false, "7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", true, false }; // child is not a subset of parent
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", false, "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", true, false }; // child is not a subset of parent
+            yield return new object[] { "", "3333333333333333", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, false }; // child is not a subset of parent
+            yield return new object[] { "3333333333333333", "6666666666666666", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, false }; // child is not a subset of parent
+            yield return new object[] { "7333333333333333", "FFFFFFFFFFFFFFFF", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, false }; // child is overlap, but not a subset of the parent
+            yield return new object[] { "", "7333333333333333", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, false }; // child is overlap, but not a subset of the parent
+        }
+
+        /// <summary>
+        /// <![CDATA[
+        /// Feature: Is Feed Range PartOf Validation
+        ///
+        /// Scenario: Child feed range is part of the parent feed range with both the child’s and parent’s isMaxInclusive set to true
+        ///   Given the parent feed range with isMaxInclusive set to true
+        ///   And the child feed range with isMaxInclusive set to true
+        ///   When the child feed range is compared to the parent feed range
+        ///   Then the child feed range is part of the parent feed range
+        /// ]]>
+        /// </summary>
+        private static IEnumerable<object[]> FeedRangeChildPartOfParentWhenBothChildAndParentIsMaxInclusiveTrue()
+        {
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "", "FFFFFFFFFFFFFFFF", true, true }; // child is subset of the parent
+            yield return new object[] { "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, "", "FFFFFFFFFFFFFFFF", true, true }; // child is subset of the parent
+            yield return new object[] { "7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", true, "", "FFFFFFFFFFFFFFFF", true, true }; // child is subset of the parent
+            yield return new object[] { "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", true, "", "FFFFFFFFFFFFFFFF", true, true }; // child is subset of the parent
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "", "3FFFFFFFFFFFFFFF", true, true }; // child is same as the parent, which makes it a subset
+            yield return new object[] { "3FFFFFFFFFFFFFFF", "4CCCCCCCCCCCCCCC", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true }; // child is subset of the parent
+            yield return new object[] { "4CCCCCCCCCCCCCCC", "5999999999999999", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true }; // child is subset of the parent
+            yield return new object[] { "5999999999999999", "6666666666666666", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true }; // child is subset of the parent
+            yield return new object[] { "6666666666666666", "7333333333333333", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true }; // child is subset of the parent
+            yield return new object[] { "7333333333333333", "7FFFFFFFFFFFFFFF", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true }; // child is subset of the parent
+        }
+
+        /// <summary>
+        /// <![CDATA[
+        /// Feature: Is Feed Range PartOf Validation
+        ///
+        /// Scenario: Child feed range is not part of the parent feed range with both the child’s and parent’s isMaxInclusive set to true
+        ///   Given the parent feed range with isMaxInclusive set to true
+        ///   And the child feed range with isMaxInclusive set to true
+        ///   When the child feed range is compared to the parent feed range
+        ///   Then the child feed range is not part of the parent feed range
+        /// ]]>
+        /// </summary>
+        private static IEnumerable<object[]> FeedRangeChildNotPartOfParentWhenBothChildAndParentIsMaxInclusiveTrue()
+        {
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, false }; // child is not a subset of parent
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", true, false }; // child is not a subset of parent
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", true, false }; // child is not a subset of parent
+            yield return new object[] { "", "3333333333333333", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, false }; // child is not a subset of parent
+            yield return new object[] { "3333333333333333", "6666666666666666", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, false }; // child is not a subset of parent
+            yield return new object[] { "7333333333333333", "FFFFFFFFFFFFFFFF", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, false }; // child is overlap, but not a subset of the parent
+            yield return new object[] { "", "7333333333333333", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, false }; // child is overlap, but not a subset of the parent
+        }
+
+        /// <summary>
+        /// <![CDATA[
+        /// Feature: Is Feed Range PartOf Validation ArgumentOutOfRangeException
+        ///
+        /// Scenario: Validate if an ArgumentOutOfRangeException is thrown when the child feed range is compared to the parent feed range with the parent's IsMinInclusive set to false
+        ///   Given the parent feed range with IsMinInclusive set to false
+        ///   And the child feed range with a valid range
+        ///   When the child feed range is compared to the parent feed range
+        ///   Then an ArgumentOutOfRangeException should be thrown
+        /// ]]>
+        /// </summary>
+        [TestMethod]
+        [Owner("philipthomas-MSFT")]
+        public async Task GivenFeedRangeThrowsArgumentOutOfRangeExceptionWhenChildComparedToParentWithParentIsMinInclusiveFalse()
+        {
+            await this.FeedRangeThrowsArgumentOutOfRangeExceptionWhenIsMinInclusiveFalse(
+                parentFeedRange: new Documents.Routing.Range<string>("", "3FFFFFFFFFFFFFFF", false, true),
+                childFeedRange: new Documents.Routing.Range<string>("", "FFFFFFFFFFFFFFFF", true, false));
+        }
+
+        /// <summary>
+        /// <![CDATA[
+        /// Feature: Is Feed Range PartOf Validation ArgumentOutOfRangeException
+        ///
+        /// Scenario: Validate if an ArgumentOutOfRangeException is thrown when the child feed range is compared to the parent feed range with the child's IsMinInclusive set to false
+        ///   Given the parent feed range with IsMinInclusive set to false
+        ///   And the child feed range with a valid range
+        ///   When the child feed range is compared to the parent feed range
+        ///   Then an ArgumentOutOfRangeException should be thrown
+        /// ]]>
+        /// </summary>
+        [TestMethod]
+        [Owner("philipthomas-MSFT")]
+        public async Task GivenFeedRangeThrowsArgumentOutOfRangeExceptionWhenChildComparedToParentWithChildIsMinInclusiveFalse()
+        {
+            await this.FeedRangeThrowsArgumentOutOfRangeExceptionWhenIsMinInclusiveFalse(
+                parentFeedRange: new Documents.Routing.Range<string>("", "3FFFFFFFFFFFFFFF", true, false),
+                childFeedRange: new Documents.Routing.Range<string>("", "FFFFFFFFFFFFFFFF", false, true));
+        }
+
+        private async Task FeedRangeThrowsArgumentOutOfRangeExceptionWhenIsMinInclusiveFalse(
+            Documents.Routing.Range<string> parentFeedRange,
+            Documents.Routing.Range<string> childFeedRange)
+        {
+            Container container = default;
+
+            try
+            {
+                ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(
+                    id: Guid.NewGuid().ToString(),
+                    partitionKeyPath: "/pk");
+
+                container = containerResponse.Container;
+
+                ArgumentOutOfRangeException exception = await Assert.ThrowsExceptionAsync<ArgumentOutOfRangeException>(
+                    async () => await container
+                        .IsFeedRangePartOfAsync(
+                            parentFeedRange: new FeedRangeEpk(parentFeedRange),
+                            childFeedRange: new FeedRangeEpk(childFeedRange),
+                            cancellationToken: CancellationToken.None));
+
+                Assert.IsNotNull(exception);
+                Assert.IsTrue(exception.Message.Contains("IsMinInclusive must be true."));
             }
             catch (Exception exception)
             {

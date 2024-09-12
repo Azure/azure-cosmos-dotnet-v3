@@ -1757,30 +1757,30 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate);
 
         /// <summary>
-        /// Takes 2 given feed ranges representing a parent and child feed range and checks if the child feed range is a subset of the parent feed range.
+        /// Determines whether the given child feed range is a subset of the specified parent feed range.
         /// </summary>
-        /// <param name="parentFeedRange">A feed range that represents a parent range.</param>
-        /// <param name="childFeedRange">A feed range tha represents a child range.</param>
-        /// <param name="cancellationToken">A cancellation token.</param>
+        /// <param name="parentFeedRange">The feed range representing the parent range.</param>
+        /// <param name="childFeedRange">The feed range representing the child range.</param>
+        /// <param name="cancellationToken">A token to cancel the operation if needed.</param>
         /// <example>
-        /// <code language="c#">
+        /// <code language="csharp">
         /// <![CDATA[
         /// CancellationToken cancellationToken = ...;
-        /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(...);
+        /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("your-connection-string");
         /// CosmosClient cosmosClient = cosmosClientBuilder.Build();
-        /// Database cosmosDatabase = cosmosClient.GetDatabase(...);
-        /// Container container = cosmosDatabase.GetContainer(...);
-        /// FeedRange parentFeedRange = ...;
-        /// FeedRange childFeedRange = ...;
+        /// Database cosmosDatabase = cosmosClient.GetDatabase("your-database-id");
+        /// Container container = cosmosDatabase.GetContainer("your-container-id");
+        /// FeedRange parentFeedRange = ...; // Define the parent feed range
+        /// FeedRange childFeedRange = ...;  // Define the child feed range
         ///
-        /// bool isSubset = await container.IsFeedRangePartOfAsync(
+        /// bool isFeedRangePartOfAsync = await container.IsFeedRangePartOfAsync(
         ///    parentFeedRange,
         ///    childFeedRange,
         ///    cancellationToken);
         /// ]]>
         /// </code>
         /// </example>
-        /// <returns>True or False</returns>
+        /// <returns>True if the child feed range is a subset of the parent feed range; otherwise, false.</returns>
         public virtual Task<bool> IsFeedRangePartOfAsync(
             Cosmos.FeedRange parentFeedRange,
             Cosmos.FeedRange childFeedRange,
