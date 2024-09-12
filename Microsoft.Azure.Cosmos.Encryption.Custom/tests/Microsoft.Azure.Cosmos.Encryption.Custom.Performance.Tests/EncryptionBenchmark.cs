@@ -18,7 +18,6 @@
 
         private TestDoc? testDoc;
         private CosmosEncryptor? encryptor;
-        private Custom.DataEncryptionKey? dek;
 
         private EncryptionOptions? encryptionOptions;
         private byte[]? encryptedData;
@@ -34,12 +33,10 @@
                 .Setup(x => x.UnwrapKey(It.IsAny<string>(), It.IsAny<KeyEncryptionKeyAlgorithm>(), It.IsAny<byte[]>()))
                 .Returns(DekData);
 
-            this.dek = this.CreateMdeDek();
-
             Mock<DataEncryptionKeyProvider> keyProvider = new();
             keyProvider
                 .Setup(x => x.FetchDataEncryptionKeyWithoutRawKeyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(() => this.dek);
+                .ReturnsAsync(() => new MdeEncryptionAlgorithm(DekProperties, EncryptionType.Deterministic, StoreProvider.Object, cacheTimeToLive: TimeSpan.MaxValue));
 
             this.encryptor = new(keyProvider.Object);
             this.testDoc = TestDoc.Create(approximateSize: this.DocumentSizeInKb * 1024);
@@ -55,8 +52,7 @@
                  new CosmosDiagnosticsContext(),
                  CancellationToken.None);
 
-            using MemoryStream memoryStream = new MemoryStream();
-            
+            using MemoryStream memoryStream = new MemoryStream();            
             encryptedStream.CopyTo(memoryStream);
             this.encryptedData = memoryStream.ToArray();
         }
@@ -80,11 +76,6 @@
                 this.encryptor,
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
-        }
-
-        private Custom.DataEncryptionKey CreateMdeDek()
-        {
-            return new MdeEncryptionAlgorithm(DekProperties, EncryptionType.Deterministic, StoreProvider.Object, cacheTimeToLive: TimeSpan.MaxValue);
         }
 
         private static EncryptionOptions CreateEncryptionOptions()
