@@ -1804,8 +1804,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <param name="expectedIsFeedRangePartOfAsync">Indicates whether the child partition key is expected to be part of the parent feed range (true if it is, false if it is not).</param>
         [TestMethod]
         [Owner("philipthomas-MSFT")]
-        [DataRow("", "FFFFFFFFFFFFFFFF", true)]
-        [DataRow("3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false)]
+        [DataRow("", "FFFFFFFFFFFFFFFF", true, DisplayName = "Full range is subset")]
+        [DataRow("3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, DisplayName = "Range 3FFFFFFFFFFFFFFF-7FFFFFFFFFFFFFFF is not subset")]
         [Description("Validate if the child partition key is part of the parent feed range.")]
         public async Task GivenFeedRangeChildPartitionKeyIsPartOfParentFeedRange(
             string parentMinimum,
@@ -1861,8 +1861,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <param name="expectedIsFeedRangePartOfAsync">A boolean value indicating whether the child hierarchical partition key is expected to be part of the parent feed range (true if it is, false if it is not).</param>
         [TestMethod]
         [Owner("philipthomas-MSFT")]
-        [DataRow("", "FFFFFFFFFFFFFFFF", true)] // Full range.
-        [DataRow("3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false)] // Some made up range.
+        [DataRow("", "FFFFFFFFFFFFFFFF", true, DisplayName = "Full range")]
+        [DataRow("3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, DisplayName = "Made-up range 3FFFFFFFFFFFFFFF-7FFFFFFFFFFFFFFF")]
         [Description("Validate if the child hierarchical partition key is part of the parent feed range.")]
         public async Task GivenFeedRangeChildHierarchicalPartitionKeyIsPartOfParentFeedRange(
             string parentMinimum,
@@ -2469,17 +2469,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <param name="childMinimum">The starting value of the child range.</param>
         /// <param name="childMaximum">The ending value of the child range.</param>
         /// <param name="expectedIsSubset">The expected actualIsSubset: true if the child is a subset, false otherwise.</param>
-        [DataTestMethod]
-        [DataRow("A", "Z", "B", "Y", true)]   // Child is a perfect subset of parent
-        [DataRow("A", "Z", "A", "Z", true)]   // Child is equal to parent
-        [DataRow("A", "Z", "@", "Y", false)]  // Child min out of parent
-        [DataRow("A", "Z", "B", "[", false)]  // Child max out of parent
-        [DataRow("A", "Z", "@", "[", false)]  // Child completely outside parent
-        [DataRow("A", "Z", "@", "Z", false)]  // Child max equals parent max but min out of range
-        [DataRow("A", "Z", "A", "[", false)]  // Child min equals parent min but max out of range
-        [DataRow("A", "Z", "", "", false)]    // Empty child range
-        [DataRow("", "", "B", "Y", false)]    // Empty parent range
-        [DataRow("A", "Z", "B", "Y", true)]   // Parent encapsulates child range
+        [TestMethod]
+        [Owner("philipthomas-MSFT")]
+        [DataRow("A", "Z", "B", "Y", true, DisplayName = "Child B-Y is a perfect subset of parent A-Z")]
+        [DataRow("A", "Z", "A", "Z", true, DisplayName = "Child A-Z equals parent A-Z")]
+        [DataRow("A", "Z", "@", "Y", false, DisplayName = "Child @-Y has min out of parent A-Z")]
+        [DataRow("A", "Z", "B", "[", false, DisplayName = "Child B-[ has max out of parent A-Z")]
+        [DataRow("A", "Z", "@", "[", false, DisplayName = "Child @-[ is completely outside parent A-Z")]
+        [DataRow("A", "Z", "@", "Z", false, DisplayName = "Child @-Z has max equal to parent but min out of range")]
+        [DataRow("A", "Z", "A", "[", false, DisplayName = "Child A-[ has min equal to parent but max out of range")]
+        [DataRow("A", "Z", "", "", false, DisplayName = "Empty child range")]
+        [DataRow("", "", "B", "Y", false, DisplayName = "Empty parent range with non-empty child range")]
+        [DataRow("A", "Z", "B", "Y", true, DisplayName = "Parent A-Z encapsulates child B-Y")]
         public void ValidateChildRangeIsSubsetOfParentForVariousCasesTest(string parentMinimum, string parentMaximum, string childMinimum, string childMaximum, bool expectedIsSubset)
         {
             Documents.Routing.Range<string> parentRange = new Documents.Routing.Range<string>(parentMinimum, parentMaximum, true, true);
