@@ -14,8 +14,9 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
     using Microsoft.Azure.Cosmos.Routing;
     using Moq;
     using Microsoft.Azure.Cosmos.Tracing;
-    using System.Net.Http;
+    using Newtonsoft.Json;
     using System.Text;
+    using System.IO;
 
     [TestClass]
     public class FeedRangeTests
@@ -223,57 +224,20 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             Assert.AreEqual(feedRangePartitionKeyRange.PartitionKeyRangeId, feedRangePartitionKeyRangeDeserialized.PartitionKeyRangeId);
         }
 
-        /// <summary>
-        /// Upon failures in PartitionKeyRanges calls, the failure should be a CosmosException
-        /// </summary>
         [TestMethod]
-        public async Task GetFeedRangesThrowsCosmosException()
+        [DataRow(false, true)]
+        [DataRow(true, true)]
+        [DataRow(false, false)]
+        public void FeedRangeEpk_InvalidCombinations(bool minInclusive, bool maxInclusive)
         {
-            Mock<IHttpHandler> mockHttpHandler = new Mock<IHttpHandler>();
-            Uri endpoint = MockSetupsHelper.SetupSingleRegionAccount(
-                "mockAccountInfo",
-                consistencyLevel: ConsistencyLevel.Session,
-                mockHttpHandler,
-                out string primaryRegionEndpoint);
+            Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("", "FF", minInclusive, maxInclusive);
+            RangeJsonConverter rangeConverter = new RangeJsonConverter();
 
-            string databaseName = "mockDbName";
-            string containerName = "mockContainerName";
-            string containerRid = "ccZ1ANCszwk=";
-            Documents.ResourceId cRid = Documents.ResourceId.Parse(containerRid);
-            MockSetupsHelper.SetupContainerProperties(
-                mockHttpHandler: mockHttpHandler,
-                regionEndpoint: primaryRegionEndpoint,
-                databaseName: databaseName,
-                containerName: containerName,
-                containerRid: containerRid);
-
-            // Return a 503 on PKRange call
-            bool invokedPkRanges = false;
-            Uri partitionKeyUri = new Uri($"{primaryRegionEndpoint}/dbs/{cRid.DatabaseId}/colls/{cRid.DocumentCollectionId}/pkranges");
-            mockHttpHandler.Setup(x => x.SendAsync(It.Is<HttpRequestMessage>(x => x.RequestUri == partitionKeyUri), It.IsAny<CancellationToken>()))
-              .Returns(() => Task.FromResult(new HttpResponseMessage()
-              {
-                  StatusCode = HttpStatusCode.ServiceUnavailable,
-                  Content = new StringContent("ServiceUnavailable")
-              }))
-              .Callback(() => invokedPkRanges = true);
-
-            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
-            {
-                ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
-                HttpClientFactory = () => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object)),
-            };
-
-            using (CosmosClient customClient = new CosmosClient(
-                   endpoint.ToString(),
-                   Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
-                   cosmosClientOptions))
-            {
-                Container container = customClient.GetContainer(databaseName, containerName);
-                CosmosException ex = await Assert.ThrowsExceptionAsync<CosmosException>(() => container.GetFeedRangesAsync(CancellationToken.None));
-                Assert.AreEqual(HttpStatusCode.ServiceUnavailable, ex.StatusCode);
-                Assert.IsTrue(invokedPkRanges);
-            }
+            using StreamWriter sw = new StreamWriter(new MemoryStream());
+            using JsonWriter writer = new JsonTextWriter(sw);
+                JsonSerializer jsonSerializer = new JsonSerializer();
+                JsonSerializationException ex = Assert.ThrowsException<JsonSerializationException>(() => rangeConverter.WriteJson(writer, range, jsonSerializer));
+                Assert.IsTrue(ex.InnerException is ArgumentOutOfRangeException);
         }
     }
 }

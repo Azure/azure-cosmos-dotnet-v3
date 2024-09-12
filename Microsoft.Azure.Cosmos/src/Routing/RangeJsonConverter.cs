@@ -19,6 +19,10 @@ namespace Microsoft.Azure.Cosmos.Routing
             try
             {
                 Documents.Routing.Range<string> range = (Documents.Routing.Range<string>)value;
+                if (!range.IsMinInclusive || range.IsMaxInclusive)
+                {
+                    throw new ArgumentOutOfRangeException($"IsMinInclusive={range.IsMinInclusive} OR IsMaxInclusive={range.IsMaxInclusive} not supported");
+                }
 
                 writer.WriteStartObject();
                 writer.WritePropertyName(MinProperty);
