@@ -1347,8 +1347,17 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="parentRange">The parent range to check against.</param>
         /// <param name="childRange">The child range that is being evaluated.</param>
+        /// <example>
+        /// <![CDATA[
+        /// Documents.Routing.Range<string> parentRange = new Documents.Routing.Range<string>("A", "Z", true, true);
+        /// Documents.Routing.Range<string> childRange = new Documents.Routing.Range<string>("B", "Y", true, true);
+        ///
+        /// bool isSubset = IsSubset(parentRange, childRange);
+        /// // isSubset will be true because the child range (B-Y) is a subset of the parent range (A-Z).
+        /// ]]>
+        /// </example>
         /// <returns>True if the child range is a subset of the parent range; otherwise, false.</returns>
-        private static bool IsSubset(
+        internal static bool IsSubset(
             Documents.Routing.Range<string> parentRange,
             Documents.Routing.Range<string> childRange)
         {

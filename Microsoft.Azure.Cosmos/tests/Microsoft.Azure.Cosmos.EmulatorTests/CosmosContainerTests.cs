@@ -2453,6 +2453,42 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
         }
+
+        /// <summary>
+        /// <![CDATA[
+        /// Feature: Is Subset
+        ///
+        /// Scenario: Validate whether the child range is a subset of the parent range for various cases.
+        ///   Given various parent and child feed ranges
+        ///   When the child range is checked if it is a subset of the parent range
+        ///   Then the actualIsSubset should either be true or false depending on the ranges
+        /// ]]>
+        /// </summary>
+        /// <param name="parentMinimum">The starting value of the parent range.</param>
+        /// <param name="parentMaximum">The ending value of the parent range.</param>
+        /// <param name="childMinimum">The starting value of the child range.</param>
+        /// <param name="childMaximum">The ending value of the child range.</param>
+        /// <param name="expectedIsSubset">The expected actualIsSubset: true if the child is a subset, false otherwise.</param>
+        [DataTestMethod]
+        [DataRow("A", "Z", "B", "Y", true)]   // Child is a perfect subset of parent
+        [DataRow("A", "Z", "A", "Z", true)]   // Child is equal to parent
+        [DataRow("A", "Z", "@", "Y", false)]  // Child min out of parent
+        [DataRow("A", "Z", "B", "[", false)]  // Child max out of parent
+        [DataRow("A", "Z", "@", "[", false)]  // Child completely outside parent
+        [DataRow("A", "Z", "@", "Z", false)]  // Child max equals parent max but min out of range
+        [DataRow("A", "Z", "A", "[", false)]  // Child min equals parent min but max out of range
+        [DataRow("A", "Z", "", "", false)]    // Empty child range
+        [DataRow("", "", "B", "Y", false)]    // Empty parent range
+        [DataRow("A", "Z", "B", "Y", true)]   // Parent encapsulates child range
+        public void ValidateChildRangeIsSubsetOfParentForVariousCasesTest(string parentMinimum, string parentMaximum, string childMinimum, string childMaximum, bool expectedIsSubset)
+        {
+            Documents.Routing.Range<string> parentRange = new Documents.Routing.Range<string>(parentMinimum, parentMaximum, true, true);
+            Documents.Routing.Range<string> childRange = new Documents.Routing.Range<string>(childMinimum, childMaximum, true, true);
+
+            bool actualIsSubset = ContainerCore.IsSubset(parentRange, childRange);
+
+            Assert.AreEqual(expected: expectedIsSubset, actual: actualIsSubset);
+        }
 #endif
     }
 }
