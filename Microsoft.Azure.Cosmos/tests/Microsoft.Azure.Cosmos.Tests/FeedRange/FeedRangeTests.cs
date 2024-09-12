@@ -278,11 +278,20 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             }
         }
 
+        /// <summary>
+        /// RangeJsonConverter accepts only (minInclusive=True, maxInclusive=False) combination
+        ///     In its serialization its not including minInclusive, maxInclusive combination 
+        ///     but on deserialization setting them to (true, false
+        ///     
+        /// All other combinations should throw an exception
+        /// </summary>
         [TestMethod]
-        [DataRow(false, true)]
-        [DataRow(true, true)]
-        [DataRow(false, false)]
-        public void FeedRangeEpk_InvalidCombinations(bool minInclusive, bool maxInclusive)
+        [DataRow(false, true, true)]
+        [DataRow(false, false, true)]
+        [DataRow(true, true, true)]
+        [DataRow(true, false, false)]
+        [Owner("kirankk")]
+        public void FeedRangeEpk_Combinations(bool minInclusive, bool maxInclusive, bool isFailureExpected)
         {
             Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("", "FF", minInclusive, maxInclusive);
             RangeJsonConverter rangeConverter = new RangeJsonConverter();
@@ -290,8 +299,15 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             using StreamWriter sw = new StreamWriter(new MemoryStream());
             using JsonWriter writer = new JsonTextWriter(sw);
                 JsonSerializer jsonSerializer = new JsonSerializer();
+            if (isFailureExpected)
+            {
                 JsonSerializationException ex = Assert.ThrowsException<JsonSerializationException>(() => rangeConverter.WriteJson(writer, range, jsonSerializer));
                 Assert.IsTrue(ex.InnerException is ArgumentOutOfRangeException);
+            }
+            else
+            {
+                rangeConverter.WriteJson(writer, range, jsonSerializer);
+            }
         }
     }
 }
