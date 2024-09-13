@@ -164,7 +164,7 @@ namespace Microsoft.Azure.Cosmos
         public void OnBeforeSendRequest(DocumentServiceRequest request)
         {
             this.isMultiMasterWriteRegion = !request.IsReadOnlyRequest
-                && (this.globalEndpointManager?.CanUseMultipleWriteLocations(request) ?? false);
+                && (this.globalEndpointManager?.CanSupportMultipleWriteLocations(request) ?? false);
         }
 
         /// <summary>

@@ -264,6 +264,11 @@ namespace Microsoft.Azure.Cosmos.Routing
             return this.locationInfo.AvailableReadLocations;
         }
 
+        public ReadOnlyCollection<string> GetAvailableWriteLocations()
+        {
+            return this.locationInfo.AvailableWriteLocations;
+        }
+
         /// <summary>
         /// Resolves request to service endpoint. 
         /// 1. If this is a write request
@@ -530,7 +535,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         public bool CanUseMultipleWriteLocations(DocumentServiceRequest request)
         {
             return this.CanUseMultipleWriteLocations()
-                && this.locationInfo.AvailableWriteLocations.Count > 1
                 && (request.ResourceType == ResourceType.Document ||
                 (request.ResourceType == ResourceType.StoredProcedure && request.OperationType == Documents.OperationType.ExecuteJavaScript));
         }
