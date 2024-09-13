@@ -710,7 +710,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
 #else
         internal
 #endif
-        CosmosClientBuilder WithAvailibilityStrategy(AvailabilityStrategy strategy)
+        CosmosClientBuilder WithAvailabilityStrategy(AvailabilityStrategy strategy)
         {
             this.clientOptions.AvailabilityStrategy = strategy;
             return this;
