@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
+    using System.Collections.Generic;
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
@@ -19,14 +20,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
     internal class TelemetryToServiceHelper : IDisposable
     {
+        private readonly OpenTelemetryMetricsCollector openTelemetryCollector = null;
         private ITelemetryCollector collector = new TelemetryCollectorNoOp();
-
+    
         internal static TimeSpan DefaultBackgroundRefreshClientConfigTimeInterval 
             = TimeSpan.FromMinutes(10);
 
         private readonly AuthorizationTokenProvider cosmosAuthorization;
         private readonly CosmosHttpClient httpClient;
-        private readonly Uri serviceEnpoint;
+        private readonly Uri serviceEndpoint;
         private readonly ConnectionPolicy connectionPolicy;
         private readonly string clientId;
         private readonly GlobalEndpointManager globalEndpointManager;
@@ -34,9 +36,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private ClientTelemetry clientTelemetry = null;
 
-        private TelemetryToServiceHelper()
+        private TelemetryToServiceHelper(string clientId, string accountName)
         {
-            //NoOpConstructor
+            this.openTelemetryCollector = new OpenTelemetryMetricsCollector(clientId: clientId, accountName: accountName);
         }
 
         private TelemetryToServiceHelper(
@@ -52,9 +54,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.cosmosAuthorization = cosmosAuthorization;
             this.httpClient = httpClient;
             this.connectionPolicy = connectionPolicy;
-            this.serviceEnpoint = serviceEndpoint;
+            this.serviceEndpoint = serviceEndpoint;
             this.globalEndpointManager = globalEndpointManager;
             this.cancellationTokenSource = cancellationTokenSource;
+
+            this.openTelemetryCollector = new OpenTelemetryMetricsCollector(clientId: clientId, accountName: serviceEndpoint.Host);
         }
 
         public static TelemetryToServiceHelper CreateAndInitializeClientConfigAndTelemetryJob(string clientId,
@@ -66,11 +70,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
            CancellationTokenSource cancellationTokenSource)
         {
 #if INTERNAL
-            return new TelemetryToServiceHelper();
+            return new TelemetryToServiceHelper(clientId: clientId, accountName: serviceEndpoint.Host);
 #else
             if (connectionPolicy.CosmosClientTelemetryOptions.DisableSendingMetricsToService)
             {
-                return new TelemetryToServiceHelper();
+                return new TelemetryToServiceHelper(clientId: clientId, accountName: serviceEndpoint.Host);
             }
 
             TelemetryToServiceHelper helper = new TelemetryToServiceHelper(
@@ -82,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 globalEndpointManager: globalEndpointManager, 
                 cancellationTokenSource: cancellationTokenSource);
 
-            _ = helper.RetrieveConfigAndInitiateTelemetryAsync(); // Let it run in backgroud
+            _ = helper.RetrieveConfigAndInitiateTelemetryAsync(); // Let it run in background
 
             return helper;
 #endif
@@ -92,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             try
             {
-                Uri serviceEndpointWithPath = new Uri(this.serviceEnpoint + Paths.ClientConfigPathSegment);
+                Uri serviceEndpointWithPath = new Uri(this.serviceEndpoint + Paths.ClientConfigPathSegment);
                 while (!this.cancellationTokenSource.IsCancellationRequested)
                 {
                     TryCatch<AccountClientConfiguration> databaseAccountClientConfigs = await this.GetDatabaseAccountClientConfigAsync(
@@ -172,9 +176,25 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
         }
 
-        public ITelemetryCollector GetCollector()
+        public List<ITelemetryCollector> GetCollectors(RequestMessage request = null)
         {
-            return this.collector;
+            List<ITelemetryCollector> collectors = new List<ITelemetryCollector>(2);
+            if (request is null || IsAllowed(request))
+            {
+                collectors.Add(this.collector);
+            }
+
+            if (this.openTelemetryCollector != null)
+            {
+                collectors.Add(this.openTelemetryCollector);
+            }
+
+            return collectors;
+        }
+
+        private static bool IsAllowed(RequestMessage request)
+        {
+            return ClientTelemetryOptions.AllowedResourceTypes.Equals(request.ResourceType);
         }
 
         public bool IsClientTelemetryJobRunning()
