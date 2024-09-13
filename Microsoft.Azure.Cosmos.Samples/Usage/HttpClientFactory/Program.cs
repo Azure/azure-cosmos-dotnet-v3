@@ -23,7 +23,7 @@
     public class Program
     {
         // <Main>
-        public static void Main(string[] args)
+        public static void Main(string[] _)
         {
             try
             {
@@ -130,10 +130,7 @@
             {
                 // <IHttpClientFactoryConsole>
                 IHostBuilder builder = new HostBuilder()
-                    .ConfigureServices((hostContext, services) =>
-                    {
-                        services.AddHttpClient();
-                    }).UseConsoleLifetime();
+                    .ConfigureServices((hostContext, services) => services.AddHttpClient()).UseConsoleLifetime();
 
                 IHost host = builder.Build();
 
@@ -190,9 +187,11 @@
         {
             // <ReusingHandler>
             // Maintain a single instance of the SocketsHttpHandler for the lifetime of the application
-            SocketsHttpHandler socketsHttpHandler = new SocketsHttpHandler();
-            socketsHttpHandler.PooledConnectionLifetime = TimeSpan.FromMinutes(10); // Customize this value based on desired DNS refresh timer
-            socketsHttpHandler.MaxConnectionsPerServer = 20; // Customize the maximum number of allowed connections
+            SocketsHttpHandler socketsHttpHandler = new SocketsHttpHandler
+            {
+                PooledConnectionLifetime = TimeSpan.FromMinutes(10), // Customize this value based on desired DNS refresh timer
+                MaxConnectionsPerServer = 20 // Customize the maximum number of allowed connections
+            };
 
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
             {
