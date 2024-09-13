@@ -428,6 +428,67 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Tests for <see cref="GlobalEndpointManager"/>
+        /// </summary>
+        [TestMethod]
+        public async Task GetDatabaseAccountFromEffectiveRegionalEndpointTestAsync()
+        {
+            AccountProperties databaseAccount = new AccountProperties
+            {
+                ReadLocationsInternal = new Collection<AccountRegion>()
+                {
+                    new AccountRegion
+                    {
+                        Name = "Location1",
+                        Endpoint = "https://testfailover-location1.documents-test.windows-int.net/"
+                    },
+                    new AccountRegion
+                    {
+                        Name = "Location2",
+                        Endpoint = "https://testfailover-location2.documents-test.windows-int.net/"
+                    },
+                    new AccountRegion
+                    {
+                        Name = "Location3",
+                        Endpoint = "https://testfailover-location3.documents-test.windows-int.net/"
+                    },
+                }
+            };
+
+            Uri defaultEndpoint = new Uri("https://testfailover.documents-test.windows-int.net/");
+            Uri effectivePreferredRegion1SuffixedUri = new Uri("https://testfailover-location1.documents-test.windows-int.net/");
+
+            //Setup mock owner "document client"
+            Mock<IDocumentClientInternal> mockOwner = new Mock<IDocumentClientInternal>();
+
+            mockOwner.Setup(owner => owner.ServiceEndpoint).Returns(defaultEndpoint);
+            mockOwner.SetupSequence(owner =>
+                    owner.GetDatabaseAccountInternalAsync(defaultEndpoint, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(databaseAccount)
+                .ThrowsAsync(new HttpRequestException());
+            mockOwner.Setup(owner =>
+                    owner.GetDatabaseAccountInternalAsync(effectivePreferredRegion1SuffixedUri, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(databaseAccount);
+            
+            // Create connection policy with no preferred locations
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy();
+
+            using GlobalEndpointManager globalEndpointManager =
+                new GlobalEndpointManager(mockOwner.Object, connectionPolicy);
+            globalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(databaseAccount);
+
+            await Task.Delay(TimeSpan.FromSeconds(5));
+            await globalEndpointManager.RefreshLocationAsync(forceRefresh: true);
+            
+            mockOwner.Verify(
+                owner => owner.GetDatabaseAccountInternalAsync(defaultEndpoint, It.IsAny<CancellationToken>()),
+                Times.Exactly(2));
+            mockOwner.Verify(
+                owner => owner.GetDatabaseAccountInternalAsync(effectivePreferredRegion1SuffixedUri, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        /// <summary>
         /// Test to validate that when an exception is thrown during a RefreshLocationAsync call
         /// the exception should not be bubbled up and remain unobserved. The exception should be
         /// handled gracefully and logged as a warning trace event.
