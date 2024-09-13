@@ -447,64 +447,68 @@
             doc.SetValue("Type", "Goverment");
             documents[2] = await this.container.CreateItemAsync<Document>(doc);
 
-            //Query
-            foreach (Document document in documents)
+            foreach (bool odeEnabled in new bool[] { false, true })
             {
-                pKey = new PartitionKeyBuilder()
-                    .Add(document.GetPropertyValue<string>("ZipCode"))
-                    .Add(document.GetPropertyValue<string>("City"))
-                .Build();
-
-                badPKey = new PartitionKeyBuilder()
-                            .Add(document.GetPropertyValue<string>("City"))
-                            .Build();
-
-                String query = $"SELECT * from c where c.id = \"{document.GetPropertyValue<string>("id")}\"";
-
-                using (FeedIterator<Document> feedIterator = this.container.GetItemQueryIterator<Document>(
-                    query,
-                    null,
-                    new QueryRequestOptions() { PartitionKey = pKey }))
+                //Query
+                foreach (Document document in documents)
                 {
-                    Assert.IsTrue(feedIterator.HasMoreResults);
+                    pKey = new PartitionKeyBuilder()
+                        .Add(document.GetPropertyValue<string>("ZipCode"))
+                        .Add(document.GetPropertyValue<string>("City"))
+                    .Build();
 
-                    FeedResponse<Document> queryDoc = await feedIterator.ReadNextAsync();
-                    queryDoc.First<Document>();
-                    Assert.IsTrue(queryDoc.Count == 1);
-                    feedIterator.Dispose();
-                }
+                    badPKey = new PartitionKeyBuilder()
+                                .Add(document.GetPropertyValue<string>("City"))
+                                .Build();
 
-                //Using an incomplete partition key with prefix of PK path definition
-                pKey = new PartitionKeyBuilder()
-                    .Add(document.GetPropertyValue<string>("ZipCode"))
-                .Build();
-                using (FeedIterator<Document> feedIterator = this.container.GetItemQueryIterator<Document>(
-                    query,
-                    null,
-                    new QueryRequestOptions() { PartitionKey = pKey }))
-                {
-                    Assert.IsTrue(feedIterator.HasMoreResults);
+                    String query = $"SELECT * from c where c.id = \"{document.GetPropertyValue<string>("id")}\"";
 
-                    FeedResponse<Document> queryDoc = await feedIterator.ReadNextAsync();
-                    queryDoc.First<Document>();
-                    Assert.IsTrue(queryDoc.Count == 1);
-                    feedIterator.Dispose();
-                }
+                    using (FeedIterator<Document> feedIterator = this.container.GetItemQueryIterator<Document>(
+                        query,
+                        null,
+                        new QueryRequestOptions() { EnableOptimisticDirectExecution = odeEnabled, PartitionKey = pKey }))
+                    {
+                        Assert.IsTrue(feedIterator.HasMoreResults);
 
-                //Negative test - using incomplete partition key
-                using (FeedIterator<Document> badFeedIterator = this.container.GetItemQueryIterator<Document>(
-                    query,
-                    null,
-                    new QueryRequestOptions() { PartitionKey = badPKey}))
-                {
-                    FeedResponse<Document> queryDocBad = await badFeedIterator.ReadNextAsync();
-                    Assert.ThrowsException<InvalidOperationException>(() =>
-                         queryDocBad.First<Document>()
-                    );
-                    badFeedIterator.Dispose();
+                        FeedResponse<Document> queryDoc = await feedIterator.ReadNextAsync();
+                        Document retrievedDocument = queryDoc.First<Document>();
+                        Assert.IsTrue(queryDoc.Count == 1);
+                        Assert.AreEqual(document.Id, retrievedDocument.Id);
+                        feedIterator.Dispose();
+                    }
+
+                    //Using an incomplete partition key with prefix of PK path definition
+                    pKey = new PartitionKeyBuilder()
+                        .Add(document.GetPropertyValue<string>("ZipCode"))
+                    .Build();
+                    using (FeedIterator<Document> feedIterator = this.container.GetItemQueryIterator<Document>(
+                        query,
+                        null,
+                        new QueryRequestOptions() { EnableOptimisticDirectExecution = odeEnabled, PartitionKey = pKey }))
+                    {
+                        Assert.IsTrue(feedIterator.HasMoreResults);
+
+                        FeedResponse<Document> queryDoc = await feedIterator.ReadNextAsync();
+                        Document retrievedDocument = queryDoc.First<Document>();
+                        Assert.IsTrue(queryDoc.Count == 1);
+                        Assert.AreEqual(document.Id, retrievedDocument.Id);
+                        feedIterator.Dispose();
+                    }
+
+                    //Negative test - using incomplete partition key
+                    using (FeedIterator<Document> badFeedIterator = this.container.GetItemQueryIterator<Document>(
+                        query,
+                        null,
+                        new QueryRequestOptions() { EnableOptimisticDirectExecution = odeEnabled, PartitionKey = badPKey }))
+                    {
+                        FeedResponse<Document> queryDocBad = await badFeedIterator.ReadNextAsync();
+                        Assert.ThrowsException<InvalidOperationException>(() =>
+                             queryDocBad.First<Document>()
+                        );
+                        badFeedIterator.Dispose();
+                    }
                 }
             }
         }
-
     }
 }

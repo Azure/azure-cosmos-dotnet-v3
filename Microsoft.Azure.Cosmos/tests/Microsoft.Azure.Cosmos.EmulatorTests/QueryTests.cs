@@ -2135,12 +2135,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 if (!(e.InnerException is DocumentClientException exception))
                 {
-                    throw e;
+                    throw;
                 }
 
                 if (exception.StatusCode != HttpStatusCode.BadRequest)
                 {
-                    throw e;
+                    throw;
                 }
 
                 Assert.IsTrue(exception.Message.Contains("continuation token limit specified is not large enough"));
@@ -2159,12 +2159,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 if (!(e.InnerException is DocumentClientException exception))
                 {
-                    throw e;
+                    throw;
                 }
 
                 if (exception.StatusCode != HttpStatusCode.BadRequest)
                 {
-                    throw e;
+                    throw;
                 }
 
                 Assert.IsTrue(exception.Message.Contains("Please pass in a valid continuation token size limit which must be a positive integer"));

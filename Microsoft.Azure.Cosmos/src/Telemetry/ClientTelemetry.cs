@@ -221,9 +221,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 Task resultTask = await Task.WhenAny(processingTask, delayTask);
                 if (resultTask == delayTask)
                 {
-                    DefaultTrace.TraceVerbose($"Processor task with date as {0} is canceled as it did not finish in {1}", telemetryDate, timeout);
-                    // Operation cancelled
-                    throw new OperationCanceledException(string.Format($"Processor task with date as {0} is canceled as it did not finish in {1}", telemetryDate, timeout));
+                    DefaultTrace.TraceError("Processor task with date as {0} is cancelled as it did not finish in {1} milliseconds", telemetryDate, timeout.TotalMilliseconds);
                 }
                 else
                 {
@@ -246,12 +244,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             // If latency information is not available. Ignore this datapoint. It is not expected but putting this safety check
             if (!data.RequestLatency.HasValue)
             {
-                DefaultTrace.TraceWarning($"Latency data point is not available for {0} cache call", cacheName);
+                DefaultTrace.TraceWarning("Latency data point is not available for {0} cache call", cacheName);
 
                 return;
             }
 
-            DefaultTrace.TraceVerbose($"Collecting cacheRefreshSource {0} data for Telemetry.", cacheName);
+            DefaultTrace.TraceVerbose("Collecting cacheRefreshSource {0} data for Telemetry.", cacheName);
 
             string regionsContacted = ClientTelemetryHelper.GetContactedRegions(data.RegionsContactedList);
 
@@ -324,7 +322,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             else
             {
-                DefaultTrace.TraceWarning($"Latency data point is not available for an operation");
+                DefaultTrace.TraceWarning("Latency data point is not available for an operation");
             }
              
             long requestChargeToRecord = (long)(data.RequestCharge * ClientTelemetryOptions.HistogramPrecisionFactor);

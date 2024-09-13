@@ -18,13 +18,7 @@ namespace Microsoft.Azure.Cosmos
     /// configured RU/s, low priority requests start getting throttled first to allow execution of mission critical workloads.
     /// </remarks>
     /// <seealso href="https://aka.ms/CosmosDB/PriorityBasedExecution"/>
-
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    enum PriorityLevel
+    public enum PriorityLevel
     {
         /// <summary> 
         /// High Priority

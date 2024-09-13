@@ -139,11 +139,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             {
                 string monitoredContainerAndDatabaseRid = await this.monitoredContainer.GetMonitoredDatabaseAndContainerRidAsync(default);
                 string leasePrefix = this.monitoredContainer.GetLeasePrefix(this.changeFeedLeaseOptions.LeasePrefix, monitoredContainerAndDatabaseRid);
-                DocumentServiceLeaseStoreManager documentServiceLeaseStoreManager = await DocumentServiceLeaseStoreManagerBuilder.InitializeAsync(
-                    monitoredContainer: this.monitoredContainer,
-                    leaseContainer: this.leaseContainer,
-                    leaseContainerPrefix: leasePrefix,
-                    instanceName: ChangeFeedEstimatorRunner.EstimatorDefaultHostName);
+                DocumentServiceLeaseStoreManager documentServiceLeaseStoreManager = await DocumentServiceLeaseStoreManagerBuilder
+                    .InitializeAsync(
+                        monitoredContainer: this.monitoredContainer,
+                        leaseContainer: this.leaseContainer,
+                        leaseContainerPrefix: leasePrefix,
+                        instanceName: ChangeFeedEstimatorRunner.EstimatorDefaultHostName,
+                        changeFeedMode: ChangeFeedMode.LatestVersion)
+                    .ConfigureAwait(false);
 
                 this.documentServiceLeaseContainer = documentServiceLeaseStoreManager.LeaseContainer;
             }

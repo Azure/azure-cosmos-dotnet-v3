@@ -227,7 +227,14 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
                     return Task.FromResult(cosmosContainerSetting);
                 });
 
-            this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null);
+            Mock<IDocumentClientInternal> mockDocumentClient = new();
+            mockDocumentClient
+                .Setup(client => client.ServiceEndpoint)
+                .Returns(new Uri("https://foo"));
+
+            using GlobalEndpointManager endpointManager = new(mockDocumentClient.Object, new ConnectionPolicy());
+
+            this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null, endpointManager);
             this.partitionKeyRangeCache.Setup(
                         m => m.TryLookupAsync(
                             It.IsAny<string>(),

@@ -34,6 +34,7 @@
             TryCatch<PartitionedQueryExecutionInfo> tryGetQueryPlan = queryPartitionProvider.TryGetPartitionedQueryExecutionInfo(
                     querySpecJsonString: sqlQuerySpec,
                     partitionKeyDefinition: PartitionKeyDefinition,
+                    vectorEmbeddingPolicy: null,
                     requireFormattableOrderByQuery: true,
                     isContinuationExpected: false,
                     allowNonValueAggregateQuery: true,
@@ -50,6 +51,7 @@
             tryGetQueryPlan = queryPartitionProvider.TryGetPartitionedQueryExecutionInfo(
                             querySpecJsonString: sqlQuerySpec,
                             partitionKeyDefinition: PartitionKeyDefinition,
+                            vectorEmbeddingPolicy: null,
                             requireFormattableOrderByQuery: true,
                             isContinuationExpected: false,
                             allowNonValueAggregateQuery: true,

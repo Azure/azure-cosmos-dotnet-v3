@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     internal sealed class SqlQuerySpec
     {
         private SqlParameterCollection parameters;
-        
+
         /// <summary>
         /// Initializes a new instance of the <see cref="T:Microsoft.Azure.Documents.SqlQuerySpec"/> class for the Azure Cosmos DB service.</summary>
         /// <remarks> 
@@ -40,11 +40,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         /// <param name="queryText">The text of the database query.</param>
         /// <param name="parameters">The <see cref="T:Microsoft.Azure.Documents.SqlParameterCollection"/> instance, which represents the collection of query parameters.</param>
         public SqlQuerySpec(string queryText, SqlParameterCollection parameters)
+            : this(queryText, parameters, null)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="T:Microsoft.Azure.Documents.SqlQuerySpec"/> class for the Azure Cosmos DB service.
+        /// </summary>
+        /// <param name="queryText">The text of the database query.</param>
+        /// <param name="parameters">The <see cref="T:Microsoft.Azure.Documents.SqlParameterCollection"/> instance, which represents the collection of query parameters.</param>
+        /// <param name="resumeFilter">The <see cref="T:Microsoft.Azure.Cosmos.Query.Core.SqlQueryResumeFilter"/> instance, which represents the query resume filter.</param>
+        public SqlQuerySpec(string queryText, SqlParameterCollection parameters, SqlQueryResumeFilter resumeFilter)
         {
             this.QueryText = queryText;
             this.parameters = parameters ?? throw new ArgumentNullException("parameters");
+            this.ResumeFilter = resumeFilter;
         }
-        
+
         /// <summary>
         /// Gets or sets the text of the Azure Cosmos DB database query.
         /// </summary>
@@ -53,21 +65,25 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         public string QueryText { get; set; }
 
         /// <summary>
+        /// Gets or sets the ClientQL Compatibility Level supported by the client.
+        /// </summary>
+        /// <value>The integer value representing the compatibility of the client.</value>
+        [DataMember(Name = "clientQLCompatibilityLevel", EmitDefaultValue = false)]
+        public int? ClientQLCompatibilityLevel { get; set; }
+
+        /// <summary>
         /// Gets or sets the <see cref="T:Microsoft.Azure.Documents.SqlParameterCollection"/> instance, which represents the collection of Azure Cosmos DB query parameters.
         /// </summary>
         /// <value>The <see cref="T:Microsoft.Azure.Documents.SqlParameterCollection"/> instance.</value>
         [DataMember(Name = "parameters")]
         public SqlParameterCollection Parameters
         {
-            get
-            {
-                return this.parameters;
-            }
-            set
-            {
-                this.parameters = value ?? throw new ArgumentNullException("value");
-            }
+            get => this.parameters;
+            set => this.parameters = value ?? throw new ArgumentNullException("value");
         }
+
+        [DataMember(Name = "resumeFilter", EmitDefaultValue = false)]
+        public SqlQueryResumeFilter ResumeFilter { get; set; }
 
         /// <summary>
         /// Returns a value that indicates whether the Azure Cosmos DB database <see cref="Parameters"/> property should be serialized.

@@ -10,12 +10,17 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Diagnostics;
+    using System.IO;
     using System.Linq;
     using System.Linq.Expressions;
+    using System.Reflection;
     using System.Runtime.CompilerServices;
     using System.Text;
+    using System.Text.Json.Serialization;
+    using System.Text.Json;
     using System.Text.RegularExpressions;
     using System.Xml;
+    using global::Azure.Core.Serialization;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -30,9 +35,38 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="queryResults"></param>
         /// <param name="dataResults"></param>
         /// <returns></returns>
-        private static bool CompareListOfAnonymousType(List<object> queryResults, List<dynamic> dataResults)
+        private static bool CompareListOfAnonymousType(List<object> queryResults, List<dynamic> dataResults, bool ignoreOrder)
         {
-            return queryResults.SequenceEqual(dataResults);
+            if (!ignoreOrder)
+            {
+                return queryResults.SequenceEqual(dataResults);
+            }
+
+            if (queryResults.Count != dataResults.Count)
+            {
+                return false;
+            }
+
+            bool resultMatched = true;
+            foreach (object obj in queryResults)
+            {
+                if (!dataResults.Any(a => a.Equals(obj)))
+                {
+                    resultMatched = false;
+                    return false;
+                }
+            }
+
+            foreach (dynamic obj in dataResults)
+            {
+                if (!queryResults.Any(a => a.Equals(obj)))
+                {
+                    resultMatched = false;
+                    break;
+                }
+            }
+
+            return resultMatched;
         }
 
         /// <summary>
@@ -156,12 +190,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         }
 
         /// <summary>
-        /// Validate the results of CosmosDB query and the results of LinQ query on the original data
-        /// Using Assert, will fail the unit test if the two results list are not SequenceEqual
+        /// Gets the results of CosmosDB query and the results of LINQ query on the original data
         /// </summary>
         /// <param name="queryResults"></param>
         /// <param name="dataResults"></param>
-        public static void ValidateResults(IQueryable queryResults, IQueryable dataResults)
+        public static (List<object> queryResults, List<dynamic> dataResults) GetResults(IQueryable queryResults, IQueryable dataResults)
         {
             // execution validation
             IEnumerator queryEnumerator = queryResults.GetEnumerator();
@@ -171,7 +204,19 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 queryResultsList.Add(queryEnumerator.Current);
             }
 
-            List<dynamic> dataResultsList = dataResults.Cast<dynamic>().ToList();
+            List<dynamic> dataResultsList = dataResults?.Cast<dynamic>()?.ToList();
+
+            return (queryResultsList, dataResultsList);
+        }
+
+        /// <summary>
+        /// Validates the results of CosmosDB query and the results of LINQ query on the original data
+        /// Using Assert, will fail the unit test if the two results list are not SequenceEqual
+        /// </summary>
+        /// <param name="queryResultsList"></param>
+        /// <param name="dataResultsList"></param>
+        private static void ValidateResults(List<object> queryResultsList, List<dynamic> dataResultsList, bool ignoreOrder)
+        {
             bool resultMatched = true;
             string actualStr = null;
             string expectedStr = null;
@@ -188,7 +233,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 }
                 else if (LinqTestsCommon.IsAnonymousType(firstElem.GetType()))
                 {
-                    resultMatched &= CompareListOfAnonymousType(queryResultsList, dataResultsList);
+                    resultMatched &= CompareListOfAnonymousType(queryResultsList, dataResultsList, ignoreOrder);
                 }
                 else if (LinqTestsCommon.IsNumber(firstElem))
                 {
@@ -229,9 +274,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             string assertMsg = string.Empty;
             if (!resultMatched)
             {
-                if (actualStr == null) actualStr = JsonConvert.SerializeObject(queryResultsList);
-
-                if (expectedStr == null) expectedStr = JsonConvert.SerializeObject(dataResultsList);
+                actualStr ??= JsonConvert.SerializeObject(queryResultsList);
+                expectedStr ??= JsonConvert.SerializeObject(dataResultsList);
 
                 resultMatched |= actualStr.Equals(expectedStr);
                 if (!resultMatched)
@@ -271,7 +315,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         }
 
         /// <summary>
-        /// Generate test data for most LinQ tests
+        /// Generate test data for most LINQ tests
         /// </summary>
         /// <typeparam name="T">the object type</typeparam>
         /// <param name="func">the lamda to create an instance of test data</param>
@@ -296,12 +340,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             }
 
             FeedOptions feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true };
-            QueryRequestOptions requestOptions = new QueryRequestOptions()
-            {
-#if PREVIEW
-                EnableOptimisticDirectExecution = false
-#endif
-            };
+            QueryRequestOptions requestOptions = new QueryRequestOptions() { EnableOptimisticDirectExecution = false };
 
             IOrderedQueryable<T> query = container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution: true, requestOptions: requestOptions);
 
@@ -310,6 +349,38 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             // That is done by using Func that take a boolean Func. The parameter of the Func indicate whether the Cosmos DB query 
             // or the data list should be used. When a test is executed, the compiled LINQ expression would pass different values
             // to this getQuery method.
+            IQueryable<T> getQuery(bool useQuery) => useQuery ? query : data.AsQueryable();
+
+            return getQuery;
+        }
+
+        /// <summary>
+        /// Generate a non-random payload for serializer LINQ tests. 
+        /// </summary>
+        /// <typeparam name="T">the object type</typeparam>
+        /// <param name="func">the lamda to create an instance of test data</param>
+        /// <param name="count">number of test data to be created</param>
+        /// <param name="container">the target container</param>
+        /// <param name="camelCaseSerialization">if theCosmosLinqSerializerOption of camelCaseSerialization should be applied</param>
+        /// <returns>a lambda that takes a boolean which indicate where the query should run against CosmosDB or against original data, and return a query results as IQueryable.</returns>
+        public static Func<bool, IQueryable<T>> GenerateSerializationTestCosmosData<T>(Func<int, bool, T> func, int count, Container container, CosmosLinqSerializerOptions linqSerializerOptions)
+        {
+            List<T> data = new List<T>();
+            for (int i = 0; i < count; i++)
+            {
+                data.Add(func(i, linqSerializerOptions.PropertyNamingPolicy == CosmosPropertyNamingPolicy.CamelCase));
+            }
+
+            foreach (T obj in data)
+            {
+                ItemResponse<T> response = container.CreateItemAsync(obj, new Cosmos.PartitionKey("Test")).Result;
+            }
+
+            FeedOptions feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true };
+            QueryRequestOptions requestOptions = new QueryRequestOptions() { EnableOptimisticDirectExecution = false };
+
+            IOrderedQueryable<T> query = container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution: true, requestOptions: requestOptions, linqSerializerOptions: linqSerializerOptions);
+
             IQueryable<T> getQuery(bool useQuery) => useQuery ? query : data.AsQueryable();
 
             return getQuery;
@@ -434,7 +505,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                     for (int j = 0; j < random.Next(MaxThings) + 1; ++j)
                     {
                         obj.Children[i].Things.Add(
-                            j == 0 ? "A" : $"{j}-{random.Next().ToString()}",
+                            j == 0 ? "A" : $"{j}-{random.Next()}",
                             LinqTestsCommon.RandomString(random, random.Next(MaxThingStringLength)));
                     }
                 }
@@ -462,40 +533,21 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             return getQuery;
         }
 
-        public static Func<bool, IQueryable<Data>> GenerateSimpleCosmosData(
-         Cosmos.Database cosmosDatabase
-         )
+        public static Func<bool, IQueryable<Data>> GenerateSimpleCosmosData(Cosmos.Database cosmosDatabase, bool useRandomData = true)
         {
             const int DocumentCount = 10;
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/Pk" }), Kind = PartitionKind.Hash };
             Container container = cosmosDatabase.CreateContainerAsync(new ContainerProperties { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition }).Result;
 
-            int seed = DateTime.Now.Millisecond;
-            Random random = new Random(seed);
-            Debug.WriteLine("Random seed: {0}", seed);
-            List<Data> testData = new List<Data>();
-            for (int index = 0; index < DocumentCount; index++)
+            ILinqTestDataGenerator dataGenerator = useRandomData ? new LinqTestRandomDataGenerator(DocumentCount) : new LinqTestDataGenerator(DocumentCount);
+            List<Data> testData = new List<Data>(dataGenerator.GenerateData());
+            foreach (Data dataEntry in testData)
             {
-                Data dataEntry = new Data()
-                {
-                    Id = Guid.NewGuid().ToString(),
-                    Number = random.Next(-10000, 10000),
-                    Flag = index % 2 == 0 ? true : false,
-                    Multiples = new int[] { index, index * 2, index * 3, index * 4 },
-                    Pk = "Test"
-                };
-
                 Data response = container.CreateItemAsync<Data>(dataEntry, new Cosmos.PartitionKey(dataEntry.Pk)).Result;
-                testData.Add(dataEntry);
             }
 
             FeedOptions feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true };
-            QueryRequestOptions requestOptions = new QueryRequestOptions()
-            {
-#if PREVIEW
-                EnableOptimisticDirectExecution = false
-#endif
-            };
+            QueryRequestOptions requestOptions = new QueryRequestOptions() { EnableOptimisticDirectExecution = false };
 
             IOrderedQueryable<Data> query = container.GetItemLinqQueryable<Data>(allowSynchronousQueryExecution: true, requestOptions: requestOptions);
 
@@ -508,28 +560,35 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             return getQuery;
         }
 
-        public static LinqTestOutput ExecuteTest(LinqTestInput input)
+        public static LinqTestOutput ExecuteTest(LinqTestInput input, bool serializeResultsInBaseline = false)
         {
             string querySqlStr = string.Empty;
             try
             {
                 Func<bool, IQueryable> compiledQuery = input.Expression.Compile();
 
-                IQueryable queryResults = compiledQuery(true);
-                querySqlStr = JObject.Parse(queryResults.ToString()).GetValue("query", StringComparison.Ordinal).ToString();
+                IQueryable query = compiledQuery(true);
+                querySqlStr = JObject.Parse(query.ToString()).GetValue("query", StringComparison.Ordinal).ToString();
 
-                // we skip unordered query because the LinQ results vs actual query results are non-deterministic
+                IQueryable dataQuery = input.skipVerification ? null : compiledQuery(false);
+
+                (List<object> queryResults, List<dynamic> dataResults) = GetResults(query, dataQuery);
+
+                // we skip unordered query because the LINQ results vs actual query results are non-deterministic
                 if (!input.skipVerification)
                 {
-                    IQueryable dataResults = compiledQuery(false);
-                    LinqTestsCommon.ValidateResults(queryResults, dataResults);
+                    LinqTestsCommon.ValidateResults(queryResults, dataResults, input.ignoreOrder);
                 }
 
-                return new LinqTestOutput(querySqlStr);
+                string serializedResults = serializeResultsInBaseline ?
+                    JsonConvert.SerializeObject(queryResults.Select(item => item is LinqTestObject ? item.ToString() : item), new JsonSerializerSettings { Formatting = Newtonsoft.Json.Formatting.Indented}) :
+                    null;
+
+                return new LinqTestOutput(querySqlStr, serializedResults, errorMsg: null, input.inputData);
             }
             catch (Exception e)
             {
-                return new LinqTestOutput(querySqlStr, LinqTestsCommon.BuildExceptionMessageForTest(e));
+                return new LinqTestOutput(querySqlStr, serializedResults: null, errorMsg: LinqTestsCommon.BuildExceptionMessageForTest(e), inputData: input.inputData);
             }
         }
 
@@ -570,13 +629,15 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     {
         private string json;
 
+        protected virtual string SerializeForTestBaseline()
+        {
+            return JsonConvert.SerializeObject(this);
+        }
+
         public override string ToString()
         {
             // simple cached serialization
-            if (this.json == null)
-            {
-                this.json = JsonConvert.SerializeObject(this);
-            }
+            this.json ??= this.SerializeForTestBaseline();
             return this.json;
         }
 
@@ -608,18 +669,30 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         internal int randomSeed = -1;
         internal Expression<Func<bool, IQueryable>> Expression { get; }
         internal string expressionStr;
+        internal string inputData;
 
         // We skip the verification between Cosmos DB and actual query restuls in the following cases
         //     - unordered query since the results are not deterministics for LinQ results and actual query results
         //     - scenarios not supported in LINQ, e.g. sequence doesn't contain element.
         internal bool skipVerification;
 
-        internal LinqTestInput(string description, Expression<Func<bool, IQueryable>> expr, bool skipVerification = false, string expressionStr = null)
+        // Ignore Ordering for AnonymousType object
+        internal readonly bool ignoreOrder;
+
+        internal LinqTestInput(
+            string description, 
+            Expression<Func<bool, IQueryable>> expr, 
+            bool skipVerification = false, 
+            bool ignoreOrderingForAnonymousTypeObject = false,
+            string expressionStr = null, 
+            string inputData = null)
             : base(description)
         {
             this.Expression = expr ?? throw new ArgumentNullException($"{nameof(expr)} must not be null.");
             this.skipVerification = skipVerification;
+            this.ignoreOrder = ignoreOrderingForAnonymousTypeObject;
             this.expressionStr = expressionStr;
+            this.inputData = inputData;
         }
 
         public static string FilterInputExpression(string input)
@@ -656,11 +729,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 throw new ArgumentNullException($"{nameof(xmlWriter)} cannot be null.");
             }
 
-            if (this.expressionStr == null)
-            {
-                this.expressionStr = LinqTestInput.FilterInputExpression(this.Expression.Body.ToString());
-            }
-
+            this.expressionStr ??= LinqTestInput.FilterInputExpression(this.Expression.Body.ToString());
 
             xmlWriter.WriteStartElement("Description");
             xmlWriter.WriteCData(this.Description);
@@ -678,7 +747,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         internal static Regex newLine = new Regex("(\r\n|\r|\n)");
 
         internal string SqlQuery { get; }
-        internal string ErrorMessage { get; private set; }
+        internal string ErrorMessage { get; }
+        internal string Results { get; }
+        internal string InputData { get; }
 
         private static readonly Dictionary<string, string> newlineKeywords = new Dictionary<string, string>() {
             { "SELECT", "\nSELECT" },
@@ -687,6 +758,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             { "JOIN", "\nJOIN" },
             { "ORDER BY", "\nORDER BY" },
             { "OFFSET", "\nOFFSET" },
+            { "GROUP BY", "\nGROUP BY" },
             { " )", "\n)" }
         };
 
@@ -704,10 +776,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             return msg;
         }
 
-        internal LinqTestOutput(string sqlQuery, string errorMsg = null)
+        internal LinqTestOutput(string sqlQuery, string serializedResults, string errorMsg, string inputData)
         {
             this.SqlQuery = FormatSql(sqlQuery);
+            this.Results = serializedResults;
             this.ErrorMessage = errorMsg;
+            this.InputData = inputData;
         }
 
         public static String FormatSql(string sqlQuery)
@@ -726,7 +800,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             const string oneTab = "    ";
             const string startCue = "SELECT";
             const string endCue = ")";
-
             string[] tokens = sb.ToString().Split('\n');
             bool firstSelect = true;
             sb.Length = 0;
@@ -740,7 +813,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 }
                 else if (tokens[i].StartsWith(endCue, StringComparison.OrdinalIgnoreCase))
                 {
-                    indentSb.Length = indentSb.Length - oneTab.Length;
+                    indentSb.Length -= oneTab.Length;
                 }
 
                 sb.Append(indentSb).Append(tokens[i]).Append("\n");
@@ -754,12 +827,129 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             xmlWriter.WriteStartElement(nameof(this.SqlQuery));
             xmlWriter.WriteCData(this.SqlQuery);
             xmlWriter.WriteEndElement();
+            if (this.InputData != null)
+            {
+                xmlWriter.WriteStartElement("InputData");
+                xmlWriter.WriteCData(this.InputData);
+                xmlWriter.WriteEndElement();
+            }
+            if (this.Results != null)
+            {
+                xmlWriter.WriteStartElement("Results");
+                xmlWriter.WriteCData(this.Results);
+                xmlWriter.WriteEndElement();
+            }
             if (this.ErrorMessage != null)
             {
                 xmlWriter.WriteStartElement("ErrorMessage");
                 xmlWriter.WriteCData(LinqTestOutput.FormatErrorMessage(this.ErrorMessage));
                 xmlWriter.WriteEndElement();
             }
+        }
+    }
+
+    class SystemTextJsonLinqSerializer : CosmosLinqSerializer
+    {
+        private readonly JsonObjectSerializer systemTextJsonSerializer;
+        private readonly JsonSerializerOptions jsonSerializerOptions;
+
+        public SystemTextJsonLinqSerializer(JsonSerializerOptions jsonSerializerOptions)
+        {
+            this.systemTextJsonSerializer = new JsonObjectSerializer(jsonSerializerOptions);
+            this.jsonSerializerOptions = jsonSerializerOptions;
+        }
+
+        public override T FromStream<T>(Stream stream)
+        {
+            if (stream == null)
+                throw new ArgumentNullException(nameof(stream));
+
+            using (stream)
+            {
+                if (stream.CanSeek && stream.Length == 0)
+                {
+                    return default;
+                }
+
+                if (typeof(Stream).IsAssignableFrom(typeof(T)))
+                {
+                    return (T)(object)stream;
+                }
+
+                return (T)this.systemTextJsonSerializer.Deserialize(stream, typeof(T), default);
+            }
+        }
+
+        public override Stream ToStream<T>(T input)
+        {
+            MemoryStream streamPayload = new MemoryStream();
+            this.systemTextJsonSerializer.Serialize(streamPayload, input, input.GetType(), default);
+            streamPayload.Position = 0;
+            return streamPayload;
+        }
+
+        public override string SerializeMemberName(MemberInfo memberInfo)
+        {
+            System.Text.Json.Serialization.JsonExtensionDataAttribute jsonExtensionDataAttribute =
+                memberInfo.GetCustomAttribute<System.Text.Json.Serialization.JsonExtensionDataAttribute>(true);
+            if (jsonExtensionDataAttribute != null)
+            {
+                return null;
+            }
+
+            JsonPropertyNameAttribute jsonPropertyNameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(true);
+            if (!string.IsNullOrEmpty(jsonPropertyNameAttribute?.Name))
+            {
+                return jsonPropertyNameAttribute.Name;
+            }
+
+            if (this.jsonSerializerOptions.PropertyNamingPolicy != null)
+            {
+                return this.jsonSerializerOptions.PropertyNamingPolicy.ConvertName(memberInfo.Name);
+            }
+
+            // Do any additional handling of JsonSerializerOptions here.
+
+            return memberInfo.Name;
+        }
+    }
+
+    class SystemTextJsonSerializer : CosmosSerializer
+    {
+        private readonly JsonObjectSerializer systemTextJsonSerializer;
+
+        public SystemTextJsonSerializer(JsonSerializerOptions jsonSerializerOptions)
+        {
+            this.systemTextJsonSerializer = new JsonObjectSerializer(jsonSerializerOptions);
+        }
+
+        public override T FromStream<T>(Stream stream)
+        {
+            if (stream == null)
+                throw new ArgumentNullException(nameof(stream));
+
+            using (stream)
+            {
+                if (stream.CanSeek && stream.Length == 0)
+                {
+                    return default;
+                }
+
+                if (typeof(Stream).IsAssignableFrom(typeof(T)))
+                {
+                    return (T)(object)stream;
+                }
+
+                return (T)this.systemTextJsonSerializer.Deserialize(stream, typeof(T), default);
+            }
+        }
+
+        public override Stream ToStream<T>(T input)
+        {
+            MemoryStream streamPayload = new MemoryStream();
+            this.systemTextJsonSerializer.Serialize(streamPayload, input, input.GetType(), default);
+            streamPayload.Position = 0;
+            return streamPayload;
         }
     }
 }

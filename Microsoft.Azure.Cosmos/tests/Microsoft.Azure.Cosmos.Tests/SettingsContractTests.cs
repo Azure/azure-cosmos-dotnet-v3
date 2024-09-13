@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void TriggerOperationMatchesDirect()
         {
-            this.AssertEnums<Cosmos.Scripts.TriggerOperation, Documents.TriggerOperation>();
+            this.AssertEnumsContains<Cosmos.Scripts.TriggerOperation, Documents.TriggerOperation>();
         }
 
         [TestMethod]
@@ -339,7 +339,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void ContainerPropertiesDeserializeWithAdditionalDataTest()
         {
-            string cosmosSerialized = "{\"indexingPolicy\":{\"automatic\":true,\"indexingMode\":\"Consistent\",\"additionalIndexPolicy\":\"indexpolicyvalue\",\"includedPaths\":[{\"path\":\"/included/path\",\"additionalIncludedPath\":\"includedPathValue\",\"indexes\":[]}],\"excludedPaths\":[{\"path\":\"/excluded/path\",\"additionalExcludedPath\":\"excludedPathValue\"}],\"compositeIndexes\":[[{\"path\":\"/composite/path\",\"additionalCompositeIndex\":\"compositeIndexValue\",\"order\":\"ascending\"}]],\"spatialIndexes\":[{\"path\":\"/spatial/path\",\"additionalSpatialIndexes\":\"spatialIndexValue\",\"types\":[]}]},\"computedProperties\":[{\"name\":\"lowerName\",\"query\":\"SELECT VALUE LOWER(c.name) FROM c\"},{\"name\":\"estimatedTax\",\"query\":\"SELECT VALUE c.salary * 0.2 FROM c\"}],\"geospatialConfig\":{\"type\":\"Geography\",\"additionalGeospatialConfig\":\"geospatialConfigValue\"},\"uniqueKeyPolicy\":{\"additionalUniqueKeyPolicy\":\"uniqueKeyPolicyValue\",\"uniqueKeys\":[{\"paths\":[\"/unique/key/path/1\",\"/unique/key/path/2\"]}]},\"conflictResolutionPolicy\":{\"mode\":\"LastWriterWins\",\"additionalConflictResolutionPolicy\":\"conflictResolutionValue\"},\"clientEncryptionPolicy\":{\"includedPaths\":[{\"path\":\"/path\",\"clientEncryptionKeyId\":\"clientEncryptionKeyId\",\"encryptionType\":\"Randomized\",\"additionalIncludedPath\":\"includedPathValue\",\"encryptionAlgorithm\":\"AEAD_AES_256_CBC_HMAC_SHA256\"}],\"policyFormatVersion\":1,\"additionalEncryptionPolicy\":\"clientEncryptionpolicyValue\"},\"id\":\"2a9f501b-6948-4795-8fd1-797defb5c466\",\"partitionKey\":{\"paths\":[],\"kind\":\"Hash\"}}";
+            string cosmosSerialized = "{\"indexingPolicy\":{\"automatic\":true,\"indexingMode\":\"Consistent\",\"additionalIndexPolicy\":\"indexpolicyvalue\",\"includedPaths\":[{\"path\":\"/included/path\",\"additionalIncludedPath\":\"includedPathValue\",\"indexes\":[]}],\"excludedPaths\":[{\"path\":\"/excluded/path\",\"additionalExcludedPath\":\"excludedPathValue\"}],\"compositeIndexes\":[[{\"path\":\"/composite/path\",\"additionalCompositeIndex\":\"compositeIndexValue\",\"order\":\"ascending\"}]],\"spatialIndexes\":[{\"path\":\"/spatial/path\",\"additionalSpatialIndexes\":\"spatialIndexValue\",\"types\":[]}],\"vectorIndexes\":[{\"path\":\"/vector1\",\"type\":\"flat\",\"additionalVectorIndex\":\"vectorIndexValue1\"},{\"path\":\"/vector2\",\"type\":\"quantizedFlat\",\"additionalVectorIndex\":\"vectorIndexValue2\"},{\"path\":\"/vector3\",\"type\":\"diskANN\"}]},\"computedProperties\":[{\"name\":\"lowerName\",\"query\":\"SELECT VALUE LOWER(c.name) FROM c\"},{\"name\":\"estimatedTax\",\"query\":\"SELECT VALUE c.salary * 0.2 FROM c\"}],\"geospatialConfig\":{\"type\":\"Geography\",\"additionalGeospatialConfig\":\"geospatialConfigValue\"},\"uniqueKeyPolicy\":{\"additionalUniqueKeyPolicy\":\"uniqueKeyPolicyValue\",\"uniqueKeys\":[{\"paths\":[\"/unique/key/path/1\",\"/unique/key/path/2\"]}]},\"conflictResolutionPolicy\":{\"mode\":\"LastWriterWins\",\"additionalConflictResolutionPolicy\":\"conflictResolutionValue\"},\"clientEncryptionPolicy\":{\"includedPaths\":[{\"path\":\"/path\",\"clientEncryptionKeyId\":\"clientEncryptionKeyId\",\"encryptionType\":\"Randomized\",\"additionalIncludedPath\":\"includedPathValue\",\"encryptionAlgorithm\":\"AEAD_AES_256_CBC_HMAC_SHA256\"}],\"policyFormatVersion\":1,\"additionalEncryptionPolicy\":\"clientEncryptionpolicyValue\"},\"id\":\"2a9f501b-6948-4795-8fd1-797defb5c466\",\"partitionKey\":{\"paths\":[],\"kind\":\"Hash\"},\"vectorEmbeddingPolicy\":{\"vectorEmbeddings\":[{\"path\":\"/vector1\",\"dataType\":\"float32\",\"dimensions\":1200,\"distanceFunction\":\"cosine\"},{\"path\":\"/vector2\",\"dataType\":\"int8\",\"dimensions\":3,\"distanceFunction\":\"dotproduct\"},{\"path\":\"/vector3\",\"dataType\":\"uint8\",\"dimensions\":400,\"distanceFunction\":\"euclidean\"}]}}";
             
             JObject complexObject = JObject.FromObject(new { id = 1, name = new { fname = "fname", lname = "lname" } });
 
@@ -368,6 +368,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(1, containerProperties.IndexingPolicy.CompositeIndexes[0][0].AdditionalProperties.Count);
             Assert.AreEqual("compositeIndexValue", containerProperties.IndexingPolicy.CompositeIndexes[0][0].AdditionalProperties["additionalCompositeIndex"]);
 
+            Assert.AreEqual(1, containerProperties.IndexingPolicy.VectorIndexes[0].AdditionalProperties.Count);
+            Assert.AreEqual("vectorIndexValue1", containerProperties.IndexingPolicy.VectorIndexes[0].AdditionalProperties["additionalVectorIndex"]);
+
+            Assert.AreEqual(1, containerProperties.IndexingPolicy.VectorIndexes[1].AdditionalProperties.Count);
+            Assert.AreEqual("vectorIndexValue2", containerProperties.IndexingPolicy.VectorIndexes[1].AdditionalProperties["additionalVectorIndex"]);
+
+            Assert.IsNull(containerProperties.IndexingPolicy.VectorIndexes[2].AdditionalProperties);
+
             Assert.AreEqual(1, containerProperties.IndexingPolicy.IncludedPaths[0].AdditionalProperties.Count);
             Assert.AreEqual("includedPathValue", containerProperties.IndexingPolicy.IncludedPaths[0].AdditionalProperties["additionalIncludedPath"]);
 
@@ -388,6 +396,13 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.AreEqual(1, containerProperties.ClientEncryptionPolicy.IncludedPaths.First().AdditionalProperties.Count);
             Assert.AreEqual("includedPathValue", containerProperties.ClientEncryptionPolicy.IncludedPaths.First().AdditionalProperties["additionalIncludedPath"]);
+
+            Assert.IsNotNull(containerProperties.VectorEmbeddingPolicy);
+            Assert.AreEqual(3, containerProperties.VectorEmbeddingPolicy.Embeddings.Count);
+            Assert.AreEqual("/vector1", containerProperties.VectorEmbeddingPolicy.Embeddings[0].Path);
+            Assert.AreEqual(Cosmos.VectorDataType.Float32, containerProperties.VectorEmbeddingPolicy.Embeddings[0].DataType);
+            Assert.AreEqual((ulong)1200, containerProperties.VectorEmbeddingPolicy.Embeddings[0].Dimensions);
+            Assert.AreEqual(Cosmos.DistanceFunction.Cosine, containerProperties.VectorEmbeddingPolicy.Embeddings[0].DistanceFunction);
 
             Assert.AreEqual(2, containerProperties.ComputedProperties.Count);
             Assert.AreEqual("lowerName", containerProperties.ComputedProperties[0].Name);
@@ -734,7 +749,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "ConflictResolutionPolicy",
                 "ChangeFeedPolicy",
                 "ClientEncryptionPolicy",
-                "PartitionKeyPaths");
+                "PartitionKeyPaths",
+                "VectorEmbeddingPolicy");
 #else
             SettingsContractTests.TypeAccessorGuard(typeof(ContainerProperties),
                 "Id",
@@ -748,7 +764,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "PartitionKeyDefinitionVersion",
                 "ConflictResolutionPolicy",
                 "ClientEncryptionPolicy",
-                "PartitionKeyPaths");
+                "PartitionKeyPaths",
+                "VectorEmbeddingPolicy");
 #endif
 
             // Two equivalent definitions 
@@ -788,7 +805,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task ContainerSettingsIndexTest()
         {
-            string containerJsonString = "{\"indexingPolicy\":{\"automatic\":true,\"indexingMode\":\"Consistent\",\"includedPaths\":[{\"path\":\"/*\",\"indexes\":[{\"dataType\":\"Number\",\"precision\":-1,\"kind\":\"Range\"},{\"dataType\":\"String\",\"precision\":-1,\"kind\":\"Range\"}]}],\"excludedPaths\":[{\"path\":\"/\\\"_etag\\\"/?\"}],\"compositeIndexes\":[],\"spatialIndexes\":[]},\"id\":\"MigrationTest\",\"partitionKey\":{\"paths\":[\"/id\"],\"kind\":\"Hash\"}}";
+            string containerJsonString = "{\"indexingPolicy\":{\"automatic\":true,\"indexingMode\":\"Consistent\",\"includedPaths\":[{\"path\":\"/*\",\"indexes\":[{\"dataType\":\"Number\",\"precision\":-1,\"kind\":\"Range\"},{\"dataType\":\"String\",\"precision\":-1,\"kind\":\"Range\"}]}],\"excludedPaths\":[{\"path\":\"/\\\"_etag\\\"/?\"}],\"compositeIndexes\":[],\"spatialIndexes\":[],\"vectorIndexes\":[]},\"id\":\"MigrationTest\",\"partitionKey\":{\"paths\":[\"/id\"],\"kind\":\"Hash\"}}";
 
             CosmosJsonDotNetSerializer serializerCore = new CosmosJsonDotNetSerializer();
             ContainerProperties containerProperties = null;
@@ -1054,6 +1071,48 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.ThrowsException<ArgumentOutOfRangeException>(() => new Cosmos.ChangeFeedPolicy() { FullFidelityRetention = TimeSpan.FromSeconds(-10) });
         }
 
+        [TestMethod]
+        public void VectorEmbeddingPolicySerialization()
+        {
+            ContainerProperties containerSettings = new ContainerProperties("TestContainer", "/pk");
+            string serialization = JsonConvert.SerializeObject(containerSettings);
+            Assert.IsFalse(serialization.Contains("vectorEmbeddingPolicy"), "Vector Embedding Policy should not be included by default");
+
+            Cosmos.Embedding embedding1 = new()
+            {
+                Path = "/vector1",
+                DataType = Cosmos.VectorDataType.Int8,
+                DistanceFunction = Cosmos.DistanceFunction.DotProduct,
+                Dimensions = 1200,
+            };
+
+            Cosmos.Embedding embedding2 = new()
+            {
+                Path = "/vector2",
+                DataType = Cosmos.VectorDataType.Uint8,
+                DistanceFunction = Cosmos.DistanceFunction.Cosine,
+                Dimensions = 3,
+            };
+
+            Collection<Cosmos.Embedding> embeddings = new ()
+            {
+                embedding1,
+                embedding2,
+            };
+
+            containerSettings.VectorEmbeddingPolicy = new Cosmos.VectorEmbeddingPolicy(embeddings);
+
+            string serializationWithValues = JsonConvert.SerializeObject(containerSettings);
+            Assert.IsTrue(serializationWithValues.Contains("vectorEmbeddingPolicy"), "Vector Embedding Policy should be included.");
+            Assert.IsTrue(serializationWithValues.Contains("distanceFunction"), "Vector Embedding Policy distance function should be included.");
+
+            JObject parsed = JObject.Parse(serializationWithValues);
+            JToken vectorEmbeddings = parsed["vectorEmbeddingPolicy"]["vectorEmbeddings"];
+            Assert.AreEqual(JTokenType.Array, vectorEmbeddings.Type, "Vector Embedding Policy serialized vectorEmbeddings should be an array.");
+            Assert.IsTrue(embedding1.Equals(vectorEmbeddings.Value<JArray>()[0].ToObject<Cosmos.Embedding>()));
+            Assert.IsTrue(embedding2.Equals(vectorEmbeddings.Value<JArray>()[1].ToObject<Cosmos.Embedding>()));
+        }
+
         private static T CosmosDeserialize<T>(string payload)
         {
             using (MemoryStream ms = new MemoryStream())
@@ -1146,6 +1205,17 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 Assert.AreEqual(Convert.ToInt32(documentssVersion), Convert.ToInt32(cosmosVersion));
             }
+        }
+
+        private void AssertEnumsContains<TFirstEnum, TSecondEnum>() where TFirstEnum : struct, IConvertible where TSecondEnum : struct, IConvertible
+        {
+            string[] allCosmosEntries = Enum.GetNames(typeof(TFirstEnum));
+            string[] allDocumentsEntries = Enum.GetNames(typeof(TSecondEnum));
+
+           foreach(string entry in allDocumentsEntries)
+           {
+                Assert.IsTrue(allCosmosEntries.Contains(entry));
+           }
         }
     }
 }

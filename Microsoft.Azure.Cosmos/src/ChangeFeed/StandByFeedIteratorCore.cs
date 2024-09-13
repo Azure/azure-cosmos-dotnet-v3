@@ -207,10 +207,5 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 trace: trace,
                 cancellationToken: cancellationToken);
         }
-
-        public override CosmosElement GetCosmosElementContinuationToken()
-        {
-            throw new NotImplementedException();
-        }
     }
 }

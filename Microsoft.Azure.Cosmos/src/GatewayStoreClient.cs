@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -132,69 +131,79 @@ namespace Microsoft.Azure.Cosmos
             return headers;
         }
 
+        /// <summary>
+        /// Creating a new DocumentClientException using the Gateway response message.
+        /// </summary>
+        /// <param name="responseMessage"></param>
+        /// <param name="requestStatistics"></param>
         internal static async Task<DocumentClientException> CreateDocumentClientExceptionAsync(
             HttpResponseMessage responseMessage,
             IClientSideRequestStatistics requestStatistics)
         {
-            bool isNameBased = false;
-            bool isFeed = false;
-            string resourceTypeString;
-            string resourceIdOrFullName;
-
-            string resourceLink = responseMessage.RequestMessage.RequestUri.LocalPath;
-            if (!PathsHelper.TryParsePathSegments(resourceLink, out isFeed, out resourceTypeString, out resourceIdOrFullName, out isNameBased))
+            if (!PathsHelper.TryParsePathSegments(
+                resourceUrl: responseMessage.RequestMessage.RequestUri.LocalPath,
+                isFeed: out _,
+                resourcePath: out _,
+                resourceIdOrFullName: out string resourceIdOrFullName,
+                isNameBased: out _))
             {
                 // if resourceLink is invalid - we will not set resourceAddress in exception.
             }
 
             // If service rejects the initial payload like header is to large it will return an HTML error instead of JSON.
-            if (string.Equals(responseMessage.Content?.Headers?.ContentType?.MediaType, "application/json", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(responseMessage.Content?.Headers?.ContentType?.MediaType, "application/json", StringComparison.OrdinalIgnoreCase) &&
+                responseMessage.Content?.Headers.ContentLength > 0)
             {
-                Stream readStream = await responseMessage.Content.ReadAsStreamAsync();
-                Error error = Documents.Resource.LoadFrom<Error>(readStream);
-                return new DocumentClientException(
-                    error,
-                    responseMessage.Headers,
-                    responseMessage.StatusCode)
+                try
                 {
-                    StatusDescription = responseMessage.ReasonPhrase,
-                    ResourceAddress = resourceIdOrFullName,
-                    RequestStatistics = requestStatistics
-                };
-            }
-            else
-            {
-                StringBuilder context = new StringBuilder();
-                context.AppendLine(await responseMessage.Content.ReadAsStringAsync());
+                    Stream contentAsStream = await responseMessage.Content.ReadAsStreamAsync();
+                    Error error = JsonSerializable.LoadFrom<Error>(stream: contentAsStream);
 
-                HttpRequestMessage requestMessage = responseMessage.RequestMessage;
-                if (requestMessage != null)
-                {
-                    context.AppendLine($"RequestUri: {requestMessage.RequestUri.ToString()};");
-                    context.AppendLine($"RequestMethod: {requestMessage.Method.Method};");
-
-                    if (requestMessage.Headers != null)
+                    return new DocumentClientException(
+                        errorResource: error,
+                        responseHeaders: responseMessage.Headers,
+                        statusCode: responseMessage.StatusCode)
                     {
-                        foreach (KeyValuePair<string, IEnumerable<string>> header in requestMessage.Headers)
-                        {
-                            context.AppendLine($"Header: {header.Key} Length: {string.Join(",", header.Value).Length};");
-                        }
+                        StatusDescription = responseMessage.ReasonPhrase,
+                        ResourceAddress = resourceIdOrFullName,
+                        RequestStatistics = requestStatistics
+                    };
+                }
+                catch
+                {
+                }
+            }
+
+            StringBuilder contextBuilder = new StringBuilder();
+            contextBuilder.AppendLine(await responseMessage.Content.ReadAsStringAsync());
+
+            HttpRequestMessage requestMessage = responseMessage.RequestMessage;
+
+            if (requestMessage != null)
+            {
+                contextBuilder.AppendLine($"RequestUri: {requestMessage.RequestUri};");
+                contextBuilder.AppendLine($"RequestMethod: {requestMessage.Method.Method};");
+
+                if (requestMessage.Headers != null)
+                {
+                    foreach (KeyValuePair<string, IEnumerable<string>> header in requestMessage.Headers)
+                    {
+                        contextBuilder.AppendLine($"Header: {header.Key} Length: {string.Join(",", header.Value).Length};");
                     }
                 }
-
-                String message = await responseMessage.Content.ReadAsStringAsync();
-                return new DocumentClientException(
-                    message: context.ToString(),
-                    innerException: null,
-                    responseHeaders: responseMessage.Headers,
-                    statusCode: responseMessage.StatusCode,
-                    requestUri: responseMessage.RequestMessage.RequestUri)
-                {
-                    StatusDescription = responseMessage.ReasonPhrase,
-                    ResourceAddress = resourceIdOrFullName,
-                    RequestStatistics = requestStatistics
-                };
             }
+
+            return new DocumentClientException(
+                message: contextBuilder.ToString(),
+                innerException: null,
+                responseHeaders: responseMessage.Headers,
+                statusCode: responseMessage.StatusCode,
+                requestUri: responseMessage.RequestMessage.RequestUri)
+            {
+                StatusDescription = responseMessage.ReasonPhrase,
+                ResourceAddress = resourceIdOrFullName,
+                RequestStatistics = requestStatistics
+            };
         }
 
         internal static bool IsAllowedRequestHeader(string headerName)

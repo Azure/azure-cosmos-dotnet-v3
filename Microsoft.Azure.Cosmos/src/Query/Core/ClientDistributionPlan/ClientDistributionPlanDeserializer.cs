@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan
             public const string Aggregate = "Aggregate";
             public const string Aggregates = "Aggregates";
             public const string Builtin = "Builtin";
-            public const string Cql = "Cql";
+            public const string ClientQL = "clientQL";
             public const string ConditionExpression = "ConditionExpression";
             public const string ClientDistributionPlan = "clientDistributionPlan";
             public const string DeclaredVariable = "DeclaredVariable";
@@ -27,6 +27,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan
             public const string Distinct = "Distinct";
             public const string EnumerationKind = "EnumerationKind";
             public const string Expression = "Expression";
+            public const string Expressions = "Expressions";
             public const string FunctionKind = "FunctionKind";
             public const string GroupBy = "GroupBy";
             public const string Identifier = "Identifier";
@@ -69,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan
         {
             CosmosObject cosmosObject = CosmosObject.Parse(jsonString);
             CosmosObject clientDistributionPlanElement = GetValue<CosmosObject>(cosmosObject, Constants.ClientDistributionPlan);
-            CosmosObject cqlElement = GetValue<CosmosObject>(clientDistributionPlanElement, Constants.Cql);
+            CosmosObject cqlElement = GetValue<CosmosObject>(clientDistributionPlanElement, Constants.ClientQL);
             CqlEnumerableExpression expression = DeserializeCqlEnumerableExpression(cqlElement);
 
             return new ClientDistributionPlan(expression);
@@ -118,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan
         {
             CqlEnumerableExpression sourceExpression = DeserializeCqlEnumerableExpression(GetValue<CosmosObject>(cosmosObject, Constants.SourceExpression));
             CqlVariable declaredVariable = DeserializeCqlVariable(GetValue<CosmosObject>(cosmosObject, Constants.DeclaredVariable));
-            IReadOnlyList<CqlScalarExpression> expressions = DeserializeScalarExpressionArray(GetValue<CosmosArray>(cosmosObject, Constants.Expression));
+            IReadOnlyList<CqlScalarExpression> expressions = DeserializeScalarExpressionArray(GetValue<CosmosArray>(cosmosObject, Constants.Expressions));
             return new CqlDistinctEnumerableExpression(sourceExpression, declaredVariable, expressions);
         }
 
@@ -318,8 +319,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan
 
         private static CqlUserDefinedFunctionCallScalarExpression DeserializeUserDefinedFunctionCallScalarExpression(CosmosObject cosmosObject)
         {
-            string identifierString = GetValue<CosmosString>(cosmosObject, Constants.Identifier).Value;
-            CqlFunctionIdentifier functionIdentifier = new CqlFunctionIdentifier(identifierString);
+            CosmosObject identifier = GetValue<CosmosObject>(cosmosObject, Constants.Identifier);
+            string nameString = GetValue<CosmosString>(identifier, Constants.Name).Value;
+            CqlFunctionIdentifier functionIdentifier = new CqlFunctionIdentifier(nameString);
             IReadOnlyList<CqlScalarExpression> arguments = DeserializeScalarExpressionArray(GetValue<CosmosArray>(cosmosObject, Constants.Arguments));
             bool builtin = GetValue<CosmosBoolean>(cosmosObject, Constants.Builtin).Value;
             return new CqlUserDefinedFunctionCallScalarExpression(functionIdentifier, arguments, builtin);

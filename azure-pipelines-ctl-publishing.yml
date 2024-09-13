@@ -1,6 +1,3 @@
-variables:
-  VmImage: 'ubuntu-latest'
-
 jobs:
   - job: BuildDockerImage
     timeoutInMinutes: 20
@@ -13,7 +10,9 @@ jobs:
         value: 'cosmosdotnetsdkctl.azurecr.io'
 
     pool:
-      vmImage: $(VmImage)
+      name: 'OneES'
+      demands: 
+        - ImageOverride -equals dotnet-ubuntu-latest
 
     steps:
     - checkout: self  # self represents the repo where the initial Pipelines YAML file was found

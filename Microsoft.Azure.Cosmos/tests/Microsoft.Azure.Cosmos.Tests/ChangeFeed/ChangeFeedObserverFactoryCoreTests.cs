@@ -35,14 +35,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 return Task.CompletedTask;
             }
 
-            ChangeFeedObserverFactoryCore<dynamic> changeFeedObserverFactoryCore = new ChangeFeedObserverFactoryCore<dynamic>(changesHandler, this.cosmosSerializerCore);
+            ChangeFeedObserverFactoryCore<dynamic> changeFeedObserverFactoryCore = new ChangeFeedObserverFactoryCore<dynamic>((Cosmos.Container.ChangesHandler<dynamic>)changesHandler, this.cosmosSerializerCore);
 
             ChangeFeedObserver changeFeedObserver = changeFeedObserverFactoryCore.CreateObserver();
 
             Assert.IsNotNull(changeFeedObserver);
 
             ResponseMessage responseMessage = this.BuildResponseMessage();
-            ChangeFeedObserverContextCore context = new ChangeFeedObserverContextCore(this.leaseToken, responseMessage, Mock.Of<PartitionCheckpointer>());
+            ChangeFeedObserverContextCore context = new ChangeFeedObserverContextCore(this.leaseToken, responseMessage, Mock.Of<PartitionCheckpointer>(), FeedRangeEpk.FullRange);
 
             await changeFeedObserver.ProcessChangesAsync(context, responseMessage.Content, CancellationToken.None);
             Assert.IsTrue(executed);
@@ -60,14 +60,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 return Task.CompletedTask;
             }
 
-            ChangeFeedObserverFactoryCore<dynamic> changeFeedObserverFactoryCore = new ChangeFeedObserverFactoryCore<dynamic>(changesHandler, this.cosmosSerializerCore);
+            ChangeFeedObserverFactoryCore<dynamic> changeFeedObserverFactoryCore = new ChangeFeedObserverFactoryCore<dynamic>((Container.ChangeFeedHandler<dynamic>)changesHandler, this.cosmosSerializerCore);
 
             ChangeFeedObserver changeFeedObserver = changeFeedObserverFactoryCore.CreateObserver();
 
             Assert.IsNotNull(changeFeedObserver);
 
             ResponseMessage responseMessage = this.BuildResponseMessage();
-            ChangeFeedObserverContextCore context = new ChangeFeedObserverContextCore(this.leaseToken, responseMessage, Mock.Of<PartitionCheckpointer>());
+            ChangeFeedObserverContextCore context = new ChangeFeedObserverContextCore(this.leaseToken, responseMessage, Mock.Of<PartitionCheckpointer>(), FeedRangeEpk.FullRange);
 
             await changeFeedObserver.ProcessChangesAsync(context, responseMessage.Content, CancellationToken.None);
             Assert.IsTrue(executed);
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Assert.IsNotNull(changeFeedObserver);
 
             ResponseMessage responseMessage = this.BuildResponseMessage();
-            ChangeFeedObserverContextCore context = new ChangeFeedObserverContextCore(this.leaseToken, responseMessage, Mock.Of<PartitionCheckpointer>());
+            ChangeFeedObserverContextCore context = new ChangeFeedObserverContextCore(this.leaseToken, responseMessage, Mock.Of<PartitionCheckpointer>(), FeedRangeEpk.FullRange);
 
             await changeFeedObserver.ProcessChangesAsync(context, responseMessage.Content, CancellationToken.None);
             Assert.IsTrue(executed);
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Assert.IsNotNull(changeFeedObserver);
 
             
-            ChangeFeedObserverContextCore context = new ChangeFeedObserverContextCore(this.leaseToken, responseMessage, Mock.Of<PartitionCheckpointer>());
+            ChangeFeedObserverContextCore context = new ChangeFeedObserverContextCore(this.leaseToken, responseMessage, Mock.Of<PartitionCheckpointer>(), FeedRangeEpk.FullRange);
 
             await changeFeedObserver.ProcessChangesAsync(context, responseMessage.Content, CancellationToken.None);
             Assert.IsTrue(executed);
@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Assert.IsNotNull(changeFeedObserver);
 
-            ChangeFeedObserverContextCore context = new ChangeFeedObserverContextCore(this.leaseToken, responseMessage, Mock.Of<PartitionCheckpointer>());
+            ChangeFeedObserverContextCore context = new ChangeFeedObserverContextCore(this.leaseToken, responseMessage, Mock.Of<PartitionCheckpointer>(), FeedRangeEpk.FullRange);
 
             await changeFeedObserver.ProcessChangesAsync(context, responseMessage.Content, CancellationToken.None);
             Assert.IsTrue(executed);

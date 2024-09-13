@@ -138,7 +138,7 @@
             catch (CosmosException ex)
             {
                 Assert.IsTrue(ex.StatusCode == HttpStatusCode.NotFound);
-                throw ex;
+                throw;
             }
         }
 
@@ -156,7 +156,7 @@
             catch (CosmosException ex)
             {
                 Assert.IsTrue(ex.StatusCode == HttpStatusCode.NotFound);
-                throw ex;
+                throw;
             }
         }
 
@@ -276,10 +276,9 @@
                                     .GetValue(loadBalancingPartition);
 
             Assert.IsNotNull(openChannels);
-            Assert.AreEqual(48, openChannels.Count, "Here the expected value 48 rather explains how many time we call the" +
-                "LoadBalancingPartition.OpenChannelAsync(). The emulator by default returns 12 partitions, and each partition has 4 replicas," +
-                "and by behavior the emulator uses the same URI for eac of these replica, hence 12 * 4 = 48 times we call the OpenChannelAsync()." +
-                "In ideal world, the value should be 1, because for each unique URI, the OpenChannelAsync() call will just be 1.");
+            Assert.AreEqual(1, openChannels.Count, "Here the expected value 1 explains how many TCP connections were opened by the LoadBalancingPartition.OpenChannelAsync()." +
+                "The emulator by default returns 12 partitions, and each partition has 4 replicas, and by behavior the emulator uses the same URI for each of these replica," +
+                "hence 12 * 4 = 48 times we call the OpenChannelAsync(). However, the number of TCP connections established would be just one per each unique endpoint.");
             Assert.AreEqual(openChannels.Count * maxRequestsPerConnection, channelCapacity);
 
             Documents.Rntbd.LbChannelState channelState = openChannels.First();

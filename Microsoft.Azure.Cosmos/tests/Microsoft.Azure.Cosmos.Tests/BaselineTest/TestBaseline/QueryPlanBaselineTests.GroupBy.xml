@@ -119,6 +119,124 @@ GROUP BY {"age": c.age}]]></RewrittenQuery>
   </Result>
   <Result>
     <Input>
+      <Description>SELECT VALUE object create with non-object create GROUP BY</Description>
+      <Query>
+                SELECT VALUE {"age": c.age}
+                FROM c
+                GROUP BY c.age</Query>
+      <PartitionKeys />
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions>
+            <GroupByExpression>c.age</GroupByExpression>
+          </GroupByExpressions>
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>True</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[SELECT [{"item": c.age}] AS groupByItems, {"age": c.age} AS payload
+FROM c
+GROUP BY c.age]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SELECT VALUE aggregate average</Description>
+      <Query>
+                SELECT VALUE AVG(c.age)
+                FROM c
+                GROUP BY c.age</Query>
+      <PartitionKeys />
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions>
+            <GroupByExpression>c.age</GroupByExpression>
+          </GroupByExpressions>
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates>
+            <AggregateOperator>Average</AggregateOperator>
+          </Aggregates>
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>True</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[SELECT [{"item": c.age}] AS groupByItems, [{"item": {"sum": SUM(c.age), "count": COUNT(c.age)}}] AS payload
+FROM c
+GROUP BY c.age]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SELECT VALUE aggregate COUNT</Description>
+      <Query>
+                SELECT VALUE COUNT(1)
+                FROM c
+                GROUP BY c.age</Query>
+      <PartitionKeys />
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions>
+            <GroupByExpression>c.age</GroupByExpression>
+          </GroupByExpressions>
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates>
+            <AggregateOperator>Count</AggregateOperator>
+          </Aggregates>
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>True</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[SELECT [{"item": c.age}] AS groupByItems, [{"item": COUNT(1)}] AS payload
+FROM c
+GROUP BY c.age]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
       <Description>Simple GROUP BY with no aggregates</Description>
       <Query>
                 SELECT c.age, c.name
@@ -194,14 +312,6 @@ GROUP BY c.age, c.name]]></RewrittenQuery>
           <Aggregates />
           <GroupByAliasToAggregateType>
             <AliasToAggregateType>
-              <Alias>min_age</Alias>
-              <AggregateOperator>Min</AggregateOperator>
-            </AliasToAggregateType>
-            <AliasToAggregateType>
-              <Alias>max_age</Alias>
-              <AggregateOperator>Max</AggregateOperator>
-            </AliasToAggregateType>
-            <AliasToAggregateType>
               <Alias>count</Alias>
               <AggregateOperator>Count</AggregateOperator>
             </AliasToAggregateType>
@@ -212,6 +322,14 @@ GROUP BY c.age, c.name]]></RewrittenQuery>
             <AliasToAggregateType>
               <Alias>team</Alias>
               <AggregateOperator>null</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>min_age</Alias>
+              <AggregateOperator>Min</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>max_age</Alias>
+              <AggregateOperator>Max</AggregateOperator>
             </AliasToAggregateType>
             <AliasToAggregateType>
               <Alias>avg_age</Alias>
@@ -387,15 +505,15 @@ GROUP BY UPPER(c.name), SUBSTRING(c.address.city, 0, 3)]]></RewrittenQuery>
           <Aggregates />
           <GroupByAliasToAggregateType>
             <AliasToAggregateType>
-              <Alias>group_name</Alias>
-              <AggregateOperator>null</AggregateOperator>
-            </AliasToAggregateType>
-            <AliasToAggregateType>
               <Alias>count</Alias>
               <AggregateOperator>Count</AggregateOperator>
             </AliasToAggregateType>
             <AliasToAggregateType>
               <Alias>info</Alias>
+              <AggregateOperator>null</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>group_name</Alias>
               <AggregateOperator>null</AggregateOperator>
             </AliasToAggregateType>
           </GroupByAliasToAggregateType>
@@ -600,16 +718,12 @@ GROUP BY c.name]]></RewrittenQuery>
           <Aggregates />
           <GroupByAliasToAggregateType>
             <AliasToAggregateType>
-              <Alias>max_age</Alias>
-              <AggregateOperator>Max</AggregateOperator>
+              <Alias>count</Alias>
+              <AggregateOperator>Count</AggregateOperator>
             </AliasToAggregateType>
             <AliasToAggregateType>
               <Alias>name</Alias>
               <AggregateOperator>null</AggregateOperator>
-            </AliasToAggregateType>
-            <AliasToAggregateType>
-              <Alias>count</Alias>
-              <AggregateOperator>Count</AggregateOperator>
             </AliasToAggregateType>
             <AliasToAggregateType>
               <Alias>$1</Alias>
@@ -621,6 +735,10 @@ GROUP BY c.name]]></RewrittenQuery>
             </AliasToAggregateType>
             <AliasToAggregateType>
               <Alias>$2</Alias>
+              <AggregateOperator>Max</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>max_age</Alias>
               <AggregateOperator>Max</AggregateOperator>
             </AliasToAggregateType>
             <AliasToAggregateType>

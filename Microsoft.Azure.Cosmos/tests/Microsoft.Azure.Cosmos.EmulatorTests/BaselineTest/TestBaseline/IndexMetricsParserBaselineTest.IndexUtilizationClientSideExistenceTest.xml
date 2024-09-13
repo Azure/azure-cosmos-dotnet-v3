@@ -1,0 +1,290 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Simple 1]]></Description>
+      <Query><![CDATA[SELECT * FROM c WHERE c.id = "1"]]></Query>
+    </Input>
+    <Output>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"\/id\/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Simple 2]]></Description>
+      <Query><![CDATA[SELECT * FROM c WHERE c.id = "1" and c.name = "Abc"]]></Query>
+    </Input>
+    <Output>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"\/name\/?"},{"IndexSpec":"\/id\/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Simple 3]]></Description>
+      <Query><![CDATA[SELECT * FROM c WHERE c.id = "1" and c.name > "Abc"]]></Query>
+    </Input>
+    <Output>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"\/name\/?"},{"IndexSpec":"\/id\/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[{"IndexSpecs":["\/id ASC","\/name ASC"],"IndexImpactScore":"High"}]}}]]></IndexMetric>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Simple 4]]></Description>
+      <Query><![CDATA[SELECT * FROM c WHERE c.id > "1" and c.name > "Abc"]]></Query>
+    </Input>
+    <Output>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"\/name\/?"},{"IndexSpec":"\/id\/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Aggregate 1]]></Description>
+      <Query><![CDATA[SELECT COUNT(1) FROM c WHERE c.id = "1"]]></Query>
+    </Input>
+    <Output>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"\/id\/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Aggregate 2]]></Description>
+      <Query><![CDATA[SELECT COUNT(1) FROM c WHERE c.id = "1" and c.name = "Abc"]]></Query>
+    </Input>
+    <Output>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"\/name\/?"},{"IndexSpec":"\/id\/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Aggregate 3]]></Description>
+      <Query><![CDATA[SELECT COUNT(1) FROM c WHERE c.id = "1" and c.name > "Abc"]]></Query>
+    </Input>
+    <Output>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"\/name\/?"},{"IndexSpec":"\/id\/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[{"IndexSpecs":["\/id ASC","\/name ASC"],"IndexImpactScore":"High"}]}}]]></IndexMetric>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Aggregate 4]]></Description>
+      <Query><![CDATA[SELECT COUNT(1) FROM c WHERE c.id > "1" and c.name > "Abc"]]></Query>
+    </Input>
+    <Output>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"\/name\/?"},{"IndexSpec":"\/id\/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Aggregate Value 1]]></Description>
+      <Query><![CDATA[SELECT VALUE COUNT(1) FROM c WHERE c.id = "1"]]></Query>
+    </Input>
+    <Output>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"\/id\/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Aggregate Value 2]]></Description>
+      <Query><![CDATA[SELECT VALUE COUNT(1) FROM c WHERE c.id = "1" and c.name = "Abc"]]></Query>
+    </Input>
+    <Output>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"\/name\/?"},{"IndexSpec":"\/id\/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Aggregate Value 3]]></Description>
+      <Query><![CDATA[SELECT VALUE COUNT(1) FROM c WHERE c.id = "1" and c.name > "Abc"]]></Query>
+    </Input>
+    <Output>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"\/name\/?"},{"IndexSpec":"\/id\/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[{"IndexSpecs":["\/id ASC","\/name ASC"],"IndexImpactScore":"High"}]}}]]></IndexMetric>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Aggregate Value 4]]></Description>
+      <Query><![CDATA[SELECT VALUE COUNT(1) FROM c WHERE c.id > "1" and c.name > "Abc"]]></Query>
+    </Input>
+    <Output>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"\/name\/?"},{"IndexSpec":"\/id\/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy 1]]></Description>
+      <Query><![CDATA[SELECT * FROM c WHERE c.id = "1" ORDER BY c.id ASC]]></Query>
+    </Input>
+    <Output>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"\/id\/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy 2]]></Description>
+      <Query><![CDATA[SELECT * FROM c WHERE c.id = "1" and c.name = "Abc" ORDER BY c.id ASC]]></Query>
+    </Input>
+    <Output>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"\/name\/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy 3]]></Description>
+      <Query><![CDATA[SELECT * FROM c WHERE c.id = "1" and c.name > "Abc" ORDER BY c.id ASC]]></Query>
+    </Input>
+    <Output>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"\/name\/?"},{"IndexSpec":"\/id\/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[{"IndexSpecs":["\/id ASC","\/name ASC"],"IndexImpactScore":"High"}]}}]]></IndexMetric>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy 4]]></Description>
+      <Query><![CDATA[SELECT * FROM c WHERE c.id > "1" and c.name > "Abc" ORDER BY c.id ASC]]></Query>
+    </Input>
+    <Output>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"\/name\/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy 1]]></Description>
+      <Query><![CDATA[SELECT COUNT(1) FROM c WHERE c.id = "1" GROUP BY c.id]]></Query>
+    </Input>
+    <Output>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"\/id\/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy 2]]></Description>
+      <Query><![CDATA[SELECT COUNT(1) FROM c WHERE c.id = "1" and c.name = "Abc" GROUP BY c.id]]></Query>
+    </Input>
+    <Output>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"\/id\/?"},{"IndexSpec":"\/name\/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy 3]]></Description>
+      <Query><![CDATA[SELECT COUNT(1) FROM c WHERE c.id = "1" and c.name > "Abc" GROUP BY c.id]]></Query>
+    </Input>
+    <Output>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"\/id\/?"},{"IndexSpec":"\/name\/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[{"IndexSpecs":["\/id ASC","\/name ASC"],"IndexImpactScore":"High"}]}}]]></IndexMetric>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy 4]]></Description>
+      <Query><![CDATA[SELECT COUNT(1) FROM c WHERE c.id > "1" and c.name > "Abc" GROUP BY c.id]]></Query>
+    </Input>
+    <Output>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"\/id\/?"},{"IndexSpec":"\/name\/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy 5]]></Description>
+      <Query><![CDATA[SELECT COUNT(1) FROM c WHERE c.id = "1" GROUP BY c.id, c.name]]></Query>
+    </Input>
+    <Output>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"\/id\/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy 6]]></Description>
+      <Query><![CDATA[SELECT COUNT(1) FROM c WHERE c.id = "1" and c.name = "Abc" GROUP BY c.id, c.name]]></Query>
+    </Input>
+    <Output>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"\/name\/?"},{"IndexSpec":"\/id\/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[{"IndexSpecs":["\/id ASC","\/name ASC"],"IndexImpactScore":"High"}]}}]]></IndexMetric>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy 7]]></Description>
+      <Query><![CDATA[SELECT COUNT(1) FROM c WHERE c.id = "1" and c.name > "Abc" GROUP BY c.id, c.name]]></Query>
+    </Input>
+    <Output>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"\/name\/?"},{"IndexSpec":"\/id\/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[{"IndexSpecs":["\/id ASC","\/name ASC"],"IndexImpactScore":"High"}]}}]]></IndexMetric>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy 8]]></Description>
+      <Query><![CDATA[SELECT COUNT(1) FROM c WHERE c.id > "1" and c.name > "Abc" GROUP BY c.id, c.name]]></Query>
+    </Input>
+    <Output>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"\/name\/?"},{"IndexSpec":"\/id\/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy Value 1]]></Description>
+      <Query><![CDATA[SELECT VALUE COUNT(1) FROM c WHERE c.id = "1"]]></Query>
+    </Input>
+    <Output>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"\/id\/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy Value 2]]></Description>
+      <Query><![CDATA[SELECT VALUE COUNT(1) FROM c WHERE c.id = "1" and c.name = "Abc"]]></Query>
+    </Input>
+    <Output>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"\/name\/?"},{"IndexSpec":"\/id\/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy Value 3]]></Description>
+      <Query><![CDATA[SELECT VALUE COUNT(1) FROM c WHERE c.id = "1" and c.name > "Abc"]]></Query>
+    </Input>
+    <Output>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"\/name\/?"},{"IndexSpec":"\/id\/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[{"IndexSpecs":["\/id ASC","\/name ASC"],"IndexImpactScore":"High"}]}}]]></IndexMetric>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy Value 4]]></Description>
+      <Query><![CDATA[SELECT VALUE COUNT(1) FROM c WHERE c.id > "1" and c.name > "Abc"]]></Query>
+    </Input>
+    <Output>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"\/name\/?"},{"IndexSpec":"\/id\/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy Value 5]]></Description>
+      <Query><![CDATA[SELECT VALUE COUNT(1) FROM c WHERE c.id = "1" GROUP BY c.id, c.name]]></Query>
+    </Input>
+    <Output>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"\/id\/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy Value 6]]></Description>
+      <Query><![CDATA[SELECT VALUE COUNT(1) FROM c WHERE c.id = "1" and c.name = "Abc" GROUP BY c.id, c.name]]></Query>
+    </Input>
+    <Output>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"\/name\/?"},{"IndexSpec":"\/id\/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[{"IndexSpecs":["\/id ASC","\/name ASC"],"IndexImpactScore":"High"}]}}]]></IndexMetric>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy Value 7]]></Description>
+      <Query><![CDATA[SELECT VALUE COUNT(1) FROM c WHERE c.id = "1" and c.name > "Abc" GROUP BY c.id, c.name]]></Query>
+    </Input>
+    <Output>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"\/name\/?"},{"IndexSpec":"\/id\/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[{"IndexSpecs":["\/id ASC","\/name ASC"],"IndexImpactScore":"High"}]}}]]></IndexMetric>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy Value 8]]></Description>
+      <Query><![CDATA[SELECT VALUE COUNT(1) FROM c WHERE c.id > "1" and c.name > "Abc" GROUP BY c.id, c.name]]></Query>
+    </Input>
+    <Output>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"\/name\/?"},{"IndexSpec":"\/id\/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
+    </Output>
+  </Result>
+</Results>

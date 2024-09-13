@@ -145,6 +145,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                     CurrentWriteQuorum = "1",
                     CurrentResourceQuotaUsage = "documentSize=0;documentsSize=1;documentsCount=1;collectionSize=1;",
                     GlobalCommittedLSN = "-1",
+                    ItemCount = "1",
                     LSN = "2540",
                     LocalLSN = "2540",
                     LastStateChangeUtc = "Wed, 18 Aug 2021 20:30:05.117 GMT",
@@ -254,6 +255,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             if (request.ResourceType == ResourceType.Document &&
                 request.OperationType == OperationType.ReadFeed)
             {
+                headers.ItemCount = "1";
                 return new StoreResponse()
                 {
                     ResponseBody = new MemoryStream(MockRequestHelper.testItemFeedResponsePayload, 0, MockRequestHelper.testItemFeedResponsePayload.Length, writable: false, publiclyVisible: true),

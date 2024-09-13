@@ -27,6 +27,28 @@ namespace Microsoft.Azure.Cosmos.Tests
         private readonly Func<string, bool> sourceNameFilter;
         private readonly string eventName;
         private readonly bool suppressAllEvents;
+        private static readonly List<string> TagsWithStaticValue = new List<string>
+        {
+            "az.schema_url",
+            "kind",
+            "az.namespace",
+            "db.operation.name",
+            "db.system",
+            "server.address",
+            "db.namespace",
+            "db.collection.name",
+            "db.cosmosdb.connection_mode",
+            "db.cosmosdb.operation_type",
+            "db.cosmosdb.regions_contacted",
+            "db.operation.batch.size",
+            "error.type"
+        };
+
+        private static readonly List<string> TagsToSkip = new List<string>
+        {
+             "db.cosmosdb.request_content_length",
+             "db.cosmosdb.response_content_length"
+        };
 
         private ConcurrentBag<IDisposable> subscriptions = new();
         private ConcurrentBag<ProducedDiagnosticScope> Scopes { get; } = new();
@@ -108,12 +130,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                     {
                         if (producedDiagnosticScope.Activity.Id == Activity.Current.Id)
                         {
-                            if (producedDiagnosticScope.Activity.Source.Name.EndsWith("Operation"))
+                            if (producedDiagnosticScope.Activity.OperationName.StartsWith("Operation."))
                             {
                                 AssertActivity.IsValidOperationActivity(producedDiagnosticScope.Activity);
                                 CustomListener.CollectedOperationActivities.Add(producedDiagnosticScope.Activity);
                             }
-                            else if (producedDiagnosticScope.Activity.Source.Name.EndsWith("Request"))
+                            else if (producedDiagnosticScope.Activity.OperationName.StartsWith("Request."))
                             {
                                 CustomListener.CollectedNetworkActivities.Add(producedDiagnosticScope.Activity);
                             }
@@ -249,28 +271,17 @@ namespace Microsoft.Azure.Cosmos.Tests
         
         private string GenerateTagForBaselineTest(Activity activity)
         {
-            List<string> tagsWithStaticValue = new List<string>
-            {
-                "az.schema_url",
-                "kind",
-                "az.namespace",
-                "db.operation",
-                "db.system",
-                "net.peer.name",
-                "db.name",
-                "db.cosmosdb.container",
-                "db.cosmosdb.connection_mode",
-                "db.cosmosdb.operation_type",
-                "db.cosmosdb.regions_contacted",
-                "tcp.sub_status_code",
-                "tcp.status_code"
-            };
-            
             StringBuilder builder = new StringBuilder();
             builder.Append($"<ACTIVITY source='{activity.Source.Name}' operationName='{activity.OperationName}' displayName='{activity.DisplayName}'>");
-            foreach (KeyValuePair<string, string> tag in activity.Tags)
+
+            foreach (KeyValuePair<string, object> tag in activity.TagObjects)
             {
-                if (tagsWithStaticValue.Contains(tag.Key))
+                if (TagsToSkip.Contains(tag.Key))
+                {
+                    continue;
+                }
+
+                if (TagsWithStaticValue.Contains(tag.Key))
                 {
                     builder
                     .Append($"<ATTRIBUTE key='{tag.Key}'>{tag.Value}</ATTRIBUTE>");
@@ -291,20 +302,40 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             List<string> generatedActivityTagsForBaselineXmls = new();
             
+            // Get all the recorded operation level activities
             List<Activity> collectedOperationActivities = new List<Activity>(CustomListener.CollectedOperationActivities);
+
+            // Order them by the static values. This is to make sure that the order of the attributes is always same.
+            List<Activity> orderedUniqueOperationActivities = collectedOperationActivities
+               .OrderBy(act =>
+               {
+                   string key = act.Source.Name + act.OperationName;
+                   foreach (string tagName in TagsWithStaticValue)
+                   {
+                       key += act.GetTagItem(tagName);
+                   }
+                   return key;
+               }).ToList();
+
+            // Generate XML tags for Baseline xmls
             foreach (Activity activity in collectedOperationActivities)
             {
                 generatedActivityTagsForBaselineXmls.Add(this.GenerateTagForBaselineTest(activity));
             }
 
+            // Get all the recorded network level activities
             HashSet<Activity> collectedNetworkActivities = new HashSet<Activity>(CustomListener.CollectedNetworkActivities, new NetworkActivityComparer());
+            
+            // Order them by the static values. This is to make sure that the order of the attributes is always same.
             List<Activity> orderedUniqueNetworkActivities = collectedNetworkActivities
                 .OrderBy(act => 
                             act.Source.Name + 
                             act.OperationName + 
-                            act.GetTagItem("tcp.status_code") + 
-                            act.GetTagItem("tcp.sub_status_code"))
+                            act.GetTagItem("rntbd.status_code") + 
+                            act.GetTagItem("rntbd.sub_status_code"))
                 .ToList();
+
+            // Generate XML tags for Baseline xmls
             foreach (Activity activity in orderedUniqueNetworkActivities)
             {
                 generatedActivityTagsForBaselineXmls.Add(this.GenerateTagForBaselineTest(activity));
@@ -369,15 +400,15 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             public bool Equals(Activity x, Activity y)
             {
-                string xData = x.Source.Name + x.OperationName + x.GetTagItem("tcp.status_code") + x.GetTagItem("tcp.sub_status_code");
-                string yData = y.Source.Name + y.OperationName + y.GetTagItem("tcp.status_code") + y.GetTagItem("tcp.sub_status_code");
+                string xData = x.Source.Name + x.OperationName + x.GetTagItem("rntbd.status_code") + x.GetTagItem("rntbd.sub_status_code");
+                string yData = y.Source.Name + y.OperationName + y.GetTagItem("rntbd.status_code") + y.GetTagItem("rntbd.sub_status_code");
 
                 return xData.Equals(yData, StringComparison.OrdinalIgnoreCase);
             }
 
             public int GetHashCode(Activity obj)
             {
-                return (obj.Source.Name + obj.OperationName + obj.GetTagItem("tcp.status_code") + obj.GetTagItem("tcp.sub_status_code")).GetHashCode() ;
+                return (obj.Source.Name + obj.OperationName + obj.GetTagItem("rntbd.status_code") + obj.GetTagItem("rntbd.sub_status_code")).GetHashCode() ;
             }
         }
 

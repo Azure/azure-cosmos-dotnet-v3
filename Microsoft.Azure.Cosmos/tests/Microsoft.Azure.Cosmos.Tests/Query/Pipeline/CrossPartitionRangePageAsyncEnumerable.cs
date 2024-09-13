@@ -53,9 +53,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     this.comparer,
                     this.maxConcurrency,
                     this.prefetchPolicy,
-                    cancellationToken,
                     this.state),
-                this.trace);
+                this.trace,
+                cancellationToken);
         }
     }
 }

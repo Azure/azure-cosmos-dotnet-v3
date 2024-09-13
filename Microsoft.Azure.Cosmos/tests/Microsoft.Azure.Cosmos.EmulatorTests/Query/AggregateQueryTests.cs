@@ -62,66 +62,24 @@
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
-                ImplementationAsync,
+                NonOdeImplementationAsync,
                 args,
                 "/" + args.PartitionKey);
 
-            async Task ImplementationAsync(
+            await this.CreateIngestQueryDeleteAsync<AggregateTestArgs>(
+                ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition,
+                documents,
+                OdeImplementationAsync,
+                args,
+                "/" + args.PartitionKey);
+
+            async Task NonOdeImplementationAsync(
                 Container container,
                 IReadOnlyList<CosmosObject> inputDocuments,
                 AggregateTestArgs aggregateTestArgs)
             {
-                IReadOnlyList<CosmosObject> documentsWherePkIsANumber = inputDocuments
-                    .Where(doc =>
-                    {
-                        return double.TryParse(
-                            doc[aggregateTestArgs.PartitionKey].ToString(),
-                            out double result);
-                    })
-                    .ToList();
-                double numberSum = documentsWherePkIsANumber
-                    .Sum(doc =>
-                    {
-                        if (!doc.TryGetValue(aggregateTestArgs.PartitionKey, out CosmosNumber number))
-                        {
-                            Assert.Fail("Failed to get partition key from document");
-                        }
-
-                        return Number64.ToDouble(number.Value);
-                    });
-                double count = documentsWherePkIsANumber.Count();
-                AggregateQueryArguments[] aggregateQueryArgumentsList = new AggregateQueryArguments[]
-                {
-                    new AggregateQueryArguments(
-                        aggregateOperator: "AVG",
-                        expectedValue: CosmosNumber64.Create(numberSum / count),
-                        predicate: $"IS_NUMBER(r.{aggregateTestArgs.PartitionKey})"),
-                    new AggregateQueryArguments(
-                        aggregateOperator: "AVG",
-                        expectedValue: CosmosUndefined.Create(),
-                        predicate: "true"),
-                    new AggregateQueryArguments(
-                        aggregateOperator: "COUNT",
-                        expectedValue: CosmosNumber64.Create(documents.Count()),
-                        predicate: "true"),
-                    new AggregateQueryArguments(
-                        aggregateOperator: "MAX",
-                        expectedValue: CosmosString.Create("xyz"),
-                        predicate: "true"),
-                    new AggregateQueryArguments(
-                        aggregateOperator: "MIN",
-                        expectedValue: CosmosBoolean.Create(false),
-                        predicate: "true"),
-                    new AggregateQueryArguments(
-                        aggregateOperator: "SUM",
-                        expectedValue: CosmosNumber64.Create(numberSum),
-                        predicate: $"IS_NUMBER(r.{aggregateTestArgs.PartitionKey})"),
-                    new AggregateQueryArguments(
-                        aggregateOperator: "SUM",
-                        expectedValue: CosmosUndefined.Create(),
-                        predicate: $"true"),
-                };
-
+                AggregateQueryArguments[] aggregateQueryArgumentsList = CreateAggregateQueryArguments(inputDocuments, aggregateTestArgs);
                 foreach (int maxDoP in new[] { 0, 10 })
                 {
                     foreach (AggregateQueryArguments argument in aggregateQueryArgumentsList)
@@ -152,14 +110,120 @@
                                 new QueryRequestOptions()
                                 {
                                     MaxConcurrency = maxDoP,
-#if PREVIEW
                                     EnableOptimisticDirectExecution = false
-#endif
                                 });
 
                             if (argument.ExpectedValue == null)
                             {
                                 Assert.AreEqual(0, items.Count, message);
+                            }
+                            else
+                            {
+                                Assert.AreEqual(1, items.Count, message);
+                                CosmosElement expected = argument.ExpectedValue;
+                                CosmosElement actual = items.Single();
+
+                                if ((expected is CosmosNumber expectedNumber) && (actual is CosmosNumber actualNumber))
+                                {
+                                    Assert.AreEqual(Number64.ToDouble(expectedNumber.Value), Number64.ToDouble(actualNumber.Value), .01);
+                                }
+                                else
+                                {
+                                    if (argument.IgnoreResultOrder)
+                                    {
+                                        // We need to sort the results for MakeList and MakeSet when comparing because these aggregates don't
+                                        // provide a guarantee of the order in which elements appear, and the order can change based on the
+                                        // order in which we access the logical partitions. 
+                                        if ((expected is CosmosArray expectedArray) && (actual is CosmosArray actualArray))
+                                        {
+                                            CosmosElement[] normalizedExpected = expectedArray.ToArray();
+                                            Array.Sort(normalizedExpected);
+                                            CosmosElement[] normalizedActual = actualArray.ToArray();
+                                            Array.Sort(normalizedActual);
+
+                                            CollectionAssert.AreEqual(normalizedExpected, normalizedActual);
+                                        }
+                                        else
+                                        {
+                                            Assert.AreEqual(expected, actual, message);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        Assert.AreEqual(expected, actual, message);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            async Task OdeImplementationAsync(
+                Container container,
+                IReadOnlyList<CosmosObject> inputDocuments,
+                AggregateTestArgs aggregateTestArgs)
+            {
+                AggregateQueryArguments[] aggregateQueryArgumentsList = CreateAggregateQueryArguments(inputDocuments, aggregateTestArgs);
+                foreach (int maxDoP in new[] { 0, 10 })
+                {
+                    foreach (AggregateQueryArguments argument in aggregateQueryArgumentsList)
+                    {
+                        string[] queryFormats = new[]
+                        {
+                            "SELECT VALUE {0}(r.{1}) FROM r WHERE {2}",
+                            "SELECT VALUE {0}(r.{1}) FROM r WHERE {2} ORDER BY r.{1}"
+                        };
+
+                        foreach (string queryFormat in queryFormats)
+                        {
+                            string query = string.Format(
+                                CultureInfo.InvariantCulture,
+                                queryFormat,
+                                argument.AggregateOperator,
+                                aggregateTestArgs.PartitionKey,
+                                argument.Predicate);
+                            string message = string.Format(
+                                CultureInfo.InvariantCulture,
+                                "query: {0}, data: {1}",
+                                query,
+                                argument.ToString());
+
+                            List<CosmosElement> items = await QueryTestsBase.RunQueryAsync(
+                                container,
+                                query,
+                                new QueryRequestOptions()
+                                {
+                                    MaxConcurrency = maxDoP,
+                                    EnableOptimisticDirectExecution = true
+                                });
+
+                            if (argument.ExpectedValue == CosmosUndefined.Create())
+                            {
+                                Assert.AreEqual(0, items.Count, message);
+                            }
+                            else if (argument.IgnoreResultOrder)
+                            {
+                                // We need to sort the results for MakeList and MakeSet when comparing because these aggregates don't
+                                // provide a guarantee of the order in which elements appear, and the order can change based on the
+                                // order in which we access the logical partitions. 
+                                Assert.AreEqual(1, items.Count, message);
+                                CosmosElement expected = argument.ExpectedValue;
+                                CosmosElement actual = items.Single();
+
+                                if ((expected is CosmosArray expectedArray) && (actual is CosmosArray actualArray))
+                                {
+                                    CosmosElement[] normalizedExpected = expectedArray.ToArray();
+                                    Array.Sort(normalizedExpected);
+                                    CosmosElement[] normalizedActual = actualArray.ToArray();
+                                    Array.Sort(normalizedActual);
+
+                                    CollectionAssert.AreEqual(normalizedExpected, normalizedActual);
+                                }
+                                else
+                                {
+                                    Assert.AreEqual(expected, actual, message);
+                                }
                             }
                             else
                             {
@@ -180,6 +244,89 @@
                     }
                 }
             }
+        }
+
+        private static AggregateQueryArguments[] CreateAggregateQueryArguments(
+            IReadOnlyList<CosmosObject> inputDocuments,
+            AggregateTestArgs aggregateTestArgs)
+        {
+            IReadOnlyList<CosmosObject> documentsWherePkIsANumber = inputDocuments
+                    .Where(doc =>
+                    {
+                        return double.TryParse(
+                            doc[aggregateTestArgs.PartitionKey].ToString(),
+                            out double result);
+                    })
+                    .ToList();
+            double numberSum = documentsWherePkIsANumber
+                .Sum(doc =>
+                {
+                    if (!doc.TryGetValue(aggregateTestArgs.PartitionKey, out CosmosNumber number))
+                    {
+                        Assert.Fail("Failed to get partition key from document");
+                    }
+
+                    return Number64.ToDouble(number.Value);
+                });
+            double count = documentsWherePkIsANumber.Count();
+
+            IReadOnlyList<CosmosElement> makeListResult = inputDocuments
+                .Select(doc =>
+                {
+                    if (!doc.TryGetValue(aggregateTestArgs.PartitionKey, out CosmosElement cosmosElement))
+                    {
+                        Assert.Fail("Failed to get partition key from document");
+                    }
+
+                    return cosmosElement;
+                })
+                .ToList();
+
+            IReadOnlyList<CosmosElement> makeSetResult = makeListResult.Distinct().ToList();
+
+            AggregateQueryArguments[] aggregateQueryArgumentsList = new AggregateQueryArguments[]
+            {
+                    new AggregateQueryArguments(
+                        aggregateOperator: "AVG",
+                        expectedValue: CosmosNumber64.Create(numberSum / count),
+                        predicate: $"IS_NUMBER(r.{aggregateTestArgs.PartitionKey})"),
+                    new AggregateQueryArguments(
+                        aggregateOperator: "AVG",
+                        expectedValue: CosmosUndefined.Create(),
+                        predicate: "true"),
+                    new AggregateQueryArguments(
+                        aggregateOperator: "COUNT",
+                        expectedValue: CosmosNumber64.Create(inputDocuments.Count()),
+                        predicate: "true"),
+                    new AggregateQueryArguments(
+                        aggregateOperator: "MAKELIST",
+                        expectedValue: CosmosArray.Create(makeListResult),
+                        predicate: "true",
+                        ignoreResultOrder: true),
+                    new AggregateQueryArguments(
+                        aggregateOperator: "MAKESET",
+                        expectedValue: CosmosArray.Create(makeSetResult),
+                        predicate: "true",
+                        ignoreResultOrder: true),
+                    new AggregateQueryArguments(
+                        aggregateOperator: "MAX",
+                        expectedValue: CosmosString.Create("xyz"),
+                        predicate: "true"),
+                    new AggregateQueryArguments(
+                        aggregateOperator: "MIN",
+                        expectedValue: CosmosBoolean.Create(false),
+                        predicate: "true"),
+                    new AggregateQueryArguments(
+                        aggregateOperator: "SUM",
+                        expectedValue: CosmosNumber64.Create(numberSum),
+                        predicate: $"IS_NUMBER(r.{aggregateTestArgs.PartitionKey})"),
+                    new AggregateQueryArguments(
+                        aggregateOperator: "SUM",
+                        expectedValue: CosmosUndefined.Create(),
+                        predicate: $"true"),
+            };
+
+            return aggregateQueryArgumentsList;
         }
 
         private readonly struct AggregateTestArgs
@@ -210,16 +357,18 @@
 
         private readonly struct AggregateQueryArguments
         {
-            public AggregateQueryArguments(string aggregateOperator, CosmosElement expectedValue, string predicate)
+            public AggregateQueryArguments(string aggregateOperator, CosmosElement expectedValue, string predicate, bool ignoreResultOrder=false)
             {
                 this.AggregateOperator = aggregateOperator;
                 this.ExpectedValue = expectedValue;
                 this.Predicate = predicate;
+                this.IgnoreResultOrder = ignoreResultOrder;
             }
 
             public string AggregateOperator { get; }
             public CosmosElement ExpectedValue { get; }
             public string Predicate { get; }
+            public bool IgnoreResultOrder { get; }
 
             public override string ToString()
             {
@@ -310,6 +459,32 @@
                             });
 
                         Assert.AreEqual(valueOfInterest, items.Single().ToDouble());
+                    }
+                    catch (Exception ex)
+                    {
+                        Assert.Fail($"Something went wrong with query: {query}, ex: {ex}");
+                    }
+                }
+
+                string[] arrayAggregateQueries = new string[]
+                {
+                    $"SELECT VALUE MAKELIST(c.{uniqueField}) FROM c WHERE c.{uniqueField} = {valueOfInterest}",
+                    $"SELECT VALUE MAKESET(c.{uniqueField}) FROM c WHERE c.{uniqueField} = {valueOfInterest}",
+                };
+
+                foreach (string query in arrayAggregateQueries)
+                {
+                    try
+                    {
+                        List<CosmosElement> items = await QueryTestsBase.RunQueryAsync(
+                            container,
+                            query,
+                            new QueryRequestOptions()
+                            {
+                                MaxConcurrency = 10,
+                            });
+
+                        Assert.IsTrue((items.Count() == 1) && (items.Single() is CosmosArray result) && result.Equals(CosmosArray.Create(CosmosNumber64.Create(valueOfInterest))));
                     }
                     catch (Exception ex)
                     {
@@ -451,43 +626,48 @@
                 args.UndefinedKey
             };
 
-            string[] aggregateOperators = new string[] { "AVG", "MIN", "MAX", "SUM", "COUNT" };
+            string[] aggregateOperators = new string[] { "AVG", "MIN", "MAX", "SUM", "COUNT", "MAKELIST", "MAKESET" };
             string[] typeCheckFunctions = new string[] { "IS_ARRAY", "IS_BOOL", "IS_NULL", "IS_NUMBER", "IS_OBJECT", "IS_STRING", "IS_DEFINED", "IS_PRIMITIVE" };
-            List<string> queries = new List<string>();
+            List<(string, bool)> queries = new List<(string, bool)>();
             foreach (string aggregateOperator in aggregateOperators)
             {
+                bool ignoreResultOrder = aggregateOperator.Equals("MAKELIST") || aggregateOperator.Equals("MAKESET");
                 foreach (string typeCheckFunction in typeCheckFunctions)
                 {
                     queries.Add(
-                    $@"
+                    ($@"
                         SELECT VALUE {aggregateOperator} (c.{field}) 
                         FROM c 
                         WHERE {typeCheckFunction}(c.{field})
-                    ");
+                    ", 
+                    ignoreResultOrder));
                 }
 
                 foreach (string typeOnlyPartitionKey in typeOnlyPartitionKeys)
                 {
                     queries.Add(
-                    $@"
+                    ($@"
                         SELECT VALUE {aggregateOperator} (c.{field}) 
                         FROM c 
                         WHERE c.{partitionKey} = ""{typeOnlyPartitionKey}""
-                    ");
+                    ",
+                    ignoreResultOrder));
                 }
             };
 
             // mixing primitive and non primitives
             foreach (string minmaxop in new string[] { "MIN", "MAX" })
             {
+                bool ignoreResultOrder = false;
                 foreach (string key in new string[] { args.OneObjectKey, args.OneArrayKey })
                 {
                     queries.Add(
-                    $@"
+                    ($@"
                         SELECT VALUE {minmaxop} (c.{field}) 
                         FROM c 
                         WHERE c.{partitionKey} IN (""{key}"", ""{args.DoubleOnlyKey}"")
-                    ");
+                    ",
+                    ignoreResultOrder));
                 }
             }
 
@@ -506,7 +686,7 @@
             {
                 writer.WriteStartDocument();
                 writer.WriteStartElement("Results");
-                foreach (string query in queries)
+                foreach ( (string query, bool ignoreResultOrder) in queries)
                 {
                     string formattedQuery = string.Join(
                         Environment.NewLine,
@@ -533,10 +713,18 @@
                     {
                         Assert.AreEqual(1, items.Count);
                         CosmosElement aggregateResult = items.First();
-
                         if(aggregateResult is not CosmosUndefined)
                         {
-                            writer.WriteCData(items.Single().ToString());
+                            if (ignoreResultOrder && (aggregateResult is CosmosArray aggregateResultArray))
+                            {
+                                CosmosElement[] normalizedAggregateResult = aggregateResultArray.ToArray();
+                                Array.Sort(normalizedAggregateResult);
+                                writer.WriteCData(CosmosArray.Create(normalizedAggregateResult).ToString());
+                            }
+                            else
+                            {
+                                writer.WriteCData(items.Single().ToString());
+                            }
                         }
                     }
 
@@ -917,6 +1105,105 @@
                 catch (Exception)
                 {
                     // Do Nothing
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task TestArrayAggregatesWithContinuationTokenAsync()
+        {
+            await this.TestArrayAggregatesWithContinuationToken(100);
+
+            // using 2048 + 1 documents here to ensure list size hits continuation token limit of 16KB
+            // We aggregate c.age (integers) which has 8 bytes, 16KB / 8B = 2048
+            await this.TestArrayAggregatesWithContinuationToken(2049);
+        }
+
+        private async Task TestArrayAggregatesWithContinuationToken(int numDocuments)
+        {
+            int seed = 135749376;
+
+            Random rand = new Random(seed);
+            List<Person> people = new List<Person>();
+
+            for (int i = 0; i < numDocuments; i++)
+            {
+                // Generate random people
+                Person person = PersonGenerator.GetRandomPerson(rand);
+                for (int j = 0; j < rand.Next(0, 4); j++)
+                {
+                    // Force an exact duplicate
+                    people.Add(person);
+                }
+            }
+
+            List<string> documents = new List<string>();
+            // Shuffle them so they end up in different pages
+            people = people.OrderBy((person) => Guid.NewGuid()).ToList();
+            foreach (Person person in people)
+            {
+                documents.Add(JsonConvert.SerializeObject(person));
+            }
+
+            await this.CreateIngestQueryDeleteAsync(
+                ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.MultiPartition,
+                documents,
+                ImplementationAsync,
+                "/id");
+
+            async static Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
+            {
+                foreach (string[] queriesToCompare in new string[][]
+                {
+                new string[]{ "SELECT VALUE c.age FROM c", "SELECT VALUE MakeList(c.age) FROM c" },
+                new string[]{ "SELECT DISTINCT VALUE c.age FROM c ORDER BY c.age", "SELECT VALUE MakeSet(c.age) FROM c" },
+                })
+                {
+                    string queryWithoutAggregate = queriesToCompare[0];
+                    List<CosmosElement> expectedDocuments = await QueryTestsBase.RunQueryCombinationsAsync(
+                        container,
+                        queryWithoutAggregate,
+                        new QueryRequestOptions()
+                        {
+                            MaxConcurrency = 10,
+                            MaxItemCount = 100,
+                        },
+                        QueryDrainingMode.ContinuationToken | QueryDrainingMode.HoldState);
+
+                    CosmosElement[] normalizedExpectedResult = expectedDocuments.ToArray();
+                    Array.Sort(normalizedExpectedResult);
+
+                    CosmosArray normalizedExpectedCosmosArray = CosmosArray.Create(normalizedExpectedResult);
+
+                    int[] pageSizes = (documents.Count() < 1000) ? new int[] { 1, 10, 100 } : new int[] { 100 };
+                    foreach (int pageSize in pageSizes)
+                    {
+                        string queryWithAggregate = queriesToCompare[1];
+                        List<CosmosElement> actualDocuments = await QueryTestsBase.RunQueryCombinationsAsync(
+                            container,
+                            queryWithAggregate,
+                            new QueryRequestOptions()
+                            {
+                                MaxConcurrency = 10,
+                                MaxItemCount = pageSize
+                            },
+                           QueryDrainingMode.ContinuationToken | QueryDrainingMode.HoldState);
+
+                        CosmosElement aggregateResult = actualDocuments.First();
+                        CosmosArray normalizedActualCosmosArray = null;
+                        if (aggregateResult is CosmosArray actualCosmosArray)
+                        {
+                            CosmosElement[] normalizedActualArray = actualCosmosArray.ToArray();
+                            Array.Sort(normalizedActualArray);
+                            normalizedActualCosmosArray = CosmosArray.Create(normalizedActualArray);
+                        }
+
+                        Assert.AreEqual(
+                            expected: normalizedExpectedCosmosArray,
+                            actual: normalizedActualCosmosArray,
+                            message: $"Documents didn't match for {queryWithAggregate} on a Partitioned container");
+                    }
                 }
             }
         }

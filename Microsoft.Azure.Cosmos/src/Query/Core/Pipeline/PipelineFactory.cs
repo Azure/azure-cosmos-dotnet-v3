@@ -20,21 +20,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
 
     internal static class PipelineFactory
     {
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
-            ExecutionEnvironment executionEnvironment,
             IDocumentContainer documentContainer,
             SqlQuerySpec sqlQuerySpec,
             IReadOnlyList<FeedRangeEpk> targetRanges,
             PartitionKey? partitionKey,
             QueryInfo queryInfo,
-            QueryPaginationOptions queryPaginationOptions,
+            QueryExecutionOptions queryPaginationOptions,
+            ContainerQueryProperties containerQueryProperties,
             int maxConcurrency,
-            CosmosElement requestContinuationToken,
-            CancellationToken requestCancellationToken)
+            CosmosElement requestContinuationToken)
         {
             if (documentContainer == null)
             {
@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             MonadicCreatePipelineStage monadicCreatePipelineStage;
             if (queryInfo.HasOrderBy)
             {
-                monadicCreatePipelineStage = (continuationToken, cancellationToken) => OrderByCrossPartitionQueryPipelineStage.MonadicCreate(
+                monadicCreatePipelineStage = (continuationToken) => OrderByCrossPartitionQueryPipelineStage.MonadicCreate(
                     documentContainer: documentContainer,
                     sqlQuerySpec: sqlQuerySpec,
                     targetRanges: targetRanges,
@@ -78,44 +78,41 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                         .Zip(queryInfo.OrderBy, (expression, sortOrder) => new OrderByColumn(expression, sortOrder)).ToList(),
                     queryPaginationOptions: queryPaginationOptions,
                     maxConcurrency: maxConcurrency,
+                    nonStreamingOrderBy: queryInfo.HasNonStreamingOrderBy,
                     continuationToken: continuationToken,
-                    cancellationToken: cancellationToken);
+                    containerQueryProperties: containerQueryProperties);
             }
             else
             {
-                monadicCreatePipelineStage = (continuationToken, cancellationToken) => ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
+                monadicCreatePipelineStage = (continuationToken) => ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                     documentContainer: documentContainer,
                     sqlQuerySpec: sqlQuerySpec,
                     targetRanges: targetRanges,
                     queryPaginationOptions: queryPaginationOptions,
                     partitionKey: partitionKey,
+                    containerQueryProperties: containerQueryProperties,
                     prefetchPolicy: prefetchPolicy,
                     maxConcurrency: maxConcurrency,
-                    continuationToken: continuationToken,
-                    cancellationToken: cancellationToken);
+                    continuationToken: continuationToken);
             }
 
             if (queryInfo.HasAggregates && !queryInfo.HasGroupBy)
             {
                 MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
-                monadicCreatePipelineStage = (continuationToken, cancellationToken) => AggregateQueryPipelineStage.MonadicCreate(
-                    executionEnvironment,
+                monadicCreatePipelineStage = (continuationToken) => AggregateQueryPipelineStage.MonadicCreate(
                     queryInfo.Aggregates,
                     queryInfo.GroupByAliasToAggregateType,
                     queryInfo.GroupByAliases,
                     queryInfo.HasSelectValue,
                     continuationToken,
-                    cancellationToken,
                     monadicCreateSourceStage);
             }
 
             if (queryInfo.HasDistinct)
             {
                 MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
-                monadicCreatePipelineStage = (continuationToken, cancellationToken) => DistinctQueryPipelineStage.MonadicCreate(
-                    executionEnvironment,
+                monadicCreatePipelineStage = (continuationToken) => DistinctQueryPipelineStage.MonadicCreate(
                     continuationToken,
-                    cancellationToken,
                     monadicCreateSourceStage,
                     queryInfo.DistinctType);
             }
@@ -123,63 +120,54 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             if (queryInfo.HasGroupBy)
             {
                 MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
-                monadicCreatePipelineStage = (continuationToken, cancellationToken) => GroupByQueryPipelineStage.MonadicCreate(
-                    executionEnvironment,
+                monadicCreatePipelineStage = (continuationToken) => GroupByQueryPipelineStage.MonadicCreate(
                     continuationToken,
-                    cancellationToken,
                     monadicCreateSourceStage,
+                    queryInfo.Aggregates,
                     queryInfo.GroupByAliasToAggregateType,
                     queryInfo.GroupByAliases,
                     queryInfo.HasSelectValue,
-                    (queryPaginationOptions ?? QueryPaginationOptions.Default).PageSizeLimit.GetValueOrDefault(int.MaxValue));
+                    (queryPaginationOptions ?? QueryExecutionOptions.Default).PageSizeLimit.GetValueOrDefault(int.MaxValue));
             }
 
             if (queryInfo.HasOffset)
             {
                 MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
-                monadicCreatePipelineStage = (continuationToken, cancellationToken) => SkipQueryPipelineStage.MonadicCreate(
-                    executionEnvironment,
+                monadicCreatePipelineStage = (continuationToken) => SkipQueryPipelineStage.MonadicCreate(
                     queryInfo.Offset.Value,
                     continuationToken,
-                    cancellationToken,
                     monadicCreateSourceStage);
             }
 
             if (queryInfo.HasLimit)
             {
                 MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
-                monadicCreatePipelineStage = (continuationToken, cancellationToken) => TakeQueryPipelineStage.MonadicCreateLimitStage(
-                    executionEnvironment,
+                monadicCreatePipelineStage = (continuationToken) => TakeQueryPipelineStage.MonadicCreateLimitStage(
                     queryInfo.Limit.Value,
                     continuationToken,
-                    cancellationToken,
                     monadicCreateSourceStage);
             }
 
             if (queryInfo.HasTop)
             {
                 MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
-                monadicCreatePipelineStage = (continuationToken, cancellationToken) => TakeQueryPipelineStage.MonadicCreateTopStage(
-                    executionEnvironment,
+                monadicCreatePipelineStage = (continuationToken) => TakeQueryPipelineStage.MonadicCreateTopStage(
                     queryInfo.Top.Value,
                     continuationToken,
-                    cancellationToken,
                     monadicCreateSourceStage);
             }
 
             if (queryInfo.HasDCount)
             {
                 MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
-                monadicCreatePipelineStage = (continuationToken, cancellationToken) => DCountQueryPipelineStage.MonadicCreate(
-                    executionEnvironment,
+                monadicCreatePipelineStage = (continuationToken) => DCountQueryPipelineStage.MonadicCreate(
                     queryInfo.DCountInfo,
                     continuationToken,
-                    cancellationToken,
                     monadicCreateSourceStage);
             }
 
-            return monadicCreatePipelineStage(requestContinuationToken, requestCancellationToken)
-                .Try<IQueryPipelineStage>(onSuccess: (stage) => new SkipEmptyPageQueryPipelineStage(stage, requestCancellationToken));
+            return monadicCreatePipelineStage(requestContinuationToken)
+                .Try<IQueryPipelineStage>(onSuccess: stage => new SkipEmptyPageQueryPipelineStage(stage));
         }
 
         private static PrefetchPolicy DeterminePrefetchPolicy(QueryInfo queryInfo)

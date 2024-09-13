@@ -11,22 +11,23 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Serializer;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class ChangeFeedCrossFeedRangeAsyncEnumerable : IAsyncEnumerable<TryCatch<ChangeFeedPage>>
     {
         private readonly IDocumentContainer documentContainer;
-        private readonly ChangeFeedPaginationOptions changeFeedPaginationOptions;
+        private readonly ChangeFeedExecutionOptions changeFeedPaginationOptions;
         private readonly ChangeFeedCrossFeedRangeState state;
         private readonly JsonSerializationFormatOptions jsonSerializationFormatOptions;
 
         public ChangeFeedCrossFeedRangeAsyncEnumerable(
             IDocumentContainer documentContainer,
             ChangeFeedCrossFeedRangeState state,
-            ChangeFeedPaginationOptions changeFeedPaginationOptions,
+            ChangeFeedExecutionOptions changeFeedPaginationOptions,
             JsonSerializationFormatOptions jsonSerializationFormatOptions = null)
         {
             this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
-            this.changeFeedPaginationOptions = changeFeedPaginationOptions ?? ChangeFeedPaginationOptions.Default;
+            this.changeFeedPaginationOptions = changeFeedPaginationOptions ?? ChangeFeedExecutionOptions.Default;
             this.state = state;
             this.jsonSerializationFormatOptions = jsonSerializationFormatOptions;
         }
@@ -37,12 +38,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             CrossPartitionChangeFeedAsyncEnumerator innerEnumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
                 this.documentContainer,
                 innerState,
-                this.changeFeedPaginationOptions,
-                cancellationToken);
+                this.changeFeedPaginationOptions);
 
-            return new ChangeFeedCrossFeedRangeAsyncEnumerator(
+            ChangeFeedCrossFeedRangeAsyncEnumerator changeFeedEnumerator = new ChangeFeedCrossFeedRangeAsyncEnumerator(
                 innerEnumerator,
                 this.jsonSerializationFormatOptions);
+
+            return new TracingAsyncEnumerator<TryCatch<ChangeFeedPage>>(changeFeedEnumerator, NoOpTrace.Singleton, cancellationToken);
         }
     }
 }

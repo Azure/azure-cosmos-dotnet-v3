@@ -55,7 +55,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenTelemetry", "OpenTeleme
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ApplicationInsights", "ApplicationInsights\ApplicationInsights.csproj", "{55149A3C-A263-4EE5-AD2D-02FE9AC4D291}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomDiagnosticAndEventListener", "CustomDiagnosticAndEventListener\CustomDiagnosticAndEventListener.csproj", "{9BE3551E-31A1-4186-9D2F-DC325411A39D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CustomDiagnosticAndEventListener", "CustomDiagnosticAndEventListener\CustomDiagnosticAndEventListener.csproj", "{9BE3551E-31A1-4186-9D2F-DC325411A39D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChangeFeedAllVersionsAndDeletes", "ChangeFeedAllVersionsAndDeletes\ChangeFeedAllVersionsAndDeletes.csproj", "{6B26AD21-63D1-4C68-A45A-5E066E3FD7F8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -171,6 +173,10 @@ Global
 		{9BE3551E-31A1-4186-9D2F-DC325411A39D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9BE3551E-31A1-4186-9D2F-DC325411A39D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9BE3551E-31A1-4186-9D2F-DC325411A39D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6B26AD21-63D1-4C68-A45A-5E066E3FD7F8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6B26AD21-63D1-4C68-A45A-5E066E3FD7F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6B26AD21-63D1-4C68-A45A-5E066E3FD7F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6B26AD21-63D1-4C68-A45A-5E066E3FD7F8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

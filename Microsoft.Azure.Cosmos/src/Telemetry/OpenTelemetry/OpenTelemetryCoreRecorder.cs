@@ -9,9 +9,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Diagnostics;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
-    /// This class is used to add information in an Activity tags ref. https://github.com/Azure/azure-cosmos-dotnet-v3/issues/3058
+    /// This class is used to add information in an Activity tags for OpenTelemetry.
+    /// Refer to <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/issues/3058"/> for more details.
     /// </summary>
     internal struct OpenTelemetryCoreRecorder : IDisposable
     {
@@ -21,9 +23,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private readonly CosmosThresholdOptions config = null;
         private readonly Activity activity = null;
 
-        private readonly Documents.OperationType operationType = Documents.OperationType.Invalid;
+        private readonly OperationType operationType = OperationType.Invalid;
+        private readonly string connectionModeCache = null;
+
         private OpenTelemetryAttributes response = null;
 
+        /// <summary>
+        /// Maps exception types to actions that record their OpenTelemetry attributes.
+        /// </summary>
         internal static IDictionary<Type, Action<Exception, DiagnosticScope>> OTelCompatibleExceptions = new Dictionary<Type, Action<Exception, DiagnosticScope>>()
         {
             { typeof(CosmosNullReferenceException), (exception, scope) => CosmosNullReferenceException.RecordOtelAttributes((CosmosNullReferenceException)exception, scope)},
@@ -50,13 +57,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string operationName,
             string containerName,
             string databaseName,
-            Documents.OperationType operationType, 
-            CosmosClientContext clientContext, CosmosThresholdOptions config)
+            OperationType operationType, 
+            CosmosClientContext clientContext, 
+            CosmosThresholdOptions config)
         {
             this.scope = scope;
             this.config = config;
+
             this.operationType = operationType;
-            
+            this.connectionModeCache = Enum.GetName(typeof(ConnectionMode), clientContext.ClientOptions.ConnectionMode);
+
             if (scope.IsEnabled)
             {
                 this.scope.Start();
@@ -70,9 +80,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         }
 
         /// <summary>
-        /// Used for creating parent activity in scenario where there are no listeners at operation level 
-        /// but they are present at network level
+        /// Creates a parent activity for scenarios where there are no listeners at the operation level but are present at the network level.
         /// </summary>
+        /// <param name="networkScope">The network-level diagnostic scope.</param>
+        /// <returns>An instance of <see cref="OpenTelemetryCoreRecorder"/>.</returns>
         public static OpenTelemetryCoreRecorder CreateNetworkLevelParentActivity(DiagnosticScope networkScope)
         {
             return new OpenTelemetryCoreRecorder(networkScope);
@@ -140,12 +151,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 // Other information
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.MachineId, VmMetadataApiHandler.GetMachineId());
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.NetPeerName, clientContext.Client?.Endpoint?.Host);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ServerAddress, clientContext.Client?.Endpoint?.Host);
 
                 // Client Information
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ClientId, clientContext?.Client?.Id);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.UserAgent, clientContext.UserAgent);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ConnectionMode, clientContext.ClientOptions.ConnectionMode);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ConnectionMode, this.connectionModeCache);
             }
         }
 
@@ -170,7 +181,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             if (this.IsEnabled)
             {
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionStacktrace, exception.StackTrace);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionType, exception.GetType());
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionType, exception.GetType().Name);
 
                 // If Exception is not registered with open Telemetry
                 if (!OpenTelemetryCoreRecorder.IsExceptionRegistered(exception, this.scope))
@@ -213,18 +224,30 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             if (this.IsEnabled)
             {
-                Documents.OperationType operationType 
-                    = (this.response == null || this.response?.OperationType == Documents.OperationType.Invalid) ? this.operationType : this.response.OperationType;
+                OperationType operationType
+                    = (this.response == null || this.response?.OperationType == OperationType.Invalid) ? this.operationType : this.response.OperationType;
 
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.OperationType, operationType);
+                string operationName = Enum.GetName(typeof(OperationType), operationType);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.OperationType, operationName);
 
                 if (this.response != null)
                 {
+                    if (this.response.BatchOperationName != null)
+                    {
+                        string batchOpsName = Enum.GetName(typeof(OperationType), this.response.BatchOperationName);
+                        operationName = $"{operationName}.{batchOpsName}";
+                    }
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.OperationType, operationName);
+
+                    if (this.response.BatchSize is not null)
+                    {
+                        this.scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.BatchSize, (int)this.response.BatchSize);
+                    }
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestContentLength, this.response.RequestContentLength);
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.ResponseContentLength, this.response.ResponseContentLength);
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.StatusCode, (int)this.response.StatusCode);
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.SubStatusCode, this.response.SubStatusCode);
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestCharge, this.response.RequestCharge);
+                    this.scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.StatusCode, (int)this.response.StatusCode);
+                    this.scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.SubStatusCode, this.response.SubStatusCode);
+                    this.scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.RequestCharge, (int)this.response.RequestCharge);
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.ItemCount, this.response.ItemCount);
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.ActivityId, this.response.ActivityId);
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.CorrelatedActivityId, this.response.CorrelatedActivityId);
@@ -237,7 +260,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                     if (!DiagnosticsFilterHelper.IsSuccessfulResponse(this.response.StatusCode, this.response.SubStatusCode))
                     {
-                        this.scope.Failed();
+                        this.scope.Failed($"{(int)this.response.StatusCode}/{this.response.SubStatusCode}");
                     }
                 }
 

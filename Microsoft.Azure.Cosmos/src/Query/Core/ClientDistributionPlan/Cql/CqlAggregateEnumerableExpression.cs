@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan.Cql
     {
         public CqlAggregateEnumerableExpression(CqlEnumerableExpression sourceExpression, CqlAggregate aggregate) 
             : base(CqlEnumerableExpressionKind.Aggregate)
-        {
+        { 
             this.SourceExpression = sourceExpression ?? throw new ArgumentNullException(nameof(sourceExpression));
             this.Aggregate = aggregate ?? throw new ArgumentNullException(nameof(aggregate));
         }
@@ -18,5 +18,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan.Cql
         public CqlEnumerableExpression SourceExpression { get; }
         
         public CqlAggregate Aggregate { get; }
+
+        public override void Accept(ICqlVisitor cqlVisitor) => cqlVisitor.Visit(this);
     }
 }

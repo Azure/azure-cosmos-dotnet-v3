@@ -7,19 +7,27 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.IO;
     using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
+    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
     using Newtonsoft.Json;
 
     [TestClass]
@@ -46,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             MergeTestUtil mergeTest = new MergeTestUtil();
             mergeTest.DocumentContainer = await CreateDocumentContainerAsync(
                 documents: documents,
-                numPartitions: 2,
+                numSplits: 2,
                 failureConfigs: new FlakyDocumentContainer.FailureConfigs(
                     inject429s: false,
                     injectEmptyPages: false,
@@ -58,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             List<CosmosElement> elements = new List<CosmosElement>();
             int iteration = 0;
-            while (await pipelineStage.MoveNextAsync(NoOpTrace.Singleton))
+            while (await pipelineStage.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default))
             {
                 TryCatch<QueryPage> tryGetQueryPage = pipelineStage.Current;
                 tryGetQueryPage.ThrowIfFailed();
@@ -237,7 +245,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             int numTraces = (await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, default)).Count;
             using (rootTrace = Trace.GetRootTrace("Cross Partition Query"))
             {
-                while (await pipelineStage.MoveNextAsync(rootTrace))
+                while (await pipelineStage.MoveNextAsync(rootTrace, cancellationToken: default))
                 {
                     TryCatch<QueryPage> tryGetQueryPage = pipelineStage.Current;
                     tryGetQueryPage.ThrowIfFailed();
@@ -247,6 +255,209 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             }
 
             Assert.AreEqual(numTraces, rootTrace.Children.Count);
+        }
+
+        [TestMethod]
+        public async Task OffsetLimitPageSize()
+        {
+            List<CosmosObject> documents = new List<CosmosObject>();
+            for (int i = 0; i < 1100; i++)
+            {
+                documents.Add(CosmosObject.Parse($"{{\"pk\" : {i} }}"));
+            }
+
+            MockInMemoryContainer mockInMemoryContainer = new MockInMemoryContainer(new InMemoryContainer(partitionKeyDefinition));
+            DocumentContainer documentContainer = await CreateDocumentContainerAsync(documents, mockInMemoryContainer, numSplits: 4);
+
+            // OFFSET/LIMIT with ORDER BY
+            await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 0 LIMIT 500", expectedPageSize: 500, expectedResults: 500, mockInMemoryContainer, documentContainer);
+            await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 10000 LIMIT 5000", expectedPageSize: 1000, expectedResults: 0, mockInMemoryContainer, documentContainer);
+            await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 10 LIMIT 100", expectedPageSize: 110, expectedResults: 100, mockInMemoryContainer, documentContainer);
+            await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 0 LIMIT 100", expectedPageSize: 100, expectedResults: 100, mockInMemoryContainer, documentContainer);
+            await this.TestPageSizeAsync("SELECT c.pk FROM c ORDER BY c.pk OFFSET 100 LIMIT 0", expectedPageSize: 100, expectedResults: 0, mockInMemoryContainer, documentContainer);
+
+            // OFFSET/LIMIT without ORDER BY
+            await this.TestPageSizeAsync("SELECT c.pk FROM c OFFSET 10 LIMIT 100", expectedPageSize: 1000, expectedResults: 100, mockInMemoryContainer, documentContainer);
+            await this.TestPageSizeAsync("SELECT c.pk FROM c OFFSET 0 LIMIT 100", expectedPageSize: 1000, expectedResults: 100, mockInMemoryContainer, documentContainer);
+            await this.TestPageSizeAsync("SELECT c.pk FROM c OFFSET 100 LIMIT 0", expectedPageSize: 1000, expectedResults: 0, mockInMemoryContainer, documentContainer);
+
+            // TOP with ORDER BY
+            await this.TestPageSizeAsync("SELECT TOP 5 c.pk FROM c ORDER BY c.pk", expectedPageSize: 5, expectedResults: 5, mockInMemoryContainer, documentContainer);
+            await this.TestPageSizeAsync("SELECT TOP 100 c.pk FROM c ORDER BY c.pk", expectedPageSize: 100, expectedResults: 100, mockInMemoryContainer, documentContainer);
+            await this.TestPageSizeAsync("SELECT TOP 5000 c.pk FROM c ORDER BY c.pk", expectedPageSize: 1000, expectedResults: 1100, mockInMemoryContainer, documentContainer);
+            await this.TestPageSizeAsync("SELECT TOP 15000 c.pk FROM c ORDER BY c.pk", expectedPageSize: 1000, expectedResults: 1100, mockInMemoryContainer, documentContainer);
+
+            // TOP without ORDER BY
+            await this.TestPageSizeAsync("SELECT TOP 5 c.pk FROM c", expectedPageSize: 1000, expectedResults: 5, mockInMemoryContainer, documentContainer);
+            await this.TestPageSizeAsync("SELECT TOP 5000 c.pk FROM c", expectedPageSize: 1000, expectedResults: 1100, mockInMemoryContainer, documentContainer);
+            await this.TestPageSizeAsync("SELECT TOP 15000 c.pk FROM c", expectedPageSize: 1000, expectedResults: 1100, mockInMemoryContainer, documentContainer);
+        }
+
+        private async Task TestPageSizeAsync(string query, int expectedPageSize, int expectedResults, MockInMemoryContainer inMemoryContainer, DocumentContainer documentContainer)
+        {
+            IQueryPipelineStage queryPipelineStage = CreateQueryPipelineStage(
+                documentContainer,
+                query,
+                partitionKeyDefinition,
+                null,
+                new QueryRequestOptions());
+
+            List<CosmosElement> elements = new List<CosmosElement>();
+            while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default))
+            {
+                TryCatch<QueryPage> tryGetQueryPage = queryPipelineStage.Current;
+                tryGetQueryPage.ThrowIfFailed();
+
+                elements.AddRange(tryGetQueryPage.Result.Documents);
+            }
+
+            Assert.AreEqual(expected: expectedPageSize, actual: inMemoryContainer.PageSizeSpecified);
+            Assert.AreEqual(expected: expectedResults, actual: elements.Count);
+        }
+
+        private static IQueryPipelineStage CreateQueryPipelineStage(
+            DocumentContainer documentContainer,
+            string query,
+            PartitionKeyDefinition partitionKeyDefinition,
+            Cosmos.PartitionKey? partitionKeyValue,
+            QueryRequestOptions queryRequestOptions)
+        {
+            CosmosSerializerCore serializerCore = new();
+            using StreamReader streamReader = new(serializerCore.ToStreamSqlQuerySpec(new SqlQuerySpec(query), Documents.ResourceType.Document));
+            string sqlQuerySpecJsonString = streamReader.ReadToEnd();
+
+            CosmosQueryExecutionContextFactory.InputParameters inputParameters = CosmosQueryExecutionContextFactory.InputParameters.Create(
+                sqlQuerySpec: new SqlQuerySpec(query),
+                initialUserContinuationToken: null,
+                initialFeedRange: null,
+                maxConcurrency: queryRequestOptions.MaxConcurrency,
+                maxItemCount: queryRequestOptions.MaxItemCount,
+                maxBufferedItemCount: queryRequestOptions.MaxBufferedItemCount,
+                partitionKey: partitionKeyValue,
+                properties: new Dictionary<string, object>() { { "x-ms-query-partitionkey-definition", partitionKeyDefinition } },
+                partitionedQueryExecutionInfo: null,
+                returnResultsInDeterministicOrder: null,
+                enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
+                isNonStreamingOrderByQueryFeatureDisabled: queryRequestOptions.IsNonStreamingOrderByQueryFeatureDisabled,
+                enableDistributedQueryGatewayMode: queryRequestOptions.EnableDistributedQueryGatewayMode,
+                testInjections: queryRequestOptions.TestSettings);
+
+            string databaseId = "db1234";
+            string resourceLink = $"dbs/{databaseId}/colls";
+            const string suffix = "-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF";
+
+            List<PartitionKeyRange> partitionKeyRanges = new List<PartitionKeyRange>
+            {
+                new PartitionKeyRange() { MinInclusive = Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey, MaxExclusive = "1F" + suffix },
+                new PartitionKeyRange() { MinInclusive = "1F" + suffix, MaxExclusive = "3F" + suffix },
+                new PartitionKeyRange() { MinInclusive = "3F" + suffix, MaxExclusive = "5F" + suffix },
+                new PartitionKeyRange() { MinInclusive = "5F" + suffix, MaxExclusive = "7F" + suffix },
+                new PartitionKeyRange() { MinInclusive = "7F" + suffix, MaxExclusive = "9F" + suffix },
+                new PartitionKeyRange() { MinInclusive = "9F" + suffix, MaxExclusive = "BF" + suffix },
+                new PartitionKeyRange() { MinInclusive = "BF" + suffix, MaxExclusive = "DF" + suffix },
+                new PartitionKeyRange() { MinInclusive = "DF" + suffix, MaxExclusive = Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey },
+            };
+
+            Mock<CosmosQueryClient> mockClient = new Mock<CosmosQueryClient>();
+
+            mockClient.Setup(x => x.GetTargetPartitionKeyRangesAsync(
+                It.IsAny<string>(),
+                "HelloWorld",
+                It.IsAny<IReadOnlyList<Documents.Routing.Range<string>>>(),
+                It.IsAny<bool>(),
+                It.IsAny<ITrace>()))
+                .Returns((string resourceLink, string collectionResourceId, IReadOnlyList<Documents.Routing.Range<string>> providedRanges, bool forceRefresh, ITrace trace) => Task.FromResult(partitionKeyRanges));
+
+            mockClient.Setup(x => x.TryGetPartitionedQueryExecutionInfoAsync(
+                It.IsAny<SqlQuerySpec>(),
+                It.IsAny<ResourceType>(),
+                It.IsAny<PartitionKeyDefinition>(),
+                It.IsAny<Cosmos.VectorEmbeddingPolicy>(),
+                It.IsAny<bool>(),
+                It.IsAny<bool>(),
+                It.IsAny<bool>(),
+                It.IsAny<bool>(),
+                It.IsAny<bool>(),
+                It.IsAny<bool>(),
+                It.IsAny<Cosmos.GeospatialType>(),
+                It.IsAny<CancellationToken>()))
+                .Returns((
+                SqlQuerySpec sqlQuerySpec,
+                ResourceType resourceType,
+                PartitionKeyDefinition partitionKeyDefinition,
+                VectorEmbeddingPolicy vectorEmbeddingPolicy,
+                bool requireFormattableOrderByQuery,
+                bool isContinuationExpected,
+                bool allowNonValueAggregateQuery,
+                bool hasLogicalPartitionKey,
+                bool allowDCount,
+                bool useSystemPrefix,
+                Cosmos.GeospatialType geospatialType,
+                CancellationToken cancellationToken) =>
+                {
+                    CosmosSerializerCore serializerCore = new();
+                    using StreamReader streamReader = new(serializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, Documents.ResourceType.Document));
+                    string sqlQuerySpecJsonString = streamReader.ReadToEnd();
+
+                    (PartitionedQueryExecutionInfo partitionedQueryExecutionInfo, QueryPartitionProvider queryPartitionProvider) = OptimisticDirectExecutionQueryBaselineTests.GetPartitionedQueryExecutionInfoAndPartitionProvider(sqlQuerySpecJsonString, partitionKeyDefinition);
+                    return Task.FromResult(TryCatch<PartitionedQueryExecutionInfo>.FromResult(partitionedQueryExecutionInfo));
+                }
+                );
+
+            List<PartitionKeyRange> targetPartitionKeyRanges = new (){
+                new PartitionKeyRange()
+                {
+                    MinInclusive = "",
+                    MaxExclusive = "FF"
+                }
+            };
+            CosmosQueryContextCore cosmosQueryContextCore = new CosmosQueryContextCore(
+                 client: new TestCosmosQueryClient(GetQueryPartitionProvider(), targetPartitionKeyRanges),
+                 resourceTypeEnum: Documents.ResourceType.Document,
+                 operationType: Documents.OperationType.Query,
+                 resourceType: typeof(QueryResponseCore),
+                 resourceLink: resourceLink,
+                 isContinuationExpected: true,
+                 allowNonValueAggregateQuery: true,
+                 useSystemPrefix: false,
+                 correlatedActivityId: Guid.NewGuid());
+
+            IQueryPipelineStage queryPipelineStage = CosmosQueryExecutionContextFactory.Create(
+                documentContainer,
+                cosmosQueryContextCore,
+                inputParameters,
+                NoOpTrace.Singleton);
+
+            return queryPipelineStage;
+        }
+
+        internal static QueryPartitionProvider GetQueryPartitionProvider()
+        {
+            IDictionary<string, object> DefaultQueryengineConfiguration = new Dictionary<string, object>()
+            {
+                {"maxSqlQueryInputLength", 30720},
+                {"maxJoinsPerSqlQuery", 5},
+                {"maxLogicalAndPerSqlQuery", 200},
+                {"maxLogicalOrPerSqlQuery", 200},
+                {"maxUdfRefPerSqlQuery", 2},
+                {"maxInExpressionItemsCount", 8000},
+                {"queryMaxInMemorySortDocumentCount", 500},
+                {"maxQueryRequestTimeoutFraction", 0.90},
+                {"sqlAllowNonFiniteNumbers", false},
+                {"sqlAllowAggregateFunctions", true},
+                {"sqlAllowSubQuery", true},
+                {"sqlAllowScalarSubQuery", false},
+                {"allowNewKeywords", true},
+                {"sqlAllowLike", true},
+                {"sqlAllowGroupByClause", false},
+                {"queryEnableMongoNativeRegex", true},
+                {"maxSpatialQueryCells", 12},
+                {"spatialMaxGeometryPointCount", 256},
+                {"sqlDisableOptimizationFlags", 0},
+                {"sqlEnableParameterExpansionCheck", true}
+            };
+
+            return new QueryPartitionProvider(DefaultQueryengineConfiguration);
         }
 
         internal static async Task<List<CosmosElement>> ExecuteQueryAsync(
@@ -292,7 +503,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             IQueryPipelineStage pipelineStage = await CreatePipelineAsync(documentContainer, query, pageSize);
 
             List<CosmosElement> elements = new List<CosmosElement>();
-            while (await pipelineStage.MoveNextAsync(NoOpTrace.Singleton))
+            while (await pipelineStage.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default))
             {
                 TryCatch<QueryPage> tryGetQueryPage = pipelineStage.Current;
                 tryGetQueryPage.ThrowIfFailed();
@@ -313,7 +524,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             {
                 pipelineStage = await CreatePipelineAsync(documentContainer, query, pageSize, state);
 
-                if (!await pipelineStage.MoveNextAsync(NoOpTrace.Singleton))
+                if (!await pipelineStage.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default))
                 {
                     break;
                 }
@@ -329,13 +540,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             return elements;
         }
 
-        internal static Task<IDocumentContainer> CreateDocumentContainerAsync(
+        internal static Task<DocumentContainer> CreateDocumentContainerAsync(
             IReadOnlyList<CosmosObject> documents,
-            int numPartitions = 3,
+            int numSplits = 3,
             FlakyDocumentContainer.FailureConfigs failureConfigs = null)
         {
             IMonadicDocumentContainer monadicDocumentContainer = CreateMonadicDocumentContainerAsync(failureConfigs);
-            return CreateDocumentContainerAsync(documents, monadicDocumentContainer, numPartitions);
+            return CreateDocumentContainerAsync(documents, monadicDocumentContainer, numSplits);
         }
 
         internal static IMonadicDocumentContainer CreateMonadicDocumentContainerAsync(FlakyDocumentContainer.FailureConfigs failureConfigs)
@@ -349,14 +560,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             return monadicDocumentContainer;
         }
 
-        internal static async Task<IDocumentContainer> CreateDocumentContainerAsync(
+        internal static async Task<DocumentContainer> CreateDocumentContainerAsync(
             IReadOnlyList<CosmosObject> documents,
             IMonadicDocumentContainer monadicDocumentContainer,
-            int numPartitions)
+            int numSplits)
         {
             DocumentContainer documentContainer = new DocumentContainer(monadicDocumentContainer);
 
-            for (int i = 0; i < numPartitions; i++)
+            for (int i = 0; i < numSplits; i++)
             {
                 IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(
                     trace: NoOpTrace.Singleton,
@@ -395,15 +606,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             IReadOnlyList<FeedRangeEpk> feedRanges = await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default);
 
             TryCatch<IQueryPipelineStage> tryCreatePipeline = PipelineFactory.MonadicCreate(
-                ExecutionEnvironment.Client,
                 documentContainer,
                 new SqlQuerySpec(query),
                 feedRanges,
                 partitionKey: null,
                 GetQueryPlan(query),
-                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: pageSize),
+                queryPaginationOptions: new QueryExecutionOptions(pageSizeHint: pageSize),
+                containerQueryProperties: new ContainerQueryProperties(),
                 maxConcurrency: 10,
-                requestCancellationToken: default,
                 requestContinuationToken: state);
 
             tryCreatePipeline.ThrowIfFailed();
@@ -416,6 +626,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             TryCatch<PartitionedQueryExecutionInfoInternal> info = QueryPartitionProviderTestInstance.Object.TryGetPartitionedQueryExecutionInfoInternal(
                 JsonConvert.SerializeObject(new SqlQuerySpec(query)),
                 partitionKeyDefinition,
+                vectorEmbeddingPolicy: null,
                 requireFormattableOrderByQuery: true,
                 isContinuationExpected: false,
                 allowNonValueAggregateQuery: true,
@@ -459,6 +670,80 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 {
                     return null;
                 }
+            }
+        }
+
+        private class MockInMemoryContainer : IMonadicDocumentContainer
+        {
+            public int? PageSizeSpecified { get; private set; }
+            public IMonadicDocumentContainer MonadicDocumentContainer { get; }
+
+            public MockInMemoryContainer(IMonadicDocumentContainer documentContainer)
+            {
+                this.MonadicDocumentContainer = documentContainer;
+                this.PageSizeSpecified = null;
+            }
+
+            public void Reset()
+            {
+                this.PageSizeSpecified = null;
+            }
+
+            public Task<TryCatch<ChangeFeedPage>> MonadicChangeFeedAsync(FeedRangeState<ChangeFeedState> feedRangeState, ChangeFeedExecutionOptions changeFeedPaginationOptions, ITrace trace, CancellationToken cancellationToken)
+            {
+                return this.MonadicDocumentContainer.MonadicChangeFeedAsync(feedRangeState, changeFeedPaginationOptions, trace, cancellationToken);
+            }
+
+            public Task<TryCatch<Record>> MonadicCreateItemAsync(CosmosObject payload, CancellationToken cancellationToken)
+            {
+                return this.MonadicDocumentContainer.MonadicCreateItemAsync(payload, cancellationToken);
+            }
+
+            public Task<TryCatch<List<FeedRangeEpk>>> MonadicGetChildRangeAsync(FeedRangeInternal feedRange, ITrace trace, CancellationToken cancellationToken)
+            {
+                return this.MonadicDocumentContainer.MonadicGetChildRangeAsync(feedRange, trace, cancellationToken);
+            }
+
+            public Task<TryCatch<List<FeedRangeEpk>>> MonadicGetFeedRangesAsync(ITrace trace, CancellationToken cancellationToken)
+            {
+                return this.MonadicDocumentContainer.MonadicGetFeedRangesAsync(trace, cancellationToken);
+            }
+
+            public Task<TryCatch<string>> MonadicGetResourceIdentifierAsync(ITrace trace, CancellationToken cancellationToken)
+            {
+                return this.MonadicDocumentContainer.MonadicGetResourceIdentifierAsync(trace, cancellationToken);
+            }
+
+            public Task<TryCatch> MonadicMergeAsync(FeedRangeInternal feedRange1, FeedRangeInternal feedRange2, CancellationToken cancellationToken)
+            {
+                return this.MonadicDocumentContainer.MonadicMergeAsync(feedRange1, feedRange2, cancellationToken);
+            }
+
+            public Task<TryCatch<QueryPage>> MonadicQueryAsync(SqlQuerySpec sqlQuerySpec, FeedRangeState<QueryState> feedRangeState, QueryExecutionOptions queryPaginationOptions, ITrace trace, CancellationToken cancellationToken)
+            {
+                this.PageSizeSpecified = queryPaginationOptions.PageSizeLimit;
+                
+                return this.MonadicDocumentContainer.MonadicQueryAsync(sqlQuerySpec, feedRangeState, queryPaginationOptions, trace, cancellationToken);
+            }
+
+            public Task<TryCatch<ReadFeedPage>> MonadicReadFeedAsync(FeedRangeState<ReadFeedState> feedRangeState, ReadFeedExecutionOptions readFeedPaginationOptions, ITrace trace, CancellationToken cancellationToken)
+            {
+                return this.MonadicDocumentContainer.MonadicReadFeedAsync(feedRangeState, readFeedPaginationOptions, trace, cancellationToken);
+            }
+
+            public Task<TryCatch<Record>> MonadicReadItemAsync(CosmosElement partitionKey, string identifier, CancellationToken cancellationToken)
+            {
+                return this.MonadicDocumentContainer.MonadicReadItemAsync(partitionKey, identifier, cancellationToken);
+            }
+
+            public Task<TryCatch> MonadicRefreshProviderAsync(ITrace trace, CancellationToken cancellationToken)
+            {
+                return this.MonadicDocumentContainer.MonadicRefreshProviderAsync(trace, cancellationToken);
+            }
+
+            public Task<TryCatch> MonadicSplitAsync(FeedRangeInternal feedRange, CancellationToken cancellationToken)
+            {
+                return this.MonadicDocumentContainer.MonadicSplitAsync(feedRange, cancellationToken);
             }
         }
     }

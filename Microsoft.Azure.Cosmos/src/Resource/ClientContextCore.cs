@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos
             HttpMessageHandler httpMessageHandler = CosmosHttpClientCore.CreateHttpClientHandler(
                 clientOptions.GatewayModeMaxConnectionLimit,
                 clientOptions.WebProxy,
-                clientOptions.ServerCertificateCustomValidationCallback);
+                clientOptions.GetServerCertificateCustomValidationCallback());
 
             DocumentClient documentClient = new DocumentClient(
                cosmosClient.Endpoint,
@@ -81,8 +81,10 @@ namespace Microsoft.Azure.Cosmos
                handler: httpMessageHandler,
                sessionContainer: clientOptions.SessionContainer,
                cosmosClientId: cosmosClient.Id,
-               remoteCertificateValidationCallback: ClientContextCore.SslCustomValidationCallBack(clientOptions.ServerCertificateCustomValidationCallback),
-               cosmosClientTelemetryOptions: clientOptions.CosmosClientTelemetryOptions);
+               remoteCertificateValidationCallback: ClientContextCore.SslCustomValidationCallBack(clientOptions.GetServerCertificateCustomValidationCallback()),
+               cosmosClientTelemetryOptions: clientOptions.CosmosClientTelemetryOptions,
+               availabilityStrategy: clientOptions.AvailabilityStrategy,
+               chaosInterceptorFactory: clientOptions.ChaosInterceptorFactory);
 
             return ClientContextCore.Create(
                 cosmosClient,
@@ -119,6 +121,7 @@ namespace Microsoft.Azure.Cosmos
                 ClientPipelineBuilder clientPipelineBuilder = new ClientPipelineBuilder(
                     cosmosClient,
                     clientOptions.ConsistencyLevel,
+                    clientOptions.PriorityLevel,
                     clientOptions.CustomHandlers,
                     telemetryToServiceHelper: documentClient.telemetryToServiceHelper);
 
@@ -284,6 +287,7 @@ namespace Microsoft.Azure.Cosmos
 
                 using (ITrace trace = disableDiagnostics ? NoOpTrace.Singleton : (ITrace)Tracing.Trace.GetRootTrace(operationName, traceComponent, traceLevel))
                 {
+                    trace.AddDatum("Client Configuration", this.client.ClientConfigurationTraceDatum);
                     trace.AddDatum("Synchronization Context", syncContextVirtualAddress);
 
                     return await this.RunWithDiagnosticsHelperAsync(

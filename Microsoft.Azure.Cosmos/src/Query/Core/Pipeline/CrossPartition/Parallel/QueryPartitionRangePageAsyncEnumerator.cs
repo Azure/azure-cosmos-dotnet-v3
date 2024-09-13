@@ -10,13 +10,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class QueryPartitionRangePageAsyncEnumerator : PartitionRangePageAsyncEnumerator<QueryPage, QueryState>
     {
         private readonly IQueryDataSource queryDataSource;
         private readonly SqlQuerySpec sqlQuerySpec;
-        private readonly QueryPaginationOptions queryPaginationOptions;
+        private readonly QueryExecutionOptions queryPaginationOptions;
+        private readonly ContainerQueryProperties containerQueryProperties;
         private readonly Cosmos.PartitionKey? partitionKey;
 
         public QueryPartitionRangePageAsyncEnumerator(
@@ -24,14 +26,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
             SqlQuerySpec sqlQuerySpec,
             FeedRangeState<QueryState> feedRangeState,
             Cosmos.PartitionKey? partitionKey,
-            QueryPaginationOptions queryPaginationOptions,
-            CancellationToken cancellationToken)
-            : base(feedRangeState, cancellationToken)
+            QueryExecutionOptions queryPaginationOptions,
+            ContainerQueryProperties containerQueryProperties)
+            : base(feedRangeState)
         {
             this.queryDataSource = queryDataSource ?? throw new ArgumentNullException(nameof(queryDataSource));
             this.sqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
             this.queryPaginationOptions = queryPaginationOptions;
             this.partitionKey = partitionKey;
+            this.containerQueryProperties = containerQueryProperties;
         }
 
         public override ValueTask DisposeAsync() => default;
@@ -43,9 +46,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
                 throw new ArgumentNullException(nameof(trace));
             }
 
-            // We sadly need to check the partition key, since a user can set a partition key in the request options with a different continuation token.
-            // In the future the partition filtering and continuation information needs to be a tightly bounded contract (like cross feed range state).
-            FeedRangeInternal feedRange = this.partitionKey.HasValue ? new FeedRangePartitionKey(this.partitionKey.Value) : this.FeedRangeState.FeedRange;
+            FeedRangeInternal feedRange = HierarchicalPartitionUtils.LimitFeedRangeToSinglePartition(this.partitionKey, this.FeedRangeState.FeedRange, this.containerQueryProperties);
             return this.queryDataSource.MonadicQueryAsync(
               sqlQuerySpec: this.sqlQuerySpec,
               feedRangeState: new FeedRangeState<QueryState>(feedRange, this.FeedRangeState.State),

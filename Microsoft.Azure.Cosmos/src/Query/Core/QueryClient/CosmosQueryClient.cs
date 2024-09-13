@@ -41,6 +41,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             SqlQuerySpec sqlQuerySpec,
             Documents.ResourceType resourceType,
             Documents.PartitionKeyDefinition partitionKeyDefinition,
+            Cosmos.VectorEmbeddingPolicy vectorEmbeddingPolicy,
             bool requireFormattableOrderByQuery,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
@@ -62,6 +63,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             int pageSize,
             ITrace trace,
             CancellationToken cancellationToken);
+
+        public abstract Task<bool> GetClientDisableOptimisticDirectExecutionAsync();
 
         public abstract Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
             string resourceUri,
