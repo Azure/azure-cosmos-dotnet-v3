@@ -56,11 +56,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         }
 
         /// <summary>
-        /// Returns if query is parameterized
+        /// Converts to SQL Query Specs
         /// </summary>
-        public bool IsParameterized()
+        internal SqlQuerySpec ToSqlQuerySpec()
         {
-            return false;
+            return new SqlQuerySpec(this.QueryText);
         }
     }
 }
