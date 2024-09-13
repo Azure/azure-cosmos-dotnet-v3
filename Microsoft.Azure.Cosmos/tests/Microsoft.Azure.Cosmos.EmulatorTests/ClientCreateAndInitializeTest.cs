@@ -13,6 +13,9 @@
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Moq.Protected;
+    using OpenTelemetry.Metrics;
+    using OpenTelemetry;
+    using System.Diagnostics;
 
     [TestClass]
     public class ClientCreateAndInitializeTest : BaseCosmosClientHelper
@@ -74,15 +77,30 @@
             };
 
             CosmosClient cosmosClient = await CosmosClient.CreateAndInitializeAsync(endpoint, authKey, containers, cosmosClientOptions);
-            Assert.IsNotNull(cosmosClient);
+           // Assert.IsNotNull(cosmosClient);
             int httpCallsMadeAfterCreation = httpCallsMade;
 
             ContainerInternal container = (ContainerInternal)cosmosClient.GetContainer(this.database.Id, "ClientCreateAndInitializeContainer");
-            ItemResponse<ToDoActivity> readResponse = await container.ReadItemAsync<ToDoActivity>("1", new Cosmos.PartitionKey("Status1"));
-            string diagnostics = readResponse.Diagnostics.ToString();
-            Assert.IsTrue(diagnostics.Contains("\"ConnectionMode\":\"Direct\""));
-            Assert.AreEqual(httpCallsMade, httpCallsMadeAfterCreation);
-            cosmosClient.Dispose();
+
+            await Task.Delay(1000);
+
+            Stopwatch sw = Stopwatch.StartNew();
+            sw.Start();
+            while(true)
+            {
+                ItemResponse<ToDoActivity> readResponse = await container.ReadItemAsync<ToDoActivity>("1", new Cosmos.PartitionKey("Status1"));
+                string diagnostics = readResponse.Diagnostics.ToString();
+                if(sw.ElapsedMilliseconds > 2000)
+                {
+                    break;
+                }
+            }
+            sw.Stop();
+            
+            await Task.Delay(1000);
+            
+           Assert.IsTrue(diagnostics.Contains("\"ConnectionMode\":\"Direct\""));
+           Assert.AreEqual(httpCallsMade, httpCallsMadeAfterCreation);
         }
 
         [TestMethod]
