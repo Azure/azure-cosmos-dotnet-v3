@@ -43,6 +43,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         {
             public IDocumentContainer DocumentContainer { get; }
 
+            public ContainerQueryProperties ContainerQueryProperties { get; }
+
             public SqlQuerySpec SqlQuerySpec { get; }
             
             public IReadOnlyList<FeedRangeEpk> TargetRanges { get; }
@@ -51,20 +53,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             
             public IReadOnlyList<OrderByColumn> OrderByColumns { get; }
             
-            public QueryPaginationOptions QueryPaginationOptions { get; }
-            
+            public QueryExecutionOptions QueryPaginationOptions { get; }
+
             public int MaxConcurrency { get; }
 
             public InitializationParameters(
                 IDocumentContainer documentContainer,
+                ContainerQueryProperties containerQueryProperties,
                 SqlQuerySpec sqlQuerySpec,
                 IReadOnlyList<FeedRangeEpk> targetRanges,
                 PartitionKey? partitionKey,
                 IReadOnlyList<OrderByColumn> orderByColumns,
-                QueryPaginationOptions queryPaginationOptions,
+                QueryExecutionOptions queryPaginationOptions,
                 int maxConcurrency)
             {
                 this.DocumentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
+                this.ContainerQueryProperties = containerQueryProperties;
                 this.SqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
                 this.TargetRanges = targetRanges ?? throw new ArgumentNullException(nameof(targetRanges));
                 this.PartitionKey = partitionKey;
@@ -83,11 +87,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
             IDocumentContainer documentContainer,
+            ContainerQueryProperties containerQueryProperties,
             SqlQuerySpec sqlQuerySpec,
             IReadOnlyList<FeedRangeEpk> targetRanges,
             Cosmos.PartitionKey? partitionKey,
             IReadOnlyList<OrderByColumn> orderByColumns,
-            QueryPaginationOptions queryPaginationOptions,
+            QueryExecutionOptions queryPaginationOptions,
             int maxConcurrency,
             bool nonStreamingOrderBy,
             CosmosElement continuationToken)
@@ -126,6 +131,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             {
                 return StreamingOrderByCrossPartitionQueryPipelineStage.MonadicCreate(
                     documentContainer,
+                    containerQueryProperties,
                     sqlQuerySpec,
                     targetRanges,
                     partitionKey,
@@ -141,6 +147,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             return TryCatch<IQueryPipelineStage>.FromResult(NonStreamingOrderByPipelineStage.Create(
                 documentContainer,
+                containerQueryProperties,
                 rewrittenQueryForOrderBy,
                 targetRanges,
                 partitionKey,
@@ -151,6 +158,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
         private static async ValueTask MoveNextAsync_InitializeAsync_HandleSplitAsync(
             IDocumentContainer documentContainer,
+            ContainerQueryProperties containerQueryProperties,
             Queue<(OrderByQueryPartitionRangePageAsyncEnumerator enumerator, OrderByContinuationToken token)> uninitializedEnumeratorsAndTokens,
             OrderByQueryPartitionRangePageAsyncEnumerator uninitializedEnumerator,
             OrderByContinuationToken token,
@@ -193,6 +201,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 // We maintain the current enumerator's range and let the RequestInvokerHandler logic kick in
                 OrderByQueryPartitionRangePageAsyncEnumerator childPaginator = OrderByQueryPartitionRangePageAsyncEnumerator.Create(
                     documentContainer,
+                    containerQueryProperties,
                     uninitializedEnumerator.SqlQuerySpec,
                     new FeedRangeState<QueryState>(uninitializedEnumerator.FeedRangeState.FeedRange, uninitializedEnumerator.StartOfPageState),
                     partitionKey: null,
@@ -210,6 +219,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
                     OrderByQueryPartitionRangePageAsyncEnumerator childPaginator = OrderByQueryPartitionRangePageAsyncEnumerator.Create(
                         documentContainer,
+                        containerQueryProperties,
                         uninitializedEnumerator.SqlQuerySpec,
                         new FeedRangeState<QueryState>(childRange, uninitializedEnumerator.StartOfPageState),
                         partitionKey: null,
@@ -293,10 +303,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         private sealed class StreamingOrderByCrossPartitionQueryPipelineStage : IQueryPipelineStage
         {
             private readonly IDocumentContainer documentContainer;
+            private readonly ContainerQueryProperties containerQueryProperties;
             private readonly IReadOnlyList<SortOrder> sortOrders;
             private readonly PriorityQueue<OrderByQueryPartitionRangePageAsyncEnumerator> enumerators;
             private readonly Queue<(OrderByQueryPartitionRangePageAsyncEnumerator enumerator, OrderByContinuationToken token)> uninitializedEnumeratorsAndTokens;
-            private readonly QueryPaginationOptions queryPaginationOptions;
+            private readonly QueryExecutionOptions queryPaginationOptions;
             private readonly int maxConcurrency;
 
             private QueryState state;
@@ -315,16 +326,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             private StreamingOrderByCrossPartitionQueryPipelineStage(
                 IDocumentContainer documentContainer,
+                ContainerQueryProperties containerQueryProperties,
                 IReadOnlyList<SortOrder> sortOrders,
-                QueryPaginationOptions queryPaginationOptions,
+                QueryExecutionOptions queryPaginationOptions,
                 int maxConcurrency,
                 IEnumerable<(OrderByQueryPartitionRangePageAsyncEnumerator, OrderByContinuationToken)> uninitializedEnumeratorsAndTokens,
                 QueryState state)
             {
                 this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
+                this.containerQueryProperties = containerQueryProperties;
                 this.sortOrders = sortOrders ?? throw new ArgumentNullException(nameof(sortOrders));
                 this.enumerators = new PriorityQueue<OrderByQueryPartitionRangePageAsyncEnumerator>(new OrderByEnumeratorComparer(this.sortOrders));
-                this.queryPaginationOptions = queryPaginationOptions ?? QueryPaginationOptions.Default;
+                this.queryPaginationOptions = queryPaginationOptions ?? QueryExecutionOptions.Default;
                 this.maxConcurrency = maxConcurrency < 0 ? throw new ArgumentOutOfRangeException($"{nameof(maxConcurrency)} must be a non negative number.") : maxConcurrency;
                 this.uninitializedEnumeratorsAndTokens = new Queue<(OrderByQueryPartitionRangePageAsyncEnumerator, OrderByContinuationToken)>(uninitializedEnumeratorsAndTokens ?? throw new ArgumentNullException(nameof(uninitializedEnumeratorsAndTokens)));
                 this.state = state ?? InitializingQueryState;
@@ -332,13 +345,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             private StreamingOrderByCrossPartitionQueryPipelineStage(
                 IDocumentContainer documentContainer,
+                ContainerQueryProperties containerQueryProperties,
                 IReadOnlyList<SortOrder> sortOrders,
                 PriorityQueue<OrderByQueryPartitionRangePageAsyncEnumerator> enumerators,
                 Queue<(OrderByQueryPartitionRangePageAsyncEnumerator enumerator, OrderByContinuationToken token)> uninitializedEnumeratorsAndTokens,
-                QueryPaginationOptions queryPaginationOptions,
+                QueryExecutionOptions queryPaginationOptions,
                 int maxConcurrency)
             {
                 this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
+                this.containerQueryProperties = containerQueryProperties;
                 this.sortOrders = sortOrders ?? throw new ArgumentNullException(nameof(sortOrders));
                 this.enumerators = enumerators ?? throw new ArgumentNullException(nameof(enumerators));
                 this.uninitializedEnumeratorsAndTokens = uninitializedEnumeratorsAndTokens ?? throw new ArgumentNullException(nameof(uninitializedEnumeratorsAndTokens));
@@ -562,6 +577,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             {
                 await OrderByCrossPartitionQueryPipelineStage.MoveNextAsync_InitializeAsync_HandleSplitAsync(
                     this.documentContainer,
+                    this.containerQueryProperties,
                     this.uninitializedEnumeratorsAndTokens,
                     uninitializedEnumerator,
                     token,
@@ -775,14 +791,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             public static IQueryPipelineStage Create(
                 IDocumentContainer documentContainer,
+                ContainerQueryProperties containerQueryProperties,
                 IReadOnlyList<SortOrder> sortOrders,
                 PriorityQueue<OrderByQueryPartitionRangePageAsyncEnumerator> enumerators,
                 Queue<(OrderByQueryPartitionRangePageAsyncEnumerator enumerator, OrderByContinuationToken token)> uninitializedEnumeratorsAndTokens,
-                QueryPaginationOptions queryPaginationOptions,
+                QueryExecutionOptions queryPaginationOptions,
                 int maxConcurrency)
             {
                 return new StreamingOrderByCrossPartitionQueryPipelineStage(
                     documentContainer,
+                    containerQueryProperties,
                     sortOrders,
                     enumerators,
                     uninitializedEnumeratorsAndTokens,
@@ -792,11 +810,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             public static TryCatch<IQueryPipelineStage> MonadicCreate(
                 IDocumentContainer documentContainer,
+                ContainerQueryProperties containerQueryProperties,
                 SqlQuerySpec sqlQuerySpec,
                 IReadOnlyList<FeedRangeEpk> targetRanges,
                 Cosmos.PartitionKey? partitionKey,
                 IReadOnlyList<OrderByColumn> orderByColumns,
-                QueryPaginationOptions queryPaginationOptions,
+                QueryExecutionOptions queryPaginationOptions,
                 int maxConcurrency,
                 CosmosElement continuationToken)
             {
@@ -815,6 +834,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     enumeratorsAndTokens = targetRanges
                         .Select(range => (OrderByQueryPartitionRangePageAsyncEnumerator.Create(
                             documentContainer,
+                            containerQueryProperties,
                             rewrittenQueryForOrderBy,
                             new FeedRangeState<QueryState>(range, state: default),
                             partitionKey,
@@ -903,6 +923,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                             OrderByContinuationToken token = kvp.Value;
                             OrderByQueryPartitionRangePageAsyncEnumerator remoteEnumerator = OrderByQueryPartitionRangePageAsyncEnumerator.Create(
                                 documentContainer,
+                                containerQueryProperties,
                                 leftQuerySpec,
                                 new FeedRangeState<QueryState>(range, token?.ParallelContinuationToken?.Token != null ? new QueryState(CosmosString.Create(token.ParallelContinuationToken.Token)) : null),
                                 partitionKey,
@@ -930,6 +951,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
                             OrderByQueryPartitionRangePageAsyncEnumerator remoteEnumerator = OrderByQueryPartitionRangePageAsyncEnumerator.Create(
                                 documentContainer,
+                                containerQueryProperties,
                                 targetQuerySpec,
                                 new FeedRangeState<QueryState>(range, token?.ParallelContinuationToken?.Token != null ? new QueryState(CosmosString.Create(token.ParallelContinuationToken.Token)) : null),
                                 partitionKey,
@@ -952,6 +974,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                             OrderByContinuationToken token = kvp.Value;
                             OrderByQueryPartitionRangePageAsyncEnumerator remoteEnumerator = OrderByQueryPartitionRangePageAsyncEnumerator.Create(
                                 documentContainer,
+                                containerQueryProperties,
                                 rightQuerySpec,
                                 new FeedRangeState<QueryState>(range, token?.ParallelContinuationToken?.Token != null ? new QueryState(CosmosString.Create(token.ParallelContinuationToken.Token)) : null),
                                 partitionKey,
@@ -991,6 +1014,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                                 OrderByContinuationToken token = kvp.Value;
                                 OrderByQueryPartitionRangePageAsyncEnumerator remoteEnumerator = OrderByQueryPartitionRangePageAsyncEnumerator.Create(
                                     documentContainer,
+                                    containerQueryProperties,
                                     rewrittenQueryForOrderBy,
                                     new FeedRangeState<QueryState>(range, token?.ParallelContinuationToken?.Token != null ? new QueryState(CosmosString.Create(token.ParallelContinuationToken.Token)) : null),
                                     partitionKey,
@@ -1006,6 +1030,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
                 StreamingOrderByCrossPartitionQueryPipelineStage stage = new StreamingOrderByCrossPartitionQueryPipelineStage(
                     documentContainer,
+                    containerQueryProperties,
                     orderByColumns.Select(column => column.SortOrder).ToList(),
                     queryPaginationOptions,
                     maxConcurrency,
@@ -1740,6 +1765,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             {
                 ITracingAsyncEnumerator<TryCatch<OrderByQueryPage>> enumerator = await OrderByCrossPartitionRangePageEnumerator.CreateAsync(
                     this.parameters.DocumentContainer,
+                    this.parameters.ContainerQueryProperties,
                     this.parameters.SqlQuerySpec,
                     this.parameters.TargetRanges,
                     this.parameters.PartitionKey,
@@ -1763,11 +1789,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             public static IQueryPipelineStage Create(
                 IDocumentContainer documentContainer,
+                ContainerQueryProperties containerQueryProperties,
                 SqlQuerySpec sqlQuerySpec,
                 IReadOnlyList<FeedRangeEpk> targetRanges,
                 Cosmos.PartitionKey? partitionKey,
                 IReadOnlyList<OrderByColumn> orderByColumns,
-                QueryPaginationOptions queryPaginationOptions,
+                QueryExecutionOptions queryPaginationOptions,
                 int maxConcurrency)
             {
                 int pageSize = queryPaginationOptions.PageSizeLimit.GetValueOrDefault(MaximumPageSize) > 0 ?
@@ -1776,6 +1803,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
                 InitializationParameters parameters = new InitializationParameters(
                     documentContainer,
+                    containerQueryProperties,
                     sqlQuerySpec,
                     targetRanges,
                     partitionKey,
@@ -1793,24 +1821,29 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         {
             private readonly IDocumentContainer documentContainer;
 
+            private readonly ContainerQueryProperties containerQueryProperties;
+
             private readonly Queue<(OrderByQueryPartitionRangePageAsyncEnumerator enumerator, OrderByContinuationToken token)> enumeratorsAndTokens;
 
             public TryCatch<OrderByQueryPage> Current { get; private set; }
 
             private OrderByCrossPartitionRangePageEnumerator(
                 IDocumentContainer documentContainer,
-                Queue<(OrderByQueryPartitionRangePageAsyncEnumerator enumerator, OrderByContinuationToken token)> enumeratorsAndTokens)
+                Queue<(OrderByQueryPartitionRangePageAsyncEnumerator enumerator, OrderByContinuationToken token)> enumeratorsAndTokens,
+                ContainerQueryProperties containerQueryProperties)
             {
                 this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
                 this.enumeratorsAndTokens = enumeratorsAndTokens ?? throw new ArgumentNullException(nameof(enumeratorsAndTokens));
+                this.containerQueryProperties = containerQueryProperties;
             }
 
             public static async Task<ITracingAsyncEnumerator<TryCatch<OrderByQueryPage>>> CreateAsync(
                 IDocumentContainer documentContainer,
+                ContainerQueryProperties containerQueryProperties,
                 SqlQuerySpec sqlQuerySpec,
                 IReadOnlyList<FeedRangeEpk> targetRanges,
                 Cosmos.PartitionKey? partitionKey,
-                QueryPaginationOptions queryPaginationOptions,
+                QueryExecutionOptions queryPaginationOptions,
                 int maxConcurrency,
                 ITrace trace,
                 CancellationToken cancellationToken)
@@ -1821,6 +1854,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 {
                     OrderByQueryPartitionRangePageAsyncEnumerator enumerator = OrderByQueryPartitionRangePageAsyncEnumerator.Create(
                         documentContainer,
+                        containerQueryProperties,
                         sqlQuerySpec,
                         new FeedRangeState<QueryState>(range, state: null),
                         partitionKey,
@@ -1837,7 +1871,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     trace,
                     cancellationToken);
 
-                return new OrderByCrossPartitionRangePageEnumerator(documentContainer, enumeratorsAndTokens);
+                return new OrderByCrossPartitionRangePageEnumerator(documentContainer, enumeratorsAndTokens, containerQueryProperties);
             }
 
             public async ValueTask DisposeAsync()
@@ -1894,6 +1928,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                             {
                                 await MoveNextAsync_InitializeAsync_HandleSplitAsync(
                                     this.documentContainer,
+                                    this.containerQueryProperties,
                                     this.enumeratorsAndTokens,
                                     enumerator,
                                     token,

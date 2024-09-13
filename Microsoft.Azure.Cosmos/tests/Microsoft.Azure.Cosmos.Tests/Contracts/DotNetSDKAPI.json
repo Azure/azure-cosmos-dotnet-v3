@@ -410,6 +410,16 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Microsoft.Azure.Cosmos.FeedRange FeedRange": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedRange FeedRange;CanRead:True;CanWrite:False;Microsoft.Azure.Cosmos.FeedRange get_FeedRange();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.FeedRange get_FeedRange()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedRange get_FeedRange();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Microsoft.Azure.Cosmos.Headers get_Headers()": {
           "Type": "Method",
           "Attributes": [],
@@ -2988,6 +2998,16 @@
           ],
           "MethodInfo": "System.String get_ApplicationRegion();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "System.Text.Json.JsonSerializerOptions get_UseSystemTextJsonSerializerWithOptions()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Text.Json.JsonSerializerOptions get_UseSystemTextJsonSerializerWithOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Text.Json.JsonSerializerOptions UseSystemTextJsonSerializerWithOptions": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.Text.Json.JsonSerializerOptions UseSystemTextJsonSerializerWithOptions;CanRead:True;CanWrite:True;System.Text.Json.JsonSerializerOptions get_UseSystemTextJsonSerializerWithOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_UseSystemTextJsonSerializerWithOptions(System.Text.Json.JsonSerializerOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.TimeSpan get_RequestTimeout()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -3164,6 +3184,11 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_TokenCredentialBackgroundRefreshInterval(System.Nullable`1[System.TimeSpan]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_UseSystemTextJsonSerializerWithOptions(System.Text.Json.JsonSerializerOptions)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_UseSystemTextJsonSerializerWithOptions(System.Text.Json.JsonSerializerOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_WebProxy(System.Net.IWebProxy)": {
           "Type": "Method",
@@ -4736,6 +4761,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithSerializerOptions(Microsoft.Azure.Cosmos.CosmosSerializationOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithSystemTextJsonSerializerOptions(System.Text.Json.JsonSerializerOptions)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithSystemTextJsonSerializerOptions(System.Text.Json.JsonSerializerOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithThrottlingRetryOptions(System.TimeSpan, Int32)": {
           "Type": "Method",

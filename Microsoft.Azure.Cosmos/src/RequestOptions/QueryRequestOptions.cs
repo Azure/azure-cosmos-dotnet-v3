@@ -183,8 +183,6 @@ namespace Microsoft.Azure.Cosmos
 
         internal SupportedSerializationFormats? SupportedSerializationFormats { get; set; }
 
-        internal ExecutionEnvironment? ExecutionEnvironment { get; set; }
-
         internal bool? ReturnResultsInDeterministicOrder { get; set; }
 
         internal TestInjections TestSettings { get; set; }
@@ -192,6 +190,11 @@ namespace Microsoft.Azure.Cosmos
         internal FeedRange FeedRange { get; set; }
 
         internal bool IsNonStreamingOrderByQueryFeatureDisabled { get; set; } = ConfigurationManager.IsNonStreamingOrderByQueryFeatureDisabled(defaultValue: false);
+
+        // This is a temporary flag to enable the distributed query gateway mode.
+        // This flag will be removed once we have a way for the client to determine
+        // that we are talking to a distributed query gateway.
+        internal bool EnableDistributedQueryGatewayMode { get; set; } = ConfigurationManager.IsDistributedQueryGatewayModeEnabled(defaultValue: false);
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties

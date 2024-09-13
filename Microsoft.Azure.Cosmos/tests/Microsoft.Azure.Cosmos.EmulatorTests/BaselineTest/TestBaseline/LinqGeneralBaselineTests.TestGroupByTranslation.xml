@@ -167,8 +167,10 @@ GROUP BY root["Int"] ]]></SqlQuery>
       <Expression><![CDATA[query.GroupBy(k => k.FamilyId, (key, values) => new AnonymousType(familyId = key, familyIdCount = values.Count()))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Expression with NodeType 'New' is not supported.]]></ErrorMessage>
+      <SqlQuery><![CDATA[
+SELECT root["FamilyId"] AS familyId, COUNT(1) AS familyIdCount 
+FROM root 
+GROUP BY root["FamilyId"] ]]></SqlQuery>
     </Output>
   </Result>
   <Result>

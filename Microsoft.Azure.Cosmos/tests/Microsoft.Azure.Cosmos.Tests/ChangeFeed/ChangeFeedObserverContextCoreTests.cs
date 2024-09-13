@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK);
             responseMessage.Headers.RequestCharge = 10;
 
-            ChangeFeedObserverContextCore changeFeedObserverContextCore = new ChangeFeedObserverContextCore(leaseToken, responseMessage, Mock.Of<PartitionCheckpointer>());
+            ChangeFeedObserverContextCore changeFeedObserverContextCore = new ChangeFeedObserverContextCore(leaseToken, responseMessage, Mock.Of<PartitionCheckpointer>(), FeedRangeEpk.FullRange);
 
             Assert.AreEqual(leaseToken, changeFeedObserverContextCore.LeaseToken);
             Assert.ReferenceEquals(responseMessage.Headers, changeFeedObserverContextCore.Headers);
@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             responseMessage.Headers.ContinuationToken = continuation;
             Mock<PartitionCheckpointer> checkpointer = new Mock<PartitionCheckpointer>();
             checkpointer.Setup(c => c.CheckpointPartitionAsync(It.Is<string>(s => s == continuation))).Returns(Task.CompletedTask);
-            ChangeFeedObserverContextCore changeFeedObserverContextCore = new ChangeFeedObserverContextCore(leaseToken, responseMessage, checkpointer.Object);
+            ChangeFeedObserverContextCore changeFeedObserverContextCore = new ChangeFeedObserverContextCore(leaseToken, responseMessage, checkpointer.Object, FeedRangeEpk.FullRange);
 
             await changeFeedObserverContextCore.CheckpointAsync();
         }
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             responseMessage.Headers.ContinuationToken = continuation;
             Mock<PartitionCheckpointer> checkpointer = new Mock<PartitionCheckpointer>();
             checkpointer.Setup(c => c.CheckpointPartitionAsync(It.Is<string>(s => s == continuation))).ThrowsAsync(new LeaseLostException());
-            ChangeFeedObserverContextCore changeFeedObserverContextCore = new ChangeFeedObserverContextCore(leaseToken, responseMessage, checkpointer.Object);
+            ChangeFeedObserverContextCore changeFeedObserverContextCore = new ChangeFeedObserverContextCore(leaseToken, responseMessage, checkpointer.Object, FeedRangeEpk.FullRange);
 
             CosmosException exception = await Assert.ThrowsExceptionAsync<CosmosException>(() => changeFeedObserverContextCore.CheckpointAsync());
             Assert.AreEqual(HttpStatusCode.PreconditionFailed, exception.StatusCode);
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             responseMessage.Headers.ContinuationToken = continuation;
             Mock<PartitionCheckpointer> checkpointer = new Mock<PartitionCheckpointer>();
             checkpointer.Setup(c => c.CheckpointPartitionAsync(It.Is<string>(s => s == continuation))).ThrowsAsync(cosmosException);
-            ChangeFeedObserverContextCore changeFeedObserverContextCore = new ChangeFeedObserverContextCore(leaseToken, responseMessage, checkpointer.Object);
+            ChangeFeedObserverContextCore changeFeedObserverContextCore = new ChangeFeedObserverContextCore(leaseToken, responseMessage, checkpointer.Object, FeedRangeEpk.FullRange);
 
             CosmosException exception = await Assert.ThrowsExceptionAsync<CosmosException>(() => changeFeedObserverContextCore.CheckpointAsync());
             Assert.ReferenceEquals(cosmosException, exception);
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             responseMessage.Headers.ContinuationToken = continuation;
             Mock<PartitionCheckpointer> checkpointer = new Mock<PartitionCheckpointer>();
             checkpointer.Setup(c => c.CheckpointPartitionAsync(It.Is<string>(s => s == continuation))).ThrowsAsync(cosmosException);
-            ChangeFeedObserverContextCore changeFeedObserverContextCore = new ChangeFeedObserverContextCore(leaseToken, responseMessage, checkpointer.Object);
+            ChangeFeedObserverContextCore changeFeedObserverContextCore = new ChangeFeedObserverContextCore(leaseToken, responseMessage, checkpointer.Object, FeedRangeEpk.FullRange);
 
             NotImplementedException exception = await Assert.ThrowsExceptionAsync<NotImplementedException>(() => changeFeedObserverContextCore.CheckpointAsync());
             Assert.ReferenceEquals(cosmosException, exception);

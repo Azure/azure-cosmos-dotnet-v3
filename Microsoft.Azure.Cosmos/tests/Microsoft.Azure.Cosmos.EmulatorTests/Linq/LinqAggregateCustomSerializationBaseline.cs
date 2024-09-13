@@ -29,7 +29,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         private static Cosmos.Database testDb;
         private static Container testContainer;
 
-        private static CosmosSerializer stjCosmosSerializer;
         private static CosmosClient stjClient;
         private static Cosmos.Database testDbSTJ;
         private static Container testContainerSTJ;
@@ -64,10 +63,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             testDb = await client.CreateDatabaseAsync(dbName);
             testContainer = testDb.CreateContainerAsync(new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/Pk")).Result;
 
-            stjCosmosSerializer = new CosmosSystemTextJsonSerializer(new JsonSerializerOptions());
-
             stjClient = TestCommon.CreateCosmosClient((cosmosClientBuilder)
-                => cosmosClientBuilder.WithCustomSerializer(stjCosmosSerializer));
+                => cosmosClientBuilder.WithSystemTextJsonSerializerOptions(
+                    new JsonSerializerOptions()),
+                    useCustomSeralizer: false);
 
             // Set a callback to get the handle of the last executed query to do the verification
             // This is neede because aggregate queries return type is a scalar so it can't be used 

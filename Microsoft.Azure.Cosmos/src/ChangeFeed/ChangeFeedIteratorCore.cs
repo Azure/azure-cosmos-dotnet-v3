@@ -203,7 +203,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     CrossPartitionChangeFeedAsyncEnumerator enumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
                         documentContainer,
                         new CrossFeedRangeState<ChangeFeedState>(monadicChangeFeedCrossFeedRangeState.Result.FeedRangeStates),
-                        new ChangeFeedPaginationOptions(
+                        new ChangeFeedExecutionOptions(
                             changeFeedMode,
                             changeFeedRequestOptions?.PageSizeHint,
                             changeFeedRequestOptions?.JsonSerializationFormatOptions?.JsonSerializationFormat,
@@ -338,11 +338,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             responseMessage.Trace = trace;
 
             return responseMessage;
-        }
-
-        public override CosmosElement GetCosmosElementContinuationToken()
-        {
-            throw new NotSupportedException();
         }
 
         private sealed class ChangeFeedStateFromToChangeFeedCrossFeedRangeState : ChangeFeedStartFromVisitor<TryCatch<ChangeFeedCrossFeedRangeState>>

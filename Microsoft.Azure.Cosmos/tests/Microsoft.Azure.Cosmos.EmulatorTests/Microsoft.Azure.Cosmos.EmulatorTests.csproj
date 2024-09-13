@@ -371,6 +371,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\FaultInjection\src\FaultInjection.csproj" />
+  </ItemGroup>
 
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
