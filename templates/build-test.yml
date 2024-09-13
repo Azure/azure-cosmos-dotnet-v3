@@ -19,7 +19,7 @@ jobs:
 - job:
   displayName: Tests Debug
   pool:
-    vmImage: ${{ parameters.VmImage }}
+    name: 'OneES'
 
   steps:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
@@ -57,7 +57,7 @@ jobs:
   displayName: PerformanceTests ${{ parameters.BuildConfiguration }}
   condition: and(succeeded(), eq(${{ parameters.IncludePerformance }}, true))
   pool:
-    vmImage: ${{ parameters.VmImage }}
+    name: 'OneES'
 
   steps:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
@@ -93,7 +93,7 @@ jobs:
   timeoutInMinutes: 120
   condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
   pool:
-    vmImage: ${{ parameters.VmImage }}
+    name: 'OneES'
 
   steps:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
@@ -126,7 +126,7 @@ jobs:
   timeoutInMinutes: 120
   condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
   pool:
-    vmImage: ${{ parameters.VmImage }}
+    name: 'OneES'
 
   steps:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
@@ -159,7 +159,7 @@ jobs:
   timeoutInMinutes: 90
   condition: and(eq(${{ parameters.IncludeEncryption }}, true), and(succeeded(), eq('${{ parameters.OS }}', 'Windows')))
   pool:
-    vmImage: ${{ parameters.VmImage }}
+    name: 'OneES'
 
   steps:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
@@ -192,7 +192,7 @@ jobs:
   timeoutInMinutes: 90
   condition: and(eq(${{ parameters.IncludeEncryption }}, true), and(succeeded(), eq('${{ parameters.OS }}', 'Windows')))
   pool:
-    vmImage: ${{ parameters.VmImage }}
+    name: 'OneES'
 
   steps:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
@@ -225,7 +225,7 @@ jobs:
   timeoutInMinutes: 120
   condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
   pool:
-    vmImage: ${{ parameters.VmImage }}
+    name: 'OneES'
 
   steps:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found

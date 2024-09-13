@@ -13,6 +13,79 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.44.0-preview.0"/> [3.44.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.44.0-preview.0) - 2024-09-04
+
+#### Added
+
+- [4598](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4598) Adds: Parallel Request Hedging for cross region read requests
+
+### <a name="3.43.0"/> [3.43.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.43.0) - 2024-09-04
+
+#### Added
+
+- [4589](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4589) SystemTextJsonSerializer: Add UseSystemTextJsonSerializerWithOptions to support SystemTextJsonSerializer
+- [4622](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4622) Open Telemetry: Adds Batchsize and Rename Batch Operation name in Operation Trace
+- [4621](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4621) CFP AVAD: Adds new FeedRange to ChangeFeedProcessorContext
+
+#### Fixed
+
+- [4619](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4619) CFP AVAD: Fixes throws when customers use WithStartTime and WithStartFromBeginning with CFP AVAD
+- [4638](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4638) Documentation: Fixes AnalyticalStoreTimeToLiveInSeconds API documentation to list correct values
+- [4640](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4640) FeedRanges: Fixes GetFeedRangesAsync throwing DocumentClientException
+- [4618](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4618) CF/P AVAD: Fixes Deserialization of ChangeFeedItem and ChangeFeedMetadata to support System.Text.Json and Newtonsoft.Json
+
+### <a name="3.43.0-preview.0"/> [3.43.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.43.0-preview.0) - 2024-07-24
+
+
+### <a name="3.42.0"/> [3.42.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.42.0) - 2024-07-24
+
+#### Added
+
+- [4544](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4544) Azure.Identity: Bumps verion to 1.11.4
+- [4546](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4546) Client Encryption: Adds support for latest Cosmos Package.
+- [4490](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4490) Query: Adds Distribution for MakeList and MakeSet
+- [4559](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4559) Query: Adds a new QueryFeature flag for MakeList and MakeSet
+- [4568](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4568) VM Metadata API: Adds an option to disable VM metadata API call
+- [4481](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4481) Query: Adds support for multi-value Group By query for LINQ
+- [4583](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4583) ChangeFeed: Adds MalformedContinuationToken SubstatusCode to exception
+- [4587](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4587) Query: Fixes ORDER BY issue when partial partition key is specified in RequestOptions in a query to sub-partitioned container
+
+#### Fixed
+
+- [4538](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4538) Query: Fixes plumbing VectorEmbeddingPolicy to ServiceInterop to choose correct default distance function
+- [4523](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4523) Change Feed / Processor AVAD: Fixes timeToLiveExpired missing from metadata
+- [4558](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4558) Query: Removes compute specific logic from query pipelines that is no longer required
+- [4580](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4580) Change Feed: Fixes incorrect exception messages in VersionedAndRidCheckedCompositeToken
+
+### <a name="3.42.0-preview.0"/> [3.42.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.42.0-preview.0) - 2024-06-07
+### <a name="3.41.0"/> [3.41.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.41.0) - 2024-06-07
+
+#### Added
+- [4489](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4489) Query: Adds DOCUMENTID extension method for LINQ
+
+#### Fixed
+- [4507](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4507) Query : Fixes ORDER BY query issue when partial partition key is specified with hierarchical partition (#4507)
+
+### <a name="3.41.0-preview.0"/> [3.41.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.41.0-preview.0) - 2024-05-17
+
+#### Added
+- [4486](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4486) ContainerProperties: Enables Vector Embedding and Indexing Policy for Preview (#4486)
+
+### <a name="3.40.0"/> [3.40.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.40.0) - 2024-05-17
+
+#### Fixed
+- [4397](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4397) Query: Fixes ResponseMessage not parsing the IndexMetrics as text in latest sdk (#4397)
+- [4426](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4426) ChangeFeedProcessor: Fixes a bug properly when dealing with Legacy lease incremental documents that do not have a Mode property (#4426)
+- [4459](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4459) Query: Fixes non streaming order by to use flag from query plan (#4459)
+- [4253](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4253) Query: Fixes LINQ Serialization CamelCase Naming Policy (#4253)
+- [4493](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4493) Query: Fixes non streaming OrderByCrossPartitionQueryPipelineStage to remove state and handle splits (#4493)
+
+#### Added
+- [4446](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4446) Query: Adds a new capability for non streaming order by in QueryFeatures (#4446)
+- [4433](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4433) Distributed Tracing: Adds Request charge and Payload size Threshold options (#4433)
+- [4462](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4462) Diagnostics: Adds DurationInMs to StoreResult (#4462)
+- [4492](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4492) Query: Adds an environment config to suppress sending NonStreamingOrderBy in the list of query features sent to the gateway (#4492)
+
 ### <a name="3.40.0-preview.2"/> [3.40.0-preview.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.40.0-preview.2) - 2024-05-16
 ### <a name="3.39.2"/> [3.39.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.39.2) - 2024-05-16
 
@@ -40,6 +113,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Fixed
 - [4357](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4357) Distributed Tracing Documentation : Fixes the default value mentioned in code doc 
+- [4359](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4359) Query: Fixes occasional hang while querying using partial partition key against a sub-partitioned container
 
 #### Added
 - [4377](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4377) Integrated cache: Adds BypassIntegratedCache for public release
@@ -1362,8 +1436,9 @@ Below is a list of any know issues affecting the [recommended minimum version](#
 
 | Issue | Impact | Mitigation | Tracking link |
 | --- | --- | --- | --- |
-| `FeedIterator` enters an infinite loop after a physical partition split occurs in a container using hierarchical partition keys. | Queries using prefix partition keys.  | Rather than having the PK included in the query request options, filtering on top level hierarchical Pks should be done through where clauses. | [#4326](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4326) | 
+| `FeedIterator` enters an infinite loop after a physical partition split occurs in a container using hierarchical partition keys. | Queries using prefix partition keys.  | Rather than having the PK included in the query request options, filtering on top level hierarchical Pks should be done through where clauses. **NOTE:** This issue has been fixed in version 3.39.0 | [#4326](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4326) | 
 | Single partition queries (queries explicitly targetted to single partition or any queries on collection that had single physical partition) that resume using continuation token after partition split can observe failure on SDK v3.38 and beyond.  | Explicit query exeuction using continuation token will fail query execution if these conditions are met. | Turn off Optimistic Direct Execution during query execution either by setting EnableOptimisticDirectExecution to false in query request options or by setting environment variable AZURE_COSMOS_OPTIMISTIC_DIRECT_EXECUTION_ENABLED to false. | [#4432](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4432) | 
+| An [Azure API](https://learn.microsoft.com/en-us/azure/virtual-machines/instance-metadata-service?tabs=linux) call is made to get the VM information. This call fails if cutomer is on non-Azure VM. | Although this call is made only once, during client initialization but this failure would come up into monitoring tool (e.g AppInsights, Datadog etc.) which leads to a confusion for a developer.| Turn off this call by setting environment variable COSMOS_DISABLE_IMDS_ACCESS to true. |[#4187](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4187) | 
 
 ## Release & Retirement dates
 

@@ -649,6 +649,21 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Configures the <see cref="CosmosClientBuilder"/> to use System.Text.Json for serialization.
+        /// Use <see cref="System.Text.Json.JsonSerializerOptions" /> to use System.Text.Json with a default configuration.
+        /// If no options are specified, Newtonsoft.Json will be used for serialization instead.
+        /// </summary>
+        /// <param name="serializerOptions">An instance of <see cref="System.Text.Json.JsonSerializerOptions"/>
+        /// containing the system text json serializer options.</param>
+        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
+        public CosmosClientBuilder WithSystemTextJsonSerializerOptions(
+            System.Text.Json.JsonSerializerOptions serializerOptions)
+        {
+            this.clientOptions.UseSystemTextJsonSerializerWithOptions = serializerOptions;
+            return this;
+        }
+
+        /// <summary>
         /// The event handler to be invoked before the request is sent.
         /// </summary>
         internal CosmosClientBuilder WithSendingRequestEventArgs(EventHandler<SendingRequestEventArgs> sendingRequestEventArgs)
@@ -682,6 +697,22 @@ namespace Microsoft.Azure.Cosmos.Fluent
         internal CosmosClientBuilder WithApiType(ApiType apiType)
         {
             this.clientOptions.ApiType = apiType;
+            return this;
+        }
+
+        /// <summary>
+        /// Availability Stragey to be used for periods of high latency
+        /// </summary>
+        /// <param name="strategy"></param>
+        /// <returns>The CosmosClientBuilder</returns>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        CosmosClientBuilder WithAvailabilityStrategy(AvailabilityStrategy strategy)
+        {
+            this.clientOptions.AvailabilityStrategy = strategy;
             return this;
         }
 

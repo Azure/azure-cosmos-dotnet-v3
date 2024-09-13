@@ -8,7 +8,7 @@
     CrossPartitionReadFeedAsyncEnumerator enumerator = CrossPartitionReadFeedAsyncEnumerator.Create(
         documentContainer,
         new CrossFeedRangeState<ReadFeedState>(ReadFeedCrossFeedRangeState.CreateFromBeginning().FeedRangeStates),
-        new ReadFeedPaginationOptions(pageSizeHint: 10));
+        new ReadFeedExecutionOptions(pageSizeHint: 10));
 
     int numChildren = 1; // One extra since we need to read one past the last user page to get the null continuation.
     TraceForBaselineTesting rootTrace;
@@ -669,7 +669,7 @@
         documentContainer,
         new CrossFeedRangeState<ChangeFeedState>(
             ChangeFeedCrossFeedRangeState.CreateFromBeginning().FeedRangeStates),
-        new ChangeFeedPaginationOptions(
+        new ChangeFeedExecutionOptions(
             ChangeFeedMode.Incremental,
             pageSizeHint: int.MaxValue));
 

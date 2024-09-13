@@ -1,0 +1,63 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[In Select clause]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.DocumentId())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE DOCUMENTID(root) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[In Filter clause]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.DocumentId() > 123))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (DOCUMENTID(root) > 123)]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[With non root term]]></Description>
+      <Expression><![CDATA[query.Where(doc => (Convert(doc.BooleanField, Object).DocumentId() > 123))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (DOCUMENTID(root["BooleanField"]) > 123)]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[With JOIN]]></Description>
+      <Expression><![CDATA[query.SelectMany(doc => doc.EnumerableField.Where(number => (doc.DocumentId() > 0)).Select(number => number))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE number0 
+FROM root 
+JOIN number0 IN root["EnumerableField"] 
+WHERE (DOCUMENTID(root) > 0)]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[In Order by clause]]></Description>
+      <Expression><![CDATA[query.OrderBy(doc => doc.DocumentId())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+ORDER BY DOCUMENTID(root) ASC]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","code":2206,"message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]},0x800A0B00]]></ErrorMessage>
+    </Output>
+  </Result>
+</Results>

@@ -35,7 +35,5 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public abstract Task<FeedResponse<T>> ReadNextAsync(ITrace trace, CancellationToken cancellationToken);
-
-        public abstract CosmosElement GetCosmosElementContinuationToken();
     }
 }

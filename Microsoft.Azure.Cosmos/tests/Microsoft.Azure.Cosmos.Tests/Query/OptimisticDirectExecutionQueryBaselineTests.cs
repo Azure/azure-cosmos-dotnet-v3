@@ -143,7 +143,7 @@
                         clientDisableOde: clientForceDisableODEFromBackend);
                     Assert.Fail("Expected exception. Received none.");
                 }
-                catch(InvalidOperationException ex)
+                catch (InvalidOperationException ex)
                 {
                     Assert.IsTrue(ex.ToString().Contains("Execution of this query cannot resume using Optimistic Direct Execution continuation token due to partition split. Please restart the query without the continuation token."));
                 }
@@ -605,7 +605,7 @@
         {
             string textPath = "../../../Query/DistributionPlans/Text";
             string[] filePaths = Directory.GetFiles(textPath);
-            
+
             foreach (string filePath in filePaths)
             {
                 string testResponse = File.ReadAllText(filePath);
@@ -821,6 +821,7 @@
             TryCatch<PartitionedQueryExecutionInfo> tryGetQueryPlan = queryPartitionProvider.TryGetPartitionedQueryExecutionInfo(
                 querySpecJsonString: querySpecJsonString,
                 partitionKeyDefinition: pkDefinition,
+                vectorEmbeddingPolicy: null,
                 requireFormattableOrderByQuery: true,
                 isContinuationExpected: true,
                 allowNonValueAggregateQuery: true,
@@ -828,7 +829,7 @@
                 allowDCount: true,
                 useSystemPrefix: false,
                 geospatialType: Cosmos.GeospatialType.Geography);
-            
+
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = tryGetQueryPlan.Succeeded ? tryGetQueryPlan.Result : throw tryGetQueryPlan.Exception;
             return Tuple.Create(partitionedQueryExecutionInfo, queryPartitionProvider);
         }
@@ -836,12 +837,12 @@
         private static IQueryPipelineStage CreateOdePipeline(OptimisticDirectExecutionTestInput input, DocumentContainer documentContainer, QueryRequestOptions queryRequestOptions, bool clientDisableOde = false)
         {
             List<FeedRangeEpk> containerRanges = documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default).Result;
-            (CosmosQueryExecutionContextFactory.InputParameters inputParameters, CosmosQueryContextCore cosmosQueryContextCore) = CreateInputParamsAndQueryContext(input, queryRequestOptions, containerRanges, clientDisableOde);
-            IQueryPipelineStage queryPipelineStage = CosmosQueryExecutionContextFactory.Create(
-                      documentContainer,
-                      cosmosQueryContextCore,
-                      inputParameters,
-                      NoOpTrace.Singleton);
+            IQueryPipelineStage queryPipelineStage = CreateQueryPipelineStage(
+                documentContainer,
+                input,
+                queryRequestOptions,
+                containerRanges,
+                clientDisableOde);
 
             Assert.IsNotNull(queryPipelineStage);
             return queryPipelineStage;
@@ -978,12 +979,12 @@
             DocumentContainer documentContainer = new DocumentContainer(monadicDocumentContainer);
             QueryRequestOptions queryRequestOptions = GetQueryRequestOptions(enableOptimisticDirectExecution: true);
             List<FeedRangeEpk> containerRanges = documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default).Result;
-            (CosmosQueryExecutionContextFactory.InputParameters inputParameters, CosmosQueryContextCore cosmosQueryContextCore) = CreateInputParamsAndQueryContext(input, queryRequestOptions, containerRanges);
-            IQueryPipelineStage queryPipelineStage = CosmosQueryExecutionContextFactory.Create(
+            IQueryPipelineStage queryPipelineStage = CreateQueryPipelineStage(
                       documentContainer,
-                      cosmosQueryContextCore,
-                      inputParameters,
-                      NoOpTrace.Singleton);
+                      input,
+                      queryRequestOptions,
+                      containerRanges,
+                      clientDisableOde: false);
 
             bool result = queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default).AsTask().GetAwaiter().GetResult();
 
@@ -1002,14 +1003,19 @@
             return new OptimisticDirectExecutionTestOutput(input.ExpectedOptimisticDirectExecution);
         }
 
-        private static Tuple<CosmosQueryExecutionContextFactory.InputParameters, CosmosQueryContextCore> CreateInputParamsAndQueryContext(OptimisticDirectExecutionTestInput input, QueryRequestOptions queryRequestOptions, List<FeedRangeEpk> containerRanges, bool clientDisableOde = false)
+        private static IQueryPipelineStage CreateQueryPipelineStage(
+            DocumentContainer documentContainer,
+            OptimisticDirectExecutionTestInput input,
+            QueryRequestOptions queryRequestOptions,
+            List<FeedRangeEpk> containerRanges,
+            bool clientDisableOde)
         {
             CosmosSerializerCore serializerCore = new();
             using StreamReader streamReader = new(serializerCore.ToStreamSqlQuerySpec(new SqlQuerySpec(input.Query), Documents.ResourceType.Document));
             string sqlQuerySpecJsonString = streamReader.ReadToEnd();
 
             (PartitionedQueryExecutionInfo partitionedQueryExecutionInfo, QueryPartitionProvider queryPartitionProvider) = GetPartitionedQueryExecutionInfoAndPartitionProvider(sqlQuerySpecJsonString, input.PartitionKeyDefinition, clientDisableOde);
-            CosmosQueryExecutionContextFactory.InputParameters inputParameters = new CosmosQueryExecutionContextFactory.InputParameters(
+            CosmosQueryExecutionContextFactory.InputParameters inputParameters = CosmosQueryExecutionContextFactory.InputParameters.Create(
                 sqlQuerySpec: new SqlQuerySpec(input.Query),
                 initialUserContinuationToken: input.ContinuationToken,
                 initialFeedRange: null,
@@ -1019,14 +1025,14 @@
                 partitionKey: input.PartitionKeyValue,
                 properties: new Dictionary<string, object>() { { "x-ms-query-partitionkey-definition", input.PartitionKeyDefinition } },
                 partitionedQueryExecutionInfo: null,
-                executionEnvironment: null,
                 returnResultsInDeterministicOrder: null,
                 enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
-                isNonStreamingOrderByQueryFeatureDisabled: false,
+                isNonStreamingOrderByQueryFeatureDisabled: queryRequestOptions.IsNonStreamingOrderByQueryFeatureDisabled,
+                enableDistributedQueryGatewayMode: queryRequestOptions.EnableDistributedQueryGatewayMode,
                 testInjections: queryRequestOptions.TestSettings);
 
-            List<PartitionKeyRange> targetPkRanges = new ();
-            foreach(FeedRangeEpk feedRangeEpk in containerRanges)
+            List<PartitionKeyRange> targetPkRanges = new();
+            foreach (FeedRangeEpk feedRangeEpk in containerRanges)
             {
                 targetPkRanges.Add(new PartitionKeyRange
                 {
@@ -1048,7 +1054,13 @@
                 useSystemPrefix: false,
                 correlatedActivityId: Guid.NewGuid());
 
-            return Tuple.Create(inputParameters, cosmosQueryContextCore);
+            IQueryPipelineStage queryPipelineStage = CosmosQueryExecutionContextFactory.Create(
+                documentContainer,
+                cosmosQueryContextCore,
+                inputParameters,
+                NoOpTrace.Singleton);
+
+            return queryPipelineStage;
         }
 
         private static QueryRequestOptions GetQueryRequestOptions(bool enableOptimisticDirectExecution)
@@ -1098,7 +1110,7 @@
             public override async Task<TryCatch<QueryPage>> MonadicQueryAsync(
                 SqlQuerySpec sqlQuerySpec,
                 FeedRangeState<QueryState> feedRangeState,
-                QueryPaginationOptions queryPaginationOptions,
+                QueryExecutionOptions queryPaginationOptions,
                 ITrace trace,
                 CancellationToken cancellationToken)
             {
@@ -1266,7 +1278,7 @@
         private readonly IReadOnlyList<PartitionKeyRange> targetPartitionKeyRanges;
 
         public TestCosmosQueryClient(QueryPartitionProvider queryPartitionProvider, IEnumerable<PartitionKeyRange> targetPartitionKeyRanges)
-        { 
+        {
             this.queryPartitionProvider = queryPartitionProvider;
             this.targetPartitionKeyRanges = targetPartitionKeyRanges.ToList();
         }
@@ -1303,7 +1315,7 @@
             return Task.FromResult(new ContainerQueryProperties(
                  "test",
                  new List<Range<string>>
-                 { 
+                 {
                      new Range<string>(
                          PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
                          PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
@@ -1311,6 +1323,7 @@
                          true)
                  },
                  new PartitionKeyDefinition(),
+                 vectorEmbeddingPolicy: null,
                  Cosmos.GeospatialType.Geometry));
         }
 
@@ -1334,12 +1347,24 @@
             throw new NotImplementedException();
         }
 
-        public override Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(SqlQuerySpec sqlQuerySpec, ResourceType resourceType, PartitionKeyDefinition partitionKeyDefinition, bool requireFormattableOrderByQuery, bool isContinuationExpected, bool allowNonValueAggregateQuery, bool hasLogicalPartitionKey, bool allowDCount, bool useSystemPrefix, Cosmos.GeospatialType geospatialType, CancellationToken cancellationToken)
+        public override Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(
+            SqlQuerySpec sqlQuerySpec,
+            ResourceType resourceType,
+            PartitionKeyDefinition partitionKeyDefinition,
+            Cosmos.VectorEmbeddingPolicy vectorEmbeddingPolicy,
+            bool requireFormattableOrderByQuery,
+            bool isContinuationExpected,
+            bool allowNonValueAggregateQuery,
+            bool hasLogicalPartitionKey,
+            bool allowDCount,
+            bool useSystemPrefix,
+            Cosmos.GeospatialType geospatialType,
+            CancellationToken cancellationToken)
         {
             CosmosSerializerCore serializerCore = new CosmosSerializerCore();
             using StreamReader streamReader = new StreamReader(serializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, Documents.ResourceType.Document));
             string sqlQuerySpecJsonString = streamReader.ReadToEnd();
-            
+
             (PartitionedQueryExecutionInfo partitionedQueryExecutionInfo, QueryPartitionProvider queryPartitionProvider) = OptimisticDirectExecutionQueryBaselineTests.GetPartitionedQueryExecutionInfoAndPartitionProvider(sqlQuerySpecJsonString, partitionKeyDefinition);
             return Task.FromResult(TryCatch<PartitionedQueryExecutionInfo>.FromResult(partitionedQueryExecutionInfo));
         }

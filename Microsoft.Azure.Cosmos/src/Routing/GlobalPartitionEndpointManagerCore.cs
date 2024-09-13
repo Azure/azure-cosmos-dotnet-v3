@@ -168,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         }
 
-        private sealed class PartitionKeyRangeFailoverInfo
+        internal sealed class PartitionKeyRangeFailoverInfo
         {
             // HashSet is not thread safe and should only accessed in the lock
             private readonly HashSet<Uri> FailedLocations;

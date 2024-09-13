@@ -14,12 +14,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
     internal sealed class ChangeFeedPartitionRangePageAsyncEnumerator : PartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState>
     {
         private readonly IChangeFeedDataSource changeFeedDataSource;
-        private readonly ChangeFeedPaginationOptions changeFeedPaginationOptions;
+        private readonly ChangeFeedExecutionOptions changeFeedPaginationOptions;
 
         public ChangeFeedPartitionRangePageAsyncEnumerator(
             IChangeFeedDataSource changeFeedDataSource,
             FeedRangeState<ChangeFeedState> feedRangeState,
-            ChangeFeedPaginationOptions changeFeedPaginationOptions)
+            ChangeFeedExecutionOptions changeFeedPaginationOptions)
             : base(feedRangeState)
         {
             this.changeFeedDataSource = changeFeedDataSource ?? throw new ArgumentNullException(nameof(changeFeedDataSource));

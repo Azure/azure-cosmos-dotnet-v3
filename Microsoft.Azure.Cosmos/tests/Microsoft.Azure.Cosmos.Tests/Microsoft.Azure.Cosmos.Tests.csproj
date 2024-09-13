@@ -260,6 +260,9 @@
     <None Update="BaselineTest\TestBaseline\QueryPlanBaselineTests.Top.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="BaselineTest\TestBaseline\QueryPlanBaselineTests.VectorSearch.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="BaselineTest\TestBaseline\OptimisticDirectExecutionQueryBaselineTests.PositiveOptimisticDirectExecutionOutput.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -399,6 +402,12 @@
 
   <ItemGroup>
     <Folder Include="Diagnostics\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\..\Directory.Build.props" Link="Directory.Build.props">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>

@@ -128,6 +128,8 @@ namespace Microsoft.Azure.Cosmos.Contracts
                 { "Microsoft.Bcl.HashCode", new Version(1, 1, 0) },
                 { "Azure.Core", new Version(1, 19, 0) },
                 { "System.Diagnostics.DiagnosticSource", new Version(6, 0, 1) },
+                { "System.Net.Http", new Version(4, 3, 4) },
+                { "System.Text.RegularExpressions", new Version(4, 3, 1) },
             };
 
             Assert.AreEqual(projectDependencies.Count, baselineDependencies.Count);
