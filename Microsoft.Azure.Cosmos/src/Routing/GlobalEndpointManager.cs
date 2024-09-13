@@ -718,7 +718,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 && !forceRefresh;
         }
 
-        private Collection<string> GetEffectivePreferredLocations()
+        public Collection<string> GetEffectivePreferredLocations()
         {
             if (this.connectionPolicy.PreferredLocations != null && this.connectionPolicy.PreferredLocations.Count > 0)
             {

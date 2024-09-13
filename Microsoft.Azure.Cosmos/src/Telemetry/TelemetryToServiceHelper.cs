@@ -206,7 +206,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         connectionMode: this.connectionPolicy.ConnectionMode,
                         authorizationTokenProvider: this.cosmosAuthorization,
                         diagnosticsHelper: DiagnosticsHandlerHelper.GetInstance(),
-                        preferredRegions: this.connectionPolicy.PreferredLocations,
+                        preferredRegions: this.globalEndpointManager.GetEffectivePreferredLocations(),
                         globalEndpointManager: this.globalEndpointManager,
                         endpointUrl: clientConfig.ClientTelemetryConfiguration.Endpoint);
 
