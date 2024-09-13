@@ -36,9 +36,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private ClientTelemetry clientTelemetry = null;
 
-        private TelemetryToServiceHelper(string clientId, string accountName)
+        private TelemetryToServiceHelper(bool isMetricEnabled, string clientId, string accountName)
         {
-            this.openTelemetryCollector = new OpenTelemetryMetricsCollector(clientId: clientId, accountName: accountName);
+            if (isMetricEnabled)
+            {
+                this.openTelemetryCollector = new OpenTelemetryMetricsCollector(clientId: clientId, accountName: accountName);
+            }
         }
 
         private TelemetryToServiceHelper(
@@ -49,6 +52,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
              Uri serviceEndpoint,
              GlobalEndpointManager globalEndpointManager,
              CancellationTokenSource cancellationTokenSource)
+            : this(connectionPolicy.CosmosClientTelemetryOptions.IsClientMetricsEnabled, clientId, serviceEndpoint.Host)
         {
             this.clientId = clientId;
             this.cosmosAuthorization = cosmosAuthorization;
@@ -57,8 +61,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.serviceEndpoint = serviceEndpoint;
             this.globalEndpointManager = globalEndpointManager;
             this.cancellationTokenSource = cancellationTokenSource;
-
-            this.openTelemetryCollector = new OpenTelemetryMetricsCollector(clientId: clientId, accountName: serviceEndpoint.Host);
         }
 
         public static TelemetryToServiceHelper CreateAndInitializeClientConfigAndTelemetryJob(string clientId,
@@ -70,11 +72,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
            CancellationTokenSource cancellationTokenSource)
         {
 #if INTERNAL
-            return new TelemetryToServiceHelper(clientId: clientId, accountName: serviceEndpoint.Host);
+            return new TelemetryToServiceHelper(isMetricEnabled: connectionPolicy.CosmosClientTelemetryOptions.IsClientMetricsEnabled, 
+                    clientId: clientId, 
+                    accountName: serviceEndpoint.Host);
 #else
             if (connectionPolicy.CosmosClientTelemetryOptions.DisableSendingMetricsToService)
             {
-                return new TelemetryToServiceHelper(clientId: clientId, accountName: serviceEndpoint.Host);
+                return new TelemetryToServiceHelper(isMetricEnabled: connectionPolicy.CosmosClientTelemetryOptions.IsClientMetricsEnabled, 
+                    clientId: clientId, 
+                    accountName: serviceEndpoint.Host);
             }
 
             TelemetryToServiceHelper helper = new TelemetryToServiceHelper(
