@@ -3225,6 +3225,18 @@
           ],
           "MethodInfo": "Boolean get_DisableSendingMetricsToService();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Boolean get_IsClientMetricsEnabled()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Boolean get_IsClientMetricsEnabled();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Boolean IsClientMetricsEnabled": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Boolean IsClientMetricsEnabled;CanRead:True;CanWrite:True;Boolean get_IsClientMetricsEnabled();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_IsClientMetricsEnabled(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Microsoft.Azure.Cosmos.CosmosThresholdOptions CosmosThresholdOptions": {
           "Type": "Property",
           "Attributes": [],
@@ -3276,10 +3288,7 @@
           "MethodInfo": "Void set_DisableSendingMetricsToService(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_QueryTextMode(Microsoft.Azure.Cosmos.QueryTextMode)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+        
           "MethodInfo": "Void set_QueryTextMode(Microsoft.Azure.Cosmos.QueryTextMode);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
