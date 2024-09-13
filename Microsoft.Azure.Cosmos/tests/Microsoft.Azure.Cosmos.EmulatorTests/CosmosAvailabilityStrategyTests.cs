@@ -227,9 +227,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(hedgeContext);
                 IReadOnlyCollection<string> hedgeContextList;
                 hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
-                Assert.AreEqual(2, hedgeContextList.Count);
-                Assert.IsTrue(hedgeContextList.Contains(CosmosAvailabilityStrategyTests.centralUS));
-                Assert.IsTrue(hedgeContextList.Contains(CosmosAvailabilityStrategyTests.northCentralUS));
+
+                if (isPreferredLocationsEmpty)
+                {
+                    Assert.AreEqual(3, hedgeContextList.Count);
+                    Assert.IsTrue(hedgeContextList.Contains(CosmosAvailabilityStrategyTests.centralUS));
+                    Assert.IsTrue(hedgeContextList.Contains(CosmosAvailabilityStrategyTests.northCentralUS));
+                    Assert.IsTrue(hedgeContextList.Contains(CosmosAvailabilityStrategyTests.eastUs));
+                }
+                else
+                {
+                    Assert.AreEqual(2, hedgeContextList.Count);
+                    Assert.IsTrue(hedgeContextList.Contains(CosmosAvailabilityStrategyTests.centralUS));
+                    Assert.IsTrue(hedgeContextList.Contains(CosmosAvailabilityStrategyTests.northCentralUS));
+                }
             };
         }
 
@@ -401,7 +412,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow("ChangeFeed", "ChangeFeed", "PartitionIsMigrating", false, DisplayName = "ChangeFeed | PartitionIsMigrating | With Preferred Regions")]
         [DataRow("ChangeFeed", "ChangeFeed", "ServiceUnavailable", false, DisplayName = "ChangeFeed | ServiceUnavailable | With Preferred Regions")]
         [DataRow("ChangeFeed", "ChangeFeed", "ResponseDelay", false, DisplayName = "ChangeFeed | ResponseDelay | With Preferred Regions")]
-         [DataRow("Read", "Read", "Gone", true, DisplayName = "Read | Gone | W/O Preferred Regions")]
+        [DataRow("Read", "Read", "Gone", true, DisplayName = "Read | Gone | W/O Preferred Regions")]
         [DataRow("Read", "Read", "RetryWith", true, DisplayName = "Read | RetryWith | W/O Preferred Regions")]
         [DataRow("Read", "Read", "InternalServerError", true, DisplayName = "Read | InternalServerError | W/O Preferred Regions")]
         [DataRow("Read", "Read", "ReadSessionNotAvailable", true, DisplayName = "Read | ReadSessionNotAvailable | W/O Preferred Regions")]
@@ -488,9 +499,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     case "Read":
                         rule.Enable();
 
+                        ItemRequestOptions itemRequestOptions = new ItemRequestOptions();
+
+                        if (isPreferredLocationsEmpty)
+                        {
+                            itemRequestOptions.ExcludeRegions = new List<string>() { "East US" };
+                        }
+
                         ItemResponse<AvailabilityStrategyTestObject> ir = await container.ReadItemAsync<AvailabilityStrategyTestObject>(
                             "testId",
-                            new PartitionKey("pk"));
+                            new PartitionKey("pk"),
+                            itemRequestOptions);
 
                         Assert.IsTrue(rule.GetHitCount() > 0);
                         traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
@@ -508,6 +527,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         {
                             PartitionKey = new PartitionKey("pk"),
                         };
+
+                        if (isPreferredLocationsEmpty)
+                        {
+                            requestOptions.ExcludeRegions = new List<string>() { "East US" };
+                        }
 
                         FeedIterator<AvailabilityStrategyTestObject> queryIterator = container.GetItemQueryIterator<AvailabilityStrategyTestObject>(
                             new QueryDefinition(queryString),
@@ -531,8 +555,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     case "CrossPartitionQuery":
                         string crossPartitionQueryString = "SELECT * FROM c";
+
+                        QueryRequestOptions queryRequestOptions = new QueryRequestOptions();
+                        
+                        if (isPreferredLocationsEmpty)
+                        {
+                            queryRequestOptions.ExcludeRegions = new List<string>() { "East US" };
+                        }
+                        
                         FeedIterator<AvailabilityStrategyTestObject> crossPartitionQueryIterator = container.GetItemQueryIterator<AvailabilityStrategyTestObject>(
-                            new QueryDefinition(crossPartitionQueryString));
+                            new QueryDefinition(crossPartitionQueryString),
+                            null,
+                            queryRequestOptions);
 
                         rule.Enable();
 
@@ -553,6 +587,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     case "ReadMany":
                         rule.Enable();
 
+                        ReadManyRequestOptions readManyRequestOptions = new ReadManyRequestOptions();
+                        
+                        if (isPreferredLocationsEmpty)
+                        {
+                            readManyRequestOptions.ExcludeRegions = new List<string>() { "East US" };
+                        }
+
                         FeedResponse<AvailabilityStrategyTestObject> readManyResponse = await container.ReadManyItemsAsync<AvailabilityStrategyTestObject>(
                             new List<(string, PartitionKey)>()
                             {
@@ -560,7 +601,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             ("testId2", new PartitionKey("pk2")),
                             ("testId3", new PartitionKey("pk3")),
                             ("testId4", new PartitionKey("pk4"))
-                            });
+                            },
+                            readManyRequestOptions);
 
                         Assert.IsTrue(rule.GetHitCount() > 0);
                         traceDiagnostic = readManyResponse.Diagnostics as CosmosTraceDiagnostics;
