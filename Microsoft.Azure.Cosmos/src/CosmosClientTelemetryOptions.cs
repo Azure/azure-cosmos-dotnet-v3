@@ -46,5 +46,13 @@ namespace Microsoft.Azure.Cosmos
         /// These values decides whether to generate an <see cref="System.Diagnostics.Tracing.EventSource"/> with request diagnostics or not.
         /// </summary>
         public CosmosThresholdOptions CosmosThresholdOptions { get; set; } = new CosmosThresholdOptions();
+
+        /// <summary>
+        /// Indicates whether client-side metrics collection is enabled or disabled. 
+        /// When set to true, the application will capture and report client metrics such as request counts, latencies, errors, and other key performance indicators. 
+        /// If false, no metrics related to the client will be gathered or reported.
+        /// <remarks>Metrics data can be published to a monitoring system like Prometheus or Azure Monitor, depending on the configured metrics provider.</remarks>
+        /// </summary>
+        public bool IsClientMetricsEnabled { get; set; }
     }
 }
