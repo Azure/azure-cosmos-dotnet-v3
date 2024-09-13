@@ -29,13 +29,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (db.StatusCode == HttpStatusCode.Created)
             {
                 container = await database.CreateContainerIfNotExistsAsync(
-                    id: MultiRegionSetupHelpers.containerName,
-                    partitionKeyPath: "/pk",
-                    throughput: 400);
+                    containerProperties: new ContainerProperties()
+                    {
+                        Id = MultiRegionSetupHelpers.containerName,
+                        PartitionKeyPath = "/pk"
+                    },
+                    throughputProperties: ThroughputProperties.CreateAutoscaleThroughput(400));
                 changeFeedContainer = await database.CreateContainerIfNotExistsAsync(
-                    id: MultiRegionSetupHelpers.changeFeedContainerName,
-                    partitionKeyPath: "/partitionKey",
-                    throughput: 400);
+                    containerProperties: new ContainerProperties()
+                    {
+                        Id = MultiRegionSetupHelpers.changeFeedContainerName,
+                        PartitionKeyPath = "/partitionKey"
+                    },
+                    throughputProperties: ThroughputProperties.CreateAutoscaleThroughput(400));
 
                 List<Task> tasks = new List<Task>()
                 {
