@@ -158,8 +158,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [DataRow(false, DisplayName = "ValidateAvailabilityStrategyNoTriggerTest with preferred regions.")]
+        [DataRow(true, DisplayName = "ValidateAvailabilityStrategyNoTriggerTest w/o preferred regions.")]
         [TestCategory("MultiRegion")]
-        public async Task AvailabilityStrategyNoTriggerTest()
+        public async Task AvailabilityStrategyNoTriggerTest(bool isPreferredLocationsEmpty)
         {
             FaultInjectionRule responseDelay = new FaultInjectionRuleBuilder(
                 id: "responseDely",
@@ -197,7 +199,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ConnectionMode = ConnectionMode.Direct,
-                ApplicationPreferredRegions = new List<string>() { "Central US", "North Central US" },
+                ApplicationPreferredRegions = isPreferredLocationsEmpty ? new List<string>() : new List<string>() { "Central US", "North Central US" },
                 AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
                         threshold: TimeSpan.FromMilliseconds(300),
                         thresholdStep: TimeSpan.FromMilliseconds(50)),
@@ -232,8 +234,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [DataRow(false, DisplayName = "ValidateAvailabilityStrategyNoTriggerTest with preferred regions.")]
+        [DataRow(true, DisplayName = "ValidateAvailabilityStrategyNoTriggerTest w/o preferred regions.")]
         [TestCategory("MultiRegion")]
-        public async Task AvailabilityStrategyRequestOptionsTriggerTest()
+        public async Task AvailabilityStrategyRequestOptionsTriggerTest(bool isPreferredLocationsEmpty)
         {
             FaultInjectionRule responseDelay = new FaultInjectionRuleBuilder(
                 id: "responseDely",
@@ -257,7 +261,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ConnectionMode = ConnectionMode.Direct,
-                ApplicationPreferredRegions = new List<string>() { "Central US", "North Central US" },
+                ApplicationPreferredRegions = isPreferredLocationsEmpty? new List<string>() : new List<string>() { "Central US", "North Central US" },
                 Serializer = this.cosmosSystemTextJsonSerializer
             };
 
@@ -290,8 +294,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [DataRow(false, DisplayName = "ValidateAvailabilityStrategyNoTriggerTest with preferred regions.")]
+        [DataRow(true, DisplayName = "ValidateAvailabilityStrategyNoTriggerTest w/o preferred regions.")]
         [TestCategory("MultiRegion")]
-        public async Task AvailabilityStrategyDisableOverideTest()
+        public async Task AvailabilityStrategyDisableOverideTest(bool isPreferredLocationsEmpty)
         {
             FaultInjectionRule responseDelay = new FaultInjectionRuleBuilder(
                 id: "responseDely",
@@ -316,7 +322,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ConnectionMode = ConnectionMode.Direct,
-                ApplicationPreferredRegions = new List<string>() { "Central US", "North Central US" },
+                ApplicationPreferredRegions = isPreferredLocationsEmpty ? new List<string>() : new List<string>() { "Central US", "North Central US" },
                 AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
                         threshold: TimeSpan.FromMilliseconds(100),
                         thresholdStep: TimeSpan.FromMilliseconds(50)),
@@ -350,52 +356,97 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [DataTestMethod]
         [TestCategory("MultiRegion")]
-        [DataRow("Read", "Read", "Gone", DisplayName = "Read | Gone")]
-        [DataRow("Read", "Read", "RetryWith", DisplayName = "Read | RetryWith")]
-        [DataRow("Read", "Read", "InternalServerError", DisplayName = "Read | InternalServerError")]
-        [DataRow("Read", "Read", "ReadSessionNotAvailable", DisplayName = "Read | ReadSessionNotAvailable")]
-        [DataRow("Read", "Read", "Timeout", DisplayName = "Read | Timeout")]
-        [DataRow("Read", "Read", "PartitionIsSplitting", DisplayName = "Read | PartitionIsSplitting")]
-        [DataRow("Read", "Read", "PartitionIsMigrating", DisplayName = "Read | PartitionIsMigrating")]
-        [DataRow("Read", "Read", "ServiceUnavailable", DisplayName = "Read | ServiceUnavailable")]
-        [DataRow("Read", "Read", "ResponseDelay", DisplayName = "Read | ResponseDelay")]
-        [DataRow("SinglePartitionQuery", "Query", "Gone", DisplayName = "SinglePartitionQuery | Gone")]
-        [DataRow("SinglePartitionQuery", "Query", "RetryWith", DisplayName = "SinglePartitionQuery | RetryWith")]
-        [DataRow("SinglePartitionQuery", "Query", "InternalServerError", DisplayName = "SinglePartitionQuery | InternalServerError")]
-        [DataRow("SinglePartitionQuery", "Query", "ReadSessionNotAvailable", DisplayName = "SinglePartitionQuery | ReadSessionNotAvailable")]
-        [DataRow("SinglePartitionQuery", "Query", "Timeout", DisplayName = "SinglePartitionQuery | Timeout")]
-        [DataRow("SinglePartitionQuery", "Query", "PartitionIsSplitting", DisplayName = "SinglePartitionQuery | PartitionIsSplitting")]
-        [DataRow("SinglePartitionQuery", "Query", "PartitionIsMigrating", DisplayName = "SinglePartitionQuery | PartitionIsMigrating")]
-        [DataRow("SinglePartitionQuery", "Query", "ServiceUnavailable", DisplayName = "SinglePartitionQuery | ServiceUnavailable")]
-        [DataRow("SinglePartitionQuery", "Query", "ResponseDelay", DisplayName = "SinglePartitionQuery | ResponseDelay")]
-        [DataRow("CrossPartitionQuery", "Query", "Gone", DisplayName = "CrossPartitionQuery | Gone")]
-        [DataRow("CrossPartitionQuery", "Query", "RetryWith", DisplayName = "CrossPartitionQuery | RetryWith")]
-        [DataRow("CrossPartitionQuery", "Query", "InternalServerError", DisplayName = "CrossPartitionQuery | InternalServerError")]
-        [DataRow("CrossPartitionQuery", "Query", "ReadSessionNotAvailable", DisplayName = "CrossPartitionQuery | ReadSessionNotAvailable")]
-        [DataRow("CrossPartitionQuery", "Query", "Timeout", DisplayName = "CrossPartitionQuery | Timeout")]
-        [DataRow("CrossPartitionQuery", "Query", "PartitionIsSplitting", DisplayName = "CrossPartitionQuery | PartitionIsSplitting")]
-        [DataRow("CrossPartitionQuery", "Query", "PartitionIsMigrating", DisplayName = "CrossPartitionQuery | PartitionIsMigrating")]
-        [DataRow("CrossPartitionQuery", "Query", "ServiceUnavailable", DisplayName = "CrossPartitionQuery | ServiceUnavailable")]
-        [DataRow("CrossPartitionQuery", "Query", "ResponseDelay", DisplayName = "CrossPartitionQuery | ResponseDelay")]
-        [DataRow("ReadMany", "ReadMany", "Gone", DisplayName = "ReadMany | Gone")]
-        [DataRow("ReadMany", "ReadMany", "RetryWith", DisplayName = "ReadMany | RetryWith")]
-        [DataRow("ReadMany", "ReadMany", "InternalServerError", DisplayName = "ReadMany | InternalServerError")]
-        [DataRow("ReadMany", "ReadMany", "ReadSessionNotAvailable", DisplayName = "ReadMany | ReadSessionNotAvailable")]
-        [DataRow("ReadMany", "ReadMany", "Timeout", DisplayName = "ReadMany | Timeout")]
-        [DataRow("ReadMany", "ReadMany", "PartitionIsSplitting", DisplayName = "ReadMany | PartitionIsSplitting")]
-        [DataRow("ReadMany", "ReadMany", "PartitionIsMigrating", DisplayName = "ReadMany | PartitionIsMigrating")]
-        [DataRow("ReadMany", "ReadMany", "ServiceUnavailable", DisplayName = "ReadMany | ServiceUnavailable")]
-        [DataRow("ReadMany", "ReadMany", "ResponseDelay", DisplayName = "ReadMany | ResponseDelay")]
-        [DataRow("ChangeFeed", "ChangeFeed", "Gone", DisplayName = "ChangeFeed | Gone")]
-        [DataRow("ChangeFeed", "ChangeFeed", "RetryWith", DisplayName = "ChangeFeed | RetryWith")]
-        [DataRow("ChangeFeed", "ChangeFeed", "InternalServerError", DisplayName = "ChangeFeed | InternalServerError")]
-        [DataRow("ChangeFeed", "ChangeFeed", "ReadSessionNotAvailable", DisplayName = "ChangeFeed | ReadSessionNotAvailable")]
-        [DataRow("ChangeFeed", "ChangeFeed", "Timeout", DisplayName = "ChangeFeed | Timeout")]
-        [DataRow("ChangeFeed", "ChangeFeed", "PartitionIsSplitting", DisplayName = "ChangeFeed | PartitionIsSplitting")]
-        [DataRow("ChangeFeed", "ChangeFeed", "PartitionIsMigrating", DisplayName = "ChangeFeed | PartitionIsMigrating")]
-        [DataRow("ChangeFeed", "ChangeFeed", "ServiceUnavailable", DisplayName = "ChangeFeed | ServiceUnavailable")]
-        [DataRow("ChangeFeed", "ChangeFeed", "ResponseDelay", DisplayName = "ChangeFeed | ResponseDelay")]
-        public async Task AvailabilityStrategyAllFaultsTests(string operation, string conditonName, string resultName)
+        [DataRow("Read", "Read", "Gone", false, DisplayName = "Read | Gone | With Preferred Regions")]
+        [DataRow("Read", "Read", "RetryWith", false, DisplayName = "Read | RetryWith | With Preferred Regions")]
+        [DataRow("Read", "Read", "InternalServerError", false, DisplayName = "Read | InternalServerError | With Preferred Regions")]
+        [DataRow("Read", "Read", "ReadSessionNotAvailable", false, DisplayName = "Read | ReadSessionNotAvailable | With Preferred Regions")]
+        [DataRow("Read", "Read", "Timeout", false, DisplayName = "Read | Timeout | With Preferred Regions")]
+        [DataRow("Read", "Read", "PartitionIsSplitting", false, DisplayName = "Read | PartitionIsSplitting | With Preferred Regions")]
+        [DataRow("Read", "Read", "PartitionIsMigrating", false, DisplayName = "Read | PartitionIsMigrating | With Preferred Regions")]
+        [DataRow("Read", "Read", "ServiceUnavailable", false, DisplayName = "Read | ServiceUnavailable | With Preferred Regions")]
+        [DataRow("Read", "Read", "ResponseDelay", false, DisplayName = "Read | ResponseDelay | With Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query",  "Gone", false, DisplayName = "SinglePartitionQuery | Gone | With Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "RetryWith", false, DisplayName = "SinglePartitionQuery | RetryWith | With Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "InternalServerError", false, DisplayName = "SinglePartitionQuery | InternalServerError | With Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "ReadSessionNotAvailable", false, DisplayName = "SinglePartitionQuery | ReadSessionNotAvailable | With Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "Timeout", false, DisplayName = "SinglePartitionQuery | Timeout | With Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "PartitionIsSplitting", false, DisplayName = "SinglePartitionQuery | PartitionIsSplitting | With Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "PartitionIsMigrating", false, DisplayName = "SinglePartitionQuery | PartitionIsMigrating | With Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "ServiceUnavailable", false, DisplayName = "SinglePartitionQuery | ServiceUnavailable | With Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "ResponseDelay", false, DisplayName = "SinglePartitionQuery | ResponseDelay | With Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "Gone", false, DisplayName = "CrossPartitionQuery | Gone | With Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "RetryWith", false, DisplayName = "CrossPartitionQuery | RetryWith | With Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "InternalServerError", false, DisplayName = "CrossPartitionQuery | InternalServerError | With Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "ReadSessionNotAvailable", false, DisplayName = "CrossPartitionQuery | ReadSessionNotAvailable | With Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "Timeout", false, DisplayName = "CrossPartitionQuery | Timeout | With Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "PartitionIsSplitting", false, DisplayName = "CrossPartitionQuery | PartitionIsSplitting | With Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "PartitionIsMigrating", false, DisplayName = "CrossPartitionQuery | PartitionIsMigrating | With Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "ServiceUnavailable", false, DisplayName = "CrossPartitionQuery | ServiceUnavailable | With Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "ResponseDelay", false, DisplayName = "CrossPartitionQuery | ResponseDelay | With Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "Gone", false, DisplayName = "ReadMany | Gone | With Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "RetryWith", false, DisplayName = "ReadMany | RetryWith | With Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "InternalServerError", false, DisplayName = "ReadMany | InternalServerError | With Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "ReadSessionNotAvailable", false, DisplayName = "ReadMany | ReadSessionNotAvailable | With Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "Timeout", false, DisplayName = "ReadMany | Timeout | With Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "PartitionIsSplitting", false, DisplayName = "ReadMany | PartitionIsSplitting | With Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "PartitionIsMigrating", false, DisplayName = "ReadMany | PartitionIsMigrating | With Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "ServiceUnavailable", false, DisplayName = "ReadMany | ServiceUnavailable | With Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "ResponseDelay", false, DisplayName = "ReadMany | ResponseDelay | With Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "Gone", false, DisplayName = "ChangeFeed | Gone | With Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "RetryWith", false, DisplayName = "ChangeFeed | RetryWith | With Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "InternalServerError", false, DisplayName = "ChangeFeed | InternalServerError | With Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "ReadSessionNotAvailable", false, DisplayName = "ChangeFeed | ReadSessionNotAvailable | With Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "Timeout", false, DisplayName = "ChangeFeed | Timeout | With Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "PartitionIsSplitting", false, DisplayName = "ChangeFeed | PartitionIsSplitting | With Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "PartitionIsMigrating", false, DisplayName = "ChangeFeed | PartitionIsMigrating | With Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "ServiceUnavailable", false, DisplayName = "ChangeFeed | ServiceUnavailable | With Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "ResponseDelay", false, DisplayName = "ChangeFeed | ResponseDelay | With Preferred Regions")]
+         [DataRow("Read", "Read", "Gone", true, DisplayName = "Read | Gone | W/O Preferred Regions")]
+        [DataRow("Read", "Read", "RetryWith", true, DisplayName = "Read | RetryWith | W/O Preferred Regions")]
+        [DataRow("Read", "Read", "InternalServerError", true, DisplayName = "Read | InternalServerError | W/O Preferred Regions")]
+        [DataRow("Read", "Read", "ReadSessionNotAvailable", true, DisplayName = "Read | ReadSessionNotAvailable | W/O Preferred Regions")]
+        [DataRow("Read", "Read", "Timeout", true, DisplayName = "Read | Timeout | W/O Preferred Regions")]
+        [DataRow("Read", "Read", "PartitionIsSplitting", true, DisplayName = "Read | PartitionIsSplitting | W/O Preferred Regions")]
+        [DataRow("Read", "Read", "PartitionIsMigrating", true, DisplayName = "Read | PartitionIsMigrating | W/O Preferred Regions")]
+        [DataRow("Read", "Read", "ServiceUnavailable", true, DisplayName = "Read | ServiceUnavailable | W/O Preferred Regions")]
+        [DataRow("Read", "Read", "ResponseDelay", true, DisplayName = "Read | ResponseDelay | W/O Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query",  "Gone", true, DisplayName = "SinglePartitionQuery | Gone | W/O Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "RetryWith", true, DisplayName = "SinglePartitionQuery | RetryWith | W/O Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "InternalServerError", true, DisplayName = "SinglePartitionQuery | InternalServerError | W/O Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "ReadSessionNotAvailable", true, DisplayName = "SinglePartitionQuery | ReadSessionNotAvailable | W/O Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "Timeout", true, DisplayName = "SinglePartitionQuery | Timeout | W/O Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "PartitionIsSplitting", true, DisplayName = "SinglePartitionQuery | PartitionIsSplitting | W/O Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "PartitionIsMigrating", true, DisplayName = "SinglePartitionQuery | PartitionIsMigrating | W/O Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "ServiceUnavailable", true, DisplayName = "SinglePartitionQuery | ServiceUnavailable | W/O Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "ResponseDelay", true, DisplayName = "SinglePartitionQuery | ResponseDelay | W/O Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "Gone", true, DisplayName = "CrossPartitionQuery | Gone | W/O Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "RetryWith", true, DisplayName = "CrossPartitionQuery | RetryWith | W/O Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "InternalServerError", true, DisplayName = "CrossPartitionQuery | InternalServerError | W/O Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "ReadSessionNotAvailable", true, DisplayName = "CrossPartitionQuery | ReadSessionNotAvailable | W/O Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "Timeout", true, DisplayName = "CrossPartitionQuery | Timeout | W/O Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "PartitionIsSplitting", true, DisplayName = "CrossPartitionQuery | PartitionIsSplitting | W/O Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "PartitionIsMigrating", true, DisplayName = "CrossPartitionQuery | PartitionIsMigrating | W/O Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "ServiceUnavailable", true, DisplayName = "CrossPartitionQuery | ServiceUnavailable | W/O Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "ResponseDelay", true, DisplayName = "CrossPartitionQuery | ResponseDelay | W/O Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "Gone", true, DisplayName = "ReadMany | Gone | W/O Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "RetryWith", true, DisplayName = "ReadMany | RetryWith | W/O Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "InternalServerError", true, DisplayName = "ReadMany | InternalServerError | W/O Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "ReadSessionNotAvailable", true, DisplayName = "ReadMany | ReadSessionNotAvailable | W/O Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "Timeout", true, DisplayName = "ReadMany | Timeout | W/O Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "PartitionIsSplitting", true, DisplayName = "ReadMany | PartitionIsSplitting | W/O Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "PartitionIsMigrating", true, DisplayName = "ReadMany | PartitionIsMigrating | W/O Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "ServiceUnavailable", true, DisplayName = "ReadMany | ServiceUnavailable | W/O Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "ResponseDelay", true, DisplayName = "ReadMany | ResponseDelay | W/O Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "Gone", true, DisplayName = "ChangeFeed | Gone | W/O Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "RetryWith", true, DisplayName = "ChangeFeed | RetryWith | W/O Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "InternalServerError", true, DisplayName = "ChangeFeed | InternalServerError | W/O Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "ReadSessionNotAvailable", true, DisplayName = "ChangeFeed | ReadSessionNotAvailable | W/O Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "Timeout", true, DisplayName = "ChangeFeed | Timeout | W/O Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "PartitionIsSplitting", true, DisplayName = "ChangeFeed | PartitionIsSplitting | W/O Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "PartitionIsMigrating", true, DisplayName = "ChangeFeed | PartitionIsMigrating | W/O Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "ServiceUnavailable", true, DisplayName = "ChangeFeed | ServiceUnavailable | W/O Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "ResponseDelay", true, DisplayName = "ChangeFeed | ResponseDelay | W/O Preferred Regions")]
+        public async Task AvailabilityStrategyAllFaultsTests(string operation, string conditonName, string resultName, bool isPreferredLocationsEmpty)
         {
             FaultInjectionCondition conditon = this.conditions[conditonName];
             IFaultInjectionResult result = this.results[resultName];
@@ -415,7 +466,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ConnectionMode = ConnectionMode.Direct,
-                ApplicationPreferredRegions = new List<string>() { "Central US", "North Central US" },
+                ApplicationPreferredRegions = isPreferredLocationsEmpty ? new List<string>() : new List<string>() { "Central US", "North Central US" },
                 AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
                         threshold: TimeSpan.FromMilliseconds(100),
                         thresholdStep: TimeSpan.FromMilliseconds(50)),
@@ -562,12 +613,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [DataTestMethod]
         [TestCategory("MultiRegion")]
-        [DataRow("Read", "Read", "ReadStep", DisplayName = "Read | ReadStep")]
-        [DataRow("SinglePartitionQuery", "Query", "QueryStep", DisplayName = "Query | SinglePartitionQueryStep")]
-        [DataRow("CrossPartitionQuery", "Query", "QueryStep", DisplayName = "Query | CrossPartitionQueryStep")]
-        [DataRow("ReadMany", "ReadMany", "ReadManyStep", DisplayName = "ReadMany | ReadManyStep")]
-        [DataRow("ChangeFeed", "ChangeFeed", "ChangeFeedStep", DisplayName = "ChangeFeed | ChangeFeedStep")]
-        public async Task AvailabilityStrategyStepTests(string operation, string conditonName1, string conditionName2)
+        [DataRow("Read", "Read", "ReadStep", false, DisplayName = "Read | ReadStep | With Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "QueryStep", false, DisplayName = "Query | SinglePartitionQueryStep | With Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "QueryStep", false, DisplayName = "Query | CrossPartitionQueryStep | With Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "ReadManyStep", false, DisplayName = "ReadMany | ReadManyStep | With Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "ChangeFeedStep", false, DisplayName = "ChangeFeed | ChangeFeedStep | With Preferred Regions")]
+        [DataRow("Read", "Read", "ReadStep", true, DisplayName = "Read | ReadStep | W/O Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "QueryStep", true, DisplayName = "Query | SinglePartitionQueryStep | W/O Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "QueryStep", true, DisplayName = "Query | CrossPartitionQueryStep | W/O Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "ReadManyStep", true, DisplayName = "ReadMany | ReadManyStep | W/O Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "ChangeFeedStep", true, DisplayName = "ChangeFeed | ChangeFeedStep | W/O Preferred Regions")]
+        public async Task AvailabilityStrategyStepTests(string operation, string conditonName1, string conditionName2, bool isPreferredRegionsEmpty)
         {
             FaultInjectionCondition conditon1 = this.conditions[conditonName1];
             FaultInjectionCondition conditon2 = this.conditions[conditionName2];
@@ -596,7 +652,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ConnectionMode = ConnectionMode.Direct,
-                ApplicationPreferredRegions = new List<string>() { "Central US", "North Central US", "East US" },
+                ApplicationPreferredRegions = isPreferredRegionsEmpty ? new List<string>() : new List<string>() { "Central US", "North Central US", "East US" },
                 AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
                         threshold: TimeSpan.FromMilliseconds(100),
                         thresholdStep: TimeSpan.FromMilliseconds(50)),

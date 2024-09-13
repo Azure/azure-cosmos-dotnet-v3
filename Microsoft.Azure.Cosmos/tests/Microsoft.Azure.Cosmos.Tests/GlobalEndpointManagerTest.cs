@@ -120,7 +120,8 @@ namespace Microsoft.Azure.Cosmos
                        },
                    accountInitializationCustomEndpoints: null,
                        getDatabaseAccountFn: (uri) => throw new Exception("The operation should be canceled and never make the network call."),
-                       cancellationTokenSource.Token);
+                       cancellationTokenSource.Token,
+                   new ReaderWriterLockSlim());
 
                 Assert.Fail("Previous call should have failed");
             }
@@ -159,7 +160,8 @@ namespace Microsoft.Azure.Cosmos
 
                         throw new Exception("This should never be hit since it should stop after the global endpoint hit the nonretriable exception");
                     },
-                    cancellationToken: default);
+                    cancellationToken: default,
+                    new ReaderWriterLockSlim());
 
                 Assert.Fail("Should throw the UnauthorizedException");
             }
@@ -191,7 +193,8 @@ namespace Microsoft.Azure.Cosmos
 
                         throw new Microsoft.Azure.Documents.UnauthorizedException("Mock failed exception");
                     },
-                    cancellationToken: default);
+                    cancellationToken: default,
+                    new ReaderWriterLockSlim());
 
                 Assert.Fail("Should throw the UnauthorizedException");
             }
@@ -222,7 +225,8 @@ namespace Microsoft.Azure.Cosmos
 
                         throw new Exception("This should never be hit since it should stop after the global endpoint hit the nonretriable exception");
                     },
-                    cancellationToken: default);
+                    cancellationToken: default,
+                    new ReaderWriterLockSlim());
 
                 Assert.Fail("Should throw the ForbiddenException");
             }
@@ -251,7 +255,8 @@ namespace Microsoft.Azure.Cosmos
                         exceptions.Add(exception);
                         throw exception;
                     },
-                    cancellationToken: default);
+                    cancellationToken: default,
+                    new ReaderWriterLockSlim());
 
                 Assert.Fail("Should throw the AggregateException");
             }
@@ -314,7 +319,8 @@ namespace Microsoft.Azure.Cosmos
                 },
                 accountInitializationCustomEndpoints: null,
                 getDatabaseAccountFn: (uri) => slowPrimaryRegionHelper.RequestHelper(uri),
-                cancellationToken: default);
+                cancellationToken: default,
+                new ReaderWriterLockSlim());
 
             Assert.AreEqual(globalEndpointResult, databaseAccount);
             Assert.AreEqual(0, slowPrimaryRegionHelper.FailedEndpointCount);
@@ -337,7 +343,8 @@ namespace Microsoft.Azure.Cosmos
                     },
                     accountInitializationCustomEndpoints: null,
                     getDatabaseAccountFn: (uri) => slowPrimaryRegionHelper.RequestHelper(uri),
-                    cancellationToken: default);
+                    cancellationToken: default,
+                    new ReaderWriterLockSlim());
                 stopwatch.Stop();
 
                 Assert.AreEqual(globalEndpointResult, databaseAccount);
@@ -361,7 +368,8 @@ namespace Microsoft.Azure.Cosmos
                     },
                     accountInitializationCustomEndpoints: null,
                     getDatabaseAccountFn: (uri) => slowPrimaryRegionHelper.RequestHelper(uri),
-                    cancellationToken: default);
+                    cancellationToken: default,
+                    new ReaderWriterLockSlim());
 
                 Assert.AreEqual(globalEndpointResult, databaseAccount);
                 Assert.AreEqual(3, slowPrimaryRegionHelper.FailedEndpointCount);
@@ -383,7 +391,8 @@ namespace Microsoft.Azure.Cosmos
                     },
                     accountInitializationCustomEndpoints: null,
                     getDatabaseAccountFn: (uri) => slowPrimaryRegionHelper.RequestHelper(uri),
-                    cancellationToken: default);
+                    cancellationToken: default,
+                    new ReaderWriterLockSlim());
 
                 Assert.AreEqual(globalEndpointResult, databaseAccount);
                 Assert.AreEqual(0, slowPrimaryRegionHelper.FailedEndpointCount);
@@ -409,7 +418,8 @@ namespace Microsoft.Azure.Cosmos
                     },
                     accountInitializationCustomEndpoints: null,
                     getDatabaseAccountFn: (uri) => slowPrimaryRegionHelper.RequestHelper(uri),
-                    cancellationToken: default);
+                    cancellationToken: default,
+                    new ReaderWriterLockSlim());
 
                 Assert.AreEqual(globalEndpointResult, databaseAccount);
                 Assert.AreEqual(5, slowPrimaryRegionHelper.FailedEndpointCount);
