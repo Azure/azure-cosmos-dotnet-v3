@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             while (true)
             {
                 ContainerResponse readResponse = await container.ReadContainerAsync(requestOptions);
-                string indexTransformationStatus = readResponse.Headers["feedRange-ms-documentdb-collection-index-transformation-progress"];
+                string indexTransformationStatus = readResponse.Headers["x-ms-documentdb-collection-index-transformation-progress"];
                 Assert.IsNotNull(indexTransformationStatus);
 
                 if (int.Parse(indexTransformationStatus) == 100)
