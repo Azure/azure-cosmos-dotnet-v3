@@ -158,15 +158,15 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="CreateItemAsync" displayName="CreateItemAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -177,6 +177,7 @@
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
     <ATTRIBUTE key="exception.message">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="error.type">Microsoft.Azure.Cosmos.CosmosException</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="Exception" />
@@ -190,9 +191,14 @@
     Guid exceptionActivityId = Guid.NewGuid();
     using CosmosClient throttleClient = TestCommon.CreateCosmosClient(builder =>
         builder
-         .WithDistributedTracingOptions(new DistributedTracingOptions()
+        .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
          {
-             LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
+            DisableDistributedTracing = false,
+            CosmosThresholdOptions = new CosmosThresholdOptions()
+            {
+                PointOperationLatencyThreshold = TimeSpan.Zero,
+                NonPointOperationLatencyThreshold = TimeSpan.Zero
+            }
          })
         .WithThrottlingRetryOptions(
             maxRetryWaitTimeOnThrottledRequests: TimeSpan.FromSeconds(1),
@@ -429,15 +435,15 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="CreateItemAsync" displayName="CreateItemAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -448,6 +454,7 @@
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
     <ATTRIBUTE key="exception.message">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="error.type">Microsoft.Azure.Cosmos.CosmosException</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="Exception" />
@@ -683,15 +690,15 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="CreateItemAsync" displayName="CreateItemAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -702,6 +709,7 @@
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
     <ATTRIBUTE key="exception.message">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="error.type">Microsoft.Azure.Cosmos.CosmosException</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="Exception" />
@@ -969,15 +977,15 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="CreateItemAsync" displayName="CreateItemAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -988,6 +996,7 @@
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
     <ATTRIBUTE key="exception.message">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="error.type">Microsoft.Azure.Cosmos.CosmosException</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="Exception" />
@@ -1319,15 +1328,15 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="CreateItemAsync" displayName="CreateItemAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -1338,6 +1347,7 @@
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
     <ATTRIBUTE key="exception.message">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="error.type">Microsoft.Azure.Cosmos.CosmosException</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="Exception" />
@@ -1502,15 +1512,15 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="CreateItemAsync" displayName="CreateItemAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.CreateItemAsync" displayName="CreateItemAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">CreateItemAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
@@ -1521,6 +1531,7 @@
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
     <ATTRIBUTE key="exception.message">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="error.type">Microsoft.Azure.Cosmos.CosmosException</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="Exception" />

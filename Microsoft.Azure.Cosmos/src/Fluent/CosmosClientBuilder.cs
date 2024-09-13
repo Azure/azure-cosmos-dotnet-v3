@@ -124,6 +124,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <example>"AccountEndpoint=https://mytestcosmosaccount.documents.azure.com:443/;AccountKey={SecretAccountKey};"</example>
         /// <param name="connectionString">The connection string must contain AccountEndpoint and AccountKey or ResourceToken.</param>
+        /// <remarks>
+        /// Emulator: To ignore SSL Certificate please suffix connectionstring with "DisableServerCertificateValidation=True;". 
+        /// When CosmosClientOptions.HttpClientFactory is used, SSL certificate needs to be handled appropriately.
+        /// NOTE: DO NOT use this flag in production (only for emulator)
+        /// </remarks>
         public CosmosClientBuilder(string connectionString)
         {
             if (connectionString == null)
@@ -133,6 +138,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
             this.accountEndpoint = CosmosClientOptions.GetAccountEndpoint(connectionString);
             this.accountKey = CosmosClientOptions.GetAccountKey(connectionString);
+            
+            this.clientOptions = CosmosClientOptions.GetCosmosClientOptionsWithCertificateFlag(connectionString, this.clientOptions);
         }
 
         /// <summary>
@@ -302,6 +309,41 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Sets the custom endpoints to use for account initialization for geo-replicated database accounts in the Azure Cosmos DB service. 
+        /// During the CosmosClient initialization the account information, including the available regions, is obtained from the <see cref="CosmosClient.Endpoint"/>.
+        /// Should the global endpoint become inaccessible, the CosmosClient will attempt to obtain the account information issuing requests to the custom endpoints
+        /// provided in the customAccountEndpoints list.
+        /// </summary>
+        /// <param name="customAccountEndpoints">An instance of <see cref="IEnumerable{T}"/> of Uri containing the custom private endpoints for the cosmos db account.</param>
+        /// <remarks>
+        ///  This function is optional and is recommended for implementation when a customer has configured one or more endpoints with a custom DNS
+        ///  hostname (instead of accountname-region.documents.azure.com) etc. for their Cosmos DB account.
+        /// </remarks>
+        /// <example>
+        /// The example below creates a new instance of <see cref="CosmosClientBuilder"/> with the regional endpoints.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+        ///     accountEndpoint: "https://testcosmos.documents.azure.com:443/",
+        ///     authKeyOrResourceToken: "SuperSecretKey")
+        /// .WithCustomAccountEndpoints(new HashSet<Uri>()
+        ///     { 
+        ///         new Uri("https://region-1.documents-test.windows-int.net:443/"),
+        ///         new Uri("https://region-2.documents-test.windows-int.net:443/") 
+        ///     });
+        /// CosmosClient client = cosmosClientBuilder.Build();
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
+        /// <seealso cref="CosmosClientOptions.AccountInitializationCustomEndpoints"/>
+        public CosmosClientBuilder WithCustomAccountEndpoints(IEnumerable<Uri> customAccountEndpoints)
+        {
+            this.clientOptions.AccountInitializationCustomEndpoints = customAccountEndpoints;
+            return this;
+        }
+
+        /// <summary>
         /// Limits the operations to the provided endpoint on the CosmosClientBuilder constructor.
         /// </summary>
         /// <param name="limitToEndpoint">Whether operations are limited to the endpoint or not.</param>
@@ -436,32 +478,18 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Sets whether Distributed Tracing for "Azure.Cosmos.Operation" source is enabled.
+        /// Sets the priority level for requests created using cosmos client.
         /// </summary>
-        /// <param name="isEnabled">Whether <see cref="CosmosClientOptions.IsDistributedTracingEnabled"/> is enabled.</param>
+        /// <remarks>
+        /// If priority level is also set at request level in <see cref="RequestOptions.PriorityLevel"/>, that priority is used.
+        /// If <see cref="WithBulkExecution(bool)"/> is set to true, priority level set on the CosmosClient is used.
+        /// </remarks>
+        /// <param name="priorityLevel">The desired priority level for the client.</param>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif 
-            CosmosClientBuilder WithDistributedTracing(bool isEnabled = true)
+        /// <seealso href="https://aka.ms/CosmosDB/PriorityBasedExecution"/>
+        public CosmosClientBuilder WithPriorityLevel(Cosmos.PriorityLevel priorityLevel)
         {
-            this.clientOptions.IsDistributedTracingEnabled = isEnabled;
-            return this;
-        }
-        
-        /// <summary>
-        /// Enables Distributed Tracing with a Configuration ref. <see cref="DistributedTracingOptions"/>
-        /// </summary>
-        /// <param name="options"><see cref="DistributedTracingOptions"/>.</param>
-        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>]
-        /// <remarks>Refer https://opentelemetry.io/docs/instrumentation/net/exporters/ to know more about open telemetry exporters</remarks>
-        internal CosmosClientBuilder WithDistributedTracingOptions(DistributedTracingOptions options)
-        {
-            this.clientOptions.IsDistributedTracingEnabled = true;
-            this.clientOptions.DistributedTracingOptions = options;
-
+            this.clientOptions.PriorityLevel = priorityLevel;
             return this;
         }
 
@@ -621,6 +649,21 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Configures the <see cref="CosmosClientBuilder"/> to use System.Text.Json for serialization.
+        /// Use <see cref="System.Text.Json.JsonSerializerOptions" /> to use System.Text.Json with a default configuration.
+        /// If no options are specified, Newtonsoft.Json will be used for serialization instead.
+        /// </summary>
+        /// <param name="serializerOptions">An instance of <see cref="System.Text.Json.JsonSerializerOptions"/>
+        /// containing the system text json serializer options.</param>
+        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
+        public CosmosClientBuilder WithSystemTextJsonSerializerOptions(
+            System.Text.Json.JsonSerializerOptions serializerOptions)
+        {
+            this.clientOptions.UseSystemTextJsonSerializerWithOptions = serializerOptions;
+            return this;
+        }
+
+        /// <summary>
         /// The event handler to be invoked before the request is sent.
         /// </summary>
         internal CosmosClientBuilder WithSendingRequestEventArgs(EventHandler<SendingRequestEventArgs> sendingRequestEventArgs)
@@ -658,6 +701,22 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Availability Stragey to be used for periods of high latency
+        /// </summary>
+        /// <param name="strategy"></param>
+        /// <returns>The CosmosClientBuilder</returns>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        CosmosClientBuilder WithAvailabilityStrategy(AvailabilityStrategy strategy)
+        {
+            this.clientOptions.AvailabilityStrategy = strategy;
+            return this;
+        }
+
+        /// <summary>
         /// Specify a store client factory to use for all transport requests for cosmos client.
         /// </summary>
         /// <remarks>
@@ -680,32 +739,21 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Disable Telemetry if enabled using environment properties
-        /// </summary>
-        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
-        internal CosmosClientBuilder WithTelemetryDisabled()
-        {
-            this.clientOptions.EnableClientTelemetry = false;
-            return this;
-        }
-
-        /// <summary>
-        /// To enable Telemetry, set COSMOS.CLIENT_TELEMETRY_ENABLED environment property. 
-        /// This function is used by Test only.
-        /// </summary>
-        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
-        internal CosmosClientBuilder WithTelemetryEnabled()
-        {
-            this.clientOptions.EnableClientTelemetry = true;
-            return this;
-        }
-
-        /// <summary>
         /// Enabled partition level failover in the SDK
         /// </summary>
         internal CosmosClientBuilder WithPartitionLevelFailoverEnabled()
         {
             this.clientOptions.EnablePartitionLevelFailover = true;
+            return this;
+        }
+
+        /// <summary>
+        /// Enables SDK to inject fault. Used for testing applications.  
+        /// </summary>
+        /// <param name="chaosInterceptorFactory"></param>
+        internal CosmosClientBuilder WithFaultInjection(IChaosInterceptorFactory chaosInterceptorFactory)
+        {
+            this.clientOptions.ChaosInterceptorFactory = chaosInterceptorFactory;
             return this;
         }
 
@@ -729,6 +777,17 @@ namespace Microsoft.Azure.Cosmos.Fluent
             this.clientOptions.MaximumRetryForRetryWithMilliseconds = maximumRetryForRetryWithMilliseconds;
             this.clientOptions.RandomSaltForRetryWithMilliseconds = randomSaltForRetryWithMilliseconds;
             this.clientOptions.TotalWaitTimeForRetryWithMilliseconds = totalWaitTimeForRetryWithMilliseconds;
+            return this;
+        }
+
+        /// <summary>
+        /// To enable Telemetry features with corresponding options
+        /// </summary>
+        /// <param name="options"></param>
+        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
+        public CosmosClientBuilder WithClientTelemetryOptions(CosmosClientTelemetryOptions options)
+        {
+            this.clientOptions.CosmosClientTelemetryOptions = options;
             return this;
         }
     }

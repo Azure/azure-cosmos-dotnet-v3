@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
+    using System.Collections.Generic;
     using System.Globalization;
     using System.Linq.Expressions;
     using Microsoft.Azure.Cosmos;
@@ -49,6 +50,17 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                 if (methodCallExpression.Method.DeclaringType.GeUnderlyingSystemType() == typeof(CosmosLinqExtensions))
                 {
+                    // CosmosLinq Extensions can be RegexMatch, DocumentId or Type check functions (IsString, IsBool, etc.)
+                    if (methodCallExpression.Method.Name == nameof(CosmosLinqExtensions.RegexMatch))
+                    {
+                        return StringBuiltinFunctions.Visit(methodCallExpression, context);
+                    }
+
+                    if (methodCallExpression.Method.Name == nameof(CosmosLinqExtensions.DocumentId))
+                    {
+                        return OtherBuiltinSystemFunctions.Visit(methodCallExpression, context);
+                    }
+
                     return TypeCheckFunctions.Visit(methodCallExpression, context);
                 }
             }

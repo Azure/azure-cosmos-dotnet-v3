@@ -59,7 +59,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     using (CosmosClient client = TestCommon.CreateCosmosClient(
                                                                 customizeClientBuilder: (builder) => builder
-                                                                                                        .WithTelemetryEnabled()
+                                                                                                        .WithClientTelemetryOptions(new CosmosClientTelemetryOptions ()
+                                                                                                        {
+                                                                                                            DisableSendingMetricsToService = !withClientTelemetry
+                                                                                                        })
                                                                                                         .WithHttpClientFactory(() => new HttpClient(httpHandler))))
                     {
                         Cosmos.Database database = client.CreateDatabaseAsync(databaseId).GetAwaiter().GetResult();
@@ -82,6 +85,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Assert.IsNotNull(response);
                         string diagnostics = response.Diagnostics.ToString();
                         Assert.IsTrue(diagnostics.Contains("Synchronization Context"));
+                        Assert.IsTrue(diagnostics.Contains("Client Configuration"));
 
                         using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
 

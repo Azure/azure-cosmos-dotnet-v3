@@ -34,7 +34,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             List<CosmosElement> elements = await AggregateQueryPipelineStageTests.CreateAndDrain(
                 pages: pages,
-                executionEnvironment: ExecutionEnvironment.Compute,
                 aggregates: new List<AggregateOperator>() { AggregateOperator.Sum },
                 aliasToAggregateType: new Dictionary<string, AggregateOperator?>() { { "$1", AggregateOperator.Sum } },
                 orderedAliases: new List<string>() { "$1" },
@@ -58,7 +57,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             List<CosmosElement> elements = await AggregateQueryPipelineStageTests.CreateAndDrain(
                 pages: pages,
-                executionEnvironment: ExecutionEnvironment.Compute,
                 aggregates: new List<AggregateOperator>() { AggregateOperator.Sum },
                 aliasToAggregateType: new Dictionary<string, AggregateOperator?>() { { "$1", AggregateOperator.Sum } },
                 orderedAliases: new List<string>() { "$1" },
@@ -82,7 +80,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             List<CosmosElement> elements = await AggregateQueryPipelineStageTests.CreateAndDrain(
                 pages: pages,
-                executionEnvironment: ExecutionEnvironment.Compute,
                 aggregates: new List<AggregateOperator>() { AggregateOperator.Sum },
                 aliasToAggregateType: new Dictionary<string, AggregateOperator?>() { { "$1", AggregateOperator.Sum } },
                 orderedAliases: new List<string>() { "$1" },
@@ -95,7 +92,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         private static async Task<List<CosmosElement>> CreateAndDrain(
             IReadOnlyList<IReadOnlyList<CosmosElement>> pages,
-            ExecutionEnvironment executionEnvironment,
             IReadOnlyList<AggregateOperator> aggregates,
             IReadOnlyDictionary<string, AggregateOperator?> aliasToAggregateType,
             IReadOnlyList<string> orderedAliases,
@@ -105,14 +101,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             IQueryPipelineStage source = new MockQueryPipelineStage(pages);
 
             TryCatch<IQueryPipelineStage> tryCreateAggregateQueryPipelineStage = AggregateQueryPipelineStage.MonadicCreate(
-                executionEnvironment: executionEnvironment,
                 aggregates: aggregates,
                 aliasToAggregateType: aliasToAggregateType,
                 orderedAliases: orderedAliases,
                 hasSelectValue: hasSelectValue,
                 continuationToken: continuationToken,
-                cancellationToken: default,
-                monadicCreatePipelineStage: (CosmosElement continuationToken, CancellationToken cancellationToken) => TryCatch<IQueryPipelineStage>.FromResult(source));
+                monadicCreatePipelineStage: (CosmosElement continuationToken) => TryCatch<IQueryPipelineStage>.FromResult(source));
             Assert.IsTrue(tryCreateAggregateQueryPipelineStage.Succeeded);
 
             IQueryPipelineStage aggregateQueryPipelineStage = tryCreateAggregateQueryPipelineStage.Result;

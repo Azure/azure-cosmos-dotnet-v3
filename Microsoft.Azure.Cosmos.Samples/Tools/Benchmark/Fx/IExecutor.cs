@@ -18,7 +18,6 @@ namespace CosmosBenchmark
                 bool isWarmup,
                 bool traceFailures,
                 Action completionCallback,
-                BenchmarkConfig benchmarkConfig,
-                MetricsCollectorProvider metricsCollectorProvider);
+                BenchmarkConfig benchmarkConfig);
     }
 }

@@ -148,18 +148,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
 
-            //update permission to PermissionMode.All
-            permissionProperties = new PermissionProperties(permissionId, PermissionMode.All, container);
-            permissionResponse = await user.GetPermission(permissionId).ReplaceAsync(permissionProperties);
-            permission = permissionResponse.Resource;
-
-            //delete resource with PermissionMode.All
-            using (CosmosClient tokenCosmosClient = TestCommon.CreateCosmosClient(cosmosClientOptions, resourceToken: permission.Token))
+            // New behavior: start with emulator 2.14.17 container deletion with resourceTokens is not allowed
             {
-                ContainerResponse response = await tokenCosmosClient
-                    .GetDatabase(this.database.Id)
-                    .GetContainer(containerId)
-                    .DeleteContainerAsync();
+                ContainerResponse response = await container.DeleteContainerAsync();
                 Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
             }
         }

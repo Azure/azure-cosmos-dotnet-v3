@@ -27,7 +27,7 @@ jobs:
 - job: GenerateNugetPackages
   displayName: Generate Nuget packages
   pool:
-    vmImage: ${{ parameters.VmImage }}
+    name: 'OneES'
 
   steps:
   - task: DotNetCoreCLI@2
@@ -61,7 +61,7 @@ jobs:
         BuildDropPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
 
     - ${{ if ne(parameters.BlobVersion, '') }}:
-      - task: AzureFileCopy@5
+      - task: AzureFileCopy@6
         displayName: 'Copy Artifacts to Azure SDK Release blob storage'
         condition: succeeded()
         inputs:

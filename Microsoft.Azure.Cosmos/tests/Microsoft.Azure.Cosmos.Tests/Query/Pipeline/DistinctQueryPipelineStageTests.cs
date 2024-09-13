@@ -187,41 +187,34 @@
                     ++pageSize;
                 }
     
-                foreach (ExecutionEnvironment env in new[] { ExecutionEnvironment.Compute, ExecutionEnvironment.Client })
-                {
-                    IEnumerable<CosmosElement> elements = await DistinctQueryPipelineStageTests.CreateAndDrainAsync(
-                        pages: pages,
-                        executionEnvironment: env,
-                        continuationToken: null,
-                        distinctQueryType: DistinctQueryType.Unordered);
+                IEnumerable<CosmosElement> elements = await DistinctQueryPipelineStageTests.CreateAndDrainAsync(
+                    pages: pages,
+                    continuationToken: null,
+                    distinctQueryType: DistinctQueryType.Unordered);
 
-                    List<string> actual = elements
-                        .Select(value => value.ToString())
-                        .ToList();
+                List<string> actual = elements
+                    .Select(value => value.ToString())
+                    .ToList();
 
-                    List<string> expected = testCase.Expected
-                        .Select(value => value.ToString())
-                        .ToList();
+                List<string> expected = testCase.Expected
+                    .Select(value => value.ToString())
+                    .ToList();
 
-                    CollectionAssert.AreEquivalent(expected, actual);
-                }
+                CollectionAssert.AreEquivalent(expected, actual);
             }
         }
 
         private static async Task<IEnumerable<CosmosElement>> CreateAndDrainAsync(
             IReadOnlyList<IReadOnlyList<CosmosElement>> pages,
-            ExecutionEnvironment executionEnvironment,
             CosmosElement continuationToken,
             DistinctQueryType distinctQueryType)
         {
             IQueryPipelineStage source = new MockQueryPipelineStage(pages);
 
             TryCatch<IQueryPipelineStage> tryCreateDistinctQueryPipelineStage = DistinctQueryPipelineStage.MonadicCreate(
-                executionEnvironment: executionEnvironment,
                 requestContinuation: continuationToken,
                 distinctQueryType: distinctQueryType,
-                cancellationToken: default,
-                monadicCreatePipelineStage: (CosmosElement continuationToken, CancellationToken cancellationToken) => TryCatch<IQueryPipelineStage>.FromResult(source));
+                monadicCreatePipelineStage: (CosmosElement continuationToken) => TryCatch<IQueryPipelineStage>.FromResult(source));
             Assert.IsTrue(tryCreateDistinctQueryPipelineStage.Succeeded);
 
             IQueryPipelineStage distinctQueryPipelineStage = tryCreateDistinctQueryPipelineStage.Result;

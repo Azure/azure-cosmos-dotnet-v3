@@ -21,6 +21,25 @@ namespace Microsoft.Azure.Cosmos.Linq
     public static class CosmosLinqExtensions
     {
         /// <summary>
+        /// Returns the integer identifier corresponding to a specific item within a physical partition.
+        /// This method is to be used in LINQ expressions only and will be evaluated on server.
+        /// There's no implementation provided in the client library.
+        /// </summary>
+        /// <param name="obj">The root object</param>
+        /// <returns>Returns the integer identifier corresponding to a specific item within a physical partition.</returns>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// var documentIdQuery = documents.Where(root => root.DocumentId());
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static int DocumentId(this object obj)
+        {
+            throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented);
+        }
+
+        /// <summary>
         /// Returns a Boolean value indicating if the type of the specified expression is an array.
         /// This method is to be used in LINQ expressions only and will be evaluated on server.
         /// There's no implementation provided in the client library.
@@ -171,6 +190,49 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </code>
         /// </example>
         public static bool IsString(this object obj)
+        {
+            throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented);
+        }
+
+        /// <summary>
+        /// Returns a Boolean value indicating if the specified expression matches the supplied regex pattern.
+        /// For more information, see https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/regexmatch.
+        /// This method is to be used in LINQ expressions only and will be evaluated on server.
+        /// There's no implementation provided in the client library.
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <param name="regularExpression">A string expression with a regular expression defined to use when searching.</param>
+        /// <returns>Returns true if the string matches the regex expressions; otherwise, false.</returns>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// var matched = documents.Where(document => document.Name.RegexMatch(<regex>));
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static bool RegexMatch(this object obj, string regularExpression)
+        {
+            throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented);
+        }
+
+        /// <summary>
+        /// Returns a Boolean value indicating if the specified expression matches the supplied regex pattern.
+        /// For more information, see https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/regexmatch.
+        /// This method is to be used in LINQ expressions only and will be evaluated on server.
+        /// There's no implementation provided in the client library.
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <param name="regularExpression">A string expression with a regular expression defined to use when searching.</param>
+        /// <param name="searchModifier">An optional string expression with the selected modifiers to use with the regular expression.</param>
+        /// <returns>Returns true if the string matches the regex expressions; otherwise, false.</returns>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// var matched = documents.Where(document => document.Name.RegexMatch(<regex>, <search_modifier>));
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static bool RegexMatch(this object obj, string regularExpression, string searchModifier)
         {
             throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented);
         }
@@ -730,7 +792,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return ResponseHelperAsync(source.Sum());
             }
 
-            return ((CosmosLinqQueryProvider)source.Provider).ExecuteAggregateAsync<int?>(
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<int?>(
                 Expression.Call(
                     GetMethodInfoOf<IQueryable<int?>, int?>(Queryable.Sum),
                     source.Expression),

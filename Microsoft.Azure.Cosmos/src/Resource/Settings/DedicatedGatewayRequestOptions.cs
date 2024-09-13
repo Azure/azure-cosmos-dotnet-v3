@@ -50,12 +50,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        bool? BypassIntegratedCache { get; set; }
+        public bool? BypassIntegratedCache { get; set; }
 
         internal static void PopulateMaxIntegratedCacheStalenessOption(DedicatedGatewayRequestOptions dedicatedGatewayRequestOptions, RequestMessage request)
         {

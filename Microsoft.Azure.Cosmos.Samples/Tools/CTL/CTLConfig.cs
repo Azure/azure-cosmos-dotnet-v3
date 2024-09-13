@@ -103,8 +103,8 @@ namespace CosmosCTL
         [Option("ctl_reservoir_sample_size", Required = false, HelpText = "The reservoir sample size.")]
         public int ReservoirSampleSize { get; set; } = 1028;
 
-        [Option("ctl_enable_client_telemetry", Required = false, HelpText = "Enable Client Telemetry Feature in SDK. Make sure you enable it from the portal also.")]
-        public bool EnableClientTelemetry { get; set; } = true;
+        [Option("ctl_disable_client_telemetry", Required = false, HelpText = "Disable Client Telemetry Feature in SDK. Make sure you enable it from the portal also.")]
+        public bool DisableClientTelemetry { get; set; } = false;
 
         internal TimeSpan RunningTimeDurationAsTimespan { get; private set; } = TimeSpan.FromHours(10);
         internal TimeSpan DiagnosticsThresholdDurationAsTimespan { get; private set; } = TimeSpan.FromSeconds(60);
@@ -130,12 +130,19 @@ namespace CosmosCTL
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ApplicationName = CTLConfig.UserAgentSuffix,
-                EnableClientTelemetry = this.EnableClientTelemetry
+                CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions()
+                {
+                    DisableSendingMetricsToService = this.DisableClientTelemetry,
+                }
             };
+
+            Console.WriteLine("ApplicationName = " + CTLConfig.UserAgentSuffix);
+            Console.WriteLine("DisableSendingMetricsToService = " + this.DisableClientTelemetry);
 
             if (this.UseGatewayMode)
             {
                 clientOptions.ConnectionMode = ConnectionMode.Gateway;
+                Console.WriteLine("ConnectionMode = " + ConnectionMode.Gateway);
             }
 
             if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))
@@ -143,6 +150,7 @@ namespace CosmosCTL
                 if (Enum.TryParse(this.ConsistencyLevel, out ConsistencyLevel consistencyLevel))
                 {
                     clientOptions.ConsistencyLevel = consistencyLevel;
+                    Console.WriteLine("ConsistencyLevel = " + consistencyLevel);
                 }
                 else
                 {

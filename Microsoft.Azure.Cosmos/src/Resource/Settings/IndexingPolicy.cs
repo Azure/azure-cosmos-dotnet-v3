@@ -118,6 +118,36 @@ namespace Microsoft.Azure.Cosmos
         public Collection<SpatialPath> SpatialIndexes { get; internal set; } = new Collection<SpatialPath>();
 
         /// <summary>
+        /// Gets the vector indexes for additional indexes
+        /// </summary>
+        /// <example>
+        /// <![CDATA[
+        /// "vectorIndexes": [
+        ///  {
+        ///    "path": "/vector1",
+        ///    "type": "diskANN"
+        ///  },
+        ///  {
+        ///    "path": "/vector2",
+        ///    "type": "flat "
+        ///  },
+        ///  {
+        ///    "path": "/vector3",
+        ///    "type": "quantizedFlat"
+        ///  }
+        /// ]
+        /// ]]>
+        /// </example>
+        [JsonProperty(PropertyName = "vectorIndexes", NullValueHandling = NullValueHandling.Ignore)]
+#if PREVIEW
+        
+        public
+#else
+        internal
+#endif
+        Collection<VectorIndexPath> VectorIndexes { get; set; } = new Collection<VectorIndexPath>();
+
+        /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>

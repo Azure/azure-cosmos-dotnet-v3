@@ -5,11 +5,9 @@
       <Expression><![CDATA[query.Select(doc => (Compare(doc.StringField, doc.StringField2) == 0))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery>
-        <![CDATA[
-SELECT VALUE (root["StringField"] = root["StringField2"])
-FROM root]]>
-      </SqlQuery>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["StringField"] = root["StringField2"]) 
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -18,11 +16,9 @@ FROM root]]>
       <Expression><![CDATA[query.Select(doc => (Compare(doc.StringField, doc.StringField2) > 0))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery>
-        <![CDATA[
-SELECT VALUE (root["StringField"] > root["StringField2"])
-FROM root]]>
-      </SqlQuery>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["StringField"] > root["StringField2"]) 
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -31,11 +27,9 @@ FROM root]]>
       <Expression><![CDATA[query.Select(doc => (Compare(doc.StringField, doc.StringField2) >= 0))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery>
-        <![CDATA[
-SELECT VALUE (root["StringField"] >= root["StringField2"])
-FROM root]]>
-      </SqlQuery>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["StringField"] >= root["StringField2"]) 
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -44,11 +38,9 @@ FROM root]]>
       <Expression><![CDATA[query.Select(doc => (Compare(doc.StringField, doc.StringField2) < 0))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery>
-        <![CDATA[
-SELECT VALUE (root["StringField"] < root["StringField2"])
-FROM root]]>
-      </SqlQuery>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["StringField"] < root["StringField2"]) 
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -57,11 +49,9 @@ FROM root]]>
       <Expression><![CDATA[query.Select(doc => (Compare(doc.StringField, doc.StringField2) <= 0))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery>
-        <![CDATA[
-SELECT VALUE (root["StringField"] <= root["StringField2"])
-FROM root]]>
-      </SqlQuery>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["StringField"] <= root["StringField2"]) 
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -70,11 +60,9 @@ FROM root]]>
       <Expression><![CDATA[query.Select(doc => (Compare(doc.StringField, "str") == 0))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery>
-        <![CDATA[
-SELECT VALUE (root["StringField"] = "str")
-FROM root]]>
-      </SqlQuery>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["StringField"] = "str") 
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -83,11 +71,9 @@ FROM root]]>
       <Expression><![CDATA[query.Select(doc => (Compare(doc.StringField, "str") > 0))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery>
-        <![CDATA[
-SELECT VALUE (root["StringField"] > "str")
-FROM root]]>
-      </SqlQuery>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["StringField"] > "str") 
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -96,11 +82,9 @@ FROM root]]>
       <Expression><![CDATA[query.Select(doc => (Compare(doc.StringField, "str") >= 0))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery>
-        <![CDATA[
-SELECT VALUE (root["StringField"] >= "str")
-FROM root]]>
-      </SqlQuery>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["StringField"] >= "str") 
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -109,11 +93,9 @@ FROM root]]>
       <Expression><![CDATA[query.Select(doc => (Compare(doc.StringField, "str") < 0))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery>
-        <![CDATA[
-SELECT VALUE (root["StringField"] < "str")
-FROM root]]>
-      </SqlQuery>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["StringField"] < "str") 
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -122,11 +104,9 @@ FROM root]]>
       <Expression><![CDATA[query.Select(doc => (Compare(doc.StringField, "str") <= 0))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery>
-        <![CDATA[
-SELECT VALUE (root["StringField"] <= "str")
-FROM root]]>
-      </SqlQuery>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["StringField"] <= "str") 
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -135,11 +115,9 @@ FROM root]]>
       <Expression><![CDATA[query.Select(doc => (0 == Compare(doc.StringField, doc.StringField2)))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery>
-        <![CDATA[
-SELECT VALUE (root["StringField"] = root["StringField2"])
-FROM root]]>
-      </SqlQuery>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["StringField"] = root["StringField2"]) 
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -148,11 +126,9 @@ FROM root]]>
       <Expression><![CDATA[query.Select(doc => (0 < Compare(doc.StringField, doc.StringField2)))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery>
-        <![CDATA[
-SELECT VALUE (root["StringField"] > root["StringField2"])
-FROM root]]>
-      </SqlQuery>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["StringField"] > root["StringField2"]) 
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -161,11 +137,9 @@ FROM root]]>
       <Expression><![CDATA[query.Select(doc => (0 <= Compare(doc.StringField, doc.StringField2)))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery>
-        <![CDATA[
-SELECT VALUE (root["StringField"] >= root["StringField2"])
-FROM root]]>
-      </SqlQuery>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["StringField"] >= root["StringField2"]) 
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -174,11 +148,9 @@ FROM root]]>
       <Expression><![CDATA[query.Select(doc => (0 > Compare(doc.StringField, doc.StringField2)))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery>
-        <![CDATA[
-SELECT VALUE (root["StringField"] < root["StringField2"])
-FROM root]]>
-      </SqlQuery>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["StringField"] < root["StringField2"]) 
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -187,11 +159,9 @@ FROM root]]>
       <Expression><![CDATA[query.Select(doc => (0 >= Compare(doc.StringField, doc.StringField2)))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery>
-        <![CDATA[
-SELECT VALUE (root["StringField"] <= root["StringField2"])
-FROM root]]>
-      </SqlQuery>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["StringField"] <= root["StringField2"]) 
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>

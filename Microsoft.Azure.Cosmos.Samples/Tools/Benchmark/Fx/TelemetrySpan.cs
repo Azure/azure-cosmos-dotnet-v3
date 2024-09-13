@@ -19,8 +19,6 @@ namespace CosmosBenchmark
 
         private Stopwatch stopwatch;
         private Func<OperationResult> lazyOperationResult;
-        private Action<TimeSpan> recordFailedOpLatencyAction;
-        private Action<TimeSpan> recordSuccessOpLatencyAction;
         private bool disableTelemetry;
         private bool isFailed = false;
         private BenchmarkConfig benchmarkConfig;
@@ -28,9 +26,7 @@ namespace CosmosBenchmark
         public static ITelemetrySpan StartNew(
             BenchmarkConfig benchmarkConfig,
             Func<OperationResult> lazyOperationResult,
-            bool disableTelemetry,
-            Action<TimeSpan> recordSuccessOpLatencyAction,
-            Action<TimeSpan> recordFailedOpLatencyAction)
+            bool disableTelemetry)
         {
             if (disableTelemetry || !TelemetrySpan.IncludePercentile)
             {
@@ -42,17 +38,25 @@ namespace CosmosBenchmark
                 benchmarkConfig = benchmarkConfig,
                 stopwatch = Stopwatch.StartNew(),
                 lazyOperationResult = lazyOperationResult,
-                recordSuccessOpLatencyAction = recordSuccessOpLatencyAction,
-                recordFailedOpLatencyAction = recordFailedOpLatencyAction,
                 disableTelemetry = disableTelemetry
             };
         }
 
-        public void MarkFailed() { this.isFailed = true; }
+        public void MarkFailed()
+        {
+            this.isFailed = true;
+            this.stopwatch.Stop();
+        }
+
+        public void MarkSuccess()
+        {
+            this.isFailed = false;
+            this.stopwatch.Stop();
+        }
 
         public void Dispose()
         {
-            this.stopwatch.Stop();
+            this.stopwatch.Stop(); // No-op in-case of MarkFailed or MarkSuccess prior call
             if (!this.disableTelemetry)
             {
                 OperationResult operationResult = this.lazyOperationResult();
@@ -61,14 +65,13 @@ namespace CosmosBenchmark
                 {
                     RecordLatency(this.stopwatch.Elapsed.TotalMilliseconds);
 
-                    if(this.isFailed)
+                    if (this.isFailed)
                     {
-                        this.recordSuccessOpLatencyAction?.Invoke(this.stopwatch.Elapsed);
+                        BenchmarkLatencyEventSource.Instance.OnOperationFailure((int)operationResult.OperationType, this.stopwatch.Elapsed.TotalMilliseconds);
                     }
                     else
                     {
-                        this.recordSuccessOpLatencyAction?.Invoke(this.stopwatch.Elapsed);
-
+                        BenchmarkLatencyEventSource.Instance.OnOperationSuccess((int)operationResult.OperationType, this.stopwatch.Elapsed.TotalMilliseconds);
                     }
                 }
 
@@ -76,9 +79,8 @@ namespace CosmosBenchmark
                     operationResult.DatabseName,
                     operationResult.ContainerName,
                     (int)this.stopwatch.ElapsedMilliseconds,
-                    operationResult.LazyDiagnostics, 
+                    operationResult.LazyDiagnostics,
                     this.benchmarkConfig.DiagnosticLatencyThresholdInMs);
-                
             }
         }
 
@@ -104,16 +106,6 @@ namespace CosmosBenchmark
             return MathNet.Numerics.Statistics.Statistics.Percentile(latencyHistogram.Take(latencyIndex + 1), percentile);
         }
 
-        internal static double? GetLatencyQuantile(double quantile)
-        {
-            if (TelemetrySpan.latencyHistogram == null)
-            {
-                return null;
-            }
-
-            return MathNet.Numerics.Statistics.Statistics.Quantile(latencyHistogram.Take(latencyIndex + 1), quantile);
-        }
-
         private class NoOpDisposable : ITelemetrySpan
         {
             public static readonly NoOpDisposable Instance = new NoOpDisposable();
@@ -122,12 +114,18 @@ namespace CosmosBenchmark
             {
             }
 
+            public void MarkSuccess()
+            {
+            }
+
             public void MarkFailed()
             {
             }
         }
 
-        public interface ITelemetrySpan : IDisposable {
+        public interface ITelemetrySpan : IDisposable
+        {
+            void MarkSuccess();
             void MarkFailed();
         }
     }

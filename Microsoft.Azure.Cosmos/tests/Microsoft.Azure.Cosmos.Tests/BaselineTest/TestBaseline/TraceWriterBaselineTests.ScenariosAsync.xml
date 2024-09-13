@@ -8,14 +8,13 @@
     CrossPartitionReadFeedAsyncEnumerator enumerator = CrossPartitionReadFeedAsyncEnumerator.Create(
         documentContainer,
         new CrossFeedRangeState<ReadFeedState>(ReadFeedCrossFeedRangeState.CreateFromBeginning().FeedRangeStates),
-        new ReadFeedPaginationOptions(pageSizeHint: 10),
-        cancellationToken: default);
+        new ReadFeedExecutionOptions(pageSizeHint: 10));
 
     int numChildren = 1; // One extra since we need to read one past the last user page to get the null continuation.
     TraceForBaselineTesting rootTrace;
     using (rootTrace = TraceForBaselineTesting.GetRootTrace())
     {
-        while (await enumerator.MoveNextAsync(rootTrace))
+        while (await enumerator.MoveNextAsync(rootTrace, cancellationToken: default))
         {
             numChildren++;
         }
@@ -670,16 +669,15 @@
         documentContainer,
         new CrossFeedRangeState<ChangeFeedState>(
             ChangeFeedCrossFeedRangeState.CreateFromBeginning().FeedRangeStates),
-        new ChangeFeedPaginationOptions(
+        new ChangeFeedExecutionOptions(
             ChangeFeedMode.Incremental,
-            pageSizeHint: int.MaxValue),
-        cancellationToken: default);
+            pageSizeHint: int.MaxValue));
 
     int numChildren = 0;
     TraceForBaselineTesting rootTrace;
     using (rootTrace = TraceForBaselineTesting.GetRootTrace())
     {
-        while (await enumerator.MoveNextAsync(rootTrace))
+        while (await enumerator.MoveNextAsync(rootTrace, cancellationToken: default))
         {
             numChildren++;
 
@@ -1131,7 +1129,7 @@
     int numChildren = (await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, default)).Count; // One extra since we need to read one past the last user page to get the null continuation.
     using (rootTrace = TraceForBaselineTesting.GetRootTrace())
     {
-        while (await pipelineStage.MoveNextAsync(rootTrace))
+        while (await pipelineStage.MoveNextAsync(rootTrace, cancellationToken: default))
         {
             numChildren++;
         }

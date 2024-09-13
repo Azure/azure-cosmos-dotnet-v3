@@ -1,0 +1,284 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Simple property reference 1]]></Description>
+      <Expression><![CDATA[SELECT c.age FROM c GROUP BY c.age]]></Expression>
+    </Input>
+    <Output>
+      <Results><![CDATA[[{"age":11},{"age":12},{"age":13},{"age":14},{"age":15},{"age":16},{"age":17},{"age":18}]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Simple property reference 2]]></Description>
+      <Expression><![CDATA[SELECT c.name FROM c GROUP BY c.name]]></Expression>
+    </Input>
+    <Output>
+      <Results><![CDATA[[{"name":"Abby"},{"name":"Adam"},{"name":"Alex"},{"name":"Bill"},{"name":"Carl"},{"name":"Dave"},{"name":"Ella"},{"name":"Eric"},{"name":"Fred"},{"name":"Gary"},{"name":"John"},{"name":"Lisa"},{"name":"Lori"},{"name":"Lucy"},{"name":"Mady"},{"name":"Mary"},{"name":"Mike"},{"name":"Rose"},{"name":"Ryan"},{"name":"Zara"}]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Simple property reference 3]]></Description>
+      <Expression><![CDATA[SELECT c.team FROM c GROUP BY c.team]]></Expression>
+    </Input>
+    <Output>
+      <Results><![CDATA[[{"team":"A"},{"team":"B"},{"team":"C"},{"team":"D"}]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Simple property reference 4]]></Description>
+      <Expression><![CDATA[SELECT c.gender FROM c GROUP BY c.gender]]></Expression>
+    </Input>
+    <Output>
+      <Results><![CDATA[[{"gender":"F"},{"gender":"M"}]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Simple property reference 5]]></Description>
+      <Expression><![CDATA[SELECT c.id FROM c GROUP BY c.id]]></Expression>
+    </Input>
+    <Output>
+      <Results><![CDATA[[{"id":"01"},{"id":"02"},{"id":"03"},{"id":"04"},{"id":"05"},{"id":"06"},{"id":"07"},{"id":"08"},{"id":"09"},{"id":"10"},{"id":"11"},{"id":"12"},{"id":"13"},{"id":"14"},{"id":"15"},{"id":"16"},{"id":"17"},{"id":"18"},{"id":"19"},{"id":"20"},{"id":"21"},{"id":"22"},{"id":"23"},{"id":"24"},{"id":"25"},{"id":"26"},{"id":"27"},{"id":"28"},{"id":"29"},{"id":"30"},{"id":"31"},{"id":"32"},{"id":"33"},{"id":"34"},{"id":"35"},{"id":"36"},{"id":"37"},{"id":"38"},{"id":"39"},{"id":"40"},{"id":"41"},{"id":"42"},{"id":"43"},{"id":"44"},{"id":"45"},{"id":"46"},{"id":"47"},{"id":"48"},{"id":"49"},{"id":"50"},{"id":"51"},{"id":"52"},{"id":"53"},{"id":"54"},{"id":"55"},{"id":"56"},{"id":"57"},{"id":"58"},{"id":"59"},{"id":"60"},{"id":"61"},{"id":"62"},{"id":"63"},{"id":"64"}]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Simple property reference 6]]></Description>
+      <Expression><![CDATA[SELECT c.age, c.name FROM c GROUP BY c.age, c.name]]></Expression>
+    </Input>
+    <Output>
+      <Results><![CDATA[[{"age":11,"name":"John"},{"age":15,"name":"Mady"},{"age":13,"name":"John"},{"age":18,"name":"Mary"},{"age":17,"name":"Fred"},{"age":16,"name":"Adam"},{"age":13,"name":"Alex"},{"age":12,"name":"Fred"},{"age":15,"name":"Fred"},{"age":18,"name":"Fred"},{"age":17,"name":"Abby"},{"age":16,"name":"John"},{"age":16,"name":"Ella"},{"age":17,"name":"Carl"},{"age":18,"name":"Mady"},{"age":15,"name":"Mike"},{"age":16,"name":"Eric"},{"age":11,"name":"Ryan"},{"age":14,"name":"Alex"},{"age":14,"name":"John"},{"age":15,"name":"Dave"},{"age":11,"name":"Lisa"},{"age":11,"name":"Zara"},{"age":13,"name":"Abby"},{"age":14,"name":"Lucy"},{"age":13,"name":"Bill"},{"age":11,"name":"Bill"},{"age":12,"name":"Zara"},{"age":13,"name":"Adam"},{"age":15,"name":"Alex"},{"age":11,"name":"Alex"},{"age":11,"name":"Eric"},{"age":12,"name":"John"},{"age":17,"name":"Ella"},{"age":12,"name":"Lucy"},{"age":14,"name":"Mady"},{"age":17,"name":"Lori"},{"age":17,"name":"Gary"},{"age":18,"name":"Eric"},{"age":15,"name":"Mary"},{"age":17,"name":"Zara"},{"age":11,"name":"Lori"},{"age":16,"name":"Bill"},{"age":16,"name":"Lisa"},{"age":12,"name":"Ryan"},{"age":12,"name":"Abby"},{"age":17,"name":"Mary"},{"age":14,"name":"Rose"},{"age":14,"name":"Gary"}]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[With SELECT Aggregates 1]]></Description>
+      <Expression><![CDATA[SELECT c.age, COUNT(1) as count FROM c GROUP BY c.age]]></Expression>
+    </Input>
+    <Output>
+      <Results><![CDATA[[{"age":11,"count":8},{"age":12,"count":8},{"age":13,"count":7},{"age":14,"count":8},{"age":15,"count":9},{"age":16,"count":8},{"age":17,"count":10},{"age":18,"count":6}]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[With SELECT Aggregates 2]]></Description>
+      <Expression><![CDATA[SELECT c.name, MIN(c.age) AS min_age FROM c GROUP BY c.name]]></Expression>
+    </Input>
+    <Output>
+      <Results><![CDATA[[{"name":"John","min_age":11},{"name":"Mady","min_age":14},{"name":"Mary","min_age":15},{"name":"Fred","min_age":12},{"name":"Adam","min_age":13},{"name":"Alex","min_age":11},{"name":"Abby","min_age":12},{"name":"Ella","min_age":16},{"name":"Carl","min_age":17},{"name":"Mike","min_age":15},{"name":"Eric","min_age":11},{"name":"Ryan","min_age":11},{"name":"Dave","min_age":15},{"name":"Lisa","min_age":11},{"name":"Zara","min_age":11},{"name":"Lucy","min_age":12},{"name":"Bill","min_age":11},{"name":"Lori","min_age":11},{"name":"Gary","min_age":14},{"name":"Rose","min_age":14}]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[With SELECT Aggregates 3]]></Description>
+      <Expression><![CDATA[SELECT c.name, MAX(c.age) AS max_age FROM c GROUP BY c.name]]></Expression>
+    </Input>
+    <Output>
+      <Results><![CDATA[[{"name":"John","max_age":16},{"name":"Mady","max_age":18},{"name":"Mary","max_age":18},{"name":"Fred","max_age":18},{"name":"Adam","max_age":16},{"name":"Alex","max_age":15},{"name":"Abby","max_age":17},{"name":"Ella","max_age":17},{"name":"Carl","max_age":17},{"name":"Mike","max_age":15},{"name":"Eric","max_age":18},{"name":"Ryan","max_age":12},{"name":"Dave","max_age":15},{"name":"Lisa","max_age":16},{"name":"Zara","max_age":17},{"name":"Lucy","max_age":14},{"name":"Bill","max_age":16},{"name":"Lori","max_age":17},{"name":"Gary","max_age":17},{"name":"Rose","max_age":14}]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[With SELECT Aggregates 4]]></Description>
+      <Expression><![CDATA[SELECT c.name, SUM(c.age) AS sum_age FROM c GROUP BY c.name]]></Expression>
+    </Input>
+    <Output>
+      <Results><![CDATA[[{"name":"John","sum_age":98},{"name":"Mady","sum_age":47},{"name":"Mary","sum_age":101},{"name":"Fred","sum_age":62},{"name":"Adam","sum_age":42},{"name":"Alex","sum_age":53},{"name":"Abby","sum_age":59},{"name":"Ella","sum_age":33},{"name":"Carl","sum_age":34},{"name":"Mike","sum_age":45},{"name":"Eric","sum_age":45},{"name":"Ryan","sum_age":23},{"name":"Dave","sum_age":15},{"name":"Lisa","sum_age":27},{"name":"Zara","sum_age":52},{"name":"Lucy","sum_age":66},{"name":"Bill","sum_age":53},{"name":"Lori","sum_age":28},{"name":"Gary","sum_age":31},{"name":"Rose","sum_age":14}]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[With SELECT Aggregates 5]]></Description>
+      <Expression><![CDATA[SELECT c.name, AVG(c.age) AS avg_age FROM c GROUP BY c.name]]></Expression>
+    </Input>
+    <Output>
+      <Results><![CDATA[[{"name":"John","avg_age":14},{"name":"Mady","avg_age":15.666666666666666},{"name":"Mary","avg_age":16.833333333333332},{"name":"Fred","avg_age":15.5},{"name":"Adam","avg_age":14},{"name":"Alex","avg_age":13.25},{"name":"Abby","avg_age":14.75},{"name":"Ella","avg_age":16.5},{"name":"Carl","avg_age":17},{"name":"Mike","avg_age":15},{"name":"Eric","avg_age":15},{"name":"Ryan","avg_age":11.5},{"name":"Dave","avg_age":15},{"name":"Lisa","avg_age":13.5},{"name":"Zara","avg_age":13},{"name":"Lucy","avg_age":13.2},{"name":"Bill","avg_age":13.25},{"name":"Lori","avg_age":14},{"name":"Gary","avg_age":15.5},{"name":"Rose","avg_age":14}]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[With SELECT Aggregates 6]]></Description>
+      <Expression><![CDATA[SELECT c.name, Count(1) AS count, Min(c.age) AS min_age, Max(c.age) AS max_age FROM c GROUP BY c.name]]></Expression>
+    </Input>
+    <Output>
+      <Results><![CDATA[[{"name":"John","count":7,"min_age":11,"max_age":16},{"name":"Mady","count":3,"min_age":14,"max_age":18},{"name":"Mary","count":6,"min_age":15,"max_age":18},{"name":"Fred","count":4,"min_age":12,"max_age":18},{"name":"Adam","count":3,"min_age":13,"max_age":16},{"name":"Alex","count":4,"min_age":11,"max_age":15},{"name":"Abby","count":4,"min_age":12,"max_age":17},{"name":"Ella","count":2,"min_age":16,"max_age":17},{"name":"Carl","count":2,"min_age":17,"max_age":17},{"name":"Mike","count":3,"min_age":15,"max_age":15},{"name":"Eric","count":3,"min_age":11,"max_age":18},{"name":"Ryan","count":2,"min_age":11,"max_age":12},{"name":"Dave","count":1,"min_age":15,"max_age":15},{"name":"Lisa","count":2,"min_age":11,"max_age":16},{"name":"Zara","count":4,"min_age":11,"max_age":17},{"name":"Lucy","count":5,"min_age":12,"max_age":14},{"name":"Bill","count":4,"min_age":11,"max_age":16},{"name":"Lori","count":2,"min_age":11,"max_age":17},{"name":"Gary","count":2,"min_age":14,"max_age":17},{"name":"Rose","count":1,"min_age":14,"max_age":14}]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[With SELECT VALUE]]></Description>
+      <Expression><![CDATA[SELECT VALUE c.age FROM c GROUP BY c.age]]></Expression>
+    </Input>
+    <Output>
+      <Results><![CDATA[[11,12,13,14,15,16,17,18]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[With SELECT VALUE Aggregates 1]]></Description>
+      <Expression><![CDATA[SELECT VALUE COUNT(1) FROM c GROUP BY c.age]]></Expression>
+    </Input>
+    <Output>
+      <Results><![CDATA[[8,8,7,8,9,8,10,6]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[With SELECT VALUE Aggregates 2]]></Description>
+      <Expression><![CDATA[SELECT VALUE MIN(c.age) FROM c GROUP BY c.name]]></Expression>
+    </Input>
+    <Output>
+      <Results><![CDATA[[11,14,15,12,13,11,12,16,17,15,11,11,15,11,11,12,11,11,14,14]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[With SELECT VALUE Aggregates 3]]></Description>
+      <Expression><![CDATA[SELECT VALUE MAX(c.age) FROM c GROUP BY c.name]]></Expression>
+    </Input>
+    <Output>
+      <Results><![CDATA[[16,18,18,18,16,15,17,17,17,15,18,12,15,16,17,14,16,17,17,14]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[With SELECT VALUE Aggregates 4]]></Description>
+      <Expression><![CDATA[SELECT VALUE AVG(c.age) FROM c GROUP BY c.name]]></Expression>
+    </Input>
+    <Output>
+      <Results><![CDATA[[14,15.666666666666666,16.833333333333332,15.5,14,13.25,14.75,16.5,17,15,15,11.5,15,13.5,13,13.2,13.25,14,15.5,14]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[With SELECT VALUE Aggregates 5]]></Description>
+      <Expression><![CDATA[SELECT VALUE SUM(c.age) FROM c GROUP BY c.name]]></Expression>
+    </Input>
+    <Output>
+      <Results><![CDATA[[98,47,101,62,42,53,59,33,34,45,45,23,15,27,52,66,53,28,31,14]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[With SELECT VALUE Object]]></Description>
+      <Expression><![CDATA[SELECT VALUE { 'Name' : c.name , 'Age' : c.age} FROM c GROUP BY c.name, c.age]]></Expression>
+    </Input>
+    <Output>
+      <Results><![CDATA[[{"Name":"John","Age":11},{"Name":"Mady","Age":15},{"Name":"John","Age":13},{"Name":"Mary","Age":18},{"Name":"Fred","Age":17},{"Name":"Adam","Age":16},{"Name":"Alex","Age":13},{"Name":"Fred","Age":12},{"Name":"Fred","Age":15},{"Name":"Fred","Age":18},{"Name":"Abby","Age":17},{"Name":"John","Age":16},{"Name":"Ella","Age":16},{"Name":"Carl","Age":17},{"Name":"Mady","Age":18},{"Name":"Mike","Age":15},{"Name":"Eric","Age":16},{"Name":"Ryan","Age":11},{"Name":"Alex","Age":14},{"Name":"John","Age":14},{"Name":"Dave","Age":15},{"Name":"Lisa","Age":11},{"Name":"Zara","Age":11},{"Name":"Abby","Age":13},{"Name":"Lucy","Age":14},{"Name":"Bill","Age":13},{"Name":"Bill","Age":11},{"Name":"Zara","Age":12},{"Name":"Adam","Age":13},{"Name":"Alex","Age":15},{"Name":"Alex","Age":11},{"Name":"Eric","Age":11},{"Name":"John","Age":12},{"Name":"Ella","Age":17},{"Name":"Lucy","Age":12},{"Name":"Mady","Age":14},{"Name":"Lori","Age":17},{"Name":"Gary","Age":17},{"Name":"Eric","Age":18},{"Name":"Mary","Age":15},{"Name":"Zara","Age":17},{"Name":"Lori","Age":11},{"Name":"Bill","Age":16},{"Name":"Lisa","Age":16},{"Name":"Ryan","Age":12},{"Name":"Abby","Age":12},{"Name":"Mary","Age":17},{"Name":"Rose","Age":14},{"Name":"Gary","Age":14}]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[With SELECT VALUE Object 2]]></Description>
+      <Expression><![CDATA[SELECT VALUE {'age' : c.age} FROM c GROUP BY {'age' : c.age}]]></Expression>
+    </Input>
+    <Output>
+      <Results><![CDATA[[{"age":11},{"age":12},{"age":13},{"age":14},{"age":15},{"age":16},{"age":17},{"age":18}]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[With SELECT VALUE Aggregate on a term that does not exist 1]]></Description>
+      <Expression><![CDATA[SELECT VALUE SUM(c.doesNotExist) FROM c GROUP BY c.name]]></Expression>
+    </Input>
+    <Output>
+      <Results><![CDATA[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[With SELECT VALUE Aggregate on a term that does not exist 2]]></Description>
+      <Expression><![CDATA[SELECT VALUE COUNT(c.doesNotExist) FROM c GROUP BY c.name]]></Expression>
+    </Input>
+    <Output>
+      <Results><![CDATA[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[With SELECT VALUE Aggregate on a term that does not exist 3]]></Description>
+      <Expression><![CDATA[SELECT VALUE AVG(c.unKnownField) FROM c GROUP BY c.age]]></Expression>
+    </Input>
+    <Output>
+      <Results><![CDATA[[]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[With SELECT VALUE Aggregate on a term that does not exist 4]]></Description>
+      <Expression><![CDATA[SELECT VALUE MIN(c.unKnownField) FROM c GROUP BY c.age]]></Expression>
+    </Input>
+    <Output>
+      <Results><![CDATA[[]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[With SELECT VALUE Aggregate on a term that does not exist 5]]></Description>
+      <Expression><![CDATA[SELECT VALUE MAX(c.unKnownField) FROM c GROUP BY c.age]]></Expression>
+    </Input>
+    <Output>
+      <Results><![CDATA[[]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Corner Case 1]]></Description>
+      <Expression><![CDATA[SELECT AVG("asdf") as avg_asdf FROM c GROUP BY c.age]]></Expression>
+    </Input>
+    <Output>
+      <Results><![CDATA[[{},{},{},{},{},{},{},{}]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Corner Case 2]]></Description>
+      <Expression><![CDATA[SELECT 
+                        c.age, 
+                        AVG(c.doesNotExist) as undefined_avg,
+                        MIN(c.doesNotExist) as undefined_min,
+                        MAX(c.doesNotExist) as undefined_max,
+                        COUNT(c.doesNotExist) as undefined_count,
+                        SUM(c.doesNotExist) as undefined_sum
+                    FROM c 
+                    GROUP BY c.age]]></Expression>
+    </Input>
+    <Output>
+      <Results><![CDATA[[{"age":11,"undefined_count":0,"undefined_sum":0},{"age":15,"undefined_count":0,"undefined_sum":0},{"age":13,"undefined_count":0,"undefined_sum":0},{"age":18,"undefined_count":0,"undefined_sum":0},{"age":17,"undefined_count":0,"undefined_sum":0},{"age":16,"undefined_count":0,"undefined_sum":0},{"age":12,"undefined_count":0,"undefined_sum":0},{"age":14,"undefined_count":0,"undefined_sum":0}]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Corner Case 3]]></Description>
+      <Expression><![CDATA[SELECT 
+                        c.age, 
+                        c.doesNotExist
+                    FROM c 
+                    GROUP BY c.age, c.doesNotExist]]></Expression>
+    </Input>
+    <Output>
+      <Results><![CDATA[[{"age":11},{"age":15},{"age":13},{"age":18},{"age":17},{"age":16},{"age":12},{"age":14}]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[With Partition Key]]></Description>
+      <Expression><![CDATA[SELECT VALUE c.id FROM c GROUP BY c.id]]></Expression>
+    </Input>
+    <Output>
+      <Results><![CDATA[["01","02","03","04","05","06","07","08","09","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52","53","54","55","56","57","58","59","60","61","62","63","64"]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Group By Undefined]]></Description>
+      <Expression><![CDATA[SELECT COUNT(1) as count, c.DoesNotExist as DoesNotExist FROM c GROUP BY c.DoesNotExist]]></Expression>
+    </Input>
+    <Output>
+      <Results><![CDATA[[{"count":64}]]]></Results>
+    </Output>
+  </Result>
+</Results>

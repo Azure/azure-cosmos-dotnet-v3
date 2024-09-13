@@ -15,12 +15,17 @@ namespace CosmosBenchmark
     /// </summary>
     public class BenchmarkProgress
     {
-
         /// <summary>
         /// Record item id
         /// </summary>
         [JsonProperty]
         public string id { get; set; }
+
+        /// <summary>
+        /// Record item pk
+        /// </summary>
+        [JsonProperty]
+        public string pk { get; set; }
 
         /// <summary>
         /// Machine name

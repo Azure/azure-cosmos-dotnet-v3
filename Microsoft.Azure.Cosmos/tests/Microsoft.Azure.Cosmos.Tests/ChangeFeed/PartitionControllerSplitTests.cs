@@ -48,6 +48,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             await sut.ShutdownAsync().ConfigureAwait(false);
 
             Mock.Get(synchronizer).VerifyAll();
+
+            Mock.Get(partitionSupervisor)
+                .Verify(s => s.Dispose(), Times.Once);
         }
 
         [TestMethod]
@@ -76,6 +79,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             await sut.ShutdownAsync().ConfigureAwait(false);
 
             Mock.Get(synchronizer).VerifyAll();
+
+            Mock.Get(partitionSupervisor)
+                .Verify(s => s.Dispose(), Times.Once);
         }
 
         [TestMethod]
@@ -108,6 +114,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                     .VerifySet(l => l.Properties = customProperties, Times.Once);
             Mock.Get(leaseChild2)
                 .VerifySet(l => l.Properties = customProperties, Times.Once);
+
+            Mock.Get(partitionSupervisor)
+                .Verify(s => s.Dispose(), Times.Once);
         }
 
         [TestMethod]
@@ -132,6 +141,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             await sut.ShutdownAsync().ConfigureAwait(false);
 
             Mock.Get(leaseManager).Verify(manager => manager.DeleteAsync(lease), Times.Never);
+
+            Mock.Get(partitionSupervisor)
+                .Verify(s => s.Dispose(), Times.Once);
         }
 
         [TestMethod]
@@ -180,6 +192,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             monitor.Verify(m => m.NotifyLeaseAcquireAsync(leaseChild1.CurrentLeaseToken), Times.Once);
             monitor.Verify(m => m.NotifyLeaseReleaseAsync(leaseChild2.CurrentLeaseToken), Times.Once);
+
+            Mock.Get(partitionSupervisor)
+                .Verify(s => s.Dispose(), Times.Once);
+            Mock.Get(partitionSupervisor1)
+                .Verify(s => s.Dispose(), Times.Once);
+            Mock.Get(partitionSupervisor2)
+                .Verify(s => s.Dispose(), Times.Once);
         }
 
         [TestMethod]

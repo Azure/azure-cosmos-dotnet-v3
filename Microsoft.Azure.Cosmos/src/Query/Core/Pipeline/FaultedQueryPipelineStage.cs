@@ -33,14 +33,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             return this.justAsyncEnumerator.DisposeAsync();
         }
 
-        public ValueTask<bool> MoveNextAsync(ITrace trace)
+        public ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
         {
             return this.justAsyncEnumerator.MoveNextAsync(trace);
-        }
-
-        public void SetCancellationToken(CancellationToken cancellationToken)
-        {
-            // No work to do with since this enumerator is fully sync.
         }
     }
 }

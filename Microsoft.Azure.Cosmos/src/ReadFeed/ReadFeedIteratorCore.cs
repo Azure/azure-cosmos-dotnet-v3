@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
         public ReadFeedIteratorCore(
             IDocumentContainer documentContainer,
             string continuationToken,
-            ReadFeedPaginationOptions readFeedPaginationOptions,
+            ReadFeedExecutionOptions readFeedPaginationOptions,
             QueryRequestOptions queryRequestOptions,
             ContainerInternal container,
             CancellationToken cancellationToken)
@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
             this.container = container;
 
             this.queryRequestOptions = queryRequestOptions;
-            readFeedPaginationOptions ??= ReadFeedPaginationOptions.Default;
+            readFeedPaginationOptions ??= ReadFeedExecutionOptions.Default;
 
             if (!string.IsNullOrEmpty(continuationToken))
             {
@@ -181,8 +181,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                     CrossPartitionReadFeedAsyncEnumerator.Create(
                         documentContainer,
                         new CrossFeedRangeState<ReadFeedState>(monadicReadFeedState.Result.FeedRangeStates),
-                        readFeedPaginationOptions,
-                        cancellationToken));
+                        readFeedPaginationOptions));
             }
 
             this.hasMoreResults = true;
@@ -232,12 +231,11 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
             }
 
             CrossPartitionReadFeedAsyncEnumerator enumerator = this.monadicEnumerator.Result;
-            enumerator.SetCancellationToken(cancellationToken);
 
             TryCatch<CrossFeedRangePage<Pagination.ReadFeedPage, ReadFeedState>> monadicPage;
             try
             {
-                if (!await enumerator.MoveNextAsync(trace))
+                if (!await enumerator.MoveNextAsync(trace, cancellationToken))
                 {
                     throw new InvalidOperationException("Should not be calling enumerator that does not have any more results");
                 }
@@ -351,11 +349,6 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
             {
                 Content = page.Content,
             };
-        }
-
-        public override CosmosElement GetCosmosElementContinuationToken()
-        {
-            throw new NotSupportedException();
         }
     }
 }

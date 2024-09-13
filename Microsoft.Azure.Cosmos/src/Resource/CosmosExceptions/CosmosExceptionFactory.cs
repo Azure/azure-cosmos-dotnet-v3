@@ -92,16 +92,19 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
         internal static CosmosException Create(
             DocumentServiceResponse documentServiceResponse,
             Headers responseHeaders,
-            RequestMessage requestMessage)
+            Tracing.ITrace trace)
         {
             if (documentServiceResponse == null)
             {
                 throw new ArgumentNullException(nameof(documentServiceResponse));
             }
 
-            if (requestMessage == null)
+            if (trace == null)
             {
-                throw new ArgumentNullException(nameof(requestMessage));
+                // Ideally, we would throw new ArgumentNullException(nameof(trace));
+                // However, someone decided to make RequestMessage.Trace settable, so we cannot enforce this invariant.
+                // Instead, we will just use a NoOpTrace.
+                trace = NoOpTrace.Singleton;
             }
 
             if (responseHeaders == null)
@@ -116,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 message: errorMessage,
                 stackTrace: null,
                 headers: responseHeaders,
-                trace: requestMessage.Trace,
+                trace: trace,
                 error: error,
                 innerException: null);
         }
@@ -159,6 +162,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                     using (StreamReader streamReader = new StreamReader(content))
                     {
                         string errorContent = streamReader.ReadToEnd();
+
                         try
                         {
                             JObject errorObj = JObject.Parse(errorContent);
@@ -179,7 +183,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                                 return (error, message.ToString());
                             }
                         }
-                        catch (Newtonsoft.Json.JsonReaderException)
+                        catch (Exception exception) when (CosmosExceptionFactory.ExceptionsToIgnore(exception))
                         {
                         }
 
@@ -191,6 +195,12 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
 
                 return (null, null);
             }
+        }
+
+        private static bool ExceptionsToIgnore(Exception exception)
+        {
+            return exception is Newtonsoft.Json.JsonReaderException ||
+                exception is Newtonsoft.Json.JsonSerializationException;
         }
 
         internal static CosmosException CreateRequestTimeoutException(

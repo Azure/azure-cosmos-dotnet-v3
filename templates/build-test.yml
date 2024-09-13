@@ -5,16 +5,21 @@ parameters:
   Arguments: ''
   VmImage: '' # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
   OS: 'Windows'
-  EmulatorPipeline1Arguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ClientTelemetryRelease & (TestCategory=ClientTelemetryEmulator|TestCategory=Query|TestCategory=ReadFeed|TestCategory=Batch|TestCategory=ChangeFeed)" --verbosity normal '
-  EmulatorPipeline2Arguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ClientTelemetryRelease & TestCategory!=ClientTelemetryEmulator & TestCategory!=Query & TestCategory!=ReadFeed & TestCategory!=Batch & TestCategory!=ChangeFeed" --verbosity normal '
+  EmulatorPipeline1Arguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ClientTelemetryRelease & TestCategory!=LongRunning & TestCategory!=MultiRegion & (TestCategory=ClientTelemetryEmulator|TestCategory=Query|TestCategory=ReadFeed|TestCategory=Batch|TestCategory=ChangeFeed)" --verbosity normal '
+  EmulatorPipeline2Arguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ClientTelemetryRelease & TestCategory!=ClientTelemetryEmulator & TestCategory!=Query & TestCategory!=ReadFeed & TestCategory!=Batch & TestCategory!=ChangeFeed & TestCategory!=LongRunning & TestCategory!=MultiRegion" --verbosity normal '
+  EmulatorPipeline3Arguments: ' --filter "TestCategory=MultiRegion" --verbosity normal '
   EmulatorPipeline1CategoryListName: ' Client Telemetry, Query, ChangeFeed, ReadFeed, Batch ' # Divided in 2 categories to run them in parallel and reduce the PR feedback time
   EmulatorPipeline2CategoryListName: ' Others '
+  EmulatorPipeline3CategoryListName: ' MultiRegion '
+  MultiRegionConnectionString : ''
+  IncludeEncryption: true
+  IncludePerformance: true
 
 jobs:
 - job:
   displayName: Tests Debug
   pool:
-    vmImage: ${{ parameters.VmImage }}
+    name: 'OneES'
 
   steps:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
@@ -50,8 +55,9 @@ jobs:
       
 - job:
   displayName: PerformanceTests ${{ parameters.BuildConfiguration }}
+  condition: and(succeeded(), eq(${{ parameters.IncludePerformance }}, true))
   pool:
-    vmImage: ${{ parameters.VmImage }}
+    name: 'OneES'
 
   steps:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
@@ -87,7 +93,7 @@ jobs:
   timeoutInMinutes: 120
   condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
   pool:
-    vmImage: ${{ parameters.VmImage }}
+    name: 'OneES'
 
   steps:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
@@ -112,13 +118,15 @@ jobs:
       nugetConfigPath: NuGet.config
       publishTestResults: true
       testRunTitle: Microsoft.Azure.Cosmos.EmulatorTests
+    env: 
+      AZURE_COSMOS_NON_STREAMING_ORDER_BY_FLAG_DISABLED: true
 
 - job:
   displayName: EmulatorTests ${{ parameters.BuildConfiguration }} - ${{ parameters.EmulatorPipeline2CategoryListName }}
   timeoutInMinutes: 120
   condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
   pool:
-    vmImage: ${{ parameters.VmImage }}
+    name: 'OneES'
 
   steps:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
@@ -143,13 +151,15 @@ jobs:
       nugetConfigPath: NuGet.config
       publishTestResults: true
       testRunTitle: Microsoft.Azure.Cosmos.EmulatorTests
+    env: 
+      AZURE_COSMOS_NON_STREAMING_ORDER_BY_FLAG_DISABLED: true
 
 - job:
   displayName: Encryption EmulatorTests ${{ parameters.BuildConfiguration }}
   timeoutInMinutes: 90
-  condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
+  condition: and(eq(${{ parameters.IncludeEncryption }}, true), and(succeeded(), eq('${{ parameters.OS }}', 'Windows')))
   pool:
-    vmImage: ${{ parameters.VmImage }}
+    name: 'OneES'
 
   steps:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
@@ -174,13 +184,15 @@ jobs:
       nugetConfigPath: NuGet.config
       publishTestResults: true
       testRunTitle: Microsoft.Azure.Cosmos.Encryption.EmulatorTests
+    env: 
+      AZURE_COSMOS_NON_STREAMING_ORDER_BY_FLAG_DISABLED: true
 
 - job:
   displayName: Encryption.Custom EmulatorTests ${{ parameters.BuildConfiguration }}
   timeoutInMinutes: 90
-  condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
+  condition: and(eq(${{ parameters.IncludeEncryption }}, true), and(succeeded(), eq('${{ parameters.OS }}', 'Windows')))
   pool:
-    vmImage: ${{ parameters.VmImage }}
+    name: 'OneES'
 
   steps:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
@@ -205,3 +217,37 @@ jobs:
       nugetConfigPath: NuGet.config
       publishTestResults: true
       testRunTitle: Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
+    env: 
+      AZURE_COSMOS_NON_STREAMING_ORDER_BY_FLAG_DISABLED: true
+
+- job:
+  displayName: EmulatorTests ${{ parameters.BuildConfiguration }} - ${{ parameters.EmulatorPipeline3CategoryListName }}
+  timeoutInMinutes: 120
+  condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
+  pool:
+    name: 'OneES'
+
+  steps:
+  - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
+    clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
+
+  # Add this Command to Include the .NET 6 SDK
+  - task: UseDotNet@2
+    displayName: Use .NET 6.0
+    inputs:
+      packageType: 'sdk'
+      version: '6.x'
+
+  - task: DotNetCoreCLI@2
+    displayName: Microsoft.Azure.Cosmos.EmulatorTests
+    condition: succeeded()
+    inputs:
+      command: test
+      projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj'
+      arguments: ${{ parameters.EmulatorPipeline3Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }}
+      nugetConfigPath: NuGet.config
+      publishTestResults: true
+      testRunTitle: Microsoft.Azure.Cosmos.EmulatorTests
+    env: 
+      COSMOSDB_MULTI_REGION: ${{ parameters.MultiRegionConnectionString }}
+      AZURE_COSMOS_NON_STREAMING_ORDER_BY_FLAG_DISABLED: true

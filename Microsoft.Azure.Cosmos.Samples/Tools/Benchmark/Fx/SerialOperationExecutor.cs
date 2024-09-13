@@ -13,7 +13,6 @@ namespace CosmosBenchmark
     internal class SerialOperationExecutor : IExecutor
     {
         private readonly IBenchmarkOperation operation;
-
         private readonly string executorId;
 
         public SerialOperationExecutor(
@@ -28,7 +27,6 @@ namespace CosmosBenchmark
         }
 
         public int SuccessOperationCount { get; private set; }
-
         public int FailedOperationCount { get; private set; }
 
         public double TotalRuCharges { get; private set; }
@@ -38,19 +36,15 @@ namespace CosmosBenchmark
                 bool isWarmup,
                 bool traceFailures,
                 Action completionCallback,
-                BenchmarkConfig benchmarkConfig,
-                MetricsCollectorProvider metricsCollectorProvider)
+                BenchmarkConfig benchmarkConfig)
         {
             Trace.TraceInformation($"Executor {this.executorId} started");
-
-            Trace.TraceInformation("Initializing counters and metrics.");
 
             try
             {
                 int currentIterationCount = 0;
                 do
                 {
-                    IMetricsCollector metricsCollector = metricsCollectorProvider.GetMetricsCollector(this.operation);
                     OperationResult? operationResult = null;
 
                     await this.operation.PrepareAsync();
@@ -58,15 +52,12 @@ namespace CosmosBenchmark
                     using (ITelemetrySpan telemetrySpan = TelemetrySpan.StartNew(
                                 benchmarkConfig,
                                 () => operationResult.Value,
-                                disableTelemetry: isWarmup,
-                                metricsCollector.RecordSuccessOpLatencyAndRps,
-                                metricsCollector.RecordFailedOpLatencyAndRps))
+                                disableTelemetry: isWarmup))
                     {
                         try
                         {
                             operationResult = await this.operation.ExecuteOnceAsync();
-
-                            metricsCollector.CollectMetricsOnSuccess();
+                            telemetrySpan.MarkSuccess();
 
                             // Success case
                             this.SuccessOperationCount++;
@@ -79,13 +70,11 @@ namespace CosmosBenchmark
                         }
                         catch (Exception ex)
                         {
+                            telemetrySpan.MarkFailed();
                             if (traceFailures)
                             {
                                 Trace.TraceInformation(ex.ToString());
                             }
-                            telemetrySpan.MarkFailed();
-
-                            metricsCollector.CollectMetricsOnFailure();
 
                             // failure case
                             this.FailedOperationCount++;

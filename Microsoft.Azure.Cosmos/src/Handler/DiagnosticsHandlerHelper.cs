@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Handler
 {
     using System;
     using System.Collections.Generic;
+    using System.Threading.Tasks;
     using Documents.Rntbd;
     using Microsoft.Azure.Cosmos.Core.Trace;
 
@@ -21,16 +22,14 @@ namespace Microsoft.Azure.Cosmos.Handler
         private const string Telemetrykey = "telemetry";
 
         public static readonly TimeSpan DiagnosticsRefreshInterval = TimeSpan.FromSeconds(10);
-        private static readonly SystemUsageRecorder DiagnosticSystemUsageRecorder = new SystemUsageRecorder(
+        private static readonly TimeSpan ClientTelemetryRefreshInterval = TimeSpan.FromSeconds(5);
+
+        // Need to reset it in Tests hence kept it non-readonly.
+        private static SystemUsageRecorder DiagnosticSystemUsageRecorder = new SystemUsageRecorder(
             identifier: Diagnostickey,
             historyLength: 6,
             refreshInterval: DiagnosticsHandlerHelper.DiagnosticsRefreshInterval);
-
-        private static readonly TimeSpan ClientTelemetryRefreshInterval = TimeSpan.FromSeconds(5);
-        private static readonly SystemUsageRecorder TelemetrySystemUsageRecorder = new SystemUsageRecorder(
-            identifier: Telemetrykey,
-            historyLength: 120,
-            refreshInterval: DiagnosticsHandlerHelper.ClientTelemetryRefreshInterval);
+        private static SystemUsageRecorder TelemetrySystemUsageRecorder = null;
 
         /// <summary>
         /// Singleton to make sure only one instance of DiagnosticHandlerHelper is there.
@@ -62,13 +61,13 @@ namespace Microsoft.Azure.Cosmos.Handler
         {
             if (isClientTelemetryEnabled != DiagnosticsHandlerHelper.isTelemetryMonitoringEnabled)
             {
-                DiagnosticsHandlerHelper.Instance.StopSystemMonitor();
+                DiagnosticsHandlerHelper tempInstance = DiagnosticsHandlerHelper.Instance;
 
-                // Update telemetry flag
                 DiagnosticsHandlerHelper.isTelemetryMonitoringEnabled = isClientTelemetryEnabled;
-
-                // Create new instance, it will start a new system monitor job
                 DiagnosticsHandlerHelper.Instance = new DiagnosticsHandlerHelper();
+
+                // Stopping the monitor is a blocking call so we do it in a separate thread
+                _ = Task.Run(() => tempInstance.StopSystemMonitor());
             }
         }
 
@@ -80,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Handler
             }
             catch (ObjectDisposedException ex)
             {
-                DefaultTrace.TraceError($"Error while stopping system usage monitor. {0} ", ex);
+                DefaultTrace.TraceError("Error while stopping system usage monitor. {0} ", ex);
             }
         }
 
@@ -102,7 +101,17 @@ namespace Microsoft.Azure.Cosmos.Handler
 
                 if (DiagnosticsHandlerHelper.isTelemetryMonitoringEnabled)
                 {
+                    // re-initialize a fresh telemetry recorder when feature is switched on
+                    DiagnosticsHandlerHelper.TelemetrySystemUsageRecorder = new SystemUsageRecorder(
+                                                                                   identifier: Telemetrykey,
+                                                                                   historyLength: 120,
+                                                                                   refreshInterval: DiagnosticsHandlerHelper.ClientTelemetryRefreshInterval);
+
                     recorders.Add(DiagnosticsHandlerHelper.TelemetrySystemUsageRecorder);
+                }
+                else
+                {
+                    DiagnosticsHandlerHelper.TelemetrySystemUsageRecorder = null;
                 }
 
                 this.systemUsageMonitor = SystemUsageMonitor.CreateAndStart(recorders);
@@ -154,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Handler
 
             try
             {
-                return DiagnosticsHandlerHelper.TelemetrySystemUsageRecorder.Data;
+                return DiagnosticsHandlerHelper.TelemetrySystemUsageRecorder?.Data;
             }
             catch (Exception ex)
             {

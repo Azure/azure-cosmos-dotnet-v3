@@ -134,7 +134,14 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (!this.isExpressionEvaluated)
                 {
-                    this.querySpec = DocumentQueryEvaluator.Evaluate(this.expression);
+                    LinqQueryOperation linqQuery = DocumentQueryEvaluator.Evaluate(this.expression);
+
+                    if (linqQuery.ScalarOperationKind != ScalarOperationKind.None)
+                    {
+                        throw new NotSupportedException($"This operation does not support the supplied LINQ expression since it involves client side operation : {linqQuery.ScalarOperationKind}");
+                    }
+
+                    this.querySpec = linqQuery.SqlQuerySpec;
                     this.isExpressionEvaluated = true;
                 }
 
@@ -158,6 +165,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public async Task<PartitionedQueryExecutionInfo> GetPartitionedQueryExecutionInfoAsync(
             PartitionKeyDefinition partitionKeyDefinition,
+            Cosmos.VectorEmbeddingPolicy vectorEmbeddingPolicy,
             bool requireFormattableOrderByQuery,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
@@ -173,6 +181,7 @@ namespace Microsoft.Azure.Cosmos.Query
             TryCatch<PartitionedQueryExecutionInfo> tryGetPartitionedQueryExecutionInfo = queryPartitionProvider.TryGetPartitionedQueryExecutionInfo(
                 querySpecJsonString: JsonConvert.SerializeObject(this.QuerySpec),
                 partitionKeyDefinition: partitionKeyDefinition,
+                vectorEmbeddingPolicy: vectorEmbeddingPolicy,
                 requireFormattableOrderByQuery: requireFormattableOrderByQuery,
                 isContinuationExpected: isContinuationExpected,
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,

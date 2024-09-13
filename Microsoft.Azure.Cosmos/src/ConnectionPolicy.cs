@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http;
     using System.Net.Security;
     using System.Security.Cryptography.X509Certificates;
-    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 
@@ -30,6 +29,7 @@ namespace Microsoft.Azure.Cosmos
 
         private Protocol connectionProtocol;
         private ObservableCollection<string> preferredLocations;
+        private ObservableCollection<Uri> accountInitializationCustomEndpoints;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ConnectionPolicy"/> class to connect to the Azure Cosmos DB service.
@@ -44,12 +44,14 @@ namespace Microsoft.Azure.Cosmos
             this.MediaReadMode = MediaReadMode.Buffered;
             this.UserAgentContainer = new UserAgentContainer(clientId: 0);
             this.preferredLocations = new ObservableCollection<string>();
+            this.accountInitializationCustomEndpoints = new ObservableCollection<Uri>();
             this.EnableEndpointDiscovery = true;
             this.MaxConnectionLimit = defaultMaxConcurrentConnectionLimit;
             this.RetryOptions = new RetryOptions();
             this.EnableReadRequestsFallback = null;
-            this.EnableClientTelemetry = false; // by default feature flag is off
             this.ServerCertificateCustomValidationCallback = null;
+
+            this.CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions();
         }
 
         /// <summary>
@@ -87,6 +89,27 @@ namespace Microsoft.Azure.Cosmos
             foreach (string preferredLocation in regions)
             {
                 this.preferredLocations.Add(preferredLocation);
+            }
+        }
+
+        /// <summary>
+        /// Sets the custom private endpoints required to fetch account information from
+        /// private domain names.
+        /// </summary>
+        /// <param name="customEndpoints">An instance of <see cref="IEnumerable{T}"/> containing the custom DNS endpoints
+        /// provided by the customer.</param>
+        public void SetAccountInitializationCustomEndpoints(
+            IEnumerable<Uri> customEndpoints)
+        {
+            if (customEndpoints == null)
+            {
+                throw new ArgumentNullException(nameof(customEndpoints));
+            }
+
+            this.accountInitializationCustomEndpoints.Clear();
+            foreach (Uri endpoint in customEndpoints)
+            {
+                this.accountInitializationCustomEndpoints.Add(endpoint);
             }
         }
 
@@ -212,15 +235,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets or sets the flag to enable client telemetry feature.
-        /// </summary>
-        internal bool EnableClientTelemetry 
-        { 
-            get; 
-            set; 
-        }
-
-        /// <summary>
         /// Gets the default connection policy used to connect to the Azure Cosmos DB service.
         /// </summary>
         /// <value>
@@ -276,6 +290,24 @@ namespace Microsoft.Azure.Cosmos
             get
             {
                 return this.preferredLocations;
+            }
+        }
+
+        /// <summary>
+        /// Gets the custom private endpoints for geo-replicated database accounts in the Azure Cosmos DB service. 
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// During the CosmosClient initialization the account information, including the available regions, is obtained from the <see cref="CosmosClient.Endpoint"/>.
+        /// Should the global endpoint become inaccessible, the CosmosClient will attempt to obtain the account information issuing requests to the custom endpoints
+        /// provided in the customAccountEndpoints list.
+        /// </para>
+        /// </remarks>
+        public Collection<Uri> AccountInitializationCustomEndpoints
+        {
+            get
+            {
+                return this.accountInitializationCustomEndpoints;
             }
         }
 
@@ -484,6 +516,15 @@ namespace Microsoft.Azure.Cosmos
         /// This setting must be used with caution. When used improperly, it can lead to client machine ephemeral port exhaustion <see href="https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-outbound-connections">Azure SNAT port exhaustion</see>.
         /// </remarks>
         internal int? MaxTcpPartitionCount
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Gets or sets Client Telemetry Options like feature flags and corresponding options
+        /// </summary>
+        internal CosmosClientTelemetryOptions CosmosClientTelemetryOptions
         {
             get;
             set;

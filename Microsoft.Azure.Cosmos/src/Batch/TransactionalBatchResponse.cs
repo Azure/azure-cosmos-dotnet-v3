@@ -312,6 +312,7 @@ namespace Microsoft.Azure.Cosmos
                     SubStatusCode = this.SubStatusCode,
                     RetryAfter = TimeSpan.FromMilliseconds(retryAfterMilliseconds),
                     SessionToken = this.Headers.Session,
+                    PartitionKeyRangeId = this.Headers.PartitionKeyRangeId,
                     ActivityId = this.ActivityId,
                 };
 
@@ -345,6 +346,7 @@ namespace Microsoft.Azure.Cosmos
 
                     operationResult.Trace = trace;
                     operationResult.SessionToken = responseMessage.Headers.Session;
+                    operationResult.PartitionKeyRangeId = responseMessage.Headers.PartitionKeyRangeId;
                     operationResult.ActivityId = responseMessage.Headers.ActivityId;
 
                     results.Add(operationResult);
@@ -388,6 +390,26 @@ namespace Microsoft.Azure.Cosmos
                 results = results
             };
             return response;
+        }
+
+        /// <summary>
+        /// Retrieves the size of the transactional batch.
+        /// </summary>
+        /// <returns>
+        /// An integer representing the number of operations in the batch. 
+        /// Returns 0 if there are no operations.
+        /// </returns>
+        /// <remarks>
+        /// This method checks the <see cref="Operations"/> property to determine the number of operations in the current transactional batch.
+        /// If the <see cref="Operations"/> property is null, it returns 0, indicating that there are no operations in the batch.
+        /// </remarks>
+        internal int GetBatchSize()
+        {
+            if (this.Operations == null)
+            {
+               return 0;
+            }
+            return this.Operations.Count;
         }
 
         /// <summary>

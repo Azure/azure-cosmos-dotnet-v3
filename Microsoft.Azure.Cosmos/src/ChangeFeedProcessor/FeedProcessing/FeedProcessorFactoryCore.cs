@@ -40,12 +40,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 FeedPollDelay = this.changeFeedProcessorOptions.FeedPollDelay,
                 MaxItemCount = this.changeFeedProcessorOptions.MaxItemCount,
                 StartFromBeginning = this.changeFeedProcessorOptions.StartFromBeginning,
-                StartTime = this.changeFeedProcessorOptions.StartTime
+                StartTime = this.changeFeedProcessorOptions.StartTime,
+                FeedRange = lease.FeedRange,
             };
 
             PartitionCheckpointerCore checkpointer = new PartitionCheckpointerCore(this.leaseCheckpointer, lease);
             ChangeFeedPartitionKeyResultSetIteratorCore iterator = ChangeFeedPartitionKeyResultSetIteratorCore.Create(
                 lease: lease,
+                mode: this.changeFeedProcessorOptions.Mode,
                 continuationToken: options.StartContinuation,
                 maxItemCount: options.MaxItemCount,
                 container: this.container,
