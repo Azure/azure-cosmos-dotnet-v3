@@ -102,11 +102,9 @@ namespace Microsoft.Azure.Cosmos
                 // Today, the only scenario where we would receive a ServiceUnavailableException from the Throttling Retry Policy
                 // is when we get 429 (TooManyRequests) with sub status code 3092 (System Resource Not Available). Note that this is applicable
                 // for write requests targeted to a multiple master account. In such case, the 429/3092 will get converted into 503.
-                if (this.isMultiMasterWriteRegion.HasValue
-                    && this.isMultiMasterWriteRegion.Value
-                    && clientException.StatusCode.HasValue
-                    && (int)clientException.StatusCode.Value == (int)StatusCodes.TooManyRequests
-                    && clientException.GetSubStatus() == SubStatusCodes.SystemResourceUnavailable)
+                if (this.ShouldMarkEndpointUnavailableOnSystemResourceUnavailable(
+                    clientException.StatusCode,
+                    clientException.GetSubStatus()))
                 {
                     DefaultTrace.TraceError(
                         "Operation will NOT be retried. Converting SystemResourceUnavailable (429/3092) to ServiceUnavailable (503). Status code: {0}, sub status code: {1}.",
@@ -165,10 +163,9 @@ namespace Microsoft.Azure.Cosmos
             // Today, the only scenario where we would receive a ServiceUnavailableException from the Throttling Retry Policy
             // is when we get 429 (TooManyRequests) with sub status code 3092 (System Resource Not Available). Note that this is applicable
             // for write requests targeted to a multiple master account. In such case, the 429/3092 will get converted into 503.
-            if (this.isMultiMasterWriteRegion.HasValue
-                && this.isMultiMasterWriteRegion.Value
-                && (int)cosmosResponseMessage.StatusCode == (int)StatusCodes.TooManyRequests
-                && cosmosResponseMessage?.Headers.SubStatusCode == SubStatusCodes.SystemResourceUnavailable)
+            if (this.ShouldMarkEndpointUnavailableOnSystemResourceUnavailable(
+                cosmosResponseMessage.StatusCode,
+                cosmosResponseMessage?.Headers.SubStatusCode))
             {
                 DefaultTrace.TraceError(
                     "Operation will NOT be retried. Converting SystemResourceUnavailable (429/3092) to ServiceUnavailable (503). Status code: {0}, sub status code: {1}.",
@@ -504,6 +501,17 @@ namespace Microsoft.Azure.Cosmos
             };
 
             return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
+        }
+
+        private bool ShouldMarkEndpointUnavailableOnSystemResourceUnavailable(
+            HttpStatusCode? statusCode,
+            SubStatusCodes? subStatusCode)
+        {
+            return this.isMultiMasterWriteRegion.HasValue
+                && this.isMultiMasterWriteRegion.Value
+                && statusCode.HasValue
+                && (int)statusCode.Value == (int)StatusCodes.TooManyRequests
+                && subStatusCode == SubStatusCodes.SystemResourceUnavailable;
         }
 
         private sealed class RetryContext
