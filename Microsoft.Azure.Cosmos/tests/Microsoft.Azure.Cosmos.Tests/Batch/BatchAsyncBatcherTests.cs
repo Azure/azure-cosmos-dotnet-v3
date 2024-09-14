@@ -23,23 +23,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     {
         private static readonly Exception expectedException = new Exception();
         private static readonly BatchPartitionMetric metric = new BatchPartitionMetric();
-        private GlobalEndpointManager mockedEndpointManager;
-
-        [TestInitialize]
-        public void Initialize()
-        {
-            Mock<IDocumentClientInternal> mockedClient = new();
-
-            this.mockedEndpointManager = new(
-                mockedClient.Object,
-                new ConnectionPolicy());
-        }
-
-        [TestCleanup]
-        public void Cleanup()
-        {
-            this.mockedEndpointManager.Dispose();
-        }
 
         private ItemBatchOperation CreateItemBatchOperation(bool withContext = false)
         {
@@ -582,12 +565,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             IDocumentClientRetryPolicy retryPolicy1 = new BulkExecutionRetryPolicy(
                 GetSplitEnabledContainer(),
                 OperationType.Read,
-                new ResourceThrottleRetryPolicy(1, this.mockedEndpointManager));
+                new ResourceThrottleRetryPolicy(1));
 
             IDocumentClientRetryPolicy retryPolicy2 = new BulkExecutionRetryPolicy(
                 GetSplitEnabledContainer(),
                 OperationType.Read,
-                new ResourceThrottleRetryPolicy(1, this.mockedEndpointManager));
+                new ResourceThrottleRetryPolicy(1));
 
             ItemBatchOperation operation1 = this.CreateItemBatchOperation();
             ItemBatchOperation operation2 = this.CreateItemBatchOperation();
@@ -611,12 +594,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             IDocumentClientRetryPolicy retryPolicy1 = new BulkExecutionRetryPolicy(
                 GetSplitEnabledContainer(),
                 OperationType.Read,
-                new ResourceThrottleRetryPolicy(1, this.mockedEndpointManager));
+                new ResourceThrottleRetryPolicy(1));
 
             IDocumentClientRetryPolicy retryPolicy2 = new BulkExecutionRetryPolicy(
                 GetSplitEnabledContainer(),
                 OperationType.Read,
-                new ResourceThrottleRetryPolicy(1, this.mockedEndpointManager));
+                new ResourceThrottleRetryPolicy(1));
 
             ItemBatchOperation operation1 = this.CreateItemBatchOperation();
             ItemBatchOperation operation2 = this.CreateItemBatchOperation();
@@ -640,12 +623,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             IDocumentClientRetryPolicy retryPolicy1 = new BulkExecutionRetryPolicy(
                 GetSplitEnabledContainer(),
                 OperationType.Read,
-                new ResourceThrottleRetryPolicy(1, this.mockedEndpointManager));
+                new ResourceThrottleRetryPolicy(1));
 
             IDocumentClientRetryPolicy retryPolicy2 = new BulkExecutionRetryPolicy(
                 GetSplitEnabledContainer(),
                 OperationType.Read,
-                new ResourceThrottleRetryPolicy(1, this.mockedEndpointManager));
+                new ResourceThrottleRetryPolicy(1));
 
             ItemBatchOperation operation1 = this.CreateItemBatchOperation();
             ItemBatchOperation operation2 = this.CreateItemBatchOperation();
@@ -689,17 +672,17 @@ namespace Microsoft.Azure.Cosmos.Tests
             IDocumentClientRetryPolicy retryPolicy1 = new BulkExecutionRetryPolicy(
                 GetSplitEnabledContainer(),
                 OperationType.Read,
-                new ResourceThrottleRetryPolicy(1, this.mockedEndpointManager));
+                new ResourceThrottleRetryPolicy(1));
 
             IDocumentClientRetryPolicy retryPolicy2 = new BulkExecutionRetryPolicy(
                 GetSplitEnabledContainer(),
                 OperationType.Read,
-                new ResourceThrottleRetryPolicy(1, this.mockedEndpointManager));
+                new ResourceThrottleRetryPolicy(1));
 
             IDocumentClientRetryPolicy retryPolicy3 = new BulkExecutionRetryPolicy(
                 GetSplitEnabledContainer(),
                 OperationType.Create,
-                new ResourceThrottleRetryPolicy(1, this.mockedEndpointManager));
+                new ResourceThrottleRetryPolicy(1));
 
             ItemBatchOperation operation1 = this.CreateItemBatchOperation();
             ItemBatchOperation operation2 = this.CreateItemBatchOperation();
@@ -727,17 +710,17 @@ namespace Microsoft.Azure.Cosmos.Tests
             IDocumentClientRetryPolicy retryPolicy1 = new BulkExecutionRetryPolicy(
                 GetSplitEnabledContainer(),
                 OperationType.Read,
-                new ResourceThrottleRetryPolicy(1, this.mockedEndpointManager));
+                new ResourceThrottleRetryPolicy(1));
 
             IDocumentClientRetryPolicy retryPolicy2 = new BulkExecutionRetryPolicy(
                 GetSplitEnabledContainer(),
                 OperationType.Read,
-                new ResourceThrottleRetryPolicy(1, this.mockedEndpointManager));
+                new ResourceThrottleRetryPolicy(1));
 
             IDocumentClientRetryPolicy retryPolicy3 = new BulkExecutionRetryPolicy(
                 GetSplitEnabledContainer(),
                 OperationType.Create,
-                new ResourceThrottleRetryPolicy(1, this.mockedEndpointManager));
+                new ResourceThrottleRetryPolicy(1));
 
             ItemBatchOperation operation1 = this.CreateItemBatchOperation();
             ItemBatchOperation operation2 = this.CreateItemBatchOperation();

@@ -92,11 +92,7 @@ namespace Microsoft.Azure.Cosmos
             ItemBatchOperationContext context = new ItemBatchOperationContext(
                 resolvedPartitionKeyRangeId,
                 trace,
-                BatchAsyncContainerExecutor.GetRetryPolicy(
-                    this.cosmosContainer,
-                    this.cosmosClientContext?.DocumentClient?.GlobalEndpointManager,
-                    operation.OperationType,
-                    this.retryOptions));
+                BatchAsyncContainerExecutor.GetRetryPolicy(this.cosmosContainer, operation.OperationType, this.retryOptions));
 
             if (itemRequestOptions != null && itemRequestOptions.AddRequestHeaders != null)
             {
@@ -163,7 +159,6 @@ namespace Microsoft.Azure.Cosmos
 
         private static IDocumentClientRetryPolicy GetRetryPolicy(
             ContainerInternal containerInternal,
-            GlobalEndpointManager endpointManager,
             OperationType operationType,
             RetryOptions retryOptions)
         {
@@ -172,7 +167,6 @@ namespace Microsoft.Azure.Cosmos
                operationType,
                new ResourceThrottleRetryPolicy(
                 retryOptions.MaxRetryAttemptsOnThrottledRequests,
-                endpointManager,
                 retryOptions.MaxRetryWaitTimeInSeconds));
         }
 

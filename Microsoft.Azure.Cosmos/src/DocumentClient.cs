@@ -988,9 +988,8 @@ namespace Microsoft.Azure.Cosmos
             this.initializeTaskFactory = (_) => TaskHelper.InlineIfPossible<bool>(
                     () => this.GetInitializationTaskAsync(storeClientFactory: storeClientFactory),
                     new ResourceThrottleRetryPolicy(
-                        maxAttemptCount: this.ConnectionPolicy.RetryOptions.MaxRetryAttemptsOnThrottledRequests,
-                        endpointManager: this.GlobalEndpointManager,
-                        maxWaitTimeInSeconds: this.ConnectionPolicy.RetryOptions.MaxRetryWaitTimeInSeconds));
+                        this.ConnectionPolicy.RetryOptions.MaxRetryAttemptsOnThrottledRequests,
+                        this.ConnectionPolicy.RetryOptions.MaxRetryWaitTimeInSeconds));
 
             // Create the task to start the initialize task
             // Task will be awaited on in the EnsureValidClientAsync

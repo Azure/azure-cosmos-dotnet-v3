@@ -35,6 +35,7 @@ namespace Microsoft.Azure.Cosmos
         private int serviceUnavailableRetryCount;
         private bool isReadRequest;
         private bool canUseMultipleWriteLocations;
+        private bool? isMultiMasterWriteRegion;
         private Uri locationEndpoint;
         private RetryContext retryContext;
         private DocumentServiceRequest documentServiceRequest;
@@ -48,7 +49,6 @@ namespace Microsoft.Azure.Cosmos
         {
             this.throttlingRetry = new ResourceThrottleRetryPolicy(
                 retryOptions.MaxRetryAttemptsOnThrottledRequests,
-                endpointManager: globalEndpointManager,
                 retryOptions.MaxRetryWaitTimeInSeconds);
 
             this.globalEndpointManager = globalEndpointManager;
@@ -58,6 +58,7 @@ namespace Microsoft.Azure.Cosmos
             this.sessionTokenRetryCount = 0;
             this.serviceUnavailableRetryCount = 0;
             this.canUseMultipleWriteLocations = false;
+            this.isMultiMasterWriteRegion = false;
             this.isPertitionLevelFailoverEnabled = isPertitionLevelFailoverEnabled;
         }
 
@@ -98,6 +99,23 @@ namespace Microsoft.Azure.Cosmos
 
             if (exception is DocumentClientException clientException)
             {
+                // Today, the only scenario where we would receive a ServiceUnavailableException from the Throttling Retry Policy
+                // is when we get 429 (TooManyRequests) with sub status code 3092 (System Resource Not Available). Note that this is applicable
+                // for write requests targeted to a multiple master account. In such case, the 429/3092 will get converted into 503.
+                if (this.isMultiMasterWriteRegion.HasValue
+                    && this.isMultiMasterWriteRegion.Value
+                    && clientException.StatusCode.HasValue
+                    && (int)clientException.StatusCode.Value == (int)StatusCodes.TooManyRequests
+                    && clientException.GetSubStatus() == SubStatusCodes.SystemResourceUnavailable)
+                {
+                    DefaultTrace.TraceError(
+                        "Operation will NOT be retried. Converting SystemResourceUnavailable (429/3092) to ServiceUnavailable (503). Status code: {0}, sub status code: {1}.",
+                        StatusCodes.TooManyRequests, SubStatusCodes.SystemResourceUnavailable);
+
+                    return this.TryMarkEndpointUnavailableForPkRangeAndRetryOnServiceUnavailable(
+                        shouldMarkEndpointUnavailableForPkRange: true);
+                }
+
                 ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
                     clientException?.StatusCode,
                     clientException?.GetSubStatus());
@@ -121,18 +139,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            ShouldRetryResult throttleRetryResult = await this.throttlingRetry.ShouldRetryAsync(exception, cancellationToken);
-
-            // Today, the only scenario where we would receive a ServiceUnavailableException from the Throttling Retry Policy
-            // is when we get 410 (Gone) with sub status code 3092 (System Resource Not Available). Note that this is applicable
-            // for write requests targeted to a multiple master account. In such case, the 410/3092 will get converted into 503.
-            if (throttleRetryResult.ExceptionToThrow is ServiceUnavailableException)
-            {
-                return this.TryMarkEndpointUnavailableForPkRangeAndRetryOnServiceUnavailable(
-                    shouldMarkEndpointUnavailableForPkRange: true);
-            }
-
-            return throttleRetryResult;
+            return await this.throttlingRetry.ShouldRetryAsync(exception, cancellationToken);
         }
 
         /// <summary> 
@@ -155,18 +162,23 @@ namespace Microsoft.Azure.Cosmos
                 return shouldRetryResult;
             }
 
-            ShouldRetryResult throttleRetryResult = await this.throttlingRetry.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
-
             // Today, the only scenario where we would receive a ServiceUnavailableException from the Throttling Retry Policy
-            // is when we get 410 (Gone) with sub status code 3092 (System Resource Not Available). Note that this is applicable
-            // for write requests targeted to a multiple master account. In such case, the 410/3092 will get converted into 503.
-            if (throttleRetryResult.ExceptionToThrow is ServiceUnavailableException)
+            // is when we get 429 (TooManyRequests) with sub status code 3092 (System Resource Not Available). Note that this is applicable
+            // for write requests targeted to a multiple master account. In such case, the 429/3092 will get converted into 503.
+            if (this.isMultiMasterWriteRegion.HasValue
+                && this.isMultiMasterWriteRegion.Value
+                && (int)cosmosResponseMessage.StatusCode == (int)StatusCodes.TooManyRequests
+                && cosmosResponseMessage?.Headers.SubStatusCode == SubStatusCodes.SystemResourceUnavailable)
             {
+                DefaultTrace.TraceError(
+                    "Operation will NOT be retried. Converting SystemResourceUnavailable (429/3092) to ServiceUnavailable (503). Status code: {0}, sub status code: {1}.",
+                    StatusCodes.TooManyRequests, SubStatusCodes.SystemResourceUnavailable);
+
                 return this.TryMarkEndpointUnavailableForPkRangeAndRetryOnServiceUnavailable(
                     shouldMarkEndpointUnavailableForPkRange: true);
             }
 
-            return throttleRetryResult;
+            return await this.throttlingRetry.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
         }
 
         /// <summary>
@@ -179,6 +191,8 @@ namespace Microsoft.Azure.Cosmos
             this.isReadRequest = request.IsReadOnlyRequest;
             this.canUseMultipleWriteLocations = this.globalEndpointManager.CanUseMultipleWriteLocations(request);
             this.documentServiceRequest = request;
+            this.isMultiMasterWriteRegion = !this.isReadRequest 
+                && (this.globalEndpointManager?.CanSupportMultipleWriteLocations(request) ?? false);
 
             // clear previous location-based routing directive
             request.RequestContext.ClearRouteToLocation();

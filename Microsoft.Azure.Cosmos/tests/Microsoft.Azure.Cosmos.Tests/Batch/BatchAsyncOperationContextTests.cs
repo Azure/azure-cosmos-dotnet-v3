@@ -18,31 +18,13 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class BatchAsyncOperationContextTests
     {
-        private GlobalEndpointManager mockedEndpointManager;
-
-        [TestInitialize]
-        public void Initialize()
-        {
-            Mock<IDocumentClientInternal> mockedClient = new();
-
-            this.mockedEndpointManager = new(
-                mockedClient.Object,
-                new ConnectionPolicy());
-        }
-
-        [TestCleanup]
-        public void Cleanup()
-        {
-            this.mockedEndpointManager.Dispose();
-        }
-
         [TestMethod]
         public async Task TraceIsJoinedOnCompletionWithRetry()
         {
             IDocumentClientRetryPolicy retryPolicy = new BulkExecutionRetryPolicy(
                 Mock.Of<ContainerInternal>(),
                 OperationType.Read,
-                new ResourceThrottleRetryPolicy(1, this.mockedEndpointManager));
+                new ResourceThrottleRetryPolicy(1));
 
             Trace rootTrace = Trace.GetRootTrace(name: "RootTrace");
 
@@ -83,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             IDocumentClientRetryPolicy retryPolicy = new BulkExecutionRetryPolicy(
                 Mock.Of<ContainerInternal>(),
                 OperationType.Read,
-                new ResourceThrottleRetryPolicy(1, this.mockedEndpointManager));
+                new ResourceThrottleRetryPolicy(1));
 
             Trace rootTrace = Trace.GetRootTrace(name: "RootTrace");
 
@@ -197,7 +179,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             IDocumentClientRetryPolicy retryPolicy = new BulkExecutionRetryPolicy(
                 Mock.Of<ContainerInternal>(),
                 OperationType.Read,
-                new ResourceThrottleRetryPolicy(1, this.mockedEndpointManager));
+                new ResourceThrottleRetryPolicy(1));
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.OK);
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0, Cosmos.PartitionKey.Null);
             operation.AttachContext(new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton, retryPolicy));
@@ -211,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             IDocumentClientRetryPolicy retryPolicy = new BulkExecutionRetryPolicy(
                 Mock.Of<ContainerInternal>(),
                 OperationType.Read,
-                new ResourceThrottleRetryPolicy(1, this.mockedEndpointManager));
+                new ResourceThrottleRetryPolicy(1));
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult((HttpStatusCode)StatusCodes.TooManyRequests);
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0, Cosmos.PartitionKey.Null);
             operation.AttachContext(new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton, retryPolicy));
@@ -225,7 +207,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             IDocumentClientRetryPolicy retryPolicy = new BulkExecutionRetryPolicy(
                 Mock.Of<ContainerInternal>(),
                 OperationType.Read,
-                new ResourceThrottleRetryPolicy(1, this.mockedEndpointManager));
+                new ResourceThrottleRetryPolicy(1));
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.RequestEntityTooLarge) { SubStatusCode = (SubStatusCodes)3402 };
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0, Cosmos.PartitionKey.Null);
             operation.AttachContext(new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton, retryPolicy));
@@ -239,7 +221,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             IDocumentClientRetryPolicy retryPolicy = new BulkExecutionRetryPolicy(
                 Mock.Of<ContainerInternal>(),
                 OperationType.Create,
-                new ResourceThrottleRetryPolicy(1, this.mockedEndpointManager));
+                new ResourceThrottleRetryPolicy(1));
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.RequestEntityTooLarge);
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0, Cosmos.PartitionKey.Null);
             operation.AttachContext(new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton, retryPolicy));
@@ -253,7 +235,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             IDocumentClientRetryPolicy retryPolicy = new BulkExecutionRetryPolicy(
                 GetSplitEnabledContainer(),
                 OperationType.Read,
-                new ResourceThrottleRetryPolicy(1, this.mockedEndpointManager));
+                new ResourceThrottleRetryPolicy(1));
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.Gone) { SubStatusCode = SubStatusCodes.PartitionKeyRangeGone };
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0, Cosmos.PartitionKey.Null);
             operation.AttachContext(new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton, retryPolicy));
@@ -267,7 +249,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             IDocumentClientRetryPolicy retryPolicy = new BulkExecutionRetryPolicy(
                 GetSplitEnabledContainer(),
                 OperationType.Read,
-                new ResourceThrottleRetryPolicy(1, this.mockedEndpointManager));
+                new ResourceThrottleRetryPolicy(1));
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.Gone) { SubStatusCode = SubStatusCodes.CompletingSplit };
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0, Cosmos.PartitionKey.Null);
             operation.AttachContext(new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton, retryPolicy));
@@ -281,7 +263,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             IDocumentClientRetryPolicy retryPolicy = new BulkExecutionRetryPolicy(
                 GetSplitEnabledContainer(),
                 OperationType.Read,
-                new ResourceThrottleRetryPolicy(1, this.mockedEndpointManager));
+                new ResourceThrottleRetryPolicy(1));
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.Gone) { SubStatusCode = SubStatusCodes.CompletingPartitionMigration };
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0, Cosmos.PartitionKey.Null);
             operation.AttachContext(new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton, retryPolicy));

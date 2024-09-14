@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
 
     // Retry when we receive the throttling from server.
@@ -20,15 +19,12 @@ namespace Microsoft.Azure.Cosmos
         private readonly uint backoffDelayFactor;
         private readonly int maxAttemptCount;
         private readonly TimeSpan maxWaitTimeInMilliseconds;
-        private readonly IGlobalEndpointManager globalEndpointManager;
 
         private int currentAttemptCount;
         private TimeSpan cumulativeRetryDelay;
-        private bool? isMultiMasterWriteRegion;
 
         public ResourceThrottleRetryPolicy(
             int maxAttemptCount,
-            IGlobalEndpointManager endpointManager,
             int maxWaitTimeInSeconds = DefaultMaxWaitTimeInSeconds,
             uint backoffDelayFactor = 1)
         {
@@ -37,7 +33,6 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentException("maxWaitTimeInSeconds", "maxWaitTimeInSeconds must be less than " + (int.MaxValue / 1000));
             }
 
-            this.globalEndpointManager = endpointManager;
             this.maxAttemptCount = maxAttemptCount;
             this.backoffDelayFactor = backoffDelayFactor;
             this.maxWaitTimeInMilliseconds = TimeSpan.FromSeconds(maxWaitTimeInSeconds);
@@ -64,9 +59,7 @@ namespace Microsoft.Azure.Cosmos
                     return Task.FromResult(ShouldRetryResult.NoRetry());
                 }
 
-                return this.ShouldRetryInternalAsync(
-                    dce?.GetSubStatus(),
-                    dce?.RetryAfter);
+                return this.ShouldRetryInternalAsync(dce.RetryAfter);
             }
 
             DefaultTrace.TraceError(
@@ -95,34 +88,11 @@ namespace Microsoft.Azure.Cosmos
                 return Task.FromResult(ShouldRetryResult.NoRetry());
             }
 
-            return this.ShouldRetryInternalAsync(
-                cosmosResponseMessage?.Headers.SubStatusCode,
-                cosmosResponseMessage?.Headers.RetryAfter,
-                cosmosResponseMessage?.CosmosException);
+            return this.ShouldRetryInternalAsync(cosmosResponseMessage?.Headers.RetryAfter);
         }
 
-        private Task<ShouldRetryResult> ShouldRetryInternalAsync(
-            SubStatusCodes? subStatusCode,
-            TimeSpan? retryAfter,
-            Exception exception = null)
+        private Task<ShouldRetryResult> ShouldRetryInternalAsync(TimeSpan? retryAfter)
         {
-            if (this.isMultiMasterWriteRegion.HasValue
-                && this.isMultiMasterWriteRegion.Value
-                && subStatusCode != null
-                && subStatusCode == SubStatusCodes.SystemResourceUnavailable)
-            {
-                DefaultTrace.TraceError(
-                    "Operation will NOT be retried. Converting SystemResourceUnavailable (429/3092) to ServiceUnavailable (503). Current attempt {0} sub status code: {1}.",
-                    this.currentAttemptCount, SubStatusCodes.SystemResourceUnavailable);
-
-                ServiceUnavailableException exceptionToThrow = ServiceUnavailableException.Create(
-                    SubStatusCodes.SystemResourceUnavailable,
-                    innerException: exception);
-
-                return Task.FromResult(
-                    ShouldRetryResult.NoRetry(exceptionToThrow));
-            }
-
             TimeSpan retryDelay = TimeSpan.Zero;
             if (this.currentAttemptCount < this.maxAttemptCount &&
                 this.CheckIfRetryNeeded(retryAfter, out retryDelay))
@@ -163,8 +133,6 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="request">The request being sent to the service.</param>
         public void OnBeforeSendRequest(DocumentServiceRequest request)
         {
-            this.isMultiMasterWriteRegion = !request.IsReadOnlyRequest
-                && (this.globalEndpointManager?.CanSupportMultipleWriteLocations(request) ?? false);
         }
 
         /// <summary>
