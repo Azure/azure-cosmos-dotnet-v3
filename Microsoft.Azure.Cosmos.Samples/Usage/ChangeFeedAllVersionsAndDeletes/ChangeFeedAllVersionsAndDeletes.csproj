@@ -13,7 +13,7 @@
     <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.43.0-preview.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="*" />
     <PackageReference Include="System.Text.Json" Version="8.0.4" />
   </ItemGroup>
 
