@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos
         private int serviceUnavailableRetryCount;
         private bool isReadRequest;
         private bool canUseMultipleWriteLocations;
-        private bool? isMultiMasterWriteRegion;
+        private bool isMultiMasterWriteRegion;
         private Uri locationEndpoint;
         private RetryContext retryContext;
         private DocumentServiceRequest documentServiceRequest;
@@ -518,8 +518,7 @@ namespace Microsoft.Azure.Cosmos
             HttpStatusCode? statusCode,
             SubStatusCodes? subStatusCode)
         {
-            return this.isMultiMasterWriteRegion.HasValue
-                && this.isMultiMasterWriteRegion.Value
+            return this.isMultiMasterWriteRegion
                 && statusCode.HasValue
                 && (int)statusCode.Value == (int)StatusCodes.TooManyRequests
                 && subStatusCode == SubStatusCodes.SystemResourceUnavailable;
