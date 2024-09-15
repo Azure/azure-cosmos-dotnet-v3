@@ -31,6 +31,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
     /// Used to perform operations on items. There are two different types of operations.
@@ -1330,6 +1331,8 @@ namespace Microsoft.Azure.Cosmos
                 return ranges.First();
             }
 
+            ContainerCore.EnsureConsistentInclusivity(ranges);
+
             ranges.Sort(Documents.Routing.Range<string>.MinComparer.Instance);
 
             Documents.Routing.Range<string> firstRange = ranges.First();
@@ -1340,6 +1343,43 @@ namespace Microsoft.Azure.Cosmos
                 max: lastRange.Max,
                 isMinInclusive: firstRange.IsMinInclusive,
                 isMaxInclusive: firstRange.IsMaxInclusive);
+        }
+
+        /// <summary>
+        /// Validates if all ranges in the list have consistent inclusivity for both IsMinInclusive and IsMaxInclusive boundaries.
+        /// Throws an InvalidOperationException if there are inconsistencies.
+        /// </summary>
+        /// <param name="ranges">The list of ranges to validate.</param>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown when 'IsMinInclusive' or 'IsMaxInclusive' values are inconsistent across ranges.
+        /// </exception>
+        /// <example>
+        /// <![CDATA[
+        /// List<Documents.Routing.Range<string>> ranges = new List<Documents.Routing.Range<string>>
+        /// {
+        ///     new Documents.Routing.Range<string> { IsMinInclusive = true, IsMaxInclusive = false },
+        ///     new Documents.Routing.Range<string> { IsMinInclusive = true, IsMaxInclusive = true },
+        ///     new Documents.Routing.Range<string> { IsMinInclusive = true, IsMaxInclusive = false },
+        ///     new Documents.Routing.Range<string> { IsMinInclusive = false, IsMaxInclusive = false }
+        /// };
+        ///
+        /// EnsureConsistentInclusivity(ranges);
+        /// ]]>
+        /// </example>
+        internal static void EnsureConsistentInclusivity(List<Range<string>> ranges)
+        {
+            Documents.Routing.Range<string> firstRange = ranges.FirstOrDefault();
+            bool areAllMinsSame = ranges.All(range => range.IsMinInclusive == firstRange.IsMinInclusive);
+            bool areAllMaxsSame = ranges.All(range => range.IsMaxInclusive == firstRange.IsMaxInclusive);
+
+            if (!areAllMinsSame || !areAllMaxsSame)
+            {
+                string differingMins = string.Join(", ", ranges.Select(range => range.IsMinInclusive).Distinct());
+                string differingMaxs = string.Join(", ", ranges.Select(range => range.IsMaxInclusive).Distinct());
+
+                throw new InvalidOperationException($"Not all 'IsMinInclusive' or 'IsMaxInclusive' values are the same. " +
+                    $"IsMinInclusive found: {differingMins}, IsMaxInclusive found: {differingMaxs}.");
+            }
         }
 
         /// <summary>

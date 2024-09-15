@@ -2490,6 +2490,88 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.AreEqual(expected: expectedIsSubset, actual: actualIsSubset);
         }
+
+        /// <summary>
+        /// Validates if all ranges in the list have consistent inclusivity for both IsMinInclusive and IsMaxInclusive.
+        /// Throws InvalidOperationException if any inconsistencies are found.
+        ///
+        /// <example>
+        /// <![CDATA[
+        /// Feature: Validate range inclusivity
+        ///
+        ///   Scenario: All ranges are consistent
+        ///     Given a list of ranges where all have the same IsMinInclusive and IsMaxInclusive values
+        ///     When the inclusivity is validated
+        ///     Then no exception is thrown
+        ///
+        ///   Scenario: Inconsistent MinInclusive values
+        ///     Given a list of ranges where IsMinInclusive values differ
+        ///     When the inclusivity is validated
+        ///     Then an InvalidOperationException is thrown
+        ///
+        ///   Scenario: Inconsistent MaxInclusive values
+        ///     Given a list of ranges where IsMaxInclusive values differ
+        ///     When the inclusivity is validated
+        ///     Then an InvalidOperationException is thrown
+        /// ]]>
+        /// </example>
+        /// </summary>
+        /// <param name="shouldNotThrow">Indicates if the test should pass without throwing an exception.</param>
+        /// <param name="isMin1">IsMinInclusive value for first range.</param>
+        /// <param name="isMax1">IsMaxInclusive value for first range.</param>
+        /// <param name="isMin2">IsMinInclusive value for second range.</param>
+        /// <param name="isMax2">IsMaxInclusive value for second range.</param>
+        /// <param name="isMin3">IsMinInclusive value for third range.</param>
+        /// <param name="isMax3">IsMaxInclusive value for third range.</param>
+        /// <param name="expectedMessage">The expected exception message.></param>
+        [TestMethod]
+        [Owner("philipthomas-MSFT")]
+        [DataRow(true, true, false, true, false, true, false, "", DisplayName = "All ranges consistent")]
+        [DataRow(false, true, false, false, false, true, false, "Not all 'IsMinInclusive' or 'IsMaxInclusive' values are the same. IsMinInclusive found: True, False, IsMaxInclusive found: False.", DisplayName = "Inconsistent MinInclusive")]
+        [DataRow(false, true, false, true, true, true, false, "Not all 'IsMinInclusive' or 'IsMaxInclusive' values are the same. IsMinInclusive found: True, IsMaxInclusive found: False, True.", DisplayName = "Inconsistent MaxInclusive")]
+        [DataRow(false, true, false, false, true, true, false, "Not all 'IsMinInclusive' or 'IsMaxInclusive' values are the same. IsMinInclusive found: True, False, IsMaxInclusive found: False, True.", DisplayName = "Inconsistent Min and Max Inclusive")]
+        [DataRow(true, null, null, null, null, null, null, "", DisplayName = "Empty range list")]
+        public void EnsureConsistentInclusivityValidatesRangesTest(
+            bool shouldNotThrow,
+            bool? isMin1,
+            bool? isMax1,
+            bool? isMin2,
+            bool? isMax2,
+            bool? isMin3,
+            bool? isMax3,
+            string expectedMessage)
+        {
+            List<Documents.Routing.Range<string>> ranges = new List<Documents.Routing.Range<string>>();
+
+            if (isMin1.HasValue && isMax1.HasValue)
+            {
+                ranges.Add(new Documents.Routing.Range<string>(min: "A", max: "B", isMinInclusive: isMin1.Value, isMaxInclusive: isMax1.Value));
+            }
+
+            if (isMin2.HasValue && isMax2.HasValue)
+            {
+                ranges.Add(new Documents.Routing.Range<string>(min: "C", max: "D", isMinInclusive: isMin2.Value, isMaxInclusive: isMax2.Value));
+            }
+
+            if (isMin3.HasValue && isMax3.HasValue)
+            {
+                ranges.Add(new Documents.Routing.Range<string>(min: "E", max: "F", isMinInclusive: isMin3.Value, isMaxInclusive: isMax3.Value));
+            }
+
+            InvalidOperationException exception = default;
+
+            if (!shouldNotThrow)
+            {
+                exception = Assert.ThrowsException<InvalidOperationException>(() => ContainerCore.EnsureConsistentInclusivity(ranges));
+
+                Assert.IsNotNull(exception);
+                Assert.AreEqual(expected: expectedMessage, actual: exception.Message);
+
+                return;
+            }
+
+            Assert.IsNull(exception);
+        }
 #endif
     }
 }
