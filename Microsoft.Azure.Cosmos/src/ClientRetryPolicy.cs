@@ -99,15 +99,17 @@ namespace Microsoft.Azure.Cosmos
 
             if (exception is DocumentClientException clientException)
             {
-                // Today, the only scenario where we would receive a ServiceUnavailableException from the Throttling Retry Policy
-                // is when we get 429 (TooManyRequests) with sub status code 3092 (System Resource Not Available). Note that this is applicable
-                // for write requests targeted to a multiple master account. In such case, the 429/3092 will get converted into 503.
+                // Today, the only scenario where we would treat a throttling (429) exception as service unavailable is when we
+                // get 429 (TooManyRequests) with sub status code 3092 (System Resource Not Available). Note that this is applicable
+                // for write requests targeted to a multiple master account. In such case, the 429/3092 will be treated as 503. The
+                // reason to keep the code out of the throttling retry policy is that in the near future, the 3092 sub status code
+                // might not be a throttling scenario at all and the status code in that case would be different than 429.
                 if (this.ShouldMarkEndpointUnavailableOnSystemResourceUnavailable(
                     clientException.StatusCode,
                     clientException.GetSubStatus()))
                 {
                     DefaultTrace.TraceError(
-                        "Operation will NOT be retried. Converting SystemResourceUnavailable (429/3092) to ServiceUnavailable (503). Status code: {0}, sub status code: {1}.",
+                        "Operation will NOT be retried. Treating SystemResourceUnavailable (429/3092) as ServiceUnavailable (503). Status code: {0}, sub status code: {1}.",
                         StatusCodes.TooManyRequests, SubStatusCodes.SystemResourceUnavailable);
 
                     return this.TryMarkEndpointUnavailableForPkRangeAndRetryOnServiceUnavailable(
@@ -160,15 +162,17 @@ namespace Microsoft.Azure.Cosmos
                 return shouldRetryResult;
             }
 
-            // Today, the only scenario where we would receive a ServiceUnavailableException from the Throttling Retry Policy
-            // is when we get 429 (TooManyRequests) with sub status code 3092 (System Resource Not Available). Note that this is applicable
-            // for write requests targeted to a multiple master account. In such case, the 429/3092 will get converted into 503.
+            // Today, the only scenario where we would treat a throttling (429) exception as service unavailable is when we
+            // get 429 (TooManyRequests) with sub status code 3092 (System Resource Not Available). Note that this is applicable
+            // for write requests targeted to a multiple master account. In such case, the 429/3092 will be treated as 503. The
+            // reason to keep the code out of the throttling retry policy is that in the near future, the 3092 sub status code
+            // might not be a throttling scenario at all and the status code in that case would be different than 429.
             if (this.ShouldMarkEndpointUnavailableOnSystemResourceUnavailable(
                 cosmosResponseMessage.StatusCode,
                 cosmosResponseMessage?.Headers.SubStatusCode))
             {
                 DefaultTrace.TraceError(
-                    "Operation will NOT be retried. Converting SystemResourceUnavailable (429/3092) to ServiceUnavailable (503). Status code: {0}, sub status code: {1}.",
+                    "Operation will NOT be retried. Treating SystemResourceUnavailable (429/3092) as ServiceUnavailable (503). Status code: {0}, sub status code: {1}.",
                     StatusCodes.TooManyRequests, SubStatusCodes.SystemResourceUnavailable);
 
                 return this.TryMarkEndpointUnavailableForPkRangeAndRetryOnServiceUnavailable(
@@ -211,7 +215,6 @@ namespace Microsoft.Azure.Cosmos
             // This enables marking the endpoint unavailability on endpoint failover/unreachability
             this.locationEndpoint = this.globalEndpointManager.ResolveServiceEndpoint(request);
             request.RequestContext.RouteToLocation(this.locationEndpoint);
-            this.throttlingRetry.OnBeforeSendRequest(request);
         }
 
         private async Task<ShouldRetryResult> ShouldRetryInternalAsync(
@@ -503,6 +506,14 @@ namespace Microsoft.Azure.Cosmos
             return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
         }
 
+        /// <summary>
+        /// Returns a boolean flag indicating if the endpoint should be marked as unavailable
+        /// due to a 429 response with a sub status code of 3092 (system resource unavailable).
+        /// This is applicable for write requests targeted for multi master accounts.
+        /// </summary>
+        /// <param name="statusCode">An instance of <see cref="HttpStatusCode"/> containing the status code.</param>
+        /// <param name="subStatusCode">An instance of <see cref="SubStatusCodes"/> containing the sub status code.</param>
+        /// <returns>A boolean flag indicating is the endpoint should be marked as unavailable.</returns>
         private bool ShouldMarkEndpointUnavailableOnSystemResourceUnavailable(
             HttpStatusCode? statusCode,
             SubStatusCodes? subStatusCode)

@@ -534,8 +534,8 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public bool CanUseMultipleWriteLocations(DocumentServiceRequest request)
         {
-            return this.CanUseMultipleWriteLocations()
-                && (request.ResourceType == ResourceType.Document ||
+            return this.CanUseMultipleWriteLocations() &&
+                (request.ResourceType == ResourceType.Document ||
                 (request.ResourceType == ResourceType.StoredProcedure && request.OperationType == Documents.OperationType.ExecuteJavaScript));
         }
 
