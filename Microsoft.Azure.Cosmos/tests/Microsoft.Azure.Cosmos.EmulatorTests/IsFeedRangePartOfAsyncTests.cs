@@ -662,6 +662,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         [Owner("philipthomas-MSFT")]
         [DataRow("A", "Z", "B", "Y", true, DisplayName = "Child B-Y is a perfect subset of parent A-Z. Parent A-Z encapsulates child B-Y")]
+        [DataRow("A", "Z", "B", "Z", true, DisplayName = "Child B-Y is a perfect subset of parent A-Z. Parent A-Z encapsulates child B-Z")]
         [DataRow("A", "Z", "A", "Z", true, DisplayName = "Child A-Z equals parent A-Z")]
         [DataRow("A", "Z", "@", "Y", false, DisplayName = "Child @-Y has min out of parent A-Z")]
         [DataRow("A", "Z", "B", "[", false, DisplayName = "Child B-[ has max out of parent A-Z")]
