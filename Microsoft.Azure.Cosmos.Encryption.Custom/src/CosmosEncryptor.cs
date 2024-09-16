@@ -49,6 +49,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         }
 
         /// <inheritdoc/>
+        public override async Task<int> DecryptAsync(byte[] cipherText, int cipherTextOffset, int cipherTextLength, byte[] output, int outputOffset, string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
+        {
+            DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync(
+                dataEncryptionKeyId,
+                encryptionAlgorithm,
+                cancellationToken);
+
+            if (dek == null)
+            {
+                throw new InvalidOperationException($"Null {nameof(DataEncryptionKey)} returned from {nameof(this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync)}.");
+            }
+
+            return dek.DecryptData(cipherText, cipherTextOffset, cipherTextLength, output, outputOffset);
+        }
+
+        /// <inheritdoc/>
         public override async Task<byte[]> EncryptAsync(
             byte[] plainText,
             string dataEncryptionKeyId,
@@ -66,6 +82,54 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
 
             return dek.EncryptData(plainText);
+        }
+
+        /// <inheritdoc/>
+        public override async Task<int> EncryptAsync(byte[] plainText, int plainTextOffset, int plainTextLength, byte[] output, int outputOffset, string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
+        {
+            DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync(
+                dataEncryptionKeyId,
+                encryptionAlgorithm,
+                cancellationToken);
+
+            if (dek == null)
+            {
+                throw new InvalidOperationException($"Null {nameof(DataEncryptionKey)} returned from {nameof(this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync)}.");
+            }
+
+            return dek.EncryptData(plainText, plainTextOffset, plainTextLength, output, outputOffset);
+        }
+
+        /// <inheritdoc/>
+        public override async Task<int> GetEncryptBytesCountAsync(int plainTextLength, string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
+        {
+            DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync(
+                dataEncryptionKeyId,
+                encryptionAlgorithm,
+                cancellationToken);
+
+            if (dek == null)
+            {
+                throw new InvalidOperationException($"Null {nameof(DataEncryptionKey)} returned from {nameof(this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync)}.");
+            }
+
+            return dek.GetEncryptByteCount(plainTextLength);
+        }
+
+        /// <inheritdoc/>
+        public override async Task<int> GetDecryptBytesCountAsync(int cipherTextLength, string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
+        {
+            DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync(
+                dataEncryptionKeyId,
+                encryptionAlgorithm,
+                cancellationToken);
+
+            if (dek == null)
+            {
+                throw new InvalidOperationException($"Null {nameof(DataEncryptionKey)} returned from {nameof(this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync)}.");
+            }
+
+            return dek.GetDecryptByteCount(cipherTextLength);
         }
     }
 }

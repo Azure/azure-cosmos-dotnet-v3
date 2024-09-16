@@ -27,9 +27,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         private const int KeySizeInBytes = AeadAes256CbcHmac256EncryptionKey.KeySize / 8;
 
         /// <summary>
+        /// Authentication tag size in bytes
+        /// </summary>
+        private const int AuthenticationTagSizeInBytes = KeySizeInBytes;
+
+        /// <summary>
         /// Block size in bytes. AES uses 16 byte blocks.
         /// </summary>
         private const int BlockSizeInBytes = 16;
+
+        /// <summary>
+        /// Size of Initialization Vector in bytes.
+        /// </summary>
+        private const int IvSizeInBytes = 16;
 
         /// <summary>
         /// Minimum Length of cipherText without authentication tag. This value is 1 (version byte) + 16 (IV) + 16 (minimum of 1 block of cipher Text)
@@ -135,6 +145,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public override byte[] EncryptData(byte[] plainText)
         {
             return this.EncryptData(plainText, hasAuthenticationTag: true);
+        }
+
+        /// <summary>
+        /// Encryption Algorithm
+        /// cell_iv = HMAC_SHA-2-256(iv_key, cell_data) truncated to 128 bits
+        /// cell_ciphertext = AES-CBC-256(enc_key, cell_iv, cell_data) with PKCS7 padding.
+        /// cell_tag = HMAC_SHA-2-256(mac_key, versionbyte + cell_iv + cell_ciphertext + versionbyte_length)
+        /// cell_blob = versionbyte + cell_tag + cell_iv + cell_ciphertext
+        /// </summary>
+        /// <param name="plainText">Plaintext data to be encrypted</param>
+        /// <returns>Returns the ciphertext corresponding to the plaintext.</returns>
+        public override int EncryptData(byte[] plainText, int plainTextOffset, int plainTextLength, byte[] output, int outputOffset)
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -417,6 +441,27 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Debug.Assert(computedHash.Length >= authenticationTag.Length);
             Buffer.BlockCopy(computedHash, 0, authenticationTag, 0, authenticationTag.Length);
             return authenticationTag;
+        }
+
+        public override int DecryptData(byte[] cipherText, int cipherTextOffset, int cipherTextLength, byte[] output, int outputOffset)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override int GetEncryptByteCount(int plainTextLength)
+        {
+            // Output buffer size = size of VersionByte + Authentication Tag + IV + cipher Text blocks.
+            return sizeof(byte) + AuthenticationTagSizeInBytes + IvSizeInBytes + GetCipherTextLength(plainTextLength);
+        }
+
+        public override int GetDecryptByteCount(int cipherTextLength)
+        {
+            throw new NotImplementedException();
+        }
+
+        private static int GetCipherTextLength(int inputSize)
+        {
+            return ((inputSize / BlockSizeInBytes) + 1) * BlockSizeInBytes;
         }
     }
 }
