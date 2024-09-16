@@ -392,17 +392,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             bool parentIsMaxInclusive,
             bool expectedIsFeedRangePartOfAsync)
         {
-            Container container = default;
-
             try
             {
-                ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(
-                    id: Guid.NewGuid().ToString(),
-                    partitionKeyPath: "/pk");
-
-                container = containerResponse.Container;
-
-                bool actualIsFeedRangePartOfAsync = await ((ContainerInternal)container).IsFeedRangePartOfAsync(
+                bool actualIsFeedRangePartOfAsync = await this.containerInternal.IsFeedRangePartOfAsync(
                     parentFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>(parentMinimum, parentMaximum, true, parentIsMaxInclusive)),
                     childFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>(childMinimum, childMaximum, true, childIsMaxInclusive)),
                     cancellationToken: CancellationToken.None);
