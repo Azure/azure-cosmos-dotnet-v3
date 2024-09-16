@@ -428,7 +428,10 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Tests for <see cref="GlobalEndpointManager"/>
+        /// Test to validate for a client that has been warmed up with account-level regions, any subsequent
+        /// DatabaseAccount refresh calls should go through the effective preferred regions / account-level read regions
+        /// if the DatabaseAccount refresh call to the global / default endpoint failed with HttpRequestException (timeout also but not possible to inject
+        /// w/o adding a refresh method just for this test)
         /// </summary>
         [TestMethod]
         public async Task GetDatabaseAccountFromEffectiveRegionalEndpointTestAsync()

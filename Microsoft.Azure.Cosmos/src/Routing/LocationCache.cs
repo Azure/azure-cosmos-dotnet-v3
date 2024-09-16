@@ -253,14 +253,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             return this.locationInfo.AvailableReadEndpointByLocation;
         }
 
-        /// <summary>
-        /// Gets account-level write locations.
-        /// </summary>
-        public ReadOnlyCollection<string> GetAvailableWriteLocations()
-        {
-            return this.locationInfo.AvailableWriteLocations;
-        }
-        
         public Uri GetHubUri()
         {
             DatabaseAccountLocationsInfo currentLocationInfo = this.locationInfo;
@@ -269,9 +261,20 @@ namespace Microsoft.Azure.Cosmos.Routing
             return locationEndpointToRoute;
         }
 
+        /// <summary>
+        /// Gets account-level read locations.
+        /// </summary>
         public ReadOnlyCollection<string> GetAvailableReadLocations()
         {
             return this.locationInfo.AvailableReadLocations;
+        }
+        
+        /// <summary>
+        /// Gets account-level write locations.
+        /// </summary>
+        public ReadOnlyCollection<string> GetAvailableWriteLocations()
+        {
+            return this.locationInfo.AvailableWriteLocations;
         }
 
         /// <summary>
@@ -525,7 +528,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                             DefaultTrace.TraceInformation("ShouldRefreshEndpoints = true since most preferred location {0} is not available for read.", mostPreferredLocation);
                             return true;
                         }
-                            }
+                    }
                     else
                     {
                         DefaultTrace.TraceInformation("ShouldRefreshEndpoints = true since most preferred location {0} is not in available read locations.", mostPreferredLocation);

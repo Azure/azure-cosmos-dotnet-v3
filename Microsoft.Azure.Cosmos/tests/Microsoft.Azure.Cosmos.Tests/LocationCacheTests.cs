@@ -967,23 +967,33 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         }
 
         [TestMethod]
-        [DataRow(true, true, true)]
-        [DataRow(true, false, false)]
-        [DataRow(true, false, true)]
-        [DataRow(true, true, false)]
-        [DataRow(false, false, false)]
-        [DataRow(false, true, true)]
-        [DataRow(false, true, false)]
-        [DataRow(false, true, true)]
+        [DataRow(true, true, true, false, DisplayName = "MultipleWriteEndpointsEnabled | EndpointDiscoveryEnabled | PreferredLocationListEmpty | DefaultEndpointIsGlobalEndpoint")]
+        [DataRow(true, false, false, false, DisplayName = "MultipleWriteEndpointsEnabled | EndpointDiscoveryNotEnabled | PreferredLocationListNotEmpty | DefaultEndpointIsGlobalEndpoint")]
+        [DataRow(true, false, true, false, DisplayName = "MultipleWriteEndpointsEnabled | EndpointDiscoveryNotEnabled | PreferredLocationListEmpty | DefaultEndpointIsGlobalEndpoint")]
+        [DataRow(true, true, false, false, DisplayName = "MultipleWriteEndpointsEnabled | EndpointDiscoveryEnabled | PreferredLocationListNotEmpty | DefaultEndpointIsGlobalEndpoint")]
+        [DataRow(false, false, false, false, DisplayName = "MultipleWriteEndpointsNotEnabled | EndpointDiscoveryNotEnabled | PreferredLocationListNotEmpty | DefaultEndpointIsGlobalEndpoint")]
+        [DataRow(false, true, true, false, DisplayName = "MultipleWriteEndpointsNotEnabled | EndpointDiscoveryEnabled | PreferredLocationListEmpty | DefaultEndpointIsGlobalEndpoint")]
+        [DataRow(false, true, false, false, DisplayName = "MultipleWriteEndpointsNotEnabled | EndpointDiscoveryEnabled | PreferredLocationListNotEmpty | DefaultEndpointIsGlobalEndpoint")]
+        [DataRow(false, true, true, false, DisplayName = "MultipleWriteEndpointsNotEnabled | EndpointDiscoveryEnabled | PreferredLocationListEmpty | DefaultEndpointIsGlobalEndpoint")]
+        [DataRow(true, true, true, true, DisplayName = "MultipleWriteEndpointsEnabled | EndpointDiscoveryEnabled | PreferredLocationListEmpty | DefaultEndpointIsRegionalEndpoint")]
+        [DataRow(true, false, false, true, DisplayName = "MultipleWriteEndpointsEnabled | EndpointDiscoveryNotEnabled | PreferredLocationListNotEmpty | DefaultEndpointIsRegionalEndpoint")]
+        [DataRow(true, false, true, true, DisplayName = "MultipleWriteEndpointsEnabled | EndpointDiscoveryNotEnabled | PreferredLocationListEmpty | DefaultEndpointIsRegionalEndpoint")]
+        [DataRow(true, true, false, true, DisplayName = "MultipleWriteEndpointsEnabled | EndpointDiscoveryEnabled | PreferredLocationListNotEmpty | DefaultEndpointIsRegionalEndpoint")]
+        [DataRow(false, false, false, true, DisplayName = "MultipleWriteEndpointsNotEnabled | EndpointDiscoveryNotEnabled | PreferredLocationListNotEmpty | DefaultEndpointIsRegionalEndpoint")]
+        [DataRow(false, true, true, true, DisplayName = "MultipleWriteEndpointsNotEnabled | EndpointDiscoveryEnabled | PreferredLocationListEmpty | DefaultEndpointIsRegionalEndpoint")]
+        [DataRow(false, true, false, true, DisplayName = "MultipleWriteEndpointsNotEnabled | EndpointDiscoveryEnabled | PreferredLocationListNotEmpty | DefaultEndpointIsRegionalEndpoint")]
+        [DataRow(false, true, true, true, DisplayName = "MultipleWriteEndpointsNotEnabled | EndpointDiscoveryEnabled | PreferredLocationListEmpty | DefaultEndpointIsRegionalEndpoint")]
         public async Task ValidateAsync(
             bool useMultipleWriteEndpoints,
             bool endpointDiscoveryEnabled,
-            bool isPreferredListEmpty)
+            bool isPreferredListEmpty, 
+            bool isDefaultEndpointARegionalEndpoint)
         {
             await this.ValidateLocationCacheAsync(
                 useMultipleWriteEndpoints,
                 endpointDiscoveryEnabled,
-                isPreferredListEmpty);
+                isPreferredListEmpty,
+                isDefaultEndpointARegionalEndpoint);
         }
 
         [TestMethod]
@@ -1514,8 +1524,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
         private static AccountProperties CreateDatabaseAccount(
             bool useMultipleWriteLocations,
-            bool enforceSingleMasterSingleWriteLocation,
-            bool isExcludeRegionsTest = false)
+            bool enforceSingleMasterSingleWriteLocation)
         {
             Collection<AccountRegion> writeLocations = new Collection<AccountRegion>()
                 {
@@ -1565,8 +1574,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         {
             this.databaseAccount = LocationCacheTests.CreateDatabaseAccount(
                 useMultipleWriteLocations,
-                enforceSingleMasterSingleWriteLocation,
-                isExcludeRegionsTest);
+                enforceSingleMasterSingleWriteLocation);
 
             if (isPreferredLocationsListEmpty)
             {
@@ -1619,9 +1627,9 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         private async Task ValidateLocationCacheAsync(
             bool useMultipleWriteLocations,
             bool endpointDiscoveryEnabled,
-            bool isPreferredListEmpty)
+            bool isPreferredListEmpty,
+            bool isDefaultEndpointARegionalEndpoint)
         {
-
             // hardcoded to represent - (location1, location2, location3) as the write regions (with and without preferred regions set)
             int maxWriteLocationIndex = 3;
             
@@ -1629,14 +1637,21 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             // as the read regions (with preferred regions set)
             int maxReadLocationIndex = isPreferredListEmpty ? 4 : 3;
 
+            if (isPreferredListEmpty && isDefaultEndpointARegionalEndpoint)
+            {
+                maxWriteLocationIndex = 1;
+                maxReadLocationIndex = 1;
+            }
+            
             for (int writeLocationIndex = 0; writeLocationIndex < maxWriteLocationIndex; writeLocationIndex++)
             {
                 for (int readLocationIndex = 0; readLocationIndex < maxReadLocationIndex; readLocationIndex++)
                 {
                     using GlobalEndpointManager endpointManager = this.Initialize(
-                        useMultipleWriteLocations,
-                        endpointDiscoveryEnabled,
-                        isPreferredListEmpty);
+                        useMultipleWriteLocations: useMultipleWriteLocations,
+                        enableEndpointDiscovery: endpointDiscoveryEnabled,
+                        isPreferredLocationsListEmpty: isPreferredListEmpty,
+                        isDefaultEndpointARegionalEndpoint: isDefaultEndpointARegionalEndpoint);
 
                     ReadOnlyCollection<Uri> currentWriteEndpoints = this.cache.WriteEndpoints;
                     ReadOnlyCollection<Uri> currentReadEndpoints = this.cache.ReadEndpoints;
@@ -1719,7 +1734,9 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                         useMultipleWriteLocations,
                         endpointDiscoveryEnabled,
                         preferredAvailableWriteEndpoints,
-                        preferredAvailableReadEndpoints);
+                        preferredAvailableReadEndpoints,
+                        isPreferredListEmpty,
+                        isDefaultEndpointARegionalEndpoint);
 
                     // wait for TTL on unavailability info
                     string expirationTime = System.Configuration.ConfigurationManager.AppSettings["UnavailableLocationsExpirationTimeInSeconds"];
@@ -1843,15 +1860,17 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             bool useMultipleWriteLocations,
             bool endpointDiscoveryEnabled,
             Uri[] availableWriteEndpoints,
-            Uri[] availableReadEndpoints)
+            Uri[] availableReadEndpoints,
+            bool isPreferredLocationsListEmpty,
+            bool isDefaultEndpointARegionalEndpoint)
         {
             Uri firstAvailableWriteEndpoint;
             Uri secondAvailableWriteEndpoint;
 
             if (!endpointDiscoveryEnabled)
             {
-                firstAvailableWriteEndpoint = LocationCacheTests.DefaultEndpoint;
-                secondAvailableWriteEndpoint = LocationCacheTests.DefaultEndpoint;
+                firstAvailableWriteEndpoint = isDefaultEndpointARegionalEndpoint ? LocationCacheTests.DefaultRegionalEndpoint : LocationCacheTests.DefaultEndpoint;
+                secondAvailableWriteEndpoint = isDefaultEndpointARegionalEndpoint ? LocationCacheTests.DefaultRegionalEndpoint : LocationCacheTests.DefaultEndpoint;
             }
             else if (!useMultipleWriteLocations)
             {
@@ -1860,28 +1879,45 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             }
             else if (availableWriteEndpoints.Length > 1)
             {
-                firstAvailableWriteEndpoint = availableWriteEndpoints[0];
-                secondAvailableWriteEndpoint = availableWriteEndpoints[1];
+
+                if (isDefaultEndpointARegionalEndpoint && isPreferredLocationsListEmpty)
+                {
+                    firstAvailableWriteEndpoint = LocationCacheTests.DefaultRegionalEndpoint;
+                    secondAvailableWriteEndpoint = LocationCacheTests.DefaultRegionalEndpoint;
+                }
+                else
+                {
+                    firstAvailableWriteEndpoint = availableWriteEndpoints[0];
+                    secondAvailableWriteEndpoint = availableWriteEndpoints[1];
+                }
             }
             else if (availableWriteEndpoints.Length > 0)
             {
-                firstAvailableWriteEndpoint = availableWriteEndpoints[0];
-                secondAvailableWriteEndpoint =
-                    this.databaseAccount.WriteLocationsInternal[0].Endpoint != firstAvailableWriteEndpoint.ToString() ?
-                    new Uri(this.databaseAccount.WriteLocationsInternal[0].Endpoint) :
-                    new Uri(this.databaseAccount.WriteLocationsInternal[1].Endpoint);
+                if (isDefaultEndpointARegionalEndpoint && isPreferredLocationsListEmpty)
+                {
+                    firstAvailableWriteEndpoint = LocationCacheTests.DefaultRegionalEndpoint;
+                    secondAvailableWriteEndpoint = LocationCacheTests.DefaultRegionalEndpoint;
+                }
+                else
+                {
+                    firstAvailableWriteEndpoint = availableWriteEndpoints[0];
+                    secondAvailableWriteEndpoint =
+                        this.databaseAccount.WriteLocationsInternal[0].Endpoint != firstAvailableWriteEndpoint.ToString() ?
+                        new Uri(this.databaseAccount.WriteLocationsInternal[0].Endpoint) :
+                        new Uri(this.databaseAccount.WriteLocationsInternal[1].Endpoint);
+                }
             }
             else
             {
-                firstAvailableWriteEndpoint = LocationCacheTests.DefaultEndpoint;
-                secondAvailableWriteEndpoint = LocationCacheTests.DefaultEndpoint;
+                firstAvailableWriteEndpoint = isDefaultEndpointARegionalEndpoint ? LocationCacheTests.DefaultRegionalEndpoint : LocationCacheTests.DefaultEndpoint;
+                secondAvailableWriteEndpoint = isDefaultEndpointARegionalEndpoint ? LocationCacheTests.DefaultRegionalEndpoint : LocationCacheTests.DefaultEndpoint;
             }
 
             Uri firstAvailableReadEndpoint;
 
             if (!endpointDiscoveryEnabled)
             {
-                firstAvailableReadEndpoint = LocationCacheTests.DefaultEndpoint;
+                firstAvailableReadEndpoint = isDefaultEndpointARegionalEndpoint ? LocationCacheTests.DefaultRegionalEndpoint : LocationCacheTests.DefaultEndpoint;
             }
             else if (availableReadEndpoints.Length > 0)
             {
@@ -1900,6 +1936,12 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 LocationCacheTests.DefaultEndpoint :
                 new Uri(this.databaseAccount.WriteLocationsInternal[1].Endpoint);
 
+            if (isDefaultEndpointARegionalEndpoint && !endpointDiscoveryEnabled)
+            {
+                firstWriteEndpoint = LocationCacheTests.DefaultRegionalEndpoint;
+                secondWriteEndpoint = LocationCacheTests.DefaultRegionalEndpoint;
+            }
+            
             // If current write endpoint is unavailable, write endpoints order doesn't change
             // All write requests flip-flop between current write and alternate write endpoint
             ReadOnlyCollection<Uri> writeEndpoints = this.cache.WriteEndpoints;
