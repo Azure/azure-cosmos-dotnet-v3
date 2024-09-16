@@ -321,18 +321,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private async Task GivenInvalidParentFeedRangeExpectsArgumentExceptionIsFeedRangePartOfAsyncTestAsync<TException>(FeedRange feedRange, string expectedMessage)
             where TException : Exception
         {
-            Container container = default;
-
             try
             {
-                ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(
-                    id: Guid.NewGuid().ToString(),
-                    partitionKeyPath: "/pk");
-
-                container = containerResponse.Container;
-
                 TException exception = await Assert.ThrowsExceptionAsync<TException>(
-                    async () => await ((ContainerInternal)container).IsFeedRangePartOfAsync(
+                    async () => await this.containerInternal.IsFeedRangePartOfAsync(
                         parentFeedRange: feedRange,
                         childFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>("", "3FFFFFFFFFFFFFFF", true, false)),
                         cancellationToken: CancellationToken.None));
@@ -343,13 +335,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (Exception exception)
             {
                 Assert.Fail(exception.Message);
-            }
-            finally
-            {
-                if (container != null)
-                {
-                    await container.DeleteContainerAsync();
-                }
             }
         }
 
@@ -404,13 +389,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (Exception exception)
             {
                 Assert.Fail(exception.Message);
-            }
-            finally
-            {
-                if (container != null)
-                {
-                    await container.DeleteContainerAsync();
-                }
             }
         }
 
