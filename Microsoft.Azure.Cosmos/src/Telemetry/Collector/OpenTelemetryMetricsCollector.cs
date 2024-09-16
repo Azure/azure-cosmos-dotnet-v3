@@ -5,7 +5,9 @@
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Diagnostics.Metrics;
     using Microsoft.Azure.Cosmos.Telemetry.Collector;
 
     /// <summary>
@@ -16,6 +18,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     {
         private readonly string clientId;
         private readonly string accountName;
+
+        private static readonly ConcurrentBag<Tuple<int, KeyValuePair<string, object>[]>> maxItemCounts = new ();
 
         /// <summary>
         /// Initializes a new instance of the OpenTelemetryMetricsCollector class.
@@ -62,12 +66,20 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="dimensions">Key-value pairs representing various metadata about the operation (e.g., container, operation type, consistency level).</param>
         private static void PushOperationLevelMetrics(TelemetryInformation telemetryInformation, KeyValuePair<string, object>[] dimensions)
         {
-            OpenTelemetryMetrics.MaxItemCounter.Add(Convert.ToInt32(telemetryInformation.MaxItemCount), dimensions);
-            OpenTelemetryMetrics.ActualItemCounter.Add(Convert.ToInt32(telemetryInformation.ActualItemCount), dimensions);
-            OpenTelemetryMetrics.RegionsContactedCounter.Add(telemetryInformation.RegionsContactedList.Count, dimensions);
+            maxItemCounts.Add(new Tuple<int, KeyValuePair<string, object>[]>(Convert.ToInt32(telemetryInformation.MaxItemCount), dimensions));
+
             OpenTelemetryMetrics.RequestUnitsHistogram.Record(telemetryInformation.RequestCharge, dimensions);
             OpenTelemetryMetrics.RequestLatencyHistogram.Record(telemetryInformation.RequestLatency.Value.Milliseconds, dimensions);
             OpenTelemetryMetrics.NumberOfOperationCallCounter.Add(1, dimensions);
         }
+
+        public static IEnumerable<Measurement<int>> GetMaxItemCount()
+        {
+            foreach (Tuple<int, KeyValuePair<string, object>[]> maxItemCount in maxItemCounts)
+            {
+                yield return new Measurement<int>(maxItemCount.Item1, maxItemCount.Item2);
+            }
+        }   
+
     }
 }

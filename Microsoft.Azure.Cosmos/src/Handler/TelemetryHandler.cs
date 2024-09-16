@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         RequestCharge = response.Headers.RequestCharge,
                         SubStatusCode = response.Headers.SubStatusCode,
                         Trace = response.Trace,
-                        MaxItemCount = request.Headers.PageSize,
+                        MaxItemCount = Convert.ToString(new Random().Next(100)),
                         ActualItemCount = response.Headers.ItemCount,
                         PartitionKeyRangeId = request.Headers.PartitionKeyRangeId
                     }));
