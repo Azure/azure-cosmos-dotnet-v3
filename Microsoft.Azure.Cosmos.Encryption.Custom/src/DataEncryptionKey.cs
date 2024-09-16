@@ -30,11 +30,33 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public abstract byte[] EncryptData(byte[] plainText);
 
         /// <summary>
+        /// Encrypts the plainText with a data encryption key.
+        /// </summary>
+        /// <param name="plainText">Plain text value to be encrypted.</param>
+        /// <param name="plainTextOffset">Offset in the plainText array at which to begin using data from.</param>
+        /// <param name="plainTextLength">Number of bytes in the plainText array to use as input.</param>
+        /// <param name="output">Output buffer to write the encrypted data to.</param>
+        /// <param name="outputOffset">Offset in the output array at which to begin writing data to.</param>
+        /// <returns>Encrypted value.</returns>
+        public abstract int EncryptData(byte[] plainText, int plainTextOffset, int plainTextLength, byte[] output, int outputOffset);
+
+        /// <summary>
         /// Decrypts the cipherText with a data encryption key.
         /// </summary>
         /// <param name="cipherText">Ciphertext value to be decrypted.</param>
         /// <returns>Plain text.</returns>
         public abstract byte[] DecryptData(byte[] cipherText);
+
+        /// <summary>
+        /// Decrypts the cipherText with a data encryption key.
+        /// </summary>
+        /// <param name="cipherText">Ciphertext value to be decrypted.</param>
+        /// <param name="cipherTextOffset">Offset in the cipherText array at which to begin using data from.</param>
+        /// <param name="cipherTextLength">Number of bytes in the cipherText array to use as input.</param>
+        /// <param name="output">Output buffer to write the decrypted data to.</param>
+        /// <param name="outputOffset">Offset in the output array at which to begin writing data to.</param>
+        /// <returns>Plain text.</returns>
+        public abstract int DecryptData(byte[] cipherText, int cipherTextOffset, int cipherTextLength, byte[] output, int outputOffset);
 
         /// <summary>
         /// Generates raw data encryption key bytes suitable for use with the provided encryption algorithm.

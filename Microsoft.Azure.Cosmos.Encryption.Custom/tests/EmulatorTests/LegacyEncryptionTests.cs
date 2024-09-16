@@ -1763,6 +1763,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 return dek.DecryptData(cipherText);
             }
 
+            public override async Task<int> DecryptAsync(byte[] cipherText, int cipherTextOffset, int cipherTextLength, byte[] output, int outputOffset, string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
+            {
+                if (this.FailDecryption && dataEncryptionKeyId.Equals("failDek"))
+                {
+                    throw new InvalidOperationException($"Null {nameof(DataEncryptionKey)} returned.");
+                }
+
+                DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync(
+                    dataEncryptionKeyId,
+                    encryptionAlgorithm,
+                    cancellationToken);
+
+                if (dek == null)
+                {
+                    throw new InvalidOperationException($"Null {nameof(DataEncryptionKey)} returned from {nameof(this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync)}.");
+                }
+
+                return dek.DecryptData(cipherText, cipherTextOffset, cipherTextLength, output, outputOffset);
+            }
+
             public override async Task<byte[]> EncryptAsync(
                 byte[] plainText,
                 string dataEncryptionKeyId,
@@ -1775,6 +1795,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     cancellationToken);
 
                 return dek.EncryptData(plainText);
+            }
+
+            public override async Task<int> EncryptAsync(byte[] plainText, int plainTextOffset, int plainTextLength, byte[] output, int outputOffset, string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
+            {
+                DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync(
+                    dataEncryptionKeyId,
+                    encryptionAlgorithm,
+                    cancellationToken);
+
+                return dek.EncryptData(plainText, plainTextOffset, plainTextLength, output, outputOffset);
             }
         }        
 

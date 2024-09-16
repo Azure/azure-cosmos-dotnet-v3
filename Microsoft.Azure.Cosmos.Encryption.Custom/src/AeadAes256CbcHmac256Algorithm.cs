@@ -141,6 +141,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// Encryption Algorithm
         /// cell_iv = HMAC_SHA-2-256(iv_key, cell_data) truncated to 128 bits
         /// cell_ciphertext = AES-CBC-256(enc_key, cell_iv, cell_data) with PKCS7 padding.
+        /// cell_tag = HMAC_SHA-2-256(mac_key, versionbyte + cell_iv + cell_ciphertext + versionbyte_length)
+        /// cell_blob = versionbyte + cell_tag + cell_iv + cell_ciphertext
+        /// </summary>
+        /// <param name="plainText">Plaintext data to be encrypted</param>
+        /// <returns>Returns the ciphertext corresponding to the plaintext.</returns>
+        public override int EncryptData(byte[] plainText, int plainTextOffset, int plainTextLength, byte[] output, int outputOffset)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Encryption Algorithm
+        /// cell_iv = HMAC_SHA-2-256(iv_key, cell_data) truncated to 128 bits
+        /// cell_ciphertext = AES-CBC-256(enc_key, cell_iv, cell_data) with PKCS7 padding.
         /// (optional) cell_tag = HMAC_SHA-2-256(mac_key, versionbyte + cell_iv + cell_ciphertext + versionbyte_length)
         /// cell_blob = versionbyte + [cell_tag] + cell_iv + cell_ciphertext
         /// </summary>
@@ -417,6 +431,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Debug.Assert(computedHash.Length >= authenticationTag.Length);
             Buffer.BlockCopy(computedHash, 0, authenticationTag, 0, authenticationTag.Length);
             return authenticationTag;
+        }
+
+        public override int DecryptData(byte[] cipherText, int cipherTextOffset, int cipherTextLength, byte[] output, int outputOffset)
+        {
+            throw new NotImplementedException();
         }
     }
 }
