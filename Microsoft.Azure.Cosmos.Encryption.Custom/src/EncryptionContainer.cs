@@ -1027,6 +1027,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 processorName,
                 onChangesDelegate);
         }
+
+        public override Task<bool> IsFeedRangePartOfAsync(
+            Cosmos.FeedRange parentFeedRange,
+            Cosmos.FeedRange childFeedRange,
+            CancellationToken cancellationToken = default)
+        {
+            return this.container.IsFeedRangePartOfAsync(
+                parentFeedRange,
+                childFeedRange,
+                cancellationToken);
+        }
 #endif
         private async Task<ResponseMessage> ReadManyItemsHelperAsync(
            IReadOnlyList<(string id, PartitionKey partitionKey)> items,

@@ -1257,7 +1257,6 @@ namespace Microsoft.Azure.Cosmos
                 applyBuilderConfiguration: changeFeedProcessor.ApplyBuildConfiguration).WithChangeFeedMode(mode);
         }
 
-#if PREVIEW
         public override async Task<bool> IsFeedRangePartOfAsync(
             FeedRange parentFeedRange,
             FeedRange childFeedRange,
@@ -1274,14 +1273,20 @@ namespace Microsoft.Azure.Cosmos
 
                 try
                 {
-                    if (!FeedRangeInternal.TryParse(parentFeedRange.ToJsonString(), out FeedRangeInternal parentFeedRangeInternal))
+                    if (parentFeedRange is not FeedRangeInternal parentFeedRangeInternal)
                     {
-                        throw new ArgumentException(string.Format(ClientResources.FeedToken_UnknownFormat, parentFeedRange.ToJsonString()));
+                        if (!FeedRangeInternal.TryParse(parentFeedRange.ToJsonString(), out parentFeedRangeInternal))
+                        {
+                            throw new ArgumentException(string.Format(ClientResources.FeedToken_UnknownFormat, parentFeedRange.ToJsonString()));
+                        }
                     }
 
-                    if (!FeedRangeInternal.TryParse(childFeedRange.ToJsonString(), out FeedRangeInternal childFeedRangeInternal))
+                    if (childFeedRange is not FeedRangeInternal childFeedRangeInternal)
                     {
-                        throw new ArgumentException(string.Format(ClientResources.FeedToken_UnknownFormat, childFeedRange.ToJsonString()));
+                        if (!FeedRangeInternal.TryParse(childFeedRange.ToJsonString(), out childFeedRangeInternal))
+                        {
+                            throw new ArgumentException(string.Format(ClientResources.FeedToken_UnknownFormat, childFeedRange.ToJsonString()));
+                        }
                     }
 
                     PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync(cancellationToken);
@@ -1368,17 +1373,25 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         internal static void EnsureConsistentInclusivity(List<Range<string>> ranges)
         {
-            Documents.Routing.Range<string> firstRange = ranges.FirstOrDefault();
-            bool areAllMinsSame = ranges.All(range => range.IsMinInclusive == firstRange.IsMinInclusive);
-            bool areAllMaxsSame = ranges.All(range => range.IsMaxInclusive == firstRange.IsMaxInclusive);
+            bool areAnyDifferent = false;
 
-            if (!areAllMinsSame || !areAllMaxsSame)
+            if (ranges.FirstOrDefault() is var firstRange)
             {
-                string differingMins = string.Join(", ", ranges.Select(range => range.IsMinInclusive).Distinct());
-                string differingMaxs = string.Join(", ", ranges.Select(range => range.IsMaxInclusive).Distinct());
+                foreach (Documents.Routing.Range<string> range in ranges.Skip(1))
+                {
+                    if (range.IsMinInclusive != firstRange.IsMinInclusive || range.IsMaxInclusive != firstRange.IsMaxInclusive)
+                    {
+                        areAnyDifferent = true;
+                        break;
+                    }
+                }
+            }
 
-                throw new InvalidOperationException($"Not all 'IsMinInclusive' or 'IsMaxInclusive' values are the same. " +
-                    $"IsMinInclusive found: {differingMins}, IsMaxInclusive found: {differingMaxs}.");
+            if (areAnyDifferent)
+            {
+                string result = $"IsMinInclusive found: {string.Join(", ", ranges.Select(range => range.IsMinInclusive).Distinct())}, IsMaxInclusive found: {string.Join(", ", ranges.Select(range => range.IsMaxInclusive).Distinct())}.";
+
+                throw new InvalidOperationException($"Not all 'IsMinInclusive' or 'IsMaxInclusive' values are the same. {result}");
             }
         }
 
@@ -1406,6 +1419,5 @@ namespace Microsoft.Azure.Cosmos
 
             return isMinWithinParent && isMaxWithinParent;
         }
-#endif
     }
 }
