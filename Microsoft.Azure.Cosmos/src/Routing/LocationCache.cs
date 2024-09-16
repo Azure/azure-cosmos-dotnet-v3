@@ -253,6 +253,14 @@ namespace Microsoft.Azure.Cosmos.Routing
             return this.locationInfo.AvailableReadEndpointByLocation;
         }
 
+        /// <summary>
+        /// Gets account-level write locations.
+        /// </summary>
+        public ReadOnlyCollection<string> GetAvailableWriteLocations()
+        {
+            return this.locationInfo.AvailableWriteLocations;
+        }
+        
         public Uri GetHubUri()
         {
             DatabaseAccountLocationsInfo currentLocationInfo = this.locationInfo;
