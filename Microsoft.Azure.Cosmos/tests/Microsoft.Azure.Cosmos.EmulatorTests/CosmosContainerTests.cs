@@ -11,7 +11,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using System.Net;
     using System.Threading.Tasks;
+    using HttpConstants = Microsoft.Azure.Documents.HttpConstants;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -629,7 +631,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             requestChargeHandler.TotalRequestCharges = 0;
             ContainerResponse createWithConflictResponse = await database.CreateContainerIfNotExistsAsync(
-                Guid.NewGuid().ToString(),
+                Guid.NewGuid().ToString(), 
                 "/pk");
 
             Assert.AreEqual(requestChargeHandler.TotalRequestCharges, createWithConflictResponse.RequestCharge);
@@ -749,9 +751,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(nameof(settings.PartitionKey), ex.ParamName);
                 Assert.IsTrue(ex.Message.Contains(string.Format(
                     ClientResources.PartitionKeyPathConflict,
-                    string.Join(",", partitionKeyPath2),
+                    string.Join(",",partitionKeyPath2),
                     containerName,
-                    string.Join(",", partitionKeyPath1))));
+                    string.Join(",",partitionKeyPath1))));
             }
 
             // Mismatch in the 2nd path
@@ -774,7 +776,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     string.Join(",", partitionKeyPath1))));
             }
 
-
+            
             //Create and fetch container with same paths
             List<string> partitionKeyPath4 = new List<string>();
             partitionKeyPath4.Add("/users");
@@ -1394,7 +1396,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Id = containerName,
                 PartitionKey = new Documents.PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = Documents.PartitionKind.Hash },
-                ClientEncryptionPolicy = new ClientEncryptionPolicy(includedPaths: paths, policyFormatVersion: 2)
+                ClientEncryptionPolicy = new ClientEncryptionPolicy(includedPaths:paths,policyFormatVersion:2)
             };
 
             ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(setting);
@@ -1423,7 +1425,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             ContainerResponse readResponse = await container.ReadContainerAsync();
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
-            Assert.IsNotNull(readResponse.Resource.ClientEncryptionPolicy);
+            Assert.IsNotNull(readResponse.Resource.ClientEncryptionPolicy);           
 
             // version 1 test.
             containerName = Guid.NewGuid().ToString();
@@ -1473,7 +1475,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             readResponse = await container.ReadContainerAsync();
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
-            Assert.IsNotNull(readResponse.Resource.ClientEncryptionPolicy);
+            Assert.IsNotNull(readResponse.Resource.ClientEncryptionPolicy);           
 
             // replace without updating CEP should be successful
             readResponse.Resource.IndexingPolicy = new Cosmos.IndexingPolicy()
@@ -1528,7 +1530,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 };
 
                 Assert.Fail("Creating ContainerProperties should have failed.");
-            }
+            }            
             catch (ArgumentException ex)
             {
                 Assert.IsTrue(ex.Message.Contains("EncryptionAlgorithm should be 'AEAD_AES_256_CBC_HMAC_SHA256'."), ex.Message);
@@ -1561,7 +1563,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     Id = containerName,
                     PartitionKey = new Documents.PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = Documents.PartitionKind.Hash },
-                    ClientEncryptionPolicy = new ClientEncryptionPolicy(pathsList)
+                    ClientEncryptionPolicy = new ClientEncryptionPolicy(pathsList)                    
                 };
 
                 Assert.Fail("Creating ContainerProperties should have failed.");
@@ -1781,6 +1783,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsFalse(containerCore.LinkUri.ToString().StartsWith("/"));
 
             Assert.IsTrue(containerSettings.LastModified.Value > new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), containerSettings.LastModified.Value.ToString());
-        } 
+        }
     }
 }
