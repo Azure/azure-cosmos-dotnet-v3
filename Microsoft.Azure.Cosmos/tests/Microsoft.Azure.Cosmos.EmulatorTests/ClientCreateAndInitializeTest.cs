@@ -13,12 +13,9 @@
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Moq.Protected;
-    using OpenTelemetry.Metrics;
-    using OpenTelemetry;
-    using System.Diagnostics;
 
     [TestClass]
-    public class ClientCreateAndInitializeTest : BaseCosmosClientHelper
+    public class OpenTelemetryMetricsTest : BaseCosmosClientHelper
     {
         private ContainerInternal Container = null;
         private const string PartitionKey = "/pk";
@@ -57,14 +54,6 @@
         [TestMethod]
         public async Task CreateAndInitializeTest()
         {
-            var histogramBuckets = new double[] { 0, 5, 10, 25, 50, 75, 100, 250, 500 };
-            MeterProvider meterProvider = Sdk
-             .CreateMeterProviderBuilder()
-             .AddMeter("*")
-             .AddView("cosmos.client.op.RUs", new ExplicitBucketHistogramConfiguration { Boundaries = histogramBuckets })
-             .AddConsoleExporter()
-             .Build();
-
             int httpCallsMade = 0;
             HttpClientHandlerHelper httpClientHandlerHelper = new HttpClientHandlerHelper
             {
@@ -85,35 +74,15 @@
             };
 
             CosmosClient cosmosClient = await CosmosClient.CreateAndInitializeAsync(endpoint, authKey, containers, cosmosClientOptions);
-           // Assert.IsNotNull(cosmosClient);
+            Assert.IsNotNull(cosmosClient);
             int httpCallsMadeAfterCreation = httpCallsMade;
 
             ContainerInternal container = (ContainerInternal)cosmosClient.GetContainer(this.database.Id, "ClientCreateAndInitializeContainer");
-
-            await Task.Delay(1000);
-
-            Stopwatch sw = Stopwatch.StartNew();
-            sw.Start();
-            while(true)
-            {
-                ItemResponse<ToDoActivity> readResponse = await container.ReadItemAsync<ToDoActivity>("1", new Cosmos.PartitionKey("Status1"));
-                string diagnostics = readResponse.Diagnostics.ToString();
-                if(sw.ElapsedMilliseconds > 2000)
-                {
-                    break;
-                }
-            }
-            sw.Stop();
-            
-            await Task.Delay(1000);
-            
-          /*  Assert.IsTrue(diagnostics.Contains("\"ConnectionMode\":\"Direct\""));
-            Assert.AreEqual(httpCallsMade, httpCallsMadeAfterCreation);*/
+            ItemResponse<ToDoActivity> readResponse = await container.ReadItemAsync<ToDoActivity>("1", new Cosmos.PartitionKey("Status1"));
+            string diagnostics = readResponse.Diagnostics.ToString();
+            Assert.IsTrue(diagnostics.Contains("\"ConnectionMode\":\"Direct\""));
+            Assert.AreEqual(httpCallsMade, httpCallsMadeAfterCreation);
             cosmosClient.Dispose();
-
-            meterProvider.Dispose();
-
-            await Task.Delay(1000);
         }
 
         [TestMethod]
