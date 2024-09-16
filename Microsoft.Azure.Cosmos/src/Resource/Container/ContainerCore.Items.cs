@@ -1298,19 +1298,24 @@ namespace Microsoft.Azure.Cosmos
 
                     IRoutingMapProvider routingMapProvider = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(trace);
 
+                    List<Range<string>> parentEffectiveRanges = await parentFeedRangeInternal.GetEffectiveRangesAsync(
+                        routingMapProvider: routingMapProvider,
+                        containerRid: containerRId,
+                        partitionKeyDefinition: partitionKeyDefinition,
+                        trace: trace);
+
+                    List<Range<string>> childEffectiveRanges = await childFeedRangeInternal.GetEffectiveRangesAsync(
+                        routingMapProvider: routingMapProvider,
+                        containerRid: containerRId,
+                        partitionKeyDefinition: partitionKeyDefinition,
+                        trace: trace);
+
+                    ContainerCore.EnsureConsistentInclusivity(parentEffectiveRanges);
+                    ContainerCore.EnsureConsistentInclusivity(childEffectiveRanges);
+
                     return ContainerCore.IsSubset(
-                        parentRange: ContainerCore.MergeRanges(
-                            ranges: await parentFeedRangeInternal.GetEffectiveRangesAsync(
-                                routingMapProvider: routingMapProvider,
-                                containerRid: containerRId,
-                                partitionKeyDefinition: partitionKeyDefinition,
-                                trace: trace)),
-                        childRange: ContainerCore.MergeRanges(
-                            ranges: await childFeedRangeInternal.GetEffectiveRangesAsync(
-                                routingMapProvider: routingMapProvider,
-                                containerRid: containerRId,
-                                partitionKeyDefinition: partitionKeyDefinition,
-                                trace: trace)));
+                        parentRange: ContainerCore.MergeRanges(parentEffectiveRanges),
+                        childRange: ContainerCore.MergeRanges(childEffectiveRanges));
                 }
                 catch (DocumentClientException dce)
                 {
@@ -1335,8 +1340,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 return ranges.First();
             }
-
-            ContainerCore.EnsureConsistentInclusivity(ranges);
 
             ranges.Sort(Documents.Routing.Range<string>.MinComparer.Instance);
 
