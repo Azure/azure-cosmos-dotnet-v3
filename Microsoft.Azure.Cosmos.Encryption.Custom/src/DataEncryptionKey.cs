@@ -41,6 +41,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public abstract int EncryptData(byte[] plainText, int plainTextOffset, int plainTextLength, byte[] output, int outputOffset);
 
         /// <summary>
+        /// Calculate size of input after encryption.
+        /// </summary>
+        /// <param name="plainTextLength">Input data size.</param>
+        /// <returns>Size of input when encrypted.</returns>
+        public abstract int GetEncryptByteCount(int plainTextLength);
+
+        /// <summary>
         /// Decrypts the cipherText with a data encryption key.
         /// </summary>
         /// <param name="cipherText">Ciphertext value to be decrypted.</param>
@@ -57,6 +64,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <param name="outputOffset">Offset in the output array at which to begin writing data to.</param>
         /// <returns>Plain text.</returns>
         public abstract int DecryptData(byte[] cipherText, int cipherTextOffset, int cipherTextLength, byte[] output, int outputOffset);
+
+        /// <summary>
+        /// Calculate upper bound size of the input after decryption.
+        /// </summary>
+        /// <param name="cipherTextLength">Input data size.</param>
+        /// <returns>Upper bound size of the input when decrypted.</returns>
+        public abstract int GetDecryptByteCount(int cipherTextLength);
 
         /// <summary>
         /// Generates raw data encryption key bytes suitable for use with the provided encryption algorithm.

@@ -104,7 +104,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             this.RawKey = rawkey;
             this.mdeAeadAes256CbcHmac256EncryptionAlgorithm = AeadAes256CbcHmac256EncryptionAlgorithm.GetOrCreate(
                 dataEncryptionKey,
-                encryptionType);
+                encryptionType,
+                Version);
         }
 
         /// <summary>
@@ -135,6 +136,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public override int DecryptData(byte[] cipherText, int cipherTextOffset, int cipherTextLength, byte[] output, int outputOffset)
         {
             return this.mdeAeadAes256CbcHmac256EncryptionAlgorithm.Decrypt(cipherText, cipherTextOffset, cipherTextLength, output, outputOffset);
+        }
+
+        public override int GetEncryptByteCount(int plainTextLength)
+        {
+            return this.mdeAeadAes256CbcHmac256EncryptionAlgorithm.GetEncryptByteCount(plainTextLength);
+        }
+
+        public override int GetDecryptByteCount(int cipherTextLength)
+        {
+            return this.mdeAeadAes256CbcHmac256EncryptionAlgorithm.GetDecryptByteCount(cipherTextLength);
         }
     }
 }

@@ -97,5 +97,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             return dek.EncryptData(plainText, plainTextOffset, plainTextLength, output, outputOffset);
         }
+
+        public override Task<int> GetEncryptBytesCount(int plainTextLength, string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override Task<int> GetDecryptBytesCount(int cipherTextLength, string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

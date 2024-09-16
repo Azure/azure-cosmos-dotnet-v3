@@ -50,6 +50,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Calculate size of input after encryption.
+        /// </summary>
+        /// <param name="plainTextLength">Input data size.</param>
+        /// <param name="dataEncryptionKeyId">Identifier of the data encryption key.</param>
+        /// <param name="encryptionAlgorithm">Identifier for the encryption algorithm.</param>
+        /// <param name="cancellationToken">Token for cancellation.</param>
+        /// <returns>Size of input when encrypted.</returns>
+        public abstract Task<int> GetEncryptBytesCount(
+            int plainTextLength,
+            string dataEncryptionKeyId,
+            string encryptionAlgorithm,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Decrypts the cipherText using the key and algorithm provided.
         /// </summary>
         /// <param name="cipherText">Ciphertext to be decrypted.</param>
@@ -81,6 +95,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             int cipherTextLength,
             byte[] output,
             int outputOffset,
+            string dataEncryptionKeyId,
+            string encryptionAlgorithm,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Calculate upper bound size of the input after decryption.
+        /// </summary>
+        /// <param name="cipherTextLength">Input data size.</param>
+        /// <param name="dataEncryptionKeyId">Identifier of the data encryption key.</param>
+        /// <param name="encryptionAlgorithm">Identifier for the encryption algorithm.</param>
+        /// <param name="cancellationToken">Token for cancellation.</param>
+        /// <returns>Upper bound size of the input when decrypted.</returns>
+        public abstract Task<int> GetDecryptBytesCount(
+            int cipherTextLength,
             string dataEncryptionKeyId,
             string encryptionAlgorithm,
             CancellationToken cancellationToken = default);

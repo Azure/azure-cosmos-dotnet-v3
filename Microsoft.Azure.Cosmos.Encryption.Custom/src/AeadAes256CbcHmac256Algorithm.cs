@@ -27,9 +27,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         private const int KeySizeInBytes = AeadAes256CbcHmac256EncryptionKey.KeySize / 8;
 
         /// <summary>
+        /// Authentication tag size in bytes
+        /// </summary>
+        private const int AuthenticationTagSizeInBytes = KeySizeInBytes;
+
+        /// <summary>
         /// Block size in bytes. AES uses 16 byte blocks.
         /// </summary>
         private const int BlockSizeInBytes = 16;
+
+        /// <summary>
+        /// Size of Initialization Vector in bytes.
+        /// </summary>
+        private const int IvSizeInBytes = 16;
 
         /// <summary>
         /// Minimum Length of cipherText without authentication tag. This value is 1 (version byte) + 16 (IV) + 16 (minimum of 1 block of cipher Text)
@@ -436,6 +446,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public override int DecryptData(byte[] cipherText, int cipherTextOffset, int cipherTextLength, byte[] output, int outputOffset)
         {
             throw new NotImplementedException();
+        }
+
+        public override int GetEncryptByteCount(int plainTextLength)
+        {
+            // Output buffer size = size of VersionByte + Authentication Tag + IV + cipher Text blocks.
+            return sizeof(byte) + AuthenticationTagSizeInBytes + IvSizeInBytes + GetCipherTextLength(plainTextLength);
+        }
+
+        public override int GetDecryptByteCount(int cipherTextLength)
+        {
+            throw new NotImplementedException();
+        }
+
+        private static int GetCipherTextLength(int inputSize)
+        {
+            return ((inputSize / BlockSizeInBytes) + 1) * BlockSizeInBytes;
         }
     }
 }
