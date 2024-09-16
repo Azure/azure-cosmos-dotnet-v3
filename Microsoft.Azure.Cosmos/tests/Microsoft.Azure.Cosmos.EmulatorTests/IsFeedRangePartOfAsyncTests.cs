@@ -691,7 +691,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <param name="expectedIsSubset">The expected actualIsSubset: true if the child is a subset, false otherwise.</param>
         [TestMethod]
         [Owner("philipthomas-MSFT")]
-        [DataRow("A", "Z", "B", "Y", true, DisplayName = "Child B-Y is a perfect subset of parent A-Z")]
+        [DataRow("A", "Z", "B", "Y", true, DisplayName = "Child B-Y is a perfect subset of parent A-Z. Parent A-Z encapsulates child B-Y")]
         [DataRow("A", "Z", "A", "Z", true, DisplayName = "Child A-Z equals parent A-Z")]
         [DataRow("A", "Z", "@", "Y", false, DisplayName = "Child @-Y has min out of parent A-Z")]
         [DataRow("A", "Z", "B", "[", false, DisplayName = "Child B-[ has max out of parent A-Z")]
@@ -700,7 +700,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow("A", "Z", "A", "[", false, DisplayName = "Child A-[ has min equal to parent but max out of range")]
         [DataRow("A", "Z", "", "", false, DisplayName = "Empty child range")]
         [DataRow("", "", "B", "Y", false, DisplayName = "Empty parent range with non-empty child range")]
-        [DataRow("A", "Z", "B", "Y", true, DisplayName = "Parent A-Z encapsulates child B-Y")]
         public void ValidateChildRangeIsSubsetOfParentForVariousCasesTest(string parentMinimum, string parentMaximum, string childMinimum, string childMaximum, bool expectedIsSubset)
         {
             Documents.Routing.Range<string> parentRange = new Documents.Routing.Range<string>(parentMinimum, parentMaximum, true, true);
