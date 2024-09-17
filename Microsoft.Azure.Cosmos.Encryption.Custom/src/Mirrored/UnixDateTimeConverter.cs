@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             try
             {
-                totalSeconds = Convert.ToDouble(reader.Value, CultureInfo.InvariantCulture);
+                totalSeconds = System.Convert.ToDouble(reader.Value, CultureInfo.InvariantCulture);
             }
             catch
             {

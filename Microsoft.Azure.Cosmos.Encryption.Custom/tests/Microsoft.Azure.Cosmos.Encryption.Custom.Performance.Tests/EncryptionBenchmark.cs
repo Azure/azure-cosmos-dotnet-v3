@@ -35,7 +35,7 @@
             Mock<DataEncryptionKeyProvider> keyProvider = new();
             keyProvider
                 .Setup(x => x.FetchDataEncryptionKeyWithoutRawKeyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(() => new MdeEncryptionAlgorithm(DekProperties, EncryptionType.Deterministic, StoreProvider.Object, cacheTimeToLive: TimeSpan.MaxValue));
+                .ReturnsAsync(() => new MdeEncryptionAlgorithm(DekProperties, EncryptionType.Randomized, StoreProvider.Object, cacheTimeToLive: TimeSpan.MaxValue));
 
             this.encryptor = new(keyProvider.Object);
             this.encryptionOptions = CreateEncryptionOptions();

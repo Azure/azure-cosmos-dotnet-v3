@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
     using System;
+    using System.Buffers;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
@@ -25,6 +26,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         // UTF-8 encoding.
         private static readonly SqlVarCharSerializer SqlVarCharSerializer = new SqlVarCharSerializer(size: -1, codePageCharacterEncoding: 65001);
+        private static readonly SqlBitSerializer SqlBoolSerializer = new SqlBitSerializer();
+        private static readonly SqlFloatSerializer SqlDoubleSerializer = new SqlFloatSerializer();
+        private static readonly SqlBigIntSerializer SqlLongSerializer = new SqlBigIntSerializer();
 
         private static readonly JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings()
         {
@@ -80,6 +84,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             byte[] cipherText = null;
             TypeMarker typeMarker;
 
+            using ArrayPoolManager arrayPoolManager = new ArrayPoolManager();
+
             switch (encryptionOptions.EncryptionAlgorithm)
             {
                 case CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized:
@@ -97,20 +103,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                             continue;
                         }
 
-                        (typeMarker, plainText) = EncryptionProcessor.Serialize(propertyValue);
+                        (typeMarker, plainText, int plainTextLength) = EncryptionProcessor.Serialize(propertyValue, arrayPoolManager);
 
-                        int cipherTextLength = await encryptor.GetEncryptBytesCount(
+                        if (plainText == null)
+                        {
+                            continue;
+                        }
+
+                        int cipherTextLength = await encryptor.GetEncryptBytesCountAsync(
                             plainText.Length,
                             encryptionOptions.DataEncryptionKeyId,
                             encryptionOptions.EncryptionAlgorithm);
 
-                        byte[] cipherTextWithTypeMarker = new byte[cipherTextLength + 1];
+                        byte[] cipherTextWithTypeMarker = arrayPoolManager.Rent(cipherTextLength + 1);
+
                         cipherTextWithTypeMarker[0] = (byte)typeMarker;
 
                         int encryptedBytesCount = await encryptor.EncryptAsync(
                             plainText,
                             plainTextOffset: 0,
-                            plainTextLength: plainText.Length,
+                            plainTextLength,
                             cipherTextWithTypeMarker,
                             outputOffset: 1,
                             encryptionOptions.DataEncryptionKeyId,
@@ -121,16 +133,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                             throw new InvalidOperationException($"{nameof(Encryptor)} returned null cipherText from {nameof(EncryptAsync)}.");
                         }
 
-                        itemJObj[propertyName] = cipherTextWithTypeMarker;
+                        itemJObj[propertyName] = cipherTextWithTypeMarker.AsSpan(0, encryptedBytesCount + 1).ToArray();
                         pathsEncrypted.Add(pathToEncrypt);
                     }
 
                     encryptionProperties = new EncryptionProperties(
-                          encryptionFormatVersion: 3,
-                          encryptionOptions.EncryptionAlgorithm,
-                          encryptionOptions.DataEncryptionKeyId,
-                          encryptedData: null,
-                          pathsEncrypted);
+                            encryptionFormatVersion: 3,
+                            encryptionOptions.EncryptionAlgorithm,
+                            encryptionOptions.DataEncryptionKeyId,
+                            encryptedData: null,
+                            pathsEncrypted);
                     break;
 
                 case CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized:
@@ -166,11 +178,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     }
 
                     encryptionProperties = new EncryptionProperties(
-                          encryptionFormatVersion: 2,
-                          encryptionOptions.EncryptionAlgorithm,
-                          encryptionOptions.DataEncryptionKeyId,
-                          encryptedData: cipherText,
-                          encryptionOptions.PathsToEncrypt);
+                            encryptionFormatVersion: 2,
+                            encryptionOptions.EncryptionAlgorithm,
+                            encryptionOptions.DataEncryptionKeyId,
+                            encryptedData: cipherText,
+                            encryptionOptions.PathsToEncrypt);
                     break;
 
                 default:
@@ -278,6 +290,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
+            using ArrayPoolManager arrayPoolManager = new ArrayPoolManager();
+
             JObject plainTextJObj = new JObject();
             foreach (string path in encryptionProperties.EncryptedPaths)
             {
@@ -288,25 +302,31 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 }
 
                 byte[] cipherTextWithTypeMarker = propertyValue.ToObject<byte[]>();
-
                 if (cipherTextWithTypeMarker == null)
                 {
                     continue;
                 }
 
-                byte[] cipherText = new byte[cipherTextWithTypeMarker.Length - 1];
-                Buffer.BlockCopy(cipherTextWithTypeMarker, 1, cipherText, 0, cipherTextWithTypeMarker.Length - 1);
+                int plainTextLength = await encryptor.GetDecryptBytesCountAsync(
+                    cipherTextWithTypeMarker.Length - 1,
+                    encryptionProperties.DataEncryptionKeyId,
+                    encryptionProperties.EncryptionAlgorithm);
 
-                byte[] plainText = await EncryptionProcessor.MdeEncAlgoDecryptPropertyAsync(
+                byte[] plainText = arrayPoolManager.Rent(plainTextLength);
+
+                int decryptedCount = await EncryptionProcessor.MdeEncAlgoDecryptPropertyAsync(
                     encryptionProperties,
-                    cipherText,
+                    cipherTextWithTypeMarker,
+                    cipherTextOffset: 1,
+                    cipherTextWithTypeMarker.Length - 1,
+                    plainText,
                     encryptor,
                     diagnosticsContext,
                     cancellationToken);
 
                 EncryptionProcessor.DeserializeAndAddProperty(
                     (TypeMarker)cipherTextWithTypeMarker[0],
-                    plainText,
+                    plainText.AsSpan(0, decryptedCount),
                     plainTextJObj,
                     propertyName);
             }
@@ -340,9 +360,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return decryptionContext;
         }
 
-        private static async Task<byte[]> MdeEncAlgoDecryptPropertyAsync(
+        private static async Task<int> MdeEncAlgoDecryptPropertyAsync(
             EncryptionProperties encryptionProperties,
             byte[] cipherText,
+            int cipherTextOffset,
+            int cipherTextLength,
+            byte[] buffer,
             Encryptor encryptor,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
@@ -352,18 +375,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 throw new NotSupportedException($"Unknown encryption format version: {encryptionProperties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
             }
 
-            byte[] plainText = await encryptor.DecryptAsync(
+            int decryptedCount = await encryptor.DecryptAsync(
                 cipherText,
+                cipherTextOffset,
+                cipherTextLength,
+                buffer,
+                outputOffset: 0,
                 encryptionProperties.DataEncryptionKeyId,
                 encryptionProperties.EncryptionAlgorithm,
                 cancellationToken);
 
-            if (plainText == null)
+            if (decryptedCount < 0)
             {
                 throw new InvalidOperationException($"{nameof(Encryptor)} returned null plainText from {nameof(DecryptAsync)}.");
             }
 
-            return plainText;
+            return decryptedCount;
         }
 
         private static async Task<DecryptionContext> LegacyEncAlgoDecryptContentAsync(
@@ -483,49 +510,71 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return encryptionPropertiesJObj;
         }
 
-        private static (TypeMarker, byte[]) Serialize(JToken propertyValue)
+        private static (TypeMarker typeMarker, byte[] serializedBytes, int serializedBytesCount) Serialize(JToken propertyValue, ArrayPoolManager arrayPoolManager)
         {
+            byte[] buffer;
+            int length;
             switch (propertyValue.Type)
             {
                 case JTokenType.Undefined:
                     Debug.Assert(false, "Undefined value cannot be in the JSON");
-                    return (default, null);
+                    return (default, null, -1);
                 case JTokenType.Null:
                     Debug.Assert(false, "Null type should have been handled by caller");
-                    return (TypeMarker.Null, null);
+                    return (TypeMarker.Null, null, -1);
                 case JTokenType.Boolean:
-                    return (TypeMarker.Boolean, SqlSerializerFactory.GetDefaultSerializer<bool>().Serialize(propertyValue.ToObject<bool>()));
+                    (buffer, length) = SerializeFixed(SqlBoolSerializer);
+                    return (TypeMarker.Boolean, buffer, length);
                 case JTokenType.Float:
-                    return (TypeMarker.Double, SqlSerializerFactory.GetDefaultSerializer<double>().Serialize(propertyValue.ToObject<double>()));
+                    (buffer, length) = SerializeFixed(SqlDoubleSerializer);
+                    return (TypeMarker.Double, buffer, length);
                 case JTokenType.Integer:
-                    return (TypeMarker.Long, SqlSerializerFactory.GetDefaultSerializer<long>().Serialize(propertyValue.ToObject<long>()));
+                    (buffer, length) = SerializeFixed(SqlLongSerializer);
+                    return (TypeMarker.Long, buffer, length);
                 case JTokenType.String:
-                    return (TypeMarker.String, SqlVarCharSerializer.Serialize(propertyValue.ToObject<string>()));
+                    (buffer, length) = SerializeString(propertyValue.ToObject<string>());
+                    return (TypeMarker.String, buffer, length);
                 case JTokenType.Array:
-                    return (TypeMarker.Array, SqlVarCharSerializer.Serialize(propertyValue.ToString()));
+                    (buffer, length) = SerializeString(propertyValue.ToString());
+                    return (TypeMarker.Array, buffer, length);
                 case JTokenType.Object:
-                    return (TypeMarker.Object, SqlVarCharSerializer.Serialize(propertyValue.ToString()));
+                    (buffer, length) = SerializeString(propertyValue.ToString());
+                    return (TypeMarker.Object, buffer, length);
                 default:
                     throw new InvalidOperationException($" Invalid or Unsupported Data Type Passed : {propertyValue.Type}");
+            }
+
+            (byte[] bytes, int length) SerializeFixed<T>(IFixedSizeSerializer<T> serializer)
+            {
+                byte[] buffer = arrayPoolManager.Rent(serializer.GetSerializedMaxByteCount());
+                int bytes = serializer.Serialize(propertyValue.ToObject<T>(), buffer);
+                return (buffer, bytes);
+            }
+
+            (byte[] bytes, int length) SerializeString(string value)
+            {
+                byte[] buffer = arrayPoolManager.Rent(SqlVarCharSerializer.GetSerializedMaxByteCount(value.Length));
+                int bytes = SqlVarCharSerializer.Serialize(value, buffer);
+                return (buffer, bytes);
             }
         }
 
         private static void DeserializeAndAddProperty(
             TypeMarker typeMarker,
-            byte[] serializedBytes,
+            ReadOnlySpan<byte> serializedBytes,
             JObject jObject,
             string key)
         {
             switch (typeMarker)
             {
                 case TypeMarker.Boolean:
-                    jObject.Add(key, SqlSerializerFactory.GetDefaultSerializer<bool>().Deserialize(serializedBytes));
+                    jObject.Add(key, SqlBoolSerializer.Deserialize(serializedBytes));
                     break;
                 case TypeMarker.Double:
-                    jObject.Add(key, SqlSerializerFactory.GetDefaultSerializer<double>().Deserialize(serializedBytes));
+                    jObject.Add(key, SqlDoubleSerializer.Deserialize(serializedBytes));
                     break;
                 case TypeMarker.Long:
-                    jObject.Add(key, SqlSerializerFactory.GetDefaultSerializer<long>().Deserialize(serializedBytes));
+                    jObject.Add(key, SqlLongSerializer.Deserialize(serializedBytes));
                     break;
                 case TypeMarker.String:
                     jObject.Add(key, SqlVarCharSerializer.Deserialize(serializedBytes));
@@ -586,6 +635,28 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             // the contents of contentJObj get decrypted in place for MDE algorithm model, and for legacy model _ei property is removed
             // and corresponding decrypted properties are added back in the documents.
             return EncryptionProcessor.BaseSerializer.ToStream(contentJObj);
+        }
+
+        internal static int GetOriginalBase64Length(string base64string)
+        {
+            if (string.IsNullOrEmpty(base64string))
+            {
+                return 0;
+            }
+
+            int paddingCount = 0;
+            int characterCount = base64string.Length;
+            if (base64string[characterCount - 1] == '=')
+            {
+                paddingCount++;
+            }
+
+            if (base64string[characterCount - 2] == '=')
+            {
+                paddingCount++;
+            }
+
+            return (3 * (characterCount / 4)) - paddingCount;
         }
     }
 }

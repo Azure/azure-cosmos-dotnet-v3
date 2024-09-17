@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <param name="encryptionAlgorithm">Identifier for the encryption algorithm.</param>
         /// <param name="cancellationToken">Token for cancellation.</param>
         /// <returns>Size of input when encrypted.</returns>
-        public abstract Task<int> GetEncryptBytesCount(
+        public abstract Task<int> GetEncryptBytesCountAsync(
             int plainTextLength,
             string dataEncryptionKeyId,
             string encryptionAlgorithm,
@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <param name="encryptionAlgorithm">Identifier for the encryption algorithm.</param>
         /// <param name="cancellationToken">Token for cancellation.</param>
         /// <returns>Upper bound size of the input when decrypted.</returns>
-        public abstract Task<int> GetDecryptBytesCount(
+        public abstract Task<int> GetDecryptBytesCountAsync(
             int cipherTextLength,
             string dataEncryptionKeyId,
             string encryptionAlgorithm,

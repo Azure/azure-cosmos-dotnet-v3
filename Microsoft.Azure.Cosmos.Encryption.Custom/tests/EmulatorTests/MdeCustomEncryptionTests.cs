@@ -2292,7 +2292,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 return dek.EncryptData(plainText, plainTextOffset, plainTextLength, output, outputOffset);
             }
 
-            public override async Task<int> GetEncryptBytesCount(int plainTextLength, string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
+            public override async Task<int> GetEncryptBytesCountAsync(int plainTextLength, string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
             {
                 DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync(
                     dataEncryptionKeyId,
@@ -2302,7 +2302,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 return dek.GetEncryptByteCount(plainTextLength);
             }
 
-            public override async Task<int> GetDecryptBytesCount(int cipherTextLength, string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
+            public override async Task<int> GetDecryptBytesCountAsync(int cipherTextLength, string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
             {
                 DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync(
                     dataEncryptionKeyId,
