@@ -6,7 +6,7 @@ Make sure that your applications, when using the .NET V3 SDK, are using at least
 
 Any known issues detected on that version are listed in the [known issues](#known-issues) section.
 
-> NOTE: Microsoft.Azure.Cosmos has Newtonsoft.Json (10.0.3) as default dependency which has a known high [severity vulnerability](https://github.com/advisories/GHSA-5crp-9r3c-p9vr), please upgrade to latest patched version.
+> NOTE: Microsoft.Azure.Cosmos has Newtonsoft.Json (10.0.3) as default dependency which has a known high [severity vulnerability](https://github.com/advisories/GHSA-5crp-9r3c-p9vr), please upgrade to latest patched version by adding an explicit reference in your csproj file.
 
 ## Release notes
 
