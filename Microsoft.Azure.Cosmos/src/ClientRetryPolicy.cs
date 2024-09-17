@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos
         private int serviceUnavailableRetryCount;
         private bool isReadRequest;
         private bool canUseMultipleWriteLocations;
-        private bool isMultiMasterWriteRegion;
+        private bool isMultiMasterWriteRequest;
         private Uri locationEndpoint;
         private RetryContext retryContext;
         private DocumentServiceRequest documentServiceRequest;
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos
             this.sessionTokenRetryCount = 0;
             this.serviceUnavailableRetryCount = 0;
             this.canUseMultipleWriteLocations = false;
-            this.isMultiMasterWriteRegion = false;
+            this.isMultiMasterWriteRequest = false;
             this.isPertitionLevelFailoverEnabled = isPertitionLevelFailoverEnabled;
         }
 
@@ -192,7 +192,7 @@ namespace Microsoft.Azure.Cosmos
             this.isReadRequest = request.IsReadOnlyRequest;
             this.canUseMultipleWriteLocations = this.globalEndpointManager.CanUseMultipleWriteLocations(request);
             this.documentServiceRequest = request;
-            this.isMultiMasterWriteRegion = !this.isReadRequest 
+            this.isMultiMasterWriteRequest = !this.isReadRequest
                 && (this.globalEndpointManager?.CanSupportMultipleWriteLocations(request) ?? false);
 
             // clear previous location-based routing directive
@@ -518,7 +518,7 @@ namespace Microsoft.Azure.Cosmos
             HttpStatusCode? statusCode,
             SubStatusCodes? subStatusCode)
         {
-            return this.isMultiMasterWriteRegion
+            return this.isMultiMasterWriteRequest
                 && statusCode.HasValue
                 && (int)statusCode.Value == (int)StatusCodes.TooManyRequests
                 && subStatusCode == SubStatusCodes.SystemResourceUnavailable;
