@@ -79,7 +79,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     queryPaginationOptions: queryPaginationOptions,
                     maxConcurrency: maxConcurrency,
                     nonStreamingOrderBy: queryInfo.HasNonStreamingOrderBy,
-                    continuationToken: continuationToken);
+                    continuationToken: continuationToken,
+                    containerQueryProperties: containerQueryProperties);
             }
             else
             {

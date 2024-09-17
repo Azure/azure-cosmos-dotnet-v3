@@ -56,11 +56,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
             return CosmosNumber64.Create(this.globalCount);
         }
 
-        public string GetContinuationToken()
-        {
-            return this.globalCount.ToString(CultureInfo.InvariantCulture);
-        }
-
         public static TryCatch<IAggregator> TryCreate(CosmosElement continuationToken)
         {
             long partialCount;
@@ -81,11 +76,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
 
             return TryCatch<IAggregator>.FromResult(
                 new CountAggregator(initialCount: partialCount));
-        }
-
-        public CosmosElement GetCosmosElementContinuationToken()
-        {
-            return CosmosNumber64.Create(this.globalCount);
         }
     }
 }

@@ -18,8 +18,6 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly ContainerInternal container;
 
-        private List<ItemBatchOperation> operations;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="BatchCore"/> class.
         /// </summary>
@@ -31,7 +29,6 @@ namespace Microsoft.Azure.Cosmos
         {
             this.container = container;
             this.partitionKey = partitionKey;
-            this.operations = new List<ItemBatchOperation>();
         }
 
         public override TransactionalBatch CreateItem<T>(
@@ -43,7 +40,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(item));
             }
 
-            this.operations.Add(new ItemBatchOperation<T>(
+            this.AddOperation(new ItemBatchOperation<T>(
                     operationType: OperationType.Create,
                     operationIndex: this.operations.Count,
                     resource: item,
@@ -62,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(streamPayload));
             }
 
-            this.operations.Add(new ItemBatchOperation(
+            this.AddOperation(new ItemBatchOperation(
                     operationType: OperationType.Create,
                     operationIndex: this.operations.Count,
                     resourceStream: streamPayload,
@@ -81,7 +78,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(id));
             }
 
-            this.operations.Add(new ItemBatchOperation(
+            this.AddOperation(new ItemBatchOperation(
                     operationType: OperationType.Read,
                     operationIndex: this.operations.Count,
                     id: id,
@@ -100,7 +97,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(item));
             }
 
-            this.operations.Add(new ItemBatchOperation<T>(
+            this.AddOperation(new ItemBatchOperation<T>(
                     operationType: OperationType.Upsert,
                     operationIndex: this.operations.Count,
                     resource: item,
@@ -119,7 +116,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(streamPayload));
             }
 
-            this.operations.Add(new ItemBatchOperation(
+            this.AddOperation(new ItemBatchOperation(
                     operationType: OperationType.Upsert,
                     operationIndex: this.operations.Count,
                     resourceStream: streamPayload,
@@ -144,7 +141,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(item));
             }
 
-            this.operations.Add(new ItemBatchOperation<T>(
+            this.AddOperation(new ItemBatchOperation<T>(
                     operationType: OperationType.Replace,
                     operationIndex: this.operations.Count,
                     id: id,
@@ -170,7 +167,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(streamPayload));
             }
 
-            this.operations.Add(new ItemBatchOperation(
+            this.AddOperation(new ItemBatchOperation(
                     operationType: OperationType.Replace,
                     operationIndex: this.operations.Count,
                     id: id,
@@ -190,7 +187,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(id));
             }
 
-            this.operations.Add(new ItemBatchOperation(
+            this.AddOperation(new ItemBatchOperation(
                     operationType: OperationType.Delete,
                     operationIndex: this.operations.Count,
                     id: id,
@@ -236,7 +233,9 @@ namespace Microsoft.Azure.Cosmos
                     return executor.ExecuteAsync(trace,  cancellationToken);
                 },
                 openTelemetry: (response) => new OpenTelemetryResponse(
-                    responseMessage: response));
+                    responseMessage: response, 
+                    isHomogenousOperations: this.isHomogenousOperations, 
+                    batchOperation: this.homogenousOperation));
         }
 
         /// <summary>
@@ -251,7 +250,7 @@ namespace Microsoft.Azure.Cosmos
             Stream patchStream,
             TransactionalBatchPatchItemRequestOptions requestOptions = null)
         {
-            this.operations.Add(new ItemBatchOperation(
+            this.AddOperation(new ItemBatchOperation(
                 operationType: OperationType.Patch,
                 operationIndex: this.operations.Count,
                 id: id,
@@ -287,7 +286,7 @@ namespace Microsoft.Azure.Cosmos
 
             PatchSpec patchSpec = new PatchSpec(patchOperations, requestOptions);
 
-            this.operations.Add(new ItemBatchOperation<PatchSpec>(
+            this.AddOperation(new ItemBatchOperation<PatchSpec>(
                 operationType: OperationType.Patch,
                 operationIndex: this.operations.Count,
                 id: id,

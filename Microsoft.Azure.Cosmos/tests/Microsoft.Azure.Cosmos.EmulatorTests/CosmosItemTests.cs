@@ -3321,6 +3321,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     cancellationToken: cancellationToken));
         }
 
+        [TestMethod]
+        public async Task MalformedChangeFeedContinuationTokenSubStatusCodeTest()
+        {
+            FeedIterator badIterator = this.Container.GetChangeFeedStreamIterator(
+                    ChangeFeedStartFrom.ContinuationToken("AMalformedContinuationToken"),
+                    ChangeFeedMode.Incremental,
+                    new ChangeFeedRequestOptions()
+                    {
+                        PageSizeHint = 100
+                    });
+
+            ResponseMessage response = await badIterator.ReadNextAsync();
+
+            Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.AreEqual(SubStatusCodes.MalformedContinuationToken, response.Headers.SubStatusCode);
+        }
+
         private static async Task GivenItemStreamAsyncWhenMissingMemberHandlingIsErrorThenExpectsCosmosExceptionTestAsync(
             Func<Container, string, string, CancellationToken, Task<ResponseMessage>> itemStreamAsync)
         {

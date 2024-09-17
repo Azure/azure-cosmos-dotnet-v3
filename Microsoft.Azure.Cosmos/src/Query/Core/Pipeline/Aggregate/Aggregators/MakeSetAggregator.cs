@@ -41,11 +41,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
             return CosmosArray.Create(this.globalSet);
         }
 
-        public string GetContinuationToken()
-        {
-            return this.globalSet.ToString();
-        }
-
         public static TryCatch<IAggregator> TryCreate(CosmosElement continuationToken)
         {
             CosmosArray partialSet;
@@ -65,11 +60,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
             }
 
             return TryCatch<IAggregator>.FromResult(new MakeSetAggregator(initialSet: partialSet));
-        }
-
-        public CosmosElement GetCosmosElementContinuationToken()
-        {
-            return this.GetResult();
         }
     }
 }

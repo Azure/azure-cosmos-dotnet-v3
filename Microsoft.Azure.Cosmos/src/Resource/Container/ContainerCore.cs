@@ -270,50 +270,57 @@ namespace Microsoft.Azure.Cosmos
                 trace,
                 cancellationToken);
 
-            IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
-                containerRId,
-                ContainerCore.allRanges,
-                trace,
-                forceRefresh: true);
-
-            if (partitionKeyRanges == null)
+            try
             {
-                string refreshedContainerRId;
-                refreshedContainerRId = await this.GetCachedRIDAsync(
-                    forceRefresh: true,
-                    trace,
-                    cancellationToken);
-
-                if (string.Equals(containerRId, refreshedContainerRId))
-                {
-                    throw CosmosExceptionFactory.CreateInternalServerErrorException(
-                        $"Container rid {containerRId} did not have a partition key range after refresh",
-                        headers: new Headers(),
-                        trace: trace);
-                }
-
-                partitionKeyRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
-                    refreshedContainerRId,
-                    ContainerCore.allRanges,
-                    trace,
-                    forceRefresh: true);
+                IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
+                        containerRId,
+                        ContainerCore.allRanges,
+                        trace,
+                        forceRefresh: true);
 
                 if (partitionKeyRanges == null)
                 {
-                    throw CosmosExceptionFactory.CreateInternalServerErrorException(
-                        $"Container rid {containerRId} returned partitionKeyRanges null after Container RID refresh",
-                        headers: new Headers(),
-                        trace: trace);
+                    string refreshedContainerRId;
+                    refreshedContainerRId = await this.GetCachedRIDAsync(
+                        forceRefresh: true,
+                        trace,
+                        cancellationToken);
+
+                    if (string.Equals(containerRId, refreshedContainerRId))
+                    {
+                        throw CosmosExceptionFactory.CreateInternalServerErrorException(
+                            $"Container rid {containerRId} did not have a partition key range after refresh",
+                            headers: new Headers(),
+                            trace: trace);
+                    }
+
+                    partitionKeyRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
+                        refreshedContainerRId,
+                        ContainerCore.allRanges,
+                        trace,
+                        forceRefresh: true);
+
+                    if (partitionKeyRanges == null)
+                    {
+                        throw CosmosExceptionFactory.CreateInternalServerErrorException(
+                            $"Container rid {containerRId} returned partitionKeyRanges null after Container RID refresh",
+                            headers: new Headers(),
+                            trace: trace);
+                    }
                 }
-            }
 
-            List<FeedRange> feedTokens = new List<FeedRange>(partitionKeyRanges.Count);
-            foreach (PartitionKeyRange partitionKeyRange in partitionKeyRanges)
+                List<FeedRange> feedTokens = new List<FeedRange>(partitionKeyRanges.Count);
+                foreach (PartitionKeyRange partitionKeyRange in partitionKeyRanges)
+                {
+                    feedTokens.Add(new FeedRangeEpk(partitionKeyRange.ToRange()));
+                }
+
+                return feedTokens;
+            }
+            catch (DocumentClientException dce)
             {
-                feedTokens.Add(new FeedRangeEpk(partitionKeyRange.ToRange()));
+                throw CosmosExceptionFactory.Create(dce, trace);
             }
-
-            return feedTokens;
         }
 
         public override FeedIterator GetChangeFeedStreamIterator(

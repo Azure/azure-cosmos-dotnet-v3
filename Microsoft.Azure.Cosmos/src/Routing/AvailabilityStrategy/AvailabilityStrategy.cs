@@ -4,29 +4,46 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Threading;
-    using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Handlers;
 
     /// <summary>
     /// Types of availability strategies supported
     /// </summary>
-    internal abstract class AvailabilityStrategy
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+    abstract class AvailabilityStrategy
     {
         /// <summary>
-        /// Execute the availability strategy
+        /// Default constructor
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="client"></param>
-        /// <param name="requestMessage"></param>
-        /// <param name="cancellationToken"></param>
-        /// <returns>The response from the service after the availability strategy is executed</returns>
-        public abstract Task<ResponseMessage> ExecuteAvailabilityStrategyAsync(
-            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender,
-            CosmosClient client,
-            RequestMessage requestMessage,
-            CancellationToken cancellationToken);
+        internal AvailabilityStrategy()
+        {
+        }
 
-        internal abstract bool Enabled();
+        /// <summary>
+        ///  Used on a per request level to disable a client level AvailabilityStrategy
+        /// </summary>
+        /// <returns>something</returns>
+        internal static AvailabilityStrategy DisabledStrategy()
+        {
+            return new DisabledAvailabilityStrategy();
+        }
+
+        /// <summary>
+        /// After a request's duration passes a threshold, this strategy will send out
+        /// hedged request to other regions. The first hedge request will be sent after the threshold. 
+        /// After that, the strategy will send out a request every thresholdStep
+        /// until the request is completed or regions are exausted
+        /// </summary>
+        /// <param name="threshold"> how long before SDK begins hedging</param>
+        /// <param name="thresholdStep">Period of time between first hedge and next hedging attempts</param>
+        /// <returns>something</returns>
+        public static AvailabilityStrategy CrossRegionHedgingStrategy(TimeSpan threshold,
+            TimeSpan? thresholdStep)
+        {
+            return new CrossRegionHedgingAvailabilityStrategy(threshold, thresholdStep);
+        }
     }
 }

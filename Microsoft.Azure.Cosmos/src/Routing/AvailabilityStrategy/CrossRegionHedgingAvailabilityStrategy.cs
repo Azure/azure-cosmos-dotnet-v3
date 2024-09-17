@@ -12,20 +12,19 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
-    /// Parallel hedging availability strategy. Once threshold time is reached, 
+    /// Hedging availability strategy. Once threshold time is reached, 
     /// the SDK will send out an additional request to a remote region in parallel
-    /// if the first parallel request or the original has not returned after the step time, 
-    /// additional parallel requests will be sent out there is a response or all regions are exausted.
+    /// if the first hedging request or the original has not returned after the step time, 
+    /// additional hedged requests will be sent out there is a response or all regions are exausted.
     /// </summary>
-    internal class CrossRegionParallelHedgingAvailabilityStrategy : AvailabilityStrategy
+    internal class CrossRegionHedgingAvailabilityStrategy : AvailabilityStrategyInternal
     {
-        private const string HedgeRegions = "Hedge Regions";
         private const string HedgeContext = "Hedge Context";
-        private const string HedgeContextOriginalRequest = "Original Request";
-        private const string HedgeContextHedgedRequest = "Hedged Request";
+        private const string ResponseRegion = "Response Region";
 
         /// <summary>
         /// Latency threshold which activates the first region hedging 
@@ -38,11 +37,11 @@ namespace Microsoft.Azure.Cosmos
         public TimeSpan ThresholdStep { get; private set; }
 
         /// <summary>
-        /// Constructor for parallel hedging availability strategy
+        /// Constructor for hedging availability strategy
         /// </summary>
         /// <param name="threshold"></param>
         /// <param name="thresholdStep"></param>
-        public CrossRegionParallelHedgingAvailabilityStrategy(
+        public CrossRegionHedgingAvailabilityStrategy(
             TimeSpan threshold,
             TimeSpan? thresholdStep)
         {
@@ -60,17 +59,18 @@ namespace Microsoft.Azure.Cosmos
             this.ThresholdStep = thresholdStep ?? TimeSpan.FromMilliseconds(-1);
         }
 
+        /// <inheritdoc/>
         internal override bool Enabled()
         {
             return true;
         }
 
         /// <summary>
-        /// This method determines if the request should be sent with a parallel hedging availability strategy.
+        /// This method determines if the request should be sent with a hedging availability strategy.
         /// This availability strategy can only be used if the request is a read-only request on a document request.
         /// </summary>
         /// <param name="request"></param>
-        /// <returns>whether the request should be a parallel hedging request.</returns>
+        /// <returns>whether the request should be a hedging request.</returns>
         internal bool ShouldHedge(RequestMessage request)
         {
             //Only use availability strategy for document point operations
@@ -89,23 +89,26 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Execute the parallel hedging availability strategy
+        /// Execute the hedging availability strategy
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="client"></param>
         /// <param name="request"></param>
         /// <param name="cancellationToken"></param>
         /// <returns>The response after executing cross region hedging</returns>
-        public override async Task<ResponseMessage> ExecuteAvailabilityStrategyAsync(
+        internal override async Task<ResponseMessage> ExecuteAvailabilityStrategyAsync(
             Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender,
             CosmosClient client,
             RequestMessage request,
             CancellationToken cancellationToken)
         {
-            if (!this.ShouldHedge(request))
+            if (!this.ShouldHedge(request)
+                || client.DocumentClient.GlobalEndpointManager.ReadEndpoints.Count == 1)
             {
                 return await sender(request, cancellationToken);
             }
+            
+            ITrace trace = request.Trace;
 
             using (CancellationTokenSource cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
             {
@@ -120,9 +123,8 @@ namespace Microsoft.Azure.Cosmos
 
                     List<Task> requestTasks = new List<Task>(hedgeRegions.Count + 1);
 
-                    Task<(bool, ResponseMessage)> primaryRequest = null;
-
-                    ResponseMessage responseMessage = null;
+                    Task<HedgingResponse> primaryRequest = null;
+                    HedgingResponse hedgeResponse = null;
 
                     //Send out hedged requests
                     for (int requestNumber = 0; requestNumber < hedgeRegions.Count; requestNumber++)
@@ -139,6 +141,7 @@ namespace Microsoft.Azure.Cosmos
                                     primaryRequest = this.RequestSenderAndResultCheckAsync(
                                         sender,
                                         request,
+                                        hedgeRegions.ElementAt(requestNumber),
                                         cancellationToken,
                                         cancellationTokenSource);
 
@@ -146,12 +149,13 @@ namespace Microsoft.Azure.Cosmos
                                 }
                                 else
                                 {
-                                    Task<(bool, ResponseMessage)> requestTask = this.CloneAndSendAsync(
+                                    Task<HedgingResponse> requestTask = this.CloneAndSendAsync(
                                     sender: sender,
                                     request: request,
                                     clonedBody: clonedBody,
                                     hedgeRegions: hedgeRegions,
                                     requestNumber: requestNumber,
+                                    trace: trace,
                                     cancellationToken: cancellationToken,
                                     cancellationTokenSource: cancellationTokenSource);
 
@@ -176,19 +180,18 @@ namespace Microsoft.Azure.Cosmos
                                     AggregateException innerExceptions = completedTask.Exception.Flatten();
                                 }
 
-                                (bool isNonTransient, responseMessage) = await (Task<(bool, ResponseMessage)>)completedTask;
-                                if (isNonTransient)
+                                hedgeResponse = await (Task<HedgingResponse>)completedTask;
+                                if (hedgeResponse.IsNonTransient)
                                 {
                                     cancellationTokenSource.Cancel();
-                                    ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value.AddOrUpdateDatum(
-                                        HedgeRegions,
-                                        HedgeRegionsToString(responseMessage.Diagnostics.GetContactedRegions()));
-                                    ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value.AddOrUpdateDatum(
+                                    //Take is not inclusive, so we need to add 1 to the request number which starts at 0
+                                    ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
                                         HedgeContext,
-                                        object.ReferenceEquals(primaryRequest, completedTask)
-                                            ? HedgeContextOriginalRequest
-                                            : HedgeContextHedgedRequest);
-                                    return responseMessage;
+                                        hedgeRegions.Take(requestNumber + 1));
+                                    ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
+                                        ResponseRegion,
+                                        hedgeResponse.ResponseRegion);
+                                    return hedgeResponse.ResponseMessage;
                                 }
                             }
                         }
@@ -206,19 +209,17 @@ namespace Microsoft.Azure.Cosmos
                             lastException = innerExceptions.InnerExceptions.FirstOrDefault();
                         }
 
-                        (bool isNonTransient, responseMessage) = await (Task<(bool, ResponseMessage)>)completedTask;
-                        if (isNonTransient || requestTasks.Count == 0)
+                        hedgeResponse = await (Task<HedgingResponse>)completedTask;
+                        if (hedgeResponse.IsNonTransient || requestTasks.Count == 0)
                         {
                             cancellationTokenSource.Cancel();
-                            ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value.AddOrUpdateDatum(
-                                HedgeRegions,
-                                HedgeRegionsToString(responseMessage.Diagnostics.GetContactedRegions()));
-                            ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value.AddOrUpdateDatum(
+                            ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
                                 HedgeContext,
-                                object.ReferenceEquals(primaryRequest, completedTask)
-                                ? HedgeContextOriginalRequest
-                                : HedgeContextHedgedRequest);
-                            return responseMessage;
+                                hedgeRegions);
+                            ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
+                                        ResponseRegion,
+                                        hedgeResponse.ResponseRegion);
+                            return hedgeResponse.ResponseMessage;
                         }
                     }
 
@@ -227,41 +228,48 @@ namespace Microsoft.Azure.Cosmos
                         throw lastException;
                     }
 
-                    Debug.Assert(responseMessage != null);
-                    return responseMessage;
+                    Debug.Assert(hedgeResponse != null);
+                    return hedgeResponse.ResponseMessage;
                 }
             }
         }
 
-        private async Task<(bool, ResponseMessage)> CloneAndSendAsync(
+        private async Task<HedgingResponse> CloneAndSendAsync(
             Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender,
             RequestMessage request,
             CloneableStream clonedBody,
             IReadOnlyCollection<string> hedgeRegions,
             int requestNumber,
+            ITrace trace,
             CancellationToken cancellationToken,
             CancellationTokenSource cancellationTokenSource)
         {
             RequestMessage clonedRequest;
-            using (clonedRequest = request.Clone(request.Trace.Parent, clonedBody))
+
+            using (clonedRequest = request.Clone(
+                trace,
+                clonedBody))
             {
                 clonedRequest.RequestOptions ??= new RequestOptions();
 
                 List<string> excludeRegions = new List<string>(hedgeRegions);
+                string region = excludeRegions[requestNumber];
                 excludeRegions.RemoveAt(requestNumber);
                 clonedRequest.RequestOptions.ExcludeRegions = excludeRegions;
 
                 return await this.RequestSenderAndResultCheckAsync(
                     sender,
                     clonedRequest,
+                    region,
                     cancellationToken,
                     cancellationTokenSource);
             }
         }
 
-        private async Task<(bool, ResponseMessage)> RequestSenderAndResultCheckAsync(
+        private async Task<HedgingResponse> RequestSenderAndResultCheckAsync(
             Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender,
             RequestMessage request,
+            string hedgedRegion,
             CancellationToken cancellationToken,
             CancellationTokenSource cancellationTokenSource)
         {
@@ -274,14 +282,15 @@ namespace Microsoft.Azure.Cosmos
                     {
                         cancellationTokenSource.Cancel();
                     }
-                    return (true, response);
+
+                    return new HedgingResponse(true, response, hedgedRegion);
                 }
 
-                return (false, response);
+                return new HedgingResponse(false, response, hedgedRegion);
             }
             catch (OperationCanceledException) when (cancellationTokenSource.IsCancellationRequested)
             {
-                return (false, null);
+                return new HedgingResponse(false, null, hedgedRegion);
             }
             catch (Exception ex)
             {
@@ -315,9 +324,18 @@ namespace Microsoft.Azure.Cosmos
             return statusCode == (int)HttpStatusCode.NotFound && subStatusCode == (int)SubStatusCodes.Unknown;
         }
 
-        private static string HedgeRegionsToString(IReadOnlyList<(string, Uri)> hedgeRegions)
+        private sealed class HedgingResponse
         {
-            return string.Join(",", hedgeRegions);
+            public readonly bool IsNonTransient;
+            public readonly ResponseMessage ResponseMessage;
+            public readonly string ResponseRegion;
+
+            public HedgingResponse(bool isNonTransient, ResponseMessage responseMessage, string responseRegion)
+            {
+                this.IsNonTransient = isNonTransient;
+                this.ResponseMessage = responseMessage;
+                this.ResponseRegion = responseRegion;
+            }
         }
     }
 }

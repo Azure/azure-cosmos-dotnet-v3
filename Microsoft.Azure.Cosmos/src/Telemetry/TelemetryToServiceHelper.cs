@@ -249,7 +249,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceWarning($"Error While stopping Telemetry Job : {0}", ex);
+                DefaultTrace.TraceWarning("Error While stopping Telemetry Job : {0}", ex);
             }   
         }
     }

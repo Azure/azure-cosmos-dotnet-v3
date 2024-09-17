@@ -61,6 +61,7 @@ namespace Microsoft.Azure.Cosmos
         private int gatewayModeMaxConnectionLimit;
         private CosmosSerializationOptions serializerOptions;
         private CosmosSerializer serializerInternal;
+        private System.Text.Json.JsonSerializerOptions stjSerializerOptions;
 
         private ConnectionMode connectionMode;
         private Protocol connectionProtocol;
@@ -394,6 +395,44 @@ namespace Microsoft.Azure.Cosmos
         public bool? EnableContentResponseOnWrite { get; set; }
 
         /// <summary>
+        /// Sets the <see cref="System.Text.Json.JsonSerializerOptions"/> for the System.Text.Json serializer.
+        /// Note that if this option is provided, then the SDK will use the System.Text.Json as the default serializer and set
+        /// the serializer options as the constructor args.
+        /// </summary>
+        /// <example>
+        /// An example on how to configure the System.Text.Json serializer options to ignore null values
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosClientOptions clientOptions = new CosmosClientOptions()
+        /// {
+        ///     UseSystemTextJsonSerializerWithOptions = new System.Text.Json.JsonSerializerOptions()
+        ///     {
+        ///         DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+        ///     }
+        /// };
+        /// 
+        /// CosmosClient client = new CosmosClient("endpoint", "key", clientOptions);
+        /// ]]>
+        /// </code>
+        /// </example>
+        public System.Text.Json.JsonSerializerOptions UseSystemTextJsonSerializerWithOptions
+        {
+            get => this.stjSerializerOptions;
+            set
+            {
+                if (this.Serializer != null || this.SerializerOptions != null)
+                {
+                    throw new ArgumentException(
+                        $"{nameof(this.UseSystemTextJsonSerializerWithOptions)} is not compatible with {nameof(this.Serializer)} or {nameof(this.SerializerOptions)}. Only one can be set.  ");
+                }
+
+                this.stjSerializerOptions = value;
+                this.serializerInternal = new CosmosSystemTextJsonSerializer(
+                    this.stjSerializerOptions);
+            }
+        }
+
+        /// <summary>
         /// Gets or sets the advanced replica selection flag. The advanced replica selection logic keeps track of the replica connection
         /// status, and based on status, it prioritizes the replicas which show healthy stable connections, so that the requests can be sent
         /// confidently to the particular replica. This helps the cosmos client to become more resilient and effective to any connectivity issues.
@@ -543,10 +582,10 @@ namespace Microsoft.Azure.Cosmos
             get => this.serializerOptions;
             set
             {
-                if (this.Serializer != null)
+                if (this.Serializer != null || this.UseSystemTextJsonSerializerWithOptions != null)
                 {
                     throw new ArgumentException(
-                        $"{nameof(this.SerializerOptions)} is not compatible with {nameof(this.Serializer)}. Only one can be set.  ");
+                        $"{nameof(this.SerializerOptions)} is not compatible with {nameof(this.Serializer)} or {nameof(this.UseSystemTextJsonSerializerWithOptions)}. Only one can be set.  ");
                 }
 
                 this.serializerOptions = value;
@@ -578,10 +617,10 @@ namespace Microsoft.Azure.Cosmos
             get => this.serializerInternal;
             set
             {
-                if (this.SerializerOptions != null)
+                if (this.SerializerOptions != null || this.UseSystemTextJsonSerializerWithOptions != null)
                 {
                     throw new ArgumentException(
-                        $"{nameof(this.Serializer)} is not compatible with {nameof(this.SerializerOptions)}. Only one can be set.  ");
+                        $"{nameof(this.Serializer)} is not compatible with {nameof(this.SerializerOptions)} or {nameof(this.UseSystemTextJsonSerializerWithOptions)}. Only one can be set.  ");
                 }
 
                 this.serializerInternal = value;
@@ -655,7 +694,35 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Availability Strategy to be used for periods of high latency
         /// </summary>
-        internal AvailabilityStrategy AvailabilityStrategy { get; set; }
+        /// /// <example>
+        /// An example on how to set an availability strategy custom serializer.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosClient client = new CosmosClientBuilder("connection string")
+        /// .WithApplicationPreferredRegions(
+        ///    new List<string> { "East US", "Central US", "West US" } )
+        /// .WithAvailabilityStrategy(
+        ///    AvailabilityStrategy.CrossRegionHedgingStrategy(
+        ///    threshold: TimeSpan.FromMilliseconds(500),
+        ///    thresholdStep: TimeSpan.FromMilliseconds(100)
+        /// ))
+        /// .Build();
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <remarks> 
+        /// The availability strategy in the example is a Cross Region Hedging Strategy.
+        /// These strategies take two values, a threshold and a threshold step.When a request that is sent 
+        /// out takes longer than the threshold time, the SDK will hedge to the second region in the application preferred regions list.
+        /// If a response from either the primary request or the first hedged request is not received 
+        /// after the threshold step time, the SDK will hedge to the third region and so on.
+        /// </remarks>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        AvailabilityStrategy AvailabilityStrategy { get; set; }
 
         /// <summary>
         /// Enable partition key level failover
@@ -849,6 +916,7 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateDirectTCPSettings();
             this.ValidateLimitToEndpointSettings();
             this.ValidatePartitionLevelFailoverSettings();
+            this.ValidateAvailabilityStrategy();
 
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
@@ -1024,6 +1092,15 @@ namespace Microsoft.Azure.Cosmos
                 && (this.ApplicationPreferredRegions == null || this.ApplicationPreferredRegions.Count == 0))
             {
                 throw new ArgumentException($"{nameof(this.ApplicationPreferredRegions)} is required when {nameof(this.EnablePartitionLevelFailover)} is enabled.");
+            }
+        }
+
+        private void ValidateAvailabilityStrategy()
+        {
+            if (this.AvailabilityStrategy != null
+                && this.ApplicationPreferredRegions == null && this.ApplicationRegion == null)
+            {
+                throw new ArgumentException($"{nameof(this.ApplicationPreferredRegions)} or {nameof(this.ApplicationRegion)} must be set to use {nameof(this.AvailabilityStrategy)}");
             }
         }
 
