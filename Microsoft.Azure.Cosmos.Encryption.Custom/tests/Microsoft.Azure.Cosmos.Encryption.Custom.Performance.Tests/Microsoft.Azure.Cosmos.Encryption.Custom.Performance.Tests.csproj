@@ -9,12 +9,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="sampledata\testdoc-100kb.json" />
-    <None Remove="sampledata\testdoc-10kb.json" />
-    <None Remove="sampledata\testdoc-1kb.json" />
-  </ItemGroup>
-
-  <ItemGroup>
     <EmbeddedResource Include="sampledata\testdoc-100kb.json" />
     <EmbeddedResource Include="sampledata\testdoc-10kb.json" />
     <EmbeddedResource Include="sampledata\testdoc-1kb.json" />
