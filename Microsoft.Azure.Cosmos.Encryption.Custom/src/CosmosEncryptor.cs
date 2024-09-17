@@ -98,14 +98,34 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return dek.EncryptData(plainText, plainTextOffset, plainTextLength, output, outputOffset);
         }
 
-        public override Task<int> GetEncryptBytesCount(int plainTextLength, string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
+        public override async Task<int> GetEncryptBytesCount(int plainTextLength, string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync(
+                dataEncryptionKeyId,
+                encryptionAlgorithm,
+                cancellationToken);
+
+            if (dek == null)
+            {
+                throw new InvalidOperationException($"Null {nameof(DataEncryptionKey)} returned from {nameof(this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync)}.");
+            }
+
+            return dek.GetEncryptByteCount(plainTextLength);
         }
 
-        public override Task<int> GetDecryptBytesCount(int cipherTextLength, string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
+        public override async Task<int> GetDecryptBytesCount(int cipherTextLength, string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync(
+                dataEncryptionKeyId,
+                encryptionAlgorithm,
+                cancellationToken);
+
+            if (dek == null)
+            {
+                throw new InvalidOperationException($"Null {nameof(DataEncryptionKey)} returned from {nameof(this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync)}.");
+            }
+
+            return dek.GetDecryptByteCount(cipherTextLength);
         }
     }
 }

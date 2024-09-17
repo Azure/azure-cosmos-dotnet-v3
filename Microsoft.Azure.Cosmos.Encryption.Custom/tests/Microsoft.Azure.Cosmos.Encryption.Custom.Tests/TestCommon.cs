@@ -27,11 +27,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             return plainText.Select(b => (byte)(b + 1)).ToArray();
         }
 
+        internal static int EncryptData(byte[] plainText, int inputOffset, byte[] output, int outputOffset)
+        {
+            byte[] cipherText = EncryptData(plainText.AsSpan(inputOffset).ToArray());
+            Buffer.BlockCopy(cipherText, 0, output, outputOffset, plainText.Length);
+
+            return cipherText.Length;
+        }
+
         internal static byte[] DecryptData(byte[] cipherText)
         {
             return cipherText.Select(b => (byte)(b - 1)).ToArray();
         }
-        
+
+        internal static int DecryptData(byte[] cipherText, int inputOffset, byte[] output, int outputOffset)
+        {
+            byte[] plainText = DecryptData(cipherText.AsSpan(inputOffset).ToArray());
+            Buffer.BlockCopy(plainText, 0, output, outputOffset, plainText.Length);
+            return plainText.Length;
+        }
+
         internal static Stream ToStream<T>(T input)
         {
             string s = JsonConvert.SerializeObject(input);

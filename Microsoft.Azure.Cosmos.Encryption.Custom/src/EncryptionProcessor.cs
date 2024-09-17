@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         {
                             throw new InvalidOperationException($"{nameof(Encryptor)} returned null cipherText from {nameof(EncryptAsync)}.");
                         }
-                                                
+
                         itemJObj[propertyName] = cipherTextWithTypeMarker;
                         pathsEncrypted.Add(pathToEncrypt);
                     }
