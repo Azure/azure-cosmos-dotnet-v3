@@ -269,6 +269,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                    inputParameters.InitialFeedRange,
                    trace);
 
+            Console.WriteLine("=============");
+            foreach (Documents.PartitionKeyRange pkRange in targetRanges)
+            {
+                Console.WriteLine(pkRange.ToString());
+            }
+            Console.WriteLine("=============");
+
             Debug.Assert(targetRanges != null, $"{nameof(CosmosQueryExecutionContextFactory)} Assert!", "targetRanges != null");
 
             TryCatch<IQueryPipelineStage> tryCreatePipelineStage;
@@ -452,6 +459,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             ITrace trace,
             CancellationToken cancellationToken) 
         {
+            Console.WriteLine("I am in TryCreateSpecializedDocumentQueryExecutionContextAsync");
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = await GetPartitionedQueryExecutionInfoAsync(
                cosmosQueryContext,
                inputParameters,
@@ -794,6 +802,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 return null;
             }
 
+            Console.WriteLine("i am in TryGetTargetRangeOptimisticDirectExecutionAsync");
             Debug.Assert(containerQueryProperties.ResourceId != null, "CosmosQueryExecutionContextFactory Assert!", "Container ResourceId cannot be null!");
 
             List<Documents.PartitionKeyRange> targetRanges;

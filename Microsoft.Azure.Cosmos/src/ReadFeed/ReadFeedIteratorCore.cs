@@ -42,6 +42,8 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
             this.operationName = OpenTelemetryConstants.Operations.ReadFeedRanges;
 
             this.queryRequestOptions = queryRequestOptions;
+
+            Console.WriteLine("ReadFeedIteratorCore");
             readFeedPaginationOptions ??= ReadFeedExecutionOptions.Default;
 
             if (!string.IsNullOrEmpty(continuationToken))
