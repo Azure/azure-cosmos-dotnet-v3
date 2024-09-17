@@ -52,6 +52,7 @@ namespace Microsoft.Azure.Cosmos
             this.container = container;
 
             this.operationName = OpenTelemetryConstants.Operations.QueryItems;
+            this.operationType = OperationType.Query;
         }
 
         public override bool HasMoreResults => this.hasMoreResultsInternal;
@@ -216,7 +217,8 @@ namespace Microsoft.Azure.Cosmos
             this.databaseName = feedIterator.databaseName;
             this.container = feedIterator.container;
 
-            this.operationName = OpenTelemetryConstants.Operations.QueryItems;
+            this.operationName = feedIterator.operationName;
+            this.operationType = feedIterator.operationType;
         }
 
         public override bool HasMoreResults => this.feedIterator.HasMoreResults;

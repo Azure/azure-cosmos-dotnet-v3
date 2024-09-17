@@ -1769,10 +1769,10 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_change_feed" displayName="query_change_feed containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_change_feed</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -1788,10 +1788,10 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_change_feed" displayName="query_change_feed containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_change_feed</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -1807,10 +1807,10 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_change_feed" displayName="query_change_feed containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_change_feed</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -1826,10 +1826,10 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_change_feed" displayName="query_change_feed containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_change_feed</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -1845,10 +1845,10 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_change_feed" displayName="query_change_feed containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_change_feed</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -3243,10 +3243,10 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_change_feed" displayName="query_change_feed containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_change_feed</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -3262,10 +3262,10 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_change_feed" displayName="query_change_feed containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_change_feed</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -3281,10 +3281,10 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_change_feed" displayName="query_change_feed containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_change_feed</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -3300,10 +3300,10 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_change_feed" displayName="query_change_feed containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_change_feed</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -3319,10 +3319,10 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_change_feed" displayName="query_change_feed containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">query_items</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">query_change_feed</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>

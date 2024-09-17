@@ -55,6 +55,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             this.container = container;
             this.operationName = OpenTelemetryConstants.Operations.QueryItems;
+            this.operationType = Documents.OperationType.Query;
         }
 
         public static QueryIterator Create(

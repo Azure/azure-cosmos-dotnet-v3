@@ -128,5 +128,10 @@ namespace Microsoft.Azure.Cosmos
         /// Operation Name used for open telemetry traces
         /// </summary>
         internal string operationName;
+
+        /// <summary>
+        /// Operation Type used for open telemetry traces
+        /// </summary>
+        internal Documents.OperationType? operationType;
     }
 }
