@@ -773,7 +773,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             return new ReadOnlyDictionary<string, Uri>(endpointsByLocation);
         }
 
-        private bool CanUseMultipleWriteLocations()
+        internal bool CanUseMultipleWriteLocations()
         {
             return this.useMultipleWriteLocations && this.enableMultipleWriteLocations;
         }

@@ -543,8 +543,10 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <returns>A boolean flag indicating if the available write locations are more than one.</returns>
         public bool CanSupportMultipleWriteLocations(DocumentServiceRequest request)
         {
-            return this.CanUseMultipleWriteLocations(request)
-                && this.locationCache.GetAvailableWriteLocations()?.Count > 1;
+            return this.locationCache.CanUseMultipleWriteLocations()
+                && this.locationCache.GetAvailableWriteLocations()?.Count > 1
+                && (request.ResourceType == ResourceType.Document ||
+                (request.ResourceType == ResourceType.StoredProcedure && request.OperationType == OperationType.Execute));
         }
 
 #pragma warning disable VSTHRD100 // Avoid async void methods

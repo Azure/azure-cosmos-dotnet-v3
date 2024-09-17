@@ -104,12 +104,12 @@ namespace Microsoft.Azure.Cosmos
                 // for write requests targeted to a multiple master account. In such case, the 429/3092 will be treated as 503. The
                 // reason to keep the code out of the throttling retry policy is that in the near future, the 3092 sub status code
                 // might not be a throttling scenario at all and the status code in that case would be different than 429.
-                if (this.ShouldMarkEndpointUnavailableOnSystemResourceUnavailable(
+                if (this.ShouldMarkEndpointUnavailableOnSystemResourceUnavailableForWrite(
                     clientException.StatusCode,
                     clientException.GetSubStatus()))
                 {
                     DefaultTrace.TraceError(
-                        "Operation will NOT be retried. Treating SystemResourceUnavailable (429/3092) as ServiceUnavailable (503). Status code: {0}, sub status code: {1}.",
+                        "Operation will NOT be retried on local region. Treating SystemResourceUnavailable (429/3092) as ServiceUnavailable (503). Status code: {0}, sub status code: {1}.",
                         StatusCodes.TooManyRequests, SubStatusCodes.SystemResourceUnavailable);
 
                     return this.TryMarkEndpointUnavailableForPkRangeAndRetryOnServiceUnavailable(
@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos
             // for write requests targeted to a multiple master account. In such case, the 429/3092 will be treated as 503. The
             // reason to keep the code out of the throttling retry policy is that in the near future, the 3092 sub status code
             // might not be a throttling scenario at all and the status code in that case would be different than 429.
-            if (this.ShouldMarkEndpointUnavailableOnSystemResourceUnavailable(
+            if (this.ShouldMarkEndpointUnavailableOnSystemResourceUnavailableForWrite(
                 cosmosResponseMessage.StatusCode,
                 cosmosResponseMessage?.Headers.SubStatusCode))
             {
@@ -514,7 +514,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="statusCode">An instance of <see cref="HttpStatusCode"/> containing the status code.</param>
         /// <param name="subStatusCode">An instance of <see cref="SubStatusCodes"/> containing the sub status code.</param>
         /// <returns>A boolean flag indicating is the endpoint should be marked as unavailable.</returns>
-        private bool ShouldMarkEndpointUnavailableOnSystemResourceUnavailable(
+        private bool ShouldMarkEndpointUnavailableOnSystemResourceUnavailableForWrite(
             HttpStatusCode? statusCode,
             SubStatusCodes? subStatusCode)
         {
