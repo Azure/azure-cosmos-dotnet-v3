@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
-    using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.IsFeedRangePartOfTestHelper;
 
     [TestClass]
     public class IsFeedRangePartOfAsyncTests
@@ -20,7 +19,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private Cosmos.Database cosmosDatabase = null;
         private ContainerInternal containerInternal = null;
         private ContainerInternal hierarchicalContainerInternal = null;
-        private static readonly GherkinInterpreter interpreter = new GherkinInterpreter();
 
         [TestInitialize]
         public async Task TestInit()
@@ -551,96 +549,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// </summary>
         private static IEnumerable<object[]> FeedRangeChildPartOfParentWhenBothChildAndParentIsMaxInclusiveTrue()
         {
-            yield return interpreter.ParseGherkinToObjectArray(@"
-                Given the child range starts from a lower bound minimum
-                And the child range ending at 3FFFFFFFFFFFFFFF
-                And the parent range starts from a lower bound minimum
-                And the parent range ending at FFFFFFFFFFFFFFFF
-                When comparing the child range with the parent range
-                Then the child range fits entirely within the parent range
-                ");
-
-            yield return interpreter.ParseGherkinToObjectArray(@"
-                Given the child range starts from 3FFFFFFFFFFFFFFF
-                And the child range ending at 7FFFFFFFFFFFFFFF
-                And the parent range starts from a lower bound minimum
-                And the parent range ending at FFFFFFFFFFFFFFFF
-                When comparing the child range with the parent range
-                Then the child range fits entirely within the parent range
-                ");
-
-            yield return interpreter.ParseGherkinToObjectArray(@"
-                Given the child range starts from 7FFFFFFFFFFFFFFF
-                And the child range ending at BFFFFFFFFFFFFFFF
-                And the parent range starts from a lower bound minimum
-                And the parent range ending at FFFFFFFFFFFFFFFF
-                When comparing the child range with the parent range
-                Then the child range fits entirely within the parent range
-                ");
-
-            yield return interpreter.ParseGherkinToObjectArray(@"
-                Given the child range starts from BFFFFFFFFFFFFFFF
-                And the child range ending at FFFFFFFFFFFFFFFF
-                And the parent range starts from a lower bound minimum
-                And the parent range ending at FFFFFFFFFFFFFFFF
-                When comparing the child range with the parent range
-                Then the child range fits entirely within the parent range
-                ");
-
-            yield return interpreter.ParseGherkinToObjectArray(@"
-                Given the child range starts from a lower bound minimum
-                And the child range ending at 3FFFFFFFFFFFFFFF
-                And the parent range starts from a lower bound minimum
-                And the parent range ending at 3FFFFFFFFFFFFFFF
-                When comparing the child range with the parent range
-                Then the child range fits entirely within the parent range
-                ");
-
-            yield return interpreter.ParseGherkinToObjectArray(@"
-                Given the child range starts from 3FFFFFFFFFFFFFFF
-                And the child range ending at 4CCCCCCCCCCCCCCC
-                And the parent range starts from 3FFFFFFFFFFFFFFF
-                And the parent range ending at 7FFFFFFFFFFFFFFF
-                When comparing the child range with the parent range
-                Then the child range fits entirely within the parent range
-                ");
-
-            yield return interpreter.ParseGherkinToObjectArray(@"
-                Given the child range starts from 4CCCCCCCCCCCCCCC
-                And the child range ending at 5999999999999999
-                And the parent range starts from 3FFFFFFFFFFFFFFF
-                And the parent range ending at 7FFFFFFFFFFFFFFF
-                When comparing the child range with the parent range
-                Then the child range fits entirely within the parent range
-                ");
-
-            yield return interpreter.ParseGherkinToObjectArray(@"
-                Given the child range starts from 5999999999999999
-                And the child range ending at 6666666666666666
-                And the parent range starts from 3FFFFFFFFFFFFFFF
-                And the parent range ending at 7FFFFFFFFFFFFFFF
-                When comparing the child range with the parent range
-                Then the child range fits entirely within the parent range
-                ");
-
-            yield return interpreter.ParseGherkinToObjectArray(@"
-                Given the child range starts from 6666666666666666
-                And the child range ending at 7333333333333333
-                And the parent range starts from 3FFFFFFFFFFFFFFF
-                And the parent range ending at 7FFFFFFFFFFFFFFF
-                When comparing the child range with the parent range
-                Then the child range fits entirely within the parent range
-                ");
-
-            yield return interpreter.ParseGherkinToObjectArray(@"
-                Given the child range starts from 7333333333333333
-                And the child range ending at 7FFFFFFFFFFFFFFF
-                And the parent range starts from 3FFFFFFFFFFFFFFF
-                And the parent range ending at 7FFFFFFFFFFFFFFF
-                When comparing the child range with the parent range
-                Then the child range fits entirely within the parent range
-                ");
-
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "", "FFFFFFFFFFFFFFFF", true, true }; // The child range, starting from a lower bound minimum and ending at 3FFFFFFFFFFFFFFF (inclusive), fits entirely within the parent range, which starts from a lower bound minimum and ends at FFFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, "", "FFFFFFFFFFFFFFFF", true, true }; // The child range, from 3FFFFFFFFFFFFFFF to 7FFFFFFFFFFFFFFF (inclusive), fits entirely within the parent range, which starts from a lower bound minimum and ends at FFFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", true, "", "FFFFFFFFFFFFFFFF", true, true }; // The child range, from 7FFFFFFFFFFFFFFF to BFFFFFFFFFFFFFFF (inclusive), fits entirely within the parent range, which starts from a lower bound minimum and ends at FFFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", true, "", "FFFFFFFFFFFFFFFF", true, true }; // The child range, from BFFFFFFFFFFFFFFF to FFFFFFFFFFFFFFFF (inclusive), fits entirely within the parent range, which starts from a lower bound minimum and ends at FFFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "", "3FFFFFFFFFFFFFFF", true, true }; // The child range, from a lower bound minimum to 3FFFFFFFFFFFFFFF (inclusive), fits entirely within the parent range, which starts from a lower bound minimum and ends at 3FFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "3FFFFFFFFFFFFFFF", "4CCCCCCCCCCCCCCC", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true }; // The child range, from 3FFFFFFFFFFFFFFF to 4CCCCCCCCCCCCCCC (inclusive), fits entirely within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends at 7FFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "4CCCCCCCCCCCCCCC", "5999999999999999", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true }; // The child range, from 4CCCCCCCCCCCCCCC to 5999999999999999 (inclusive), fits entirely within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends at 7FFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "5999999999999999", "6666666666666666", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true }; // The child range, from 5999999999999999 to 6666666666666666 (inclusive), fits entirely within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends at 7FFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "6666666666666666", "7333333333333333", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true }; // The child range, from 6666666666666666 to 7333333333333333 (inclusive), fits entirely within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends at 7FFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "7333333333333333", "7FFFFFFFFFFFFFFF", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true }; // The child range, from 7333333333333333 to 7FFFFFFFFFFFFFFF (inclusive), fits entirely within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends at 7FFFFFFFFFFFFFFF (inclusive).
         }
 
         /// <summary>
@@ -656,68 +574,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// </summary>
         private static IEnumerable<object[]> FeedRangeChildNotPartOfParentWhenBothChildAndParentIsMaxInclusiveTrue()
         {
-            yield return interpreter.ParseGherkinToObjectArray(@"
-                Given the child range starts from a lower bound minimum
-                And the child range ending at 3FFFFFFFFFFFFFFF
-                And the parent range starts from 3FFFFFFFFFFFFFFF
-                And the parent range ending at 7FFFFFFFFFFFFFFF
-                When comparing the child range with the parent range
-                Then the child range does not fit within the parent range
-                ");
-
-            yield return interpreter.ParseGherkinToObjectArray(@"
-                Given the child range starts from a lower bound minimum
-                And the child range ending at 3FFFFFFFFFFFFFFF
-                And the parent range starts from 7FFFFFFFFFFFFFFF
-                And the parent range ending at BFFFFFFFFFFFFFFF
-                When comparing the child range with the parent range
-                Then the child range does not fit within the parent range
-                ");
-
-            yield return interpreter.ParseGherkinToObjectArray(@"
-                Given the child range starts from a lower bound minimum
-                And the child range ending at 3FFFFFFFFFFFFFFF
-                And the parent range starts from BFFFFFFFFFFFFFFF
-                And the parent range ending at FFFFFFFFFFFFFFFF
-                When comparing the child range with the parent range
-                Then the child range does not fit within the parent range
-                ");
-
-            yield return interpreter.ParseGherkinToObjectArray(@"
-                Given the child range starts from a lower bound minimum
-                And the child range ending at 3333333333333333
-                And the parent range starts from 3FFFFFFFFFFFFFFF
-                And the parent range ending at 7FFFFFFFFFFFFFFF
-                When comparing the child range with the parent range
-                Then the child range does not fit within the parent range
-                ");
-
-            yield return interpreter.ParseGherkinToObjectArray(@"
-                Given the child range starts from 3333333333333333
-                And the child range ending at 6666666666666666
-                And the parent range starts from 3FFFFFFFFFFFFFFF
-                And the parent range ending at 7FFFFFFFFFFFFFFF
-                When comparing the child range with the parent range
-                Then the child range does not fit within the parent range
-                ");
-
-            yield return interpreter.ParseGherkinToObjectArray(@"
-                Given the child range starts from 7333333333333333
-                And the child range ending at FFFFFFFFFFFFFFFF
-                And the parent range starts from 3FFFFFFFFFFFFFFF
-                And the parent range ending at 7FFFFFFFFFFFFFFF
-                When comparing the child range with the parent range
-                Then the child range does not fit within the parent range
-                ");
-
-            yield return interpreter.ParseGherkinToObjectArray(@"
-                Given the child range starts from a lower bound minimum
-                And the child range ending at 7333333333333333
-                And the parent range starts from 3FFFFFFFFFFFFFFF
-                And the parent range ending at 7FFFFFFFFFFFFFFF
-                When comparing the child range with the parent range
-                Then the child range does not fit within the parent range
-                ");
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, false }; // The child range, starting from a lower bound minimum and ending at 3FFFFFFFFFFFFFFF (inclusive), does not fit within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends at 7FFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", true, false }; // The child range, starting from a lower bound minimum and ending at 3FFFFFFFFFFFFFFF (inclusive), does not fit within the parent range, which starts from 7FFFFFFFFFFFFFFF and ends at BFFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", true, false }; // The child range, starting from a lower bound minimum and ending at 3FFFFFFFFFFFFFFF (inclusive), does not fit within the parent range, which starts from BFFFFFFFFFFFFFFF and ends at FFFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "", "3333333333333333", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, false }; // The child range, starting from a lower bound minimum and ending at 3333333333333333 (inclusive), does not fit within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends at 7FFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "3333333333333333", "6666666666666666", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, false }; // The child range, from 3333333333333333 to 6666666666666666 (inclusive), does not fit within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends at 7FFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "7333333333333333", "FFFFFFFFFFFFFFFF", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, false }; // The child range, from 7333333333333333 to FFFFFFFFFFFFFFFF (inclusive), does not fit within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends at 7FFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "", "7333333333333333", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, false }; // The child range, starting from a lower bound minimum and ending at 7333333333333333 (inclusive), does not fit within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends at 7FFFFFFFFFFFFFFF (inclusive).
         }
 
         /// <summary>
