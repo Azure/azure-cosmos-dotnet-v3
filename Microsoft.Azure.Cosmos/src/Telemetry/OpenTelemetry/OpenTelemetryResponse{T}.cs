@@ -22,8 +22,7 @@ namespace Microsoft.Azure.Cosmos
                requestMessage: responseMessage.RequestMessage,
                subStatusCode: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.SubStatusCode,
                activityId: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.ActivityId,
-               correlatedActivityId: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.CorrelatedActivityId,
-               operationType: responseMessage is QueryResponse<T> ? Documents.OperationType.Query : Documents.OperationType.Invalid)
+               correlatedActivityId: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.CorrelatedActivityId)
         {
         }
 
@@ -37,20 +36,8 @@ namespace Microsoft.Azure.Cosmos
                   requestMessage: responseMessage.RequestMessage,
                   subStatusCode: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.SubStatusCode,
                   activityId: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.ActivityId,
-                  correlatedActivityId: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.CorrelatedActivityId,
-                  operationType: GetOperationType(responseMessage),
-                  resourceType: GetResourceType(responseMessage))
+                  correlatedActivityId: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.CorrelatedActivityId)
         {
-        }
-
-        private static OperationType GetOperationType(Response<T> responseMessage)
-        {
-            return responseMessage is QueryResponse ? Documents.OperationType.Query : Documents.OperationType.Invalid;
-        }
-
-        private static ResourceType? GetResourceType(Response<T> responseMessage)
-        {
-            return responseMessage is ItemResponse<T> ? Documents.ResourceType.Document : null;
         }
 
         private OpenTelemetryResponse(
@@ -62,9 +49,7 @@ namespace Microsoft.Azure.Cosmos
            RequestMessage requestMessage,
            Documents.SubStatusCodes? subStatusCode,
            string activityId,
-           string correlatedActivityId,
-           Documents.OperationType operationType,
-           Documents.ResourceType? resourceType = null)
+           string correlatedActivityId)
            : base(requestMessage)
         {
             this.StatusCode = statusCode;
@@ -75,8 +60,6 @@ namespace Microsoft.Azure.Cosmos
             this.SubStatusCode = (int)(subStatusCode ?? Documents.SubStatusCodes.Unknown);
             this.ActivityId = activityId;
             this.CorrelatedActivityId = correlatedActivityId;
-            this.OperationType = operationType;
-            this.ResourceType = resourceType;
         }
 
         private static Headers GetHeader(FeedResponse<T> responseMessage)

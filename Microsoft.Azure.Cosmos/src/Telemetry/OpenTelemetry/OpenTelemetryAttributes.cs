@@ -4,7 +4,9 @@
 
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
+    using System;
     using System.Net;
+    using System.Security.AccessControl;
 
     internal class OpenTelemetryAttributes
     {
@@ -18,6 +20,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal OpenTelemetryAttributes(RequestMessage requestMessage)
         {
             this.RequestContentLength = requestMessage?.Headers?.ContentLength;
+            if (requestMessage != null)
+            {
+                this.OperationType = requestMessage.OperationType;
+                this.ResourceType = requestMessage.ResourceType;
+            }
+            else
+            {
+                this.OperationType = Documents.OperationType.Invalid;
+            }
         }
 
         /// <summary>

@@ -265,7 +265,6 @@ namespace Microsoft.Azure.Cosmos
                     trace,
                     task,
                     openTelemetry,
-                    operationName,
                     requestOptions,
                     resourceType);
             }
@@ -304,7 +303,6 @@ namespace Microsoft.Azure.Cosmos
                         trace,
                         task,
                         openTelemetry,
-                        operationName,
                         requestOptions,
                         resourceType);
                 }
@@ -497,7 +495,6 @@ namespace Microsoft.Azure.Cosmos
             ITrace trace,
             Func<ITrace, Task<TResult>> task,
             Tuple<string, Func<TResult, OpenTelemetryAttributes>> openTelemetry,
-            string operationName,
             RequestOptions requestOptions,
             ResourceType? resourceType = null)
         {
@@ -513,7 +510,7 @@ namespace Microsoft.Azure.Cosmos
 
                                         if (resourceType is not null && this.IsBulkOperationSupported(resourceType.Value, operationType))
                                         {
-                                            operationName = OpenTelemetryConstants.Operations.ExecuteBulkPrefix + openTelemetry.Item1;
+                                            return OpenTelemetryConstants.Operations.ExecuteBulkPrefix + openTelemetry.Item1;
                                         }
                                         return openTelemetry.Item1;
                                     },
