@@ -665,7 +665,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             FeedRangeInternal feedRangeInternal,
             ITrace trace)
         {
-            List<Documents.PartitionKeyRange> targetRanges;
+            List<Documents.PartitionKeyRange> targetRanges = new ReaderInterface().GetPartitionKeyRanges(string.Empty, string.Empty);
+            if (targetRanges.Count > 0)
+            {
+                return targetRanges;
+            }
+
             if (containerQueryProperties.EffectiveRangesForPartitionKey != null)
             {
                 targetRanges = await queryClient.GetTargetPartitionKeyRangesAsync(

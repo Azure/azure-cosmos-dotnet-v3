@@ -6,12 +6,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
-    using System.Net.Http;
-    using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Fluent;
-    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using OpenTelemetry;
     using OpenTelemetry.Trace;
@@ -48,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 pkCount: 2,
                 perPKItemCount: 5);
 
-            string sqlQueryText = "SELECT * FROM c";
+            string sqlQueryText = "SELECT * FROM c WHERE c.description = 'CreateRandomToDoActivity'";
 
             List<object> families = new List<object>();
 
