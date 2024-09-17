@@ -172,7 +172,7 @@ namespace Microsoft.Azure.Cosmos
                 cosmosResponseMessage?.Headers.SubStatusCode))
             {
                 DefaultTrace.TraceError(
-                    "Operation will NOT be retried. Treating SystemResourceUnavailable (429/3092) as ServiceUnavailable (503). Status code: {0}, sub status code: {1}.",
+                    "Operation will NOT be retried on local region. Treating SystemResourceUnavailable (429/3092) as ServiceUnavailable (503). Status code: {0}, sub status code: {1}.",
                     StatusCodes.TooManyRequests, SubStatusCodes.SystemResourceUnavailable);
 
                 return this.TryMarkEndpointUnavailableForPkRangeAndRetryOnServiceUnavailable(
