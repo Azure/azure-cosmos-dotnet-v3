@@ -672,7 +672,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Delete,
                 requestOptions: requestOptions,
                 task: (trace) => base.DeleteAllItemsByPartitionKeyStreamAsync(partitionKey, trace, requestOptions, cancellationToken),
-                openTelemetry: new (OpenTelemetryConstants.Operations.DeleteAllItemsByPartitionKeyStream, (response) => new OpenTelemetryResponse(response)));
+                openTelemetry: new (OpenTelemetryConstants.Operations.DeleteAllItemsByPartitionKey, (response) => new OpenTelemetryResponse(response)));
         }
     }
 }

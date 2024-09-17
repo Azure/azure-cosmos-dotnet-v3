@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry
 
             // Item Operations
             public const string CreateItem = "create_item";
-            public const string DeleteAllItemsByPartitionKeyStream = "delete_all_items_by_partition_key_stream";
+            public const string DeleteAllItemsByPartitionKey = "delete_all_items_by_partition_key";
             public const string DeleteItem = "delete_item";
             public const string PatchItem = "patch_item";
             public const string QueryItems = "query_items";
