@@ -107,6 +107,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             this.monitoredContainerFeedCreator = monitoredContainerFeedCreator;
             this.documentServiceLeaseContainer = documentServiceLeaseContainer;
+
+            this.operationName = OpenTelemetryConstants.Operations.QueryChangeFeedEstimator;
         }
 
         public override bool HasMoreResults => this.hasMoreResults;

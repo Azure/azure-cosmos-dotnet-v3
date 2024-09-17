@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class QueryIterator : FeedIteratorInternal
@@ -53,6 +54,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.correlatedActivityId = correlatedActivityId;
 
             this.container = container;
+            this.operationName = OpenTelemetryConstants.Operations.QueryItems;
         }
 
         public static QueryIterator Create(

@@ -30,6 +30,8 @@ namespace Microsoft.Azure.Cosmos
 
             this.container = feedIteratorInternal.container;
             this.databaseName = feedIteratorInternal.databaseName;
+
+            this.operationName = feedIteratorInternal.operationName;
         }
 
         internal FeedIteratorInlineCore(
@@ -41,6 +43,8 @@ namespace Microsoft.Azure.Cosmos
 
             this.container = feedIteratorInternal.container;
             this.databaseName = feedIteratorInternal.databaseName;
+
+            this.operationName = feedIteratorInternal.operationName;
         }
 
         public override bool HasMoreResults => this.feedIteratorInternal.HasMoreResults;
@@ -54,7 +58,7 @@ namespace Microsoft.Azure.Cosmos
                         operationType: Documents.OperationType.ReadFeed,
                         requestOptions: null,
                         task: trace => this.feedIteratorInternal.ReadNextAsync(trace, cancellationToken),
-                        openTelemetry: new (OpenTelemetryConstants.Operations.QueryItems, (response) => new OpenTelemetryResponse<T>(responseMessage: response)));
+                        openTelemetry: new (this.feedIteratorInternal.operationName, (response) => new OpenTelemetryResponse<T>(responseMessage: response)));
         }
 
         public override Task<FeedResponse<T>> ReadNextAsync(ITrace trace, CancellationToken cancellationToken)

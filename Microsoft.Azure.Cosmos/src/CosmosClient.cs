@@ -1289,7 +1289,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return this.ClientContext.OperationHelperAsync(
-                operationName: nameof(CreateDatabaseIfNotExistsAsync),
+                operationName: nameof(CreateDatabaseStreamAsync),
                 containerName: null,
                 databaseName: databaseProperties.Id,
                 operationType: OperationType.Create,
@@ -1304,7 +1304,7 @@ namespace Microsoft.Azure.Cosmos
                         trace,
                         cancellationToken);
                 },
-                openTelemetry: new (OpenTelemetryConstants.Operations.CreateDatabaseIfNotExists, (response) => new OpenTelemetryResponse(response)));
+                openTelemetry: new (OpenTelemetryConstants.Operations.CreateDatabase, (response) => new OpenTelemetryResponse(response)));
         }
 
         private async Task<DatabaseResponse> CreateDatabaseInternalAsync(

@@ -123,5 +123,10 @@ namespace Microsoft.Azure.Cosmos
         /// Collect database name if container information not available in open telemetry attributes
         /// </summary>
         internal string databaseName;
+
+        /// <summary>
+        /// Operation Name used for open telemetry traces
+        /// </summary>
+        internal string operationName;
     }
 }

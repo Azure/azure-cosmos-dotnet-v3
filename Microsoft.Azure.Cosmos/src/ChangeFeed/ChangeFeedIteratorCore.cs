@@ -51,6 +51,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             this.changeFeedRequestOptions = changeFeedRequestOptions ?? new ChangeFeedRequestOptions();
             this.changeFeedQuerySpec = changeFeedQuerySpec;
 
+            this.operationName = OpenTelemetryConstants.Operations.QueryChangeFeed;
+
             this.lazyMonadicEnumerator = new AsyncLazy<TryCatch<CrossPartitionChangeFeedAsyncEnumerator>>(
                 valueFactory: async (trace, cancellationToken) =>
                 {
