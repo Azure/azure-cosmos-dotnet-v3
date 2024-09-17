@@ -742,6 +742,328 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [TestMethod]
+        [TestCategory("MultiRegion-MultiMaster")]
+        public async Task AvailabilityStrategyMultiMasterWriteBeforeTest()
+        {
+            FaultInjectionRule sendDelay = new FaultInjectionRuleBuilder(
+                id: "sendDelay",
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithRegion("Central US")
+                        .WithOperationType(FaultInjectionOperationType.CreateItem)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.SendDelay)
+                        .WithDelay(TimeSpan.FromMilliseconds(6000))
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(90))
+                .Build();
+
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule>() { sendDelay };
+            FaultInjector faultInjector = new FaultInjector(rules);
+
+            sendDelay.Disable();
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                ApplicationPreferredRegions = new List<string>() { "Central US", "North Central US" },
+                Serializer = this.cosmosSystemTextJsonSerializer
+            };
+
+            using (CosmosClient faultInjectionClient = new CosmosClient(
+                connectionString: this.connectionString,
+                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
+            {
+                Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
+                Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
+
+                sendDelay.Enable();
+
+                ItemRequestOptions requestOptions = new ItemRequestOptions
+                {
+                    AvailabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
+                        threshold: TimeSpan.FromMilliseconds(100),
+                        thresholdStep: TimeSpan.FromMilliseconds(50),
+                        multiMasterWritesEnabled: true)
+                };
+
+                AvailabilityStrategyTestObject availabilityStrategyTestObject = new AvailabilityStrategyTestObject
+                {
+                    Id = "testId",
+                    Pk = "pk",
+                    Other = "test"
+                };
+
+                ItemResponse<AvailabilityStrategyTestObject> ir = await container.CreateItemAsync<AvailabilityStrategyTestObject>(
+                    availabilityStrategyTestObject,
+                    requestOptions: requestOptions);
+
+                sendDelay.Disable();
+
+                await container.DeleteItemAsync<AvailabilityStrategyTestObject>(
+                    availabilityStrategyTestObject.Id,
+                    new PartitionKey(availabilityStrategyTestObject.Pk));
+
+                CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
+                Assert.IsNotNull(traceDiagnostic);
+                traceDiagnostic.Value.Data.TryGetValue("Response Region", out object hedgeContext);
+                Assert.IsNotNull(hedgeContext);
+                Assert.AreEqual(CosmosAvailabilityStrategyTests.northCentralUS, (string)hedgeContext);
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("MultiRegion-MultiMaster")]
+        public async Task AvailabilityStrategyMultiMasterWriteAfterTest()
+        {
+            FaultInjectionRule responseDelay = new FaultInjectionRuleBuilder(
+                id: "responseDelay",
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithRegion("Central US")
+                        .WithOperationType(FaultInjectionOperationType.CreateItem)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
+                        .WithDelay(TimeSpan.FromMilliseconds(6000))
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(90))
+                .Build();
+
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule>() { responseDelay };
+            FaultInjector faultInjector = new FaultInjector(rules);
+
+            responseDelay.Disable();
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                ApplicationPreferredRegions = new List<string>() { "Central US", "North Central US" },
+                Serializer = this.cosmosSystemTextJsonSerializer
+            };
+
+            using (CosmosClient faultInjectionClient = new CosmosClient(
+                connectionString: this.connectionString,
+                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
+            {
+                Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
+                Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
+
+                responseDelay.Enable();
+
+                ItemRequestOptions requestOptions = new ItemRequestOptions
+                {
+                    AvailabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
+                        threshold: TimeSpan.FromMilliseconds(100),
+                        thresholdStep: TimeSpan.FromMilliseconds(50),
+                        multiMasterWritesEnabled: true)
+                };
+
+                AvailabilityStrategyTestObject availabilityStrategyTestObject = new AvailabilityStrategyTestObject
+                {
+                    Id = "testId",
+                    Pk = "pk",
+                    Other = "test"
+                };
+
+                ItemResponse<AvailabilityStrategyTestObject> ir = await container.CreateItemAsync<AvailabilityStrategyTestObject>(
+                    availabilityStrategyTestObject,
+                    requestOptions: requestOptions);
+
+                responseDelay.Disable();
+
+                await container.DeleteItemAsync<AvailabilityStrategyTestObject>(
+                    availabilityStrategyTestObject.Id,
+                    new PartitionKey(availabilityStrategyTestObject.Pk));
+
+                CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
+                Assert.IsNotNull(traceDiagnostic);
+                traceDiagnostic.Value.Data.TryGetValue("Response Region", out object hedgeContext);
+                Assert.IsNotNull(hedgeContext);
+                Assert.AreEqual(CosmosAvailabilityStrategyTests.northCentralUS, (string)hedgeContext);
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("MultiRegion-MultiMaster")]
+        public async Task AvailabilityStrategyMultiMasterWriteBeforeStepTest()
+        {
+            FaultInjectionRule sendDelay = new FaultInjectionRuleBuilder(
+                id: "sendDelay",
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithRegion("Central US")
+                        .WithOperationType(FaultInjectionOperationType.CreateItem)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.SendDelay)
+                        .WithDelay(TimeSpan.FromMilliseconds(6000))
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(90))
+                .Build();
+
+            FaultInjectionRule sendDelay2 = new FaultInjectionRuleBuilder(
+                id: "sendDelay2",
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithRegion("North Central US")
+                        .WithOperationType(FaultInjectionOperationType.CreateItem)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.SendDelay)
+                        .WithDelay(TimeSpan.FromMilliseconds(6000))
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(90))
+                .Build();
+
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule>() { sendDelay, sendDelay2 };
+            FaultInjector faultInjector = new FaultInjector(rules);
+
+            sendDelay.Disable();
+            sendDelay2.Disable();
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                ApplicationPreferredRegions = new List<string>() { "Central US", "North Central US", "East US" },
+                Serializer = this.cosmosSystemTextJsonSerializer
+            };
+
+            using (CosmosClient faultInjectionClient = new CosmosClient(
+                connectionString: this.connectionString,
+                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
+            {
+                Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
+                Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
+
+                sendDelay.Enable();
+                sendDelay2.Enable();
+
+                ItemRequestOptions requestOptions = new ItemRequestOptions
+                {
+                    AvailabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
+                        threshold: TimeSpan.FromMilliseconds(100),
+                        thresholdStep: TimeSpan.FromMilliseconds(50),
+                        multiMasterWritesEnabled: true)
+                };
+
+                AvailabilityStrategyTestObject availabilityStrategyTestObject = new AvailabilityStrategyTestObject
+                {
+                    Id = "testId",
+                    Pk = "pk",
+                    Other = "test"
+                };
+
+                ItemResponse<AvailabilityStrategyTestObject> ir = await container.CreateItemAsync<AvailabilityStrategyTestObject>(
+                    availabilityStrategyTestObject,
+                    requestOptions: requestOptions);
+
+                sendDelay.Disable();
+                sendDelay2.Disable();
+
+                await container.DeleteItemAsync<AvailabilityStrategyTestObject>(
+                    availabilityStrategyTestObject.Id,
+                    new PartitionKey(availabilityStrategyTestObject.Pk));
+
+                CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
+                Assert.IsNotNull(traceDiagnostic);
+                traceDiagnostic.Value.Data.TryGetValue("Response Region", out object hedgeContext);
+                Assert.IsNotNull(hedgeContext);
+                Assert.AreEqual(CosmosAvailabilityStrategyTests.eastUs, (string)hedgeContext);
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("MultiRegion-MultiMaster")]
+        public async Task AvailabilityStrategyMultiMasterWriteAfterStepTest()
+        {
+            FaultInjectionRule responseDelay = new FaultInjectionRuleBuilder(
+                id: "responseDelay",
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithRegion("Central US")
+                        .WithOperationType(FaultInjectionOperationType.CreateItem)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
+                        .WithDelay(TimeSpan.FromMilliseconds(6000))
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(90))
+                .Build();
+
+            FaultInjectionRule responseDelay2 = new FaultInjectionRuleBuilder(
+                id: "responseDelay2",
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithRegion("North Central US")
+                        .WithOperationType(FaultInjectionOperationType.CreateItem)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
+                        .WithDelay(TimeSpan.FromMilliseconds(6000))
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(90))
+                .Build();
+
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule>() { responseDelay, responseDelay2 };
+            FaultInjector faultInjector = new FaultInjector(rules);
+
+            responseDelay.Disable();
+            responseDelay2.Disable();
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                ApplicationPreferredRegions = new List<string>() { "Central US", "North Central US", "East US" },
+                Serializer = this.cosmosSystemTextJsonSerializer
+            };
+
+            using (CosmosClient faultInjectionClient = new CosmosClient(
+                connectionString: this.connectionString,
+                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
+            {
+                Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
+                Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
+
+                responseDelay.Enable();
+                responseDelay2.Enable();
+
+                ItemRequestOptions requestOptions = new ItemRequestOptions
+                {
+                    AvailabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
+                        threshold: TimeSpan.FromMilliseconds(100),
+                        thresholdStep: TimeSpan.FromMilliseconds(50),
+                        multiMasterWritesEnabled: true)
+                };
+
+                AvailabilityStrategyTestObject availabilityStrategyTestObject = new AvailabilityStrategyTestObject
+                {
+                    Id = "testId",
+                    Pk = "pk",
+                    Other = "test"
+                };
+
+                ItemResponse<AvailabilityStrategyTestObject> ir = await container.CreateItemAsync<AvailabilityStrategyTestObject>(
+                    availabilityStrategyTestObject,
+                    requestOptions: requestOptions);
+
+                responseDelay.Disable();
+                responseDelay2.Disable();
+
+                await container.DeleteItemAsync<AvailabilityStrategyTestObject>(
+                    availabilityStrategyTestObject.Id,
+                    new PartitionKey(availabilityStrategyTestObject.Pk));
+
+                CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
+                Assert.IsNotNull(traceDiagnostic);
+                traceDiagnostic.Value.Data.TryGetValue("Response Region", out object hedgeContext);
+                Assert.IsNotNull(hedgeContext);
+                Assert.AreEqual(CosmosAvailabilityStrategyTests.eastUs, (string)hedgeContext);
+            }
+        }
+
         private static async Task HandleChangesAsync(
             ChangeFeedProcessorContext context,
             IReadOnlyCollection<AvailabilityStrategyTestObject> changes,

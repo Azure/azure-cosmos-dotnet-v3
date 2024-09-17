@@ -37,13 +37,20 @@ namespace Microsoft.Azure.Cosmos
         public TimeSpan ThresholdStep { get; private set; }
 
         /// <summary>
+        /// Whether hedging for multi-master writes are enabled
+        /// </summary>
+        public bool MultiMasterWriteHedge { get; private set; }
+
+        /// <summary>
         /// Constructor for hedging availability strategy
         /// </summary>
         /// <param name="threshold"></param>
         /// <param name="thresholdStep"></param>
+        /// <param name="multiMasterWritesEnabled"></param>
         public CrossRegionHedgingAvailabilityStrategy(
             TimeSpan threshold,
-            TimeSpan? thresholdStep)
+            TimeSpan? thresholdStep,
+            bool multiMasterWritesEnabled = false)
         {
             if (threshold <= TimeSpan.Zero)
             {
@@ -57,6 +64,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.Threshold = threshold;
             this.ThresholdStep = thresholdStep ?? TimeSpan.FromMilliseconds(-1);
+            this.MultiMasterWriteHedge = multiMasterWritesEnabled;
         }
 
         /// <inheritdoc/>
@@ -70,8 +78,9 @@ namespace Microsoft.Azure.Cosmos
         /// This availability strategy can only be used if the request is a read-only request on a document request.
         /// </summary>
         /// <param name="request"></param>
+        /// <param name="client"></param>
         /// <returns>whether the request should be a hedging request.</returns>
-        internal bool ShouldHedge(RequestMessage request)
+        internal bool ShouldHedge(RequestMessage request, CosmosClient client)
         {
             //Only use availability strategy for document point operations
             if (request.ResourceType != ResourceType.Document)
@@ -79,9 +88,14 @@ namespace Microsoft.Azure.Cosmos
                 return false;
             }
 
-            //check to see if it is a not a read-only request
+            //check to see if it is a not a read-only request/ if multimaster writes are enabled
             if (!OperationTypeExtensions.IsReadOperation(request.OperationType))
             {
+                if (this.MultiMasterWriteHedge
+                    && client.DocumentClient.GlobalEndpointManager.CanSupportMultipleWriteLocations(request))
+                {
+                    return true;
+                }
                 return false;
             }
 
@@ -102,7 +116,7 @@ namespace Microsoft.Azure.Cosmos
             RequestMessage request,
             CancellationToken cancellationToken)
         {
-            if (!this.ShouldHedge(request)
+            if (!this.ShouldHedge(request, client)
                 || client.DocumentClient.GlobalEndpointManager.ReadEndpoints.Count == 1)
             {
                 return await sender(request, cancellationToken);
