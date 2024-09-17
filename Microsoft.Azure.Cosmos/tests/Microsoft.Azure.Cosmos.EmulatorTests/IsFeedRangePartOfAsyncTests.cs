@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -407,16 +408,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// </summary>
         private static IEnumerable<object[]> FeedRangeChildNotPartOfParentWhenBothIsMaxInclusiveAreFalse()
         {
-            yield return new object[] { "", "3FFFFFFFFFFFFFFF", false, "", "FFFFFFFFFFFFFFFF", false, true };
-            yield return new object[] { "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, "", "FFFFFFFFFFFFFFFF", false, true };
-            yield return new object[] { "7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", false, "", "FFFFFFFFFFFFFFFF", false, true };
-            yield return new object[] { "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", false, "", "FFFFFFFFFFFFFFFF", false, true };
-            yield return new object[] { "3FFFFFFFFFFFFFFF", "4CCCCCCCCCCCCCCC", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true };
-            yield return new object[] { "4CCCCCCCCCCCCCCC", "5999999999999999", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true };
-            yield return new object[] { "5999999999999999", "6666666666666666", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true };
-            yield return new object[] { "6666666666666666", "7333333333333333", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true };
-            yield return new object[] { "7333333333333333", "7FFFFFFFFFFFFFFF", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true };
-            yield return new object[] { "", "3FFFFFFFFFFFFFFF", false, "", "3FFFFFFFFFFFFFFF", false, true };
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", false, "", "FFFFFFFFFFFFFFFF", false, true }; // The child range, starting from a lower bound minimum and ending just before 3FFFFFFFFFFFFFFF, fits entirely within the parent range, which starts from a lower bound minimum and ends just before FFFFFFFFFFFFFFFF.
+            yield return new object[] { "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, "", "FFFFFFFFFFFFFFFF", false, true }; // The child range, from 3FFFFFFFFFFFFFFF to just before 7FFFFFFFFFFFFFFF, fits entirely within the parent range, which starts from a lower bound minimum and ends just before FFFFFFFFFFFFFFFF.
+            yield return new object[] { "7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", false, "", "FFFFFFFFFFFFFFFF", false, true }; // The child range, from 7FFFFFFFFFFFFFFF to just before BFFFFFFFFFFFFFFF, fits entirely within the parent range, which starts from a lower bound minimum and ends just before FFFFFFFFFFFFFFFF.
+            yield return new object[] { "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", false, "", "FFFFFFFFFFFFFFFF", false, true }; // The child range, from BFFFFFFFFFFFFFFF to just before FFFFFFFFFFFFFFFF, fits entirely within the parent range, which starts from a lower bound minimum and ends just before FFFFFFFFFFFFFFFF.
+            yield return new object[] { "3FFFFFFFFFFFFFFF", "4CCCCCCCCCCCCCCC", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true }; // The child range, from 3FFFFFFFFFFFFFFF to just before 4CCCCCCCCCCCCCCC, fits entirely within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends just before 7FFFFFFFFFFFFFFF.
+            yield return new object[] { "4CCCCCCCCCCCCCCC", "5999999999999999", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true }; // The child range, from 4CCCCCCCCCCCCCCC to just before 5999999999999999, fits entirely within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends just before 7FFFFFFFFFFFFFFF.
+            yield return new object[] { "5999999999999999", "6666666666666666", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true }; // The child range, from 5999999999999999 to just before 6666666666666666, fits entirely within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends just before 7FFFFFFFFFFFFFFF.
+            yield return new object[] { "6666666666666666", "7333333333333333", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true }; // The child range, from 6666666666666666 to just before 7333333333333333, fits entirely within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends just before 7FFFFFFFFFFFFFFF.
+            yield return new object[] { "7333333333333333", "7FFFFFFFFFFFFFFF", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true }; // The child range, from 7333333333333333 to just before 7FFFFFFFFFFFFFFF, fits entirely within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends just before 7FFFFFFFFFFFFFFF.
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", false, "", "3FFFFFFFFFFFFFFF", false, true }; // The child range, starting from a lower bound minimum and ending just before 3FFFFFFFFFFFFFFF, fits entirely within the parent range, which starts from a lower bound minimum and ends just before 3FFFFFFFFFFFFFFF.
+
         }
 
         /// <summary>
@@ -432,13 +434,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// </summary>
         private static IEnumerable<object[]> FeedRangeChildNotPartOfParentWhenChildAndParentIsMaxInclusiveAreFalse()
         {
-            yield return new object[] { "", "3FFFFFFFFFFFFFFF", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, false };
-            yield return new object[] { "", "3FFFFFFFFFFFFFFF", false, "7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", false, false };
-            yield return new object[] { "", "3FFFFFFFFFFFFFFF", false, "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", false, false };
-            yield return new object[] { "", "3333333333333333", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, false };
-            yield return new object[] { "3333333333333333", "6666666666666666", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, false };
-            yield return new object[] { "7333333333333333", "FFFFFFFFFFFFFFFF", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, false };
-            yield return new object[] { "", "7333333333333333", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, false };
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, false }; // The child range ends just before 3FFFFFFFFFFFFFFF, but is not part of the parent range from 3FFFFFFFFFFFFFFF to 7FFFFFFFFFFFFFFF.
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", false, "7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", false, false }; // The child range ends just before 3FFFFFFFFFFFFFFF, but is not part of the parent range from 7FFFFFFFFFFFFFFF to BFFFFFFFFFFFFFFF.
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", false, "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", false, false }; // The child range ends just before 3FFFFFFFFFFFFFFF, but is not part of the parent range from BFFFFFFFFFFFFFFF to FFFFFFFFFFFFFFFF.
+            yield return new object[] { "", "3333333333333333", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, false }; // The child range ends just before 3333333333333333, but is not part of the parent range from 3FFFFFFFFFFFFFFF to 7FFFFFFFFFFFFFFF.
+            yield return new object[] { "3333333333333333", "6666666666666666", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, false }; // The child range from 3333333333333333 to just before 6666666666666666 is not part of the parent range from 3FFFFFFFFFFFFFFF to 7FFFFFFFFFFFFFFF.
+            yield return new object[] { "7333333333333333", "FFFFFFFFFFFFFFFF", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, false }; // The child range from 7333333333333333 to just before FFFFFFFFFFFFFFFF is not part of the parent range from 3FFFFFFFFFFFFFFF to 7FFFFFFFFFFFFFFF.
+            yield return new object[] { "", "7333333333333333", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, false }; // The child range ends just before 7333333333333333, but is not part of the parent range from 3FFFFFFFFFFFFFFF to 7FFFFFFFFFFFFFFF.
         }
 
         /// <summary>
@@ -454,16 +456,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// </summary>
         private static IEnumerable<object[]> FeedRangeChildPartOfParentWhenChildIsMaxInclusiveTrueAndParentIsMaxInclusiveFalse()
         {
-            yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "", "FFFFFFFFFFFFFFFF", false, true };
-            yield return new object[] { "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, "", "FFFFFFFFFFFFFFFF", false, true };
-            yield return new object[] { "7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", true, "", "FFFFFFFFFFFFFFFF", false, true };
-            yield return new object[] { "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", true, "", "FFFFFFFFFFFFFFFF", false, true };
-            yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "", "3FFFFFFFFFFFFFFF", false, true };
-            yield return new object[] { "3FFFFFFFFFFFFFFF", "4CCCCCCCCCCCCCCC", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true };
-            yield return new object[] { "4CCCCCCCCCCCCCCC", "5999999999999999", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true };
-            yield return new object[] { "5999999999999999", "6666666666666666", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true };
-            yield return new object[] { "6666666666666666", "7333333333333333", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true };
-            yield return new object[] { "7333333333333333", "7FFFFFFFFFFFFFFF", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true };
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "", "FFFFFFFFFFFFFFFF", false, true }; // The child range, starting from a lower bound minimum and ending at 3FFFFFFFFFFFFFFF (inclusive), fits within the parent range, which starts from a lower bound minimum and ends just before FFFFFFFFFFFFFFFF.
+            yield return new object[] { "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, "", "FFFFFFFFFFFFFFFF", false, true }; // The child range, from 3FFFFFFFFFFFFFFF to 7FFFFFFFFFFFFFFF (inclusive), fits within the parent range, starting from a lower bound minimum and ending just before FFFFFFFFFFFFFFFF.
+            yield return new object[] { "7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", true, "", "FFFFFFFFFFFFFFFF", false, true }; // The child range, from 7FFFFFFFFFFFFFFF to BFFFFFFFFFFFFFFF (inclusive), fits within the parent range, starting from a lower bound minimum and ending just before FFFFFFFFFFFFFFFF.
+            yield return new object[] { "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", true, "", "FFFFFFFFFFFFFFFF", false, true }; // The child range, from BFFFFFFFFFFFFFFF to FFFFFFFFFFFFFFFF (inclusive), fits within the parent range, starting from a lower bound minimum and ending just before FFFFFFFFFFFFFFFF.
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "", "3FFFFFFFFFFFFFFF", false, true }; // The child range, from a lower bound minimum to 3FFFFFFFFFFFFFFF (inclusive), fits entirely within the parent range, which starts from a lower bound minimum and ends just before 3FFFFFFFFFFFFFFF.
+            yield return new object[] { "3FFFFFFFFFFFFFFF", "4CCCCCCCCCCCCCCC", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true }; // The child range, from 3FFFFFFFFFFFFFFF to 4CCCCCCCCCCCCCCC (inclusive), fits within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends just before 7FFFFFFFFFFFFFFF.
+            yield return new object[] { "4CCCCCCCCCCCCCCC", "5999999999999999", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true }; // The child range, from 4CCCCCCCCCCCCCCC to 5999999999999999 (inclusive), fits within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends just before 7FFFFFFFFFFFFFFF.
+            yield return new object[] { "5999999999999999", "6666666666666666", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true }; // The child range, from 5999999999999999 to 6666666666666666 (inclusive), fits within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends just before 7FFFFFFFFFFFFFFF.
+            yield return new object[] { "6666666666666666", "7333333333333333", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true }; // The child range, from 6666666666666666 to 7333333333333333 (inclusive), fits within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends just before 7FFFFFFFFFFFFFFF.
+            yield return new object[] { "7333333333333333", "7FFFFFFFFFFFFFFF", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true }; // The child range, from 7333333333333333 to 7FFFFFFFFFFFFFFF (inclusive), fits within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends just before 7FFFFFFFFFFFFFFF.
         }
 
         /// <summary>
@@ -479,13 +481,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// </summary>
         private static IEnumerable<object[]> FeedRangeChildNotPartOfParentWhenChildIsMaxInclusiveTrueAndParentIsMaxInclusiveFalse()
         {
-            yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, false };
-            yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", false, false };
-            yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", false, false };
-            yield return new object[] { "", "3333333333333333", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, false };
-            yield return new object[] { "3333333333333333", "6666666666666666", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, false };
-            yield return new object[] { "7333333333333333", "FFFFFFFFFFFFFFFF", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, false };
-            yield return new object[] { "", "7333333333333333", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, false };
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, false }; // The child range, starting from a lower bound minimum and ending at 3FFFFFFFFFFFFFFF (inclusive), does not fit within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends just before 7FFFFFFFFFFFFFFF.
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", false, false }; // The child range, starting from a lower bound minimum and ending at 3FFFFFFFFFFFFFFF (inclusive), does not fit within the parent range, which starts from 7FFFFFFFFFFFFFFF and ends just before BFFFFFFFFFFFFFFF.
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", false, false }; // The child range, starting from a lower bound minimum and ending at 3FFFFFFFFFFFFFFF (inclusive), does not fit within the parent range, which starts from BFFFFFFFFFFFFFFF and ends just before FFFFFFFFFFFFFFFF.
+            yield return new object[] { "", "3333333333333333", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, false }; // The child range, starting from a lower bound minimum and ending at 3333333333333333 (inclusive), does not fit within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends just before 7FFFFFFFFFFFFFFF.
+            yield return new object[] { "3333333333333333", "6666666666666666", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, false }; // The child range, from 3333333333333333 to 6666666666666666 (inclusive), does not fit within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends just before 7FFFFFFFFFFFFFFF.
+            yield return new object[] { "7333333333333333", "FFFFFFFFFFFFFFFF", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, false }; // The child range, from 7333333333333333 to FFFFFFFFFFFFFFFF (inclusive), does not fit within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends just before 7FFFFFFFFFFFFFFF.
+            yield return new object[] { "", "7333333333333333", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, false }; // The child range, starting from a lower bound minimum and ending at 7333333333333333 (inclusive), does not fit within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends just before 7FFFFFFFFFFFFFFF.
         }
 
         /// <summary>
@@ -501,16 +503,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// </summary>
         private static IEnumerable<object[]> FeedRangeChildPartOfParentWhenChildIsMaxInclusiveFalseAndParentIsMaxInclusiveTrue()
         {
-            yield return new object[] { "", "3FFFFFFFFFFFFFFF", false, "", "FFFFFFFFFFFFFFFF", true, true };
-            yield return new object[] { "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, "", "FFFFFFFFFFFFFFFF", true, true };
-            yield return new object[] { "7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", false, "", "FFFFFFFFFFFFFFFF", true, true };
-            yield return new object[] { "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", false, "", "FFFFFFFFFFFFFFFF", true, true };
-            yield return new object[] { "", "3FFFFFFFFFFFFFFF", false, "", "3FFFFFFFFFFFFFFF", true, true };
-            yield return new object[] { "3FFFFFFFFFFFFFFF", "4CCCCCCCCCCCCCCC", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true };
-            yield return new object[] { "4CCCCCCCCCCCCCCC", "5999999999999999", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true };
-            yield return new object[] { "5999999999999999", "6666666666666666", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true };
-            yield return new object[] { "6666666666666666", "7333333333333333", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true };
-            yield return new object[] { "7333333333333333", "7FFFFFFFFFFFFFFF", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true };
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", false, "", "FFFFFFFFFFFFFFFF", true, true }; // The child range, starting from a lower bound minimum and ending just before 3FFFFFFFFFFFFFFF, fits entirely within the parent range, which starts from a lower bound minimum and ends at FFFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, "", "FFFFFFFFFFFFFFFF", true, true }; // The child range, from 3FFFFFFFFFFFFFFF to just before 7FFFFFFFFFFFFFFF, fits entirely within the parent range, which starts from a lower bound minimum and ends at FFFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", false, "", "FFFFFFFFFFFFFFFF", true, true }; // The child range, from 7FFFFFFFFFFFFFFF to just before BFFFFFFFFFFFFFFF, fits entirely within the parent range, which starts from a lower bound minimum and ends at FFFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", false, "", "FFFFFFFFFFFFFFFF", true, true }; // The child range, from BFFFFFFFFFFFFFFF to just before FFFFFFFFFFFFFFFF, fits entirely within the parent range, which starts from a lower bound minimum and ends at FFFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", false, "", "3FFFFFFFFFFFFFFF", true, true }; // The child range, from a lower bound minimum to just before 3FFFFFFFFFFFFFFF, fits entirely within the parent range, which starts from a lower bound minimum and ends at 3FFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "3FFFFFFFFFFFFFFF", "4CCCCCCCCCCCCCCC", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true }; // The child range, from 3FFFFFFFFFFFFFFF to just before 4CCCCCCCCCCCCCCC, fits entirely within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends at 7FFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "4CCCCCCCCCCCCCCC", "5999999999999999", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true }; // The child range, from 4CCCCCCCCCCCCCCC to just before 5999999999999999, fits entirely within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends at 7FFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "5999999999999999", "6666666666666666", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true }; // The child range, from 5999999999999999 to just before 6666666666666666, fits entirely within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends at 7FFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "6666666666666666", "7333333333333333", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true }; // The child range, from 6666666666666666 to just before 7333333333333333, fits entirely within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends at 7FFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "7333333333333333", "7FFFFFFFFFFFFFFF", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true }; // The child range, from 7333333333333333 to just before 7FFFFFFFFFFFFFFF, fits entirely within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends at 7FFFFFFFFFFFFFFF (inclusive).
         }
 
         /// <summary>
@@ -526,13 +528,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// </summary>
         private static IEnumerable<object[]> FeedRangeChildNotPartOfParentWhenChildIsMaxInclusiveFalseAndParentIsMaxInclusiveTrue()
         {
-            yield return new object[] { "", "3FFFFFFFFFFFFFFF", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, false };
-            yield return new object[] { "", "3FFFFFFFFFFFFFFF", false, "7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", true, false };
-            yield return new object[] { "", "3FFFFFFFFFFFFFFF", false, "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", true, false };
-            yield return new object[] { "", "3333333333333333", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, false };
-            yield return new object[] { "3333333333333333", "6666666666666666", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, false };
-            yield return new object[] { "7333333333333333", "FFFFFFFFFFFFFFFF", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, false };
-            yield return new object[] { "", "7333333333333333", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, false };
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, false }; // The child range, starting from a lower bound minimum and ending just before 3FFFFFFFFFFFFFFF, does not fit within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends at 7FFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", false, "7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", true, false }; // The child range, starting from a lower bound minimum and ending just before 3FFFFFFFFFFFFFFF, does not fit within the parent range, which starts from 7FFFFFFFFFFFFFFF and ends at BFFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", false, "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", true, false }; // The child range, starting from a lower bound minimum and ending just before 3FFFFFFFFFFFFFFF, does not fit within the parent range, which starts from BFFFFFFFFFFFFFFF and ends at FFFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "", "3333333333333333", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, false }; // The child range, starting from a lower bound minimum and ending just before 3333333333333333, does not fit within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends at 7FFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "3333333333333333", "6666666666666666", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, false }; // The child range, from 3333333333333333 to just before 6666666666666666, does not fit within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends at 7FFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "7333333333333333", "FFFFFFFFFFFFFFFF", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, false }; // The child range, from 7333333333333333 to just before FFFFFFFFFFFFFFFF, does not fit within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends at 7FFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "", "7333333333333333", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, false }; // The child range, starting from a lower bound minimum and ending just before 7333333333333333, does not fit within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends at 7FFFFFFFFFFFFFFF (inclusive).
         }
 
         /// <summary>
@@ -548,16 +550,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// </summary>
         private static IEnumerable<object[]> FeedRangeChildPartOfParentWhenBothChildAndParentIsMaxInclusiveTrue()
         {
-            yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "", "FFFFFFFFFFFFFFFF", true, true };
-            yield return new object[] { "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, "", "FFFFFFFFFFFFFFFF", true, true };
-            yield return new object[] { "7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", true, "", "FFFFFFFFFFFFFFFF", true, true };
-            yield return new object[] { "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", true, "", "FFFFFFFFFFFFFFFF", true, true };
-            yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "", "3FFFFFFFFFFFFFFF", true, true };
-            yield return new object[] { "3FFFFFFFFFFFFFFF", "4CCCCCCCCCCCCCCC", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true };
-            yield return new object[] { "4CCCCCCCCCCCCCCC", "5999999999999999", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true };
-            yield return new object[] { "5999999999999999", "6666666666666666", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true };
-            yield return new object[] { "6666666666666666", "7333333333333333", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true };
-            yield return new object[] { "7333333333333333", "7FFFFFFFFFFFFFFF", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true };
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "", "FFFFFFFFFFFFFFFF", true, true }; // The child range, starting from a lower bound minimum and ending at 3FFFFFFFFFFFFFFF (inclusive), fits entirely within the parent range, which starts from a lower bound minimum and ends at FFFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, "", "FFFFFFFFFFFFFFFF", true, true }; // The child range, from 3FFFFFFFFFFFFFFF to 7FFFFFFFFFFFFFFF (inclusive), fits entirely within the parent range, which starts from a lower bound minimum and ends at FFFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", true, "", "FFFFFFFFFFFFFFFF", true, true }; // The child range, from 7FFFFFFFFFFFFFFF to BFFFFFFFFFFFFFFF (inclusive), fits entirely within the parent range, which starts from a lower bound minimum and ends at FFFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", true, "", "FFFFFFFFFFFFFFFF", true, true }; // The child range, from BFFFFFFFFFFFFFFF to FFFFFFFFFFFFFFFF (inclusive), fits entirely within the parent range, which starts from a lower bound minimum and ends at FFFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "", "3FFFFFFFFFFFFFFF", true, true }; // The child range, from a lower bound minimum to 3FFFFFFFFFFFFFFF (inclusive), fits entirely within the parent range, which starts from a lower bound minimum and ends at 3FFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "3FFFFFFFFFFFFFFF", "4CCCCCCCCCCCCCCC", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true }; // The child range, from 3FFFFFFFFFFFFFFF to 4CCCCCCCCCCCCCCC (inclusive), fits entirely within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends at 7FFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "4CCCCCCCCCCCCCCC", "5999999999999999", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true }; // The child range, from 4CCCCCCCCCCCCCCC to 5999999999999999 (inclusive), fits entirely within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends at 7FFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "5999999999999999", "6666666666666666", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true }; // The child range, from 5999999999999999 to 6666666666666666 (inclusive), fits entirely within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends at 7FFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "6666666666666666", "7333333333333333", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true }; // The child range, from 6666666666666666 to 7333333333333333 (inclusive), fits entirely within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends at 7FFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "7333333333333333", "7FFFFFFFFFFFFFFF", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true }; // The child range, from 7333333333333333 to 7FFFFFFFFFFFFFFF (inclusive), fits entirely within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends at 7FFFFFFFFFFFFFFF (inclusive).
         }
 
         /// <summary>
@@ -573,13 +575,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// </summary>
         private static IEnumerable<object[]> FeedRangeChildNotPartOfParentWhenBothChildAndParentIsMaxInclusiveTrue()
         {
-            yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, false };
-            yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", true, false };
-            yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", true, false };
-            yield return new object[] { "", "3333333333333333", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, false };
-            yield return new object[] { "3333333333333333", "6666666666666666", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, false };
-            yield return new object[] { "7333333333333333", "FFFFFFFFFFFFFFFF", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, false };
-            yield return new object[] { "", "7333333333333333", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, false };
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, false }; // The child range, starting from a lower bound minimum and ending at 3FFFFFFFFFFFFFFF (inclusive), does not fit within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends at 7FFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", true, false }; // The child range, starting from a lower bound minimum and ending at 3FFFFFFFFFFFFFFF (inclusive), does not fit within the parent range, which starts from 7FFFFFFFFFFFFFFF and ends at BFFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", true, false }; // The child range, starting from a lower bound minimum and ending at 3FFFFFFFFFFFFFFF (inclusive), does not fit within the parent range, which starts from BFFFFFFFFFFFFFFF and ends at FFFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "", "3333333333333333", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, false }; // The child range, starting from a lower bound minimum and ending at 3333333333333333 (inclusive), does not fit within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends at 7FFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "3333333333333333", "6666666666666666", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, false }; // The child range, from 3333333333333333 to 6666666666666666 (inclusive), does not fit within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends at 7FFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "7333333333333333", "FFFFFFFFFFFFFFFF", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, false }; // The child range, from 7333333333333333 to FFFFFFFFFFFFFFFF (inclusive), does not fit within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends at 7FFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "", "7333333333333333", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, false }; // The child range, starting from a lower bound minimum and ending at 7333333333333333 (inclusive), does not fit within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends at 7FFFFFFFFFFFFFFF (inclusive).
         }
 
         /// <summary>
