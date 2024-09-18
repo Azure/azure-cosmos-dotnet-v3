@@ -273,10 +273,10 @@ namespace Microsoft.Azure.Cosmos
             try
             {
                 IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
-                    containerRId,
-                    ContainerCore.allRanges,
-                    trace,
-                    forceRefresh: true);
+                        containerRId,
+                        ContainerCore.allRanges,
+                        trace,
+                        forceRefresh: true);
 
                 if (partitionKeyRanges == null)
                 {
