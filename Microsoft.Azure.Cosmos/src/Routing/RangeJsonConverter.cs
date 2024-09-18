@@ -7,28 +7,36 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
-    using PartitionKeyRange = Documents.PartitionKeyRange;
 
     internal sealed class RangeJsonConverter : JsonConverter
     {
         private static readonly string MinProperty = "min";
         private static readonly string MaxProperty = "max";
+        private static readonly string MinInclusiveProperty = "isMinInclusive";
+        private static readonly string MaxInclusiveProperty = "isMaxInclusive";
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
             try
             {
                 Documents.Routing.Range<string> range = (Documents.Routing.Range<string>)value;
-                if (!range.IsMinInclusive || range.IsMaxInclusive)
-                {
-                    throw new ArgumentOutOfRangeException($"IsMinInclusive={range.IsMinInclusive} OR IsMaxInclusive={range.IsMaxInclusive} not supported");
-                }
 
                 writer.WriteStartObject();
                 writer.WritePropertyName(MinProperty);
                 serializer.Serialize(writer, range.Min);
                 writer.WritePropertyName(MaxProperty);
                 serializer.Serialize(writer, range.Max);
+                if (!range.IsMinInclusive)
+                {
+                    writer.WritePropertyName(MinInclusiveProperty);
+                    writer.WriteValue(false);
+                }
+                if (range.IsMaxInclusive)
+                {
+                    writer.WritePropertyName(MaxInclusiveProperty);
+                    writer.WriteValue(true);
+                }
+
                 writer.WriteEndObject();
             }
             catch (Exception ex)
@@ -42,10 +50,23 @@ namespace Microsoft.Azure.Cosmos.Routing
             try
             {
                 JObject jsonObject = JObject.Load(reader);
+                bool isMinInclusive = true;
+                if (jsonObject.TryGetValue(MinInclusiveProperty, out JToken minInclusiveToken))
+                {
+                    isMinInclusive = (bool)minInclusiveToken;
+                }
+
+                bool isMaxInclusive = false;
+                if (jsonObject.TryGetValue(MaxInclusiveProperty, out JToken maxInclusiveToken))
+                {
+                    isMaxInclusive = (bool)maxInclusiveToken;
+                }
+
                 return new Documents.Routing.Range<string>(
                     jsonObject[MinProperty].Value<string>(),
                     jsonObject[MaxProperty].Value<string>(),
-                    true, false);
+                    isMinInclusive,
+                    isMaxInclusive);
             }
             catch (Exception ex)
             {
@@ -55,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public override bool CanConvert(Type objectType)
         {
-            return typeof(PartitionKeyRange).IsAssignableFrom(objectType);
+            return typeof(Documents.Routing.Range<string>).IsAssignableFrom(objectType);
         }
     }
 }

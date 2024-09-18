@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
     using System.Text;
     using System.IO;
     using System.Net.Http;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class FeedRangeTests
@@ -286,27 +287,40 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         /// All other combinations should throw an exception
         /// </summary>
         [TestMethod]
-        [DataRow(false, true, true)]
-        [DataRow(false, false, true)]
-        [DataRow(true, true, true)]
-        [DataRow(true, false, false)]
+        [DataRow(false, true)]
+        [DataRow(false, false)]
+        [DataRow(true, true)]
+        [DataRow(true, false)]
         [Owner("kirankk")]
-        public void FeedRangeEpk_Combinations(bool minInclusive, bool maxInclusive, bool isFailureExpected)
+        public void FeedRangeEpk_Combinations(bool minInclusive, bool maxInclusive)
         {
             Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("", "FF", minInclusive, maxInclusive);
             RangeJsonConverter rangeConverter = new RangeJsonConverter();
 
-            using StreamWriter sw = new StreamWriter(new MemoryStream());
+            using StringWriter sw = new StringWriter();
             using JsonWriter writer = new JsonTextWriter(sw);
+            {
                 JsonSerializer jsonSerializer = new JsonSerializer();
-            if (isFailureExpected)
-            {
-                JsonSerializationException ex = Assert.ThrowsException<JsonSerializationException>(() => rangeConverter.WriteJson(writer, range, jsonSerializer));
-                Assert.IsTrue(ex.InnerException is ArgumentOutOfRangeException);
-            }
-            else
-            {
                 rangeConverter.WriteJson(writer, range, jsonSerializer);
+                writer.Flush();
+                sw.Flush();
+
+                JObject parsedJson = JObject.Parse(sw.ToString());
+                Assert.AreEqual(true, parsedJson.ContainsKey("min"));
+                Assert.AreEqual(string.Empty, parsedJson["min"]);
+                Assert.AreEqual(true, parsedJson.ContainsKey("max"));
+                Assert.AreEqual("FF", parsedJson["max"]);
+                Assert.AreEqual(!minInclusive, parsedJson.ContainsKey("isMinInclusive"));
+                Assert.AreEqual(maxInclusive, parsedJson.ContainsKey("isMaxInclusive"));
+                if (!minInclusive)
+                {
+                    Assert.AreEqual(false, parsedJson["isMinInclusive"]);
+                }
+
+                if (maxInclusive)
+                {
+                    Assert.AreEqual(true, parsedJson["isMaxInclusive"]);
+                }
             }
         }
     }
