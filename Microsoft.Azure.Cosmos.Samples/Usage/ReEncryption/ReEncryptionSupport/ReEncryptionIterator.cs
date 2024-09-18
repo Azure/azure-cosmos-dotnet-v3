@@ -282,13 +282,10 @@ namespace Cosmos.Samples.ReEncryption
         {
             ChangeFeedStartFrom changeFeedStartFrom;
 
-            if (this.changeFeedRequestOptions == null)
-            {
-                this.changeFeedRequestOptions = new ChangeFeedRequestOptions
+            this.changeFeedRequestOptions ??= new ChangeFeedRequestOptions
                 {
                     PageSizeHint = PageSize,
                 };
-            }
 
             FeedIterator feedIterator = null;
 

@@ -26,7 +26,7 @@
 
             using (Microsoft.ApplicationInsights.Extensibility.IOperationHolder<RequestTelemetry> operation = this.telemetryClient.StartOperation<RequestTelemetry>("CosmosDBRequest"))
             {
-                this.telemetryClient.TrackTrace($"{request.Method.Method} - {request.RequestUri.ToString()}");
+                this.telemetryClient.TrackTrace($"{request.Method.Method} - {request.RequestUri}");
                 ResponseMessage response = await base.SendAsync(request, cancellationToken);
 
                 operation.Telemetry.ResponseCode = ((int)response.StatusCode).ToString();
