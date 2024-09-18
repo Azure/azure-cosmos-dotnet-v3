@@ -41,13 +41,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Verify container has multiple partitions
             DocumentFeedResponse<Documents.PartitionKeyRange> pkRanges = await itemsCore.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(itemsCore.LinkUri);
             Console.WriteLine("Number of partitions: " + pkRanges.Count);
-
+            
             List<Documents.PartitionKeyRange> pkRangesList = new List<Documents.PartitionKeyRange>();
             foreach (Documents.PartitionKeyRange pkRange in pkRanges)
             {
                 pkRangesList.Add(pkRange);
                 break;
             }
+            Console.WriteLine("Writing to GSI Count: " + pkRangesList.Count);
             ReaderInterface.partitionKeyRanges.Add("CreateRandomToDoActivity", pkRangesList);
 
             Assert.IsTrue(pkRanges.Count > 1, "Should have created a multi partition container.");
@@ -66,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             double totalRequestCharge = 0;
             double totalTimeToGetTheResults = 0;
 
-            Console.WriteLine(" ====> IS GSI ENABLED " + ConfigurationManager.GetEnvironmentVariable<bool>("GSI_ENABLED", false));
+            Console.WriteLine("====> IS GSI ENABLED " + ConfigurationManager.GetEnvironmentVariable<bool>("GSI_ENABLED", false));
             QueryDefinition queryDefinition = new (sqlQueryText);
             int counter = 1;
             using (FeedIterator<object> queryResultSetIterator = container.GetItemQueryIterator<object>(queryDefinition.WithParameter("@param1", "CreateRandomToDoActivity")))

@@ -270,12 +270,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                    trace,
                    inputParameters.SqlQuerySpec);
 
-            Console.WriteLine("=============");
+            Console.WriteLine($"====> Partition Key Range Ids : Count is {targetRanges.Count}");
             foreach (Documents.PartitionKeyRange pkRange in targetRanges)
             {
                 Console.WriteLine(pkRange.ToString());
             }
-            Console.WriteLine("=============");
 
             Debug.Assert(targetRanges != null, $"{nameof(CosmosQueryExecutionContextFactory)} Assert!", "targetRanges != null");
 
