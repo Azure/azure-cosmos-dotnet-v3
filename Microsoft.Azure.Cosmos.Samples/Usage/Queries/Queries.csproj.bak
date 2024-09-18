@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -6,7 +6,6 @@
     <LangVersion>latest</LangVersion>
     <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
   </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.43.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
