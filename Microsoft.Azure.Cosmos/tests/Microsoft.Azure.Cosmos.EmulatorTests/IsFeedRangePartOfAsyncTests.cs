@@ -688,7 +688,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Generate ranges for parent and child based on shared min and max range
             (string min, string max) parentRange = parentContext.GenerateRange(minRange, maxRange);
-            (string min, string max) childRange = childContext.GenerateRange(minRange, maxRange);
+            (string min, string max) childRange = childContext.GenerateRange(parentRange.min, parentRange.max);
 
             // Note, the values of isMaxInclusive and isMinInclusive do not affect the outcome of this test, as IsSubset only depends on the min and max values of the parent and child ranges.
 
