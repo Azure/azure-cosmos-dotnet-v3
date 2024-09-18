@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Net;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Documents;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Telemetry;
 
