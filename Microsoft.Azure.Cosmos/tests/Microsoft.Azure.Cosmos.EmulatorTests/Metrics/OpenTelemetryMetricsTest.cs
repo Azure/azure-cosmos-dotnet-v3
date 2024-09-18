@@ -5,53 +5,17 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
 {
     using System;
-    using System.Collections.Concurrent;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Net;
-    using System.Net.Http;
-    using System.Reflection;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Fluent;
-    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
-    using Moq.Protected;
     using OpenTelemetry.Metrics;
     using OpenTelemetry;
     using System.Diagnostics;
+    using OpenTelemetry.Resources;
+    using Microsoft.Azure.Cosmos.Telemetry;
 
     [TestClass]
     public class OpenTelemetryMetricsTest : BaseCosmosClientHelper
     {
-        private ContainerInternal Container = null;
-        private const string PartitionKey = "/pk";
-
-        [TestInitialize]
-        public async Task TestInitialize()
-        {
-            await this.TestInit();
-
-            ContainerResponse response = await this.database.CreateContainerAsync(
-                        new ContainerProperties(id: "ClientCreateAndInitializeContainer", partitionKeyPath: PartitionKey),
-                        throughput: 20000,
-                        cancellationToken: this.cancellationToken);
-            Assert.IsNotNull(response);
-            Assert.IsNotNull(response.Container);
-            Assert.IsNotNull(response.Resource);
-            this.Container = (ContainerInlineCore)response;
-
-            // Create items with different
-            for (int i = 0; i < 500; i++)
-            {
-                ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
-                item.pk = "Status" + i.ToString();
-                item.id = i.ToString();
-                ItemResponse<ToDoActivity> itemResponse = await this.Container.CreateItemAsync(item);
-                Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
-            }
-        }
-
         [TestCleanup]
         public async Task Cleanup()
         {
@@ -61,65 +25,86 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
         [TestMethod]
         public async Task OperationLevelMetrics()
         {
-            //var histogramBuckets = new double[] { 0, 5, 10, 25, 50, 75, 100, 250, 500 };
+            Console.WriteLine("Start => " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
             MeterProvider meterProvider = Sdk
-             .CreateMeterProviderBuilder()
-             .AddMeter("*")/*
-             .AddView("cosmos.client.op.RUs", new ExplicitBucketHistogramConfiguration { Boundaries = histogramBuckets })*/
-             .AddConsoleExporter()
-             .Build();
-
-            int httpCallsMade = 0;
-            HttpClientHandlerHelper httpClientHandlerHelper = new HttpClientHandlerHelper
-            {
-                RequestCallBack = (request, cancellationToken) =>
+                .CreateMeterProviderBuilder()
+                .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("OperationLevelMetrics"))
+                .AddMeter("Azure.Cosmos.Client.Operation")
+                .AddView(instrumentName: OpenTelemetryMetricsConstant.OperationMetrics.Name.RequestCharge, new ExplicitBucketHistogramConfiguration // Define histogram buckets
                 {
-                    httpCallsMade++;
-                    return null;
-                }
-            };
+                    Boundaries = OpenTelemetryMetricsConstant.HistogramBuckets.RequestUnitBuckets
+                })
+                .AddView(instrumentName: OpenTelemetryMetricsConstant.OperationMetrics.Name.Latency, new ExplicitBucketHistogramConfiguration // Define histogram buckets
+                {
+                    Boundaries = OpenTelemetryMetricsConstant.HistogramBuckets.RequestLatencyBuckets
+                })
+                .AddView(instrumentName: OpenTelemetryMetricsConstant.OperationMetrics.Name.RowCount, new ExplicitBucketHistogramConfiguration // Define histogram buckets
+                {
+                    Boundaries = OpenTelemetryMetricsConstant.HistogramBuckets.RowCountBuckets
+                })
+                .AddView(instrumentName: OpenTelemetryMetricsConstant.OperationMetrics.Name.ActiveInstances, new ExplicitBucketHistogramConfiguration // Define histogram buckets
+                {
+                    Boundaries = OpenTelemetryMetricsConstant.HistogramBuckets.ActiveInstancesBuckets
+                })
+                /*.AddOtlpExporter((exporterOptions, metricReaderOptions) =>
+                 {
+                     exporterOptions.Endpoint = new Uri("http://localhost:9090/api/v1/otlp/v1/metrics");
+                     exporterOptions.Protocol = OtlpExportProtocol.HttpProtobuf;
+                     metricReaderOptions.PeriodicExportingMetricReaderOptions.ExportIntervalMilliseconds = 1000;
+                 })*/
+                .AddConsoleExporter()
+                //.AddAzureMonitorMetricExporter( o => o.ConnectionString = "")
+                //.AddReader(new PeriodicExportingMetricReader(new CustomMetricExporter(), exportIntervalMilliseconds: 1000))
+                .Build();
 
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();
-            List<(string, string)> containers = new List<(string, string)> 
-            { (this.database.Id, "ClientCreateAndInitializeContainer")};
-
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions
             {
-                HttpClientFactory = () => new HttpClient(httpClientHandlerHelper),
                 CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions()
                 {
                     IsClientMetricsEnabled = true
                 }
             };
 
-            CosmosClient cosmosClient = await CosmosClient.CreateAndInitializeAsync(endpoint, authKey, containers, cosmosClientOptions);
-           // Assert.IsNotNull(cosmosClient);
-            int httpCallsMadeAfterCreation = httpCallsMade;
+            this.SetClient(new CosmosClient(endpoint, authKey, cosmosClientOptions));
 
-            ContainerInternal container = (ContainerInternal)cosmosClient.GetContainer(this.database.Id, "ClientCreateAndInitializeContainer");
-
-            await Task.Delay(1000);
+            Database database = await this.GetClient().CreateDatabaseIfNotExistsAsync(Guid.NewGuid().ToString());
+            Container container = await database.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString(), "/pk", throughput: 10000);
 
             Stopwatch sw = Stopwatch.StartNew();
             sw.Start();
+            int counter = 1;
             while(true)
             {
-                ItemResponse<ToDoActivity> readResponse = await container.ReadItemAsync<ToDoActivity>("1", new Cosmos.PartitionKey("Status1"));
-                string diagnostics = readResponse.Diagnostics.ToString();
-                if(sw.ElapsedMilliseconds > 2000)
+                string randomId = Guid.NewGuid().ToString();
+                string pk = "Status1";
+
+                await container.CreateItemAsync<ToDoActivity>(ToDoActivity.CreateRandomToDoActivity(id: randomId, pk: pk));
+                await container.ReadItemAsync<ToDoActivity>(randomId, new PartitionKey(pk));
+
+                QueryRequestOptions queryRequestOptions = new QueryRequestOptions()
+                {
+                    MaxItemCount = Random.Shared.Next(1, 100)
+                };
+                FeedIterator<ToDoActivity> feedIterator = container.GetItemQueryIterator<ToDoActivity>("SELECT * FROM c", requestOptions: queryRequestOptions);
+                while (feedIterator.HasMoreResults)
+                {
+                    FeedResponse<ToDoActivity> toDoActivities = await feedIterator.ReadNextAsync();
+                    Console.WriteLine($"{counter++} : Read {toDoActivities.Count} items");
+                }
+
+                if (sw.ElapsedMilliseconds > TimeSpan.FromSeconds(1).TotalMilliseconds)
                 {
                     break;
                 }
             }
             sw.Stop();
-            
-            await Task.Delay(1000);
-
-            cosmosClient.Dispose();
 
             meterProvider.Dispose();
 
-            await Task.Delay(1000);
+            await Task.Delay(TimeSpan.FromSeconds(1));
+
+            Console.WriteLine("End => " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
         }
     }
 }

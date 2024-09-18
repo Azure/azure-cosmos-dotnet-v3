@@ -954,6 +954,11 @@ namespace Microsoft.Azure.Cosmos
             // Loading VM Information (non blocking call and initialization won't fail if this call fails)
             VmMetadataApiHandler.TryInitialize(this.httpClient);
 
+            if (this.cosmosClientTelemetryOptions.IsClientMetricsEnabled)
+            {
+                CosmosOperationMeter.Initialize();
+            }
+
             // Starting ClientTelemetry Job
             this.telemetryToServiceHelper = TelemetryToServiceHelper.CreateAndInitializeClientConfigAndTelemetryJob(this.clientId,
                                                                  this.ConnectionPolicy,

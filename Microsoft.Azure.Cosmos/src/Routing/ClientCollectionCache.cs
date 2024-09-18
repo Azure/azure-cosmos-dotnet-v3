@@ -216,7 +216,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                             {
                                 ContainerProperties containerProperties = CosmosResource.FromStream<ContainerProperties>(response);
                                 
-                                this.telemetryToServiceHelper.GetCollectors().ForEach((collector) => collector.CollectCacheInfo(
+                                this.telemetryToServiceHelper.GetCollector().CollectCacheInfo(
                                      ClientCollectionCache.TelemetrySourceName,
                                      () => new TelemetryInformation
                                      {
@@ -227,7 +227,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                                          ResourceType = request.ResourceType,
                                          SubStatusCode = response.SubStatusCode,
                                          CollectionLink = collectionLink
-                                     }));
+                                     });
 
                                 return containerProperties;
                             }
