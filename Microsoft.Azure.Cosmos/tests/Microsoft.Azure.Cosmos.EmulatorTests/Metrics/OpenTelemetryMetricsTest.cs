@@ -5,18 +5,11 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
 {
     using System;
-    using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Net;
     using System.Net.Http;
-    using System.Reflection;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Fluent;
-    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
-    using Moq.Protected;
     using OpenTelemetry.Metrics;
     using OpenTelemetry;
     using System.Diagnostics;
@@ -61,13 +54,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
         [TestMethod]
         public async Task OperationLevelMetrics()
         {
-            //var histogramBuckets = new double[] { 0, 5, 10, 25, 50, 75, 100, 250, 500 };
             MeterProvider meterProvider = Sdk
-             .CreateMeterProviderBuilder()
-             .AddMeter("*")/*
-             .AddView("cosmos.client.op.RUs", new ExplicitBucketHistogramConfiguration { Boundaries = histogramBuckets })*/
-             .AddConsoleExporter()
-             .Build();
+                .CreateMeterProviderBuilder()
+                .AddMeter("*")
+                .AddReader(new PeriodicExportingMetricReader(new CustomMetricExporter(), exportIntervalMilliseconds: 3000))
+                .Build();
 
             int httpCallsMade = 0;
             HttpClientHandlerHelper httpClientHandlerHelper = new HttpClientHandlerHelper
@@ -98,8 +89,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
 
             ContainerInternal container = (ContainerInternal)cosmosClient.GetContainer(this.database.Id, "ClientCreateAndInitializeContainer");
 
-            await Task.Delay(1000);
-
             Stopwatch sw = Stopwatch.StartNew();
             sw.Start();
             while(true)
@@ -112,8 +101,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
                 }
             }
             sw.Stop();
-            
-            await Task.Delay(1000);
 
             cosmosClient.Dispose();
 
