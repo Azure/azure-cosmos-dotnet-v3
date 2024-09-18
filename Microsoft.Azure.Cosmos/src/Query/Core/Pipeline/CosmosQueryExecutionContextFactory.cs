@@ -667,12 +667,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             ITrace trace,
             SqlQuerySpec sqlQuerySpec = null)
         {
-            List<Documents.PartitionKeyRange> targetRanges = new ReaderInterface().GetPartitionKeyRanges(sqlQuerySpec.Parameters[0].Name, Convert.ToString(sqlQuerySpec.Parameters[0].Value));
-            if (targetRanges.Count > 0)
+            bool is_gsi_enabled = ConfigurationManager.GetEnvironmentVariable<bool>("GSI_ENABLED", false);
+            List<Documents.PartitionKeyRange> targetRanges;
+            if (is_gsi_enabled)
             {
-                return targetRanges;
+                targetRanges = new ReaderInterface().GetPartitionKeyRanges(sqlQuerySpec.Parameters[0].Name, Convert.ToString(sqlQuerySpec.Parameters[0].Value));
+                if (targetRanges.Count > 0)
+                {
+                    return targetRanges;
+                }
             }
-
+           
             if (containerQueryProperties.EffectiveRangesForPartitionKey != null)
             {
                 targetRanges = await queryClient.GetTargetPartitionKeyRangesAsync(

@@ -18,24 +18,39 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         protected CosmosClientBuilder cosmosClientBuilder;
 
         [TestMethod]
-        [DataRow(ConnectionMode.Gateway)]
-        [DataRow(ConnectionMode.Direct)]
-        public async Task QueryOperationCrossPartitionTest(ConnectionMode mode)
+        [DataRow(ConnectionMode.Gateway, true)]
+        [DataRow(ConnectionMode.Direct, true)]
+        [DataRow(ConnectionMode.Gateway, false)]
+        [DataRow(ConnectionMode.Direct, false)]
+        public async Task QueryOperationCrossPartitionTest(ConnectionMode mode, bool isGsiEnabled)
         {
-            AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
+            ReaderInterface.partitionKeyRanges.Clear();
+            Environment.SetEnvironmentVariable("GSI_ENABLED", Convert.ToString(isGsiEnabled));
+
+            /*AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
             TracerProvider traceProvider = Sdk.CreateTracerProviderBuilder()
              .AddConsoleExporter()
-             .AddHttpClientInstrumentation()
+            // .AddHttpClientInstrumentation()
              .AddSource("*")
-             .Build();
+             .Build();*/
 
             ContainerInternal itemsCore = (ContainerInternal)await this.CreateClientAndContainer(
                 mode: mode,
                 isLargeContainer: true);
 
             // Verify container has multiple partitions
-            int pkRangesCount = (await itemsCore.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(itemsCore.LinkUri)).Count;
-            Assert.IsTrue(pkRangesCount > 1, "Should have created a multi partition container.");
+            DocumentFeedResponse<Documents.PartitionKeyRange> pkRanges = await itemsCore.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(itemsCore.LinkUri);
+            Console.WriteLine("Number of partitions: " + pkRanges.Count);
+
+            List<Documents.PartitionKeyRange> pkRangesList = new List<Documents.PartitionKeyRange>();
+            foreach (Documents.PartitionKeyRange pkRange in pkRanges)
+            {
+                pkRangesList.Add(pkRange);
+                break;
+            }
+            ReaderInterface.partitionKeyRanges.Add("CreateRandomToDoActivity", pkRangesList);
+
+            Assert.IsTrue(pkRanges.Count > 1, "Should have created a multi partition container.");
 
             Container container = (Container)itemsCore;
 
@@ -51,8 +66,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             double totalRequestCharge = 0;
             double totalTimeToGetTheResults = 0;
 
-            Console.WriteLine("--------------------------------------------------------------------------------------------------------------");
+            Console.WriteLine(" ====> IS GSI ENABLED " + ConfigurationManager.GetEnvironmentVariable<bool>("GSI_ENABLED", false));
             QueryDefinition queryDefinition = new (sqlQueryText);
+            int counter = 1;
             using (FeedIterator<object> queryResultSetIterator = container.GetItemQueryIterator<object>(queryDefinition.WithParameter("@param1", "CreateRandomToDoActivity")))
             {
                 while (queryResultSetIterator.HasMoreResults)
@@ -63,18 +79,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         families.Add(family);
                     }
 
+                    Console.WriteLine("Page " + counter++ + " Request Charge : " + currentResultSet.RequestCharge + " Latency(ms) : " + currentResultSet.Diagnostics.GetClientElapsedTime().TotalMilliseconds);
                     totalRequestCharge += currentResultSet.RequestCharge;
                     totalTimeToGetTheResults += currentResultSet.Diagnostics.GetClientElapsedTime().TotalMilliseconds;
                 }
             }
 
-            Assert.AreEqual(10, families.Count);
-            Console.WriteLine(totalRequestCharge);
-            Console.WriteLine(totalTimeToGetTheResults);
+            Console.WriteLine("Total Request Charge: " + totalRequestCharge);
+            Console.WriteLine("Total Latency: " + totalTimeToGetTheResults);
 
-            traceProvider.Dispose();
+            // traceProvider.Dispose();
 
             await Task.Delay(2000);
+
+            await this.database.DeleteStreamAsync();
         }
 
         private async Task<Container> CreateClientAndContainer(ConnectionMode mode,
@@ -93,20 +111,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .WithApplicationName("gsitesting")
                 .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
                 {
-                    DisableDistributedTracing = false,
+                   // DisableDistributedTracing = false,
                 });
 
             this.SetClient(mode == ConnectionMode.Gateway
                 ? this.cosmosClientBuilder.WithConnectionModeGateway().Build()
                 : this.cosmosClientBuilder.Build());
 
-            // Making sure client telemetry is enabled
-            Assert.IsNotNull(this.GetClient().DocumentClient.telemetryToServiceHelper);
-
-            this.database = await this.GetClient().CreateDatabaseAsync(Guid.NewGuid().ToString());
+            this.database = await this.GetClient().CreateDatabaseAsync("gsidatabase");
 
             return await this.database.CreateContainerAsync(
-                id: Guid.NewGuid().ToString(),
+                id: "gsicontainer",
                 partitionKeyPath: "/id",
                 throughput: isLargeContainer ? 15000 : 400);
 

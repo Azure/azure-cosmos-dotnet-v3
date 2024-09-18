@@ -10,25 +10,11 @@ namespace Microsoft.Azure.Cosmos
 
     internal class ReaderInterface : IReaderInterface
     {
-        private readonly Dictionary<string, List<Documents.PartitionKeyRange>> partitionKeyRanges = new Dictionary<string, List<Documents.PartitionKeyRange>>();
+        public static Dictionary<string, List<Documents.PartitionKeyRange>> partitionKeyRanges = new Dictionary<string, List<Documents.PartitionKeyRange>>();
 
-        public ReaderInterface()
-        {
-            this.partitionKeyRanges.Add("CreateRandomToDoActivity", new List<Documents.PartitionKeyRange>()
-            {
-                new Documents.PartitionKeyRange()
-                {
-                    MinInclusive = "AA",
-                    MaxExclusive = "FF",
-                    Id = "0"
-                }
-            });
-        }
-        
         public List<Documents.PartitionKeyRange> GetPartitionKeyRanges(string secondaryIndex, string secondaryIndexValue)
         {
-            return new List<Documents.PartitionKeyRange>();
-            //this.partitionKeyRanges[secondaryIndexValue];
+            return partitionKeyRanges[secondaryIndexValue];
         }
     }
 }
