@@ -267,7 +267,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                    containerQueryProperties,
                    inputParameters.Properties,
                    inputParameters.InitialFeedRange,
-                   trace);
+                   trace,
+                   inputParameters.SqlQuerySpec);
 
             Console.WriteLine("=============");
             foreach (Documents.PartitionKeyRange pkRange in targetRanges)
@@ -663,9 +664,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             ContainerQueryProperties containerQueryProperties,
             IReadOnlyDictionary<string, object> properties,
             FeedRangeInternal feedRangeInternal,
-            ITrace trace)
+            ITrace trace,
+            SqlQuerySpec sqlQuerySpec = null)
         {
-            List<Documents.PartitionKeyRange> targetRanges = new ReaderInterface().GetPartitionKeyRanges(string.Empty, string.Empty);
+            List<Documents.PartitionKeyRange> targetRanges = new ReaderInterface().GetPartitionKeyRanges(sqlQuerySpec.Parameters[0].Name, Convert.ToString(sqlQuerySpec.Parameters[0].Value));
             if (targetRanges.Count > 0)
             {
                 return targetRanges;

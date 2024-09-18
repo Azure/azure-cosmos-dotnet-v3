@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 pkCount: 2,
                 perPKItemCount: 5);
 
-            string sqlQueryText = "SELECT * FROM c WHERE c.description = 'CreateRandomToDoActivity'";
+            string sqlQueryText = "SELECT * FROM c WHERE c.description = @param1";
 
             List<object> families = new List<object>();
 
@@ -52,8 +52,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             double totalTimeToGetTheResults = 0;
 
             Console.WriteLine("--------------------------------------------------------------------------------------------------------------");
-            QueryDefinition queryDefinition = new QueryDefinition(sqlQueryText);
-            using (FeedIterator<object> queryResultSetIterator = container.GetItemQueryIterator<object>(queryDefinition))
+            QueryDefinition queryDefinition = new (sqlQueryText);
+            using (FeedIterator<object> queryResultSetIterator = container.GetItemQueryIterator<object>(queryDefinition.WithParameter("@param1", "CreateRandomToDoActivity")))
             {
                 while (queryResultSetIterator.HasMoreResults)
                 {
