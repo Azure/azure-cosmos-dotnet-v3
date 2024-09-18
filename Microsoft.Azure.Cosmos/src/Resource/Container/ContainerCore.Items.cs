@@ -1399,27 +1399,35 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Determines whether the child range is a subset of the parent range.
+        /// Determines whether the specified child range is entirely within the bounds of the parent range.
+        /// This includes checking both the minimum and maximum boundaries of the ranges for inclusion.
         /// </summary>
-        /// <param name="parentRange">The parent range to check against.</param>
-        /// <param name="childRange">The child range that is being evaluated.</param>
+        /// <param name="parentRange">The parent range to check against, representing the outer bounds.</param>
+        /// <param name="childRange">The child range being evaluated for subset inclusion within the parent range.</param>
         /// <example>
         /// <![CDATA[
         /// Documents.Routing.Range<string> parentRange = new Documents.Routing.Range<string>("A", "Z", true, true);
         /// Documents.Routing.Range<string> childRange = new Documents.Routing.Range<string>("B", "Y", true, true);
         ///
         /// bool isSubset = IsSubset(parentRange, childRange);
-        /// // isSubset will be true because the child range (B-Y) is a subset of the parent range (A-Z).
+        /// isSubset will be true because the child range (B-Y) is fully contained within the parent range (A-Z).
         /// ]]>
         /// </example>
-        /// <returns>True if the child range is a subset of the parent range; otherwise, false.</returns>
+        /// <returns>
+        /// Returns <c>true</c> if the child range is a subset of the parent range, meaning the child range's 
+        /// minimum and maximum values fall within the bounds of the parent range. Returns <c>false</c> otherwise.
+        /// </returns>
         internal static bool IsSubset(
             Documents.Routing.Range<string> parentRange,
             Documents.Routing.Range<string> childRange)
         {
+            // Check if the child's minimum value is within the parent range
             bool isMinWithinParent = parentRange.Contains(childRange.Min);
-            bool isMaxWithinParent = parentRange.Max == childRange.Max || parentRange.Contains(childRange.Max);
 
+            // Check if the child's maximum value is within the parent range
+            bool isMaxWithinParent = parentRange.Contains(childRange.Max);
+
+            // The child range is a subset if both min and max values are within the parent range
             return isMinWithinParent && isMaxWithinParent;
         }
     }
