@@ -6,6 +6,7 @@
     <AssemblyName>Cosmos.Samples.TransactionalBatch</AssemblyName>
     <RootNamespace>Cosmos.Samples.TransactionalBatch</RootNamespace>
     <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.2.0" />

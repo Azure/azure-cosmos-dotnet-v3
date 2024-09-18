@@ -6,6 +6,7 @@
     <AssemblyName>Cosmos.Samples.Encryption</AssemblyName>
     <RootNamespace>Cosmos.Samples.Encryption</RootNamespace>
     <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Azure.Identity" Version="1.12.0" />

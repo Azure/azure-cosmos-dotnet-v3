@@ -6,6 +6,7 @@
     <AssemblyName>Cosmos.Samples.OpenTelemetry</AssemblyName>
     <RootNamespace>Cosmos.Samples.OpenTelemetry</RootNamespace>
     <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>

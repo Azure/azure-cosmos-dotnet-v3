@@ -6,6 +6,7 @@
     <LangVersion>latest</LangVersion>
     <AssemblyName>Cosmos.Samples.Handlers</AssemblyName>
     <RootNamespace>Cosmos.Samples.Handlers</RootNamespace>
+    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>

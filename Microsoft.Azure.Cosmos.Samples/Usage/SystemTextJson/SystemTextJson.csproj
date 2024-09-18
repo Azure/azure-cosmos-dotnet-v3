@@ -7,6 +7,7 @@
     <RootNamespace>Cosmos.Samples.SystemTextJson</RootNamespace>
     <LangVersion>latest</LangVersion>
     <ServerGarbageCollection>true</ServerGarbageCollection>
+    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Azure.Core" Version="1.43.0" />

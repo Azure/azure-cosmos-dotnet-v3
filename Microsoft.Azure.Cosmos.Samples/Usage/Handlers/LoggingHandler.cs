@@ -14,7 +14,9 @@
         private readonly TelemetryClient telemetryClient;
         public LoggingHandler()
         {
+#pragma warning disable CS0618 
             this.telemetryClient = new TelemetryClient();
+#pragma warning restore CS0618 
         }
 
         public override async Task<ResponseMessage> SendAsync(

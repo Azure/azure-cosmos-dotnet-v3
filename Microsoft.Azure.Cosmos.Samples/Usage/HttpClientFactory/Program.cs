@@ -155,6 +155,7 @@
             //ASP.NET Core applications get it from the Dependency Injection container.
             {
                 // <IHttpClientFactoryASPNETCore>
+#pragma warning disable CS8321
                 void ConfigureServices(IServiceCollection services)
                 {
                     services.AddHttpClient();
@@ -173,7 +174,8 @@
 
                     //... other service registration
                 }
-                // </IHttpClientFactoryASPNETCore>
+#pragma warning restore CS8321
+                              // </IHttpClientFactoryASPNETCore>
             }
         }
 

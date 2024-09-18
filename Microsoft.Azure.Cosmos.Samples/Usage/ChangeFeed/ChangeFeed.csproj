@@ -6,6 +6,7 @@
     <AssemblyName>Cosmos.Samples.ChangeFeed</AssemblyName>
     <RootNamespace>Cosmos.Samples.ChangeFeed</RootNamespace>
     <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.43.0" />

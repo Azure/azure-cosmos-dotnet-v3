@@ -6,6 +6,7 @@
     <AssemblyName>Cosmos.Samples.ApplicationInsights</AssemblyName>
     <RootNamespace>Cosmos.Samples.ApplicationInsights</RootNamespace>
     <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>

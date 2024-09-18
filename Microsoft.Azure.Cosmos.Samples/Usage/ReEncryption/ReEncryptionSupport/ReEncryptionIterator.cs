@@ -311,7 +311,7 @@ namespace Cosmos.Samples.ReEncryption
                 feedIterator = this.sourceContainer
                     .GetChangeFeedStreamIterator(
                     ChangeFeedStartFrom.ContinuationToken(continuationToken),
-                    ChangeFeedMode.FullFidelity,
+                    ChangeFeedMode.AllVersionsAndDeletes,
                     this.changeFeedRequestOptions);
             }
 
