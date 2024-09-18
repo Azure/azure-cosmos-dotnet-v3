@@ -50,7 +50,7 @@ ItemRequestOptions requestOptions = new ItemRequestOptions()
 };
 ```
 
-Hedging can be enabled for all read requests: ReadItem, Queries (single and cross partition), ReadMany, and ChangeFeed. It is not enabled for write requests.
+When enabled, the availability strategy applies to all read requests: ReadItem, Queries (single and cross partition), ReadMany, and ChangeFeed. It is not enabled for write requests.
 
 ## Diagnostics
 
