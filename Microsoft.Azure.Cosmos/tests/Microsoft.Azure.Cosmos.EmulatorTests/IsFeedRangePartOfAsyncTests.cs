@@ -659,15 +659,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         ///       And the child feed range is <childIsMinInclusive> inclusive of its min value
         ///       And the child feed range is <childIsMaxInclusive> inclusive of its max value
         ///     Then the result should be <expectedIsSubset> indicating if the child is a subset of the parent
-        ///
-        ///   Examples:
-        ///     | parentIsMinInclusive | parentIsMaxInclusive | parentMinValue | parentMaxValue | childIsMinInclusive | childIsMaxInclusive | childMinValue | childMaxValue | expectedIsSubset |
-        ///     | true                 | true                 | "A"            | "Z"            | true                 | true                 | "A"           | "Z"           | true              |
-        ///     | true                 | false                | "A"            | "Y"            | true                 | false                | "A"           | "Y"           | true              |
-        ///     | false                | true                 | "B"            | "Z"            | false                | true                 | "B"           | "Z"           | true              |
-        ///     | false                | false                | "B"            | "Y"            | false                | false                | "B"           | "Y"           | true              |
-        ///     | true                 | true                 | "A"            | "Z"            | true                 | false                | "A"           | "Y"           | true              |
-        ///     | ...                  | ...                  | ...            | ...            | ...                  | ...                  | ...            | ...           | ...               |
         /// ]]>
         /// </summary>
         [TestMethod]
