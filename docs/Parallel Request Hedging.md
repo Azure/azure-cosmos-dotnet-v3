@@ -35,7 +35,7 @@ CosmosClient client = new CosmosClient(
 
 The example above will create a `CosmosClient` instance with AvailabilityStrategy enabled with at 500ms threshold. This means that if a request takes longer than 500ms the SDK will send a new request to the backend in order of the Preferred Regions List. If the `ApplicationRegion` or `ApplicationPreferredRegions` list is not set, then an AvailabilityStrategy will not be able to be set. If still no response comes back from the first hedge or the primary request after the step time, another parallel request will be made to the next region.  The SDK will then return the first response that comes back from the backend. The threshold parameter is a required parameter can be set to any value greater than 0. There is also an option to the `AvailabilityStrategy` at request level and override the client level `AvailabilityStrategy` by setting the `AvailabilityStrategy` on the `RequestOptions` object.
 
-> Note: `ApplicationRegion` or `ApplicationPreferredRegions` MUST be set to use Hedging
+> Note: `ApplicationRegion` or `ApplicationPreferredRegions` MUST be set to add an `AvailabilityStrategy`.
 
 Override `AvailabilityStrategy`:
 
