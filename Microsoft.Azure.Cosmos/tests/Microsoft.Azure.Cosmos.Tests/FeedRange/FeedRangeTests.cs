@@ -292,7 +292,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         [DataRow(true, true)]
         [DataRow(true, false)]
         [Owner("kirankk")]
-        public void FeedRangeEpk_Combinations(bool minInclusive, bool maxInclusive)
+        public void FeedRangeEpk_SerializationValidation(bool minInclusive, bool maxInclusive)
         {
             Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("", "FF", minInclusive, maxInclusive);
             RangeJsonConverter rangeConverter = new RangeJsonConverter();
@@ -322,6 +322,50 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                     Assert.AreEqual(true, parsedJson["isMaxInclusive"]);
                 }
             }
+        }
+
+        [TestMethod]
+        [DataRow(false, true)]
+        [DataRow(false, false)]
+        [DataRow(true, true)]
+        [DataRow(true, false)]
+        [Owner("kirankk")]
+        public void FeedRangeEpk_SerdeValdation(bool minInclusive, bool maxInclusive)
+        {
+            Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("", "FF", minInclusive, maxInclusive);
+            RangeJsonConverter rangeConverter = new RangeJsonConverter();
+
+            using StringWriter sw = new StringWriter();
+            using JsonWriter writer = new JsonTextWriter(sw);
+            {
+                JsonSerializer jsonSerializer = new JsonSerializer();
+
+                rangeConverter.WriteJson(writer, range, jsonSerializer);
+
+                string serializedJson = sw.ToString();
+                System.Diagnostics.Trace.TraceInformation(serializedJson);
+
+                using TextReader reader = new StringReader(serializedJson);
+                using JsonReader jsonReader = new JsonTextReader(reader);
+                Documents.Routing.Range<string> rangeDeserialized = (Documents.Routing.Range<string>)rangeConverter.ReadJson(jsonReader, typeof(Documents.Routing.Range<string>), null, jsonSerializer);
+                Assert.IsTrue(range.Equals(rangeDeserialized), serializedJson);
+            }
+        }
+
+        [TestMethod]
+        [Owner("kirankk")]
+        public void FeedRangeEpk_BackwardComptibility()
+        {
+            string testJson = @"{""min"":"""",""max"":""FF""}";
+            System.Diagnostics.Trace.TraceInformation(testJson);
+            RangeJsonConverter rangeConverter = new RangeJsonConverter();
+
+            using TextReader reader = new StringReader(testJson);
+            using JsonReader jsonReader = new JsonTextReader(reader);
+            Documents.Routing.Range<string> rangeDeserialized = (Documents.Routing.Range<string>)rangeConverter.ReadJson(jsonReader, typeof(Documents.Routing.Range<string>), null, new JsonSerializer());
+
+            Assert.IsTrue(rangeDeserialized.IsMinInclusive);
+            Assert.IsFalse(rangeDeserialized.IsMaxInclusive);
         }
     }
 }
