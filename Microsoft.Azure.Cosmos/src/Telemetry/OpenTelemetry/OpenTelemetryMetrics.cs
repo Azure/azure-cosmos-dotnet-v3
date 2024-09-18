@@ -34,19 +34,21 @@ namespace Microsoft.Azure.Cosmos
 
         internal static readonly ObservableGauge<int> maxItemGauge = 
             CosmosMeter.CreateObservableGauge<int>(name: "cosmos.client.op.maxItemCount",
-               observeValue: () => OpenTelemetryMetricsCollector.GetMaxItemCount(),
+               observeValues: () => OpenTelemetryMetricsCollector.GetMaxItemCount(),
                unit: "#",
                description: "For feed operations (query, readAll, readMany, change feed) and batch operations this meter capture the requested maxItemCount per page/request");
 
-        /*internal static readonly ObservableGauge<int> ActualItemCounter =
-           CosmosMeter.CreateObservableGauge<int>(name: "cosmos.client.op.actualItemCount", 
+        internal static readonly ObservableGauge<int> ActualItemCounter =
+            CosmosMeter.CreateObservableGauge<int>(name: "cosmos.client.op.actualItemCount",
+               observeValues: () => OpenTelemetryMetricsCollector.GetActualItemCount(),
                unit: "#", 
                description: "For feed operations (query, readAll, readMany, change feed) batch operations this meter capture the actual item count in responses from the service");
 
         internal static readonly ObservableGauge<int> RegionsContactedCounter =
-           CosmosMeter.CreateObservableGauge<int>(name: "cosmos.client.op.regionsContacted", 
-               unit: "#", 
-               description: "Number of regions contacted when executing an operation");*/
+            CosmosMeter.CreateObservableGauge<int>(name: "cosmos.client.op.regionsContacted",
+               observeValues: () => OpenTelemetryMetricsCollector.GetRegionContactedCount(),
+               unit: "# regions", 
+               description: "Number of regions contacted when executing an operation");
 
     }
 }
