@@ -1035,7 +1035,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Cosmos.FeedRange childFeedRange,
             CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return this.container.IsFeedRangePartOfAsync(
+                parentFeedRange,
+                childFeedRange,
+                cancellationToken);
         }
 #endif
         private async Task<ResponseMessage> ReadManyItemsHelperAsync(
