@@ -645,66 +645,68 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        // GivenParentRangeWhenChildRangeComparedThenValidateIfSubset
+
         /// <summary>
-        /// Feature: Child Range Subset Validation
+        /// <![CDATA[
+        /// Feature: Feed Range Subset Verification
         ///
-        /// Scenario: Validate whether the child range is a subset of the parent range
-        /// based on whether the parent and child ranges are max inclusive or max exclusive.
+        ///   Scenario Outline: Verify if the child feed range is a subset of the parent feed range
+        ///     Given a parent feed range with min value <parentMinValue> and max value <parentMaxValue>
+        ///       And the parent feed range is <parentIsMinInclusive> inclusive of its min value
+        ///       And the parent feed range is <parentIsMaxInclusive> inclusive of its max value
+        ///     When a child feed range with min value <childMinValue> and max value <childMaxValue> is compared
+        ///       And the child feed range is <childIsMinInclusive> inclusive of its min value
+        ///       And the child feed range is <childIsMaxInclusive> inclusive of its max value
+        ///     Then the result should be <expectedIsSubset> indicating if the child is a subset of the parent
         ///
-        /// Given a parent range with a specified max inclusivity,
-        /// When a child range is compared with a specified max inclusivity,
-        /// Then determine if the child range is a subset of the parent range.
+        ///   Examples:
+        ///     | parentIsMinInclusive | parentIsMaxInclusive | parentMinValue | parentMaxValue | childIsMinInclusive | childIsMaxInclusive | childMinValue | childMaxValue | expectedIsSubset |
+        ///     | true                 | true                 | "A"            | "Z"            | true                 | true                 | "A"           | "Z"           | true              |
+        ///     | true                 | false                | "A"            | "Y"            | true                 | false                | "A"           | "Y"           | true              |
+        ///     | false                | true                 | "B"            | "Z"            | false                | true                 | "B"           | "Z"           | true              |
+        ///     | false                | false                | "B"            | "Y"            | false                | false                | "B"           | "Y"           | true              |
+        ///     | true                 | true                 | "A"            | "Z"            | true                 | false                | "A"           | "Y"           | true              |
+        ///     | ...                  | ...                  | ...            | ...            | ...                  | ...                  | ...            | ...           | ...               |
+        /// ]]>
         /// </summary>
-        /// <param name="isParentMaxInclusive">Indicates whether the parent range's max value is inclusive (true) or exclusive (false).</param>
-        /// <param name="isChildMaxInclusive">Indicates whether the child range's max value is inclusive (true) or exclusive (false).</param>
-        /// <param name="expectedIsSubsetOfParent">The expected result: true if the child range is expected to be a subset of the parent range, false otherwise.</param>
         [TestMethod]
-        [Owner("philipthomas-MSFT")]
-        [DataRow(true, true, true, DisplayName = "Given parent is max inclusive, when child is max inclusive, then child is a subset of parent")]
-        [DataRow(true, false, true, DisplayName = "Given parent is max inclusive, when child is max exclusive, then child is a subset of parent")]
-        [DataRow(false, false, true, DisplayName = "Given parent is max exclusive, when child is max exclusive, then child is a subset of parent")]
-        [DataRow(false, true, false, DisplayName = "Given parent is max exclusive, when child is max inclusive, then child is not a subset of parent")]
+        [Owner("philipthomas")]
+        [DataRow(true, true, "A", "Z", true, true, "A", "Z", true, DisplayName = "Given both parent and child ranges are fully inclusive and equal, child is a subset")]
+        [DataRow(true, true, "A", "Z", true, false, "A", "Y", true, DisplayName = "Given parent range is fully inclusive and child range has an exclusive max, child is a subset")]
+        [DataRow(true, true, "A", "Z", false, true, "B", "Z", true, DisplayName = "Given parent range is fully inclusive and child range starts exclusively after parent, but both end inclusively, child is a subset")]
+        [DataRow(true, true, "A", "Z", false, false, "B", "Y", true, DisplayName = "Given parent range is fully inclusive and child range is fully exclusive within the parent, child is a subset")]
+        [DataRow(true, false, "A", "Y", true, true, "A", "Z", false, DisplayName = "Given parent range has an exclusive max but child range exceeds the parent’s max with an inclusive bound, child is not a subset")]
+        [DataRow(true, false, "A", "Y", true, false, "A", "Y", true, DisplayName = "Given both parent and child ranges share an inclusive min and exclusive max, child is a subset")]
+        [DataRow(true, false, "A", "Y", false, true, "B", "Z", false, DisplayName = "Given child range exceeds the parent’s exclusive max with an inclusive max, child is not a subset")]
+        [DataRow(true, false, "A", "Y", false, false, "B", "Y", true, DisplayName = "Given parent range is partially inclusive and child is fully exclusive but within the parent’s bounds, child is a subset")]
+        [DataRow(false, true, "B", "Z", true, true, "A", "Z", false, DisplayName = "Given parent range excludes its min and starts after the child range, but both end inclusively, child is not a subset")]
+        [DataRow(false, true, "B", "Z", true, false, "A", "Y", false, DisplayName = "Given parent range excludes its min and child range is less than parent’s exclusive min, child is not a subset")]
+        [DataRow(false, true, "B", "Z", false, true, "B", "Z", false, DisplayName = "Given both parent and child ranges are exclusive at the start and inclusive at the end with the same values, child is not a subset")]
+        [DataRow(false, true, "B", "Z", false, false, "B", "Y", false, DisplayName = "Given parent range excludes its min and includes its max, and child is fully exclusive within the parent’s bounds, child is not a subset")]
+        [DataRow(false, false, "B", "Y", true, true, "A", "Z", false, DisplayName = "Given parent range excludes both min and max, and child range is larger with inclusive bounds, child is not a subset")]
+        [DataRow(false, false, "B", "Y", true, false, "A", "Y", false, DisplayName = "Given parent range excludes both min and max, and child range is larger with an inclusive min, child is not a subset")]
+        [DataRow(false, false, "B", "Y", false, true, "B", "Z", false, DisplayName = "Given parent range excludes both bounds and child range exceeds parent’s max, child is not a subset")]
+        [DataRow(false, false, "B", "Y", false, false, "B", "Y", false, DisplayName = "Given both parent and child ranges are fully exclusive and equal, child is not a subset")]
+
         public void GivenParentRangeWhenChildRangeComparedThenValidateIfSubset(
-            bool isParentMaxInclusive,
-            bool isChildMaxInclusive,
-            bool expectedIsSubsetOfParent)
+            bool parentIsMinInclusive,
+            bool parentIsMaxInclusive,
+            string parentMinValue,
+            string parentMaxValue,
+            bool childIsMinInclusive,
+            bool childIsMaxInclusive,
+            string childMinValue,
+            string childMaxValue,
+            bool expectedIsSubset)
         {
-            // Define a shared min and max range for both parent and child
-            string minRange = "A";  // Example shared min value
-            string maxRange = "Z";  // Example shared max value
-
-            // Create strategies based on inclusivity for the parent and child ranges
-            IRangeStrategy parentRangeStrategy = isParentMaxInclusive
-                ? new InclusiveMaxRangeStrategy()
-                : new ExclusiveMaxRangeStrategy();
-
-            IRangeStrategy childRangeStrategy = isChildMaxInclusive
-                ? new InclusiveMaxRangeStrategy()
-                : new ExclusiveMaxRangeStrategy();
-
-            // Create range generator contexts for both parent and child using the same min and max
-            RangeGeneratorContext parentContext = new RangeGeneratorContext(parentRangeStrategy);
-            RangeGeneratorContext childContext = new RangeGeneratorContext(childRangeStrategy);
-
-            // Generate ranges for parent and child based on shared min and max range
-            (string min, string max) parentRange = parentContext.GenerateRange(minRange, maxRange);
-            (string min, string max) childRange = childContext.GenerateRange(minRange, maxRange);
-
-            // Note, the values of isMaxInclusive and isMinInclusive do not affect the outcome of this test, as IsSubset only depends on the min and max values of the parent and child ranges.
+            bool actualIsSubset = ContainerCore.IsSubset(
+                new Documents.Routing.Range<string>(isMinInclusive: parentIsMinInclusive, isMaxInclusive: parentIsMaxInclusive, min: parentMinValue, max: parentMaxValue),
+                new Documents.Routing.Range<string>(isMinInclusive: childIsMinInclusive, isMaxInclusive: childIsMaxInclusive, min: childMinValue, max: childMaxValue));
 
             Assert.AreEqual(
-                expected: expectedIsSubsetOfParent,
-                actual: ContainerCore.IsSubset(
-                    parentRange: new Documents.Routing.Range<string>(
-                        min: parentRange.min,
-                        max: parentRange.max,
-                        isMinInclusive: true,
-                        isMaxInclusive: isParentMaxInclusive),
-                    childRange: new Documents.Routing.Range<string>(
-                        min: childRange.min,
-                        max: childRange.max,
-                        isMinInclusive: true,
-                        isMaxInclusive: isChildMaxInclusive)));
+                expected: expectedIsSubset,
+                actual: actualIsSubset);
         }
 
         /// <summary>
@@ -787,44 +789,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             Assert.IsNull(exception);
-        }
-    }
-
-    public interface IRangeStrategy
-    {
-        (string min, string max) GenerateRange(string min, string maxValue);
-    }
-
-    public class InclusiveMaxRangeStrategy : IRangeStrategy
-    {
-        public (string min, string max) GenerateRange(string min, string maxValue)
-        {
-            return (min, maxValue); // max is inclusive
-        }
-    }
-
-    public class ExclusiveMaxRangeStrategy : IRangeStrategy
-    {
-        public (string min, string max) GenerateRange(string min, string maxValue)
-        {
-            // Subtract 1 lexicographically for exclusive max range
-            string exclusiveMax = (maxValue.Length > 0) ? (char)(maxValue[0] - 1) + maxValue[1..] : maxValue;
-            return (min, exclusiveMax);
-        }
-    }
-
-    public class RangeGeneratorContext
-    {
-        private readonly IRangeStrategy rangeStrategy;
-
-        public RangeGeneratorContext(IRangeStrategy rangeStrategy)
-        {
-            this.rangeStrategy = rangeStrategy;
-        }
-
-        public (string min, string max) GenerateRange(string min, string maxValue)
-        {
-            return this.rangeStrategy.GenerateRange(min, maxValue);
         }
     }
 }
