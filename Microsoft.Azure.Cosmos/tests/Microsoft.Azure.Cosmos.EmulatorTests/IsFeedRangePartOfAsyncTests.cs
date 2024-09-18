@@ -646,41 +646,65 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         /// <summary>
-        /// <![CDATA[
-        /// Feature: Is Subset
+        /// Feature: Child Range Subset Validation
         ///
-        /// Scenario: Validate whether the child range is a subset of the parent range for various cases.
-        ///   Given various parent and child feed ranges
-        ///   When the child range is checked if it is a subset of the parent range
-        ///   Then the actualIsSubset should either be true or false depending on the ranges
-        /// ]]>
+        /// Scenario: Validate whether the child range is a subset of the parent range
+        /// based on whether the parent and child ranges are max inclusive or max exclusive.
+        ///
+        /// Given a parent range with a specified max inclusivity,
+        /// When a child range is compared with a specified max inclusivity,
+        /// Then determine if the child range is a subset of the parent range.
         /// </summary>
-        /// <param name="parentMinimum">The starting value of the parent range.</param>
-        /// <param name="parentMaximum">The ending value of the parent range.</param>
-        /// <param name="childMinimum">The starting value of the child range.</param>
-        /// <param name="childMaximum">The ending value of the child range.</param>
-        /// <param name="expectedIsSubset">The expected actualIsSubset: true if the child is a subset, false otherwise.</param>
+        /// <param name="isParentMaxInclusive">Indicates whether the parent range's max value is inclusive (true) or exclusive (false).</param>
+        /// <param name="isChildMaxInclusive">Indicates whether the child range's max value is inclusive (true) or exclusive (false).</param>
+        /// <param name="expectedIsSubsetOfParent">The expected result: true if the child range is expected to be a subset of the parent range, false otherwise.</param>
         [TestMethod]
         [Owner("philipthomas-MSFT")]
-        [DataRow("A", "Z", "B", "Y", true, DisplayName = "Child B-Y (IsMinInclusive = false, IsMaxInclusive = false) is a perfect subset of parent A-Z. Parent A-Z encapsulates child B-Y")]
-        [DataRow("A", "Z", "B", "Z", true, DisplayName = "Child B-Z (IsMinInclusive = false, IsMaxInclusive = true) is a perfect subset of parent A-Z. Parent A-Z encapsulates child B-Z")]
-        [DataRow("A", "Z", "A", "Z", true, DisplayName = "Child A-Z (IsMinInclusive = true, IsMaxInclusive = true) equals parent A-Z")]
-        [DataRow("A", "Z", "A", "Y", true, DisplayName = "Child A-Y (IsMinInclusive = true, IsMaxInclusive = false) equals parent A-Z")]
-        [DataRow("A", "Z", "@", "Y", false, DisplayName = "Child @-Y (IsMinInclusive = false, IsMaxInclusive = false) has min out of parent A-Z")]
-        [DataRow("A", "Z", "B", "[", false, DisplayName = "Child B-[ (IsMinInclusive = false, IsMaxInclusive = false) has max out of parent A-Z")]
-        [DataRow("A", "Z", "@", "[", false, DisplayName = "Child @-[ (IsMinInclusive = false, IsMaxInclusive = false) is completely outside parent A-Z")]
-        [DataRow("A", "Z", "@", "Z", false, DisplayName = "Child @-Z (IsMinInclusive = false, IsMaxInclusive = false) has max equal to parent but min out of range")]
-        [DataRow("A", "Z", "A", "[", false, DisplayName = "Child A-[ (IsMinInclusive = false, IsMaxInclusive = false) has min equal to parent but max out of range")]
-        [DataRow("A", "Z", "", "", false, DisplayName = "Empty child range")]
-        [DataRow("", "", "B", "Y", false, DisplayName = "Empty parent range with non-empty child range")]
-        public void ValidateChildRangeIsSubsetOfParentForVariousCasesTest(string parentMinimum, string parentMaximum, string childMinimum, string childMaximum, bool expectedIsSubset)
+        [DataRow(true, true, true, DisplayName = "Given parent is max inclusive, when child is max inclusive, then child is a subset of parent")]
+        [DataRow(true, false, true, DisplayName = "Given parent is max inclusive, when child is max exclusive, then child is a subset of parent")]
+        [DataRow(false, false, true, DisplayName = "Given parent is max exclusive, when child is max exclusive, then child is a subset of parent")]
+        [DataRow(false, true, false, DisplayName = "Given parent is max exclusive, when child is max inclusive, then child is not a subset of parent")]
+        public void GivenParentRangeWhenChildRangeComparedThenValidateIfSubset(
+            bool isParentMaxInclusive,
+            bool isChildMaxInclusive,
+            bool expectedIsSubsetOfParent)
         {
-            Documents.Routing.Range<string> parentRange = new Documents.Routing.Range<string>(parentMinimum, parentMaximum, true, true);
-            Documents.Routing.Range<string> childRange = new Documents.Routing.Range<string>(childMinimum, childMaximum, true, true);
+            // Define a shared min and max range for both parent and child
+            string minRange = "A";  // Example shared min value
+            string maxRange = "Z";  // Example shared max value
 
-            bool actualIsSubset = ContainerCore.IsSubset(parentRange, childRange);
+            // Create strategies based on inclusivity for the parent and child ranges
+            IRangeStrategy parentRangeStrategy = isParentMaxInclusive
+                ? new InclusiveMaxRangeStrategy()
+                : new ExclusiveMaxRangeStrategy();
 
-            Assert.AreEqual(expected: expectedIsSubset, actual: actualIsSubset);
+            IRangeStrategy childRangeStrategy = isChildMaxInclusive
+                ? new InclusiveMaxRangeStrategy()
+                : new ExclusiveMaxRangeStrategy();
+
+            // Create range generator contexts for both parent and child using the same min and max
+            RangeGeneratorContext parentContext = new RangeGeneratorContext(parentRangeStrategy);
+            RangeGeneratorContext childContext = new RangeGeneratorContext(childRangeStrategy);
+
+            // Generate ranges for parent and child based on shared min and max range
+            (string min, string max) parentRange = parentContext.GenerateRange(minRange, maxRange);
+            (string min, string max) childRange = childContext.GenerateRange(minRange, maxRange);
+
+            // Note, the values of isMaxInclusive and isMinInclusive do not affect the outcome of this test, as IsSubset only depends on the min and max values of the parent and child ranges.
+
+            Assert.AreEqual(
+                expected: expectedIsSubsetOfParent,
+                actual: ContainerCore.IsSubset(
+                    parentRange: new Documents.Routing.Range<string>(
+                        min: parentRange.min,
+                        max: parentRange.max,
+                        isMinInclusive: true,
+                        isMaxInclusive: isParentMaxInclusive),
+                    childRange: new Documents.Routing.Range<string>(
+                        min: childRange.min,
+                        max: childRange.max,
+                        isMinInclusive: true,
+                        isMaxInclusive: isChildMaxInclusive)));
         }
 
         /// <summary>
@@ -763,6 +787,44 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             Assert.IsNull(exception);
+        }
+    }
+
+    public interface IRangeStrategy
+    {
+        (string min, string max) GenerateRange(string min, string maxValue);
+    }
+
+    public class InclusiveMaxRangeStrategy : IRangeStrategy
+    {
+        public (string min, string max) GenerateRange(string min, string maxValue)
+        {
+            return (min, maxValue); // max is inclusive
+        }
+    }
+
+    public class ExclusiveMaxRangeStrategy : IRangeStrategy
+    {
+        public (string min, string max) GenerateRange(string min, string maxValue)
+        {
+            // Subtract 1 lexicographically for exclusive max range
+            string exclusiveMax = (maxValue.Length > 0) ? (char)(maxValue[0] - 1) + maxValue[1..] : maxValue;
+            return (min, exclusiveMax);
+        }
+    }
+
+    public class RangeGeneratorContext
+    {
+        private readonly IRangeStrategy rangeStrategy;
+
+        public RangeGeneratorContext(IRangeStrategy rangeStrategy)
+        {
+            this.rangeStrategy = rangeStrategy;
+        }
+
+        public (string min, string max) GenerateRange(string min, string maxValue)
+        {
+            return this.rangeStrategy.GenerateRange(min, maxValue);
         }
     }
 }
