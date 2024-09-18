@@ -599,8 +599,8 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            return new FeedIteratorInlineCore<T>(base.GetChangeFeedIterator<T>(changeFeedStartFrom,
-                                                 changeFeedMode,
+            return new FeedIteratorInlineCore<T>(base.GetChangeFeedIterator<T>(changeFeedStartFrom, 
+                                                 changeFeedMode, 
                                                  changeFeedRequestOptions),
                                                  this.ClientContext);
         }
