@@ -1354,8 +1354,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Validates if all ranges in the list have consistent inclusivity for both IsMinInclusive and IsMaxInclusive boundaries.
-        /// Throws an InvalidOperationException if there are inconsistencies.
+        /// Validates whether all ranges in the list have consistent inclusivity for both IsMinInclusive and IsMaxInclusive boundaries.
+        /// Throws an InvalidOperationException if any inconsistencies are found across the ranges.
         /// </summary>
         /// <param name="ranges">The list of ranges to validate.</param>
         /// <exception cref="InvalidOperationException">
@@ -1374,8 +1374,8 @@ namespace Microsoft.Azure.Cosmos
         /// EnsureConsistentInclusivity(ranges);
         /// ]]>
         /// </example>
-        internal static void EnsureConsistentInclusivity(List<Range<string>> ranges)
-        {
+        internal static void EnsureConsistentInclusivity(List<Documents.Routing.Range<string>> ranges)
+{
             bool areAnyDifferent = false;
 
             if (ranges.FirstOrDefault() is var firstRange)
@@ -1421,13 +1421,9 @@ namespace Microsoft.Azure.Cosmos
             Documents.Routing.Range<string> parentRange,
             Documents.Routing.Range<string> childRange)
         {
-            // Check if the child's minimum value is within the parent range
             bool isMinWithinParent = parentRange.Contains(childRange.Min);
+            bool isMaxWithinParent = parentRange.Max == childRange.Max || parentRange.Contains(childRange.Max);
 
-            // Check if the child's maximum value is within the parent range
-            bool isMaxWithinParent = parentRange.Contains(childRange.Max);
-
-            // The child range is a subset if both min and max values are within the parent range
             return isMinWithinParent && isMaxWithinParent;
         }
     }
