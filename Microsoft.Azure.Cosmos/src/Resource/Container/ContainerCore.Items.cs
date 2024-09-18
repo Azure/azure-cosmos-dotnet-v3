@@ -1257,7 +1257,12 @@ namespace Microsoft.Azure.Cosmos
                 applyBuilderConfiguration: changeFeedProcessor.ApplyBuildConfiguration).WithChangeFeedMode(mode);
         }
 
-        public override async Task<bool> IsFeedRangePartOfAsync(
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+         override async Task<bool> IsFeedRangePartOfAsync(
             FeedRange parentFeedRange,
             FeedRange childFeedRange,
             CancellationToken cancellationToken = default)

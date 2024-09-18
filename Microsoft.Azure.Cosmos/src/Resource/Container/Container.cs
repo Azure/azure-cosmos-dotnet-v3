@@ -1781,7 +1781,13 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>True if the child feed range is a subset of the parent feed range; otherwise, false.</returns>
-        public virtual Task<bool> IsFeedRangePartOfAsync(
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+
+        virtual Task<bool> IsFeedRangePartOfAsync(
             Cosmos.FeedRange parentFeedRange,
             Cosmos.FeedRange childFeedRange,
             CancellationToken cancellationToken = default)
