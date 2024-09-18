@@ -645,8 +645,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        // GivenParentRangeWhenChildRangeComparedThenValidateIfSubset
-
         /// <summary>
         /// <![CDATA[
         /// Feature: Feed Range Subset Verification
