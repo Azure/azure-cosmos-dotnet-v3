@@ -667,8 +667,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(true, false, "A", "Y", true, false, "A", "Y", true, DisplayName = "Given both parent and child ranges share an inclusive min and exclusive max, child is a subset")]
         [DataRow(true, true, "A", "A", true, true, "A", "A", true, DisplayName = "Given both parent and child ranges are fully inclusive and equal, and min and max range is the same, child is a subset")]
         [DataRow(true, true, "A", "A", true, true, "B", "B", false, DisplayName = "Given both parent and child ranges are fully inclusive and equal, and min and max range are not the same, child is not a subset")]
-        [DataRow(true, false, "", "1FF", true, true, "", "FF", false)]
-        [DataRow(true, false, "", "FF", true, true, "", "FF", true)]
+        [DataRow(true, false, "", "1FF", true, true, "", "FF", false, DisplayName = "Given parent range has an exclusive max and child range is fully inclusive with a different max, child is not a subset")]
+        [DataRow(true, false, "", "FF", true, true, "", "FF", true, DisplayName = "Given both parent and child ranges are equal and fully inclusive with exclusive max, child is a subset")]
         public void GivenParentRangeWhenChildRangeComparedThenValidateIfSubset(
             bool parentIsMinInclusive,
             bool parentIsMaxInclusive,
