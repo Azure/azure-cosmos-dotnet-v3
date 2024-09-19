@@ -674,21 +674,5 @@ namespace Microsoft.Azure.Cosmos
                 task: (trace) => base.DeleteAllItemsByPartitionKeyStreamAsync(partitionKey, trace, requestOptions, cancellationToken),
                 openTelemetry: new (OpenTelemetryConstants.Operations.DeleteAllItemsByPartitionKey, (response) => new OpenTelemetryResponse(response)));
         }
-
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        override Task<bool> IsFeedRangePartOfAsync(
-            Cosmos.FeedRange parentFeedRange,
-            Cosmos.FeedRange childFeedRange,
-            CancellationToken cancellationToken = default)
-        {
-            return base.IsFeedRangePartOfAsync(
-                parentFeedRange,
-                childFeedRange,
-                cancellationToken);
-        }
     }
 }

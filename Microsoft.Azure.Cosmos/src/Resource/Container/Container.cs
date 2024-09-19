@@ -1755,7 +1755,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
             string processorName,
             ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate);
-#endif
+
         /// <summary>
         /// Determines whether the given child feed range is a subset of the specified parent feed range.
         /// </summary>
@@ -1781,18 +1781,13 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>True if the child feed range is a subset of the parent feed range; otherwise, false.</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-
-        virtual Task<bool> IsFeedRangePartOfAsync(
+        public virtual Task<bool> IsFeedRangePartOfAsync(
             Cosmos.FeedRange parentFeedRange,
             Cosmos.FeedRange childFeedRange,
             CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
         }
+#endif
     }
 }
