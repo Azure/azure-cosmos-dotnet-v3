@@ -38,6 +38,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly int backgroundRefreshLocationTimeIntervalInMS = GlobalEndpointManager.DefaultBackgroundRefreshLocationTimeIntervalInMS;
         private readonly object backgroundAccountRefreshLock = new object();
         private readonly object isAccountRefreshInProgressLock = new object();
+        private readonly ReaderWriterLockSlim locationCacheDatabaseAccountReadWriteLock = new ReaderWriterLockSlim();
         private bool isAccountRefreshInProgress = false;
         private bool isBackgroundAccountRefreshActive = false;
         private DateTime LastBackgroundRefreshUtc = DateTime.MinValue;
@@ -95,7 +96,15 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public ReadOnlyCollection<Uri> WriteEndpoints => this.locationCache.WriteEndpoints;
 
-        public int PreferredLocationCount => this.connectionPolicy.PreferredLocations != null ? this.connectionPolicy.PreferredLocations.Count : 0;
+        public int PreferredLocationCount
+        {
+            get
+            {
+                Collection<string> effectivePreferredLocations = this.GetEffectivePreferredLocations();
+                
+                return effectivePreferredLocations.Count;
+            }
+        }
 
         public bool IsMultimasterMetadataWriteRequest(DocumentServiceRequest request)
         {
@@ -119,7 +128,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             IList<string>? locations,
             IList<Uri>? accountInitializationCustomEndpoints,
             Func<Uri, Task<AccountProperties>> getDatabaseAccountFn,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            ReaderWriterLockSlim accountPropertiesReaderWriterLock)
         {
             using (GetAccountPropertiesHelper threadSafeGetAccountHelper = new GetAccountPropertiesHelper(
                defaultEndpoint,
@@ -128,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                getDatabaseAccountFn,
                cancellationToken))
             {
-                return await threadSafeGetAccountHelper.GetAccountPropertiesAsync();
+                return await threadSafeGetAccountHelper.GetAccountPropertiesAsync(accountPropertiesReaderWriterLock);
             }
         }
 
@@ -166,15 +176,15 @@ namespace Microsoft.Azure.Cosmos.Routing
                     .GetEnumerator();
             }
 
-            public async Task<AccountProperties> GetAccountPropertiesAsync()
+            public async Task<AccountProperties> GetAccountPropertiesAsync(ReaderWriterLockSlim readerWriterLock)
             {
                 // If there are no preferred regions or private endpoints, then just wait for the global endpoint results
                 if (this.LimitToGlobalEndpointOnly)
                 {
-                    return await this.GetOnlyGlobalEndpointAsync();
+                    return await this.GetOnlyGlobalEndpointAsync(readerWriterLock);
                 }
 
-                Task globalEndpointTask = this.GetAndUpdateAccountPropertiesAsync(this.DefaultEndpoint);
+                Task globalEndpointTask = this.GetAndUpdateAccountPropertiesAsync(this.DefaultEndpoint, readerWriterLock);
 
                 // Start a timer to start secondary requests in parallel.
                 Task timerTask = Task.Delay(TimeSpan.FromSeconds(5));
@@ -194,8 +204,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                 HashSet<Task> tasksToWaitOn = new HashSet<Task>
                 {
                     globalEndpointTask,
-                    this.TryGetAccountPropertiesFromAllLocationsAsync(),
-                    this.TryGetAccountPropertiesFromAllLocationsAsync()
+                    this.TryGetAccountPropertiesFromAllLocationsAsync(readerWriterLock),
+                    this.TryGetAccountPropertiesFromAllLocationsAsync(readerWriterLock)
                 };
 
                 while (tasksToWaitOn.Any())
@@ -227,14 +237,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                 throw new AggregateException(this.TransientExceptions);
             }
 
-            private async Task<AccountProperties> GetOnlyGlobalEndpointAsync()
+            private async Task<AccountProperties> GetOnlyGlobalEndpointAsync(ReaderWriterLockSlim readerWriterLock)
             {
                 if (!this.LimitToGlobalEndpointOnly)
                 {
                     throw new ArgumentException("GetOnlyGlobalEndpointAsync should only be called if there are no other private endpoints or regions");
                 }
 
-                await this.GetAndUpdateAccountPropertiesAsync(this.DefaultEndpoint);
+                await this.GetAndUpdateAccountPropertiesAsync(this.DefaultEndpoint, readerWriterLock);
 
                 if (this.AccountProperties != null)
                 {
@@ -262,7 +272,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             /// <summary>
             /// This is done in a thread safe way to allow multiple tasks to iterate over the list of service endpoints.
             /// </summary>
-            private async Task TryGetAccountPropertiesFromAllLocationsAsync()
+            private async Task TryGetAccountPropertiesFromAllLocationsAsync(ReaderWriterLockSlim readerWriterLock)
             {
                 while (this.TryMoveNextServiceEndpointhreadSafe(
                         out Uri? serviceEndpoint))
@@ -274,7 +284,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                     }
 
                     await this.GetAndUpdateAccountPropertiesAsync(
-                        endpoint: serviceEndpoint);
+                        endpoint: serviceEndpoint,
+                        readerWriterLock);
                 }
             }
 
@@ -308,7 +319,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
             }
 
-            private async Task GetAndUpdateAccountPropertiesAsync(Uri endpoint)
+            private async Task GetAndUpdateAccountPropertiesAsync(Uri endpoint, ReaderWriterLockSlim readerWriterLock)
             {
                 try
                 {
@@ -326,8 +337,17 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                     if (databaseAccount != null)
                     {
-                        this.AccountProperties = databaseAccount;
-                        this.CancellationTokenSource.Cancel();
+                        readerWriterLock.EnterWriteLock();
+                        
+                        try
+                        {
+                            this.AccountProperties = databaseAccount;
+                            this.CancellationTokenSource.Cancel();
+                        }
+                        finally
+                        {
+                            readerWriterLock.ExitWriteLock();
+                        }
                     }
                 }
                 catch (Exception e)
@@ -497,8 +517,16 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return;
             }
 
-            this.locationCache.OnDatabaseAccountRead(databaseAccount);
-
+            this.locationCacheDatabaseAccountReadWriteLock.EnterWriteLock();
+            try
+            {
+                this.locationCache.OnDatabaseAccountRead(databaseAccount);
+            }
+            finally
+            {
+                this.locationCacheDatabaseAccountReadWriteLock.ExitWriteLock();
+            }
+            
             if (this.isBackgroundAccountRefreshActive)
             {
                 return;
@@ -533,20 +561,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
             await this.RefreshDatabaseAccountInternalAsync(forceRefresh: forceRefresh);
-        }
-
-        /// <summary>
-        /// Determines whether the current configuration and state of the service allow for supporting multiple write locations.
-        /// This method returns True is the AvailableWriteLocations in LocationCache is more than 1. Otherwise, it returns False.
-        /// </summary>
-        /// <param name="request">The document service request for which the write location support is being evaluated.</param>
-        /// <returns>A boolean flag indicating if the available write locations are more than one.</returns>
-        public bool CanSupportMultipleWriteLocations(DocumentServiceRequest request)
-        {
-            return this.locationCache.CanUseMultipleWriteLocations()
-                && this.locationCache.GetAvailableWriteLocations()?.Count > 1
-                && (request.ResourceType == ResourceType.Document ||
-                (request.ResourceType == ResourceType.StoredProcedure && request.OperationType == OperationType.Execute));
         }
 
 #pragma warning disable VSTHRD100 // Avoid async void methods
@@ -647,7 +661,19 @@ namespace Microsoft.Azure.Cosmos.Routing
             try
             {
                 this.LastBackgroundRefreshUtc = DateTime.UtcNow;
-                this.locationCache.OnDatabaseAccountRead(await this.GetDatabaseAccountAsync(true));
+
+                AccountProperties accountProperties = await this.GetDatabaseAccountAsync(true);
+                
+                this.locationCacheDatabaseAccountReadWriteLock.EnterWriteLock();
+
+                try
+                {
+                    this.locationCache.OnDatabaseAccountRead(accountProperties);
+                }
+                finally
+                {
+                    this.locationCacheDatabaseAccountReadWriteLock.ExitWriteLock();
+                }
             }
             catch (Exception ex)
             {
@@ -671,10 +697,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                               obsoleteValue: null,
                               singleValueInitFunc: () => GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
                                   this.defaultEndpoint,
-                                  this.connectionPolicy.PreferredLocations,
+                                  this.GetEffectivePreferredLocations(),
                                   this.connectionPolicy.AccountInitializationCustomEndpoints,
                                   this.GetDatabaseAccountAsync,
-                                  this.cancellationTokenSource.Token),
+                                  this.cancellationTokenSource.Token,
+                                  this.locationCacheDatabaseAccountReadWriteLock),
                               cancellationToken: this.cancellationTokenSource.Token,
                               forceRefresh: forceRefresh);
 #nullable enable
@@ -689,6 +716,25 @@ namespace Microsoft.Azure.Cosmos.Routing
             TimeSpan timeSinceLastRefresh = DateTime.UtcNow - this.LastBackgroundRefreshUtc;
             return (this.isAccountRefreshInProgress || this.MinTimeBetweenAccountRefresh > timeSinceLastRefresh)
                 && !forceRefresh;
+        }
+
+        public Collection<string> GetEffectivePreferredLocations()
+        {
+            if (this.connectionPolicy.PreferredLocations != null && this.connectionPolicy.PreferredLocations.Count > 0)
+            {
+                return this.connectionPolicy.PreferredLocations;
+            }
+
+            this.locationCacheDatabaseAccountReadWriteLock.EnterReadLock();
+
+            try
+            {
+                return new Collection<string>(this.locationCache.EffectivePreferredLocations);
+            }
+            finally
+            {
+                this.locationCacheDatabaseAccountReadWriteLock.ExitReadLock();
+            }
         }
     }
 }
