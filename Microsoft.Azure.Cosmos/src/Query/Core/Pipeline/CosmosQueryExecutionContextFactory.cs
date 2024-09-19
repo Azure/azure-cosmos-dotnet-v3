@@ -270,11 +270,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                    trace,
                    inputParameters.SqlQuerySpec);
 
-            Console.WriteLine($"====> Partition Key Range Ids : Count is {targetRanges.Count}");
-            foreach (Documents.PartitionKeyRange pkRange in targetRanges)
-            {
-                Console.WriteLine(pkRange.ToString());
-            }
+            Console.WriteLine($"Partition Key Range Ids to Query : Count is {targetRanges.Count}");
 
             Debug.Assert(targetRanges != null, $"{nameof(CosmosQueryExecutionContextFactory)} Assert!", "targetRanges != null");
 
@@ -666,17 +662,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             ITrace trace,
             SqlQuerySpec sqlQuerySpec = null)
         {
-            bool is_gsi_enabled = ConfigurationManager.GetEnvironmentVariable<bool>("GSI_ENABLED", false);
             List<Documents.PartitionKeyRange> targetRanges;
-            if (is_gsi_enabled)
-            {
-                targetRanges = new ReaderInterface().GetPartitionKeyRanges(sqlQuerySpec.Parameters[0].Name, Convert.ToString(sqlQuerySpec.Parameters[0].Value));
-                if (targetRanges.Count > 0)
-                {
-                    return targetRanges;
-                }
-            }
-           
+          
             if (containerQueryProperties.EffectiveRangesForPartitionKey != null)
             {
                 targetRanges = await queryClient.GetTargetPartitionKeyRangesAsync(
@@ -720,6 +707,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                                     partitionedQueryExecutionInfo.QueryRanges,
                                     forceRefresh: false,
                                     trace);
+            }
+
+            bool is_gsi_enabled = ConfigurationManager.GetEnvironmentVariable<bool>("GSI_ENABLED", false);
+            if (is_gsi_enabled)
+            {
+                await GSIFactory.FilterUsingCacheAsync(sqlQuerySpec, targetRanges);
             }
 
             return targetRanges;
