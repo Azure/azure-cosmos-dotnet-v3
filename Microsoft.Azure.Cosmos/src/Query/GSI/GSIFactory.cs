@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
     {
        public static IGarnetReader cacheReader = new GarnetReader();
 
-       public static async Task FilterUsingCacheAsync(SqlQuerySpec querySpec, List<Documents.PartitionKeyRange> keyRanges)
+       public static async Task<List<Documents.PartitionKeyRange>> FilterUsingCacheAsync(SqlQuerySpec querySpec, List<Documents.PartitionKeyRange> keyRanges)
        {
             List<string> pkrangesIdsToKeep = new ();
             foreach (var parameter in querySpec.Parameters)
@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            keyRanges = keyRanges.Where(obj => pkrangesIdsToKeep.Contains(obj.Id)).ToList();
+            return keyRanges.Where(obj => pkrangesIdsToKeep.Contains(obj.Id)).ToList();
         }
     }
 }

@@ -29,8 +29,6 @@ namespace Microsoft.Azure.Cosmos
 
             for (int i = 0; i < connectionPool.connections.Length; i++)
             {
-                Console.WriteLine($" - Creating Connection #{i}");
-
                 ConnectionMultiplexer con = Connection.CreateConnection(config);
                 connectionPool.connections[i] = con;
             }

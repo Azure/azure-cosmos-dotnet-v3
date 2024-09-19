@@ -712,7 +712,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             bool is_gsi_enabled = ConfigurationManager.GetEnvironmentVariable<bool>("GSI_ENABLED", false);
             if (is_gsi_enabled)
             {
-                await GSIFactory.FilterUsingCacheAsync(sqlQuerySpec, targetRanges);
+                targetRanges = await GSIFactory.FilterUsingCacheAsync(sqlQuerySpec, targetRanges);
             }
 
             return targetRanges;
