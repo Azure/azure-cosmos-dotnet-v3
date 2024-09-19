@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             get
             {
                 Collection<string> effectivePreferredLocations = this.GetEffectivePreferredLocations();
-                
+
                 return effectivePreferredLocations.Count;
             }
         }
@@ -338,7 +338,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     if (databaseAccount != null)
                     {
                         readerWriterLock.EnterWriteLock();
-                        
+
                         try
                         {
                             this.AccountProperties = databaseAccount;
@@ -518,6 +518,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
             this.locationCacheDatabaseAccountReadWriteLock.EnterWriteLock();
+
             try
             {
                 this.locationCache.OnDatabaseAccountRead(databaseAccount);
@@ -526,7 +527,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 this.locationCacheDatabaseAccountReadWriteLock.ExitWriteLock();
             }
-            
+
             if (this.isBackgroundAccountRefreshActive)
             {
                 return;
@@ -675,9 +676,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             try
             {
                 this.LastBackgroundRefreshUtc = DateTime.UtcNow;
-
                 AccountProperties accountProperties = await this.GetDatabaseAccountAsync(true);
-                
+
                 this.locationCacheDatabaseAccountReadWriteLock.EnterWriteLock();
 
                 try
