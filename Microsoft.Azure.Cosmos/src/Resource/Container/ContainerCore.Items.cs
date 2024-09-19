@@ -1267,7 +1267,7 @@ namespace Microsoft.Azure.Cosmos
             FeedRange childFeedRange,
             CancellationToken cancellationToken = default)
         {
-            using (ITrace trace = Tracing.Trace.GetRootTrace("ContainerCore FeedRange IsSubset Async", TraceComponent.Unknown, Tracing.TraceLevel.Info))
+            using (ITrace trace = Tracing.Trace.GetRootTrace("ContainerCore FeedRange IsFeedRangePartOfAsync Async", TraceComponent.Unknown, Tracing.TraceLevel.Info))
             {
                 if (parentFeedRange == null || childFeedRange == null)
                 {
