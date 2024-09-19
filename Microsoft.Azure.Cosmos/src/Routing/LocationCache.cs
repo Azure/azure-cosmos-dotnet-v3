@@ -277,6 +277,11 @@ namespace Microsoft.Azure.Cosmos.Routing
             return this.locationInfo.AvailableWriteLocations;
         }
 
+        public ReadOnlyCollection<string> GetAvailableWriteLocations()
+        {
+            return this.locationInfo.AvailableWriteLocations;
+        }
+
         /// <summary>
         /// Resolves request to service endpoint. 
         /// 1. If this is a write request
@@ -878,7 +883,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             return new ReadOnlyDictionary<string, Uri>(endpointsByLocation);
         }
 
-        private bool CanUseMultipleWriteLocations()
+        internal bool CanUseMultipleWriteLocations()
         {
             return this.useMultipleWriteLocations && this.enableMultipleWriteLocations;
         }

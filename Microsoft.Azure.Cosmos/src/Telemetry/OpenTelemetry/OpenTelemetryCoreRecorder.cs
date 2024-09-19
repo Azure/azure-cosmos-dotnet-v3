@@ -232,13 +232,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                 if (this.response != null)
                 {
-                    if (this.response.BatchOperationName != null)
-                    {
-                        string batchOpsName = Enum.GetName(typeof(OperationType), this.response.BatchOperationName);
-                        operationName = $"{operationName}.{batchOpsName}";
-                    }
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.OperationType, operationName);
-
                     if (this.response.BatchSize is not null)
                     {
                         this.scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.BatchSize, (int)this.response.BatchSize);

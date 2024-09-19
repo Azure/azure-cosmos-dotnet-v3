@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -45,6 +46,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             this.changeFeedOptions = options;
             this.maxItemCount = maxItemCount;
             this.continuationToken = continuationToken;
+
+            this.operationName = OpenTelemetryConstants.Operations.QueryChangeFeed;
         }
 
         /// <summary>
