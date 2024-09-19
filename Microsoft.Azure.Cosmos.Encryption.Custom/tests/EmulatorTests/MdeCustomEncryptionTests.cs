@@ -374,7 +374,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 await MdeCustomEncryptionTests.CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
 
             testEncryptionKeyStoreProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out unwrapcount);
-            Assert.AreEqual(32, unwrapcount);
+            Assert.AreEqual(64, unwrapcount);
 
             // 2 hours default
             testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider();  

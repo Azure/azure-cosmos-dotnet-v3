@@ -8,14 +8,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using System.Buffers;
     using System.Collections.Generic;
 
-    internal class ArrayPoolManager : IDisposable
+    internal class ArrayPoolManager<T> : IDisposable
     {
-        private List<byte[]> rentedBuffers = new List<byte[]>();
+        private List<T[]> rentedBuffers = new List<T[]>();
         private bool disposedValue;
 
-        public byte[] Rent(int minimumLength)
+        public T[] Rent(int minimumLength)
         {
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(minimumLength);
+            T[] buffer = ArrayPool<T>.Shared.Rent(minimumLength);
             this.rentedBuffers.Add(buffer);
             return buffer;
         }
@@ -26,9 +26,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 if (disposing)
                 {
-                    foreach (byte[] buffer in this.rentedBuffers)
+                    foreach (T[] buffer in this.rentedBuffers)
                     {
-                        ArrayPool<byte>.Shared.Return(buffer);
+                        ArrayPool<T>.Shared.Return(buffer, clearArray: true);
                     }
                 }
 
@@ -43,5 +43,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             this.Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
+    }
+
+    internal class ArrayPoolManager : ArrayPoolManager<byte>
+    {
     }
 }

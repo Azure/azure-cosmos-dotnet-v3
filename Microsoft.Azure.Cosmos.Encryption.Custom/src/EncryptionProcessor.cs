@@ -544,18 +544,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     throw new InvalidOperationException($" Invalid or Unsupported Data Type Passed : {propertyValue.Type}");
             }
 
-            (byte[] bytes, int length) SerializeFixed<T>(IFixedSizeSerializer<T> serializer)
+            (byte[], int) SerializeFixed<T>(IFixedSizeSerializer<T> serializer)
             {
                 byte[] buffer = arrayPoolManager.Rent(serializer.GetSerializedMaxByteCount());
-                int bytes = serializer.Serialize(propertyValue.ToObject<T>(), buffer);
-                return (buffer, bytes);
+                int length = serializer.Serialize(propertyValue.ToObject<T>(), buffer);
+                return (buffer, length);
             }
 
-            (byte[] bytes, int length) SerializeString(string value)
+            (byte[], int) SerializeString(string value)
             {
                 byte[] buffer = arrayPoolManager.Rent(SqlVarCharSerializer.GetSerializedMaxByteCount(value.Length));
-                int bytes = SqlVarCharSerializer.Serialize(value, buffer);
-                return (buffer, bytes);
+                int length = SqlVarCharSerializer.Serialize(value, buffer);
+                return (buffer, length);
             }
         }
 
@@ -580,14 +580,30 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     jObject.Add(key, SqlVarCharSerializer.Deserialize(serializedBytes));
                     break;
                 case TypeMarker.Array:
-                    jObject.Add(key, JsonConvert.DeserializeObject<JArray>(SqlVarCharSerializer.Deserialize(serializedBytes), JsonSerializerSettings));
+                    DeserializeAndAddProperty<JArray>(serializedBytes);
                     break;
                 case TypeMarker.Object:
-                    jObject.Add(key, JsonConvert.DeserializeObject<JObject>(SqlVarCharSerializer.Deserialize(serializedBytes), JsonSerializerSettings));
+                    DeserializeAndAddProperty<JObject>(serializedBytes);
                     break;
                 default:
                     Debug.Fail(string.Format("Unexpected type marker {0}", typeMarker));
                     break;
+            }
+
+            void DeserializeAndAddProperty<T>(ReadOnlySpan<byte> serializedBytes)
+                where T : JToken
+            {
+                using ArrayPoolManager<char> manager = new ArrayPoolManager<char>();
+
+                char[] buffer = manager.Rent(SqlVarCharSerializer.GetDeserializedMaxLength(serializedBytes.Length));
+                int length = SqlVarCharSerializer.Deserialize(serializedBytes, buffer.AsSpan());
+
+                JsonSerializer serializer = JsonSerializer.Create(JsonSerializerSettings);
+
+                using MemoryTextReader memoryTextReader = new MemoryTextReader(new Memory<char>(buffer, 0, length));
+                using JsonTextReader reader = new JsonTextReader(memoryTextReader);
+
+                jObject.Add(key, serializer.Deserialize<T>(reader));
             }
         }
 
