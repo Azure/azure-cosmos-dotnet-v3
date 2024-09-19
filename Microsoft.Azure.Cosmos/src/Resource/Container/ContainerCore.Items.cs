@@ -1401,9 +1401,13 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Determines whether the specified child range is entirely within the bounds of the parent range.
         /// This includes checking both the minimum and maximum boundaries of the ranges for inclusion.
+        ///
+        /// Additionally, the method performs null checks on the parameters:
+        /// - If <paramref name="parentRange"/> is null, an <see cref="ArgumentNullException"/> is thrown.
+        /// - If <paramref name="childRange"/> is null, an <see cref="ArgumentNullException"/> is thrown.
         /// </summary>
-        /// <param name="parentRange">The parent range to check against, representing the outer bounds.</param>
-        /// <param name="childRange">The child range being evaluated for subset inclusion within the parent range.</param>
+        /// <param name="parentRange">The parent range to check against, representing the outer bounds. Cannot be null.</param>
+        /// <param name="childRange">The child range being evaluated for subset inclusion within the parent range. Cannot be null.</param>
         /// <example>
         /// <![CDATA[
         /// Documents.Routing.Range<string> parentRange = new Documents.Routing.Range<string>("A", "Z", true, true);
@@ -1417,12 +1421,28 @@ namespace Microsoft.Azure.Cosmos
         /// Returns <c>true</c> if the child range is a subset of the parent range, meaning the child range's 
         /// minimum and maximum values fall within the bounds of the parent range. Returns <c>false</c> otherwise.
         /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when <paramref name="parentRange"/> or <paramref name="childRange"/> is <c>null</c>.
+        /// </exception>
         internal static bool IsSubset(
             Documents.Routing.Range<string> parentRange,
             Documents.Routing.Range<string> childRange)
         {
+            if (parentRange is null)
+            {
+                throw new ArgumentNullException(nameof(parentRange));
+            }
+
+            if (childRange is null)
+            {
+                throw new ArgumentNullException(nameof(childRange));
+            }
+
+            bool isMaxWithinParent = !parentRange.IsMaxInclusive
+                ? parentRange.Contains(childRange.Max)
+                : parentRange.Max == childRange.Max || parentRange.Contains(childRange.Max);
+
             bool isMinWithinParent = parentRange.Contains(childRange.Min);
-            bool isMaxWithinParent = parentRange.Max == childRange.Max || parentRange.Contains(childRange.Max);
 
             return isMinWithinParent && isMaxWithinParent;
         }

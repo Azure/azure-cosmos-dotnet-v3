@@ -410,13 +410,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             yield return new object[] { "", "3FFFFFFFFFFFFFFF", false, "", "FFFFFFFFFFFFFFFF", false, true }; // The child range, starting from a lower bound minimum and ending just before 3FFFFFFFFFFFFFFF, fits entirely within the parent range, which starts from a lower bound minimum and ends just before FFFFFFFFFFFFFFFF.
             yield return new object[] { "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, "", "FFFFFFFFFFFFFFFF", false, true }; // The child range, from 3FFFFFFFFFFFFFFF to just before 7FFFFFFFFFFFFFFF, fits entirely within the parent range, which starts from a lower bound minimum and ends just before FFFFFFFFFFFFFFFF.
             yield return new object[] { "7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", false, "", "FFFFFFFFFFFFFFFF", false, true }; // The child range, from 7FFFFFFFFFFFFFFF to just before BFFFFFFFFFFFFFFF, fits entirely within the parent range, which starts from a lower bound minimum and ends just before FFFFFFFFFFFFFFFF.
-            yield return new object[] { "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", false, "", "FFFFFFFFFFFFFFFF", false, true }; // The child range, from BFFFFFFFFFFFFFFF to just before FFFFFFFFFFFFFFFF, fits entirely within the parent range, which starts from a lower bound minimum and ends just before FFFFFFFFFFFFFFFF.
+            yield return new object[] { "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", false, "", "FFFFFFFFFFFFFFFF", false, false }; // The child range, from BFFFFFFFFFFFFFFF to just before FFFFFFFFFFFFFFFF, does not fit within the parent range, which starts from a lower bound minimum and ends just before FFFFFFFFFFFFFFFF.
             yield return new object[] { "3FFFFFFFFFFFFFFF", "4CCCCCCCCCCCCCCC", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true }; // The child range, from 3FFFFFFFFFFFFFFF to just before 4CCCCCCCCCCCCCCC, fits entirely within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends just before 7FFFFFFFFFFFFFFF.
             yield return new object[] { "4CCCCCCCCCCCCCCC", "5999999999999999", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true }; // The child range, from 4CCCCCCCCCCCCCCC to just before 5999999999999999, fits entirely within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends just before 7FFFFFFFFFFFFFFF.
             yield return new object[] { "5999999999999999", "6666666666666666", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true }; // The child range, from 5999999999999999 to just before 6666666666666666, fits entirely within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends just before 7FFFFFFFFFFFFFFF.
             yield return new object[] { "6666666666666666", "7333333333333333", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true }; // The child range, from 6666666666666666 to just before 7333333333333333, fits entirely within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends just before 7FFFFFFFFFFFFFFF.
-            yield return new object[] { "7333333333333333", "7FFFFFFFFFFFFFFF", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true }; // The child range, from 7333333333333333 to just before 7FFFFFFFFFFFFFFF, fits entirely within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends just before 7FFFFFFFFFFFFFFF.
-            yield return new object[] { "", "3FFFFFFFFFFFFFFF", false, "", "3FFFFFFFFFFFFFFF", false, true }; // The child range, starting from a lower bound minimum and ending just before 3FFFFFFFFFFFFFFF, fits entirely within the parent range, which starts from a lower bound minimum and ends just before 3FFFFFFFFFFFFFFF.
+            yield return new object[] { "7333333333333333", "7FFFFFFFFFFFFFFF", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, false }; // The child range, from 7333333333333333 to just before 7FFFFFFFFFFFFFFF, does not fit within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends just before 7FFFFFFFFFFFFFFF.
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", false, "", "3FFFFFFFFFFFFFFF", false, false }; // The child range, starting from a lower bound minimum and ending just before 3FFFFFFFFFFFFFFF, does not fit within the parent range, which starts from a lower bound minimum and ends just before 3FFFFFFFFFFFFFFF.
 
         }
 
@@ -458,13 +458,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "", "FFFFFFFFFFFFFFFF", false, true }; // The child range, starting from a lower bound minimum and ending at 3FFFFFFFFFFFFFFF (inclusive), fits within the parent range, which starts from a lower bound minimum and ends just before FFFFFFFFFFFFFFFF.
             yield return new object[] { "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, "", "FFFFFFFFFFFFFFFF", false, true }; // The child range, from 3FFFFFFFFFFFFFFF to 7FFFFFFFFFFFFFFF (inclusive), fits within the parent range, starting from a lower bound minimum and ending just before FFFFFFFFFFFFFFFF.
             yield return new object[] { "7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", true, "", "FFFFFFFFFFFFFFFF", false, true }; // The child range, from 7FFFFFFFFFFFFFFF to BFFFFFFFFFFFFFFF (inclusive), fits within the parent range, starting from a lower bound minimum and ending just before FFFFFFFFFFFFFFFF.
-            yield return new object[] { "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", true, "", "FFFFFFFFFFFFFFFF", false, true }; // The child range, from BFFFFFFFFFFFFFFF to FFFFFFFFFFFFFFFF (inclusive), fits within the parent range, starting from a lower bound minimum and ending just before FFFFFFFFFFFFFFFF.
-            yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "", "3FFFFFFFFFFFFFFF", false, true }; // The child range, from a lower bound minimum to 3FFFFFFFFFFFFFFF (inclusive), fits entirely within the parent range, which starts from a lower bound minimum and ends just before 3FFFFFFFFFFFFFFF.
+            yield return new object[] { "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", true, "", "FFFFFFFFFFFFFFFF", false, false }; // "The child range, from BFFFFFFFFFFFFFFF to FFFFFFFFFFFFFFFF (inclusive), does not fit within the parent range, which starts from a lower bound minimum and ends just before FFFFFFFFFFFFFFFF.
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", true, "", "3FFFFFFFFFFFFFFF", false, false }; // The child range, from a lower bound minimum to 3FFFFFFFFFFFFFFF (inclusive), does not fit within the parent range, which starts from a lower bound minimum and ends just before 3FFFFFFFFFFFFFFF.
             yield return new object[] { "3FFFFFFFFFFFFFFF", "4CCCCCCCCCCCCCCC", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true }; // The child range, from 3FFFFFFFFFFFFFFF to 4CCCCCCCCCCCCCCC (inclusive), fits within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends just before 7FFFFFFFFFFFFFFF.
             yield return new object[] { "4CCCCCCCCCCCCCCC", "5999999999999999", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true }; // The child range, from 4CCCCCCCCCCCCCCC to 5999999999999999 (inclusive), fits within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends just before 7FFFFFFFFFFFFFFF.
             yield return new object[] { "5999999999999999", "6666666666666666", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true }; // The child range, from 5999999999999999 to 6666666666666666 (inclusive), fits within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends just before 7FFFFFFFFFFFFFFF.
             yield return new object[] { "6666666666666666", "7333333333333333", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true }; // The child range, from 6666666666666666 to 7333333333333333 (inclusive), fits within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends just before 7FFFFFFFFFFFFFFF.
-            yield return new object[] { "7333333333333333", "7FFFFFFFFFFFFFFF", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true }; // The child range, from 7333333333333333 to 7FFFFFFFFFFFFFFF (inclusive), fits within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends just before 7FFFFFFFFFFFFFFF.
+            yield return new object[] { "7333333333333333", "7FFFFFFFFFFFFFFF", true, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, false }; // The child range, from 7333333333333333 to 7FFFFFFFFFFFFFFF (inclusive), does not fit within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends just before 7FFFFFFFFFFFFFFF.
         }
 
         /// <summary>
@@ -664,11 +664,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(true, true, "A", "Z", true, true, "A", "Z", true, DisplayName = "Given both parent and child ranges are fully inclusive and equal, child is a subset")]
         [DataRow(true, true, "A", "Z", true, false, "A", "Y", true, DisplayName = "Given parent range is fully inclusive and child range has an exclusive max, child is a subset")]
         [DataRow(true, false, "A", "Y", true, true, "A", "Z", false, DisplayName = "Given parent range has an exclusive max but child range exceeds the parent’s max with an inclusive bound, child is not a subset")]
-        [DataRow(true, false, "A", "Y", true, false, "A", "Y", true, DisplayName = "Given both parent and child ranges share an inclusive min and exclusive max, child is a subset")]
+        [DataRow(true, false, "A", "Y", true, false, "A", "Y", false, DisplayName = "Given both parent and child ranges share an inclusive min and exclusive max, child is not a subset")]
         [DataRow(true, true, "A", "A", true, true, "A", "A", true, DisplayName = "Given both parent and child ranges are fully inclusive and equal, and min and max range is the same, child is a subset")]
         [DataRow(true, true, "A", "A", true, true, "B", "B", false, DisplayName = "Given both parent and child ranges are fully inclusive and equal, and min and max range are not the same, child is not a subset")]
-        [DataRow(true, false, "", "1FF", true, true, "", "FF", false, DisplayName = "Given parent range has an exclusive max and child range is fully inclusive with a different max, child is not a subset")]
-        [DataRow(true, false, "", "FF", true, true, "", "FF", true, DisplayName = "Given both parent and child ranges are equal and fully inclusive with exclusive max, child is a subset")]
+        [DataRow(true, false, "A", "Z", true, true, "A", "Z", false, DisplayName = "Given parent range has an exclusive max and child range is fully inclusive, and both have the same min and max values, child is not a subset")]
         public void GivenParentRangeWhenChildRangeComparedThenValidateIfSubset(
             bool parentIsMinInclusive,
             bool parentIsMaxInclusive,
@@ -687,6 +686,49 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(
                 expected: expectedIsSubset,
                 actual: actualIsSubset);
+        }
+
+        /// <summary>
+        /// <![CDATA[
+        /// Feature: Verify IsSubset method
+        ///
+        ///   Scenario: Handle null parent range input
+        ///     Given a null parent feed range
+        ///     And a valid child feed range
+        ///     When calling the IsSubset method
+        ///     Then an ArgumentNullException is thrown
+        /// ]]>
+        [TestMethod]
+        [Owner("philipthomas-MSFT")]
+        public void GivenNullParentFeedRangeWhenCallingIsSubsetThenArgumentNullExceptionIsThrown()
+        {
+            ArgumentNullException exception = Assert.ThrowsException<ArgumentNullException>(() => ContainerCore.IsSubset(
+                parentRange: null,
+                childRange: new Documents.Routing.Range<string>(min: "A", max: "Z", isMinInclusive: true, isMaxInclusive: true)));
+
+            Assert.IsNotNull(exception);
+        }
+
+        /// <summary>
+        /// <![CDATA[
+        /// Feature: Verify IsSubset method
+        ///
+        ///   Scenario: Handle null child range input
+        ///     Given a valid parent feed range
+        ///     And a null child feed range
+        ///     When calling the IsSubset method
+        ///     Then an ArgumentNullException is thrown
+        /// ]]>
+        /// </summary>
+        [TestMethod]
+        [Owner("philipthomas-MSFT")]
+        public void GivenNullChildFeedRangeWhenCallingIsSubsetThenArgumentNullExceptionIsThrown()
+        {
+            ArgumentNullException exception = Assert.ThrowsException<ArgumentNullException>(() => ContainerCore.IsSubset(
+                parentRange: new Documents.Routing.Range<string>(min: "A", max: "Z", isMinInclusive: true, isMaxInclusive: true),
+                childRange: null));
+
+            Assert.IsNotNull(exception);
         }
 
         /// <summary>
