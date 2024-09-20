@@ -443,7 +443,7 @@ namespace Microsoft.Azure.Cosmos
         ///     public string status {get; set;}
         /// }
         /// 
-        /// ToDoActivity toDoActivity = await this.container.ReadItemAsync<ToDoActivity>("id", new PartitionKey("partitionKey"));
+        /// ItemResponse<ToDoActivity> toDoActivity = await this.container.ReadItemAsync<ToDoActivity>("id", new PartitionKey("partitionKey"));
         /// 
         /// ]]>
         /// </code>
@@ -740,7 +740,7 @@ namespace Microsoft.Azure.Cosmos
         ///     public int frequency {get; set;}
         /// }
         /// 
-        /// ToDoActivity toDoActivity = await this.container.ReadItemAsync<ToDoActivity>("id", new PartitionKey("partitionKey"));
+        /// ItemResponse<ToDoActivity> toDoActivity = await this.container.ReadItemAsync<ToDoActivity>("id", new PartitionKey("partitionKey"));
         /// /* toDoActivity = {
         ///     "id" : "someId",
         ///     "status" : "someStatusPK",
