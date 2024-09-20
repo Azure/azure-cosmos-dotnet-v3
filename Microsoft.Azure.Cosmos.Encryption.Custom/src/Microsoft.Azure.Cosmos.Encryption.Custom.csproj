@@ -37,7 +37,7 @@
   <ItemGroup>
      <PackageReference Include="Azure.Core" Version="1.38.0" />
      <PackageReference Include="Azure.Identity" Version="1.11.4" />
-     <PackageReference Include="Microsoft.Data.Encryption.Cryptography" Version="0.2.0-pre" />
+     <PackageReference Include="Microsoft.Data.Encryption.Cryptography" Version="1.1.0" />
      <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />     
   </ItemGroup>
 
