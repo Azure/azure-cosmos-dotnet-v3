@@ -66,7 +66,7 @@ ItemRequestOptions requestOptions = new ItemRequestOptions()
 };
 ```
 
-When enabled, the availability strategy applies to all read requests: ReadItem, Queries (single and cross partition), ReadMany, and ChangeFeed. It is not enabled for write requests.
+When enabled at the `CosmosClient` level, the availability strategy applies to all read requests unless explicitly disabled per request: ReadItem, Queries (single and cross partition), ReadMany, and ChangeFeed. It is not enabled for write requests.
 
 ## Diagnostics
 
