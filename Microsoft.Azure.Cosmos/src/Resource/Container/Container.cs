@@ -443,7 +443,20 @@ namespace Microsoft.Azure.Cosmos
         ///     public string status {get; set;}
         /// }
         /// 
+        /// Example 1: Reading Item with Full Response
+        ///
+        /// This example demonstrates how to read an item from the container and retrieve the full
+        /// response, including metadata such as request units (RU) consumed, along with the
+        /// `ToDoActivity` object.
+        ///
         /// ItemResponse<ToDoActivity> toDoActivity = await this.container.ReadItemAsync<ToDoActivity>("id", new PartitionKey("partitionKey"));
+        ///
+        /// Example 2: Reading Item with Implicit Casting
+        ///
+        /// This example shows how to read an item from the container and implicitly cast the
+        /// response directly to a `ToDoActivity` object, omitting the metadata in the `ItemResponse`.
+        ///
+        /// ToDoActivity toDoActivity = await this.container.ReadItemAsync<ToDoActivity>("id", new PartitionKey("partitionKey"));
         /// 
         /// ]]>
         /// </code>
@@ -740,7 +753,21 @@ namespace Microsoft.Azure.Cosmos
         ///     public int frequency {get; set;}
         /// }
         /// 
+        /// Example 1: Reading Item with Full Response
+        ///
+        /// This example demonstrates how to read an item from the container and retrieve the full
+        /// response, including metadata such as request units (RU) consumed, along with the
+        /// `ToDoActivity` object.
+        ///
         /// ItemResponse<ToDoActivity> toDoActivity = await this.container.ReadItemAsync<ToDoActivity>("id", new PartitionKey("partitionKey"));
+        ///
+        /// Example 2: Reading Item with Implicit Casting
+        ///
+        /// This example shows how to read an item from the container and implicitly cast the
+        /// response directly to a `ToDoActivity` object, omitting the metadata in the `ItemResponse`.
+        ///
+        /// ToDoActivity toDoActivity = await this.container.ReadItemAsync<ToDoActivity>("id", new PartitionKey("partitionKey"));
+        ///
         /// /* toDoActivity = {
         ///     "id" : "someId",
         ///     "status" : "someStatusPK",
