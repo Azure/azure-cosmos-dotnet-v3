@@ -1774,7 +1774,7 @@ namespace Microsoft.Azure.Cosmos
         ///
         /// - **Effective Ranges**:
         ///   - The method uses `GetEffectiveRangesAsync` to retrieve the actual ranges of partition keys that each feed range represents.
-        ///   - These effective ranges are returned as lists of `Range<string>`, which represent the partition key boundaries.
+        ///   - These effective ranges are returned as lists of `Range`, which represent the partition key boundaries.
         ///
         /// - **Inclusivity Consistency**:
         ///   - Before performing the subset comparison, the method checks that the inclusivity of the boundary conditions (`IsMinInclusive` and `IsMaxInclusive`) is consistent across all ranges in both the parent and child feed ranges.
