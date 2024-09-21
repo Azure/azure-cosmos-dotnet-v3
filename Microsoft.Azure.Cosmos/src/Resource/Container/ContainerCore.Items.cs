@@ -1325,14 +1325,45 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Merges a list of feed ranges into a single range by taking the minimum of the first range and the maximum of the last range.
-        /// If only one range exists, it returns that range.
+        /// Merges a list of feed ranges into a single range by taking the minimum value of the first range and the maximum value of the last range.
+        /// This function ensures that the resulting range covers the entire span of the input ranges.
+        ///
+        /// - The method begins by checking if the list contains only one range:
+        ///   - If there is only one range, it simply returns that range without performing any additional logic.
+        ///
+        /// - If the list contains multiple ranges:
+        ///   - It first sorts the ranges based on the minimum value of each range using a custom comparator (`MinComparer`).
+        ///   - It selects the first range (after sorting) to extract the minimum value, ensuring the merged range starts with the lowest value across all ranges.
+        ///   - It selects the last range (after sorting) to extract the maximum value, ensuring the merged range ends with the highest value across all ranges.
+        ///
+        /// - The inclusivity of the boundaries (`IsMinInclusive` and `IsMaxInclusive`) is inherited from the first range in the list:
+        ///   - `IsMinInclusive` from the first range determines whether the merged range includes its minimum value.
+        ///   - `IsMaxInclusive` from the last range would generally be expected to influence whether the merged range includes its maximum value, but this method uses `IsMaxInclusive` from the first range for both boundaries.
+        ///   - **Note**: This could result in unexpected behavior if inclusivity should differ for the merged max value.
+        ///
+        /// - The merged range spans the minimum value of the first range and the maximum value of the last range, effectively combining multiple ranges into a single, continuous range.
         /// </summary>
-        /// <param name="ranges">The list of feed ranges to merge.</param>
+        /// <param name="ranges">The list of feed ranges to merge. Each range contains a minimum and maximum value along with boundary inclusivity flags (`IsMinInclusive`, `IsMaxInclusive`).</param>
         /// <returns>
         /// A new merged range with the minimum value from the first range and the maximum value from the last range.
-        /// If the list contains a single range, it returns that range.
+        /// If the list contains a single range, it returns that range directly without modification.
         /// </returns>
+        /// <exception cref="ArgumentException">
+        /// Thrown when the list of ranges is empty.
+        /// </exception>
+        /// <example>
+        /// <![CDATA[
+        /// List<Documents.Routing.Range<string>> ranges = new List<Documents.Routing.Range<string>>
+        /// {
+        ///     new Documents.Routing.Range<string>("A", "C", true, false),
+        ///     new Documents.Routing.Range<string>("D", "F", true, true),
+        ///     new Documents.Routing.Range<string>("G", "I", false, true),
+        /// };
+        ///
+        /// Documents.Routing.Range<string> mergedRange = MergeRanges(ranges);
+        /// // The merged range would span from "A" to "I", taking the minimum of the first range and the maximum of the last.
+        /// ]]>
+        /// </example>
         private static Documents.Routing.Range<string> MergeRanges(
             List<Documents.Routing.Range<string>> ranges)
         {
@@ -1354,12 +1385,22 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Validates whether all ranges in the list have consistent inclusivity for both IsMinInclusive and IsMaxInclusive boundaries.
-        /// Throws an InvalidOperationException if any inconsistencies are found across the ranges.
+        /// Validates whether all ranges in the list have consistent inclusivity for both `IsMinInclusive` and `IsMaxInclusive` boundaries.
+        /// This ensures that all ranges either have the same inclusivity or exclusivity for their minimum and maximum boundaries.
+        /// If there are any inconsistencies in the inclusivity/exclusivity of the ranges, it throws an `InvalidOperationException`.
+        ///
+        /// The logic works as follows:
+        /// - The method starts by checking the first range in the list to establish a baseline for comparison.
+        /// - It then iterates over the remaining ranges, comparing their `IsMinInclusive` and `IsMaxInclusive` values with those of the first range.
+        /// - If any range differs from the first in terms of inclusivity or exclusivity (either for the min or max boundary), the method sets a flag (`areAnyDifferent`) and exits the loop early.
+        /// - If any differences are found, the method gathers the distinct `IsMinInclusive` and `IsMaxInclusive` values found across all ranges.
+        /// - It then throws an `InvalidOperationException`, including the distinct values in the exception message to indicate the specific inconsistencies.
+        ///
+        /// This method is useful in scenarios where the ranges need to have uniform inclusivity for boundary conditions.
         /// </summary>
-        /// <param name="ranges">The list of ranges to validate.</param>
+        /// <param name="ranges">The list of ranges to validate. Each range has `IsMinInclusive` and `IsMaxInclusive` values that represent the inclusivity of its boundaries.</param>
         /// <exception cref="InvalidOperationException">
-        /// Thrown when 'IsMinInclusive' or 'IsMaxInclusive' values are inconsistent across ranges.
+        /// Thrown when `IsMinInclusive` or `IsMaxInclusive` values are inconsistent across ranges. The exception message includes details of the inconsistencies.
         /// </exception>
         /// <example>
         /// <![CDATA[
@@ -1372,6 +1413,8 @@ namespace Microsoft.Azure.Cosmos
         /// };
         ///
         /// EnsureConsistentInclusivity(ranges);
+        ///
+        /// // This will throw an InvalidOperationException because there are different inclusivity values for IsMinInclusive and IsMaxInclusive.
         /// ]]>
         /// </example>
         internal static void EnsureConsistentInclusivity(List<Documents.Routing.Range<string>> ranges)
@@ -1402,6 +1445,34 @@ namespace Microsoft.Azure.Cosmos
         /// Determines whether the specified child range is entirely within the bounds of the parent range.
         /// This includes checking both the minimum and maximum boundaries of the ranges for inclusion.
         ///
+        /// The method checks whether the `Min` and `Max` boundaries of `childRange` are within `parentRange`,
+        /// taking into account whether each boundary is inclusive or exclusive.
+        ///
+        /// - For the `Max` boundary:
+        ///   - If the parent range's max is exclusive and the child range's max is inclusive, it checks whether the parent range contains the child range's max value.
+        ///   - For all other cases, it checks if the max values are equal or whether the parent range contains the child range's max.
+        ///   - This applies to the following combinations:
+        ///     - (false, false): Both max values are exclusive.
+        ///     - (true, true): Both max values are inclusive.
+        ///     - (true, false): Parent max is inclusive, child max is exclusive.
+        ///
+        /// - For the `Min` boundary:
+        ///   - It simply checks whether the parent range contains the child range's min value.
+        ///
+        /// The method ensures the child range is considered a subset only if both its min and max values fall within the parent range.
+        ///
+        /// Summary of combinations for `parentRange.IsMaxInclusive` and `childRange.IsMaxInclusive`:
+        /// 1. parentRange.IsMaxInclusive == false, childRange.IsMaxInclusive == true:
+        ///    - The parent range is exclusive at max, but the child range is inclusive.
+        /// 2. parentRange.IsMaxInclusive == false, childRange.IsMaxInclusive == false:
+        ///    - Both ranges are exclusive at max.
+        /// 3. parentRange.IsMaxInclusive == true, childRange.IsMaxInclusive == true:
+        ///    - Both ranges are inclusive at max.
+        /// 4. parentRange.IsMaxInclusive == true, childRange.IsMaxInclusive == false:
+        ///    - The parent range is inclusive at max, but the child range is exclusive.
+        ///
+        /// The method returns true only if both the min and max boundaries of the child range are within the parent range's boundaries.
+        ///
         /// Additionally, the method performs null checks on the parameters:
         /// - If <paramref name="parentRange"/> is null, an <see cref="ArgumentNullException"/> is thrown.
         /// - If <paramref name="childRange"/> is null, an <see cref="ArgumentNullException"/> is thrown.
@@ -1418,7 +1489,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </example>
         /// <returns>
-        /// Returns <c>true</c> if the child range is a subset of the parent range, meaning the child range's 
+        /// Returns <c>true</c> if the child range is a subset of the parent range, meaning the child range's
         /// minimum and maximum values fall within the bounds of the parent range. Returns <c>false</c> otherwise.
         /// </returns>
         /// <exception cref="ArgumentNullException">
@@ -1438,9 +1509,14 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(childRange));
             }
 
-            bool isMaxWithinParent = !parentRange.IsMaxInclusive
-                ? parentRange.Contains(childRange.Max)
-                : parentRange.Max == childRange.Max || parentRange.Contains(childRange.Max);
+            bool isMaxWithinParent = (parentRange.IsMaxInclusive, childRange.IsMaxInclusive) switch
+            {
+                (false, true) => parentRange.Contains(childRange.Max),  // Parent max is exclusive, child max is inclusive
+                _ => parentRange.Max == childRange.Max || parentRange.Contains(childRange.Max) // Default for the following combinations:
+                                                                                                // (false, false): Both max values are exclusive
+                                                                                                // (true, true): Both max values are inclusive
+                                                                                                // (true, false): Parent max is inclusive, child max is exclusive
+            };
 
             bool isMinWithinParent = parentRange.Contains(childRange.Min);
 

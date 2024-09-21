@@ -410,13 +410,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             yield return new object[] { "", "3FFFFFFFFFFFFFFF", false, "", "FFFFFFFFFFFFFFFF", false, true }; // The child range, starting from a lower bound minimum and ending just before 3FFFFFFFFFFFFFFF, fits entirely within the parent range, which starts from a lower bound minimum and ends just before FFFFFFFFFFFFFFFF.
             yield return new object[] { "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, "", "FFFFFFFFFFFFFFFF", false, true }; // The child range, from 3FFFFFFFFFFFFFFF to just before 7FFFFFFFFFFFFFFF, fits entirely within the parent range, which starts from a lower bound minimum and ends just before FFFFFFFFFFFFFFFF.
             yield return new object[] { "7FFFFFFFFFFFFFFF", "BFFFFFFFFFFFFFFF", false, "", "FFFFFFFFFFFFFFFF", false, true }; // The child range, from 7FFFFFFFFFFFFFFF to just before BFFFFFFFFFFFFFFF, fits entirely within the parent range, which starts from a lower bound minimum and ends just before FFFFFFFFFFFFFFFF.
-            yield return new object[] { "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", false, "", "FFFFFFFFFFFFFFFF", false, false }; // The child range, from BFFFFFFFFFFFFFFF to just before FFFFFFFFFFFFFFFF, does not fit within the parent range, which starts from a lower bound minimum and ends just before FFFFFFFFFFFFFFFF.
+            yield return new object[] { "BFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFF", false, "", "FFFFFFFFFFFFFFFF", false, true }; // The child range, from BFFFFFFFFFFFFFFF to just before FFFFFFFFFFFFFFFF, does fit within the parent range, which starts from a lower bound minimum and ends just before FFFFFFFFFFFFFFFF.
             yield return new object[] { "3FFFFFFFFFFFFFFF", "4CCCCCCCCCCCCCCC", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true }; // The child range, from 3FFFFFFFFFFFFFFF to just before 4CCCCCCCCCCCCCCC, fits entirely within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends just before 7FFFFFFFFFFFFFFF.
             yield return new object[] { "4CCCCCCCCCCCCCCC", "5999999999999999", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true }; // The child range, from 4CCCCCCCCCCCCCCC to just before 5999999999999999, fits entirely within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends just before 7FFFFFFFFFFFFFFF.
             yield return new object[] { "5999999999999999", "6666666666666666", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true }; // The child range, from 5999999999999999 to just before 6666666666666666, fits entirely within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends just before 7FFFFFFFFFFFFFFF.
             yield return new object[] { "6666666666666666", "7333333333333333", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true }; // The child range, from 6666666666666666 to just before 7333333333333333, fits entirely within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends just before 7FFFFFFFFFFFFFFF.
-            yield return new object[] { "7333333333333333", "7FFFFFFFFFFFFFFF", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, false }; // The child range, from 7333333333333333 to just before 7FFFFFFFFFFFFFFF, does not fit within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends just before 7FFFFFFFFFFFFFFF.
-            yield return new object[] { "", "3FFFFFFFFFFFFFFF", false, "", "3FFFFFFFFFFFFFFF", false, false }; // The child range, starting from a lower bound minimum and ending just before 3FFFFFFFFFFFFFFF, does not fit within the parent range, which starts from a lower bound minimum and ends just before 3FFFFFFFFFFFFFFF.
+            yield return new object[] { "7333333333333333", "7FFFFFFFFFFFFFFF", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", false, true }; // The child range, from 7333333333333333 to just before 7FFFFFFFFFFFFFFF, does fit within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends just before 7FFFFFFFFFFFFFFF.
+            yield return new object[] { "", "3FFFFFFFFFFFFFFF", false, "", "3FFFFFFFFFFFFFFF", false, true }; // The child range, starting from a lower bound minimum and ending just before 3FFFFFFFFFFFFFFF, does not fit within the parent range, which starts from a lower bound minimum and ends just before 3FFFFFFFFFFFFFFF.
 
         }
 
@@ -660,14 +660,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// ]]>
         /// </summary>
         [TestMethod]
-        [Owner("philipthomas")]
-        [DataRow(true, true, "A", "Z", true, true, "A", "Z", true, DisplayName = "Given both parent and child ranges are fully inclusive and equal, child is a subset")]
-        [DataRow(true, true, "A", "Z", true, false, "A", "Y", true, DisplayName = "Given parent range is fully inclusive and child range has an exclusive max, child is a subset")]
-        [DataRow(true, false, "A", "Y", true, true, "A", "Z", false, DisplayName = "Given parent range has an exclusive max but child range exceeds the parent’s max with an inclusive bound, child is not a subset")]
-        [DataRow(true, false, "A", "Y", true, false, "A", "Y", false, DisplayName = "Given both parent and child ranges share an inclusive min and exclusive max, child is not a subset")]
-        [DataRow(true, true, "A", "A", true, true, "A", "A", true, DisplayName = "Given both parent and child ranges are fully inclusive and equal, and min and max range is the same, child is a subset")]
-        [DataRow(true, true, "A", "A", true, true, "B", "B", false, DisplayName = "Given both parent and child ranges are fully inclusive and equal, and min and max range are not the same, child is not a subset")]
-        [DataRow(true, false, "A", "Z", true, true, "A", "Z", false, DisplayName = "Given parent range has an exclusive max and child range is fully inclusive, and both have the same min and max values, child is not a subset")]
+        [Owner("philipthomas-MSFT")]
+        [DataRow(true, true, "A", "Z", true, true, "A", "Z", true, DisplayName = "(true, true) Given both parent and child ranges are fully inclusive and equal, child is a subset")]
+        [DataRow(true, true, "A", "Z", true, false, "A", "Y", true, DisplayName = "(true, false) Given parent range is fully inclusive and child range has an exclusive max, child is a subset")]
+        [DataRow(true, false, "A", "Y", true, true, "A", "Z", false, DisplayName = "(false, true) Given parent range has an exclusive max but child range exceeds the parent’s max with an inclusive bound, child is not a subset")]
+        [DataRow(true, false, "A", "Y", true, false, "A", "Y", true, DisplayName = "(false, false) Given both parent and child ranges share an inclusive min and exclusive max, child is a subset")]
+        [DataRow(true, true, "A", "A", true, true, "A", "A", true, DisplayName = "(true, true) Given both parent and child ranges are fully inclusive and equal, and min and max range is the same, child is a subset")]
+        [DataRow(true, true, "A", "A", true, true, "B", "B", false, DisplayName = "(true, true) Given both parent and child ranges are fully inclusive and equal, and min and max range are not the same, child is not a subset")]
+        [DataRow(true, false, "A", "Z", true, true, "A", "Z", false, DisplayName = "(false, true) Given parent range has an exclusive max and child range is fully inclusive, and both have the same min and max values, child is not a subset")]
+        [DataRow(true, false, "A", "W", true, false, "A", "Y", false, DisplayName = "(false, false) Given both parent and child ranges have inclusive min and exclusive max, and child’s max is less than parent’s max, child is a subset")]
+        [DataRow(true, false, "A", "Y", true, false, "A", "W", true, DisplayName = "(false, false) Given both parent and child ranges have inclusive min and exclusive max, and child’s max is less than parent’s max, child is a subset")]
         public void GivenParentRangeWhenChildRangeComparedThenValidateIfSubset(
             bool parentIsMinInclusive,
             bool parentIsMaxInclusive,
