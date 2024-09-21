@@ -1788,7 +1788,6 @@ namespace Microsoft.Azure.Cosmos
         ///   - Any exceptions related to document client errors are caught, and a `CosmosException` is thrown, wrapping the original `DocumentClientException`.
         ///
         /// This method is useful for determining if a smaller, more granular feed range (child) is fully contained within a broader feed range (parent), which is a common operation in distributed systems to manage partitioned data.
-        ///
         /// </summary>
         /// <param name="parentFeedRange">The feed range representing the parent range.</param>
         /// <param name="childFeedRange">The feed range representing the child range.</param>
