@@ -30,12 +30,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\src\FaultInjection.csproj" />
+    <ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
 	<SignAssembly>true</SignAssembly>
     <DelaySign>true</DelaySign>
-	<AssemblyOriginatorKeyFile>..\..\..\..\testkey.snk</AssemblyOriginatorKeyFile>
+	<AssemblyOriginatorKeyFile>..\..\..\testkey.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

@@ -79,18 +79,22 @@ namespace Microsoft.Azure.Cosmos.Handlers
             await request.AssertPartitioningDetailsAsync(this.client, cancellationToken, request.Trace);
             this.FillMultiMasterContext(request);
 
-            AvailabilityStrategy strategy = this.AvailabilityStrategy(request);
-            
-            if (strategy != null && strategy.Enabled())
-            {
-                return await strategy.ExecuteAvailabilityStrategyAsync(
+            AvailabilityStrategyInternal strategy = this.AvailabilityStrategy(request);
+
+            ResponseMessage response = strategy != null && strategy.Enabled()
+                ? await strategy.ExecuteAvailabilityStrategyAsync(
                     this.BaseSendAsync,
                     this.client,
                     request,
-                    cancellationToken);
+                    cancellationToken)
+                : await this.BaseSendAsync(request, cancellationToken);
+
+            if (request.RequestOptions?.ExcludeRegions != null)
+            {
+                ((CosmosTraceDiagnostics)response.Diagnostics).Value.AddOrUpdateDatum("ExcludedRegions", request.RequestOptions.ExcludeRegions);
             }
 
-            return await this.BaseSendAsync(request, cancellationToken);
+            return response;
         }
 
         /// <summary>
@@ -99,23 +103,24 @@ namespace Microsoft.Azure.Cosmos.Handlers
         /// </summary>
         /// <param name="request"></param>
         /// <returns>whether the request should be a parallel hedging request.</returns>
-        public AvailabilityStrategy AvailabilityStrategy(RequestMessage request)
+        public AvailabilityStrategyInternal AvailabilityStrategy(RequestMessage request)
         {
-            return request.RequestOptions?.AvailabilityStrategy
+            AvailabilityStrategy strategy = request.RequestOptions?.AvailabilityStrategy
                     ?? this.client.ClientOptions.AvailabilityStrategy;
+
+            if (strategy == null)
+            {
+                return null;
+            }
+
+            return strategy as AvailabilityStrategyInternal;
         }
 
         public virtual async Task<ResponseMessage> BaseSendAsync(
             RequestMessage request,
             CancellationToken cancellationToken)
         {
-            ResponseMessage response = await base.SendAsync(request, cancellationToken);
-            if (request.RequestOptions?.ExcludeRegions != null)
-            {
-                ((CosmosTraceDiagnostics)response.Diagnostics).Value.AddOrUpdateDatum("ExcludedRegions", request.RequestOptions.ExcludeRegions);
-            }
-
-            return response;
+            return await base.SendAsync(request, cancellationToken);
         }
 
         public virtual async Task<T> SendAsync<T>(

@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
 
     // This class acts as a wrapper for environments that use SynchronizationContext.
     internal sealed class ConflictsInlineCore : ConflictsCore
@@ -31,7 +32,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Delete,
                 requestOptions: null,
                 task: (trace) => base.DeleteAsync(conflict, partitionKey, trace, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.DeleteConflict, (response) => new OpenTelemetryResponse(response)));
         }
 
         public override FeedIterator GetConflictQueryStreamIterator(
@@ -94,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Read,
                 requestOptions: null,
                 task: (trace) => base.ReadCurrentAsync<T>(cosmosConflict, partitionKey, trace, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<T>(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.ReadConflict, (response) => new OpenTelemetryResponse<T>(response)));
         }
 
         public override T ReadConflictContent<T>(ConflictProperties cosmosConflict)

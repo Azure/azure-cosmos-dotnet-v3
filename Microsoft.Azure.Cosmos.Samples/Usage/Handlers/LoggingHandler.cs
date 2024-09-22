@@ -14,7 +14,9 @@
         private readonly TelemetryClient telemetryClient;
         public LoggingHandler()
         {
+#pragma warning disable CS0618 
             this.telemetryClient = new TelemetryClient();
+#pragma warning restore CS0618 
         }
 
         public override async Task<ResponseMessage> SendAsync(
@@ -24,7 +26,7 @@
 
             using (Microsoft.ApplicationInsights.Extensibility.IOperationHolder<RequestTelemetry> operation = this.telemetryClient.StartOperation<RequestTelemetry>("CosmosDBRequest"))
             {
-                this.telemetryClient.TrackTrace($"{request.Method.Method} - {request.RequestUri.ToString()}");
+                this.telemetryClient.TrackTrace($"{request.Method.Method} - {request.RequestUri}");
                 ResponseMessage response = await base.SendAsync(request, cancellationToken);
 
                 operation.Telemetry.ResponseCode = ((int)response.StatusCode).ToString();
