@@ -71,7 +71,7 @@
         {
             this.container = this.database.GetContainer(CosmosMultiRegionDiagnosticsTests.containerName);
 
-            FeedResponse<AvailabilityStrategyTestObject> itemResponse = await this.container.ReadManyItemsAsync<AvailabilityStrategyTestObject>(
+            FeedResponse<AvailabilityStrategyTestObject> feedResonse = await this.container.ReadManyItemsAsync<AvailabilityStrategyTestObject>(
                             new List<(string, PartitionKey)>()
                             {
                             ("testId", new PartitionKey("pk")),
@@ -85,7 +85,7 @@
                 });
 
             List<string> excludeRegionsList;
-            CosmosTraceDiagnostics traceDiagnostic = itemResponse.Diagnostics as CosmosTraceDiagnostics;
+            CosmosTraceDiagnostics traceDiagnostic = feedResonse.Diagnostics as CosmosTraceDiagnostics;
             traceDiagnostic.Value.Data.TryGetValue("ExcludedRegions", out object excludeRegionObject);
             excludeRegionsList = excludeRegionObject as List<string>;
             Assert.IsTrue(excludeRegionsList.Contains("North Central US"));
