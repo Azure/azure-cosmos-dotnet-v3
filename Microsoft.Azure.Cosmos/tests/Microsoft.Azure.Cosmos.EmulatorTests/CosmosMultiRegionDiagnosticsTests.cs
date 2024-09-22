@@ -67,6 +67,33 @@
 
         [TestMethod]
         [TestCategory("MultiRegion")]
+        public async Task ExcludeRegionWithReadManyDiagnosticsTest()
+        {
+            this.container = this.database.GetContainer(CosmosMultiRegionDiagnosticsTests.containerName);
+
+            FeedResponse<AvailabilityStrategyTestObject> itemResponse = await this.container.ReadManyItemsAsync<AvailabilityStrategyTestObject>(
+                            new List<(string, PartitionKey)>()
+                            {
+                            ("testId", new PartitionKey("pk")),
+                            ("testId2", new PartitionKey("pk2")),
+                            ("testId3", new PartitionKey("pk3")),
+                            ("testId4", new PartitionKey("pk4"))
+                            },
+                new ReadManyRequestOptions()
+                {
+                    ExcludeRegions = new List<string>() { "North Central US", "East US" }
+                });
+
+            List<string> excludeRegionsList;
+            CosmosTraceDiagnostics traceDiagnostic = itemResponse.Diagnostics as CosmosTraceDiagnostics;
+            traceDiagnostic.Value.Data.TryGetValue("ExcludedRegions", out object excludeRegionObject);
+            excludeRegionsList = excludeRegionObject as List<string>;
+            Assert.IsTrue(excludeRegionsList.Contains("North Central US"));
+            Assert.IsTrue(excludeRegionsList.Contains("East US"));
+        }
+
+        [TestMethod]
+        [TestCategory("MultiRegion")]
         public async Task HedgeNestingDiagnosticsTest()
         {
             FaultInjectionRule responseDelay = new FaultInjectionRuleBuilder(
