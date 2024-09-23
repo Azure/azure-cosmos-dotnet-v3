@@ -661,15 +661,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// </summary>
         [TestMethod]
         [Owner("philipthomas-MSFT")]
-        [DataRow(true, true, "A", "Z", true, true, "A", "Z", true, DisplayName = "(true, true) Given both parent and child ranges are fully inclusive and equal, child is a subset")]
-        [DataRow(true, true, "A", "Z", true, false, "A", "Y", true, DisplayName = "(true, false) Given parent range is fully inclusive and child range has an exclusive max, child is a subset")]
-        [DataRow(true, false, "A", "Y", true, true, "A", "Z", false, DisplayName = "(false, true) Given parent range has an exclusive max but child range exceeds the parent’s max with an inclusive bound, child is not a subset")]
-        [DataRow(true, false, "A", "Y", true, false, "A", "Y", true, DisplayName = "(false, false) Given both parent and child ranges share an inclusive min and exclusive max, child is a subset")]
-        [DataRow(true, true, "A", "A", true, true, "A", "A", true, DisplayName = "(true, true) Given both parent and child ranges are fully inclusive and equal, and min and max range is the same, child is a subset")]
-        [DataRow(true, true, "A", "A", true, true, "B", "B", false, DisplayName = "(true, true) Given both parent and child ranges are fully inclusive and equal, and min and max range are not the same, child is not a subset")]
-        [DataRow(true, false, "A", "Z", true, true, "A", "Z", false, DisplayName = "(false, true) Given parent range has an exclusive max and child range is fully inclusive, and both have the same min and max values, child is not a subset")]
-        [DataRow(true, false, "A", "W", true, false, "A", "Y", false, DisplayName = "(false, false) Given both parent and child ranges have inclusive min and exclusive max, and child’s max is less than parent’s max, child is a subset")]
-        [DataRow(true, false, "A", "Y", true, false, "A", "W", true, DisplayName = "(false, false) Given both parent and child ranges have inclusive min and exclusive max, and child’s max is less than parent’s max, child is a subset")]
+        [DataRow(true, true, "A", "Z", true, true, "A", "Z", true, DisplayName = "(true, true) Given both parent and child ranges (A to Z) are fully inclusive and equal, child is a subset")]
+        [DataRow(true, true, "A", "A", true, true, "A", "A", true, DisplayName = "(true, true) Given both parent and child ranges (A to A) are fully inclusive and equal, and min and max range is the same, child is a subset")]
+        [DataRow(true, true, "A", "A", true, true, "B", "B", false, DisplayName = "(true, true) Given both parent and child ranges are fully inclusive but min and max ranges are not the same (A to A, B to B), child is not a subset")]
+        [DataRow(true, true, "B", "B", true, true, "A", "A", false, DisplayName = "(true, true) Given parent range (B to B) is fully inclusive and child range (A to A) is fully inclusive, child is not a subset")]
+        [DataRow(true, true, "A", "Z", true, false, "A", "Y", true, DisplayName = "(true, false) Given parent range (A to Z) is fully inclusive and child range (A to Y) has an exclusive max, child is a subset")]
+        [DataRow(true, true, "A", "Y", true, false, "A", "Z", false, DisplayName = "(true, false) Given parent range (A to Y) is fully inclusive and child range (A to Z) has an exclusive max, child is not a subset")]
+        [DataRow(true, true, "A", "Z", true, false, "A", "Z", true, DisplayName = "(true, false) Given parent range (A to Z) is fully inclusive and child range (A to Z) has an exclusive max, child is a subset")]
+        [DataRow(true, false, "A", "Z", true, true, "A", "Y", true, DisplayName = "(false, true) Given parent range (A to Z) has an exclusive max and child range (A to Y) is fully inclusive, child is a subset")]
+        [DataRow(true, false, "A", "Y", true, true, "A", "Z", false, DisplayName = "(false, true) Given parent range (A to Y) has an exclusive max but child range (A to Z) exceeds the parent’s max with an inclusive bound, child is not a subset")]
+        [DataRow(true, false, "A", "Z", true, true, "A", "Z", false, DisplayName = "(false, true) Given parent range (A to Z) has an exclusive max and child range (A to Z) is fully inclusive, child is not a subset")]
+        [DataRow(true, false, "A", "Y", true, false, "A", "Y", true, DisplayName = "(false, false) Given parent range (A to Y) is inclusive at min and exclusive at max, and child range (A to Y) is inclusive at min and exclusive at max, child is a subset")]
+        [DataRow(true, false, "A", "W", true, false, "A", "Y", false, DisplayName = "(false, false) Given parent range (A to W) is inclusive at min and exclusive at max, and child range (A to Y) is inclusive at min and exclusive at max, child is not a subset")]
+        [DataRow(true, false, "A", "Y", true, false, "A", "W", true, DisplayName = "(false, false) Given parent range (A to Y) is inclusive at min and exclusive at max, and child range (A to W) is inclusive at min and exclusive at max, child is a subset")]
         public void GivenParentRangeWhenChildRangeComparedThenValidateIfSubset(
             bool parentIsMinInclusive,
             bool parentIsMaxInclusive,
