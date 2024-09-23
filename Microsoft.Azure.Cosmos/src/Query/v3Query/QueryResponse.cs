@@ -171,7 +171,11 @@ namespace Microsoft.Azure.Cosmos
             this.IndexUtilizationText = ResponseMessage.DecodeIndexMetrics(
                 responseMessageHeaders, 
                 isBase64Encoded: false);
-            
+
+            this.QueryAdviceText = (responseMessageHeaders?.QueryAdvice != null)
+                ? new Lazy<string>(() => System.Web.HttpUtility.UrlDecode(responseMessageHeaders.QueryAdvice, Encoding.UTF8))
+                : null;
+
             this.RequestMessage = requestMessage;
         }
 
@@ -192,6 +196,10 @@ namespace Microsoft.Azure.Cosmos
         private Lazy<string> IndexUtilizationText { get; }
 
         public override string IndexMetrics => this.IndexUtilizationText?.Value;
+
+        private Lazy<string> QueryAdviceText { get; }
+
+        public override string QueryAdvice => this.QueryAdviceText?.Value;
 
         public override IEnumerator<T> GetEnumerator()
         {

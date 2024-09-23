@@ -85,6 +85,10 @@ namespace Microsoft.Azure.Cosmos
 
             this.IndexUtilizationText = ResponseMessage.DecodeIndexMetrics(this.Headers, isBase64Encoded: false);
 
+            this.QueryAdviceText = (this.Headers?.QueryAdvice != null)
+                ? new Lazy<string>(() => System.Web.HttpUtility.UrlDecode(this.Headers.QueryAdvice, Encoding.UTF8))
+                : null;
+
             if (requestMessage != null && requestMessage.Trace != null)
             {
                 this.Trace = requestMessage.Trace;
@@ -142,6 +146,18 @@ namespace Microsoft.Azure.Cosmos
         /// The index utilization metrics.
         /// </value>
         public string IndexMetrics => this.IndexUtilizationText?.Value;
+
+        private Lazy<string> QueryAdviceText { get; }
+
+        /// <summary>
+        /// Gets the Query Advice in the current <see cref="ResponseMessage"/> to be used for debugging purposes. 
+        /// It's applicable to query response only. Other feed response will return null for this field.
+        /// This result is only available if QueryRequestOptions.PopulateQueryAdvice is set to true.
+        /// </summary>
+        /// <value>
+        /// The index utilization metrics.
+        /// </value>
+        public string QueryAdvice => this.QueryAdviceText?.Value;
 
         /// <summary>
         /// Gets the original request message

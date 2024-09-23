@@ -115,6 +115,18 @@ namespace Microsoft.Azure.Cosmos
         public bool? PopulateIndexMetrics { get; set; }
 
         /// <summary>
+        /// Gets or sets the <see cref="PopulateQueryAdvice"/> request option for document query requests in the Azure Cosmos DB service.
+        /// </summary>
+        /// <remarks>
+        /// <para> 
+        /// PopulateQueryAdvice is used to obtain the query advice to understand aspect of the query that can be optimized.
+        /// The results will be displayed in FeedResponse.QueryAdvice. Please note that this options will incur overhead, so it should be 
+        /// enabled only when debugging queries.
+        /// </para>
+        /// </remarks>
+        public bool? PopulateQueryAdvice { get; set; }
+
+        /// <summary>
         /// Gets or sets the consistency level required for the request in the Azure Cosmos DB service.
         /// </summary>
         /// <value>
@@ -272,6 +284,11 @@ namespace Microsoft.Azure.Cosmos
             if (this.PopulateIndexMetrics.HasValue)
             {
                 request.Headers.CosmosMessageHeaders.Add(HttpConstants.HttpHeaders.PopulateIndexMetricsV2, this.PopulateIndexMetrics.ToString());
+            }
+
+            if (this.PopulateQueryAdvice.HasValue)
+            {
+                request.Headers.CosmosMessageHeaders.Add(HttpConstants.HttpHeaders.PopulateQueryAdvice, this.PopulateQueryAdvice.ToString());
             }
 
             DedicatedGatewayRequestOptions.PopulateMaxIntegratedCacheStalenessOption(this.DedicatedGatewayRequestOptions, request);
