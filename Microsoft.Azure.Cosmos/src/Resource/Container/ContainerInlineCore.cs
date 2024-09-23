@@ -577,6 +577,9 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default)
         {
+            // TODO: The current use of Documents.OperationType.ReadFeed is not a precise fit for this operation.
+            // A more suitable or generic Documents.OperationType should be created in the future to accurately represent this action.
+
             return this.ClientContext.OperationHelperAsync(
                 operationName: nameof(GetFeedRangesAsync),
                 containerName: this.Id,
@@ -680,6 +683,9 @@ namespace Microsoft.Azure.Cosmos
             FeedRange childFeedRange,
             CancellationToken cancellationToken = default)
         {
+            // TODO: The current use of Documents.OperationType.ReadFeed is not a precise fit for this operation.
+            // A more suitable or generic Documents.OperationType should be created in the future to accurately represent this action.
+
             return this.ClientContext.OperationHelperAsync(
                 operationName: nameof(IsFeedRangePartOfAsync),
                 containerName: this.Id,
