@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics.Metrics;
+    using System.Linq;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.Azure.Cosmos.Telemetry.Collector;
 
     /// <summary>
@@ -70,15 +72,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="dimensions">Key-value pairs representing various metadata about the operation (e.g., container, operation type, consistency level).</param>
         private static void PushOperationLevelMetrics(TelemetryInformation telemetryInformation, KeyValuePair<string, object>[] dimensions)
         {
-            Console.WriteLine("Pushing maxItemCounts " + telemetryInformation.MaxItemCount);
             maxItemCounts ??= new ConcurrentBag<Tuple<int, KeyValuePair<string, object>[]>>();
+            Console.WriteLine($"Pushing [{string.Join(",", maxItemCounts.ToList().Select(item => item.Item1))}] maxItemCounts " + telemetryInformation.MaxItemCount);
             maxItemCounts.Add(new Tuple<int, KeyValuePair<string, object>[]>(Convert.ToInt32(telemetryInformation.MaxItemCount), dimensions));
 
-            Console.WriteLine("Pushing ActualItemCount " + telemetryInformation.ActualItemCount);
+            //Console.WriteLine("Pushing ActualItemCount " + telemetryInformation.ActualItemCount);
             actualItemCounts ??= new ConcurrentBag<Tuple<int, KeyValuePair<string, object>[]>>();
             actualItemCounts.Add(new Tuple<int, KeyValuePair<string, object>[]>(Convert.ToInt32(telemetryInformation.ActualItemCount), dimensions));
 
-            Console.WriteLine("Pushing telemetryInformation.RegionsContactedList.Count " + telemetryInformation.RegionsContactedList.Count);
+            //Console.WriteLine("Pushing telemetryInformation.RegionsContactedList.Count " + telemetryInformation.RegionsContactedList.Count);
             regionsContactedCounts ??= new ConcurrentBag<Tuple<int, KeyValuePair<string, object>[]>>();
             regionsContactedCounts.Add(new Tuple<int, KeyValuePair<string, object>[]>(telemetryInformation.RegionsContactedList.Count, dimensions));
 
@@ -89,28 +91,37 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         public static IEnumerable<Measurement<int>> GetMaxItemCount()
         {
-            foreach (Tuple<int, KeyValuePair<string, object>[]> maxItemCount in maxItemCounts)
+            while (maxItemCounts.Count > 0)
             {
-                Console.WriteLine("Pulling maxItemCounts " + maxItemCount.Item1);
-                yield return new Measurement<int>(maxItemCount.Item1, maxItemCount.Item2);
+                if (maxItemCounts.TryTake(out Tuple<int, KeyValuePair<string, object>[]> maxItemCount))
+                {
+                    Console.WriteLine($"Pulling [{string.Join(",", maxItemCounts.ToList().Select(item => item.Item1))}] maxItemCounts " + maxItemCount.Item1);
+                    yield return new Measurement<int>(maxItemCount.Item1, maxItemCount.Item2);
+                }
             }
         }
 
         public static IEnumerable<Measurement<int>> GetActualItemCount()
         {
-            foreach (Tuple<int, KeyValuePair<string, object>[]> actualItemCount in actualItemCounts)
+            while (actualItemCounts.Count > 0)
             {
-                Console.WriteLine("Pulling actualItemCount " + actualItemCount.Item1);
-                yield return new Measurement<int>(actualItemCount.Item1, actualItemCount.Item2);
+                if (actualItemCounts.TryTake(out Tuple<int, KeyValuePair<string, object>[]> actualItemCount))
+                {
+                    //Console.WriteLine("Pulling actualItemCounts " + actualItemCount.Item1);
+                    yield return new Measurement<int>(actualItemCount.Item1, actualItemCount.Item2);
+                }
             }
         }
 
         public static IEnumerable<Measurement<int>> GetRegionContactedCount()
         {
-            foreach (Tuple<int, KeyValuePair<string, object>[]> regionContactedCount in regionsContactedCounts)
+            while (regionsContactedCounts.Count > 0)
             {
-                Console.WriteLine("Pulling regionContactedCount " + regionContactedCount.Item1);
-                yield return new Measurement<int>(regionContactedCount.Item1, regionContactedCount.Item2);
+                if (regionsContactedCounts.TryTake(out Tuple<int, KeyValuePair<string, object>[]> regionsContactedCount))
+                {
+                    //Console.WriteLine("Pulling regionsContactedCounts " + regionsContactedCount.Item1);
+                    yield return new Measurement<int>(regionsContactedCount.Item1, regionsContactedCount.Item2);
+                }
             }
         }
     }
