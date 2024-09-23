@@ -16,11 +16,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
             Console.WriteLine("\n[Custom Exporter] Exporting metrics:");
 
             int gaugeCount = 0;
-            foreach (var metric in batch)
+            foreach (Metric metric in batch)
             {
                 Console.WriteLine($"Metric: {metric.Name}, Type: {metric.MetricType}");
-
-                foreach (var metricPoint in metric.GetMetricPoints())
+                foreach (MetricPoint metricPoint in metric.GetMetricPoints())
                 {
                     switch (metric.MetricType)
                     {
@@ -41,7 +40,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
                             break;
                     }
                 }
-
             }
 
             Console.WriteLine($"Total gauge values exported: {gaugeCount}");
