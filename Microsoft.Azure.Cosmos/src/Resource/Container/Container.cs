@@ -1759,35 +1759,6 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Determines whether the given child feed range is a part of the specified parent feed range.
         /// This method performs a comparison between the effective ranges of the child and parent feed ranges, determining if the child is fully contained within the parent.
-        ///
-        /// - **Parent and Child Feed Ranges**: Both `parentFeedRange` and `childFeedRange` are representations of logical partitions or ranges within the Cosmos DB container.
-        ///   - These ranges are typically used for operations such as querying or reading data within a specified range of partition key values.
-        ///
-        /// - **Validation and Parsing**:
-        ///   - The method begins by validating that neither `parentFeedRange` nor `childFeedRange` is null. If either is null, an `ArgumentNullException` is thrown.
-        ///   - It then checks whether each feed range is of type `FeedRangeInternal`. If not, it attempts to parse the JSON representation of the feed range into the internal format (`FeedRangeInternal`).
-        ///   - If the parsing fails, an `ArgumentException` is thrown, indicating that the feed range is of an unknown or unsupported format.
-        ///
-        /// - **Partition Key and Routing Map Setup**:
-        ///   - The partition key definition for the container is retrieved asynchronously using `GetPartitionKeyDefinitionAsync`, as it is required to identify the partition structure.
-        ///   - The method also retrieves the container's resource ID (`containerRId`) and the partition key range routing map from the `IRoutingMapProvider`. These are essential for determining the actual partition key ranges that correspond to the feed ranges.
-        ///
-        /// - **Effective Ranges**:
-        ///   - The method uses `GetEffectiveRangesAsync` to retrieve the actual ranges of partition keys that each feed range represents.
-        ///   - These effective ranges are returned as lists of `Range`, which represent the partition key boundaries.
-        ///
-        /// - **Inclusivity Consistency**:
-        ///   - Before performing the subset comparison, the method checks that the inclusivity of the boundary conditions (`IsMinInclusive` and `IsMaxInclusive`) is consistent across all ranges in both the parent and child feed ranges.
-        ///   - This ensures that the comparison between ranges is logically correct and avoids potential mismatches due to differing boundary conditions.
-        ///
-        /// - **Subset Check**:
-        ///   - Finally, the method calls `ContainerCore.IsSubset`, which checks if the merged effective range of the child feed range is fully contained within the merged effective range of the parent feed range.
-        ///   - Merging the ranges ensures that the comparison accounts for multiple ranges and considers the full span of each feed range.
-        ///
-        /// - **Exception Handling**:
-        ///   - Any exceptions related to document client errors are caught, and a `CosmosException` is thrown, wrapping the original `DocumentClientException`.
-        ///
-        /// This method is useful for determining if a smaller, more granular feed range (child) is fully contained within a broader feed range (parent), which is a common operation in distributed systems to manage partitioned data.
         /// </summary>
         /// <param name="parentFeedRange">The feed range representing the parent range.</param>
         /// <param name="childFeedRange">The feed range representing the child range.</param>
