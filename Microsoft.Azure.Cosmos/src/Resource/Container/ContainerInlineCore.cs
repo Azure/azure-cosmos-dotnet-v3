@@ -680,10 +680,16 @@ namespace Microsoft.Azure.Cosmos
             FeedRange childFeedRange,
             CancellationToken cancellationToken = default)
         {
-            return base.IsFeedRangePartOfAsync(
-                parentFeedRange: parentFeedRange,
-                childFeedRange: childFeedRange,
-                cancellationToken: cancellationToken);
+            return this.ClientContext.OperationHelperAsync(
+                operationName: nameof(IsFeedRangePartOfAsync),
+                containerName: this.Id,
+                databaseName: this.Database.Id,
+                operationType: Documents.OperationType.ReadFeed,
+                requestOptions: null,
+                task: (trace) => base.IsFeedRangePartOfAsync(
+                    parentFeedRange: parentFeedRange,
+                    childFeedRange: childFeedRange,
+                    cancellationToken: cancellationToken));
         }
     }
 }
