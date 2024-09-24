@@ -1420,7 +1420,8 @@ namespace Microsoft.Azure.Cosmos
         /// If there are any inconsistencies in the inclusivity/exclusivity of the ranges, it throws an `InvalidOperationException`.
         ///
         /// The logic works as follows:
-        /// - The method starts by checking the first range in the list to establish a baseline for comparison.
+        /// - The method assumes that the `ranges` list is never null.
+        /// - It starts by checking the first range in the list to establish a baseline for comparison.
         /// - It then iterates over the remaining ranges, comparing their `IsMinInclusive` and `IsMaxInclusive` values with those of the first range.
         /// - If any range differs from the first in terms of inclusivity or exclusivity (either for the min or max boundary), the method sets a flag (`areAnyDifferent`) and exits the loop early.
         /// - If any differences are found, the method gathers the distinct `IsMinInclusive` and `IsMaxInclusive` values found across all ranges.
@@ -1451,15 +1452,14 @@ namespace Microsoft.Azure.Cosmos
 {
             bool areAnyDifferent = false;
 
-            if (ranges.FirstOrDefault() is var firstRange)
+            Range<string> firstRange = ranges[0];
+
+            foreach (Documents.Routing.Range<string> range in ranges.Skip(1))
             {
-                foreach (Documents.Routing.Range<string> range in ranges.Skip(1))
+                if (range.IsMinInclusive != firstRange.IsMinInclusive || range.IsMaxInclusive != firstRange.IsMaxInclusive)
                 {
-                    if (range.IsMinInclusive != firstRange.IsMinInclusive || range.IsMaxInclusive != firstRange.IsMaxInclusive)
-                    {
-                        areAnyDifferent = true;
-                        break;
-                    }
+                    areAnyDifferent = true;
+                    break;
                 }
             }
 
