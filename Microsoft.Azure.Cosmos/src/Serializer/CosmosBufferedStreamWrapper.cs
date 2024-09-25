@@ -231,27 +231,5 @@ namespace Microsoft.Azure.Cosmos.Serializer
                 this.hasReadFirstByte = true;
             }
         }
-
-        internal class ObjectPool<T>
-        {
-            private readonly ConcurrentBag<T> Objects;
-            private readonly Func<T> ObjectGenerator;
-
-            public ObjectPool(Func<T> objectGenerator)
-            {
-                this.ObjectGenerator = objectGenerator ?? throw new ArgumentNullException(nameof(objectGenerator));
-                this.Objects = new ConcurrentBag<T>();
-            }
-
-            public T Get()
-            {
-                return this.Objects.TryTake(out T item) ? item : this.ObjectGenerator();
-            }
-
-            public void Return(T item)
-            {
-                this.Objects.Add(item);
-            }
-        }
     }
 }
