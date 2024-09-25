@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal static class OpenTelemetryMetrics
     {
-        internal static readonly Meter CosmosMeter = new Meter("Azure.Cosmos.Client");
+        internal static readonly Meter CosmosMeter = new Meter("Azure.Cosmos.Client", "1.0.0");
 
         internal static readonly Counter<int> NumberOfOperationCallCounter =
             CosmosMeter.CreateCounter<int>(name: "cosmos.client.op.calls", 
@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal static readonly Histogram<double> RequestUnitsHistogram =
             CosmosMeter.CreateHistogram<double>(name: "cosmos.client.op.RUs", 
-                unit: "#", 
+                unit: "# RU", 
                 description: "Total request units per operation (sum of RUs for all requested needed when processing an operation)");
 
         internal static readonly ObservableGauge<int> maxItemGauge = 
@@ -38,13 +38,13 @@ namespace Microsoft.Azure.Cosmos
                unit: "#",
                description: "For feed operations (query, readAll, readMany, change feed) and batch operations this meter capture the requested maxItemCount per page/request");
 
-        internal static readonly ObservableGauge<int> ActualItemCounter =
+        internal static readonly ObservableGauge<int> ActualItemGauge =
             CosmosMeter.CreateObservableGauge<int>(name: "cosmos.client.op.actualItemCount",
                observeValues: () => OpenTelemetryMetricsCollector.GetActualItemCount(),
                unit: "#", 
                description: "For feed operations (query, readAll, readMany, change feed) batch operations this meter capture the actual item count in responses from the service");
 
-        internal static readonly ObservableGauge<int> RegionsContactedCounter =
+        internal static readonly ObservableGauge<int> RegionsContactedGauge =
             CosmosMeter.CreateObservableGauge<int>(name: "cosmos.client.op.regionsContacted",
                observeValues: () => OpenTelemetryMetricsCollector.GetRegionContactedCount(),
                unit: "# regions", 
