@@ -442,7 +442,7 @@ namespace Microsoft.Azure.Cosmos
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Read,
-                requestOptions: null,
+                requestOptions: readManyRequestOptions,
                 task: (trace) => base.ReadManyItemsStreamAsync(items, trace, readManyRequestOptions, cancellationToken),
                 openTelemetry: new (OpenTelemetryConstants.Operations.ReadManyItems, (response) => new OpenTelemetryResponse(responseMessage: response)));
         }
@@ -457,7 +457,7 @@ namespace Microsoft.Azure.Cosmos
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Read,
-                requestOptions: null,
+                requestOptions: readManyRequestOptions,
                 task: (trace) => base.ReadManyItemsAsync<T>(items, trace, readManyRequestOptions, cancellationToken),
                 openTelemetry: new (OpenTelemetryConstants.Operations.ReadManyItems, (response) => new OpenTelemetryResponse<T>(responseMessage: response)));
         }
