@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private readonly OperationType operationType = OperationType.Invalid;
         private readonly string connectionModeCache = null;
 
-        private readonly ShowQueryMode showQueryMode = ShowQueryMode.NONE;
+        private readonly QueryTextMode queryTextMode = QueryTextMode.NONE;
         private OpenTelemetryAttributes response = null;
 
         /// <summary>
@@ -61,14 +61,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             OperationType operationType, 
             CosmosClientContext clientContext, 
             CosmosThresholdOptions config,
-            ShowQueryMode showQueryMode)
+            QueryTextMode queryTextMode)
         {
             this.scope = scope;
             this.config = config;
 
             this.operationType = operationType;
             this.connectionModeCache = Enum.GetName(typeof(ConnectionMode), clientContext.ClientOptions.ConnectionMode);
-            this.showQueryMode = showQueryMode;
+            this.queryTextMode = queryTextMode;
 
             if (scope.IsEnabled)
             {
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             Documents.OperationType operationType,
             CosmosClientContext clientContext,
             CosmosThresholdOptions config, 
-            ShowQueryMode showQueryMode)
+            QueryTextMode queryTextMode)
         {
             return new OpenTelemetryCoreRecorder(
                         operationScope,
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         operationType,
                         clientContext,
                         config,
-                        showQueryMode);
+                        queryTextMode);
         }
 
         public bool IsEnabled => this.scope.IsEnabled;
@@ -252,9 +252,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                     if (this.response.QuerySpec is not null)
                     {
-                        if (this.showQueryMode == ShowQueryMode.ALL || 
-                            (this.showQueryMode != ShowQueryMode.NONE && this.response.QuerySpec.ShouldSerializeParameters() && 
-                             this.showQueryMode == ShowQueryMode.PARAMETERIZED_ONLY))
+                        if (this.queryTextMode == QueryTextMode.ALL || 
+                            (this.queryTextMode != QueryTextMode.NONE && this.response.QuerySpec.ShouldSerializeParameters() && 
+                             this.queryTextMode == QueryTextMode.PARAMETERIZED_ONLY))
                         {
                             this.scope.AddAttribute(OpenTelemetryAttributeKeys.QueryText, this.response.QuerySpec?.QueryText);
                         }

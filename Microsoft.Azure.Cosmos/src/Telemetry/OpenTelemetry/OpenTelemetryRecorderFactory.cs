@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 {
                     scope.SetDisplayName($"{operationName} {containerName}");
 
-                    ShowQueryMode showQueryMode = GetShowQueryMode(requestOptions, clientContext);
+                    QueryTextMode queryTextMode = GetQueryTextMode(requestOptions, clientContext);
 
                     openTelemetryRecorder = OpenTelemetryCoreRecorder.CreateOperationLevelParentActivity(
                         operationScope: scope,
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         operationType: operationType,
                         clientContext: clientContext,
                         config: requestOptions?.CosmosThresholdOptions ?? clientContext.ClientOptions?.CosmosClientTelemetryOptions.CosmosThresholdOptions,
-                        showQueryMode: showQueryMode);
+                        queryTextMode: queryTextMode);
                 }
 #if !INTERNAL
                 // If there are no listeners at operation level and no parent activity created.
@@ -87,21 +87,21 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             return openTelemetryRecorder;
         }
 
-        private static ShowQueryMode GetShowQueryMode(RequestOptions requestOptions, CosmosClientContext clientContext)
+        private static QueryTextMode GetQueryTextMode(RequestOptions requestOptions, CosmosClientContext clientContext)
         {
-            ShowQueryMode? showQueryMode = null;
-            if (requestOptions is QueryRequestOptions queryRequestOptions && queryRequestOptions.ShowQueryMode.HasValue)
+            QueryTextMode? queryTextMode = null;
+            if (requestOptions is QueryRequestOptions queryRequestOptions && queryRequestOptions.QueryTextMode.HasValue)
             {
-                showQueryMode = queryRequestOptions.ShowQueryMode.Value;
+                queryTextMode = queryRequestOptions.QueryTextMode.Value;
+            }
+            else if (requestOptions is ChangeFeedRequestOptions changeFeedRequestOptions && changeFeedRequestOptions.QueryTextMode.HasValue)
+            {
+                queryTextMode = changeFeedRequestOptions.QueryTextMode.Value;
 
             }
-            else if (requestOptions is ChangeFeedRequestOptions changeFeedRequestOptions && changeFeedRequestOptions.ShowQueryMode.HasValue)
-            {
-                showQueryMode = changeFeedRequestOptions.ShowQueryMode.Value;
 
-            }
-            showQueryMode ??= clientContext.ClientOptions?.CosmosClientTelemetryOptions?.ShowQueryMode ?? ShowQueryMode.NONE;
-            return showQueryMode.Value;
+            queryTextMode ??= clientContext.ClientOptions?.CosmosClientTelemetryOptions?.QueryTextMode ?? QueryTextMode.NONE;
+            return queryTextMode.Value;
         }
     }
 }

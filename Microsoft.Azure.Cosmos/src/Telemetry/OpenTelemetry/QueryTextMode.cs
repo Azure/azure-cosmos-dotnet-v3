@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Defines whether to print query in tracing attributes
     /// </summary>
-    public enum ShowQueryMode
+    public enum QueryTextMode
     {
         /// <summary>
         ///  Do not show query.

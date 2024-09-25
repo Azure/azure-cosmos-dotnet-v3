@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
                         task: (trace) => this.feedIteratorInternal.ReadNextAsync(trace, cancellationToken),
                         openTelemetry: new (this.operationName, (response) =>
                         {
-                            OpenTelemetryResponse openTelemetryResponse = new OpenTelemetryResponse(responseMessage: response, querySpec: this.querySpec);
+                            OpenTelemetryResponse openTelemetryResponse = new OpenTelemetryResponse(responseMessage: response, querySpecFunc: () => this.querySpec);
 
                             if (this.operationType.HasValue)
                             {
