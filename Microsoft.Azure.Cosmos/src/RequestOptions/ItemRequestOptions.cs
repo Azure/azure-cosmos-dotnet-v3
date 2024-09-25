@@ -129,16 +129,15 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Gets or sets the boolean to enable binary response for point operations like Create, Upsert, Read, Patch, and Replace.
-        /// Setting this option to true will cause the response to be in binary format, which can reduce networking and CPU load
-        /// by not sending the resource back over the network and serializing it on the client.
+        /// Setting this option to true will cause the response to be in binary format. This request option will remain internal only
+        /// since the consumer of thie flag will be the internal components of the cosmos db ecosystem.
         /// </summary>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
         /// ItemRequestOptions requestOptions = new ItemRequestOptions() { EnableBinaryResponseOnPointOperations = true };
-        /// ItemResponse itemResponse = await this.container.CreateItemAsync<ToDoActivity>(tests, new PartitionKey(test.status), requestOptions);
-        /// Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
-        /// Assert.IsNotNull(itemResponse.Resource);
+        /// ResponseMessage responseMessage = await container.CreateItemStreamAsync(createStream, new Cosmos.PartitionKey(comment.pk), requestOptions);
+        /// Assert.AreEqual(HttpStatusCode.Created, responseMessage.StatusCode);
         /// ]]>
         /// </code>
         /// </example>

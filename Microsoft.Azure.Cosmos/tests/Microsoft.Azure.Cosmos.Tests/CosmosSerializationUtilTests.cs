@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System.IO;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -101,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         [DataRow("text", "binary", DisplayName = "Validate Text to Binary Conversation.")]
         [DataRow("binary", "text", DisplayName = "Validate Binary to Text Conversation.")]
-        public void TrySerializeStreamToTargetFormat_Success(string expected, string target)
+        public async Task TrySerializeStreamToTargetFormat_Success(string expected, string target)
         {
             // Arrange
             JsonSerializationFormat expectedFormat = expected.Equals("text") ? JsonSerializationFormat.Text : JsonSerializationFormat.Binary;
@@ -113,10 +114,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 : CosmosSerializationUtil.ConvertInputToBinaryStream(json, Newtonsoft.Json.JsonSerializer.Create());
 
             // Act
-            bool result = CosmosSerializationUtil.TrySerializeStreamToTargetFormat(expectedFormat, targetFormat, inputStream, out Stream outputStream);
+            Stream outputStream = await CosmosSerializationUtil.TrySerializeStreamToTargetFormatAsync(expectedFormat, targetFormat, inputStream);
 
             // Assert
-            Assert.IsTrue(result);
             Assert.IsNotNull(outputStream);
             Assert.IsTrue(CosmosSerializationUtil.CheckFirstBufferByte(outputStream, targetFormat, out byte[] binBytes));
             Assert.IsNotNull(binBytes);
@@ -124,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void TrySerializeStreamToTargetFormat_Failure()
+        public async Task TrySerializeStreamToTargetFormat_Failure()
         {
             // Arrange
             string json = "{\"name\":\"test\"}";
@@ -133,10 +133,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             JsonSerializationFormat targetFormat = JsonSerializationFormat.Text;
 
             // Act
-            bool result = CosmosSerializationUtil.TrySerializeStreamToTargetFormat(expectedFormat, targetFormat, inputStream, out Stream outputStream);
+            Stream outputStream = await CosmosSerializationUtil.TrySerializeStreamToTargetFormatAsync(expectedFormat, targetFormat, inputStream);
 
             // Assert
-            Assert.IsFalse(result);
             Assert.IsNull(outputStream);
         }
     }

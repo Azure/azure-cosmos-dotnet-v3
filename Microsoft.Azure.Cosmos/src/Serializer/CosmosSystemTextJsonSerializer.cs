@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Text.Json.Serialization;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Serializer;
 
     /// <summary>
     /// This class provides a default implementation of System.Text.Json Cosmos Linq Serializer.
@@ -49,13 +50,12 @@ namespace Microsoft.Azure.Cosmos
                 return default;
             }
 
-            using (stream)
+            using (CosmosBufferedStreamWrapper bufferedStream = new (stream, shouldDisposeInnerStream: true))
             {
-                if (CosmosSerializationUtil.CheckFirstBufferByte(
-                    stream,
-                    JsonSerializationFormat.Binary,
-                    out byte[] content))
+                if (bufferedStream.GetJsonSerializationFormat() == Json.JsonSerializationFormat.Binary)
                 {
+                    byte[] content = bufferedStream.ReadAll();
+
                     if (CosmosObject.TryCreateFromBuffer(content, out CosmosObject cosmosObject))
                     {
                         return System.Text.Json.JsonSerializer.Deserialize<T>(cosmosObject.ToString(), this.jsonSerializerOptions);
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
                     }
                 }
 
-                return this.DeserializeStream<T>(stream);
+                return this.DeserializeStream<T>(bufferedStream);
             }
         }
 

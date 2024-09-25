@@ -7,9 +7,11 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.IO;
     using System.Text;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Json.Interop;
+    using Microsoft.Azure.Cosmos.Serializer;
     using Newtonsoft.Json.Serialization;
 
     internal static class CosmosSerializationUtil
@@ -42,36 +44,65 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="expectedSerializationFormat">The expected JSON serialization format for the input stream.</param>
         /// <param name="targetSerializationFormat">The desired JSON serialization format for the output stream.</param>
         /// <param name="inputStream">The input stream containing the data to be serialized.</param>
-        /// <param name="outputStream">The output stream containing the serialized data if the conversion is successful.</param>
         /// <returns>Returns true if the input stream is successfully serialized to the target format, otherwise false.</returns>
-        internal static bool TrySerializeStreamToTargetFormat(
+        internal static async Task<Stream> TrySerializeStreamToTargetFormatAsync(
             JsonSerializationFormat? expectedSerializationFormat,
             JsonSerializationFormat? targetSerializationFormat,
-            Stream inputStream,
-            out Stream outputStream)
+            Stream inputStream)
         {
-            outputStream = null;
-
             if (targetSerializationFormat == null ||
                 inputStream == null ||
                 targetSerializationFormat == expectedSerializationFormat)
             {
-                return false;
+                return null;
             }
 
-            if (CosmosSerializationUtil.CheckFirstBufferByte(
+            using (CosmosBufferedStreamWrapper bufferedStream = new (
                 inputStream,
-                expectedSerializationFormat.Value,
-                out byte[] targetContent))
+                shouldDisposeInnerStream: false))
             {
-                outputStream = CosmosSerializationUtil.ConvertToStreamUsingJsonSerializationFormat(
-                    targetContent,
-                    targetSerializationFormat.Value);
+                if (bufferedStream != null
+                    && bufferedStream.CanRead
+                    && bufferedStream.GetJsonSerializationFormat() == expectedSerializationFormat)
+                {
+                    byte[] targetContent = await bufferedStream.ReadAllAsync();
 
-                return true;
+                    if (targetContent != null && targetContent.Length > 0)
+                    {
+                        return CosmosSerializationUtil.ConvertToStreamUsingJsonSerializationFormat(
+                            targetContent,
+                            targetSerializationFormat.Value);
+                    }
+                }
             }
 
-            return false;
+            return null;
+        }
+
+        /// <summary>
+        /// Converts raw bytes to a stream using the specified JSON serialization format.
+        /// </summary>
+        /// <param name="rawBytes">The raw byte array to be converted.</param>
+        /// <param name="format">The desired JSON serialization format.</param>
+        /// <returns>Returns a stream containing the formatted JSON data.</returns>
+        internal static Stream ConvertToStreamUsingJsonSerializationFormat(
+            ReadOnlyMemory<byte> rawBytes,
+            JsonSerializationFormat format)
+        {
+            IJsonWriter writer = JsonWriter.Create(format);
+            if (CosmosObject.TryCreateFromBuffer(rawBytes, out CosmosObject cosmosObject))
+            {
+                cosmosObject.WriteTo(writer);
+            }
+            else
+            {
+                IJsonReader desiredReader = JsonReader.Create(rawBytes);
+                desiredReader.WriteAll(writer);
+            }
+
+            byte[] formattedBytes = writer.GetResult().ToArray();
+
+            return new MemoryStream(formattedBytes, index: 0, count: formattedBytes.Length, writable: true, publiclyVisible: true);
         }
 
         /// <summary>
@@ -125,32 +156,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return false;
-        }
-
-        /// <summary>
-        /// Converts raw bytes to a stream using the specified JSON serialization format.
-        /// </summary>
-        /// <param name="rawBytes">The raw byte array to be converted.</param>
-        /// <param name="format">The desired JSON serialization format.</param>
-        /// <returns>Returns a stream containing the formatted JSON data.</returns>
-        internal static Stream ConvertToStreamUsingJsonSerializationFormat(
-            ReadOnlyMemory<byte> rawBytes,
-            JsonSerializationFormat format)
-        {
-            IJsonWriter writer = JsonWriter.Create(format);
-            if (CosmosObject.TryCreateFromBuffer(rawBytes, out CosmosObject cosmosObject))
-            {
-                cosmosObject.WriteTo(writer);
-            }
-            else
-            {
-                IJsonReader desiredReader = JsonReader.Create(rawBytes);
-                desiredReader.WriteAll(writer);
-            }
-
-            byte[] formattedBytes = writer.GetResult().ToArray();
-
-            return new MemoryStream(formattedBytes, index: 0, count: formattedBytes.Length, writable: true, publiclyVisible: true);
         }
 
         /// <summary>

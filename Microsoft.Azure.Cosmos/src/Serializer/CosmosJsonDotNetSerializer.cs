@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.IO;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Serializer;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Serialization;
 
@@ -87,7 +88,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The object representing the deserialized stream</returns>
         public override T FromStream<T>(Stream stream)
         {
-            using (stream)
+            using (CosmosBufferedStreamWrapper bufferedStream = new (stream, shouldDisposeInnerStream: true))
             {
                 if (typeof(Stream).IsAssignableFrom(typeof(T)))
                 {
@@ -95,11 +96,11 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 JsonSerializer jsonSerializer = this.GetSerializer();
-                if (CosmosSerializationUtil.CheckFirstBufferByte(
-                    stream,
-                    Json.JsonSerializationFormat.Binary,
-                    out byte[] content))
+
+                if (bufferedStream.GetJsonSerializationFormat() == Json.JsonSerializationFormat.Binary)
                 {
+                    byte[] content = bufferedStream.ReadAll();
+
                     using Json.Interop.CosmosDBToNewtonsoftReader reader = new (
                         jsonReader: Json.JsonReader.Create(
                             jsonSerializationFormat: Json.JsonSerializationFormat.Binary,
@@ -109,9 +110,9 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
-                    using (StreamReader sr = new StreamReader(stream))
+                    using (StreamReader sr = new (bufferedStream))
                     {
-                        using (JsonTextReader jsonTextReader = new JsonTextReader(sr))
+                        using (JsonTextReader jsonTextReader = new (sr))
                         {
                             return jsonSerializer.Deserialize<T>(jsonTextReader);
                         }

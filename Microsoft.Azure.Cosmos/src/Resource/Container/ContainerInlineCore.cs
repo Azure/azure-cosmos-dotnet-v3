@@ -392,7 +392,7 @@ namespace Microsoft.Azure.Cosmos
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Patch,
                 requestOptions: requestOptions,
-                task: (trace) => base.PatchItemStreamAsync(id, partitionKey, patchOperations, trace, requestOptions, cancellationToken, targetResponseSerializationFormat: JsonSerializationFormat.Text),
+                task: (trace) => base.PatchItemStreamAsync(id, partitionKey, patchOperations, trace, requestOptions, cancellationToken),
                 openTelemetry: new (OpenTelemetryConstants.Operations.PatchItem, (response) => new OpenTelemetryResponse(response)),
                 resourceType: Documents.ResourceType.Document);
         }

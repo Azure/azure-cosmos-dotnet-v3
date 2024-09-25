@@ -82,7 +82,6 @@ namespace Microsoft.Azure.Cosmos
                 item: item,
                 operationType: OperationType.Create,
                 requestOptions: requestOptions,
-                targetRequestSerializationFormat: ContainerCore.GetTargetRequestSerializationFormat(),
                 trace: trace,
                 cancellationToken: cancellationToken);
 
@@ -121,8 +120,9 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: null,
                 operationType: OperationType.Read,
                 requestOptions: requestOptions,
-                targetRequestSerializationFormat: ContainerCore.GetTargetRequestSerializationFormat(),
                 trace: trace,
+                targetRequestSerializationFormat: ContainerCore.GetTargetRequestSerializationFormat(),
+                targetResponseSerializationFormat: default,
                 cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreateItemResponse<T>(response);
@@ -165,7 +165,6 @@ namespace Microsoft.Azure.Cosmos
                 item: item,
                 operationType: OperationType.Upsert,
                 requestOptions: requestOptions,
-                targetRequestSerializationFormat: ContainerCore.GetTargetRequestSerializationFormat(),
                 trace: trace,
                 cancellationToken: cancellationToken);
 
@@ -216,7 +215,6 @@ namespace Microsoft.Azure.Cosmos
                item: item,
                operationType: OperationType.Replace,
                requestOptions: requestOptions,
-               targetRequestSerializationFormat: ContainerCore.GetTargetRequestSerializationFormat(),
                trace: trace,
                cancellationToken: cancellationToken);
 
@@ -255,8 +253,9 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: null,
                 operationType: OperationType.Delete,
                 requestOptions: requestOptions,
-                targetRequestSerializationFormat: ContainerCore.GetTargetRequestSerializationFormat(),
                 trace: trace,
+                targetRequestSerializationFormat: ContainerCore.GetTargetRequestSerializationFormat(),
+                targetResponseSerializationFormat: default,
                 cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreateItemResponse<T>(response);
@@ -844,7 +843,6 @@ namespace Microsoft.Azure.Cosmos
             T item,
             OperationType operationType,
             ItemRequestOptions requestOptions,
-            JsonSerializationFormat? targetRequestSerializationFormat,
             ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -869,8 +867,9 @@ namespace Microsoft.Azure.Cosmos
                         operationType,
                         requestOptions,
                         trace: trace,
-                        cancellationToken: cancellationToken,
-                        targetRequestSerializationFormat: targetRequestSerializationFormat);
+                        targetRequestSerializationFormat: ContainerCore.GetTargetRequestSerializationFormat(),
+                        targetResponseSerializationFormat: default,
+                        cancellationToken: cancellationToken);
             }
 
             PartitionKeyMismatchRetryPolicy requestRetryPolicy = null;
@@ -884,8 +883,9 @@ namespace Microsoft.Azure.Cosmos
                     itemStream,
                     operationType,
                     requestOptions,
-                    targetRequestSerializationFormat: ContainerCore.GetTargetRequestSerializationFormat(),
                     trace: trace,
+                    targetRequestSerializationFormat: ContainerCore.GetTargetRequestSerializationFormat(),
+                    targetResponseSerializationFormat: default,
                     cancellationToken: cancellationToken);
 
                 if (responseMessage.IsSuccessStatusCode)
@@ -915,9 +915,9 @@ namespace Microsoft.Azure.Cosmos
             OperationType operationType,
             ItemRequestOptions requestOptions,
             ITrace trace,
-            CancellationToken cancellationToken,
             JsonSerializationFormat? targetRequestSerializationFormat,
-            JsonSerializationFormat? targetResponseSerializationFormat = default)
+            JsonSerializationFormat? targetResponseSerializationFormat,
+            CancellationToken cancellationToken)
         {
             if (trace == null)
             {
@@ -933,13 +933,14 @@ namespace Microsoft.Azure.Cosmos
             string resourceUri = this.GetResourceUri(requestOptions, operationType, itemId);
 
             // Convert Text to Binary Stream.
-            if (CosmosSerializationUtil.TrySerializeStreamToTargetFormat(
+            Stream convertedStream = await CosmosSerializationUtil.TrySerializeStreamToTargetFormatAsync(
                 expectedSerializationFormat: JsonSerializationFormat.Text,
                 targetSerializationFormat: targetRequestSerializationFormat,
-                inputStream: streamPayload,
-                outputStream: out Stream outputRequestStream))
+                inputStream: streamPayload);
+
+            if (convertedStream != null)
             {
-                streamPayload = outputRequestStream;
+                streamPayload = convertedStream;
             }
 
             ResponseMessage responseMessage = await this.ClientContext.ProcessResourceOperationStreamAsync(
@@ -956,14 +957,17 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
 
             // Convert Binary Stream to Text.
-            if ((requestOptions == null || !requestOptions.EnableBinaryResponseOnPointOperations)
-                && CosmosSerializationUtil.TrySerializeStreamToTargetFormat(
+            if (requestOptions == null || !requestOptions.EnableBinaryResponseOnPointOperations)
+            {
+                Stream outputResponseStream = await CosmosSerializationUtil.TrySerializeStreamToTargetFormatAsync(
                     expectedSerializationFormat: JsonSerializationFormat.Binary,
                     targetSerializationFormat: targetResponseSerializationFormat,
-                    inputStream: responseMessage?.Content,
-                    outputStream: out Stream outputResponseStream))
-            {
-                responseMessage.Content = outputResponseStream;
+                    inputStream: responseMessage?.Content);
+
+                if (outputResponseStream != null)
+                {
+                    responseMessage.Content = outputResponseStream;
+                }
             }
 
             return responseMessage;
@@ -1161,14 +1165,13 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreateItemResponse<T>(responseMessage);
         }
 
-        public async Task<ResponseMessage> PatchItemStreamAsync(
+        public Task<ResponseMessage> PatchItemStreamAsync(
             string id,
             PartitionKey partitionKey,
             IReadOnlyList<PatchOperation> patchOperations,
             ITrace trace,
             PatchItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default,
-            JsonSerializationFormat? targetResponseSerializationFormat = default)
+            CancellationToken cancellationToken = default)
         {
             if (trace == null)
             {
@@ -1202,7 +1205,7 @@ namespace Microsoft.Azure.Cosmos
                 patchOperationsStream = this.ClientContext.SerializerCore.ToStream(new PatchSpec(patchOperations, requestOptions));
             }
 
-            ResponseMessage responseMessage = await this.ClientContext.ProcessResourceOperationStreamAsync(
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: this.GetResourceUri(
                     requestOptions,
                     OperationType.Patch,
@@ -1217,18 +1220,6 @@ namespace Microsoft.Azure.Cosmos
                 requestEnricher: null,
                 trace: trace,
                 cancellationToken: cancellationToken);
-
-            if ((requestOptions == null || !requestOptions.EnableBinaryResponseOnPointOperations)
-                && CosmosSerializationUtil.TrySerializeStreamToTargetFormat(
-                    expectedSerializationFormat: JsonSerializationFormat.Binary,
-                    targetSerializationFormat: targetResponseSerializationFormat,
-                    inputStream: responseMessage?.Content,
-                    outputStream: out Stream outputResponseStream))
-            {
-                responseMessage.Content = outputResponseStream;
-            }
-
-            return responseMessage;
         }
 
         public Task<ResponseMessage> PatchItemStreamAsync(
