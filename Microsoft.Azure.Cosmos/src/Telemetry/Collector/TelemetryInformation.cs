@@ -30,5 +30,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Collector
         internal string MaxItemCount { get; set; }
         internal string ActualItemCount { get; set; }
         internal string PartitionKeyRangeId { get; set; }
+        internal string ClientId { get; set; }
     }
 }
