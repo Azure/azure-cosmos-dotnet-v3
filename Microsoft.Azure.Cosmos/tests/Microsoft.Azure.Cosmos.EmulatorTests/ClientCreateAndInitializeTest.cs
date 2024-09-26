@@ -15,7 +15,7 @@
     using Moq.Protected;
 
     [TestClass]
-    public class OpenTelemetryMetricsTest : BaseCosmosClientHelper
+    public class ClientCreateAndInitializeTest : BaseCosmosClientHelper
     {
         private ContainerInternal Container = null;
         private const string PartitionKey = "/pk";
