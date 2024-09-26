@@ -733,11 +733,6 @@ namespace Microsoft.Azure.Cosmos
         /// The patch operations are atomic and are executed sequentially.
         /// By default, resource body will be returned as part of the response. User can request no content by setting <see cref="ItemRequestOptions.EnableContentResponseOnWrite"/> flag to false.
         /// Note that, this API does not support the usage of <see cref="RequestOptions.IfMatchEtag"/> property at the moment.
-        ///
-        /// <para>The Replace operation is similar to Set in that it updates a field's value, but differs in one crucial way: Replace
-        /// only updates an existing field. If the field is absent, Replace will fail and throw a **400 BadRequest** (HTTP status code 400).
-        /// In contrast, Set will either update the existing field or create a new one if it does not exist. Users should be aware that
-        /// Replace follows strict semantics and will not add new fields, unlike Set, which is more flexible.</para>
         /// </remarks>
         /// <param name="id">The Cosmos item id of the item to be patched.</param>
         /// <param name="partitionKey"><see cref="PartitionKey"/> for the item</param>
@@ -795,34 +790,6 @@ namespace Microsoft.Azure.Cosmos
         ///     "frequency" : 2,
         ///     "daysOfWeek" : ["Monday", "Thursday"]
         /// }*/
-        ///
-        /// Example 3: Replace Operation on a Non-existent Property
-        ///
-        /// ToDoActivity toDoActivity = await this.container.ReadItemAsync<ToDoActivity>("id", new PartitionKey("partitionKey"));
-        ///
-        /// /* toDoActivity = {
-        ///     "id" : "someId",
-        ///     "status" : "someStatusPK",
-        ///     "description" : "someDescription",
-        ///     "frequency" : 7
-        /// }*/
-        ///
-        /// This example illustrates what happens when a Replace operation is attempted on a property that does not exist.
-        /// In this case, trying to replace the "priority" property, which is not present in the original ToDoActivity item, results in an HTTP 400 BadRequest.
-        ///
-        /// List<PatchOperation> patchOperations = new List<PatchOperation>()
-        /// {
-        ///     PatchOperation.Replace("/priority", "High")
-        /// };
-        ///
-        /// try
-        /// {
-        ///     ItemResponse<ToDoActivity> item = await this.container.PatchItemAsync<ToDoActivity>(toDoActivity.id, new PartitionKey(toDoActivity.status), patchOperations);
-        /// }
-        /// catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.BadRequest)
-        /// {
-        ///     ...
-        /// }
         /// ]]>
         /// </code>
         /// </example>
