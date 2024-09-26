@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
     using System.Diagnostics;
     using OpenTelemetry.Resources;
     using global::Azure.Monitor.OpenTelemetry.Exporter;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
 
     [TestClass]
     public class OpenTelemetryMetricsTest : BaseCosmosClientHelper
@@ -28,13 +29,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
             MeterProvider meterProvider = Sdk
                 .CreateMeterProviderBuilder()
                 .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("MyService"))
-                .AddMeter("Azure.Cosmos.Client")
-               /* .AddView(instrumentName: "cosmos.client.op.RUs", new ExplicitBucketHistogramConfiguration // Define histogram buckets
-                 {
-                     Boundaries = new double[] { 0, 0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10 }
-                 })*/
-                //.AddView(instrumentName: "cosmos.client.op.RUs", MetricStreamConfiguration.Drop) // Dropping Particular instrument
-                
+                .AddMeter("Azure.Cosmos.Client.Operation")
+                .AddView(instrumentName: OpenTelemetryMetricsConstant.OperationMetrics.RUName, new ExplicitBucketHistogramConfiguration // Define histogram buckets
+                {
+                    Boundaries = OpenTelemetryMetricsConstant.HistogramBuckets.RequestUnitBuckets
+                })
+                .AddView(instrumentName: OpenTelemetryMetricsConstant.OperationMetrics.LatencyName, new ExplicitBucketHistogramConfiguration // Define histogram buckets
+                {
+                    Boundaries = OpenTelemetryMetricsConstant.HistogramBuckets.RequestLatencyBuckets
+                })
+                .AddAzureMonitorMetricExporter( o => o.ConnectionString = "")
                 .AddReader(new PeriodicExportingMetricReader(new CustomMetricExporter(), exportIntervalMilliseconds: 1000))
                 .Build();
 
@@ -50,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
             this.SetClient(new CosmosClient(endpoint, authKey, cosmosClientOptions));
 
             Database database = await this.GetClient().CreateDatabaseIfNotExistsAsync(Guid.NewGuid().ToString());
-            Container container = await database.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString(), "/pk");
+            Container container = await database.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString(), "/pk", throughput: 10000);
 
             Stopwatch sw = Stopwatch.StartNew();
             sw.Start();
@@ -61,7 +65,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
 
                 await container.CreateItemAsync<ToDoActivity>(ToDoActivity.CreateRandomToDoActivity(id: randomId, pk: pk));
                 await container.ReadItemAsync<ToDoActivity>(randomId, new PartitionKey(pk));
-                if(sw.ElapsedMilliseconds > TimeSpan.FromMinutes(4).TotalMilliseconds)
+
+                FeedIterator<ToDoActivity> feedIterator = container.GetItemQueryIterator<ToDoActivity>("SELECT * FROM c");
+                while (feedIterator.HasMoreResults)
+                {
+                    await feedIterator.ReadNextAsync();
+                }
+
+                if (sw.ElapsedMilliseconds > TimeSpan.FromMinutes(.5).TotalMilliseconds)
                 {
                     break;
                 }
