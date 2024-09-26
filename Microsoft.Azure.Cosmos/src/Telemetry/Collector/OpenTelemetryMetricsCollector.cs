@@ -47,14 +47,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             Func<KeyValuePair<string, object>[]> dimensionsFunc = () => new[]
                 {
-                    new KeyValuePair<string, object>("AccountName", this.accountName),
-                    new KeyValuePair<string, object>("Container", telemetryInformation.ContainerId),
-                    new KeyValuePair<string, object>("Database", telemetryInformation.DatabaseId),
-                    new KeyValuePair<string, object>("Operation", telemetryInformation.OperationType),
-                    new KeyValuePair<string, object>("OperationStatusCode", telemetryInformation.StatusCode),
-                    new KeyValuePair<string, object>("ClientCorrelationId", this.clientId),
-                    new KeyValuePair<string, object>("ConsistencyLevel", telemetryInformation.ConsistencyLevel),
-                    new KeyValuePair<string, object>("PartitionKeyRangeId", telemetryInformation.PartitionKeyRangeId),
+                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.AccountName., this.accountName),
+                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ContainerName, telemetryInformation.ContainerId),
+                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbName, telemetryInformation.DatabaseId),
+                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.OperationType, telemetryInformation.OperationType),
+                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.StatusCode, telemetryInformation.StatusCode),
+                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.SubStatusCode, this.clientId),
+                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.SubStatusCode, telemetryInformation.ConsistencyLevel),
+                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.PartitionKeyRangeId, telemetryInformation.PartitionKeyRangeId),
                 };
 
             CosmosOperationMeter.RecordMaxItemCount(Convert.ToInt32(telemetryInformation.MaxItemCount), dimensionsFunc);
