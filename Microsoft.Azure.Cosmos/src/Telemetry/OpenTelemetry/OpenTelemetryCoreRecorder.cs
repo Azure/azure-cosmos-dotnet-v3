@@ -250,7 +250,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.ActivityId, this.response.ActivityId);
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.CorrelatedActivityId, this.response.CorrelatedActivityId);
 
-                    if (this.response.QuerySpec is not null)
+                    if (this.response.QuerySpec.HasValue)
                     {
                         if (this.queryTextMode == QueryTextMode.All || 
                             (this.queryTextMode != QueryTextMode.None && this.response.QuerySpec.ShouldSerializeParameters() && 
