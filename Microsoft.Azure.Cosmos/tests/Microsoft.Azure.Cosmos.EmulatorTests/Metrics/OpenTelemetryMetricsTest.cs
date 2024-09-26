@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
                     await feedIterator.ReadNextAsync();
                 }
 
-                if (sw.ElapsedMilliseconds > TimeSpan.FromMinutes(.5).TotalMilliseconds)
+                if (sw.ElapsedMilliseconds > TimeSpan.FromMinutes(1.5).TotalMilliseconds)
                 {
                     break;
                 }
