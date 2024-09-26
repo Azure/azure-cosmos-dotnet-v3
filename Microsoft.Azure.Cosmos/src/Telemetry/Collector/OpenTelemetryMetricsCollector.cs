@@ -5,12 +5,9 @@
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
-    using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Diagnostics.Metrics;
-    using System.Linq;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.Azure.Cosmos.Telemetry.Collector;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
 
     /// <summary>
     /// The OpenTelemetryMetricsCollector class is responsible for collecting and recording Cosmos DB operational metrics, such as item counts, request latency, request units, and regions contacted. 
@@ -21,10 +18,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private readonly string clientId;
         private readonly string accountName;
 
-        private static ConcurrentBag<Tuple<int, KeyValuePair<string, object>[]>> maxItemCounts = null;
-        private static ConcurrentBag<Tuple<int, KeyValuePair<string, object>[]>> actualItemCounts = null;
-        private static ConcurrentBag<Tuple<int, KeyValuePair<string, object>[]>> regionsContactedCounts = null;
-
         /// <summary>
         /// Initializes a new instance of the OpenTelemetryMetricsCollector class.
         /// </summary>
@@ -34,6 +27,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             this.clientId = clientId;
             this.accountName = accountName;
+
+            CosmosOperationMeter.Initialize();
         }
 
         public void CollectCacheInfo(string cacheName, Func<TelemetryInformation> getTelemetryInformation)
@@ -50,73 +45,24 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             TelemetryInformation telemetryInformation = getTelemetryInformation();
 
-            KeyValuePair<string, object>[] dimensions = new[]
-            {
-                new KeyValuePair<string, object>("AccountName", this.accountName),
-                new KeyValuePair<string, object>("Container", telemetryInformation.ContainerId),
-                new KeyValuePair<string, object>("Database", telemetryInformation.DatabaseId),
-                new KeyValuePair<string, object>("Operation", telemetryInformation.OperationType),
-                new KeyValuePair<string, object>("OperationStatusCode", telemetryInformation.StatusCode),
-                new KeyValuePair<string, object>("ClientCorrelationId", this.clientId),
-                new KeyValuePair<string, object>("ConsistencyLevel", telemetryInformation.ConsistencyLevel),
-                new KeyValuePair<string, object>("PartitionKeyRangeId", telemetryInformation.PartitionKeyRangeId),
-            };
-
-            PushOperationLevelMetrics(telemetryInformation, dimensions);
-        }
-
-        /// <summary>
-        /// Pushes various operation-level metrics to OpenTelemetry.
-        /// </summary>
-        /// <param name="telemetryInformation">Contains telemetry data related to the operation, such as item counts, request charge, and latency.</param>
-        /// <param name="dimensions">Key-value pairs representing various metadata about the operation (e.g., container, operation type, consistency level).</param>
-        private static void PushOperationLevelMetrics(TelemetryInformation telemetryInformation, KeyValuePair<string, object>[] dimensions)
-        {
-            maxItemCounts ??= new ConcurrentBag<Tuple<int, KeyValuePair<string, object>[]>>();
-            maxItemCounts.Add(new Tuple<int, KeyValuePair<string, object>[]>(Convert.ToInt32(telemetryInformation.MaxItemCount), dimensions));
-
-            actualItemCounts ??= new ConcurrentBag<Tuple<int, KeyValuePair<string, object>[]>>();
-            actualItemCounts.Add(new Tuple<int, KeyValuePair<string, object>[]>(Convert.ToInt32(telemetryInformation.ActualItemCount), dimensions));
-
-            regionsContactedCounts ??= new ConcurrentBag<Tuple<int, KeyValuePair<string, object>[]>>();
-            regionsContactedCounts.Add(new Tuple<int, KeyValuePair<string, object>[]>(telemetryInformation.RegionsContactedList.Count, dimensions));
-
-            OpenTelemetryMetrics.RequestUnitsHistogram.Record(telemetryInformation.RequestCharge, dimensions);
-            OpenTelemetryMetrics.RequestLatencyHistogram.Record(telemetryInformation.RequestLatency.Value.Milliseconds, dimensions);
-            OpenTelemetryMetrics.NumberOfOperationCallCounter.Add(1, dimensions);
-        }
-
-        public static IEnumerable<Measurement<int>> GetMaxItemCount()
-        {
-            while (maxItemCounts.Count > 0)
-            {
-                if (maxItemCounts.TryTake(out Tuple<int, KeyValuePair<string, object>[]> maxItemCount))
+            Func<KeyValuePair<string, object>[]> dimensionsFunc = () => new[]
                 {
-                   yield return new Measurement<int>(maxItemCount.Item1, maxItemCount.Item2);
-                }
-            }
-        }
+                    new KeyValuePair<string, object>("AccountName", this.accountName),
+                    new KeyValuePair<string, object>("Container", telemetryInformation.ContainerId),
+                    new KeyValuePair<string, object>("Database", telemetryInformation.DatabaseId),
+                    new KeyValuePair<string, object>("Operation", telemetryInformation.OperationType),
+                    new KeyValuePair<string, object>("OperationStatusCode", telemetryInformation.StatusCode),
+                    new KeyValuePair<string, object>("ClientCorrelationId", this.clientId),
+                    new KeyValuePair<string, object>("ConsistencyLevel", telemetryInformation.ConsistencyLevel),
+                    new KeyValuePair<string, object>("PartitionKeyRangeId", telemetryInformation.PartitionKeyRangeId),
+                };
 
-        public static IEnumerable<Measurement<int>> GetActualItemCount()
-        {
-            while (actualItemCounts.Count > 0)
-            {
-                if (actualItemCounts.TryTake(out Tuple<int, KeyValuePair<string, object>[]> actualItemCount))
-                {
-                    yield return new Measurement<int>(actualItemCount.Item1, actualItemCount.Item2);
-                }
-            }
-        }
-
-        public static IEnumerable<Measurement<int>> GetRegionContactedCount()
-        {
-            while (regionsContactedCounts.Count > 0)
-            {
-                if (regionsContactedCounts.TryTake(out Tuple<int, KeyValuePair<string, object>[]> regionsContactedCount))
-                {
-                    yield return new Measurement<int>(regionsContactedCount.Item1, regionsContactedCount.Item2);
-                }
-            }
+            CosmosOperationMeter.RecordMaxItemCount(Convert.ToInt32(telemetryInformation.MaxItemCount), dimensionsFunc);
+            CosmosOperationMeter.RecordActualItemCount(Convert.ToInt32(telemetryInformation.ActualItemCount), dimensionsFunc);
+            CosmosOperationMeter.RecordRegionContactedCount(telemetryInformation.RegionsContactedList.Count, dimensionsFunc);
+            CosmosOperationMeter.RecordRequestUnit(telemetryInformation.RequestCharge, dimensionsFunc);
+            CosmosOperationMeter.RecordRequestLatency(telemetryInformation.RequestLatency, dimensionsFunc);
+            CosmosOperationMeter.RecordOperationCallCount(dimensionsFunc);
         }
     }
 }

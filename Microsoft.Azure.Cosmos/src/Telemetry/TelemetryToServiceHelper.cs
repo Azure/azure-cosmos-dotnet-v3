@@ -40,7 +40,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             if (isMetricEnabled)
             {
-                this.openTelemetryCollector = new OpenTelemetryMetricsCollector(clientId: clientId, accountName: accountName);
+                this.openTelemetryCollector = new OpenTelemetryMetricsCollector(clientId: clientId, 
+                    accountName: accountName);
             }
         }
 
@@ -52,7 +53,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
              Uri serviceEndpoint,
              GlobalEndpointManager globalEndpointManager,
              CancellationTokenSource cancellationTokenSource)
-            : this(connectionPolicy.CosmosClientTelemetryOptions.IsClientMetricsEnabled, clientId, serviceEndpoint.Host)
+            : this(connectionPolicy.CosmosClientTelemetryOptions.IsClientMetricsEnabled, 
+                  clientId, 
+                  serviceEndpoint.Host)
         {
             this.clientId = clientId;
             this.cosmosAuthorization = cosmosAuthorization;
