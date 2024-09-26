@@ -134,16 +134,15 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.BinaryEncodingEnabled)
             {
-                using Json.Interop.CosmosDBToNewtonsoftWriter writer = new (
-                    jsonSerializationFormat: Json.JsonSerializationFormat.Binary);
+                using (Json.Interop.CosmosDBToNewtonsoftWriter writer = new (
+                    jsonSerializationFormat: Json.JsonSerializationFormat.Binary))
+                {
+                    writer.Formatting = Formatting.None;
+                    jsonSerializer.Serialize(writer, input);
 
-                writer.Formatting = Formatting.None;
-                jsonSerializer.Serialize(writer, input);
-
-                byte[] binBytes = writer.GetResult().ToArray();
-                streamPayload.Write(binBytes, 0, binBytes.Length);
-
-                writer.Flush();
+                    byte[] binBytes = writer.GetResult().ToArray();
+                    streamPayload.Write(binBytes, 0, binBytes.Length);
+                }
             }
             else
             {
