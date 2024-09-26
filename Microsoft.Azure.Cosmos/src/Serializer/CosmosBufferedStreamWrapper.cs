@@ -135,6 +135,13 @@ namespace Microsoft.Azure.Cosmos.Serializer
                 {
                     this.innerStream.Dispose();
                 }
+                else
+                {
+                    if (this.innerStream.CanSeek)
+                    {
+                        this.innerStream.Position = 0;
+                    }
+                }
             }
 
             base.Dispose(disposing);
