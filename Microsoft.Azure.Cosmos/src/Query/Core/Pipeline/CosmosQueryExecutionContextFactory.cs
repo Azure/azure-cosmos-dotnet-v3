@@ -267,7 +267,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                    containerQueryProperties,
                    inputParameters.Properties,
                    inputParameters.InitialFeedRange,
-                   trace);
+                   trace,
+                   inputParameters.SqlQuerySpec);
+
+            Console.WriteLine($"Partition Key Range Ids to Query : Count is {targetRanges.Count}");
 
             Debug.Assert(targetRanges != null, $"{nameof(CosmosQueryExecutionContextFactory)} Assert!", "targetRanges != null");
 
@@ -452,6 +455,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             ITrace trace,
             CancellationToken cancellationToken) 
         {
+            Console.WriteLine("I am in TryCreateSpecializedDocumentQueryExecutionContextAsync");
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = await GetPartitionedQueryExecutionInfoAsync(
                cosmosQueryContext,
                inputParameters,
@@ -655,9 +659,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             ContainerQueryProperties containerQueryProperties,
             IReadOnlyDictionary<string, object> properties,
             FeedRangeInternal feedRangeInternal,
-            ITrace trace)
+            ITrace trace,
+            SqlQuerySpec sqlQuerySpec = null)
         {
             List<Documents.PartitionKeyRange> targetRanges;
+          
             if (containerQueryProperties.EffectiveRangesForPartitionKey != null)
             {
                 targetRanges = await queryClient.GetTargetPartitionKeyRangesAsync(
@@ -701,6 +707,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                                     partitionedQueryExecutionInfo.QueryRanges,
                                     forceRefresh: false,
                                     trace);
+            }
+
+            bool is_gsi_enabled = ConfigurationManager.GetEnvironmentVariable<bool>("GSI_ENABLED", false);
+            if (is_gsi_enabled)
+            {
+                targetRanges = await GSIFactory.FilterUsingCacheAsync(sqlQuerySpec, targetRanges);
             }
 
             return targetRanges;
@@ -794,6 +806,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 return null;
             }
 
+            Console.WriteLine("i am in TryGetTargetRangeOptimisticDirectExecutionAsync");
             Debug.Assert(containerQueryProperties.ResourceId != null, "CosmosQueryExecutionContextFactory Assert!", "Container ResourceId cannot be null!");
 
             List<Documents.PartitionKeyRange> targetRanges;
