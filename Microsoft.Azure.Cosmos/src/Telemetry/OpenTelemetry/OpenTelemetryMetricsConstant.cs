@@ -28,12 +28,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry
             /// NumberOfCalls
             /// </summary>
             public const string NumberOfCallsName = "cosmos.client.op.calls";
-
-            /// <summary>
-            /// Count
-            /// </summary>
-            public const string Count = "#";
-
             /// <summary>
             /// NumberOfCallsDesc
             /// </summary>
@@ -55,14 +49,55 @@ namespace Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry
             public const string RUName = "cosmos.client.op.RUs";
 
             /// <summary>
-            /// RUUnit
+            /// RUDesc
             /// </summary>
-            public const string RUUnit = "# RU";
+            public const string RUDesc = "Total request units per operation (sum of RUs for all requested needed when processing an operation)";
+
+            /// <summary>
+            /// RUName
+            /// </summary>
+            public const string MaxItemName = "cosmos.client.op.maxItemCount";
 
             /// <summary>
             /// RUDesc
             /// </summary>
-            public const string RUDesc = "Total request units per operation (sum of RUs for all requested needed when processing an operation)";
+            public const string MaxItemDesc = "For feed operations (query, readAll, readMany, change feed) and batch operations this meter capture the requested maxItemCount per page/request";
+
+            /// <summary>
+            /// ActualItemName
+            /// </summary>
+            public const string ActualItemName = "cosmos.client.op.actualItemCount";
+
+            /// <summary>
+            /// ActualItemDesc
+            /// </summary>
+            public const string ActualItemDesc = "For feed operations (query, readAll, readMany, change feed) batch operations this meter capture the actual item count in responses from the service";
+
+            /// <summary>
+            /// RegionContactedName
+            /// </summary>
+            public const string RegionContactedName = "cosmos.client.op.regionsContacted";
+
+            /// <summary>
+            /// RegionContactedDesc
+            /// </summary>
+            public const string RegionContactedDesc = "Number of regions contacted when executing an operation";
+
+            /// <summary>
+            /// Count
+            /// </summary>
+            public const string Count = "#";
+
+            /// <summary>
+            /// Milliseconds
+            /// </summary>
+            public const string Ms = "ms";
+
+            /// <summary>
+            /// RUUnit
+            /// </summary>
+            public const string RUUnit = "# RU";
+            
         }
 
         /// <summary>

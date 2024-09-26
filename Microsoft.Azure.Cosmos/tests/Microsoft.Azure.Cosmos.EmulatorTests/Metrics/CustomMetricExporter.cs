@@ -28,8 +28,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
         {
             Console.WriteLine("\n[Custom Exporter] Exporting metrics:");
 
-            int gaugeCount = 0;
-
             Dictionary<string, MetricType> actualMetrics = new Dictionary<string, MetricType>();
             foreach (Metric metric in batch)
             {
@@ -45,7 +43,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
                             break;
                         case MetricType.LongGauge:
                             Console.WriteLine($"Value (Gauge): {metricPoint.GetGaugeLastValueLong()}");
-                            gaugeCount++;
                             break;
                         case MetricType.Histogram:
                             Console.WriteLine($"Value (Histogram): {metricPoint.GetHistogramCount()}");
@@ -60,9 +57,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
             }
 
             Assert.IsTrue(expectedMetrics.Count == actualMetrics.Count && !expectedMetrics.Except(actualMetrics).Any());
-
-            Console.WriteLine($"Total gauge values exported: {gaugeCount}");
-            Console.WriteLine();
 
             return ExportResult.Success;
         }

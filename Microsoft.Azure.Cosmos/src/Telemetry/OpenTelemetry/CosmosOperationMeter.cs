@@ -28,62 +28,73 @@ namespace Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry
         {
             cosmosMeter ??= new Meter(OpenTelemetryMetricsConstant.OperationMetricName, OpenTelemetryMetricsConstant.MetricVersion100);
 
-            NumberOfOperationCallCounter = cosmosMeter.CreateCounter<int>(
+            CosmosOperationMeter.NumberOfOperationCallCounter = cosmosMeter.CreateCounter<int>(
                 name: OpenTelemetryMetricsConstant.OperationMetrics.NumberOfCallsName, 
                 unit: OpenTelemetryMetricsConstant.OperationMetrics.Count, 
                 description: OpenTelemetryMetricsConstant.OperationMetrics.NumberOfCallsDesc);
 
-            RequestLatencyHistogram = cosmosMeter.CreateHistogram<double>(name: OpenTelemetryMetricsConstant.OperationMetrics.LatencyName,
-                unit: OpenTelemetryMetricsConstant.OperationMetrics.Count,
+            CosmosOperationMeter.RequestLatencyHistogram = cosmosMeter.CreateHistogram<double>(name: OpenTelemetryMetricsConstant.OperationMetrics.LatencyName,
+                unit: OpenTelemetryMetricsConstant.OperationMetrics.Ms,
                 description: OpenTelemetryMetricsConstant.OperationMetrics.LatencyDesc);
 
-            RequestUnitsHistogram = cosmosMeter.CreateHistogram<double>(name: OpenTelemetryMetricsConstant.OperationMetrics.RUName,
+            CosmosOperationMeter.RequestUnitsHistogram = cosmosMeter.CreateHistogram<double>(name: OpenTelemetryMetricsConstant.OperationMetrics.RUName,
                 unit: OpenTelemetryMetricsConstant.OperationMetrics.RUUnit,
                 description: OpenTelemetryMetricsConstant.OperationMetrics.RUDesc);
 
-            MaxItemGauge = cosmosMeter.CreateObservableGauge<int>(name: "cosmos.client.op.maxItemCount", observeValues: () => CosmosOperationMeter.PullMaxItemCount(), unit: "#", description: "For feed operations (query, readAll, readMany, change feed) and batch operations this meter capture the requested maxItemCount per page/request");
-            ActualItemGauge = cosmosMeter.CreateObservableGauge<int>(name: "cosmos.client.op.actualItemCount", observeValues: () => CosmosOperationMeter.PullActualItemCount(), unit: "#", description: "For feed operations (query, readAll, readMany, change feed) batch operations this meter capture the actual item count in responses from the service");
-            RegionsContactedGauge = cosmosMeter.CreateObservableGauge<int>(name: "cosmos.client.op.regionsContacted", observeValues: () => CosmosOperationMeter.PullRegionContactedCount(), unit: "# regions", description: "Number of regions contacted when executing an operation");
+            CosmosOperationMeter.MaxItemGauge = cosmosMeter.CreateObservableGauge<int>(name: OpenTelemetryMetricsConstant.OperationMetrics.MaxItemName, 
+                observeValues: () => CosmosOperationMeter.PullMaxItemCount(), 
+                unit: OpenTelemetryMetricsConstant.OperationMetrics.Count,
+                description: OpenTelemetryMetricsConstant.OperationMetrics.MaxItemDesc );
+
+            CosmosOperationMeter.ActualItemGauge = cosmosMeter.CreateObservableGauge<int>(name: OpenTelemetryMetricsConstant.OperationMetrics.ActualItemName, 
+                observeValues: () => CosmosOperationMeter.PullActualItemCount(), 
+                unit: OpenTelemetryMetricsConstant.OperationMetrics.Count, 
+                description: OpenTelemetryMetricsConstant.OperationMetrics.ActualItemDesc);
+
+            CosmosOperationMeter.RegionsContactedGauge = cosmosMeter.CreateObservableGauge<int>(name: OpenTelemetryMetricsConstant.OperationMetrics.RegionContactedName, 
+                observeValues: () => CosmosOperationMeter.PullRegionContactedCount(), 
+                unit: OpenTelemetryMetricsConstant.OperationMetrics.Count, 
+                description: OpenTelemetryMetricsConstant.OperationMetrics.RegionContactedDesc);
         }
 
         public static void RecordMaxItemCount(int maxItemCount, Func<KeyValuePair<string, object>[]> dimensionsFunc)
         {
-            if (!MaxItemGauge.Enabled)
+            if (!CosmosOperationMeter.MaxItemGauge.Enabled)
             {
                 return;
             }
 
-            maxItemCounts ??= new ConcurrentBag<Tuple<int, KeyValuePair<string, object>[]>>();
-            maxItemCounts.Add(new Tuple<int, KeyValuePair<string, object>[]>(maxItemCount, dimensionsFunc()));
+            CosmosOperationMeter.maxItemCounts ??= new ConcurrentBag<Tuple<int, KeyValuePair<string, object>[]>>();
+            CosmosOperationMeter.maxItemCounts.Add(new Tuple<int, KeyValuePair<string, object>[]>(maxItemCount, dimensionsFunc()));
         }
 
         public static void RecordActualItemCount(int actualItemCount, Func<KeyValuePair<string, object>[]> dimensionsFunc)
         {
-            if (!ActualItemGauge.Enabled)
+            if (!CosmosOperationMeter.ActualItemGauge.Enabled)
             {
                 return;
             }
 
-            actualItemCounts ??= new ConcurrentBag<Tuple<int, KeyValuePair<string, object>[]>>();
-            actualItemCounts.Add(new Tuple<int, KeyValuePair<string, object>[]>(actualItemCount, dimensionsFunc()));
+            CosmosOperationMeter.actualItemCounts ??= new ConcurrentBag<Tuple<int, KeyValuePair<string, object>[]>>();
+            CosmosOperationMeter.actualItemCounts.Add(new Tuple<int, KeyValuePair<string, object>[]>(actualItemCount, dimensionsFunc()));
         }
 
         public static void RecordRegionContactedCount(int regionsContactedCount, Func<KeyValuePair<string, object>[]> dimensionsFunc)
         {
-            if (!RegionsContactedGauge.Enabled)
+            if (!CosmosOperationMeter.RegionsContactedGauge.Enabled)
             {
                 return;
             }
 
-            regionsContactedCounts ??= new ConcurrentBag<Tuple<int, KeyValuePair<string, object>[]>>();
-            regionsContactedCounts.Add(new Tuple<int, KeyValuePair<string, object>[]>(regionsContactedCount, dimensionsFunc()));
+            CosmosOperationMeter.regionsContactedCounts ??= new ConcurrentBag<Tuple<int, KeyValuePair<string, object>[]>>();
+            CosmosOperationMeter.regionsContactedCounts.Add(new Tuple<int, KeyValuePair<string, object>[]>(regionsContactedCount, dimensionsFunc()));
         }
 
         public static IEnumerable<Measurement<int>> PullMaxItemCount()
         {
-            while (maxItemCounts.Count > 0)
+            while (CosmosOperationMeter.maxItemCounts.Count > 0)
             {
-                if (maxItemCounts.TryTake(out Tuple<int, KeyValuePair<string, object>[]> maxItemCount))
+                if (CosmosOperationMeter.maxItemCounts.TryTake(out Tuple<int, KeyValuePair<string, object>[]> maxItemCount))
                 {
                     yield return new Measurement<int>(maxItemCount.Item1, maxItemCount.Item2);
                 }
@@ -92,9 +103,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry
 
         public static IEnumerable<Measurement<int>> PullActualItemCount()
         {
-            while (actualItemCounts.Count > 0)
+            while (CosmosOperationMeter.actualItemCounts.Count > 0)
             {
-                if (actualItemCounts.TryTake(out Tuple<int, KeyValuePair<string, object>[]> actualItemCount))
+                if (CosmosOperationMeter.actualItemCounts.TryTake(out Tuple<int, KeyValuePair<string, object>[]> actualItemCount))
                 {
                     yield return new Measurement<int>(actualItemCount.Item1, actualItemCount.Item2);
                 }
@@ -103,9 +114,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry
 
         public static IEnumerable<Measurement<int>> PullRegionContactedCount()
         {
-            while (regionsContactedCounts.Count > 0)
+            while (CosmosOperationMeter.regionsContactedCounts.Count > 0)
             {
-                if (regionsContactedCounts.TryTake(out Tuple<int, KeyValuePair<string, object>[]> regionsContactedCount))
+                if (CosmosOperationMeter.regionsContactedCounts.TryTake(out Tuple<int, KeyValuePair<string, object>[]> regionsContactedCount))
                 {
                     yield return new Measurement<int>(regionsContactedCount.Item1, regionsContactedCount.Item2);
                 }
@@ -114,32 +125,32 @@ namespace Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry
 
         internal static void RecordRequestUnit(double requestCharge, Func<KeyValuePair<string, object>[]> dimensionsFunc)
         {
-            if (!RequestUnitsHistogram.Enabled)
+            if (!CosmosOperationMeter.RequestUnitsHistogram.Enabled)
             {
                 return;
             }
 
-            RequestUnitsHistogram?.Record(requestCharge, dimensionsFunc());
+            CosmosOperationMeter.RequestUnitsHistogram?.Record(requestCharge, dimensionsFunc());
         }
 
         internal static void RecordRequestLatency(TimeSpan? requestLatency, Func<KeyValuePair<string, object>[]> dimensionsFunc)
         {
-            if (!RequestLatencyHistogram.Enabled || !requestLatency.HasValue)
+            if (!CosmosOperationMeter.RequestLatencyHistogram.Enabled || !requestLatency.HasValue)
             {
                 return;
             }
 
-            RequestLatencyHistogram.Record(requestLatency.Value.Milliseconds, dimensionsFunc());
+            CosmosOperationMeter.RequestLatencyHistogram.Record(requestLatency.Value.Milliseconds, dimensionsFunc());
         }
 
         internal static void RecordOperationCallCount(Func<KeyValuePair<string, object>[]> dimensionsFunc)
         {
-            if (!NumberOfOperationCallCounter.Enabled)
+            if (!CosmosOperationMeter.NumberOfOperationCallCounter.Enabled)
             {
                 return;
             }
 
-            NumberOfOperationCallCounter.Add(1, dimensionsFunc());
+            CosmosOperationMeter.NumberOfOperationCallCounter.Add(1, dimensionsFunc());
         }
     }
 }
