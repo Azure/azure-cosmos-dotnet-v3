@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos
         internal Documents.OperationType? operationType;
 
         /// <summary>
-        /// collect SQL query Specs
+        /// collect SQL query Specs for tracing
         /// </summary>
         internal SqlQuerySpec querySpec;
     }
