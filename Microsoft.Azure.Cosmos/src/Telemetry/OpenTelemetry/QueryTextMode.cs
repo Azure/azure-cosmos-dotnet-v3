@@ -12,16 +12,16 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         ///  Do not show query.
         /// </summary>
-        NONE = 0,
+        None = 0,
 
         /// <summary>
         /// Print parameterized query only.
         /// </summary>
-        PARAMETERIZED_ONLY = 1,
+        ParameterizedOnly = 1,
 
         /// <summary>
         /// Print both parameterized and non parameterized query.
         /// </summary>
-        ALL = 2
+        All = 2
     }
 }

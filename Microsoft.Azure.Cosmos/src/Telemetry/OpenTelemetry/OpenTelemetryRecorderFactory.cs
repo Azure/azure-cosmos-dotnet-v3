@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             }
 
-            queryTextMode ??= clientContext.ClientOptions?.CosmosClientTelemetryOptions?.QueryTextMode ?? QueryTextMode.NONE;
+            queryTextMode ??= clientContext.ClientOptions?.CosmosClientTelemetryOptions?.QueryTextMode ?? QueryTextMode.None;
             return queryTextMode.Value;
         }
     }

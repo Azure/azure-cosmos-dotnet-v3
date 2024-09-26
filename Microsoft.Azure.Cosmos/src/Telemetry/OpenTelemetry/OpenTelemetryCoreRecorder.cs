@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private readonly OperationType operationType = OperationType.Invalid;
         private readonly string connectionModeCache = null;
 
-        private readonly QueryTextMode queryTextMode = QueryTextMode.NONE;
+        private readonly QueryTextMode queryTextMode = QueryTextMode.None;
         private OpenTelemetryAttributes response = null;
 
         /// <summary>
@@ -252,9 +252,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                     if (this.response.QuerySpec is not null)
                     {
-                        if (this.queryTextMode == QueryTextMode.ALL || 
-                            (this.queryTextMode != QueryTextMode.NONE && this.response.QuerySpec.ShouldSerializeParameters() && 
-                             this.queryTextMode == QueryTextMode.PARAMETERIZED_ONLY))
+                        if (this.queryTextMode == QueryTextMode.All || 
+                            (this.queryTextMode != QueryTextMode.None && this.response.QuerySpec.ShouldSerializeParameters() && 
+                             this.queryTextMode == QueryTextMode.ParameterizedOnly))
                         {
                             this.scope.AddAttribute(OpenTelemetryAttributeKeys.QueryText, this.response.QuerySpec?.QueryText);
                         }

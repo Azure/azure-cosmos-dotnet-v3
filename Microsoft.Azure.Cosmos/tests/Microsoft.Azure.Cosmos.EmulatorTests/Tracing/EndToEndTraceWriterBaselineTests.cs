@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                             PointOperationLatencyThreshold = TimeSpan.Zero,
                             NonPointOperationLatencyThreshold = TimeSpan.Zero
                         },
-                        QueryTextMode = QueryTextMode.ALL
+                        QueryTextMode = QueryTextMode.All
                     }));
 
             bulkClient = TestCommon.CreateCosmosClient(builder => builder
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                         PointOperationLatencyThreshold = TimeSpan.Zero,
                         NonPointOperationLatencyThreshold = TimeSpan.Zero
                     },
-                    QueryTextMode = QueryTextMode.ALL
+                    QueryTextMode = QueryTextMode.All
                 }));
 
             // Set a small retry count to reduce test time
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                             PointOperationLatencyThreshold = TimeSpan.Zero,
                             NonPointOperationLatencyThreshold = TimeSpan.Zero
                         },
-                        QueryTextMode = QueryTextMode.ALL
+                        QueryTextMode = QueryTextMode.All
                     }));
 
             EndToEndTraceWriterBaselineTests.database = await client.CreateDatabaseAsync(
@@ -523,7 +523,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             //  Query Typed
             //----------------------------------------------------------------
             {
-                requestOptions.QueryTextMode = QueryTextMode.NONE;
+                requestOptions.QueryTextMode = QueryTextMode.None;
 
                 startLineNumber = GetLineNumber();
                 FeedIteratorInternal<JToken> feedIterator = (FeedIteratorInternal<JToken>)container.GetItemQueryIterator<JToken>(
@@ -553,7 +553,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             //  Query Public API
             //----------------------------------------------------------------
             {
-                requestOptions.QueryTextMode = QueryTextMode.PARAMETERIZED_ONLY;
+                requestOptions.QueryTextMode = QueryTextMode.ParameterizedOnly;
 
                 startLineNumber = GetLineNumber();
                 FeedIterator feedIterator = container.GetItemQueryStreamIterator(
@@ -584,7 +584,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             //  Query Public API Typed
             //----------------------------------------------------------------
             {
-                requestOptions.QueryTextMode = QueryTextMode.PARAMETERIZED_ONLY;
+                requestOptions.QueryTextMode = QueryTextMode.ParameterizedOnly;
 
                 QueryDefinition parameterizedQuery = new QueryDefinition(
                     query: "SELECT * FROM c WHERE c.id != @customIdentifier"
