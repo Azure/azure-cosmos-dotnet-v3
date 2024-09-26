@@ -105,7 +105,9 @@
                     partitionKeyDefinition);
 
                 Assert.IsNotNull(queryInfo.HybridSearchQueryInfo);
-                string actual = JsonConvert.SerializeObject(queryInfo.HybridSearchQueryInfo);
+                string actual = JsonConvert.SerializeObject(
+                    queryInfo.HybridSearchQueryInfo,
+                    new JsonSerializerSettings { Formatting = Formatting.None });
                 Assert.AreEqual(expected, actual);
             }
         }
