@@ -30,6 +30,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\src\FaultInjection.csproj" />
+    <ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

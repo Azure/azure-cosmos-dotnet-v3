@@ -68,7 +68,8 @@ namespace Microsoft.Azure.Cosmos
                 IfMatchEtag = this.IfMatchEtag,
                 IfNoneMatchEtag = this.IfNoneMatchEtag,
                 Properties = this.Properties,
-                AddRequestHeaders = this.AddRequestHeaders
+                AddRequestHeaders = this.AddRequestHeaders,
+                ExcludeRegions = this.ExcludeRegions
             };
         }
     }

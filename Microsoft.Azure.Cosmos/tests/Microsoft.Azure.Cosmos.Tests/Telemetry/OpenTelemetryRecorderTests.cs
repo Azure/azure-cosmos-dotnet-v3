@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Diagnostics;
     using System.Linq;
     using System.Net;
     using System.Reflection;
@@ -19,7 +18,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
-    using static Microsoft.Azure.Cosmos.CrossRegionParallelHedgingAvailabilityStrategy;
 
     [TestClass]
     public class OpenTelemetryRecorderTests
@@ -110,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 
                 if (instance is TransactionalBatchResponse transactionInstance)
                 {
-                    _ = new OpenTelemetryResponse(transactionInstance, false, null);
+                    _ = new OpenTelemetryResponse(transactionInstance);
                 }
                 else if (instance is ResponseMessage responseMessageInstance)
                 {
@@ -173,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                     Assert.AreEqual(
                         "HedgingResponse",
                         hedgingResponse,
-                        "HedgingResponse is only used internally in the CrossRegionParallelHedgingAvailabilityStrategy and is never returned. No support Needed.");
+                        "HedgingResponse is only used internally in the CrossRegionHedgingAvailabilityStrategy and is never returned. No support Needed.");
                 }
                 else
                 {

@@ -88,6 +88,82 @@
         }
 
         /// <summary>
+        /// Test to validate that when 429.3092 is thrown from the service, write requests on
+        /// a multi master account should be converted to 503 and retried to the next region.
+        /// </summary>
+        [TestMethod]
+        [DataRow(true, DisplayName = "Validate retry policy with multi master write account.")]
+        [DataRow(false, DisplayName = "Validate retry policy with single master write account.")]
+        public async Task ShouldRetryAsync_WhenRequestThrottledWithResourceNotAvailable_ShouldThrow503OnMultiMasterWriteAndRetryOnNextRegion(
+            bool isMultiMasterAccount)
+        {
+            // Arrange.
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: isMultiMasterAccount,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                multimasterMetadataWriteRetryTest: true);
+
+            await endpointManager.RefreshLocationAsync();
+
+            ClientRetryPolicy retryPolicy = new (
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new RetryOptions(),
+                enableEndpointDiscovery,
+                false);
+
+            // Creates a sample write request.
+            DocumentServiceRequest request = this.CreateRequest(
+                isReadRequest: false,
+                isMasterResourceType: false);
+
+            // On first attempt should get (default/non hub) location.
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.AreEqual(request.RequestContext.LocationEndpointToRoute, ClientRetryPolicyTests.Location1Endpoint);
+
+            // Creation of 429.3092 Error.
+            HttpStatusCode throttleException = HttpStatusCode.TooManyRequests;
+            SubStatusCodes resourceNotAvailable = SubStatusCodes.SystemResourceUnavailable;
+
+            Exception innerException = new ();
+            Mock<INameValueCollection> nameValueCollection = new ();
+            DocumentClientException documentClientException = new (
+                message: "SystemResourceUnavailable: 429 with 3092 occurred.",
+                innerException: innerException,
+                statusCode: throttleException,
+                substatusCode: resourceNotAvailable,
+                requestUri: request.RequestContext.LocationEndpointToRoute,
+                responseHeaders: nameValueCollection.Object);
+
+            // Act.
+            Task<ShouldRetryResult> shouldRetry = retryPolicy.ShouldRetryAsync(
+                documentClientException,
+                new CancellationToken());
+
+            // Assert.
+            Assert.IsTrue(shouldRetry.Result.ShouldRetry);
+            retryPolicy.OnBeforeSendRequest(request);
+
+            if (isMultiMasterAccount)
+            {
+                Assert.AreEqual(
+                    expected: ClientRetryPolicyTests.Location2Endpoint,
+                    actual: request.RequestContext.LocationEndpointToRoute,
+                    message: "The request should be routed to the next region, since the accound is a multi master write account and the request" +
+                    "failed with 429.309 which got converted into 503 internally. This should trigger another retry attempt to the next region.");
+            }
+            else
+            {
+                Assert.AreEqual(
+                    expected: ClientRetryPolicyTests.Location1Endpoint,
+                    actual: request.RequestContext.LocationEndpointToRoute,
+                    message: "Since this is asingle master account, the write request should not be retried on the next region.");
+            }
+        }
+
+        /// <summary>
         /// Tests to see if different 503 substatus codes are handeled correctly
         /// </summary>
         /// <param name="testCode">The substatus code being Tested.</param>

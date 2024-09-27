@@ -30,7 +30,7 @@
         private static readonly string monitoredContainerPrefix = "monitored-";
         private static readonly string leasesContainer = "leases";
         private static readonly string partitionKeyPath = "/id";
-        static async Task Main(string[] args)
+        static async Task Main(string[] _)
         {
             try
             {
@@ -38,13 +38,13 @@
                     .AddJsonFile("appSettings.json")
                     .Build();
 
-                string endpoint = configuration["EndPointUrl"];
+                string? endpoint = configuration["EndPointUrl"];
                 if (string.IsNullOrEmpty(endpoint))
                 {
                     throw new ArgumentNullException("Please specify a valid endpoint in the appSettings.json");
                 }
 
-                string authKey = configuration["AuthorizationKey"];
+                string? authKey = configuration["AuthorizationKey"];
                 if (string.IsNullOrEmpty(authKey) || string.Equals(authKey, "Super secret key"))
                 {
                     throw new ArgumentException("Please specify a valid AuthorizationKey in the appSettings.json");

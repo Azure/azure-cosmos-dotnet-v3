@@ -5,7 +5,7 @@
 # the repo. Unless a later match takes precedence,
 # @global-owner1 and @global-owner2 will be requested for
 # review when someone opens a pull request.
-*       @kirankumarkolli @FabianMeiswinkel @kirillg @sboshra
+*       @kirankumarkolli @FabianMeiswinkel @sboshra @Pilchie
 Microsoft.Azure.Cosmos/src/Json @adityasa @neildsh @kirankumarkolli @sboshra
 Microsoft.Azure.Cosmos/src/Query @adityasa @neildsh @kirankumarkolli @sboshra
 Microsoft.Azure.Cosmos/src/CosmosElements @adityasa @neildsh @kirankumarkolli @sboshra
@@ -21,4 +21,4 @@ Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/Contracts @kir
 Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Contracts/DotNetSDKAPI.json @Azure/azure-cosmosdb-lt
 Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Contracts/DotNetPreviewSDKAPI.json @Azure/azure-cosmosdb-lt
 Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Contracts/DotNetSDKTelemetryAPI.json @Azure/azure-cosmosdb-lt
-CODEOWNERS @kirillg @kirankumarkolli
+CODEOWNERS @Pilchie @kirankumarkolli

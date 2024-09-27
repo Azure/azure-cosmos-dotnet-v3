@@ -30,6 +30,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         DCount = 1 << 10,
         NonStreamingOrderBy = 1 << 11,
         ListAndSetAggregate = 1 << 12,
-        HybridSearch = 1 << 13,
+        CountIf = 1 << 13,
+        HybridSearch = 1 << 14,
     }
 }

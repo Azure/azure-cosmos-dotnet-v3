@@ -76,7 +76,12 @@ namespace Microsoft.Azure.Cosmos
         /// reduce latency and increase availability. Currently there is one type of availability strategy, parallel request hedging.
         /// If there is a globally enabled availability strategy, setting one in the request options will override the global one.
         /// </summary>
-        internal AvailabilityStrategy AvailabilityStrategy { get; set; }
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        AvailabilityStrategy AvailabilityStrategy { get; set; }
 
         /// <summary>
         /// Gets or sets the boolean to use effective partition key routing in the cosmos db request.

@@ -576,10 +576,10 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.FeedIterator ReadNextAsync" displayName="FeedIterator ReadNextAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.read_feed_ranges" displayName="read_feed_ranges containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">FeedIterator ReadNextAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">read_feed_ranges</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -596,10 +596,10 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.FeedIterator ReadNextAsync" displayName="FeedIterator ReadNextAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.read_feed_ranges" displayName="read_feed_ranges containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">FeedIterator ReadNextAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">read_feed_ranges</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -616,10 +616,10 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.FeedIterator ReadNextAsync" displayName="FeedIterator ReadNextAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.read_feed_ranges" displayName="read_feed_ranges containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">FeedIterator ReadNextAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">read_feed_ranges</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -636,10 +636,10 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.FeedIterator ReadNextAsync" displayName="FeedIterator ReadNextAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.read_feed_ranges" displayName="read_feed_ranges containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">FeedIterator ReadNextAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">read_feed_ranges</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -1259,10 +1259,10 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.read_feed_ranges" displayName="read_feed_ranges containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">read_feed_ranges</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -1279,10 +1279,10 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.read_feed_ranges" displayName="read_feed_ranges containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">read_feed_ranges</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -1299,10 +1299,10 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.read_feed_ranges" displayName="read_feed_ranges containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">read_feed_ranges</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -1319,10 +1319,10 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.read_feed_ranges" displayName="read_feed_ranges containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">read_feed_ranges</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -1923,10 +1923,10 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.FeedIterator ReadNextAsync" displayName="FeedIterator ReadNextAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.read_feed_ranges" displayName="read_feed_ranges containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">FeedIterator ReadNextAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">read_feed_ranges</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -1943,10 +1943,10 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.FeedIterator ReadNextAsync" displayName="FeedIterator ReadNextAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.read_feed_ranges" displayName="read_feed_ranges containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">FeedIterator ReadNextAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">read_feed_ranges</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -1963,10 +1963,10 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.FeedIterator ReadNextAsync" displayName="FeedIterator ReadNextAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.read_feed_ranges" displayName="read_feed_ranges containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">FeedIterator ReadNextAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">read_feed_ranges</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -1983,10 +1983,10 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.FeedIterator ReadNextAsync" displayName="FeedIterator ReadNextAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.read_feed_ranges" displayName="read_feed_ranges containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">FeedIterator ReadNextAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">read_feed_ranges</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -2607,10 +2607,10 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.read_feed_ranges" displayName="read_feed_ranges containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">read_feed_ranges</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -2627,10 +2627,10 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.read_feed_ranges" displayName="read_feed_ranges containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">read_feed_ranges</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -2647,10 +2647,10 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.read_feed_ranges" displayName="read_feed_ranges containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">read_feed_ranges</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
@@ -2667,10 +2667,10 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync containerName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.read_feed_ranges" displayName="read_feed_ranges containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.operation.name">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">read_feed_ranges</ATTRIBUTE>
     <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>

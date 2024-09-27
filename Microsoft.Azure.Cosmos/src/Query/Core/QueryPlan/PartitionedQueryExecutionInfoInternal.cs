@@ -25,5 +25,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             get;
             set;
         }
+
+        // Change to the below after Direct package upgrade
+        // [JsonProperty(Constants.Properties.HybridSearchQueryInfo)]
+        [JsonProperty("hybridSearchQueryInfo")]
+        public HybridSearchQueryInfo HybridSearchQueryInfo
+        {
+            get;
+            set;
+        }
     }
 }

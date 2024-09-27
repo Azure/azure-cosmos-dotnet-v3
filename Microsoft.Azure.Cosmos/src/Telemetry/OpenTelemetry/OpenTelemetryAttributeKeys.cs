@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Represents the size of the batch operation.
         /// </summary>
-        public const string BatchSize = "db.operation.batch.size";
+        public const string BatchSize = "db.operation.batch_size";
 
         // Exceptions
 

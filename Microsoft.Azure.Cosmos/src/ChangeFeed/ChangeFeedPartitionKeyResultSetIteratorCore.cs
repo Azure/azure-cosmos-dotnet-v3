@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
-    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -81,6 +81,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             this.changeFeedStartFrom = changeFeedStartFrom ?? throw new ArgumentNullException(nameof(changeFeedStartFrom));
             this.clientContext = this.container.ClientContext;
             this.changeFeedOptions = options;
+
+            this.operationName = OpenTelemetryConstants.Operations.QueryChangeFeed;
         }
 
         public override bool HasMoreResults => this.hasMoreResultsInternal;
@@ -99,8 +101,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                                 operationType: Documents.OperationType.ReadFeed,
                                 requestOptions: this.changeFeedOptions,
                                 task: (trace) => this.ReadNextAsync(trace, cancellationToken),
-                                openTelemetry: (response) => new OpenTelemetryResponse(
-                                    responseMessage: response),
                                 traceComponent: TraceComponent.ChangeFeed,
                                 traceLevel: TraceLevel.Info);
         }

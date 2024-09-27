@@ -176,6 +176,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             {
                 QueryInfo = queryInfoInternal.QueryInfo,
                 QueryRanges = effectiveRanges,
+                HybridSearchQueryInfo = queryInfoInternal.HybridSearchQueryInfo,
             };
         }
 

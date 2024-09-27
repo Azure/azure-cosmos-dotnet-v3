@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
 
     // This class acts as a wrapper for environments that use SynchronizationContext.
     internal sealed class UserInlineCore : UserCore
@@ -32,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Read,
                 requestOptions: requestOptions,
                 task: (trace) => base.ReadAsync(requestOptions, trace, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<UserProperties>(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.ReadUser, (response) => new OpenTelemetryResponse<UserProperties>(response)));
         }
 
         public override Task<UserResponse> ReplaceAsync(
@@ -47,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Replace,
                 requestOptions: requestOptions,
                 task: (trace) => base.ReplaceAsync(userProperties, requestOptions, trace, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<UserProperties>(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.ReplaceUser, (response) => new OpenTelemetryResponse<UserProperties>(response)));
         }
 
         public override Task<UserResponse> DeleteAsync(
@@ -61,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Delete,
                 requestOptions: requestOptions,
                 task: (trace) => base.DeleteAsync(requestOptions, trace, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<UserProperties>(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.DeleteUser, (response) => new OpenTelemetryResponse<UserProperties>(response)));
         }
 
         public override Permission GetPermission(string id)
@@ -82,7 +83,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Create,
                 requestOptions: requestOptions,
                 task: (trace) => base.CreatePermissionAsync(permissionProperties, tokenExpiryInSeconds, requestOptions, trace, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<PermissionProperties>(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.CreatePermission, (response) => new OpenTelemetryResponse<PermissionProperties>(response)));
         }
 
         public override Task<PermissionResponse> UpsertPermissionAsync(
@@ -98,7 +99,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Upsert,
                 requestOptions: requestOptions,
                 task: (trace) => base.UpsertPermissionAsync(permissionProperties, tokenExpiryInSeconds, requestOptions, trace, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<PermissionProperties>(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.UpsertPermission, (response) => new OpenTelemetryResponse<PermissionProperties>(response)));
         }
 
         public override FeedIterator<T> GetPermissionQueryIterator<T>(

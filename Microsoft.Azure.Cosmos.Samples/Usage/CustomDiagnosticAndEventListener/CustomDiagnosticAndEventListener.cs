@@ -12,7 +12,7 @@
     /// <remarks>It is a simple sample. Anybody can get as creative as they want to make it better in terms of usability and performance.</remarks>
     internal class CustomDiagnosticAndEventListener :
         EventListener, // Override Event Listener to capture Event source events
-        IObserver<KeyValuePair<string, object>>, // Override IObserver to capture Activity events
+        IObserver<KeyValuePair<string, object?>>, // Override IObserver to capture Activity events
         IObserver<DiagnosticListener>,
         IDisposable
     {
@@ -47,7 +47,7 @@
         /// <summary>
         /// IObserver Override
         /// </summary>
-        public void OnNext(KeyValuePair<string, object> value)
+        public void OnNext(KeyValuePair<string, object?> value)
         {
             lock (this.Activities)
             {

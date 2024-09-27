@@ -14,8 +14,11 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
     using Microsoft.Azure.Cosmos.Routing;
     using Moq;
     using Microsoft.Azure.Cosmos.Tracing;
-    using System.Net.Http;
+    using Newtonsoft.Json;
     using System.Text;
+    using System.IO;
+    using System.Net.Http;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class FeedRangeTests
@@ -274,6 +277,95 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 Assert.AreEqual(HttpStatusCode.ServiceUnavailable, ex.StatusCode);
                 Assert.IsTrue(invokedPkRanges);
             }
+        }
+
+        /// <summary>
+        /// RangeJsonConverter accepts only (minInclusive=True, maxInclusive=False) combination
+        ///     In its serialization its not including minInclusive, maxInclusive combination 
+        ///     but on deserialization setting them to (true, false
+        ///     
+        /// All other combinations should throw an exception
+        /// </summary>
+        [TestMethod]
+        [DataRow(false, true)]
+        [DataRow(false, false)]
+        [DataRow(true, true)]
+        [DataRow(true, false)]
+        [Owner("kirankk")]
+        public void FeedRangeEpk_SerializationValidation(bool minInclusive, bool maxInclusive)
+        {
+            Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("", "FF", minInclusive, maxInclusive);
+            RangeJsonConverter rangeConverter = new RangeJsonConverter();
+
+            using StringWriter sw = new StringWriter();
+            using JsonWriter writer = new JsonTextWriter(sw);
+            {
+                JsonSerializer jsonSerializer = new JsonSerializer();
+                rangeConverter.WriteJson(writer, range, jsonSerializer);
+                writer.Flush();
+                sw.Flush();
+
+                JObject parsedJson = JObject.Parse(sw.ToString());
+                Assert.AreEqual(true, parsedJson.ContainsKey("min"));
+                Assert.AreEqual(string.Empty, parsedJson["min"]);
+                Assert.AreEqual(true, parsedJson.ContainsKey("max"));
+                Assert.AreEqual("FF", parsedJson["max"]);
+                Assert.AreEqual(!minInclusive, parsedJson.ContainsKey("isMinInclusive"));
+                Assert.AreEqual(maxInclusive, parsedJson.ContainsKey("isMaxInclusive"));
+                if (!minInclusive)
+                {
+                    Assert.AreEqual(false, parsedJson["isMinInclusive"]);
+                }
+
+                if (maxInclusive)
+                {
+                    Assert.AreEqual(true, parsedJson["isMaxInclusive"]);
+                }
+            }
+        }
+
+        [TestMethod]
+        [DataRow(false, true)]
+        [DataRow(false, false)]
+        [DataRow(true, true)]
+        [DataRow(true, false)]
+        [Owner("kirankk")]
+        public void FeedRangeEpk_SerdeValdation(bool minInclusive, bool maxInclusive)
+        {
+            Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("", "FF", minInclusive, maxInclusive);
+            RangeJsonConverter rangeConverter = new RangeJsonConverter();
+
+            using StringWriter sw = new StringWriter();
+            using JsonWriter writer = new JsonTextWriter(sw);
+            {
+                JsonSerializer jsonSerializer = new JsonSerializer();
+
+                rangeConverter.WriteJson(writer, range, jsonSerializer);
+
+                string serializedJson = sw.ToString();
+                System.Diagnostics.Trace.TraceInformation(serializedJson);
+
+                using TextReader reader = new StringReader(serializedJson);
+                using JsonReader jsonReader = new JsonTextReader(reader);
+                Documents.Routing.Range<string> rangeDeserialized = (Documents.Routing.Range<string>)rangeConverter.ReadJson(jsonReader, typeof(Documents.Routing.Range<string>), null, jsonSerializer);
+                Assert.IsTrue(range.Equals(rangeDeserialized), serializedJson);
+            }
+        }
+
+        [TestMethod]
+        [Owner("kirankk")]
+        public void FeedRangeEpk_BackwardComptibility()
+        {
+            string testJson = @"{""min"":"""",""max"":""FF""}";
+            System.Diagnostics.Trace.TraceInformation(testJson);
+            RangeJsonConverter rangeConverter = new RangeJsonConverter();
+
+            using TextReader reader = new StringReader(testJson);
+            using JsonReader jsonReader = new JsonTextReader(reader);
+            Documents.Routing.Range<string> rangeDeserialized = (Documents.Routing.Range<string>)rangeConverter.ReadJson(jsonReader, typeof(Documents.Routing.Range<string>), null, new JsonSerializer());
+
+            Assert.IsTrue(rangeDeserialized.IsMinInclusive);
+            Assert.IsFalse(rangeDeserialized.IsMaxInclusive);
         }
     }
 }

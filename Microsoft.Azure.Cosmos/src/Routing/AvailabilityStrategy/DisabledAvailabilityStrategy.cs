@@ -10,8 +10,9 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// A Disabled availability strategy that does not do anything. Used for overriding the default global availability strategy.
     /// </summary>
-    internal class DisabledAvailabilityStrategy : AvailabilityStrategy
+    internal class DisabledAvailabilityStrategy : AvailabilityStrategyInternal
     {
+        /// <inheritdoc/>
         internal override bool Enabled()
         {
             return false;
@@ -25,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestMessage"></param>
         /// <param name="cancellationToken"></param>
         /// <returns>nothing, this will throw.</returns>
-        public override Task<ResponseMessage> ExecuteAvailabilityStrategyAsync(
+        internal override Task<ResponseMessage> ExecuteAvailabilityStrategyAsync(
             Func<RequestMessage,
             CancellationToken,
             Task<ResponseMessage>> sender,
