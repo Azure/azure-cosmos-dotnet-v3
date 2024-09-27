@@ -47,13 +47,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             Func<KeyValuePair<string, object>[]> dimensionsFunc = () => new[]
                 {
-                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.AccountName., this.accountName),
+                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.AccountName, this.accountName),
                     new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ContainerName, telemetryInformation.ContainerId),
                     new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbName, telemetryInformation.DatabaseId),
                     new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.OperationType, telemetryInformation.OperationType),
-                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.StatusCode, telemetryInformation.StatusCode),
-                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.SubStatusCode, this.clientId),
-                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.SubStatusCode, telemetryInformation.ConsistencyLevel),
+                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.StatusCode, (int)telemetryInformation.StatusCode),
+                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.SubStatusCode, (int)telemetryInformation.SubStatusCode),
+                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ClientId, this.clientId),
+                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.Consistency, telemetryInformation.ConsistencyLevel),
                     new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.PartitionKeyRangeId, telemetryInformation.PartitionKeyRangeId),
                 };
 

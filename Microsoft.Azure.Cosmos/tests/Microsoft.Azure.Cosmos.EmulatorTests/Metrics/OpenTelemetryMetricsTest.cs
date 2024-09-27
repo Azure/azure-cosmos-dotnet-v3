@@ -11,8 +11,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
     using OpenTelemetry;
     using System.Diagnostics;
     using OpenTelemetry.Resources;
-    using global::Azure.Monitor.OpenTelemetry.Exporter;
     using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
+    using OpenTelemetry.Exporter;
 
     [TestClass]
     public class OpenTelemetryMetricsTest : BaseCosmosClientHelper
@@ -38,7 +38,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
                 {
                     Boundaries = OpenTelemetryMetricsConstant.HistogramBuckets.RequestLatencyBuckets
                 })
-                .AddAzureMonitorMetricExporter( o => o.ConnectionString = "")
+                .AddOtlpExporter((exporterOptions, metricReaderOptions) =>
+                 {
+                     exporterOptions.Endpoint = new Uri("http://localhost:9090/api/v1/otlp/v1/metrics");
+                     exporterOptions.Protocol = OtlpExportProtocol.HttpProtobuf;
+                     metricReaderOptions.PeriodicExportingMetricReaderOptions.ExportIntervalMilliseconds = 1000;
+                 })
+                //.AddAzureMonitorMetricExporter( o => o.ConnectionString = "")
                 .AddReader(new PeriodicExportingMetricReader(new CustomMetricExporter(), exportIntervalMilliseconds: 1000))
                 .Build();
 
