@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
         ParameterizedOnly = 1,
 
         /// <summary>
-        /// Print both parameterized and non parameterized query.
+        /// Print query text from both parameterized and non parameterized queries. Parameter values won't be captured.
         /// </summary>
         All = 2
     }
