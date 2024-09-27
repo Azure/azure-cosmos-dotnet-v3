@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Serializer;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using static Microsoft.Azure.Documents.RuntimeConstants;
@@ -49,6 +50,9 @@ namespace Microsoft.Azure.Cosmos
 
             this.databaseName = databaseId;
             this.container = container;
+
+            this.operationName = OpenTelemetryConstants.Operations.QueryItems;
+            this.operationType = OperationType.Query;
         }
 
         public override bool HasMoreResults => this.hasMoreResultsInternal;
@@ -212,6 +216,9 @@ namespace Microsoft.Azure.Cosmos
 
             this.databaseName = feedIterator.databaseName;
             this.container = feedIterator.container;
+
+            this.operationName = feedIterator.operationName;
+            this.operationType = feedIterator.operationType;
         }
 
         public override bool HasMoreResults => this.feedIterator.HasMoreResults;
