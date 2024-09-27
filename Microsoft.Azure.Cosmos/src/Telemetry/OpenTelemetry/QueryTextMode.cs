@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
         None = 0,
 
         /// <summary>
-        /// Print parameterized query only.
+        /// Only print query text that is parameterized. Parameter values won't be captured.
         /// </summary>
         ParameterizedOnly = 1,
 
