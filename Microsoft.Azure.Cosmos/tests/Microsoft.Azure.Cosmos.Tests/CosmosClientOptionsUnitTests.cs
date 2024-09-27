@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net;
     using System.Net.Http;
     using System.Net.Security;
+    using System.Reflection;
     using System.Security.Cryptography;
     using System.Security.Cryptography.X509Certificates;
     using System.Text;
@@ -716,6 +717,26 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions { ApplicationPreferredRegions = new List<string>() { Regions.EastUS }, ApplicationRegion = Regions.EastUS };
             cosmosClientOptions.GetConnectionPolicy(clientId: 0);
+        }
+
+        [TestMethod]
+        [DynamicData(nameof(GetTestData), DynamicDataSourceType.Method)]
+        public void VerifyApplicationRegionSettingsForAllPublicRegions(string regionName)
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions { ApplicationRegion = regionName };
+            cosmosClientOptions.GetConnectionPolicy(clientId: 0);
+        }
+
+        private static IEnumerable<object[]> GetTestData()
+        {
+            List<object[]> testData = new List<object[]>();
+            foreach (FieldInfo fieldInfo in typeof(Regions).GetFields().Where(e => e.IsPublic && e.IsStatic))
+            {
+                string regionValue = fieldInfo.GetValue(null).ToString();
+                testData.Add(new object[] { regionValue });
+            }
+
+            return testData;
         }
 
         [TestMethod]
