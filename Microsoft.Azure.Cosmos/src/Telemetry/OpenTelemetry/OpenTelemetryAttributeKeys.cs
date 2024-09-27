@@ -165,6 +165,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         public const string AccountName = "db.cosmosdb.account_name";
 
         /// <summary>
+        /// Consistency
+        /// </summary>
+        public const string Consistency = "db.cosmosdb.consistency";
+
+        /// <summary>
         /// PartitionKeyRangeId
         /// </summary>
         public const string PartitionKeyRangeId = "db.cosmosdb.partition_key_range_id";
