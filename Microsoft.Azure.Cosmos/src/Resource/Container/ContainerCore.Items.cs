@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos
                 trace: trace,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateItemResponse<T>(response);
+            return await this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
         }
 
         public async Task<ResponseMessage> ReadItemStreamAsync(
@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos
                 targetResponseSerializationFormat: default,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateItemResponse<T>(response);
+            return await this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
         }
 
         public async Task<ResponseMessage> UpsertItemStreamAsync(
@@ -168,7 +168,7 @@ namespace Microsoft.Azure.Cosmos
                 trace: trace,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateItemResponse<T>(response);
+            return await this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
         }
 
         public async Task<ResponseMessage> ReplaceItemStreamAsync(
@@ -218,7 +218,7 @@ namespace Microsoft.Azure.Cosmos
                trace: trace,
                cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateItemResponse<T>(response);
+            return await this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
         }
 
         public async Task<ResponseMessage> DeleteItemStreamAsync(
@@ -258,7 +258,7 @@ namespace Microsoft.Azure.Cosmos
                 targetResponseSerializationFormat: default,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateItemResponse<T>(response);
+            return await this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
         }
 
         public override FeedIterator GetItemQueryStreamIterator(
@@ -1162,7 +1162,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions,
                 cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateItemResponse<T>(responseMessage);
+            return await this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(responseMessage);
         }
 
         public Task<ResponseMessage> PatchItemStreamAsync(

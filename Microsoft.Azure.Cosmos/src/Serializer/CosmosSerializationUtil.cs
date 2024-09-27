@@ -7,11 +7,13 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.IO;
     using System.Text;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Json.Interop;
     using Microsoft.Azure.Cosmos.Serializer;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json.Serialization;
 
     internal static class CosmosSerializationUtil
@@ -57,26 +59,23 @@ namespace Microsoft.Azure.Cosmos
                 return null;
             }
 
-            using (CosmosBufferedStreamWrapper bufferedStream = new (
-                inputStream,
-                shouldDisposeInnerStream: false))
+            using (CloneableStream clonedStream = await StreamExtension.AsClonableStreamAsync(inputStream))
             {
-                if (bufferedStream != null
-                    && bufferedStream.CanRead
-                    && bufferedStream.GetJsonSerializationFormat() == expectedSerializationFormat)
+                byte[] targetContent = await CosmosSerializationUtil.GetByteArrayOfDesiredFormatAsync(
+                    clonedStream,
+                    expectedSerializationFormat.Value);
+
+                if (targetContent != null && targetContent.Length > 0)
                 {
-                    byte[] targetContent = await bufferedStream.ReadAllAsync();
+                    Stream outputStream = CosmosSerializationUtil.ConvertToStreamUsingJsonSerializationFormat(
+                        targetContent,
+                        targetSerializationFormat.Value);
 
-                    if (targetContent != null && targetContent.Length > 0)
-                    {
-                        return CosmosSerializationUtil.ConvertToStreamUsingJsonSerializationFormat(
-                            targetContent,
-                            targetSerializationFormat.Value);
-                    }
+                    return outputStream;
                 }
+                
+                return clonedStream.Clone();
             }
-
-            return null;
         }
 
         /// <summary>
@@ -103,6 +102,48 @@ namespace Microsoft.Azure.Cosmos
             byte[] formattedBytes = writer.GetResult().ToArray();
 
             return new MemoryStream(formattedBytes, index: 0, count: formattedBytes.Length, writable: true, publiclyVisible: true);
+        }
+
+        /// <summary>
+        /// Checks the first byte of the provided stream to determine if it matches the desired JSON serialization format.
+        /// </summary>
+        /// <param name="messageContent">The stream containing the message content to be checked.</param>
+        /// <param name="desiredFormat">The desired JSON serialization format to check against.</param>
+        /// <returns>Returns a boolean flag indicating if the first byte of the stream matches the desired format.</returns>
+        internal static async Task<byte[]> GetByteArrayOfDesiredFormatAsync(
+            CloneableStream messageContent,
+            JsonSerializationFormat desiredFormat)
+        {
+            byte[] content = default;
+
+            if (messageContent != null && messageContent.CanRead)
+            {
+                // Use a buffer to read the first byte
+                byte[] buffer = new byte[1];
+                int readCount = messageContent.Read(buffer, 0, 1);
+
+                // Check if the first byte matches the desired format
+                if (readCount > 0
+                    && (IsBinaryFormat(buffer[0], desiredFormat) || IsTextFormat(buffer[0], desiredFormat)))
+                {
+                    int count, sum = (int)messageContent.Position;
+                    byte[] bytes = new byte[messageContent.Length];
+                    while ((count = await messageContent.ReadAsync(bytes, sum, bytes.Length - sum, CancellationToken.None)) > 0)
+                    {
+                        sum += count;
+                    }
+
+                    bytes[0] = buffer[0];
+                    return bytes;
+                }
+            }
+
+            if (messageContent.CanSeek)
+            {
+                messageContent.Position = 0;
+            }
+
+            return content;
         }
 
         /// <summary>

@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Scripts;
 
     /// <summary>
@@ -28,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
         /// <typeparam name="T">The user</typeparam>
         /// <param name="responseMessage">The response message from the stream API</param>
         /// <returns>An instance of FeedResponse<typeparamref name="T"/></returns>
-        public abstract ItemResponse<T> CreateItemResponse<T>(
+        public abstract Task<ItemResponse<T>> CreateItemResponseAsync<T>(
             ResponseMessage responseMessage);
 
         /// <summary>

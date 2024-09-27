@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
     using System.IO;
     using System.Net;
     using System.Text;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Query.Core;
@@ -165,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
         }
 
         [TestMethod]
-        public void ValidateResponseFactoryJsonSerializer()
+        public async Task ValidateResponseFactoryJsonSerializer()
         {
             ResponseMessage databaseResponse = this.CreateResponse();
             ResponseMessage containerResponse = this.CreateResponse();
@@ -180,7 +181,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             CosmosResponseFactoryInternal cosmosResponseFactory = new CosmosResponseFactoryCore(serializerCore);
 
             // Verify all the user types use the user specified version
-            ItemResponse<ToDoActivity> itemResponseFromFactory = cosmosResponseFactory.CreateItemResponse<ToDoActivity>(itemResponse);
+            ItemResponse<ToDoActivity> itemResponseFromFactory = await cosmosResponseFactory.CreateItemResponseAsync<ToDoActivity>(itemResponse);
             Assert.IsNotNull(itemResponseFromFactory.Diagnostics);
             // Verify that FromStream is not called as the stream is empty
             mockUserJsonSerializer.Verify(x => x.FromStream<ToDoActivity>(itemResponse.Content), Times.Never);
@@ -250,7 +251,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
         }
 
         [TestMethod]
-        public void ValidateResponseFactoryJsonSerializerWithContent()
+        public async Task ValidateResponseFactoryJsonSerializerWithContent()
         {
             ResponseMessage itemResponse = this.CreateResponseWithContent();
 
@@ -261,7 +262,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(itemResponse.Content)).Callback<Stream>(input => input.Dispose()).Returns(new ToDoActivity());
 
             // Verify all the user types use the user specified version
-            ItemResponse<ToDoActivity> itemResponseFromFactory = cosmosResponseFactory.CreateItemResponse<ToDoActivity>(itemResponse);
+            ItemResponse<ToDoActivity> itemResponseFromFactory = await cosmosResponseFactory.CreateItemResponseAsync<ToDoActivity>(itemResponse);
             Assert.IsNotNull(itemResponseFromFactory.Diagnostics);
             Assert.IsNotNull(itemResponseFromFactory.Resource); 
             Assert.AreEqual(HttpStatusCode.OK, itemResponseFromFactory.StatusCode);
