@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     public enum QueryTextMode
     {
         /// <summary>
-        ///  Do not show query.
+        ///  Do not show query text.
         /// </summary>
         None = 0,
 
