@@ -340,14 +340,9 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             DatabaseAccountLocationsInfo databaseAccountLocationsInfoSnapshot = this.locationInfo;
 
-            ReadOnlyCollection<string> effectivePreferredLocations = databaseAccountLocationsInfoSnapshot.PreferredLocations;
+            ReadOnlyCollection<string> effectivePreferredLocations = databaseAccountLocationsInfoSnapshot.EffectivePreferredLocations;
 
-            if (effectivePreferredLocations == null || effectivePreferredLocations.Count == 0)
-            {
-                effectivePreferredLocations = databaseAccountLocationsInfoSnapshot.EffectivePreferredLocations;
-            }
-
-            return this.GetApplicableEndpoints(
+            return GetApplicableEndpoints(
                 isReadRequest ? this.locationInfo.AvailableReadEndpointByLocation : this.locationInfo.AvailableWriteEndpointByLocation,
                 effectivePreferredLocations,
                 this.defaultEndpoint,
@@ -356,39 +351,15 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public ReadOnlyCollection<string> GetApplicableRegions(IEnumerable<string> excludeRegions, bool isReadRequest)
         {
-            bool isPreferredLocationsEmpty = this.locationInfo.PreferredLocations == null || this.locationInfo.PreferredLocations.Count == 0;
-
             DatabaseAccountLocationsInfo databaseAccountLocationsInfoSnapshot = this.locationInfo;
 
-            ReadOnlyCollection<string> effectivePreferredLocations = this.locationInfo.PreferredLocations;
+            ReadOnlyCollection<string> effectivePreferredLocations = this.locationInfo.EffectivePreferredLocations;
 
-            if (effectivePreferredLocations == null || effectivePreferredLocations.Count == 0)
-            {
-                effectivePreferredLocations = databaseAccountLocationsInfoSnapshot.EffectivePreferredLocations;
-            }
-
-            Uri firstEffectivePreferredEndpoint = isReadRequest ? databaseAccountLocationsInfoSnapshot.ReadEndpoints[0] : databaseAccountLocationsInfoSnapshot.WriteEndpoints[0];
-            
-            if (isReadRequest)
-            {
-                databaseAccountLocationsInfoSnapshot.AvailableReadLocationByEndpoint.TryGetValue(firstEffectivePreferredEndpoint, out string firstEffectivePreferredLocation);
-
-                return this.GetApplicableRegions(
-                    databaseAccountLocationsInfoSnapshot.AvailableReadLocations,
-                    effectivePreferredLocations,
-                    isPreferredLocationsEmpty ? firstEffectivePreferredLocation : databaseAccountLocationsInfoSnapshot.PreferredLocations[0],
-                    excludeRegions);
-            }
-            else
-            {
-                databaseAccountLocationsInfoSnapshot.AvailableWriteLocationByEndpoint.TryGetValue(firstEffectivePreferredEndpoint, out string firstEffectivePreferredLocation);
-
-                return this.GetApplicableRegions(
-                    databaseAccountLocationsInfoSnapshot.AvailableWriteLocations,
-                    effectivePreferredLocations,
-                    isPreferredLocationsEmpty ? firstEffectivePreferredLocation : databaseAccountLocationsInfoSnapshot.PreferredLocations[0],
-                    excludeRegions);
-            }
+            return GetApplicableRegions(
+                isReadRequest ? databaseAccountLocationsInfoSnapshot.AvailableReadLocations : databaseAccountLocationsInfoSnapshot.AvailableWriteLocations,
+                effectivePreferredLocations,
+                effectivePreferredLocations[0],
+                excludeRegions);
         }
 
         /// <summary>
@@ -399,7 +370,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <param name="fallbackEndpoint"></param>
         /// <param name="excludeRegions"></param>
         /// <returns>a list of applicable endpoints for a request</returns>
-        private ReadOnlyCollection<Uri> GetApplicableEndpoints(
+        private static ReadOnlyCollection<Uri> GetApplicableEndpoints(
             ReadOnlyDictionary<string, Uri> regionNameByEndpoint,
             ReadOnlyCollection<string> effectivePreferredLocations,
             Uri fallbackEndpoint,
@@ -446,7 +417,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <param name="fallbackRegion"></param>
         /// <param name="excludeRegions"></param>
         /// <returns>a list of applicable endpoints for a request</returns>
-        private ReadOnlyCollection<string> GetApplicableRegions(
+        private static ReadOnlyCollection<string> GetApplicableRegions(
             ReadOnlyCollection<string> availableLocations,
             ReadOnlyCollection<string> effectivePreferredLocations,
             string fallbackRegion,
@@ -490,12 +461,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             canRefreshInBackground = true;
             DatabaseAccountLocationsInfo currentLocationInfo = this.locationInfo;
 
-            string mostPreferredLocation = currentLocationInfo.PreferredLocations.FirstOrDefault();
-            
-            if (currentLocationInfo.PreferredLocations == null || currentLocationInfo.PreferredLocations.Count == 0)
-            {
-                mostPreferredLocation = currentLocationInfo.EffectivePreferredLocations.FirstOrDefault();
-            }
+            string mostPreferredLocation = currentLocationInfo.EffectivePreferredLocations.FirstOrDefault();
 
             // we should schedule refresh in background if we are unable to target the user's most preferredLocation.
             if (this.enableEndpointDiscovery)
@@ -730,6 +696,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                     expectedAvailableOperation: OperationType.Read,
                     fallbackEndpoint: nextLocationInfo.WriteEndpoints[0]);
 
+                nextLocationInfo.EffectivePreferredLocations = nextLocationInfo.PreferredLocations;
+
                 if (nextLocationInfo.PreferredLocations == null || nextLocationInfo.PreferredLocations.Count == 0)
                 {
                     if (!nextLocationInfo.AvailableReadLocationByEndpoint.TryGetValue(this.defaultEndpoint, out string regionForDefaultEndpoint))
@@ -738,6 +706,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                     }
                     else
                     {
+                        // if defaultEndpoint equals a regional endpoint - do not use account-level regions,
+                        // stick to defaultEndpoint configured for the CosmosClient instance
                         List<string> locations = new ()
                         {
                             regionForDefaultEndpoint
@@ -797,6 +767,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                         {
                             if (endpointsByLocation.TryGetValue(location, out Uri endpoint))
                             {
+                                // if defaultEndpoint equals a regional endpoint - do not use account-level regions,
+                                // stick to defaultEndpoint configured for the CosmosClient instance
                                 if (this.defaultEndpoint.Equals(endpoint))
                                 {
                                     endpoints = new List<Uri>();

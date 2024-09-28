@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             get
             {
-                Collection<string> effectivePreferredLocations = this.GetEffectivePreferredLocations();
+                IList<string> effectivePreferredLocations = this.GetEffectivePreferredLocations();
 
                 return effectivePreferredLocations.Count;
             }
@@ -128,8 +128,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             IList<string>? locations,
             IList<Uri>? accountInitializationCustomEndpoints,
             Func<Uri, Task<AccountProperties>> getDatabaseAccountFn,
-            CancellationToken cancellationToken,
-            ReaderWriterLockSlim accountPropertiesReaderWriterLock)
+            ReaderWriterLockSlim accountPropertiesReaderWriterLock,
+            CancellationToken cancellationToken)
         {
             using (GetAccountPropertiesHelper threadSafeGetAccountHelper = new GetAccountPropertiesHelper(
                defaultEndpoint,
@@ -714,8 +714,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                                   this.GetEffectivePreferredLocations(),
                                   this.connectionPolicy.AccountInitializationCustomEndpoints,
                                   this.GetDatabaseAccountAsync,
-                                  this.cancellationTokenSource.Token,
-                                  this.locationCacheDatabaseAccountReadWriteLock),
+                                  this.locationCacheDatabaseAccountReadWriteLock,
+                                  this.cancellationTokenSource.Token),
                               cancellationToken: this.cancellationTokenSource.Token,
                               forceRefresh: forceRefresh);
 #nullable enable
@@ -732,7 +732,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 && !forceRefresh;
         }
 
-        public Collection<string> GetEffectivePreferredLocations()
+        public IList<string> GetEffectivePreferredLocations()
         {
             if (this.connectionPolicy.PreferredLocations != null && this.connectionPolicy.PreferredLocations.Count > 0)
             {
@@ -743,7 +743,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             try
             {
-                return new Collection<string>(this.locationCache.EffectivePreferredLocations);
+                return this.locationCache.EffectivePreferredLocations;
             }
             finally
             {
