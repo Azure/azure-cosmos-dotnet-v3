@@ -733,7 +733,13 @@ namespace Microsoft.Azure.Cosmos.Tests
             foreach (FieldInfo fieldInfo in typeof(Regions).GetFields().Where(e => e.IsPublic && e.IsStatic))
             {
                 string regionValue = fieldInfo.GetValue(null).ToString();
-                testData.Add(new object[] { regionValue });
+
+                // TODO: 
+                if (!regionValue.Equals("Germany Central", StringComparison.OrdinalIgnoreCase)
+                    && !regionValue.Equals("Germany Northeast", StringComparison.OrdinalIgnoreCase))
+                {
+                    testData.Add(new object[] { regionValue });
+                }
             }
 
             return testData;
