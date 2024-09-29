@@ -521,18 +521,6 @@
     "Microsoft.Azure.Cosmos.ChangeFeedRequestOptions;Microsoft.Azure.Cosmos.RequestOptions;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "System.Nullable`1[Microsoft.Azure.Cosmos.QueryTextMode] get_QueryTextMode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.QueryTextMode] get_QueryTextMode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.Nullable`1[Microsoft.Azure.Cosmos.QueryTextMode] QueryTextMode": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.QueryTextMode] QueryTextMode;CanRead:True;CanWrite:True;System.Nullable`1[Microsoft.Azure.Cosmos.QueryTextMode] get_QueryTextMode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_QueryTextMode(System.Nullable`1[Microsoft.Azure.Cosmos.QueryTextMode]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
         "System.Nullable`1[System.Int32] get_PageSizeHint()": {
           "Type": "Method",
           "Attributes": [],
@@ -588,13 +576,6 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Void set_PageSizeHint(System.Nullable`1[System.Int32]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Void set_QueryTextMode(System.Nullable`1[Microsoft.Azure.Cosmos.QueryTextMode])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_QueryTextMode(System.Nullable`1[Microsoft.Azure.Cosmos.QueryTextMode]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -6922,20 +6903,20 @@
           "Attributes": [],
           "MethodInfo": "Int32 value__;IsInitOnly:False;IsStatic:False;"
         },
-        "Microsoft.Azure.Cosmos.QueryTextMode ALL": {
+        "Microsoft.Azure.Cosmos.QueryTextMode All": {
           "Type": "Field",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.QueryTextMode ALL;IsInitOnly:False;IsStatic:True;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.QueryTextMode All;IsInitOnly:False;IsStatic:True;"
         },
-        "Microsoft.Azure.Cosmos.QueryTextMode NONE": {
+        "Microsoft.Azure.Cosmos.QueryTextMode None": {
           "Type": "Field",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.QueryTextMode NONE;IsInitOnly:False;IsStatic:True;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.QueryTextMode None;IsInitOnly:False;IsStatic:True;"
         },
-        "Microsoft.Azure.Cosmos.QueryTextMode PARAMETERIZED_ONLY": {
+        "Microsoft.Azure.Cosmos.QueryTextMode ParameterizedOnly": {
           "Type": "Field",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.QueryTextMode PARAMETERIZED_ONLY;IsInitOnly:False;IsStatic:True;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.QueryTextMode ParameterizedOnly;IsInitOnly:False;IsStatic:True;"
         }
       },
       "NestedTypes": {}
@@ -7491,18 +7472,6 @@
         "Microsoft.Azure.Cosmos.ChangeFeedRequestOptions;Microsoft.Azure.Cosmos.RequestOptions;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
           "Subclasses": {},
           "Members": {
-            "System.Nullable`1[Microsoft.Azure.Cosmos.QueryTextMode] get_QueryTextMode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-              "Type": "Method",
-              "Attributes": [
-                "CompilerGeneratedAttribute"
-              ],
-              "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.QueryTextMode] get_QueryTextMode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-            },
-            "System.Nullable`1[Microsoft.Azure.Cosmos.QueryTextMode] QueryTextMode": {
-              "Type": "Property",
-              "Attributes": [],
-              "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.QueryTextMode] QueryTextMode;CanRead:True;CanWrite:True;System.Nullable`1[Microsoft.Azure.Cosmos.QueryTextMode] get_QueryTextMode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_QueryTextMode(System.Nullable`1[Microsoft.Azure.Cosmos.QueryTextMode]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-            },
             "System.Nullable`1[System.Int32] get_PageSizeHint()": {
               "Type": "Method",
               "Attributes": [],
@@ -7558,13 +7527,6 @@
               "Type": "Method",
               "Attributes": [],
               "MethodInfo": "Void set_PageSizeHint(System.Nullable`1[System.Int32]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-            },
-            "Void set_QueryTextMode(System.Nullable`1[Microsoft.Azure.Cosmos.QueryTextMode])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-              "Type": "Method",
-              "Attributes": [
-                "CompilerGeneratedAttribute"
-              ],
-              "MethodInfo": "Void set_QueryTextMode(System.Nullable`1[Microsoft.Azure.Cosmos.QueryTextMode]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             }
           },
           "NestedTypes": {}
