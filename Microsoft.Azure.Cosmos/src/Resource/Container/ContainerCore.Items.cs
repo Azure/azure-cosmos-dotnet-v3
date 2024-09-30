@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Globalization;
     using System.IO;
     using System.Linq;
+    using System.Numerics;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -1307,7 +1308,8 @@ namespace Microsoft.Azure.Cosmos
                     {
                         if (!FeedRangeInternal.TryParse(parentFeedRange.ToJsonString(), out parentFeedRangeInternal))
                         {
-                            throw new ArgumentException(string.Format(ClientResources.FeedToken_UnknownFormat, parentFeedRange.ToJsonString()));
+                            throw new ArgumentException(
+                                string.Format("The provided string, '{0}', for '{1}', does not represent any known format.", parentFeedRange.ToJsonString(), nameof(parentFeedRange)));
                         }
                     }
 
@@ -1315,7 +1317,8 @@ namespace Microsoft.Azure.Cosmos
                     {
                         if (!FeedRangeInternal.TryParse(childFeedRange.ToJsonString(), out childFeedRangeInternal))
                         {
-                            throw new ArgumentException(string.Format(ClientResources.FeedToken_UnknownFormat, childFeedRange.ToJsonString()));
+                            throw new ArgumentException(
+                                string.Format("The provided string, '{0}', for '{1}', does not represent any known format.", childFeedRange.ToJsonString(), nameof(childFeedRange)));
                         }
                     }
 
@@ -1541,16 +1544,93 @@ namespace Microsoft.Azure.Cosmos
 
             bool isMaxWithinParent = (parentRange.IsMaxInclusive, childRange.IsMaxInclusive) switch
             {
-                (false, true) => parentRange.Contains(childRange.Max),  // Parent max is exclusive, child max is inclusive
-                _ => parentRange.Max == childRange.Max || parentRange.Contains(childRange.Max) // Default for the following combinations:
-                                                                                                // (false, false): Both max values are exclusive
-                                                                                                // (true, true): Both max values are inclusive
-                                                                                                // (true, false): Parent max is inclusive, child max is exclusive
+            (false, true) => parentRange.Contains(childRange.Max),  // Parent max is exclusive, child max is inclusive
+            (true, false) => ContainerCore.IsChildMaxExclusiveWithinParent(parentRange, childRange), // (true, false): Parent max is inclusive, child max is exclusive
+                _ => ContainerCore.IsChildMaxWithinParent(parentRange, childRange.Max) // Default for the following combinations:
+                                                                                        // (true, true): Both max values are inclusive
+                                                                                        // (false, false): Both max values are exclusive
             };
 
             bool isMinWithinParent = parentRange.Contains(childRange.Min);
 
             return isMinWithinParent && isMaxWithinParent;
+        }
+
+        /// <summary>
+        /// Determines whether the given maximum value of the child range is either equal to or contained within the parent range.
+        /// </summary>
+        /// <param name="parentRange">The parent range to compare against, which defines the boundary.</param>
+        /// <param name="childRangeMax">The maximum value of the child range to be checked.</param>
+        /// <returns>True if the maximum value of the child range is equal to or contained within the parent range; otherwise, false.</returns>
+        private static bool IsChildMaxWithinParent(
+            Documents.Routing.Range<string> parentRange,
+            string childRangeMax)
+        {
+            return parentRange.Max == childRangeMax || parentRange.Contains(childRangeMax);
+        }
+
+        /// <summary>
+        /// Determines whether the exclusive maximum of the child range is either equal to or contained within the parent range.
+        /// </summary>
+        /// <param name="parentRange">The range representing the parent, which is compared against.</param>
+        /// <param name="childRange">The range representing the child, whose exclusive maximum is checked.</param>
+        /// <returns>True if the exclusive maximum of the child range is within or equal to the parent range's maximum; otherwise, false.</returns>
+        private static bool IsChildMaxExclusiveWithinParent(
+            Documents.Routing.Range<string> parentRange,
+            Documents.Routing.Range<string> childRange)
+        {
+            // Calculate the exclusive maximum of the child range
+            string childMaxExclusive = ContainerCore.GetExclusiveMaxValue(childRange.Max);
+
+            // Check if the parent's max is equal to or contains the child's exclusive max
+            return ContainerCore.IsChildMaxWithinParent(parentRange, childMaxExclusive);
+        }
+
+        /// <summary>
+        /// Returns the exclusive maximum of the given value by subtracting one.
+        /// Supports hexadecimal and numeric values. If the value is neither, it returns the original string.
+        /// </summary>
+        /// <param name="value">The value to calculate the exclusive maximum for, either a hexadecimal or numeric string.</param>
+        /// <returns>The exclusive maximum of the value as a string, or the original value if no subtraction can be performed.</returns>
+        private static string GetExclusiveMaxValue(string value)
+        {
+            // Check if the value is a valid hexadecimal string
+            if (ContainerCore.IsValidHex(value))
+            {
+                try
+                {
+                    long number = Convert.ToInt64(value, 16);
+                    number -= 1;
+                    return number.ToString("X"); // Return the result as a hexadecimal string
+                }
+                catch (OverflowException)
+                {
+                    // Handle overflow in case of extremely large numbers
+                    throw new ArgumentOutOfRangeException(nameof(value), "Value is too large to process as a hexadecimal.");
+                }
+            }
+            // Check if the value is a valid numeric string
+            else if (long.TryParse(value, out long numericValue))
+            {
+                return (numericValue - 1).ToString(); // Subtract 1 and return as a string
+            }
+            else
+            {
+                // If the value is neither a hex nor a number, return it as is
+                return value;
+            }
+        }
+
+        /// <summary>
+        /// Determines whether the provided string represents a valid hexadecimal number.
+        /// Supports both small and large hexadecimal numbers.
+        /// </summary>
+        /// <param name="value">The string to check for a valid hexadecimal format.</param>
+        /// <returns>True if the string is a valid hexadecimal number; otherwise, false.</returns>
+        private static bool IsValidHex(string value)
+        {
+            // Try to parse the string as a hexadecimal number using BigInteger to handle larger values
+            return BigInteger.TryParse(value, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out _);
         }
     }
 }

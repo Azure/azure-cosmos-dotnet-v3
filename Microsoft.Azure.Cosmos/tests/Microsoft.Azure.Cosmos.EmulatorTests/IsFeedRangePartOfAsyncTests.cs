@@ -224,7 +224,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.GivenInvalidChildFeedRangeExpectsArgumentExceptionIsFeedRangePartOfAsyncTestAsync<ArgumentException>(
                 feedRange: feedRange,
-                expectedMessage: $"The provided string '<xml />' does not represent any known format.");
+                expectedMessage: $"The provided string, '<xml />', for 'childFeedRange', does not represent any known format.");
         }
 
         private async Task GivenInvalidChildFeedRangeExpectsArgumentExceptionIsFeedRangePartOfAsyncTestAsync<TExceeption>(
@@ -315,7 +315,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.GivenInvalidParentFeedRangeExpectsArgumentExceptionIsFeedRangePartOfAsyncTestAsync<ArgumentException>(
                 feedRange: feedRange,
-                expectedMessage: $"The provided string '<xml />' does not represent any known format.");
+                expectedMessage: $"The provided string, '<xml />', for 'parentFeedRange', does not represent any known format.");
         }
 
         private async Task GivenInvalidParentFeedRangeExpectsArgumentExceptionIsFeedRangePartOfAsyncTestAsync<TException>(FeedRange feedRange, string expectedMessage)
@@ -514,8 +514,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             yield return new object[] { "5999999999999999", "6666666666666666", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true }; // The child range, from 5999999999999999 to just before 6666666666666666, fits entirely within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends at 7FFFFFFFFFFFFFFF (inclusive).
             yield return new object[] { "6666666666666666", "7333333333333333", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true }; // The child range, from 6666666666666666 to just before 7333333333333333, fits entirely within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends at 7FFFFFFFFFFFFFFF (inclusive).
             yield return new object[] { "7333333333333333", "7FFFFFFFFFFFFFFF", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true }; // The child range, from 7333333333333333 to just before 7FFFFFFFFFFFFFFF, fits entirely within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends at 7FFFFFFFFFFFFFFF (inclusive).
-            yield return new object[] { "10", "11", false, "10", "10", true, false }; // The child range, which starts at 10 and ends just before 11 (non-inclusive), does not fits entirely within the parent range, which starts and ends at 10 (inclusive), due to the parent's inclusive boundary at 10.
-            yield return new object[] { "A", "B", false, "A", "A", true, false }; // The child range, which starts at A and ends just before B (non-inclusive), does not fits entirely within the parent range, which starts and ends at A (inclusive), due to the parent's inclusive boundary at A.
+            yield return new object[] { "10", "11", false, "10", "10", true, true }; // The child range, which starts at 10 and ends just before 11 (non-inclusive), does not fits entirely within the parent range, which starts and ends at 10 (inclusive), due to the parent's inclusive boundary at 10.
+            yield return new object[] { "A", "B", false, "A", "A", true, true }; // The child range, which starts at A and ends just before B (non-inclusive), does not fits entirely within the parent range, which starts and ends at A (inclusive), due to the parent's inclusive boundary at A.
         }
 
         /// <summary>
