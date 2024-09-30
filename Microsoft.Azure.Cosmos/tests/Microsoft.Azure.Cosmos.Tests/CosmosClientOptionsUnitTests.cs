@@ -720,16 +720,16 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [DynamicData(nameof(GetTestData), DynamicDataSourceType.Method)]
+        [DynamicData(nameof(GetPublicRegionNames), DynamicDataSourceType.Method)]
         public void VerifyApplicationRegionSettingsForAllPublicRegions(string regionName)
         {
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions { ApplicationRegion = regionName };
             cosmosClientOptions.GetConnectionPolicy(clientId: 0);
         }
 
-        private static IEnumerable<object[]> GetTestData()
+        private static IEnumerable<object[]> GetPublicRegionNames()
         {
-            List<object[]> testData = new List<object[]>();
+            List<object[]> regionNames = new List<object[]>();
             foreach (FieldInfo fieldInfo in typeof(Regions).GetFields().Where(e => e.IsPublic && e.IsStatic))
             {
                 string regionValue = fieldInfo.GetValue(null).ToString();
@@ -737,11 +737,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 if (!regionValue.Equals(Regions.GermanyCentral, StringComparison.OrdinalIgnoreCase)
                     && !regionValue.Equals(Regions.GermanyNortheast, StringComparison.OrdinalIgnoreCase))
                 {
-                    testData.Add(new object[] { regionValue });
+                    regionNames.Add(new object[] { regionValue });
                 }
             }
 
-            return testData;
+            return regionNames;
         }
 
         [TestMethod]
