@@ -356,13 +356,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 cipherText,
                 encryptionProperties.DataEncryptionKeyId,
                 encryptionProperties.EncryptionAlgorithm,
-                cancellationToken);
-
-            if (plainText == null)
-            {
-                throw new InvalidOperationException($"{nameof(Encryptor)} returned null plainText from {nameof(DecryptAsync)}.");
-            }
-
+                cancellationToken) ?? throw new InvalidOperationException($"{nameof(Encryptor)} returned null plainText from {nameof(DecryptAsync)}.");
             return plainText;
         }
 
@@ -382,18 +376,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 encryptionProperties.EncryptedData,
                 encryptionProperties.DataEncryptionKeyId,
                 encryptionProperties.EncryptionAlgorithm,
-                cancellationToken);
-
-            if (plainText == null)
-            {
-                throw new InvalidOperationException($"{nameof(Encryptor)} returned null plainText from {nameof(DecryptAsync)}.");
-            }
-
+                cancellationToken) ?? throw new InvalidOperationException($"{nameof(Encryptor)} returned null plainText from {nameof(DecryptAsync)}.");
             JObject plainTextJObj;
             using (MemoryStream memoryStream = new MemoryStream(plainText))
             using (StreamReader streamReader = new StreamReader(memoryStream))
             using (JsonTextReader jsonTextReader = new JsonTextReader(streamReader))
             {
+                jsonTextReader.ArrayPool = JsonArrayPool.Instance;
                 plainTextJObj = JObject.Load(jsonTextReader);
             }
 
@@ -458,6 +447,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             using (StreamReader sr = new StreamReader(input, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
             using (JsonTextReader jsonTextReader = new JsonTextReader(sr))
             {
+                jsonTextReader.ArrayPool = JsonArrayPool.Instance;
                 JsonSerializerSettings jsonSerializerSettings = new JsonSerializerSettings()
                 {
                     DateParseHandling = DateParseHandling.None,
