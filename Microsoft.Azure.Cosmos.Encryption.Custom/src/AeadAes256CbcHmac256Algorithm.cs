@@ -158,7 +158,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <returns>Returns the ciphertext corresponding to the plaintext.</returns>
         public override int EncryptData(byte[] plainText, int plainTextOffset, int plainTextLength, byte[] output, int outputOffset)
         {
-            throw new NotImplementedException();
+            var buffer = this.EncryptData(plainText.AsSpan(plainTextOffset, plainTextLength).ToArray());
+
+            if (buffer.Length > output.Length-outputOffset)
+            {
+                throw new ArgumentOutOfRangeException($"Output buffer is shorter than required {buffer.Length} bytes");
+            }
+
+            buffer.CopyTo(output, outputOffset);
+            return buffer.Length;
         }
 
         /// <summary>

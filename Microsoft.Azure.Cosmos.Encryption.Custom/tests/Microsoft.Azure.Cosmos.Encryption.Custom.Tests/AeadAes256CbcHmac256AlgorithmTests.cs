@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             byte[] cipherTextBytes = new byte[cipherTextLength];
 
             int encrypted = algorithm.EncryptData(plainTextBytes, 0, plainTextBytes.Length, cipherTextBytes, 0);
-            Assert.Equals(encrypted, cipherTextLength);
+            Assert.AreEqual(encrypted, cipherTextLength);
 
             byte[] decrypted = algorithm.DecryptData(cipherTextBytes);
 
