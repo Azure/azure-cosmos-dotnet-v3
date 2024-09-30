@@ -50,11 +50,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Retrieve Data Encryption Key.
+        /// </summary>
+        /// <param name="dataEncryptionKeyId">Identifier of the data encryption key.</param>
+        /// <param name="encryptionAlgorithm">Identifier of the encryption algorithm.</param>
+        /// <param name="cancellationToken">Token for cancellation.</param>
+        /// <returns>Data Encryption Key</returns>
+        public abstract Task<DataEncryptionKey> GetEncryptionKeyAsync(string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Calculate size of input after encryption.
         /// </summary>
         /// <param name="plainTextLength">Input data size.</param>
         /// <param name="dataEncryptionKeyId">Identifier of the data encryption key.</param>
         /// <param name="encryptionAlgorithm">Identifier for the encryption algorithm.</param>
+        /// <param name="dataEncryptionKey">Data Encryption Key used.</param>
         /// <param name="cancellationToken">Token for cancellation.</param>
         /// <returns>Size of input when encrypted.</returns>
         public abstract Task<int> GetEncryptBytesCountAsync(

@@ -55,19 +55,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 return input;
             }
 
-            if (!encryptionOptions.PathsToEncrypt.Distinct().SequenceEqual(encryptionOptions.PathsToEncrypt))
+            if (encryptionOptions.PathsToEncrypt.Distinct().Count() != encryptionOptions.PathsToEncrypt.Count())
             {
                 throw new InvalidOperationException("Duplicate paths in PathsToEncrypt passed via EncryptionOptions.");
             }
 
             foreach (string path in encryptionOptions.PathsToEncrypt)
             {
-                if (string.IsNullOrWhiteSpace(path) || path[0] != '/' || path.LastIndexOf('/') != 0)
+                if (string.IsNullOrWhiteSpace(path) || path[0] != '/' || path.LastIndexOf(',', 1) != -1)
                 {
                     throw new InvalidOperationException($"Invalid path {path ?? string.Empty}, {nameof(encryptionOptions.PathsToEncrypt)}");
                 }
 
-                if (string.Equals(path.Substring(1), "id"))
+                if (path.AsSpan(1).Equals("id".AsSpan(), StringComparison.InvariantCulture))
                 {
                     throw new InvalidOperationException($"{nameof(encryptionOptions.PathsToEncrypt)} includes a invalid path: '{path}'.");
                 }
@@ -99,22 +99,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
                         (typeMarker, plainText) = EncryptionProcessor.Serialize(propertyValue);
 
-                        int cipherTextLength = await encryptor.GetEncryptBytesCountAsync(
-                            plainText.Length,
-                            encryptionOptions.DataEncryptionKeyId,
-                            encryptionOptions.EncryptionAlgorithm);
+                        DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionOptions.DataEncryptionKeyId, encryptionOptions.EncryptionAlgorithm);
+
+                        int cipherTextLength = encryptionKey.GetEncryptByteCount(plainText.Length);
 
                         byte[] cipherTextWithTypeMarker = new byte[cipherTextLength + 1];
                         cipherTextWithTypeMarker[0] = (byte)typeMarker;
 
-                        int encryptedBytesCount = await encryptor.EncryptAsync(
+                        int encryptedBytesCount = encryptionKey.EncryptData(
                             plainText,
                             plainTextOffset: 0,
                             plainTextLength: plainText.Length,
                             cipherTextWithTypeMarker,
-                            outputOffset: 1,
-                            encryptionOptions.DataEncryptionKeyId,
-                            encryptionOptions.EncryptionAlgorithm);
+                            outputOffset: 1);
 
                         if (encryptedBytesCount < 0)
                         {
