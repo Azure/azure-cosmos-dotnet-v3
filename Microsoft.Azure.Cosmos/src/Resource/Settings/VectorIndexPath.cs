@@ -32,11 +32,15 @@ namespace Microsoft.Azure.Cosmos
     ///         },
     ///         {
     ///             "path": "/vector2",
-    ///             "type": "flat"
+    ///             "type": "quantizedFlat",
+    ///             "quantizationByteSize": 4,
     ///         },
     ///         {
     ///             "path": "/embeddings/vector",
-    ///             "type": "flat"
+    ///             "type": "DiskANN",
+    ///             "quantizationByteSize": 4,
+    ///             "indexingSearchListSize": 100,
+    ///             "vectorIndexShardKey": ["/Country/City", "ZipCode"]
     ///         }
     ///     ]
     /// }
@@ -61,6 +65,24 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = "type")]
         [JsonConverter(typeof(StringEnumConverter))]
         public VectorIndexType Type { get; set; }
+
+        /// <summary>
+        /// Gets or sets the full path in a document used for vector indexing.
+        /// </summary>
+        [JsonProperty(PropertyName = "quantizationByteSize")]
+        public int QuantizationByteSize { get; set; }
+
+        /// <summary>
+        /// Gets or sets the full path in a document used for vector indexing.
+        /// </summary>
+        [JsonProperty(PropertyName = "indexingSearchListSize")]
+        public int IndexingSearchListSize { get; set; }
+
+        /// <summary>
+        /// Gets or sets the full path in a document used for vector indexing.
+        /// </summary>
+        [JsonProperty(PropertyName = "vectorIndexShardKey")]
+        public string[] VectorIndexShardKey { get; set; }
 
         /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 
