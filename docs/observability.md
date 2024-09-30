@@ -7,7 +7,7 @@
 
 There are 3 kind of events generated:
 1. LatencyOverThrehold: If particular operation latency is more than threshold.
-2. FailedRequest: If particular reequest failed. Status codes not considered as failed, are anything below 300, 404/0, 304/0, 409/0, and 412/0
+2. FailedRequest: If particular request failed. Status codes not considered as failed, are anything below 300, 404/0, 304/0, 409/0, and 412/0
 3. Exception: If any exception occured.
 
 For detail about usage of this feature, please see the [Azure Cosmos DB SDK observability](https://learn.microsoft.com/azure/cosmos-db/nosql/sdk-observability?tabs=dotnet)
