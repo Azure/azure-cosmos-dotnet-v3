@@ -72,8 +72,9 @@ namespace Microsoft.Azure.Cosmos
                 RetryAfterLiteral = this.RetryAfterLiteral,
                 SubStatusCodeLiteral = this.SubStatusCodeLiteral,
                 ContentType = this.ContentType,
-                QueryMetricsText = QueryMetricsText,
-                IndexUtilizationText = IndexUtilizationText,
+                QueryMetricsText = this.QueryMetricsText,
+                IndexUtilizationText = this.IndexUtilizationText,
+                QueryAdvice = this.QueryAdvice,
                 CorrelatedActivityId = this.CorrelatedActivityId
             };
         }
@@ -110,6 +111,7 @@ namespace Microsoft.Azure.Cosmos
                 ContentType = sourceHeaders.ContentType,
                 QueryMetricsText = sourceHeaders.QueryMetricsText,
                 IndexUtilizationText = sourceHeaders.IndexUtilizationText,
+                QueryAdvice = sourceHeaders.QueryAdvice,
                 CorrelatedActivityId = sourceHeaders.CorrelatedActivityId
             };
         }
