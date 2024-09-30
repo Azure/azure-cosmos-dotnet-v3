@@ -1798,20 +1798,20 @@ namespace Microsoft.Azure.Cosmos
         /// CosmosClient cosmosClient = cosmosClientBuilder.Build();
         /// Database cosmosDatabase = cosmosClient.GetDatabase("your-database-id");
         /// Container container = cosmosDatabase.GetContainer("your-container-id");
-        /// FeedRange parentFeedRange = ...; // Define the parent feed range
-        /// FeedRange childFeedRange = ...;  // Define the child feed range
+        /// FeedRange x = ...; // Define the parent feed range
+        /// FeedRange y = ...;  // Define the child feed range
         ///
         /// bool isFeedRangePartOfAsync = await container.IsFeedRangePartOfAsync(
-        ///    parentFeedRange,
-        ///    childFeedRange,
+        ///    x,
+        ///    y,
         ///    cancellationToken);
         /// ]]>
         /// </code>
         /// </example>
         /// <returns>True if the child feed range is a subset of the parent feed range; otherwise, false.</returns>
         public virtual Task<bool> IsFeedRangePartOfAsync(
-            Cosmos.FeedRange parentFeedRange,
-            Cosmos.FeedRange childFeedRange,
+            Cosmos.FeedRange x,
+            Cosmos.FeedRange y,
             CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
