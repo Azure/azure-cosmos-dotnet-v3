@@ -11,8 +11,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
     using OpenTelemetry;
     using System.Diagnostics;
     using OpenTelemetry.Resources;
-    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using OpenTelemetry.Exporter;
+    using Microsoft.Azure.Cosmos.Telemetry;
 
     [TestClass]
     public class OpenTelemetryMetricsTest : BaseCosmosClientHelper
