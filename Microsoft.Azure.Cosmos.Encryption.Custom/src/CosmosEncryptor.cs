@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         }
 
         /// <inheritdoc/>
-        [Obsolete("It is suggested to use GetEncryptionKeyAsync + key.GetEncryptByteCount to reduce overhead.")]
+        [Obsolete("It is suggested to use GetEncryptionKeyAsync + key.GetDecryptByteCount to reduce overhead.")]
         public override async Task<int> GetDecryptBytesCountAsync(
             int cipherTextLength,
             string dataEncryptionKeyId,
