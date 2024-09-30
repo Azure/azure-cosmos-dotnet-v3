@@ -512,6 +512,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             yield return new object[] { "5999999999999999", "6666666666666666", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true }; // The child range, from 5999999999999999 to just before 6666666666666666, fits entirely within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends at 7FFFFFFFFFFFFFFF (inclusive).
             yield return new object[] { "6666666666666666", "7333333333333333", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true }; // The child range, from 6666666666666666 to just before 7333333333333333, fits entirely within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends at 7FFFFFFFFFFFFFFF (inclusive).
             yield return new object[] { "7333333333333333", "7FFFFFFFFFFFFFFF", false, "3FFFFFFFFFFFFFFF", "7FFFFFFFFFFFFFFF", true, true }; // The child range, from 7333333333333333 to just before 7FFFFFFFFFFFFFFF, fits entirely within the parent range, which starts from 3FFFFFFFFFFFFFFF and ends at 7FFFFFFFFFFFFFFF (inclusive).
+            yield return new object[] { "AA", "AA", true, "", "AA", false, false }; // The child range, which starts and ends at AA (inclusive), does not fit within the parent range, which starts from a lower bound minimum and ends just before AA (non-inclusive), due to the parent's non-inclusive upper boundary.
         }
 
         /// <summary>
