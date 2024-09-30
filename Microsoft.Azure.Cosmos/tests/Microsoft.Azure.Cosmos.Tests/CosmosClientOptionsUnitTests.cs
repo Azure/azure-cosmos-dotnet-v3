@@ -735,8 +735,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 string regionValue = fieldInfo.GetValue(null).ToString();
 
                 // TODO: 
-                if (!regionValue.Equals("Germany Central", StringComparison.OrdinalIgnoreCase)
-                    && !regionValue.Equals("Germany Northeast", StringComparison.OrdinalIgnoreCase))
+                if (!regionValue.Equals(Regions.GermanyCentral, StringComparison.OrdinalIgnoreCase)
+                    && !regionValue.Equals(Regions.GermanyNortheast, StringComparison.OrdinalIgnoreCase))
                 {
                     testData.Add(new object[] { regionValue });
                 }
