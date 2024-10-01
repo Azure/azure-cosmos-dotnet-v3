@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private static ConcurrentBag<Tuple<int, KeyValuePair<string, object>[]>> actualItemCounts = null;
         private static ConcurrentBag<Tuple<int, KeyValuePair<string, object>[]>> regionsContactedCounts = null;
 
-        internal static Counter<int> NumberOfOperationCallCounter = null;
         internal static Histogram<double> RequestLatencyHistogram = null;
         internal static Histogram<double> RequestUnitsHistogram = null;
         internal static ObservableGauge<int> MaxItemGauge = null;
@@ -27,14 +26,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         public static void Initialize()
         {
             cosmosMeter ??= new Meter(OpenTelemetryMetricsConstant.OperationMetricName, OpenTelemetryMetricsConstant.MetricVersion100);
-
-            CosmosOperationMeter.NumberOfOperationCallCounter = cosmosMeter.CreateCounter<int>(
-                name: OpenTelemetryMetricsConstant.OperationMetrics.NumberOfCallsName, 
-                unit: OpenTelemetryMetricsConstant.OperationMetrics.Count, 
-                description: OpenTelemetryMetricsConstant.OperationMetrics.NumberOfCallsDesc);
-
+            
             CosmosOperationMeter.RequestLatencyHistogram = cosmosMeter.CreateHistogram<double>(name: OpenTelemetryMetricsConstant.OperationMetrics.LatencyName,
-                unit: OpenTelemetryMetricsConstant.OperationMetrics.Ms,
+                unit: OpenTelemetryMetricsConstant.OperationMetrics.Sec,
                 description: OpenTelemetryMetricsConstant.OperationMetrics.LatencyDesc);
 
             CosmosOperationMeter.RequestUnitsHistogram = cosmosMeter.CreateHistogram<double>(name: OpenTelemetryMetricsConstant.OperationMetrics.RUName,
@@ -141,16 +135,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
 
             CosmosOperationMeter.RequestLatencyHistogram.Record(requestLatency.Value.Milliseconds, dimensionsFunc());
-        }
-
-        internal static void RecordOperationCallCount(Func<KeyValuePair<string, object>[]> dimensionsFunc)
-        {
-            if (!CosmosOperationMeter.NumberOfOperationCallCounter.Enabled)
-            {
-                return;
-            }
-
-            CosmosOperationMeter.NumberOfOperationCallCounter.Add(1, dimensionsFunc());
         }
     }
 }

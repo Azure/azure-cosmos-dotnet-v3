@@ -165,11 +165,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         public const string ExceptionStacktrace = "exception.stacktrace";
 
         /// <summary>
-        /// AccountName
-        /// </summary>
-        public const string AccountName = "db.cosmosdb.account_name";
-
-        /// <summary>
         /// Consistency
         /// </summary>
         public const string Consistency = "db.cosmosdb.consistency";

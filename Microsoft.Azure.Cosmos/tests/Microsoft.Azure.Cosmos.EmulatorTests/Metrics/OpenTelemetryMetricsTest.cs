@@ -26,9 +26,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
         [TestMethod]
         public async Task OperationLevelMetrics()
         {
+            Console.WriteLine("Start => " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
             MeterProvider meterProvider = Sdk
                 .CreateMeterProviderBuilder()
-                .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("MyService"))
+                .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("OperationLevelMetrics"))
                 .AddMeter("Azure.Cosmos.Client.Operation")
                 .AddView(instrumentName: OpenTelemetryMetricsConstant.OperationMetrics.RUName, new ExplicitBucketHistogramConfiguration // Define histogram buckets
                 {
@@ -38,14 +39,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
                 {
                     Boundaries = OpenTelemetryMetricsConstant.HistogramBuckets.RequestLatencyBuckets
                 })
-                .AddOtlpExporter((exporterOptions, metricReaderOptions) =>
+                /*.AddOtlpExporter((exporterOptions, metricReaderOptions) =>
                  {
                      exporterOptions.Endpoint = new Uri("http://localhost:9090/api/v1/otlp/v1/metrics");
                      exporterOptions.Protocol = OtlpExportProtocol.HttpProtobuf;
                      metricReaderOptions.PeriodicExportingMetricReaderOptions.ExportIntervalMilliseconds = 1000;
-                 })
+                 })*/
+                .AddConsoleExporter()
                 //.AddAzureMonitorMetricExporter( o => o.ConnectionString = "")
-                .AddReader(new PeriodicExportingMetricReader(new CustomMetricExporter(), exportIntervalMilliseconds: 1000))
+                //.AddReader(new PeriodicExportingMetricReader(new CustomMetricExporter(), exportIntervalMilliseconds: 1000))
                 .Build();
 
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();
@@ -64,6 +66,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
 
             Stopwatch sw = Stopwatch.StartNew();
             sw.Start();
+            int counter = 1;
             while(true)
             {
                 string randomId = Guid.NewGuid().ToString();
@@ -72,13 +75,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
                 await container.CreateItemAsync<ToDoActivity>(ToDoActivity.CreateRandomToDoActivity(id: randomId, pk: pk));
                 await container.ReadItemAsync<ToDoActivity>(randomId, new PartitionKey(pk));
 
-                FeedIterator<ToDoActivity> feedIterator = container.GetItemQueryIterator<ToDoActivity>("SELECT * FROM c");
+                QueryRequestOptions queryRequestOptions = new QueryRequestOptions()
+                {
+                    MaxItemCount = Random.Shared.Next(1, 100)
+                };
+                FeedIterator<ToDoActivity> feedIterator = container.GetItemQueryIterator<ToDoActivity>("SELECT * FROM c", requestOptions: queryRequestOptions);
                 while (feedIterator.HasMoreResults)
                 {
-                    await feedIterator.ReadNextAsync();
+                    FeedResponse<ToDoActivity> toDoActivities = await feedIterator.ReadNextAsync();
+                    Console.WriteLine($"{counter++} : Read {toDoActivities.Count} items");
                 }
 
-                if (sw.ElapsedMilliseconds > TimeSpan.FromMinutes(1.5).TotalMilliseconds)
+                if (sw.ElapsedMilliseconds > TimeSpan.FromSeconds(1).TotalMilliseconds)
                 {
                     break;
                 }
@@ -87,7 +95,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
 
             meterProvider.Dispose();
 
-            await Task.Delay(TimeSpan.FromSeconds(7));
+            await Task.Delay(TimeSpan.FromSeconds(1));
+
+            Console.WriteLine("End => " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
         }
     }
 }
