@@ -298,7 +298,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             using ArrayPoolManager arrayPoolManager = new ArrayPoolManager();
 
-            JObject plainTextJObj = new JObject();
+            List<string> pathsDecrypted = new List<string>(encryptionProperties.EncryptedPaths.Count());
             foreach (string path in encryptionProperties.EncryptedPaths)
             {
                 string propertyName = path.Substring(1);
@@ -329,15 +329,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 EncryptionProcessor.DeserializeAndAddProperty(
                     (TypeMarker)cipherTextWithTypeMarker[0],
                     plainText.AsSpan(0, decryptedCount),
-                    plainTextJObj,
+                    document,
                     propertyName);
-            }
 
-            List<string> pathsDecrypted = new List<string>();
-            foreach (JProperty property in plainTextJObj.Properties())
-            {
-                document[property.Name] = property.Value;
-                pathsDecrypted.Add("/" + property.Name);
+                pathsDecrypted.Add(path);
             }
 
             DecryptionContext decryptionContext = EncryptionProcessor.CreateDecryptionContext(
@@ -557,16 +552,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             switch (typeMarker)
             {
                 case TypeMarker.Boolean:
-                    jObject.Add(key, SqlBoolSerializer.Deserialize(serializedBytes));
+                    jObject[key] = SqlBoolSerializer.Deserialize(serializedBytes);
                     break;
                 case TypeMarker.Double:
-                    jObject.Add(key, SqlDoubleSerializer.Deserialize(serializedBytes));
+                    jObject[key] = SqlDoubleSerializer.Deserialize(serializedBytes);
                     break;
                 case TypeMarker.Long:
-                    jObject.Add(key, SqlLongSerializer.Deserialize(serializedBytes));
+                    jObject[key] = SqlLongSerializer.Deserialize(serializedBytes);
                     break;
                 case TypeMarker.String:
-                    jObject.Add(key, SqlVarCharSerializer.Deserialize(serializedBytes));
+                    jObject[key] = SqlVarCharSerializer.Deserialize(serializedBytes);
                     break;
                 case TypeMarker.Array:
                     DeserializeAndAddProperty<JArray>(serializedBytes);
@@ -592,7 +587,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 using MemoryTextReader memoryTextReader = new MemoryTextReader(new Memory<char>(buffer, 0, length));
                 using JsonTextReader reader = new JsonTextReader(memoryTextReader);
 
-                jObject.Add(key, serializer.Deserialize<T>(reader));
+                jObject[key] = serializer.Deserialize<T>(reader);
             }
         }
 
