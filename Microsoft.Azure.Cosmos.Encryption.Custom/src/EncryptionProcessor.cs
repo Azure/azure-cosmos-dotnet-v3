@@ -49,6 +49,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
+            _ = diagnosticsContext;
+
             EncryptionProcessor.ValidateInputForEncrypt(
                 input,
                 encryptor,
@@ -118,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
                         cipherTextWithTypeMarker[0] = (byte)typeMarker;
 
-                        int encryptedBytesCount = await encryptionKey.EncryptAsync(
+                        int encryptedBytesCount = encryptionKey.EncryptData(
                             plainText,
                             plainTextOffset: 0,
                             plainTextLength,
@@ -287,6 +289,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
+            _ = diagnosticsContext;
+
+            if (encryptionProperties.EncryptionFormatVersion != 3)
+            {
+                throw new NotSupportedException($"Unknown encryption format version: {encryptionProperties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
+            }
+
             using ArrayPoolManager arrayPoolManager = new ArrayPoolManager();
 
             JObject plainTextJObj = new JObject();
@@ -304,22 +313,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     continue;
                 }
 
-                int plainTextLength = await encryptor.GetDecryptBytesCountAsync(
-                    cipherTextWithTypeMarker.Length - 1,
-                    encryptionProperties.DataEncryptionKeyId,
-                    encryptionProperties.EncryptionAlgorithm);
+                DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionProperties.DataEncryptionKeyId, encryptionProperties.EncryptionAlgorithm, cancellationToken);
+
+                int plainTextLength = encryptionKey.GetDecryptByteCount(cipherTextWithTypeMarker.Length - 1);
 
                 byte[] plainText = arrayPoolManager.Rent(plainTextLength);
 
-                int decryptedCount = await EncryptionProcessor.MdeEncAlgoDecryptPropertyAsync(
-                    encryptionProperties,
+                int decryptedCount = EncryptionProcessor.MdeEncAlgoDecryptPropertyAsync(
+                    encryptionKey,
                     cipherTextWithTypeMarker,
                     cipherTextOffset: 1,
                     cipherTextWithTypeMarker.Length - 1,
-                    plainText,
-                    encryptor,
-                    diagnosticsContext,
-                    cancellationToken);
+                    plainText);
 
                 EncryptionProcessor.DeserializeAndAddProperty(
                     (TypeMarker)cipherTextWithTypeMarker[0],
@@ -357,30 +362,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return decryptionContext;
         }
 
-        private static async Task<int> MdeEncAlgoDecryptPropertyAsync(
-            EncryptionProperties encryptionProperties,
+        private static int MdeEncAlgoDecryptPropertyAsync(
+            DataEncryptionKey encryptionKey,
             byte[] cipherText,
             int cipherTextOffset,
             int cipherTextLength,
-            byte[] buffer,
-            Encryptor encryptor,
-            CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken)
+            byte[] buffer)
         {
-            if (encryptionProperties.EncryptionFormatVersion != 3)
-            {
-                throw new NotSupportedException($"Unknown encryption format version: {encryptionProperties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
-            }
-
-            int decryptedCount = await encryptor.DecryptAsync(
+            int decryptedCount = encryptionKey.DecryptData(
                 cipherText,
                 cipherTextOffset,
                 cipherTextLength,
                 buffer,
-                outputOffset: 0,
-                encryptionProperties.DataEncryptionKeyId,
-                encryptionProperties.EncryptionAlgorithm,
-                cancellationToken);
+                outputOffset: 0);
 
             if (decryptedCount < 0)
             {
@@ -397,6 +391,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
+            _ = diagnosticsContext;
+
             if (encryptionProperties.EncryptionFormatVersion != 2)
             {
                 throw new NotSupportedException($"Unknown encryption format version: {encryptionProperties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
