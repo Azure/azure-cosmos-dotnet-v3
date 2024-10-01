@@ -55,19 +55,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 return input;
             }
 
-            if (encryptionOptions.PathsToEncrypt.Distinct().Count() != encryptionOptions.PathsToEncrypt.Count())
+            if (!encryptionOptions.PathsToEncrypt.Distinct().SequenceEqual(encryptionOptions.PathsToEncrypt))
             {
                 throw new InvalidOperationException("Duplicate paths in PathsToEncrypt passed via EncryptionOptions.");
             }
 
             foreach (string path in encryptionOptions.PathsToEncrypt)
             {
-                if (string.IsNullOrWhiteSpace(path) || path[0] != '/' || path.LastIndexOf(',', 1) != -1)
+                if (string.IsNullOrWhiteSpace(path) || path[0] != '/' || path.LastIndexOf('/') != 0)
                 {
                     throw new InvalidOperationException($"Invalid path {path ?? string.Empty}, {nameof(encryptionOptions.PathsToEncrypt)}");
                 }
 
-                if (path.AsSpan(1).Equals("id".AsSpan(), StringComparison.InvariantCulture))
+                if (string.Equals(path.Substring(1), "id"))
                 {
                     throw new InvalidOperationException($"{nameof(encryptionOptions.PathsToEncrypt)} includes a invalid path: '{path}'.");
                 }
