@@ -92,6 +92,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 case CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized:
 
+                    DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionOptions.DataEncryptionKeyId, encryptionOptions.EncryptionAlgorithm);
+
                     foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
                     {
                         string propertyName = pathToEncrypt.Substring(1);
@@ -111,8 +113,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         {
                             continue;
                         }
-
-                        DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionOptions.DataEncryptionKeyId, encryptionOptions.EncryptionAlgorithm);
 
                         int cipherTextLength = encryptionKey.GetEncryptByteCount(plainText.Length);
 
@@ -298,6 +298,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             using ArrayPoolManager arrayPoolManager = new ArrayPoolManager();
 
+            DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionProperties.DataEncryptionKeyId, encryptionProperties.EncryptionAlgorithm, cancellationToken);
+
             List<string> pathsDecrypted = new List<string>(encryptionProperties.EncryptedPaths.Count());
             foreach (string path in encryptionProperties.EncryptedPaths)
             {
@@ -312,8 +314,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 {
                     continue;
                 }
-
-                DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionProperties.DataEncryptionKeyId, encryptionProperties.EncryptionAlgorithm, cancellationToken);
 
                 int plainTextLength = encryptionKey.GetDecryptByteCount(cipherTextWithTypeMarker.Length - 1);
 
