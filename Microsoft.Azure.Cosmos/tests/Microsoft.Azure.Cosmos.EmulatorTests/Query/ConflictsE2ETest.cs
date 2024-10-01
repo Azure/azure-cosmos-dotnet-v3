@@ -135,7 +135,7 @@
         /// <summary>
         /// Inserts items from multiple clients.
         /// </summary>
-        /// <param name="cosmosContainers">Containers to insert documents to.</param>
+        /// <param name="cosmosContainers">ContainerContext to insert documents to.</param>
         /// <param name="payloadFormat">Format of the document with placeholders for insertion iteration (one round across all clients) and optional client index.</param>
         /// <param name="clientFilter">Optional filter that determines whether a client should be used for insertion.</param>
         /// <returns></returns>

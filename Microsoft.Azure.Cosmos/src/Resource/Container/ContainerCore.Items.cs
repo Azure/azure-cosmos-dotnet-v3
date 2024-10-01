@@ -1475,6 +1475,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Feature: Feed Range Subset Verification
+        ///
         /// Determines whether the specified child range is entirely within the bounds of the parent range.
         /// This includes checking both the minimum and maximum boundaries of the ranges for inclusion.
         ///
@@ -1483,35 +1485,45 @@ namespace Microsoft.Azure.Cosmos
         ///
         /// - For the `Max` boundary:
         ///   - If the parent range's max is exclusive and the child range's max is inclusive, it checks whether the parent range contains the child range's max value.
+        ///   - If the parent range's max is inclusive and the child range's max is exclusive, this combination is not supported and a <see cref="NotSupportedException"/> is thrown.
         ///   - For all other cases, it checks if the max values are equal or whether the parent range contains the child range's max.
         ///   - This applies to the following combinations:
-        ///     - (false, false): Both max values are exclusive.
+        ///     - (false, true): Parent max is exclusive, child max is inclusive.
         ///     - (true, true): Both max values are inclusive.
+        ///     - (false, false): Both max values are exclusive.
         ///     - (true, false): Parent max is inclusive, child max is exclusive.
+        ///       - **NotSupportedException Scenario:** This case is not supported because handling a scenario where the parent range has an inclusive maximum and the child range has an exclusive maximum requires additional logic that is not implemented.
+        ///       - If encountered, a <see cref="NotSupportedException"/> is thrown with a message explaining that this combination is not supported.
         ///
         /// - For the `Min` boundary:
-        ///   - It simply checks whether the parent range contains the child range's min value.
+        ///   - It checks whether the parent range contains the child range's min value, regardless of inclusivity.
         ///
         /// The method ensures the child range is considered a subset only if both its min and max values fall within the parent range.
         ///
         /// Summary of combinations for `parentRange.IsMaxInclusive` and `childRange.IsMaxInclusive`:
         /// 1. parentRange.IsMaxInclusive == false, childRange.IsMaxInclusive == true:
-        ///    - The parent range is exclusive at max, but the child range is inclusive.
+        ///    - The parent range is exclusive at max, but the child range is inclusive. This is supported and will check if the parent contains the child's max.
         /// 2. parentRange.IsMaxInclusive == false, childRange.IsMaxInclusive == false:
-        ///    - Both ranges are exclusive at max.
+        ///    - Both ranges are exclusive at max. This is supported and will check if the parent contains the child's max.
         /// 3. parentRange.IsMaxInclusive == true, childRange.IsMaxInclusive == true:
-        ///    - Both ranges are inclusive at max.
+        ///    - Both ranges are inclusive at max. This is supported and will check if the max values are equal or if the parent contains the child's max.
         /// 4. parentRange.IsMaxInclusive == true, childRange.IsMaxInclusive == false:
-        ///    - The parent range is inclusive at max, but the child range is exclusive.
+        ///    - The parent range is inclusive at max, but the child range is exclusive. This combination is not supported and will result in a <see cref="NotSupportedException"/> being thrown.
         ///
         /// The method returns true only if both the min and max boundaries of the child range are within the parent range's boundaries.
         ///
         /// Additionally, the method performs null checks on the parameters:
         /// - If <paramref name="parentRange"/> is null, an <see cref="ArgumentNullException"/> is thrown.
         /// - If <paramref name="childRange"/> is null, an <see cref="ArgumentNullException"/> is thrown.
+        ///
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when <paramref name="parentRange"/> or <paramref name="childRange"/> is <c>null</c>.
+        /// </exception>
+        /// <exception cref="NotSupportedException">
+        /// Thrown when <paramref name="parentRange"/> is inclusive at max and <paramref name="childRange"/> is exclusive at max.
+        /// This combination is not supported and requires specific handling.
+        /// </exception>
         /// </summary>
-        /// <param name="parentRange">The parent range to check against, representing the outer bounds. Cannot be null.</param>
-        /// <param name="childRange">The child range being evaluated for subset inclusion within the parent range. Cannot be null.</param>
         /// <example>
         /// <![CDATA[
         /// Documents.Routing.Range<string> parentRange = new Documents.Routing.Range<string>("A", "Z", true, true);
@@ -1525,9 +1537,6 @@ namespace Microsoft.Azure.Cosmos
         /// Returns <c>true</c> if the child range is a subset of the parent range, meaning the child range's
         /// minimum and maximum values fall within the bounds of the parent range. Returns <c>false</c> otherwise.
         /// </returns>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when <paramref name="parentRange"/> or <paramref name="childRange"/> is <c>null</c>.
-        /// </exception>
         internal static bool IsSubset(
             Documents.Routing.Range<string> parentRange,
             Documents.Routing.Range<string> childRange)
@@ -1544,9 +1553,9 @@ namespace Microsoft.Azure.Cosmos
 
             bool isMaxWithinParent = (parentRange.IsMaxInclusive, childRange.IsMaxInclusive) switch
             {
-            (false, true) => parentRange.Contains(childRange.Max),  // Parent max is exclusive, child max is inclusive
-            (true, false) => ContainerCore.IsChildMaxExclusiveWithinParent(parentRange, childRange), // (true, false): Parent max is inclusive, child max is exclusive
-                _ => ContainerCore.IsChildMaxWithinParent(parentRange, childRange.Max) // Default for the following combinations:
+                (false, true) => parentRange.Contains(childRange.Max),  // Parent max is exclusive, child max is inclusive
+                (true, false) => throw new NotSupportedException("The combination where the parent range's maximum is inclusive and the child range's maximum is exclusive is not supported in the current implementation. This case needs specific handling, which has not been implemented."),
+                    _ => ContainerCore.IsChildMaxWithinParent(parentRange, childRange.Max) // Default for the following combinations:
                                                                                         // (true, true): Both max values are inclusive
                                                                                         // (false, false): Both max values are exclusive
             };
@@ -1567,23 +1576,6 @@ namespace Microsoft.Azure.Cosmos
             string childRangeMax)
         {
             return parentRange.Max == childRangeMax || parentRange.Contains(childRangeMax);
-        }
-
-        /// <summary>
-        /// Determines whether the exclusive maximum of the child range is either equal to or contained within the parent range.
-        /// </summary>
-        /// <param name="parentRange">The range representing the parent, which is compared against.</param>
-        /// <param name="childRange">The range representing the child, whose exclusive maximum is checked.</param>
-        /// <returns>True if the exclusive maximum of the child range is within or equal to the parent range's maximum; otherwise, false.</returns>
-        private static bool IsChildMaxExclusiveWithinParent(
-            Documents.Routing.Range<string> parentRange,
-            Documents.Routing.Range<string> childRange)
-        {
-            // Calculate the exclusive maximum of the child range
-            string childMaxExclusive = ContainerCore.GetExclusiveMaxValue(childRange.Max);
-
-            // Check if the parent's max is equal to or contains the child's exclusive max
-            return ContainerCore.IsChildMaxWithinParent(parentRange, childMaxExclusive);
         }
 
         /// <summary>

@@ -814,12 +814,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             //----------------------------------------------------------------
             //{
             //    startLineNumber = GetLineNumber();
-            //    ContainerInternal containerInternal = (ContainerInternal)container;
+            //    ContainerInternal V1Container = (ContainerInternal)container;
             //    List<PatchOperation> patchOperations = new List<PatchOperation>()
             //    {
             //        PatchOperation.Replace("/someField", "42")
             //    };
-            //    ItemResponse<JToken> patchResponse = await containerInternal.PatchItemAsync<JToken>(
+            //    ItemResponse<JToken> patchResponse = await V1Container.PatchItemAsync<JToken>(
             //        id: "9001",
             //        partitionKey: new PartitionKey("9001"),
             //        patchOperations: patchOperations);
@@ -936,12 +936,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             //{
             //    startLineNumber = GetLineNumber();
             //    ItemRequestOptions requestOptions = new ItemRequestOptions();
-            //    ContainerInternal containerInternal = (ContainerInternal)container;
+            //    ContainerInternal V1Container = (ContainerInternal)container;
             //    List<PatchOperation> patch = new List<PatchOperation>()
             //    {
             //        PatchOperation.Replace("/someField", "42")
             //    };
-            //    ResponseMessage patchResponse = await containerInternal.PatchItemStreamAsync(
+            //    ResponseMessage patchResponse = await V1Container.PatchItemStreamAsync(
             //        id: "9001",
             //        partitionKey: new PartitionKey("9001"),
             //        patchOperations: patch,
