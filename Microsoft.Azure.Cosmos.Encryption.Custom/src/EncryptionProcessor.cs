@@ -55,26 +55,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 return input;
             }
 
-            if (!encryptionOptions.PathsToEncrypt.Distinct().SequenceEqual(encryptionOptions.PathsToEncrypt))
+            if (encryptionOptions.PathsToEncrypt.Distinct().Count() != encryptionOptions.PathsToEncrypt.Count())
             {
                 throw new InvalidOperationException("Duplicate paths in PathsToEncrypt passed via EncryptionOptions.");
             }
 
             foreach (string path in encryptionOptions.PathsToEncrypt)
             {
-                if (string.IsNullOrWhiteSpace(path) || path[0] != '/' || path.LastIndexOf('/') != 0)
+                if (string.IsNullOrWhiteSpace(path) || path[0] != '/' || path.IndexOf('/', 1) != -1)
                 {
                     throw new InvalidOperationException($"Invalid path {path ?? string.Empty}, {nameof(encryptionOptions.PathsToEncrypt)}");
                 }
 
-                if (string.Equals(path.Substring(1), "id"))
+                if (path.AsSpan(1).Equals("id".AsSpan(), StringComparison.Ordinal))
                 {
                     throw new InvalidOperationException($"{nameof(encryptionOptions.PathsToEncrypt)} includes a invalid path: '{path}'.");
                 }
             }
 
             JObject itemJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(input);
-            List<string> pathsEncrypted = new List<string>();
+            List<string> pathsEncrypted = new List<string>(encryptionOptions.PathsToEncrypt.Count());
             EncryptionProperties encryptionProperties = null;
             byte[] plainText = null;
             byte[] cipherText = null;
