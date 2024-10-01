@@ -179,7 +179,7 @@ namespace Microsoft.Azure.Cosmos
                 trace: trace,
                 cancellationToken: cancellationToken);
 
-            return await this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
+            return this.ClientContext.ResponseFactory.CreateItemResponse<T>(response);
         }
 
         public override T ReadConflictContent<T>(ConflictProperties cosmosConflict)

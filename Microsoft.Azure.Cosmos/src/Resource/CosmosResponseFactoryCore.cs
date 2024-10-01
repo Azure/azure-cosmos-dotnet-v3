@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Scripts;
 
     internal sealed class CosmosResponseFactoryCore : CosmosResponseFactoryInternal
@@ -82,12 +81,12 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public override async Task<ItemResponse<T>> CreateItemResponseAsync<T>(
+        public override ItemResponse<T> CreateItemResponse<T>(
             ResponseMessage responseMessage)
         {
-            return await this.ProcessMessage(responseMessage, async (cosmosResponseMessage) =>
+            return this.ProcessMessage(responseMessage, (cosmosResponseMessage) =>
             {
-                T item = await this.ToItemObjectAsync<T>(cosmosResponseMessage);
+                T item = this.ToObjectpublic<T>(cosmosResponseMessage);
                 return new ItemResponse<T>(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
@@ -284,22 +283,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return this.serializerCore.FromStream<T>(responseMessage.Content);
-        }
-
-        public async Task<T> ToItemObjectAsync<T>(ResponseMessage responseMessage)
-        {
-            if (responseMessage.Content == null)
-            {
-                return default;
-            }
-
-            if (responseMessage.Content.Length == 0)
-            {
-                responseMessage.Content.Dispose();
-                return default;
-            }
-
-            return await this.serializerCore.FromStreamAsync<T>(responseMessage.Content);
         }
     }
 }

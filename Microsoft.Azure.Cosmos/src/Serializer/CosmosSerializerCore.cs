@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.IO;
-    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
@@ -68,14 +67,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return new CosmosSerializerCore(customSerializer);
-        }
-
-        internal async Task<T> FromStreamAsync<T>(Stream stream)
-        {
-            CloneableStream cloneableStream = await StreamExtension.AsClonableStreamAsync(stream);
-
-            CosmosSerializer serializer = this.GetSerializer<T>();
-            return serializer.FromStream<T>(cloneableStream);
         }
 
         internal T FromStream<T>(Stream stream)
