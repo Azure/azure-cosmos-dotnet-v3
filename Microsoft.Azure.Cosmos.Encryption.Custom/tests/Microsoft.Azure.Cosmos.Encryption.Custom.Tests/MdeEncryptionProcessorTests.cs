@@ -41,7 +41,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 .Returns((int plainTextLength) => plainTextLength);
             DekMock.Setup(m => m.EncryptData(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<byte[]>(), It.IsAny<int>()))
                 .Returns((byte[] plainText, int plainTextOffset, int plainTextLength, byte[] output, int outputOffset) => TestCommon.EncryptData(plainText, plainTextOffset, plainTextLength, output, outputOffset));
-
+            DekMock.Setup(m => m.DecryptData(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<byte[]>(), It.IsAny<int>()))
+                .Returns((byte[] plainText, int plainTextOffset, int plainTextLength, byte[] output, int outputOffset) => TestCommon.DecryptData(plainText, plainTextOffset, plainTextLength, output, outputOffset));
+            DekMock.Setup(m => m.GetDecryptByteCount(It.IsAny<int>()))
+                .Returns((int cipherTextLength) => cipherTextLength);
 
             MdeEncryptionProcessorTests.mockEncryptor = new Mock<Encryptor>();
             MdeEncryptionProcessorTests.mockEncryptor.Setup(m => m.GetEncryptionKeyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
