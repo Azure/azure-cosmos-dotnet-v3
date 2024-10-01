@@ -25,10 +25,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         public static class OperationMetrics
         {
             /// <summary>
-            /// NumberOfCalls
-            /// </summary>
-            public const string NumberOfCallsName = "cosmos.client.op.calls";
-            /// <summary>
             /// NumberOfCallsDesc
             /// </summary>
             public const string NumberOfCallsDesc = "Number of operation calls";
@@ -36,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             /// <summary>
             /// LatencyName
             /// </summary>
-            public const string LatencyName = "cosmos.client.op.latency";
+            public const string LatencyName = "db.client.operation.duration";
 
             /// <summary>
             /// LatencyDesc
@@ -46,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             /// <summary>
             /// RUName
             /// </summary>
-            public const string RUName = "cosmos.client.op.RUs";
+            public const string RUName = "db.cosmos.operation.request_charge";
 
             /// <summary>
             /// RUDesc
@@ -56,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             /// <summary>
             /// RUName
             /// </summary>
-            public const string MaxItemName = "cosmos.client.op.maxItemCount";
+            public const string MaxItemName = "db.cosmos.operation.max_item_count";
 
             /// <summary>
             /// RUDesc
@@ -66,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             /// <summary>
             /// ActualItemName
             /// </summary>
-            public const string ActualItemName = "cosmos.client.op.actualItemCount";
+            public const string ActualItemName = "db.cosmos.operation.actual_item_countt";
 
             /// <summary>
             /// ActualItemDesc
@@ -76,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             /// <summary>
             /// RegionContactedName
             /// </summary>
-            public const string RegionContactedName = "cosmos.client.op.regionsContacted";
+            public const string RegionContactedName = "db.cosmos.operation.regions_contacted";
 
             /// <summary>
             /// RegionContactedDesc
@@ -91,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             /// <summary>
             /// Milliseconds
             /// </summary>
-            public const string Ms = "ms";
+            public const string Sec = "s";
 
             /// <summary>
             /// RUUnit
