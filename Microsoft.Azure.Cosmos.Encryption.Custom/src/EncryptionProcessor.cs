@@ -110,23 +110,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                             continue;
                         }
 
-                        int cipherTextLength = await encryptor.GetEncryptBytesCountAsync(
-                            plainText.Length,
-                            encryptionOptions.DataEncryptionKeyId,
-                            encryptionOptions.EncryptionAlgorithm);
+                        DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionOptions.DataEncryptionKeyId, encryptionOptions.EncryptionAlgorithm);
+
+                        int cipherTextLength = encryptionKey.GetEncryptByteCount(plainText.Length);
 
                         byte[] cipherTextWithTypeMarker = arrayPoolManager.Rent(cipherTextLength + 1);
 
                         cipherTextWithTypeMarker[0] = (byte)typeMarker;
 
-                        int encryptedBytesCount = await encryptor.EncryptAsync(
+                        int encryptedBytesCount = await encryptionKey.EncryptAsync(
                             plainText,
                             plainTextOffset: 0,
                             plainTextLength,
                             cipherTextWithTypeMarker,
-                            outputOffset: 1,
-                            encryptionOptions.DataEncryptionKeyId,
-                            encryptionOptions.EncryptionAlgorithm);
+                            outputOffset: 1);
 
                         if (encryptedBytesCount < 0)
                         {
@@ -409,18 +406,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 encryptionProperties.EncryptedData,
                 encryptionProperties.DataEncryptionKeyId,
                 encryptionProperties.EncryptionAlgorithm,
-                cancellationToken);
-
-            if (plainText == null)
-            {
-                throw new InvalidOperationException($"{nameof(Encryptor)} returned null plainText from {nameof(DecryptAsync)}.");
-            }
-
+                cancellationToken) ?? throw new InvalidOperationException($"{nameof(Encryptor)} returned null plainText from {nameof(DecryptAsync)}.");
             JObject plainTextJObj;
             using (MemoryStream memoryStream = new MemoryStream(plainText))
             using (StreamReader streamReader = new StreamReader(memoryStream))
             using (JsonTextReader jsonTextReader = new JsonTextReader(streamReader))
             {
+                jsonTextReader.ArrayPool = JsonArrayPool.Instance;
                 plainTextJObj = JObject.Load(jsonTextReader);
             }
 
@@ -485,6 +477,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             using (StreamReader sr = new StreamReader(input, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
             using (JsonTextReader jsonTextReader = new JsonTextReader(sr))
             {
+                jsonTextReader.ArrayPool = JsonArrayPool.Instance;
                 JsonSerializerSettings jsonSerializerSettings = new JsonSerializerSettings()
                 {
                     DateParseHandling = DateParseHandling.None,

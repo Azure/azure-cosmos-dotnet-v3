@@ -63,11 +63,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             }
         }
 
-        private static JObject ParseStream(Stream stream)
-        {
-            return JObject.Load(new JsonTextReader(new StreamReader(stream)));
-        }
-
         internal class TestDoc
         {
             public static List<string> PathsToEncrypt { get; } = new List<string>() { "/SensitiveStr", "/SensitiveInt", "/SensitiveArr", "/SensitiveDict" };

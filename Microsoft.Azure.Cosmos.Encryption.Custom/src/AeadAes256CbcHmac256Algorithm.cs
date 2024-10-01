@@ -158,7 +158,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <returns>Returns the ciphertext corresponding to the plaintext.</returns>
         public override int EncryptData(byte[] plainText, int plainTextOffset, int plainTextLength, byte[] output, int outputOffset)
         {
-            throw new NotImplementedException();
+            byte[] buffer = this.EncryptData(plainText.AsSpan(plainTextOffset, plainTextLength).ToArray());
+
+            if (buffer.Length > output.Length - outputOffset)
+            {
+                throw new ArgumentOutOfRangeException($"Output buffer is shorter than required {buffer.Length} bytes.");
+            }
+
+            buffer.CopyTo(output, outputOffset);
+            return buffer.Length;
         }
 
         /// <summary>
@@ -445,7 +453,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         public override int DecryptData(byte[] cipherText, int cipherTextOffset, int cipherTextLength, byte[] output, int outputOffset)
         {
-            throw new NotImplementedException();
+            byte[] buffer = this.DecryptData(cipherText.AsSpan(cipherTextOffset, cipherTextLength).ToArray(), true);
+
+            if (buffer.Length > output.Length - outputOffset)
+            {
+                throw new ArgumentOutOfRangeException($"Output buffer is shorter than required {buffer.Length} bytes");
+            }
+
+            buffer.CopyTo(output, outputOffset);
+            return buffer.Length;
         }
 
         public override int GetEncryptByteCount(int plainTextLength)
@@ -456,7 +472,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         public override int GetDecryptByteCount(int cipherTextLength)
         {
-            throw new NotImplementedException();
+            int value = cipherTextLength - (sizeof(byte) + AuthenticationTagSizeInBytes + IvSizeInBytes);
+            if (value < BlockSizeInBytes)
+            {
+                throw new ArgumentOutOfRangeException(nameof(cipherTextLength), $"Cipher text length is too short.");
+            }
+
+            return value;
         }
 
         private static int GetCipherTextLength(int inputSize)
