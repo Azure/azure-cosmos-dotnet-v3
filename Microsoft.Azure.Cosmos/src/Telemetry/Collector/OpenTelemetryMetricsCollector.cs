@@ -44,24 +44,23 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Collector
             TelemetryInformation telemetryInformation = getTelemetryInformation();
 
             Func<KeyValuePair<string, object>[]> dimensionsFunc = () => new[]
-                {
-                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.AccountName, this.accountName),
-                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ContainerName, telemetryInformation.ContainerId),
-                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbName, telemetryInformation.DatabaseId),
-                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.OperationType, telemetryInformation.OperationType),
-                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.StatusCode, (int)telemetryInformation.StatusCode),
-                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.SubStatusCode, (int)telemetryInformation.SubStatusCode),
-                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ClientId, this.clientId),
-                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.Consistency, telemetryInformation.ConsistencyLevel),
-                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.PartitionKeyRangeId, telemetryInformation.PartitionKeyRangeId),
-                };
+            {
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbSystemName, "cosmosdb"),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerAddress, this.accountName),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ContainerName, telemetryInformation.ContainerId),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbName, telemetryInformation.DatabaseId),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.OperationType, telemetryInformation.OperationType),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.StatusCode, (int)telemetryInformation.StatusCode),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.SubStatusCode, (int)telemetryInformation.SubStatusCode),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ClientId, this.clientId),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.Consistency, telemetryInformation.ConsistencyLevel)
+            };
 
             CosmosOperationMeter.RecordMaxItemCount(Convert.ToInt32(telemetryInformation.MaxItemCount), dimensionsFunc);
             CosmosOperationMeter.RecordActualItemCount(Convert.ToInt32(telemetryInformation.ActualItemCount), dimensionsFunc);
             CosmosOperationMeter.RecordRegionContactedCount(telemetryInformation.RegionsContactedList.Count, dimensionsFunc);
             CosmosOperationMeter.RecordRequestUnit(telemetryInformation.RequestCharge, dimensionsFunc);
             CosmosOperationMeter.RecordRequestLatency(telemetryInformation.RequestLatency, dimensionsFunc);
-            CosmosOperationMeter.RecordOperationCallCount(dimensionsFunc);
         }
     }
 }
