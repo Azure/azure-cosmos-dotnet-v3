@@ -1784,11 +1784,10 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate);
 
         /// <summary>
-        /// Determines whether the given child feed range is a part of the specified parent feed range.
-        /// This method performs a comparison between the effective ranges of the child and parent feed ranges, determining if the child is fully contained within the parent.
+        /// Determines whether the given y feed range is a part of the specified x feed range.
         /// </summary>
-        /// <param name="x">The feed range representing the parent range.</param>
-        /// <param name="y">The feed range representing the child range.</param>
+        /// <param name="x">The feed range representing the x range.</param>
+        /// <param name="y">The feed range representing the y range.</param>
         /// <param name="cancellationToken">A token to cancel the operation if needed.</param>
         /// <example>
         /// <code language="csharp">
@@ -1798,8 +1797,8 @@ namespace Microsoft.Azure.Cosmos
         /// CosmosClient cosmosClient = cosmosClientBuilder.Build();
         /// Database cosmosDatabase = cosmosClient.GetDatabase("your-database-id");
         /// Container container = cosmosDatabase.GetContainer("your-container-id");
-        /// FeedRange x = ...; // Define the parent feed range
-        /// FeedRange y = ...;  // Define the child feed range
+        /// FeedRange x = ...; // Define the feed range for x
+        /// FeedRange y = ...;  // Define the feed range for y
         ///
         /// bool isFeedRangePartOfAsync = await container.IsFeedRangePartOfAsync(
         ///    x,
@@ -1808,7 +1807,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <returns>True if the child feed range is a subset of the parent feed range; otherwise, false.</returns>
+        /// <returns>True if the y feed range is a part of the x feed range; otherwise, false.</returns>
         public virtual Task<bool> IsFeedRangePartOfAsync(
             Cosmos.FeedRange x,
             Cosmos.FeedRange y,
