@@ -6,10 +6,11 @@ steps:
       Invoke-WebRequest "$env:EMULATORMSIURL" -OutFile "$env:temp\azure-cosmosdb-emulator.msi"
       Write-Host "Finished Downloading Cosmos Emulator - $env:temp\azure-cosmosdb-emulator.msi" -ForegroundColor green 
       dir "$env:temp" 
-      choco install lessmsi
-      choco upgrade lessmsi
+      mkdir "$env:temp\lessmsi"
+      Expand-Archive -LiteralPath 'tools\lessmsi-v2.1.1.zip' -DestinationPath "$env:temp\lessmsi"
+
       mkdir "$env:temp\Azure Cosmos DB Emulator"
-      lessmsi x "$env:temp\azure-cosmosdb-emulator.msi" "$env:temp\Azure Cosmos DB Emulator\"
+      "$env:temp\lessmsi\lessmsi" x "$env:temp\azure-cosmosdb-emulator.msi" "$env:temp\Azure Cosmos DB Emulator\"
       Add-MpPreference -ExclusionPath "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator"
       Add-MpPreference -ExclusionPath "$env:localappdata\CosmosDBEmulator"
     displayName: Downloading and Installing Cosmos DB Emulator
