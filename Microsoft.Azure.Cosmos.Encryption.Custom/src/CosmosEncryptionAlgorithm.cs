@@ -31,8 +31,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <returns> Returns True if the Algorithm is supported. </returns>
         internal static bool VerifyIfSupportedAlgorithm(string encryptionAlgorithm)
         {
-            if (!string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized) &&
-                !string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized))
+            if (!string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized, StringComparison.Ordinal) &&
+                !string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized, StringComparison.Ordinal))
             {
                 return false;
             }
