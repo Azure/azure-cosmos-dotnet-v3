@@ -7,6 +7,20 @@ steps:
       Write-Host "Finished Downloading Cosmos Emulator - $env:temp\azure-cosmosdb-emulator.msi" -ForegroundColor green 
       dir "$env:temp" 
 
+      function Remove-DirectoryIfExists {
+          param ([string]$Path)
+
+          if (Test-Path -Path $Path -PathType Container) {
+            Remove-Item -Path $Path -Recurse -Force
+            Write-Output "Folder deleted: $Path"
+          } else {
+            Write-Output "Folder does not exist: $Path"
+          }
+      }  
+
+      Remove-DirectoryIfExists -Path "$env:temp\lessmsi"
+      Remove-DirectoryIfExists -Path "$env:temp\Azure Cosmos DB Emulator\"
+
       Expand-Archive -LiteralPath 'tools\lessmsi-v2.1.1.zip' -DestinationPath "$env:temp\lessmsi"
       &"$env:temp\lessmsi\lessmsi.exe" x "$env:temp\azure-cosmosdb-emulator.msi" "$env:temp\Azure Cosmos DB Emulator\"
 
