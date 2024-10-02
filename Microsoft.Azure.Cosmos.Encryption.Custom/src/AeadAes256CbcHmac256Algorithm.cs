@@ -201,12 +201,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             // Final blob we return = version + HMAC + iv + cipherText
             const int hmacStartIndex = 1;
-            int authenticationTagLen = hasAuthenticationTag ? KeySizeInBytes : 0;
+            int authenticationTagLen = hasAuthenticationTag ? AuthenticationTagSizeInBytes : 0;
             int ivStartIndex = hmacStartIndex + authenticationTagLen;
             int cipherStartIndex = ivStartIndex + BlockSizeInBytes; // this is where hmac starts.
 
-            // Output buffer size = size of VersionByte + Authentication Tag + IV + cipher Text blocks.
-            int outputBufSize = sizeof(byte) + authenticationTagLen + iv.Length + (numBlocks * BlockSizeInBytes);
+            int outputBufSize = this.GetEncryptByteCount(plainText.Length) - (hasAuthenticationTag ? 0 : authenticationTagLen);
             byte[] outBuffer = new byte[outputBufSize];
 
             // Store the version and IV rightaway
