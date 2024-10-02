@@ -1787,8 +1787,8 @@ namespace Microsoft.Azure.Cosmos
         /// Determines whether the given child feed range is a part of the specified parent feed range.
         /// This method performs a comparison between the effective ranges of the child and parent feed ranges, determining if the child is fully contained within the parent.
         /// </summary>
-        /// <param name="parentFeedRange">The feed range representing the parent range.</param>
-        /// <param name="childFeedRange">The feed range representing the child range.</param>
+        /// <param name="x">The feed range representing the parent range.</param>
+        /// <param name="y">The feed range representing the child range.</param>
         /// <param name="cancellationToken">A token to cancel the operation if needed.</param>
         /// <example>
         /// <code language="csharp">
