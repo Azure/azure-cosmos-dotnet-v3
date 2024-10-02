@@ -700,6 +700,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void VerifyLimitToEndpointSettings()
         {
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions { ApplicationRegion = Regions.EastUS, LimitToEndpoint = true };
+
+            // For invalid regions GetConnectionPolicy will throw exception
             cosmosClientOptions.GetConnectionPolicy(clientId: 0);
         }
 
@@ -708,6 +710,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void VerifyLimitToEndpointSettingsWithPreferredRegions()
         {
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions { ApplicationPreferredRegions = new List<string>() { Regions.EastUS }, LimitToEndpoint = true };
+
+            // For invalid regions GetConnectionPolicy will throw exception
             cosmosClientOptions.GetConnectionPolicy(clientId: 0);
         }
 
@@ -716,6 +720,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void VerifyApplicationRegionSettingsWithPreferredRegions()
         {
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions { ApplicationPreferredRegions = new List<string>() { Regions.EastUS }, ApplicationRegion = Regions.EastUS };
+
+            // For invalid regions GetConnectionPolicy will throw exception
             cosmosClientOptions.GetConnectionPolicy(clientId: 0);
         }
 
@@ -724,6 +730,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void VerifyApplicationRegionSettingsForAllPublicRegions(string regionName)
         {
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions { ApplicationRegion = regionName };
+
+            // For invalid regions GetConnectionPolicy will throw exception
             cosmosClientOptions.GetConnectionPolicy(clientId: 0);
         }
 
