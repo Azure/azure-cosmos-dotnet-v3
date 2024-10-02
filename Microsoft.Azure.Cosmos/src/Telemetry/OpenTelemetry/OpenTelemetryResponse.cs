@@ -8,12 +8,11 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Net;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Documents;
     using Telemetry;
 
     internal sealed class OpenTelemetryResponse : OpenTelemetryAttributes
     {
-        internal OpenTelemetryResponse(TransactionalBatchResponse responseMessage, bool isHomogenousOperations, OperationType? batchOperation)
+        internal OpenTelemetryResponse(TransactionalBatchResponse responseMessage)
            : this(
                   statusCode: responseMessage.StatusCode,
                   requestCharge: OpenTelemetryResponse.GetHeader(responseMessage)?.RequestCharge,
@@ -24,8 +23,7 @@ namespace Microsoft.Azure.Cosmos
                   subStatusCode: OpenTelemetryResponse.GetHeader(responseMessage)?.SubStatusCode,
                   activityId: OpenTelemetryResponse.GetHeader(responseMessage)?.ActivityId,
                   correlationId: OpenTelemetryResponse.GetHeader(responseMessage)?.CorrelatedActivityId,
-                  batchSize: responseMessage.GetBatchSize(),
-                  batchOperationName: isHomogenousOperations ? batchOperation : null )
+                  batchSize: responseMessage.GetBatchSize())
         {
         }
 
@@ -39,9 +37,7 @@ namespace Microsoft.Azure.Cosmos
                   requestMessage: responseMessage.RequestMessage,
                   subStatusCode: OpenTelemetryResponse.GetHeader(responseMessage)?.SubStatusCode,
                   activityId: OpenTelemetryResponse.GetHeader(responseMessage)?.ActivityId,
-                  correlationId: OpenTelemetryResponse.GetHeader(responseMessage)?.CorrelatedActivityId,
-                  operationType: responseMessage is QueryResponse ? Documents.OperationType.Query : Documents.OperationType.Invalid
-                 )
+                  correlationId: OpenTelemetryResponse.GetHeader(responseMessage)?.CorrelatedActivityId)
         {
         }
 
@@ -55,9 +51,7 @@ namespace Microsoft.Azure.Cosmos
             Documents.SubStatusCodes? subStatusCode,
             string activityId,
             string correlationId,
-            Documents.OperationType operationType = Documents.OperationType.Invalid,
-            int? batchSize = null,
-            Documents.OperationType? batchOperationName = null)
+            int? batchSize = null)
             : base(requestMessage)
         {
             this.StatusCode = statusCode;
@@ -68,9 +62,7 @@ namespace Microsoft.Azure.Cosmos
             this.SubStatusCode = (int)(subStatusCode ?? Documents.SubStatusCodes.Unknown);
             this.ActivityId = activityId;
             this.CorrelatedActivityId = correlationId;
-            this.OperationType = operationType;
             this.BatchSize = batchSize;
-            this.BatchOperationName = batchOperationName;
         }
 
         private static string GetPayloadSize(ResponseMessage response)
