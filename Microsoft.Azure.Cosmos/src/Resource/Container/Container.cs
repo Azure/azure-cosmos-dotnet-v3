@@ -1784,7 +1784,8 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate);
 
         /// <summary>
-        /// Determines whether the given child feed range is a part of the specified parent feed range.
+        /// Determines whether a feed range contains another feed range.
+
         /// This method performs a comparison between the effective ranges of the child and parent feed ranges, determining if the child is fully contained within the parent.
         /// </summary>
         /// <param name="x">The feed range representing the parent range.</param>
