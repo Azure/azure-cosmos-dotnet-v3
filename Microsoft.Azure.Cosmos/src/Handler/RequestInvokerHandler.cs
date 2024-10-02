@@ -69,8 +69,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             if (ConfigurationManager.IsBinaryEncodingEnabled()
-                && RequestInvokerHandler.IsPointOperationSupportedForBinaryEncoding(request.OperationType)
-                && request.ResourceType == ResourceType.Document)
+                && RequestInvokerHandler.IsPointOperationSupportedForBinaryEncoding(request))
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.SupportedSerializationFormats, RequestInvokerHandler.BinarySerializationFormat);
                 if (request.Content != null)
@@ -107,9 +106,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             if (ConfigurationManager.IsBinaryEncodingEnabled()
-                && RequestInvokerHandler.IsPointOperationSupportedForBinaryEncoding(request.OperationType)
-                && response.Content != null
-                && response.Content is not MemoryStream)
+                && RequestInvokerHandler.IsPointOperationSupportedForBinaryEncoding(request)
+                && (response?.Content is not MemoryStream 
+                || response?.Content is not CloneableStream))
             {
                 CloneableStream clonableStream = await StreamExtension.AsClonableStreamAsync(response.Content, default);
                 response.Content = clonableStream;
@@ -568,13 +567,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
               operationType == OperationType.Patch);
         }
 
-        private static bool IsPointOperationSupportedForBinaryEncoding(OperationType operationType)
+        private static bool IsPointOperationSupportedForBinaryEncoding(RequestMessage request)
         {
-            return operationType == OperationType.Create
-                || operationType == OperationType.Replace
-                || operationType == OperationType.Delete
-                || operationType == OperationType.Read
-                || operationType == OperationType.Upsert;
+            return request.ResourceType == ResourceType.Document 
+                && (request.OperationType == OperationType.Create
+                    || request.OperationType == OperationType.Replace
+                    || request.OperationType == OperationType.Delete
+                    || request.OperationType == OperationType.Read
+                    || request.OperationType == OperationType.Upsert);
         }
 
         private static bool IsClientNoResponseSet(CosmosClientOptions clientOptions, OperationType operationType)

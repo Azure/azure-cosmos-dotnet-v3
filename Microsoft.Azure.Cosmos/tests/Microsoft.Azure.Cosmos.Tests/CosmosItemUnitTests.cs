@@ -154,65 +154,72 @@ namespace Microsoft.Azure.Cosmos.Tests
         [DataRow(false, DisplayName = "Test scenario when binary encoding is disabled at client level.")]
         public async Task CreateItemAsync_WithNonSeekableStream_ShouldConvertToClonnableStream(bool binaryEncodingEnabledInClient)
         {
-            if (binaryEncodingEnabledInClient)
+            try
             {
-                Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, "True");
-            }
-
-            dynamic item = new
-            {
-                id = Guid.NewGuid().ToString(),
-                pk = "FF627B77-568E-4541-A47E-041EAC10E46F",
-            };
-
-            ItemRequestOptions options = new ();
-
-            ResponseMessage response = null;
-            HttpStatusCode httpStatusCode = HttpStatusCode.OK;
-            int testHandlerHitCount = 0;
-            string itemResponseString = "{\r\n    \\\"id\\\": \\\"60362d85-ce1e-4ceb-9af3-f2ddfebf4547\\\",\r\n    \\\"pk\\\": \\\"pk\\\",\r\n    \\\"name\\\": \\\"1856531480\\\",\r\n    " +
-                "\\\"email\\\": \\\"dkunda@test.com\\\",\r\n    \\\"body\\\": \\\"This document is intended for binary encoding test.\\\",\r\n    \\\"_rid\\\": \\\"fIsUAKsjjj0BAAAAAAAAAA==\\\",\r\n    " +
-                "\\\"_self\\\": \\\"dbs/fIsUAA==/colls/fIsUAKsjjj0=/docs/fIsUAKsjjj0BAAAAAAAAAA==/\\\",\r\n    \\\"_etag\\\": \\\"\\\\\"510096bc-0000-0d00-0000-66ccf70b0000\\\\\"\\\",\r\n    " +
-                "\\\"_attachments\\\": \\\"attachments/\\\",\r\n    \\\"_ts\\\": 1724708619\r\n}";
-
-            TestHandler testHandler = new TestHandler((request, cancellationToken) =>
-            {
-                Assert.IsTrue(request.RequestUri.OriginalString.StartsWith(@"dbs/testdb/colls/testcontainer"));
-                Assert.AreEqual(options, request.RequestOptions);
-                Assert.AreEqual(ResourceType.Document, request.ResourceType);
-                Assert.IsNotNull(request.Headers.PartitionKey);
-                // Assert.AreEqual("\"[4567.1234]\"", request.Headers.PartitionKey);
-                testHandlerHitCount++;
-
-                bool shouldReturnBinaryResponse = request.Headers[HttpConstants.HttpHeaders.SupportedSerializationFormats] != null
-                    && request.Headers[HttpConstants.HttpHeaders.SupportedSerializationFormats].Equals(SupportedSerializationFormats.CosmosBinary.ToString());
-
-                response = new ResponseMessage(httpStatusCode, request, errorMessage: null)
+                if (binaryEncodingEnabledInClient)
                 {
-                    Content = shouldReturnBinaryResponse
-                    ? CosmosSerializerUtils.ConvertInputToNonSeekableBinaryStream(
-                        itemResponseString,
-                        JsonSerializer.Create())
-                    : CosmosSerializerUtils.ConvertInputToTextStream(
-                        itemResponseString,
-                        JsonSerializer.Create())
+                    Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, "True");
+                }
+
+                dynamic item = new
+                {
+                    id = Guid.NewGuid().ToString(),
+                    pk = "FF627B77-568E-4541-A47E-041EAC10E46F",
                 };
-                return Task.FromResult(response);
-            });
 
-            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
-                (builder) => builder.AddCustomHandlers(testHandler));
+                ItemRequestOptions options = new();
 
-            Container container = client.GetDatabase("testdb")
-                                        .GetContainer("testcontainer");
+                ResponseMessage response = null;
+                HttpStatusCode httpStatusCode = HttpStatusCode.OK;
+                int testHandlerHitCount = 0;
+                string itemResponseString = "{\r\n    \\\"id\\\": \\\"60362d85-ce1e-4ceb-9af3-f2ddfebf4547\\\",\r\n    \\\"pk\\\": \\\"pk\\\",\r\n    \\\"name\\\": \\\"1856531480\\\",\r\n    " +
+                    "\\\"email\\\": \\\"dkunda@test.com\\\",\r\n    \\\"body\\\": \\\"This document is intended for binary encoding test.\\\",\r\n    \\\"_rid\\\": \\\"fIsUAKsjjj0BAAAAAAAAAA==\\\",\r\n    " +
+                    "\\\"_self\\\": \\\"dbs/fIsUAA==/colls/fIsUAKsjjj0=/docs/fIsUAKsjjj0BAAAAAAAAAA==/\\\",\r\n    \\\"_etag\\\": \\\"\\\\\"510096bc-0000-0d00-0000-66ccf70b0000\\\\\"\\\",\r\n    " +
+                    "\\\"_attachments\\\": \\\"attachments/\\\",\r\n    \\\"_ts\\\": 1724708619\r\n}";
 
-            ItemResponse<dynamic> itemResponse = await container.CreateItemAsync<dynamic>(
-                item: item,
-                requestOptions: options);
+                TestHandler testHandler = new TestHandler((request, cancellationToken) =>
+                {
+                    Assert.IsTrue(request.RequestUri.OriginalString.StartsWith(@"dbs/testdb/colls/testcontainer"));
+                    Assert.AreEqual(options, request.RequestOptions);
+                    Assert.AreEqual(ResourceType.Document, request.ResourceType);
+                    Assert.IsNotNull(request.Headers.PartitionKey);
+                    // Assert.AreEqual("\"[4567.1234]\"", request.Headers.PartitionKey);
+                    testHandlerHitCount++;
 
-            Assert.IsNotNull(itemResponse);
-            Assert.AreEqual(httpStatusCode, itemResponse.StatusCode);
-            Assert.AreEqual(itemResponseString, itemResponse.Resource.ToString());
+                    bool shouldReturnBinaryResponse = request.Headers[HttpConstants.HttpHeaders.SupportedSerializationFormats] != null
+                        && request.Headers[HttpConstants.HttpHeaders.SupportedSerializationFormats].Equals(SupportedSerializationFormats.CosmosBinary.ToString());
+
+                    response = new ResponseMessage(httpStatusCode, request, errorMessage: null)
+                    {
+                        Content = shouldReturnBinaryResponse
+                        ? CosmosSerializerUtils.ConvertInputToNonSeekableBinaryStream(
+                            itemResponseString,
+                            JsonSerializer.Create())
+                        : CosmosSerializerUtils.ConvertInputToTextStream(
+                            itemResponseString,
+                            JsonSerializer.Create())
+                    };
+                    return Task.FromResult(response);
+                });
+
+                using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
+                    (builder) => builder.AddCustomHandlers(testHandler));
+
+                Container container = client.GetDatabase("testdb")
+                                            .GetContainer("testcontainer");
+
+                ItemResponse<dynamic> itemResponse = await container.CreateItemAsync<dynamic>(
+                    item: item,
+                    requestOptions: options);
+
+                Assert.IsNotNull(itemResponse);
+                Assert.AreEqual(httpStatusCode, itemResponse.StatusCode);
+                Assert.AreEqual(itemResponseString, itemResponse.Resource.ToString());
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, null);
+            }
         }
 
         [TestMethod]
