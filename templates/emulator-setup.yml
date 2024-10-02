@@ -10,7 +10,7 @@ steps:
       Expand-Archive -LiteralPath 'tools\lessmsi-v2.1.1.zip' -DestinationPath "$env:temp\lessmsi"
 
       mkdir "$env:temp\Azure Cosmos DB Emulator"
-      "$env:temp\lessmsi\lessmsi" x "$env:temp\azure-cosmosdb-emulator.msi" "$env:temp\Azure Cosmos DB Emulator\"
+      Invoke-Expression -Command "$env:temp\lessmsi\lessmsi x $env:temp\azure-cosmosdb-emulator.msi $env:temp\Azure Cosmos DB Emulator\"
       Add-MpPreference -ExclusionPath "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator"
       Add-MpPreference -ExclusionPath "$env:localappdata\CosmosDBEmulator"
     displayName: Downloading and Installing Cosmos DB Emulator
