@@ -120,8 +120,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         this.TestContext.LogTestExecutionForContainer(containerContext);
 
                         bool actualIsFeedRangePartOfAsync = await containerContext.Container.IsFeedRangePartOfAsync(
-                            parentFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>(parentMinimum, parentMaximum, true, false)),
-                            childFeedRange: feedRange,
+                            new FeedRangeEpk(new Documents.Routing.Range<string>(parentMinimum, parentMaximum, true, false)),
+                            feedRange,
                             cancellationToken: CancellationToken.None);
 
                         if (actualIsFeedRangePartOfAsync != expectedIsFeedRangePartOfAsync)
@@ -197,8 +197,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         this.TestContext.LogTestExecutionForContainer(containerContext);
 
                         bool actualIsFeedRangePartOfAsync = await containerContext.Container.IsFeedRangePartOfAsync(
-                            parentFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>(parentMinimum, parentMaximum, true, false)),
-                            childFeedRange: feedRange,
+                            new FeedRangeEpk(new Documents.Routing.Range<string>(parentMinimum, parentMaximum, true, false)),
+                            feedRange,
                             cancellationToken: CancellationToken.None);
 
                         if (actualIsFeedRangePartOfAsync != expectedIsFeedRangePartOfAsync)
@@ -318,8 +318,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         TExceeption exception = await Assert.ThrowsExceptionAsync<TExceeption>(
                             async () => await containerContext.Container.IsFeedRangePartOfAsync(
-                                parentFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>("", "FFFFFFFFFFFFFFFF", true, false)),
-                                childFeedRange: feedRange,
+                                new FeedRangeEpk(new Documents.Routing.Range<string>("", "FFFFFFFFFFFFFFFF", true, false)),
+                                feedRange,
                                 cancellationToken: CancellationToken.None));
 
                         if (exception == null)
@@ -446,8 +446,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         TException exception = await Assert.ThrowsExceptionAsync<TException>(
                             async () => await containerContext.Container.IsFeedRangePartOfAsync(
-                                parentFeedRange: feedRange,
-                                childFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>("", "3FFFFFFFFFFFFFFF", true, false)),
+                                feedRange,
+                                new FeedRangeEpk(new Documents.Routing.Range<string>("", "3FFFFFFFFFFFFFFF", true, false)),
                                 cancellationToken: CancellationToken.None));
 
                         if (exception == null)
@@ -530,8 +530,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         NotSupportedException exception = await Assert.ThrowsExceptionAsync<NotSupportedException>(
                             async () => 
                             await containerContext.Container.IsFeedRangePartOfAsync(
-                                parentFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>(parentMinimum, parentMaximum, true, parentIsMaxInclusive)),
-                                childFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>(childMinimum, childMaximum, true, childIsMaxInclusive)),
+                                new FeedRangeEpk(new Documents.Routing.Range<string>(parentMinimum, parentMaximum, true, parentIsMaxInclusive)),
+                                new FeedRangeEpk(new Documents.Routing.Range<string>(childMinimum, childMaximum, true, childIsMaxInclusive)),
                                 cancellationToken: CancellationToken.None));
 
                         if (exception == null)
@@ -606,8 +606,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         this.TestContext.LogTestExecutionForContainer(containerContext);
 
                         bool actualIsFeedRangePartOfAsync = await containerContext.Container.IsFeedRangePartOfAsync(
-                            parentFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>(parentMinimum, parentMaximum, true, parentIsMaxInclusive)),
-                            childFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>(childMinimum, childMaximum, true, childIsMaxInclusive)),
+                            new FeedRangeEpk(new Documents.Routing.Range<string>(parentMinimum, parentMaximum, true, parentIsMaxInclusive)),
+                            new FeedRangeEpk(new Documents.Routing.Range<string>(childMinimum, childMaximum, true, childIsMaxInclusive)),
                             cancellationToken: CancellationToken.None);
 
                         if (expectedIsFeedRangePartOfAsync != actualIsFeedRangePartOfAsync)
@@ -906,8 +906,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         ArgumentOutOfRangeException exception = await Assert.ThrowsExceptionAsync<ArgumentOutOfRangeException>(
                             async () => await containerContext.Container
                                 .IsFeedRangePartOfAsync(
-                                    parentFeedRange: new FeedRangeEpk(parentFeedRange),
-                                    childFeedRange: new FeedRangeEpk(childFeedRange),
+                                    new FeedRangeEpk(parentFeedRange),
+                                    new FeedRangeEpk(childFeedRange),
                                     cancellationToken: CancellationToken.None));
 
                         if (exception == null)
