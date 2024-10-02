@@ -16,15 +16,18 @@ steps:
           } else {
             Write-Output "Folder does not exist: $Path"
           }
-      }  
+      }
 
-      Remove-DirectoryIfExists -Path "$env:temp\lessmsi"
-      Remove-DirectoryIfExists -Path "$env:temp\Azure Cosmos DB Emulator\"
+      $lessMsiDir="$env:temp\lessmsi"
+      $emulatorDir="$env:temp\Azure Cosmos DB Emulator\"
 
-      Expand-Archive -LiteralPath 'tools\lessmsi-v2.1.1.zip' -DestinationPath "$env:temp\lessmsi"
-      &"$env:temp\lessmsi\lessmsi.exe" x "$env:temp\azure-cosmosdb-emulator.msi" "$env:temp\Azure Cosmos DB Emulator\"
+      Remove-DirectoryIfExists -Path $lessMsiDir
+      Remove-DirectoryIfExists -Path $emulatorDir
 
-      Add-MpPreference -ExclusionPath "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator"
+      Expand-Archive -LiteralPath 'tools\lessmsi-v2.1.1.zip' -DestinationPath $lessMsiDir
+      &"$env:temp\lessmsi\lessmsi.exe" x "$env:temp\azure-cosmosdb-emulator.msi" "$emulatorDir"
+
+      Add-MpPreference -ExclusionPath "$emulatorDir\SourceDir\Azure Cosmos DB Emulator"
       Add-MpPreference -ExclusionPath "$env:localappdata\CosmosDBEmulator"
     displayName: Downloading and Installing Cosmos DB Emulator
     failOnStderr: true
