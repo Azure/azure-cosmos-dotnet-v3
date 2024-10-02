@@ -730,7 +730,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         private static IEnumerable<object[]> GetPublicRegionNames()
         {
             List<object[]> regionNames = new List<object[]>();
-            foreach (FieldInfo fieldInfo in typeof(Regions).GetFields(BindingFlags.Public | BindingFlags.Static))
+            foreach (FieldInfo fieldInfo in typeof(Regions).GetFields(BindingFlags.Public & BindingFlags.Static))
             {
                 string regionValue = fieldInfo.GetValue(null).ToString();
 
