@@ -2366,7 +2366,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
             TestDoc testDoc = TestDoc.Create();
             // hierarchical pk container test
-            cepWithPKIdPath1 = new ClientEncryptionIncludedPath()
+            ClientEncryptionIncludedPath cepWithPKIdPath1 = new ClientEncryptionIncludedPath()
             {
                 Path = "/Sensitive_LongFormat",
                 ClientEncryptionKeyId = "key1",
@@ -2374,7 +2374,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
             };
 
-            cepWithPKIdPath2 = new ClientEncryptionIncludedPath()
+            ClientEncryptionIncludedPath cepWithPKIdPath2 = new ClientEncryptionIncludedPath()
             {
                 Path = "/Sensitive_NestedObjectFormatL1",
                 ClientEncryptionKeyId = "key1",
@@ -2382,18 +2382,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
             };
 
-            paths = new Collection<ClientEncryptionIncludedPath> { cepWithPKIdPath1, cepWithPKIdPath2 };
+            Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath> { cepWithPKIdPath1, cepWithPKIdPath2 };
 
-            clientEncryptionPolicyWithRevokedKek = new ClientEncryptionPolicy(paths, 2);
+            ClientEncryptionPolicy clientEncryptionPolicyWithRevokedKek = new ClientEncryptionPolicy(paths, 2);
 
-            containerProperties = new ContainerProperties() 
+            ContainerProperties containerProperties = new ContainerProperties() 
             { 
                 Id = "HierarchicalPkEncContainer",
                 PartitionKeyPaths = new List<string> { "/Sensitive_StringFormat", "/Sensitive_NestedObjectFormatL1/Sensitive_NestedObjectFormatL2/Sensitive_StringFormatL2" },
                 ClientEncryptionPolicy = clientEncryptionPolicyWithRevokedKek 
             };
 
-            encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);
+            Container encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);
             await encryptionContainer.InitializeEncryptionAsync();
 
             PartitionKey hirarchicalPk = new PartitionKeyBuilder()
@@ -2401,14 +2401,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 .Add(testDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_StringFormatL2)
                 .Build();
 
-            createResponse = await encryptionContainer.CreateItemAsync(
+            ItemResponse<TestDoc> createResponse = await encryptionContainer.CreateItemAsync(
                 testDoc,
                 partitionKey: hirarchicalPk);
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
             VerifyExpectedDocResponse(testDoc, createResponse.Resource);
 
             // read back
-            readResponse = await encryptionContainer.ReadItemAsync<TestDoc>(
+            ItemResponse<TestDoc> readResponse = await encryptionContainer.ReadItemAsync<TestDoc>(
                testDoc.Id,
                hirarchicalPk);
 
@@ -2567,11 +2567,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 VerifyExpectedDocResponse(testDoc, response.First());
             }
 
-            partialHirarchicalPk = new PartitionKeyBuilder()
+            PartitionKeyBuilder partialHirarchicalPk = new PartitionKeyBuilder()
                 .Add(testDoc.State)
                 .Build();
 
-            queryRequestOptions = new QueryRequestOptions
+            QueryRequestOptions queryRequestOptions = new QueryRequestOptions
             {
                 PartitionKey = partialHirarchicalPk
             };
