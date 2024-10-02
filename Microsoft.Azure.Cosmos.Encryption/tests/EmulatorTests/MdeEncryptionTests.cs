@@ -2571,11 +2571,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 VerifyExpectedDocResponse(testDoc, response.First());
             }
 
-            PartitionKeyBuilder partialHirarchicalPk = new PartitionKeyBuilder()
+            partialHirarchicalPk = new PartitionKeyBuilder()
                 .Add(testDoc.State)
                 .Build();
 
-            QueryRequestOptions queryRequestOptions = new QueryRequestOptions
+            queryRequestOptions = new QueryRequestOptions
             {
                 PartitionKey = partialHirarchicalPk
             };
