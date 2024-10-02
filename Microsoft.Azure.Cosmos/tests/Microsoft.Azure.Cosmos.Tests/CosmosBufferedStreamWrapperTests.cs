@@ -74,45 +74,47 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void TestReadWithNonSeekableStream()
+        public async Task TestReadWithNonSeekableStream()
         {
             byte[] data = Encoding.UTF8.GetBytes("Hello, World!");
-            using (NonSeekableMemoryStream memoryStream = new (data))
-            using (CosmosBufferedStreamWrapper bufferedStream = new (memoryStream, true))
-            {
-                Assert.IsFalse(bufferedStream.CanSeek);
-                JsonSerializationFormat format = bufferedStream.GetJsonSerializationFormat();
 
-                Assert.AreEqual(JsonSerializationFormat.Text, format);
+            using NonSeekableMemoryStream memoryStream = new(data);
+            using Documents.CloneableStream clonableStream = await Documents.StreamExtension.AsClonableStreamAsync(memoryStream);
+            using CosmosBufferedStreamWrapper bufferedStream = new(clonableStream, true);
+            
+            Assert.IsTrue(bufferedStream.CanSeek);
+            JsonSerializationFormat format = bufferedStream.GetJsonSerializationFormat();
 
-                byte[] result = new byte[bufferedStream.Length];
-                int bytes = bufferedStream.Read(result, 0, (int)bufferedStream.Length);
+            Assert.AreEqual(JsonSerializationFormat.Text, format);
 
-                Assert.IsNotNull(result);
-                Assert.AreEqual(bytes, result.Length);
-                Assert.AreEqual(data.Length, result.Length);
-                CollectionAssert.AreEqual(data, result);
-            }
+            byte[] result = new byte[bufferedStream.Length];
+            int bytes = bufferedStream.Read(result, 0, (int)bufferedStream.Length);
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual(bytes, result.Length);
+            Assert.AreEqual(data.Length, result.Length);
+            CollectionAssert.AreEqual(data, result);
         }
 
         [TestMethod]
         public async Task TestReadAllAsyncWithNonSeekableStream()
         {
             byte[] data = Encoding.UTF8.GetBytes("Hello, World!");
-            using (NonSeekableMemoryStream memoryStream = new (data))
-            using (CosmosBufferedStreamWrapper bufferedStream = new (memoryStream, true))
-            {
-                Assert.IsFalse(bufferedStream.CanSeek);
-                JsonSerializationFormat format = bufferedStream.GetJsonSerializationFormat();
 
-                Assert.AreEqual(JsonSerializationFormat.Text, format);
+            using NonSeekableMemoryStream memoryStream = new(data);
+            using Documents.CloneableStream clonableStream = await Documents.StreamExtension.AsClonableStreamAsync(memoryStream);
+            using CosmosBufferedStreamWrapper bufferedStream = new(clonableStream, true);
 
-                byte[] result = await bufferedStream.ReadAllAsync();
+            Assert.IsTrue(bufferedStream.CanSeek);
+            JsonSerializationFormat format = bufferedStream.GetJsonSerializationFormat();
 
-                Assert.IsNotNull(result);
-                Assert.AreEqual(data.Length, result.Length);
-                CollectionAssert.AreEqual(data, result);
-            }
+            Assert.AreEqual(JsonSerializationFormat.Text, format);
+
+            byte[] result = await bufferedStream.ReadAllAsync();
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual(data.Length, result.Length);
+            CollectionAssert.AreEqual(data, result);
         }
 
         [TestMethod]
@@ -133,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
-        class NonSeekableMemoryStream : Stream
+        internal class NonSeekableMemoryStream : Stream
         {
             private readonly byte[] buffer;
             private int position;

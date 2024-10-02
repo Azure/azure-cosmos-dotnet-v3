@@ -106,6 +106,15 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 ((CosmosTraceDiagnostics)response.Diagnostics).Value.AddOrUpdateDatum("ExcludedRegions", request.RequestOptions.ExcludeRegions);
             }
 
+            if (ConfigurationManager.IsBinaryEncodingEnabled()
+                && RequestInvokerHandler.IsPointOperationSupportedForBinaryEncoding(request.OperationType)
+                && response.Content != null
+                && response.Content is not MemoryStream)
+            {
+                CloneableStream clonableStream = await StreamExtension.AsClonableStreamAsync(response.Content, default);
+                response.Content = clonableStream;
+            }
+
             return response;
         }
 

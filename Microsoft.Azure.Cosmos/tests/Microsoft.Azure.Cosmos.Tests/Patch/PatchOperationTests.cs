@@ -256,10 +256,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             return new ResponseMessage(httpStatusCode, request, errorMessage: null)
             {
                 Content = shouldReturnBinaryResponse
-                ? CosmosSerializationUtil.ConvertInputToBinaryStream(
+                ? CosmosSerializerUtils.ConvertInputToBinaryStream(
                     itemResponseString,
                     Newtonsoft.Json.JsonSerializer.Create())
-                : CosmosSerializationUtil.ConvertInputToTextStream(
+                : CosmosSerializerUtils.ConvertInputToTextStream(
                     itemResponseString,
                     Newtonsoft.Json.JsonSerializer.Create())
             };

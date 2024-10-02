@@ -5,10 +5,12 @@
 namespace Microsoft.Azure.Cosmos.Serializer
 {
     using System;
+    using System.Diagnostics;
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// A wrapper for a stream that buffers the first byte.
@@ -44,6 +46,10 @@ namespace Microsoft.Azure.Cosmos.Serializer
             Stream inputStream,
             bool shouldDisposeInnerStream)
         {
+            Debug.Assert(
+                inputStream is CloneableStream || inputStream is MemoryStream,
+                "The inner stream is neither a memory stream nor a cloneable stream.");
+
             this.innerStream = inputStream ?? throw new ArgumentNullException(nameof(inputStream));
             this.shouldDisposeInnerStream = shouldDisposeInnerStream;
         }

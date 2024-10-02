@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             JsonSerializationFormat format = JsonSerializationFormat.Binary;
 
             // Act
-            bool result = CosmosSerializationUtil.IsBinaryFormat(firstByte, format);
+            bool result = CosmosSerializerUtils.IsBinaryFormat(firstByte, format);
 
             // Assert
             Assert.IsTrue(result);
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             JsonSerializationFormat format = JsonSerializationFormat.Binary;
 
             // Act
-            bool result = CosmosSerializationUtil.IsBinaryFormat(firstByte, format);
+            bool result = CosmosSerializerUtils.IsBinaryFormat(firstByte, format);
 
             // Assert
             Assert.IsFalse(result);
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             JsonSerializationFormat format = JsonSerializationFormat.Text;
 
             // Act
-            bool result = CosmosSerializationUtil.IsTextFormat(firstByte, format);
+            bool result = CosmosSerializerUtils.IsTextFormat(firstByte, format);
 
             // Assert
             Assert.IsTrue(result);
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             JsonSerializationFormat format = JsonSerializationFormat.Text;
 
             // Act
-            bool result = CosmosSerializationUtil.IsTextFormat(firstByte, format);
+            bool result = CosmosSerializerUtils.IsTextFormat(firstByte, format);
 
             // Assert
             Assert.IsFalse(result);
@@ -110,15 +110,15 @@ namespace Microsoft.Azure.Cosmos.Tests
             string json = "{\"name\":\"test\"}";
 
             Stream inputStream = JsonSerializationFormat.Text.Equals(expectedFormat)
-                ? CosmosSerializationUtil.ConvertInputToTextStream(json, Newtonsoft.Json.JsonSerializer.Create())
-                : CosmosSerializationUtil.ConvertInputToBinaryStream(json, Newtonsoft.Json.JsonSerializer.Create());
+                ? CosmosSerializerUtils.ConvertInputToTextStream(json, Newtonsoft.Json.JsonSerializer.Create())
+                : CosmosSerializerUtils.ConvertInputToBinaryStream(json, Newtonsoft.Json.JsonSerializer.Create());
 
             // Act
             Stream outputStream = await CosmosSerializationUtil.TrySerializeStreamToTargetFormatAsync(expectedFormat, targetFormat, inputStream);
 
             // Assert
             Assert.IsNotNull(outputStream);
-            Assert.IsTrue(CosmosSerializationUtil.CheckFirstBufferByte(outputStream, targetFormat, out byte[] binBytes));
+            Assert.IsTrue(CosmosSerializerUtils.CheckFirstBufferByte(outputStream, targetFormat, out byte[] binBytes));
             Assert.IsNotNull(binBytes);
             Assert.IsTrue(binBytes.Length > 0);
         }
@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             // Arrange
             string json = "{\"name\":\"test\"}";
-            Stream inputStream = CosmosSerializationUtil.ConvertInputToTextStream(json, Newtonsoft.Json.JsonSerializer.Create());
+            Stream inputStream = CosmosSerializerUtils.ConvertInputToTextStream(json, Newtonsoft.Json.JsonSerializer.Create());
             JsonSerializationFormat expectedFormat = JsonSerializationFormat.Text;
             JsonSerializationFormat targetFormat = JsonSerializationFormat.Text;
 

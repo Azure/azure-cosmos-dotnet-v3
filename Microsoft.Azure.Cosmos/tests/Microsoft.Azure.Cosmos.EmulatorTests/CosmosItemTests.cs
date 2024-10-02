@@ -3977,7 +3977,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 inputStream.Position = 0;
 
                 Assert.IsTrue(content.Length > 0);
-                Assert.IsTrue(CosmosSerializationUtil.IsBinaryFormat(content[0], JsonSerializationFormat.Binary));
+                Assert.IsTrue(CosmosItemTests.IsBinaryFormat(content[0], JsonSerializationFormat.Binary));
             }
         }
 
@@ -3992,8 +3992,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 inputStream.Position = 0;
 
                 Assert.IsTrue(content.Length > 0);
-                Assert.IsTrue(CosmosSerializationUtil.IsTextFormat(content[0], JsonSerializationFormat.Text));
+                Assert.IsTrue(CosmosItemTests.IsTextFormat(content[0], JsonSerializationFormat.Text));
             }
+        }
+
+        private static bool IsBinaryFormat(
+            int firstByte,
+            JsonSerializationFormat desiredFormat)
+        {
+            return desiredFormat == JsonSerializationFormat.Binary && firstByte == (int)JsonSerializationFormat.Binary;
+        }
+
+        private static bool IsTextFormat(
+            int firstByte,
+            JsonSerializationFormat desiredFormat)
+        {
+            return desiredFormat == JsonSerializationFormat.Text && firstByte < (int)JsonSerializationFormat.Binary;
         }
     }
 }
