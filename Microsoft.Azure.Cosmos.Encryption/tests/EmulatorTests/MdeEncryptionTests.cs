@@ -195,7 +195,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         }
 
         [TestCleanup]
-        public static async Task TestCleanup()
+        public async Task TestCleanup()
         {
             if (MdeEncryptionTests.database != null)
             {
