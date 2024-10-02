@@ -739,7 +739,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             List<object[]> regionNames = new List<object[]>();
 
-            foreach (PropertyInfo fieldInfo in typeof(Regions).GetProperties(BindingFlags.Public & BindingFlags.Static))
+            // BindingFlags.FlattenHierarchy MUST for const fields 
+            foreach (FieldInfo fieldInfo in typeof(Regions).GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy))
             {
                 string regionValue = fieldInfo.GetValue(null).ToString();
 
