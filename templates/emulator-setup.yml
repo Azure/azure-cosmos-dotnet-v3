@@ -11,6 +11,7 @@ steps:
 
       mkdir "$env:temp\Azure Cosmos DB Emulator"
       $lessmsiCommand = "$env:temp\lessmsi\lessmsi x $env:temp\azure-cosmosdb-emulator.msi \"$env:temp\Azure Cosmos DB Emulator\" "
+      Write-Host "execuring $lessmsiCommand" 
       Invoke-Expression -Command $lessmsiCommand
       Add-MpPreference -ExclusionPath "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator"
       Add-MpPreference -ExclusionPath "$env:localappdata\CosmosDBEmulator"
