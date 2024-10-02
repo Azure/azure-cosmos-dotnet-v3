@@ -1577,52 +1577,5 @@ namespace Microsoft.Azure.Cosmos
         {
             return parentRange.Max == childRangeMax || parentRange.Contains(childRangeMax);
         }
-
-        /// <summary>
-        /// Returns the exclusive maximum of the given value by subtracting one.
-        /// Supports hexadecimal and numeric values. If the value is neither, it returns the original string.
-        /// </summary>
-        /// <param name="value">The value to calculate the exclusive maximum for, either a hexadecimal or numeric string.</param>
-        /// <returns>The exclusive maximum of the value as a string, or the original value if no subtraction can be performed.</returns>
-        private static string GetExclusiveMaxValue(string value)
-        {
-            // Check if the value is a valid hexadecimal string
-            if (ContainerCore.IsValidHex(value))
-            {
-                try
-                {
-                    long number = Convert.ToInt64(value, 16);
-                    number -= 1;
-                    return number.ToString("X"); // Return the result as a hexadecimal string
-                }
-                catch (OverflowException)
-                {
-                    // Handle overflow in case of extremely large numbers
-                    throw new ArgumentOutOfRangeException(nameof(value), "Value is too large to process as a hexadecimal.");
-                }
-            }
-            // Check if the value is a valid numeric string
-            else if (long.TryParse(value, out long numericValue))
-            {
-                return (numericValue - 1).ToString(); // Subtract 1 and return as a string
-            }
-            else
-            {
-                // If the value is neither a hex nor a number, return it as is
-                return value;
-            }
-        }
-
-        /// <summary>
-        /// Determines whether the provided string represents a valid hexadecimal number.
-        /// Supports both small and large hexadecimal numbers.
-        /// </summary>
-        /// <param name="value">The string to check for a valid hexadecimal format.</param>
-        /// <returns>True if the string is a valid hexadecimal number; otherwise, false.</returns>
-        private static bool IsValidHex(string value)
-        {
-            // Try to parse the string as a hexadecimal number using BigInteger to handle larger values
-            return BigInteger.TryParse(value, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out _);
-        }
     }
 }
