@@ -1554,7 +1554,8 @@ namespace Microsoft.Azure.Cosmos
             bool isMaxWithinParent = (parentRange.IsMaxInclusive, childRange.IsMaxInclusive) switch
             {
                 (false, true) => parentRange.Contains(childRange.Max),  // Parent max is exclusive, child max is inclusive
-                (true, false) => throw new NotSupportedException("The combination where the parent range's maximum is inclusive and the child range's maximum is exclusive is not supported in the current implementation. This case needs specific handling, which has not been implemented."),
+                (true, false) => throw new NotSupportedException("The combination where the parent range's maximum is inclusive and the child range's maximum is exclusive is not supported in the current implementation."),
+
                     _ => ContainerCore.IsChildMaxWithinParent(parentRange, childRange.Max) // Default for the following combinations:
                                                                                         // (true, true): Both max values are inclusive
                                                                                         // (false, false): Both max values are exclusive
