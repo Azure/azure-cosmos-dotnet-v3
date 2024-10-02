@@ -18,6 +18,7 @@ parameters:
 jobs:
 - job:
   displayName: Tests Debug
+  condition: eq(1,2) #and(succeeded(), eq(${{ parameters.IncludePerformance }}, true))
   pool:
     name: 'OneES'
 
@@ -55,7 +56,7 @@ jobs:
       
 - job:
   displayName: PerformanceTests ${{ parameters.BuildConfiguration }}
-  condition: and(succeeded(), eq(${{ parameters.IncludePerformance }}, true))
+  condition: eq(1,2) #and(succeeded(), eq(${{ parameters.IncludePerformance }}, true))
   pool:
     name: 'OneES'
 

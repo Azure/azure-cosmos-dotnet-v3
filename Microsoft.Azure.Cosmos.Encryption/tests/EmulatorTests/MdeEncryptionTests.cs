@@ -206,8 +206,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                         FeedResponse<ContainerProperties> response = await feedIterator.ReadNextAsync();
                         foreach (ContainerProperties containerProperty in response)
                         {
-                            Container container = MdeEncryptionTests.database.GetContainer(containerProperty.Id);
-                            await container.DeleteContainerAsync();
+                            if (containerProperties.Id != encryptionContainer.Id
+                                    && containerProperties.Id != encryptionContainerForChangeFeed.Id)
+                            {
+                                Container container = MdeEncryptionTests.database.GetContainer(containerProperty.Id);
+                                await container.DeleteContainerAsync();
+                            }
                         }
                     }
                 }
