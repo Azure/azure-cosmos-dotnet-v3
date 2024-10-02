@@ -7,15 +7,24 @@ steps:
       Write-Host "Finished Downloading Cosmos Emulator - $env:temp\azure-cosmosdb-emulator.msi" -ForegroundColor green 
       dir "$env:temp" 
 
-      mkdir "$env:temp\Azure Cosmos DB Emulator"
-      $rootLocation=(Get-Location).Path
+      function Ensure-DirectoryExists {
+          param (
+              [string]$Path
+          )
 
-      mkdir "$env:temp\lessmsi"
+          if (-not (Test-Path -Path $Path -PathType Container)) {
+              New-Item -Path $Path -ItemType Directory
+              Write-Output "Directory created: $Path"
+          } else {
+              Write-Output "Directory already exists: $Path"
+          }
+      }      
+
+      Ensure-DirectoryExists -Path "$env:temp\Azure Cosmos DB Emulator"
+      Ensure-DirectoryExists -Path "$env:temp\lessmsi"
       Expand-Archive -LiteralPath 'tools\lessmsi-v2.1.1.zip' -DestinationPath "$env:temp\lessmsi"
-      cd "$env:temp\lessmsi"
-      .\lessmsi.exe x "$env:temp\azure-cosmosdb-emulator.msi" "$env:temp\Azure Cosmos DB Emulator\"
+      &"$env:temp\lessmsi\lessmsi.exe" x "$env:temp\azure-cosmosdb-emulator.msi" "$env:temp\Azure Cosmos DB Emulator\"
 
-      cd "$rootLocation"
       Add-MpPreference -ExclusionPath "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator"
       Add-MpPreference -ExclusionPath "$env:localappdata\CosmosDBEmulator"
     displayName: Downloading and Installing Cosmos DB Emulator
