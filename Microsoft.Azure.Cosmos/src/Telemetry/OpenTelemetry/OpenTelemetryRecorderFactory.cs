@@ -90,14 +90,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private static QueryTextMode GetQueryTextMode(RequestOptions requestOptions, CosmosClientContext clientContext)
         {
             QueryTextMode? queryTextMode = null;
-            if (requestOptions is QueryRequestOptions queryRequestOptions && queryRequestOptions.QueryTextMode.HasValue)
+            if (requestOptions is QueryRequestOptions queryRequestOptions)
             {
-                queryTextMode = queryRequestOptions.QueryTextMode.Value;
+                queryTextMode = queryRequestOptions.QueryTextMode;
             }
-            else if (requestOptions is ChangeFeedRequestOptions changeFeedRequestOptions && changeFeedRequestOptions.QueryTextMode.HasValue)
+            else if (requestOptions is ChangeFeedRequestOptions changeFeedRequestOptions)
             {
-                queryTextMode = changeFeedRequestOptions.QueryTextMode.Value;
-
+                queryTextMode = changeFeedRequestOptions.QueryTextMode;
             }
 
             queryTextMode ??= clientContext.ClientOptions?.CosmosClientTelemetryOptions?.QueryTextMode ?? QueryTextMode.None;

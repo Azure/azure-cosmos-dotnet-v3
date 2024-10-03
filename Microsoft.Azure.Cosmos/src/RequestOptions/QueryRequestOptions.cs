@@ -176,7 +176,7 @@ namespace Microsoft.Azure.Cosmos
         /// Users have the option to enable printing parameterized or all queries, 
         /// but has to beware that customer data may be shown when the later option is chosen. It's the user's responsibility to sanitize the queries if necessary.
         /// </summary>
-        public QueryTextMode? QueryTextMode { get; set; } = null;
+        public QueryTextMode QueryTextMode { get; set; } = QueryTextMode.None;
 
         internal CosmosElement CosmosElementContinuationToken { get; set; }
 

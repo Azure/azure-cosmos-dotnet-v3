@@ -6668,6 +6668,18 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions get_DedicatedGatewayRequestOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Microsoft.Azure.Cosmos.QueryTextMode get_QueryTextMode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.QueryTextMode get_QueryTextMode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.QueryTextMode QueryTextMode": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.QueryTextMode QueryTextMode;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.QueryTextMode get_QueryTextMode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_QueryTextMode(Microsoft.Azure.Cosmos.QueryTextMode);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel] ConsistencyLevel": {
           "Type": "Property",
           "Attributes": [],
@@ -6689,18 +6701,6 @@
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.PartitionKey] PartitionKey;CanRead:True;CanWrite:True;System.Nullable`1[Microsoft.Azure.Cosmos.PartitionKey] get_PartitionKey();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_PartitionKey(System.Nullable`1[Microsoft.Azure.Cosmos.PartitionKey]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.Nullable`1[Microsoft.Azure.Cosmos.QueryTextMode] get_QueryTextMode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.QueryTextMode] get_QueryTextMode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.Nullable`1[Microsoft.Azure.Cosmos.QueryTextMode] QueryTextMode": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.QueryTextMode] QueryTextMode;CanRead:True;CanWrite:True;System.Nullable`1[Microsoft.Azure.Cosmos.QueryTextMode] get_QueryTextMode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_QueryTextMode(System.Nullable`1[Microsoft.Azure.Cosmos.QueryTextMode]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.Nullable`1[System.Boolean] EnableLowPrecisionOrderBy": {
           "Type": "Property",
@@ -6871,12 +6871,12 @@
           ],
           "MethodInfo": "Void set_PopulateIndexMetrics(System.Nullable`1[System.Boolean]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void set_QueryTextMode(System.Nullable`1[Microsoft.Azure.Cosmos.QueryTextMode])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Void set_QueryTextMode(Microsoft.Azure.Cosmos.QueryTextMode)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Void set_QueryTextMode(System.Nullable`1[Microsoft.Azure.Cosmos.QueryTextMode]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Void set_QueryTextMode(Microsoft.Azure.Cosmos.QueryTextMode);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_ResponseContinuationTokenLimitInKb(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -7789,6 +7789,18 @@
               ],
               "MethodInfo": "Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions get_DedicatedGatewayRequestOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
+            "Microsoft.Azure.Cosmos.QueryTextMode get_QueryTextMode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.QueryTextMode get_QueryTextMode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "Microsoft.Azure.Cosmos.QueryTextMode QueryTextMode": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": "Microsoft.Azure.Cosmos.QueryTextMode QueryTextMode;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.QueryTextMode get_QueryTextMode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_QueryTextMode(Microsoft.Azure.Cosmos.QueryTextMode);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
             "System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel] ConsistencyLevel": {
               "Type": "Property",
               "Attributes": [],
@@ -7810,18 +7822,6 @@
               "Type": "Property",
               "Attributes": [],
               "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.PartitionKey] PartitionKey;CanRead:True;CanWrite:True;System.Nullable`1[Microsoft.Azure.Cosmos.PartitionKey] get_PartitionKey();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_PartitionKey(System.Nullable`1[Microsoft.Azure.Cosmos.PartitionKey]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-            },
-            "System.Nullable`1[Microsoft.Azure.Cosmos.QueryTextMode] get_QueryTextMode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-              "Type": "Method",
-              "Attributes": [
-                "CompilerGeneratedAttribute"
-              ],
-              "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.QueryTextMode] get_QueryTextMode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-            },
-            "System.Nullable`1[Microsoft.Azure.Cosmos.QueryTextMode] QueryTextMode": {
-              "Type": "Property",
-              "Attributes": [],
-              "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.QueryTextMode] QueryTextMode;CanRead:True;CanWrite:True;System.Nullable`1[Microsoft.Azure.Cosmos.QueryTextMode] get_QueryTextMode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_QueryTextMode(System.Nullable`1[Microsoft.Azure.Cosmos.QueryTextMode]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
             "System.Nullable`1[System.Boolean] EnableLowPrecisionOrderBy": {
               "Type": "Property",
@@ -7992,12 +7992,12 @@
               ],
               "MethodInfo": "Void set_PopulateIndexMetrics(System.Nullable`1[System.Boolean]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
-            "Void set_QueryTextMode(System.Nullable`1[Microsoft.Azure.Cosmos.QueryTextMode])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+            "Void set_QueryTextMode(Microsoft.Azure.Cosmos.QueryTextMode)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",
               "Attributes": [
                 "CompilerGeneratedAttribute"
               ],
-              "MethodInfo": "Void set_QueryTextMode(System.Nullable`1[Microsoft.Azure.Cosmos.QueryTextMode]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+              "MethodInfo": "Void set_QueryTextMode(Microsoft.Azure.Cosmos.QueryTextMode);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
             "Void set_ResponseContinuationTokenLimitInKb(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",
