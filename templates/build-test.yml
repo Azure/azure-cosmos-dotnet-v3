@@ -44,8 +44,6 @@ jobs:
       nugetConfigPath: NuGet.config
       testRunTitle: Microsoft.Azure.Cosmos.Tests
 
-
-jobs:
 - job:
   displayName: Microsoft.Azure.Cosmos.Tests Coverage
   condition: and(succeeded(), eq(${{ parameters.IncludeCoverage }}, true))
@@ -82,7 +80,7 @@ jobs:
       codeCoverageTool: Cobertura
       summaryFileLocation: '$(Build.SourcesDirectory)/CodeCoverage/Cobertura.xml'
       reportDirectory: '$(Build.SourcesDirectory)/CodeCoverage'
-      
+
 - job:
   displayName: PerformanceTests ${{ parameters.BuildConfiguration }}
   condition: and(succeeded(), eq(${{ parameters.IncludePerformance }}, true))
