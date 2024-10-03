@@ -20,7 +20,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     using EncryptionKeyWrapMetadata = Custom.EncryptionKeyWrapMetadata;
     using DataEncryptionKey = Custom.DataEncryptionKey;
     using Newtonsoft.Json.Linq;
-    using System.Buffers.Text;
 
     [TestClass]
     public class MdeCustomEncryptionTests
@@ -2260,12 +2259,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 return await this.encryptor.DecryptAsync(cipherText, dataEncryptionKeyId, encryptionAlgorithm, cancellationToken);
             }
 
-            public override async Task<int> DecryptAsync(byte[] cipherText, int cipherTextOffset, int cipherTextLength, byte[] output, int outputOffset, string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
-            {
-                this.ThrowIfFail(dataEncryptionKeyId);
-                return await this.encryptor.DecryptAsync(cipherText, cipherTextOffset, cipherTextLength, output, outputOffset, dataEncryptionKeyId, encryptionAlgorithm, cancellationToken);
-            }
-
             public override async Task<byte[]> EncryptAsync(
                 byte[] plainText,
                 string dataEncryptionKeyId,
@@ -2274,24 +2267,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             {
                 this.ThrowIfFail(dataEncryptionKeyId);
                 return await this.encryptor.EncryptAsync(plainText, dataEncryptionKeyId, encryptionAlgorithm, cancellationToken);
-            }
-
-            public override async Task<int> EncryptAsync(byte[] plainText, int plainTextOffset, int plainTextLength, byte[] output, int outputOffset, string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
-            {
-                this.ThrowIfFail(dataEncryptionKeyId);
-                return await this.encryptor.EncryptAsync(plainText, plainTextOffset, plainTextLength, output, outputOffset, dataEncryptionKeyId, encryptionAlgorithm, cancellationToken);
-            }
-
-            public override async Task<int> GetEncryptBytesCountAsync(int plainTextLength, string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
-            {
-                this.ThrowIfFail(dataEncryptionKeyId);
-                return await this.encryptor.GetEncryptBytesCountAsync(plainTextLength, dataEncryptionKeyId, encryptionAlgorithm, cancellationToken);
-            }
-
-            public override async Task<int> GetDecryptBytesCountAsync(int cipherTextLength, string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
-            {
-                this.ThrowIfFail(dataEncryptionKeyId);
-                return await this.encryptor.GetDecryptBytesCountAsync(cipherTextLength, dataEncryptionKeyId, encryptionAlgorithm, cancellationToken);
             }
 
             public override async Task<DataEncryptionKey> GetEncryptionKeyAsync(string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
