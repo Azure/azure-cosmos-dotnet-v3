@@ -38,9 +38,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         private static ContainerProperties containerProperties;
         private static ClientEncryptionPolicy clientEncryptionPolicy;
 
-        [ClassInitialize]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "The ClassInitialize method takes a single parameter of type TestContext.")]
-        public static async Task ClassInitialize(TestContext context)
+        public static async Task InitializeContainers()
         {
             MdeEncryptionTests.client = TestCommon.CreateCosmosClient();
             testKeyEncryptionKeyResolver = new TestKeyEncryptionKeyResolver();
@@ -185,8 +183,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         }
 
         [TestInitialize]
-        public void TestInitialize()
+        public async Task TestInitialize()
         {
+            await MdeEncryptionTests.InitializeContainers();
+
             // Reset static cache TTL
             Microsoft.Data.Encryption.Cryptography.ProtectedDataEncryptionKey.TimeToLive = TimeSpan.FromHours(2);
             // flag to disable https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3951
@@ -199,22 +199,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
             if (MdeEncryptionTests.database != null)
             {
-                using (FeedIterator<ContainerProperties> feedIterator = MdeEncryptionTests.database.GetContainerQueryIterator<ContainerProperties>())
-                {
-                    while (feedIterator.HasMoreResults)
-                    {
-                        FeedResponse<ContainerProperties> response = await feedIterator.ReadNextAsync();
-                        foreach (ContainerProperties containerProperty in response)
-                        {
-                            if (containerProperties.Id != encryptionContainer.Id
-                                    && containerProperties.Id != encryptionContainerForChangeFeed.Id)
-                            {
-                                Container container = MdeEncryptionTests.database.GetContainer(containerProperty.Id);
-                                await container.DeleteContainerAsync();
-                            }
-                        }
-                    }
-                }
+                await MdeEncryptionTests.database.DeleteAsync();
+
+                MdeEncryptionTests.client = null;
+                MdeEncryptionTests.encryptionCosmosClient = null;
+                MdeEncryptionTests.database = null;
+                MdeEncryptionTests.encryptionContainer = null;
+                MdeEncryptionTests.encryptionContainerForChangeFeed = null;
+                MdeEncryptionTests.testKeyEncryptionKeyResolver = null;
+                MdeEncryptionTests.containerProperties = null;
+                MdeEncryptionTests.clientEncryptionPolicy = null;
             }
         }
 
