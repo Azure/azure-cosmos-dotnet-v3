@@ -143,6 +143,7 @@ namespace Microsoft.Azure.Documents
 
             bool isRetryWith = false;
             if (!GoneAndRetryWithRequestRetryPolicy<TResponse>.IsBaseGone(response, exception) &&
+                !GoneAndRetryWithRequestRetryPolicy<TResponse>.IsGoneWithLeaseNotFound(response, exception) &&
                 !(exception is RetryWithException) &&
                 !(GoneAndRetryWithRequestRetryPolicy<TResponse>.IsPartitionIsMigrating(response, exception) && (request.ServiceIdentity == null || request.ServiceIdentity.IsMasterService)) &&
                 !(GoneAndRetryWithRequestRetryPolicy<TResponse>.IsInvalidPartition(response, exception) && (request.PartitionKeyRangeIdentity == null || request.PartitionKeyRangeIdentity.CollectionRid == null)) &&
@@ -169,6 +170,21 @@ namespace Microsoft.Azure.Documents
 
                 isRetryWith = true;
                 this.lastRetryWithException = exception as RetryWithException;
+            }
+            else if (GoneAndRetryWithRequestRetryPolicy<TResponse>.IsGoneWithLeaseNotFound(response, exception))
+            {
+                DefaultTrace.TraceWarning(
+                    "The GoneAndRetryWithRequestRetryPolicy has hit 410 with lease not found exception: {0}. Converting it to 503 to trigger cross regional failover",
+                    new ErrorOrResponse(exception));
+
+                exceptionToThrow = ServiceUnavailableException.Create(
+                    SubStatusCodes.LeaseNotFound,
+                    innerException: exception);
+
+                this.durationTimer.Stop();
+
+                shouldRetryResult = ShouldRetryResult.NoRetry(exceptionToThrow);
+                return true;
             }
 
             int remainingMilliseconds;
@@ -426,6 +442,13 @@ namespace Microsoft.Azure.Documents
         {
             return exception is PartitionKeyRangeGoneException
                 || (response?.StatusCode == HttpStatusCode.Gone && response?.SubStatusCode == SubStatusCodes.PartitionKeyRangeGone);
+        }
+
+        private static bool IsGoneWithLeaseNotFound(TResponse response, Exception exception)
+        {
+            return exception is LeaseNotFoundException
+                || (response?.StatusCode == HttpStatusCode.Gone &&
+                   (response?.SubStatusCode == SubStatusCodes.LeaseNotFound));
         }
 
         private static void ClearRequestContext(DocumentServiceRequest request)

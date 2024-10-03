@@ -30,7 +30,11 @@ namespace Microsoft.Azure.Documents.Rntbd
     internal sealed class Connection : IDisposable
     {
         private const int ResponseLengthByteLimit = int.MaxValue;
-        private const SslProtocols TlsProtocols = SslProtocols.Tls12;
+
+        // Allow TLS 1.2 and 1.3 only for direct mode connections.
+        // Reference: https://learn.microsoft.com/dotnet/framework/network-programming/tls
+        private const SslProtocols TlsProtocols = SslProtocols.Tls12 | (SslProtocols)12288;
+
         private const uint TcpKeepAliveIntervalSocketOptionEnumValue = 17;
         private const uint TcpKeepAliveTimeSocketOptionEnumValue = 3;
         private const uint DefaultSocketOptionTcpKeepAliveInterval = 1;

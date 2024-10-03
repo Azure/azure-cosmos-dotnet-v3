@@ -156,7 +156,9 @@ namespace Microsoft.Azure.Documents
         CanNotAcquireInAccountRestoreInProgressLock = 2019,
         CollectionStateChanged = 2020,
         OfferScaledUpByUser = 2021,
+        TargetPkRangeExceededMaxAllowedSize = 2102,
         AccountAlreadyinTargetGateway = 2100,
+        CanNotAcquireLogStoreStorageAccountLoadBalanceLock = 2101,
 
         //412: PreConditionFailed migration substatus codes
         PartitionMigrationCancelledForPendingUserOperation = 2006,
@@ -195,6 +197,14 @@ namespace Microsoft.Azure.Documents
         PartitionMigrationRequestValidationFailed = 2051,
         PartitionMigrationSourceFederationEntityIsNull = 2052,
         PartitionMigrationCanNotAcquireTargetFederationPartitionMigrationLock = 2053,
+        PartitionMigrationIsDisabledAtTheCurrentArmLocation = 2054,
+        PartitionMigrationFailedToAcquirePartitionMigrationLocks = 2055,
+        PartitionMigrationIsDisabledOnTheRegionalAccount = 2056,
+        PartitionMigrationWaitForCatchupTimedOut = 2057,
+        PartitionMigrationFailureMitigationWrongServiceType = 2058,
+        PartitionMigrationWaitForTargetReplicaResourceCreationTimedOut = 2059,
+        PartitionMigrationIsDisabledOnTheService = 2060,
+        PartitionMigrationIsDisabledInTheRegion = 2061,
 
         // 500: InternalServerError
         ConfigurationNameNotEmpty = 3001,
@@ -212,6 +222,8 @@ namespace Microsoft.Azure.Documents
         GatewayThrottled = 3201,
         StoredProcedureConcurrency = 3084,
         ThottleDueToSplit = 3088,
+        SystemResourceUnavailable = 3092,
+        ThrottleDueToTransportBufferUsage = 3103,
 
         // Key Vault Access Client Error Code
         AadClientCredentialsGrantFailure = 4000, // Indicated access to AAD failed to get a token
@@ -232,6 +244,7 @@ namespace Microsoft.Azure.Documents
         UndefinedDefaultIdentity = 4015, // Indicates that the account has an undefined default identity.
         NspOutboundDenied = 4016, // Indicates that the account's NSP is blocking outbound requests to Key Vault.
         KeyVaultNotFound = 4017, // Indicates that the Key Vault could not be found by the system.
+        KeyDisabledOrExpired = 4018, // Indicates that the Key Vault key has been disabled.
 
         // Keep in sync with Microsoft.Azure.Cosmos.ServiceFramework.Security.AadAuthentication.AadSubStatusCodes
         // 401 : Unauthorized Exception (User-side errors start with 50)
@@ -288,6 +301,10 @@ namespace Microsoft.Azure.Documents
         // 2001: PartitionMigrationOperationError
         PartitionMigrationWaitForFullSyncReceivedInternalServerErrorDuringCompleteMigrationFromBackend = 6001,
         PartitionMigrationWaitForFullSyncReceivedInternalServerErrorDuringAbortMigrationFromBackend = 6002,
+        PartitionMigrationFinalizeMigrationsDidNotCompleteInTenRetries = 6003,
+
+        // 412: PreConditionFailed AZ Migration substatus codes
+        AZMigrationCancelledForPendingUserOperation = 7001,
 
         // SDK Codes (Client)
         // IMPORTANT - keep these consistent with Java SDK as well

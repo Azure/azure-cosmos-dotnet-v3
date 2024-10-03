@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Documents
         {
             get
             {
-                if (!this.isPolicyEnabled)
+                if (this.isPolicyEnabled == null)
                 {
                     this.isPolicyEnabled = base.GetValue<Boolean>(Constants.Properties.IsPolicyEnabled, true);
                 }
@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Documents
             }
             set
             {
-                if (!value)
+                if (value == null)
                 {
                     throw new ArgumentNullException(string.Format(CultureInfo.CurrentCulture, RMResources.PropertyCannotBeNull, nameof(IsPolicyEnabled)));
                 }

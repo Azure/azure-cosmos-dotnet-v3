@@ -96,6 +96,7 @@ namespace Microsoft.Azure.Documents.Collections
         public string PartitionThroughputInfo { get; set; }
         public string PendingPKDelete { get; set; }
         public string PhysicalPartitionId { get; set; }
+        public string QueryAdvice { get; set; }
         public string QueryExecutionInfo { get; set; }
         public string QueryMetrics { get; set; }
         public string QuorumAckedLocalLSN { get; set; }
@@ -224,6 +225,7 @@ namespace Microsoft.Azure.Documents.Collections
             this.PartitionThroughputInfo = null;
             this.PendingPKDelete = null;
             this.PhysicalPartitionId = null;
+            this.QueryAdvice = null;
             this.QueryExecutionInfo = null;
             this.QueryMetrics = null;
             this.QuorumAckedLocalLSN = null;
@@ -324,6 +326,7 @@ namespace Microsoft.Azure.Documents.Collections
                 PartitionThroughputInfo = this.PartitionThroughputInfo,
                 PendingPKDelete = this.PendingPKDelete,
                 PhysicalPartitionId = this.PhysicalPartitionId,
+                QueryAdvice = this.QueryAdvice,
                 QueryExecutionInfo = this.QueryExecutionInfo,
                 QueryMetrics = this.QueryMetrics,
                 QuorumAckedLocalLSN = this.QuorumAckedLocalLSN,
@@ -494,6 +497,10 @@ namespace Microsoft.Azure.Documents.Collections
             if (this.IndexUtilization != null)
             {
                 yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.IndexUtilization, this.IndexUtilization);
+            }
+            if (this.QueryAdvice != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.QueryAdvice, this.QueryAdvice);
             }
             if (this.GlobalCommittedLSN != null)
             {
@@ -866,6 +873,10 @@ namespace Microsoft.Azure.Documents.Collections
             {
                 yield return WFConstants.BackendHeaders.IndexUtilization;
             }
+            if (this.QueryAdvice != null)
+            {
+                yield return WFConstants.BackendHeaders.QueryAdvice;
+            }
             if (this.GlobalCommittedLSN != null)
             {
                 yield return WFConstants.BackendHeaders.GlobalCommittedLSN;
@@ -1235,6 +1246,10 @@ namespace Microsoft.Azure.Documents.Collections
                         if (this.IndexUtilization != null)
                         {
                             this.nameValueCollection.Add(WFConstants.BackendHeaders.IndexUtilization, this.IndexUtilization);
+                        }
+                        if (this.QueryAdvice != null)
+                        {
+                            this.nameValueCollection.Add(WFConstants.BackendHeaders.QueryAdvice, this.QueryAdvice);
                         }
                         if (this.GlobalCommittedLSN != null)
                         {
@@ -1724,6 +1739,10 @@ namespace Microsoft.Azure.Documents.Collections
                     {
                         return this.DatabaseAccountId;
                     }
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.QueryAdvice, key))
+                    {
+                        return this.QueryAdvice;
+                    }
                     if (object.ReferenceEquals(HttpConstants.HttpHeaders.BackendRequestDurationMilliseconds, key))
                     {
                         return this.BackendRequestDurationMilliseconds;
@@ -1740,6 +1759,11 @@ namespace Microsoft.Azure.Documents.Collections
                     if (string.Equals(WFConstants.BackendHeaders.DatabaseAccountId, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.DatabaseAccountId;
+                    }
+
+                    if (string.Equals(WFConstants.BackendHeaders.QueryAdvice, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.QueryAdvice;
                     }
 
                     if (string.Equals(HttpConstants.HttpHeaders.BackendRequestDurationMilliseconds, key, StringComparison.OrdinalIgnoreCase))
@@ -2814,6 +2838,16 @@ namespace Microsoft.Azure.Documents.Collections
                         this.DatabaseAccountId = value;
                         return;
                     }
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.QueryAdvice, key))
+                    {
+                        if (throwIfAlreadyExists && this.QueryAdvice != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.QueryAdvice = value;
+                        return;
+                    }
                     if (object.ReferenceEquals(HttpConstants.HttpHeaders.BackendRequestDurationMilliseconds, key))
                     {
                         if (throwIfAlreadyExists && this.BackendRequestDurationMilliseconds != null)
@@ -2852,6 +2886,16 @@ namespace Microsoft.Azure.Documents.Collections
                         }
 
                         this.DatabaseAccountId = value;
+                        return;
+                    }
+                    if (string.Equals(WFConstants.BackendHeaders.QueryAdvice, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.QueryAdvice != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.QueryAdvice = value;
                         return;
                     }
                     if (string.Equals(HttpConstants.HttpHeaders.BackendRequestDurationMilliseconds, key, StringComparison.OrdinalIgnoreCase))

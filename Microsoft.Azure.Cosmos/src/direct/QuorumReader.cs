@@ -432,6 +432,15 @@ namespace Microsoft.Azure.Documents
                 ExceptionDispatchInfo.Capture(storeResult.GetException()).Throw();
             }
 
+            if (entity.IsValidStatusCodeForExceptionlessRetry((int)storeResult.StatusCode, storeResult.SubStatusCode)
+                && storeResult.LSN < 0)
+            {
+                // Exceptionless failures should be treated similar to exceptions
+                // Validate LSN for cases where there is no exception because the ReadPrimary has requiresValidLsn: true
+                return new ReadPrimaryResult(
+                    requestChargeTracker: entity.RequestContext.RequestChargeTracker, isSuccessful: true, shouldRetryOnSecondary: false, response: disposableStoreResult.TryAddReference());
+            }
+
             if (storeResult.CurrentReplicaSetSize <= 0 || storeResult.LSN < 0 || storeResult.QuorumAckedLSN < 0)
             {
                 string message = string.Format(CultureInfo.CurrentCulture,

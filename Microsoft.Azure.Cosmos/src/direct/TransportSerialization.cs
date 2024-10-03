@@ -233,6 +233,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             TransportSerialization.AddPopulateQueryMetrics(requestHeaders, rntbdRequest);
             TransportSerialization.AddPopulateQueryMetricsIndexUtilization(requestHeaders, rntbdRequest);
             TransportSerialization.AddPopulateIndexMetricsV2(requestHeaders, rntbdRequest);
+            TransportSerialization.AddPopulateQueryAdvice(requestHeaders, rntbdRequest);
             TransportSerialization.AddOptimisticDirectExecute(requestHeaders, rntbdRequest);
             TransportSerialization.AddQueryForceScan(requestHeaders, rntbdRequest);
             TransportSerialization.AddResponseContinuationTokenLimitInKb(requestHeaders, rntbdRequest);
@@ -277,7 +278,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             TransportSerialization.AddRetriableWriteRequestMetadata(request, rntbdRequest);
             TransportSerialization.AddRequestedCollectionType(requestHeaders, rntbdRequest);
             TransportSerialization.AddIsThroughputCapRequest(requestHeaders, rntbdRequest);
-            TransportSerialization.AddUpdateOfferStateToPending(requestHeaders, rntbdRequest);
+            TransportSerialization.AddUpdateOfferStateToPendingForMerge(requestHeaders, rntbdRequest);
             TransportSerialization.AddUpdateOfferStateToRestorePending(requestHeaders, rntbdRequest);
             TransportSerialization.AddMasterResourcesDeletionPending(requestHeaders, rntbdRequest);
             TransportSerialization.AddIsInternalServerlessRequest(requestHeaders, rntbdRequest);
@@ -379,6 +380,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.PopulateDocumentRecordCount, requestHeaders.PopulateDocumentRecordCount, rntbdRequest.populateDocumentRecordCount, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.PopulateUserStrings, requestHeaders.PopulateUserStrings, rntbdRequest.populateUserStrings, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.SkipThroughputCapValidation, requestHeaders.SkipThroughputCapValidation, rntbdRequest.skipThroughputCapValidation, rntbdRequest);
+            TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.ThroughputBucket, requestHeaders.ThroughputBucket, rntbdRequest.throughputBucket, rntbdRequest);
 
             // will be null in case of direct, which is fine - BE will use the value from the connection context message.
             // When this is used in Gateway, the header value will be populated with the proxied HTTP request's header, and
@@ -1452,6 +1454,18 @@ namespace Microsoft.Azure.Documents.Rntbd
                     ? (byte)0x01
                     : (byte)0x00;
                 rntbdRequest.populateIndexMetricsV2.isPresent = true;
+            }
+        }
+
+        private static void AddPopulateQueryAdvice(RequestNameValueCollection requestHeaders, RntbdConstants.Request rntbdRequest)
+        {
+            if (!string.IsNullOrEmpty(requestHeaders.PopulateQueryAdvice))
+            {
+                rntbdRequest.populateQueryAdvice.value.valueByte = (requestHeaders.PopulateQueryAdvice.
+                    Equals(bool.TrueString, StringComparison.OrdinalIgnoreCase))
+                    ? (byte)0x01
+                    : (byte)0x00;
+                rntbdRequest.populateQueryAdvice.isPresent = true;
             }
         }
 
@@ -2542,15 +2556,15 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        private static void AddUpdateOfferStateToPending(RequestNameValueCollection requestHeaders, RntbdConstants.Request rntbdRequest)
+        private static void AddUpdateOfferStateToPendingForMerge(RequestNameValueCollection requestHeaders, RntbdConstants.Request rntbdRequest)
         {
-            if (!string.IsNullOrEmpty(requestHeaders.UpdateOfferStateToPending))
+            if (!string.IsNullOrEmpty(requestHeaders.UpdateOfferStateToPendingForMerge))
             {
-                rntbdRequest.updateOfferStateToPending.value.valueByte = (requestHeaders.UpdateOfferStateToPending.
+                rntbdRequest.updateOfferStateToPendingForMerge.value.valueByte = (requestHeaders.UpdateOfferStateToPendingForMerge.
                     Equals(bool.TrueString, StringComparison.OrdinalIgnoreCase))
                     ? (byte)0x01
                     : (byte)0x00;
-                rntbdRequest.updateOfferStateToPending.isPresent = true;
+                rntbdRequest.updateOfferStateToPendingForMerge.isPresent = true;
             }
         }
 

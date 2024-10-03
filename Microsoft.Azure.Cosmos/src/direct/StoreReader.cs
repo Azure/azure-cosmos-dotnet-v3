@@ -326,7 +326,9 @@ namespace Microsoft.Azure.Documents
                             StoreResult.VerifyCanContinueOnException(storeResult.Exception);
                         }
 
-                        if (storeResult.IsValid)
+                        // Valid results including exceptionless failures with required valid LSN
+                        if (storeResult.IsValid
+                            && (!entity.IsValidStatusCodeForExceptionlessRetry((int)storeResult.StatusCode, storeResult.SubStatusCode) || !requiresValidLsn || storeResult.LSN > 0))
                         {
                             if (requestSessionToken == null
                                 || (storeResult.SessionToken != null && requestSessionToken.IsValid(storeResult.SessionToken))

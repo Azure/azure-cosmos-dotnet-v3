@@ -474,7 +474,7 @@ namespace Microsoft.Azure.Documents
             UseUserBackgroundBudget = 0x00B4,
             IncludePhysicalPartitionThroughputInfo = 0x00B5,
             IsServerlessStorageRefreshRequest = 0x00B6,
-            UpdateOfferStateToPending = 0x00B7,
+            UpdateOfferStateToPendingForMerge = 0x00B7,
             PopulateOldestActiveSchemaId = 0x00B8,
             IsInternalServerlessRequest = 0x00B9,
             OfferReplaceRURedistribution = 0x00BA,
@@ -509,6 +509,8 @@ namespace Microsoft.Azure.Documents
             CosmosGatewayTransactionId = 0x00D7,
             PopulateUserStrings = 0x00D8,
             SkipThroughputCapValidation = 0x00D9,
+            PopulateQueryAdvice = 0x00DA,
+            ThroughputBucket = 0x00DB,
         }
 
         public sealed class Request : RntbdTokenStream<RequestIdentifiers>
@@ -681,7 +683,7 @@ namespace Microsoft.Azure.Documents
             public RntbdToken useUserBackgroundBudget;
             public RntbdToken includePhysicalPartitionThroughputInfo;
             public RntbdToken isServerlessStorageRefreshRequest;
-            public RntbdToken updateOfferStateToPending;
+            public RntbdToken updateOfferStateToPendingForMerge;
             public RntbdToken populateOldestActiveSchemaId;
             public RntbdToken isInternalServerlessRequest;
             public RntbdToken offerReplaceRURedistribution;
@@ -716,6 +718,8 @@ namespace Microsoft.Azure.Documents
             public RntbdToken cosmosGatewayTransactionId;
             public RntbdToken populateUserStrings;
             public RntbdToken skipThroughputCapValidation;
+            public RntbdToken populateQueryAdvice;
+            public RntbdToken throughputBucket;
 
             public Request()
             {
@@ -885,7 +889,7 @@ namespace Microsoft.Azure.Documents
                 this.useUserBackgroundBudget = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.UseUserBackgroundBudget);
                 this.includePhysicalPartitionThroughputInfo = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.IncludePhysicalPartitionThroughputInfo);
                 this.isServerlessStorageRefreshRequest = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.IsServerlessStorageRefreshRequest);
-                this.updateOfferStateToPending = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.UpdateOfferStateToPending);
+                this.updateOfferStateToPendingForMerge = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.UpdateOfferStateToPendingForMerge);
                 this.populateOldestActiveSchemaId = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.PopulateOldestActiveSchemaId);
                 this.isInternalServerlessRequest = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.IsInternalServerlessRequest);
                 this.offerReplaceRURedistribution = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.OfferReplaceRURedistribution);
@@ -920,6 +924,8 @@ namespace Microsoft.Azure.Documents
                 this.cosmosGatewayTransactionId = new RntbdToken(false, RntbdTokenTypes.Guid, (ushort)RequestIdentifiers.CosmosGatewayTransactionId);
                 this.populateUserStrings = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.PopulateUserStrings);
                 this.skipThroughputCapValidation = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.SkipThroughputCapValidation);
+                this.populateQueryAdvice = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.PopulateQueryAdvice);
+                this.throughputBucket = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.ThroughputBucket);
 
                 this.tokens = new RntbdToken[]
                 {
@@ -1106,7 +1112,7 @@ namespace Microsoft.Azure.Documents
                     this.useUserBackgroundBudget,
                     this.includePhysicalPartitionThroughputInfo,
                     this.isServerlessStorageRefreshRequest,
-                    this.updateOfferStateToPending,
+                    this.updateOfferStateToPendingForMerge,
                     this.populateOldestActiveSchemaId,
                     this.isInternalServerlessRequest,
                     this.offerReplaceRURedistribution,
@@ -1141,6 +1147,8 @@ namespace Microsoft.Azure.Documents
                     this.cosmosGatewayTransactionId,
                     this.populateUserStrings,
                     this.skipThroughputCapValidation,
+                    this.populateQueryAdvice,
+                    this.throughputBucket,
                 };
             }
         }
@@ -1235,6 +1243,7 @@ namespace Microsoft.Azure.Documents
             DocumentRecordCount = 0x0072,
             CosmosGatewayTransactionId = 0x0073,
             UserStrings = 0x0074,
+            QueryAdvice = 0x0075,
         }
 
         //

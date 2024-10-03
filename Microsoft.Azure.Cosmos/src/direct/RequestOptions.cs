@@ -418,6 +418,16 @@ namespace Microsoft.Azure.Documents.Client
         internal bool IncludeSnapshotDirectories { get; set; }
 
         /// <summary>
+        /// Gets or sets <see cref="ForceRefresh"/> for snapshot read requests in Azure Cosmos DB.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// ForceRefresh is used to force refreshing the and fetching the storage account keys for the storage SAS uris. 
+        /// </para>
+        /// </remarks>
+        internal bool ForceRefresh { get; set; }
+
+        /// <summary>
         ///  Gets or sets the <see cref="PopulateQuotaInfo"/> for document collection read requests in the Azure Cosmos DB service.
         /// </summary>
         /// <remarks>
@@ -642,6 +652,14 @@ namespace Microsoft.Azure.Documents.Client
         /// <seealso cref="Microsoft.Azure.Documents.PriorityLevel"/>
         /// <seealso cref="PriorityLevel"/>
         internal PriorityLevel? PriorityLevel { get; set; }
+
+        /// <summary>
+        /// Gets or sets the throughput bucket for the request in the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>
+        /// The throughput bucket to use with a request.
+        /// </value>
+        internal int? ThroughputBucket { get; set; }
 
 #if !COSMOSCLIENT
         /// <summary>

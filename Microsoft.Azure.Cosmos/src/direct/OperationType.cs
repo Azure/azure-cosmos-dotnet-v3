@@ -110,6 +110,10 @@ namespace Microsoft.Azure.Documents
         // Operation type for recreating RidRange resources during the pitr restore of a multi master partition
         CreateRidRangeResources = 64,
         Truncate = 65,
+        QueryStoredProc = 66,
+        Other = 67,
+        Count = 68,
+        Last = 69,
 #endif
 
         // These names make it unclear what they map to in RequestOperationType.
@@ -138,6 +142,9 @@ namespace Microsoft.Azure.Documents
         ControllerBatchAutoscaleRUsConsumption = -23,
         ControllerBatchGetAutoscaleAggregateOutput = -24,
         GetDekProperties = -25,
+        ControllerBatchReportChargesV2 = -26,
+        ControllerBatchGetOutputV2 = -27,
+        ControllerBatchWatchdogHealthCheckPing = -28,
 #endif
     }
 
@@ -145,17 +152,58 @@ namespace Microsoft.Azure.Documents
     {
         private static readonly Dictionary<int, string> OperationTypeNames = new Dictionary<int, string>();
 
+        private static readonly Dictionary<string, OperationType> OperationTypesMapping = new Dictionary<string, OperationType>();
+
         static OperationTypeExtensions()
         {
             foreach (OperationType type in Enum.GetValues(typeof(OperationType)))
             {
                 OperationTypeExtensions.OperationTypeNames[(int)type] = type.ToString();
             }
+
+            OperationTypeExtensions.OperationTypesMapping.Add("PUT", OperationType.Patch);
+            OperationTypeExtensions.OperationTypesMapping.Add("GET", OperationType.Read);
+            OperationTypeExtensions.OperationTypesMapping.Add("DELETE", OperationType.Delete);
+            OperationTypeExtensions.OperationTypesMapping.Add("POST", OperationType.Create);
+
+            OperationTypeExtensions.OperationTypesMapping.Add("CreateJob", OperationType.Create);
+            OperationTypeExtensions.OperationTypesMapping.Add("GetJob", OperationType.Read);
+            OperationTypeExtensions.OperationTypesMapping.Add("ListJobs", OperationType.Read);
+            OperationTypeExtensions.OperationTypesMapping.Add("UpdateJob", OperationType.Patch);
+            OperationTypeExtensions.OperationTypesMapping.Add("DeleteJob", OperationType.Delete);
+            OperationTypeExtensions.OperationTypesMapping.Add("GetClusterUsage", OperationType.Read);
         }
 
         public static string ToOperationTypeString(this OperationType type)
         {
             return OperationTypeExtensions.OperationTypeNames[(int)type];
+        }
+
+        public static OperationType ToOperationType(string type)
+        {
+            OperationType toReturn = OperationType.Invalid;
+
+            if (!ToOperationType(type, out toReturn))
+            {
+                toReturn = OperationType.Invalid;
+            }
+
+            return toReturn;
+        }
+
+        public static bool ToOperationType(string type, out OperationType operationType)
+        {
+            operationType = OperationType.Invalid;
+
+            if (!Enum.TryParse<OperationType>(type, out operationType))
+            {
+                if (!OperationTypeExtensions.OperationTypesMapping.TryGetValue(type, out operationType))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         public static bool IsWriteOperation(this OperationType type)

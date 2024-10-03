@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Documents
                 if (object.ReferenceEquals(resourceMan, null))
                 {
 #if COSMOSCLIENT
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Azure.Cosmos.RMResources", typeof(RMResources).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Azure.Documents.RMResources", typeof(RMResources).Assembly);
 #else
                     global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Azure.Documents.RMResources", typeof(RMResources).GetAssembly());
 #endif
@@ -246,6 +246,17 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return ResourceManager.GetString("BadUrl", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot offline when per partition failover is enabled..
+        /// </summary>
+        internal static string CannotOfflineWhenPerPartitionFailoverIsEnabled
+        {
+            get
+            {
+                return ResourceManager.GetString("CannotOfflineWhenPerPartitionFailoverIsEnabled", resourceCulture);
             }
         }
 
@@ -4380,6 +4391,7 @@ namespace Microsoft.Azure.Documents
         }
 
         ///   Looks up a localized string similar to Could not resolve DataTransfer state store account for region [{0}]..
+        /// </summary>
         internal static string DataTransferStateStoreNotResolved
         {
             get
@@ -4719,6 +4731,17 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Access to your account is currently revoked because the correspondent key either disabled or expired.
+        /// </summary>
+        internal static string KeyDisabledOrExpiredRevokeMessage
+        {
+            get
+            {
+                return ResourceManager.GetString("KeyDisabledOrExpiredRevokeMessage", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Access to your account is currently revoked because the Azure Key Vault DNS name specified by the account's keyvaultkeyuri property could not be resolved; for more details about this error and how to restore access to your account please visit https://learn.microsoft.com/en-us/azure/cosmos-db/cmk-troubleshooting-guide#unable-to-resolve-the-key-vaults-dns ({0}).
         /// </summary>
         internal static string KeyVaultDNSNotResolvedRevokeMessage
@@ -4803,6 +4826,17 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return ResourceManager.GetString("EnableDataMaskingPolicyAndEnableLogStoreNotSupported", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Change of CapacityMode from Serverless to Provisioned is failed as account: {0} is not serverless account.
+        /// </summary>
+        internal static string NotServerlessAccount
+        {
+            get
+            {
+                return ResourceManager.GetString("NotServerlessAccount", resourceCulture);
             }
         }
 

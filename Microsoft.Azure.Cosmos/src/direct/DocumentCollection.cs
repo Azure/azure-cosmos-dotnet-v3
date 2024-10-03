@@ -119,6 +119,8 @@ namespace Microsoft.Azure.Documents
         private InAccountRestoreParameters restoreParameters;
         private byte uniqueIndexNameEncodingMode;
         private Collection<ComputedProperty> computedProperties;
+        private Collection<string> userStrings;
+        private VectorEmbeddingPolicy vectorEmbeddingPolicy;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DocumentCollection"/> class for the Azure Cosmos DB service.
@@ -321,6 +323,10 @@ namespace Microsoft.Azure.Documents
             }
             set
             {
+                if(value == null)
+                {
+                    throw new ArgumentNullException(string.Format(CultureInfo.CurrentCulture, RMResources.PropertyCannotBeNull, "UniqueIndexNameEncodingMode"));
+                }
                 this.uniqueIndexNameEncodingMode = value;
                 this.SetValue(Constants.Properties.UniqueIndexNameEncodingMode, value);
             }
@@ -949,7 +955,7 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-        /// <summary>
+        // <summary>
         /// Gets the <see cref="DataMaskingPolicy"/> associated with the collection from the Azure Cosmos DB service. 
         /// </summary>
         /// <value>
@@ -976,6 +982,36 @@ namespace Microsoft.Azure.Documents
 
                 this.dataMaskingPolicy = value;
                 base.SetObject<DataMaskingPolicy>(Constants.Properties.DataMaskingPolicy, value);
+            }
+        }
+
+        // <summary>
+        /// Gets the <see cref="VectorEmbeddingPolicy"/> associated with the collection from the Azure Cosmos DB service. 
+        /// </summary>
+        /// <value>
+        /// The VectorEmbeddingPolicy associated with the collection.
+        /// </value>
+        [JsonProperty(PropertyName = Constants.Properties.VectorEmbeddingPolicy, DefaultValueHandling = DefaultValueHandling.Ignore, NullValueHandling = NullValueHandling.Ignore)]
+        internal VectorEmbeddingPolicy VectorEmbeddingPolicy
+        {
+            get
+            {
+                if (this.vectorEmbeddingPolicy == null)
+                {
+                    this.vectorEmbeddingPolicy = base.GetObject<VectorEmbeddingPolicy>(Constants.Properties.VectorEmbeddingPolicy);
+                }
+
+                return this.vectorEmbeddingPolicy;
+            }
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentNullException(string.Format(CultureInfo.CurrentCulture, RMResources.PropertyCannotBeNull, nameof(VectorEmbeddingPolicy)));
+                }
+
+                this.vectorEmbeddingPolicy = value;
+                base.SetObject<VectorEmbeddingPolicy>(Constants.Properties.VectorEmbeddingPolicy, value);
             }
         }
 
@@ -1051,6 +1087,36 @@ namespace Microsoft.Azure.Documents
             {
                 this.restoreParameters = value;
                 base.SetObject<InAccountRestoreParameters>(Constants.Properties.RestoreParams, value);
+            }
+        }
+
+        /// <summary>
+        /// Gets the user-defined strings on the collection.
+        /// </summary>
+        /// <value>
+        /// It is an optional property. User strings will not be found on collection responses, since they are internal properties
+        /// and are removed before the backend response is sent.
+        /// </value>
+        [JsonProperty(PropertyName = Constants.Properties.UserStrings)]
+        internal Collection<string> UserStrings
+        {
+            get
+            {
+                if (this.userStrings == null)
+                {
+                    this.userStrings = base.GetValue<Collection<string>>(Constants.Properties.UserStrings);
+                    if (this.userStrings == null)
+                    {
+                        this.userStrings = new Collection<string>();
+                    }
+                }
+
+                return this.userStrings;
+            }
+            set
+            {
+                this.userStrings = value;
+                base.SetValueCollection<string>(Constants.Properties.UserStrings, value);
             }
         }
 
@@ -1162,6 +1228,17 @@ namespace Microsoft.Azure.Documents
             if(this.uniqueIndexNameEncodingMode != 0)
             { 
                 base.SetValue(Constants.Properties.UniqueIndexNameEncodingMode, this.uniqueIndexNameEncodingMode);
+            }
+
+            if (this.userStrings != null)
+            {
+                base.SetValueCollection<string>(Constants.Properties.UserStrings, this.userStrings);
+            }
+
+            if (this.vectorEmbeddingPolicy != null)
+            {
+                this.vectorEmbeddingPolicy.OnSave();
+                base.SetObject(Constants.Properties.VectorEmbeddingPolicy, this.vectorEmbeddingPolicy);
             }
         }
     }

@@ -419,6 +419,7 @@ namespace Microsoft.Azure.Documents
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateQueryMetrics, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateIndexMetrics, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateIndexMetricsV2, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateQueryAdvice, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.CorrelatedActivityId, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.ForceQueryScan, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.OptimisticDirectExecute, request);
@@ -475,7 +476,7 @@ namespace Microsoft.Azure.Documents
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateAnalyticalMigrationProgress, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateByokEncryptionProgress, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IncludePhysicalPartitionThroughputInfo, request);
-            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.UpdateOfferStateToPending, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.UpdateOfferStateToPendingForMerge, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.UpdateOfferStateToRestorePending, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateOldestActiveSchemaId, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.OfferReplaceRURedistribution, request);
@@ -491,6 +492,7 @@ namespace Microsoft.Azure.Documents
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.EnableConflictResolutionPolicyUpdate, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.AllowDocumentReadsInOfflineRegion, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, WFConstants.BackendHeaders.PopulateUserStrings, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.ThroughputBucket, request);
 
             // Set the CollectionOperation TransactionId if present
             // Currently only being done for SharedThroughputTransactionHandler in the collection create path
@@ -664,13 +666,20 @@ namespace Microsoft.Azure.Documents
                 case OperationType.ReportThroughputUtilization:
                 case OperationType.BatchReportThroughputUtilization:
                 case OperationType.ControllerBatchReportCharges:
+                case OperationType.ControllerBatchReportChargesV2:
                 case OperationType.ControllerBatchGetOutput:
+                case OperationType.ControllerBatchGetOutputV2:
                 case OperationType.ControllerBatchAutoscaleRUsConsumption:
                 case OperationType.ControllerBatchGetAutoscaleAggregateOutput:
                     httpRequestMessage.RequestUri = HttpTransportClient.GetRootOperationUri(physicalAddress, resourceOperation.operationType);
                     httpRequestMessage.Method = HttpMethod.Post;
                     Debug.Assert(clonedStream != null);
                     httpRequestMessage.Content = new StreamContent(clonedStream);
+                    break;
+
+                case OperationType.ControllerBatchWatchdogHealthCheckPing:
+                    httpRequestMessage.RequestUri = HttpTransportClient.GetRootOperationUri(physicalAddress, resourceOperation.operationType);
+                    httpRequestMessage.Method = HttpMethod.Get;
                     break;
 #endif
 
@@ -1266,6 +1275,16 @@ namespace Microsoft.Azure.Documents
                             else if ((SubStatusCodes)nSubStatus == SubStatusCodes.CompletingPartitionMigration)
                             {
                                 exception = new PartitionIsMigratingException(
+                                    string.Format(CultureInfo.CurrentUICulture,
+                                        RMResources.ExceptionMessage,
+                                        string.IsNullOrEmpty(errorMessage) ? RMResources.Gone : errorMessage),
+                                    response.Headers,
+                                    response.RequestMessage.RequestUri);
+                                break;
+                            }
+                            else if ((SubStatusCodes)nSubStatus == SubStatusCodes.LeaseNotFound)
+                            {
+                                exception = new LeaseNotFoundException(
                                     string.Format(CultureInfo.CurrentUICulture,
                                         RMResources.ExceptionMessage,
                                         string.IsNullOrEmpty(errorMessage) ? RMResources.Gone : errorMessage),

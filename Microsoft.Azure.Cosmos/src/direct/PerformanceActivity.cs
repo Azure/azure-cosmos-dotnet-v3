@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Documents
 {
     using System;
     using System.Diagnostics;
+    using Microsoft.Azure.Documents.Test.Analytics;
 
     internal class PerformanceActivity
     {
