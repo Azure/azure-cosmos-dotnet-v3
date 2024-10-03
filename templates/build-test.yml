@@ -160,7 +160,6 @@ jobs:
 - job:
   displayName: Encryption EmulatorTests ${{ parameters.BuildConfiguration }}
   timeoutInMinutes: 90
-  retryCountOnTaskFailure: 2
   condition: and(eq(${{ parameters.IncludeEncryption }}, true), and(succeeded(), eq('${{ parameters.OS }}', 'Windows')))
   pool:
     name: 'OneES'
