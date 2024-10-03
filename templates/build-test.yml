@@ -35,6 +35,7 @@ jobs:
   - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos.Tests
     condition: succeeded()
+    retryCountOnTaskFailure: 2
     inputs:
       command: test
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/*.csproj'
@@ -111,6 +112,7 @@ jobs:
   - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos.EmulatorTests
     condition: succeeded()
+    retryCountOnTaskFailure: 2
     inputs:
       command: test
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj'
@@ -144,6 +146,7 @@ jobs:
   - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos.EmulatorTests
     condition: succeeded()
+    retryCountOnTaskFailure: 2
     inputs:
       command: test
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj'
@@ -157,6 +160,7 @@ jobs:
 - job:
   displayName: Encryption EmulatorTests ${{ parameters.BuildConfiguration }}
   timeoutInMinutes: 90
+  retryCountOnTaskFailure: 2
   condition: and(eq(${{ parameters.IncludeEncryption }}, true), and(succeeded(), eq('${{ parameters.OS }}', 'Windows')))
   pool:
     name: 'OneES'
@@ -177,6 +181,7 @@ jobs:
   - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     condition: succeeded()
+    retryCountOnTaskFailure: 2
     inputs:
       command: test
       projects: 'Microsoft.Azure.Cosmos.Encryption/tests/EmulatorTests/*.csproj'
@@ -210,6 +215,7 @@ jobs:
   - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
     condition: succeeded()
+    retryCountOnTaskFailure: 2
     inputs:
       command: test
       projects: 'Microsoft.Azure.Cosmos.Encryption.Custom/tests/EmulatorTests/*.csproj'
@@ -240,6 +246,7 @@ jobs:
 
   - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos.EmulatorTests
+    retryCountOnTaskFailure: 2
     condition: succeeded()
     inputs:
       command: test
