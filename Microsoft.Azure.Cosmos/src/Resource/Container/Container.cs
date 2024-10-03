@@ -1807,7 +1807,6 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <returns>True if the y feed range is a part of the x feed range; otherwise, false.</returns>
         /// <returns>Returns a boolean indicating whether the y feed range is fully contained within the x feed range.</returns>
         public virtual Task<bool> IsFeedRangePartOfAsync(
             Cosmos.FeedRange x,
