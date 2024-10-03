@@ -25,6 +25,4 @@ jobs:
     IncludeEncryption: true
     IncludePerformance: true
     IncludeCoverage: true
-    IncludeClientTelemetry: true
-
 
