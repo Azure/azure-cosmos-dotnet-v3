@@ -545,7 +545,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
 
-                requestOptions.QueryTextMode = null; //Reset request Option
+                requestOptions.QueryTextMode = QueryTextMode.None; //Reset request Option
             }
             //----------------------------------------------------------------
 
@@ -576,7 +576,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
 
-                requestOptions.QueryTextMode = null; //Reset request Option
+                requestOptions.QueryTextMode = QueryTextMode.None; //Reset request Option
             }
             //----------------------------------------------------------------
 
