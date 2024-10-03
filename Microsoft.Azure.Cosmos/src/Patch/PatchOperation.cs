@@ -5,7 +5,9 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
+    using System.Linq.Expressions;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -195,6 +197,90 @@ namespace Microsoft.Azure.Cosmos
                 PatchOperationType.Move,
                 path,
                 from);
+        }
+
+        /// <summary>
+        /// IPathBuilder.
+        /// </summary>
+        public interface IPathBuilder
+        {
+            /// <summary>
+            /// Build.
+            /// </summary>
+            IEnumerable<string> Build();
+        }
+
+        /// <summary>
+        /// AddPathBuilder.
+        /// </summary>
+        /// <typeparam name="T">The type.</typeparam>
+        public class AddPathBuilder<T> : BasePatchOperationBuilder<T, AddPathBuilder<T>>
+        {
+            /// <summary>
+            /// Build.
+            /// </summary>
+            /// <returns>pathSegments.</returns>
+            public IEnumerable<string> Build() => base.pathSegments;
+        }
+
+        /// <summary>
+        /// BasePatchOperationBuilder.
+        /// </summary>
+        /// <typeparam name="T">The type.</typeparam>
+        /// <typeparam name="TBuilder">The type of builder.</typeparam>
+        public abstract class BasePatchOperationBuilder<T, TBuilder>
+            where TBuilder : BasePatchOperationBuilder<T, TBuilder>
+        {
+            /// <summary>
+            /// pathSegments.
+            /// </summary>
+            protected readonly List<string> pathSegments = new List<string>();
+
+            /// <summary>
+            /// Property.
+            /// </summary>
+            /// <typeparam name="TProperty">The type of property.</typeparam>
+            /// <param name="propertyExpression"></param>
+            /// <returns>The builder.</returns>
+            /// <exception cref="ArgumentException">ArgumentException.</exception>
+            public TBuilder Property<TProperty>(Expression<Func<T, TProperty>> propertyExpression)
+            {
+                if (propertyExpression.Body is MemberExpression memberExpression)
+                {
+                    this.pathSegments.Add(memberExpression.Member.Name);
+                }
+                else
+                {
+                    throw new ArgumentException("Expression is not a valid member expression.");
+                }
+                return (TBuilder)this;
+            }
+
+            /// <summary>
+            /// ArrayIndex.
+            /// </summary>
+            /// <param name="index">The index.</param>
+            /// <returns>The builder.</returns>
+            public TBuilder ArrayIndex(int index)
+            {
+                this.pathSegments.Add(index.ToString());
+                return (TBuilder)this;
+            }
+
+            /// <summary>
+            /// GetPathSegments.
+            /// </summary>
+            /// <returns>pathSegments.</returns>
+            public IEnumerable<string> GetPathSegments() => this.pathSegments;
+
+            /// <summary>
+            /// ToString.
+            /// </summary>
+            /// <returns>Formatted pathSegments.</returns>
+            public override string ToString()
+            {
+                return string.Join("/", this.pathSegments);
+            }
         }
     }
 }

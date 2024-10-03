@@ -1101,6 +1101,37 @@ namespace Microsoft.Azure.Cosmos
             return this.cachedUriSegmentWithoutId + Uri.EscapeUriString(resourceId);
         }
 
+        /// <summary>
+        /// PatchItemAsync.
+        /// </summary>
+        /// <typeparam name="T">The type.</typeparam>
+        /// <param name="id"></param>
+        /// <param name="partitionKey"></param>
+        /// <param name="patchOperations"></param>
+        /// <param name="trace"></param>
+        /// <param name="requestOptions"></param>
+        /// <param name="cancellationToken"></param>
+        public async Task<ItemResponse<T>> PatchItemAsync<T>(
+            string id,
+            PartitionKey partitionKey,
+            IReadOnlyList<PatchOperation.IPathBuilder> patchOperations,
+            ITrace trace,
+            PatchItemRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            IEnumerable<IEnumerable<string>> p = patchOperations.Select(x => x.Build());
+
+            ResponseMessage responseMessage = await this.PatchItemStreamAsync(
+                id,
+                partitionKey,
+                default,
+                trace,
+                requestOptions,
+                cancellationToken);
+
+            return this.ClientContext.ResponseFactory.CreateItemResponse<T>(responseMessage);
+        }
+
         public async Task<ItemResponse<T>> PatchItemAsync<T>(
             string id,
             PartitionKey partitionKey,
