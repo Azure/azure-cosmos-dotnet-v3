@@ -38,7 +38,7 @@ jobs:
     inputs:
       command: test
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/*.csproj'
-      arguments: ${{ parameters.Arguments }} --configuration Debug /p:OS=${{ parameters.OS }}
+      arguments: ${{ parameters.Arguments }} /p:OS=${{ parameters.OS }}
       publishTestResults: true
       nugetConfigPath: NuGet.config
       testRunTitle: Microsoft.Azure.Cosmos.Tests
