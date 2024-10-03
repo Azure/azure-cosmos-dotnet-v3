@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Globalization;
     using System.IO;
     using System.Linq;
-    using System.Numerics;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -28,11 +27,9 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.ReadFeed;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
-    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
     /// Used to perform operations on items. There are two different types of operations.
@@ -395,7 +392,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 linqSerializerOptions ??= new CosmosLinqSerializerOptions
                 {
-                    PropertyNamingPolicy = this.ClientContext.ClientOptions.SerializerOptions?.PropertyNamingPolicy ?? CosmosPropertyNamingPolicy.Default
+                    PropertyNamingPolicy = this.ClientContext.ClientOptions.SerializerOptions?.PropertyNamingPolicy ?? CosmosPropertyNamingPolicy.Default             
                 };
             }
 
@@ -616,7 +613,7 @@ namespace Microsoft.Azure.Cosmos
             DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
 
             Dictionary<string, string> additionalHeaders;
-
+            
             if ((changeFeedRequestOptions?.Properties != null) && changeFeedRequestOptions.Properties.Any())
             {
                 Dictionary<string, object> additionalNonStringHeaders = new Dictionary<string, object>();
@@ -1318,15 +1315,13 @@ namespace Microsoft.Azure.Cosmos
                         trace: trace,
                         cancellationToken: cancellationToken);
 
-                    IRoutingMapProvider routingMapProvider = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(trace);
-
-                    List<Range<string>> xEffectiveRanges = await xFeedRangeInternal.GetEffectiveRangesAsync(
+                    Routing.IRoutingMapProvider routingMapProvider = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(trace);
+                    List<Documents.Routing.Range<string>> xEffectiveRanges = await xFeedRangeInternal.GetEffectiveRangesAsync(
                         routingMapProvider: routingMapProvider,
                         containerRid: containerRId,
                         partitionKeyDefinition: partitionKeyDefinition,
                         trace: trace);
-
-                    List<Range<string>> yEffectiveRanges = await yFeedRangeInternal.GetEffectiveRangesAsync(
+                    List<Documents.Routing.Range<string>> yEffectiveRanges = await yFeedRangeInternal.GetEffectiveRangesAsync(
                         routingMapProvider: routingMapProvider,
                         containerRid: containerRId,
                         partitionKeyDefinition: partitionKeyDefinition,
@@ -1452,10 +1447,9 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </example>
         internal static void EnsureConsistentInclusivity(List<Documents.Routing.Range<string>> ranges)
-{
+        {
             bool areAnyDifferent = false;
-
-            Range<string> firstRange = ranges[0];
+            Documents.Routing.Range<string> firstRange = ranges[0];
 
             foreach (Documents.Routing.Range<string> range in ranges.Skip(1))
             {
@@ -1555,8 +1549,8 @@ namespace Microsoft.Azure.Cosmos
                 (true, false) => throw new NotSupportedException("The combination where the x range's maximum is inclusive and the y range's maximum is exclusive is not supported in the current implementation."),
 
                 _ => ContainerCore.IsYMaxWithinX(x, y) // Default for the following combinations:
-                                                                              // (true, true): Both max values are inclusive
-                                                                              // (false, false): Both max values are exclusive
+                                                       // (true, true): Both max values are inclusive
+                                                       // (false, false): Both max values are exclusive
             };
 
             bool isMinWithinX = x.Contains(y.Min);
