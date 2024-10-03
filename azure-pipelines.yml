@@ -53,6 +53,7 @@ jobs:
     MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
     IncludePerformance: false
     IncludeCoverage: false
+    IncludeClientTelemetry: false
 
 - template:  templates/build-internal.yml
   parameters:
