@@ -107,8 +107,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             if (ConfigurationManager.IsBinaryEncodingEnabled()
                 && RequestInvokerHandler.IsPointOperationSupportedForBinaryEncoding(request)
-                && (response?.Content is not MemoryStream 
-                || response?.Content is not CloneableStream))
+                && response.Content != null
+                && (response.Content is not MemoryStream 
+                || response.Content is not CloneableStream))
             {
                 CloneableStream clonableStream = await StreamExtension.AsClonableStreamAsync(response.Content, default);
                 response.Content = clonableStream;
