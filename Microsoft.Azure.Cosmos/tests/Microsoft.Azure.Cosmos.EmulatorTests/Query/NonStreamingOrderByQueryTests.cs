@@ -324,9 +324,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
         private static class DebugTraceHelpers
         {
+#pragma warning disable CS0162, CS0649 // Unreachable code detected
             private const bool Enabled = false;
 
-#pragma warning disable CS0162 // Unreachable code detected
             public static void TraceSupportedFeaturesString(string supportedQueryFeatures)
             {
                 if (Enabled)
