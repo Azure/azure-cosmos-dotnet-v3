@@ -1808,6 +1808,10 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>True if the y feed range is a part of the x feed range; otherwise, false.</returns>
+        /// <param name="x">The broader feed range representing the larger, encompassing logical partition.</param>
+        /// <param name="y">The smaller, more granular feed range that needs to be checked for containment within the broader feed range.</param>
+        /// <param name="cancellationToken">An optional cancellation token to cancel the operation before completion.</param>
+        /// <returns>Returns a boolean indicating whether the y feed range is fully contained within the x feed range.</returns>
         public virtual Task<bool> IsFeedRangePartOfAsync(
             Cosmos.FeedRange x,
             Cosmos.FeedRange y,

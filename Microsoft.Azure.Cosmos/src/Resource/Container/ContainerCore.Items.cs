@@ -1259,13 +1259,13 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// This method is useful for determining if a smaller, more granular feed range (child) is fully contained within a broader feed range (parent), which is a common operation in distributed systems to manage partitioned data.
+        /// This method is useful for determining if a smaller, more granular feed range (y) is fully contained within a broader feed range (x), which is a common operation in distributed systems to manage partitioned data.
         ///
-        /// - **Parent and Child Feed Ranges**: Both `parentFeedRange` and `childFeedRange` are representations of logical partitions or ranges within the Cosmos DB container.
+        /// - **x and y Feed Ranges**: Both `x` and `y` are representations of logical partitions or ranges within the Cosmos DB container.
         ///   - These ranges are typically used for operations such as querying or reading data within a specified range of partition key values.
         ///
         /// - **Validation and Parsing**:
-        ///   - The method begins by validating that neither `parentFeedRange` nor `childFeedRange` is null. If either is null, an `ArgumentNullException` is thrown.
+        ///   - The method begins by validating that neither `x` nor `y` is null. If either is null, an `ArgumentNullException` is thrown.
         ///   - It then checks whether each feed range is of type `FeedRangeInternal`. If not, it attempts to parse the JSON representation of the feed range into the internal format (`FeedRangeInternal`).
         ///   - If the parsing fails, an `ArgumentException` is thrown, indicating that the feed range is of an unknown or unsupported format.
         ///
@@ -1278,49 +1278,38 @@ namespace Microsoft.Azure.Cosmos
         ///   - These effective ranges are returned as lists of `Range`, which represent the partition key boundaries.
         ///
         /// - **Inclusivity Consistency**:
-        ///   - Before performing the subset comparison, the method checks that the inclusivity of the boundary conditions (`IsMinInclusive` and `IsMaxInclusive`) is consistent across all ranges in both the parent and child feed ranges.
+        ///   - Before performing the subset comparison, the method checks that the inclusivity of the boundary conditions (`IsMinInclusive` and `IsMaxInclusive`) is consistent across all ranges in both the x and y feed ranges.
         ///   - This ensures that the comparison between ranges is logically correct and avoids potential mismatches due to differing boundary conditions.
         ///
         /// - **Subset Check**:
-        ///   - Finally, the method calls `ContainerCore.IsSubset`, which checks if the merged effective range of the child feed range is fully contained within the merged effective range of the parent feed range.
+        ///   - Finally, the method calls `ContainerCore.IsSubset`, which checks if the merged effective range of the y feed range is fully contained within the merged effective range of the x feed range.
         ///   - Merging the ranges ensures that the comparison accounts for multiple ranges and considers the full span of each feed range.
         ///
         /// - **Exception Handling**:
         ///   - Any exceptions related to document client errors are caught, and a `CosmosException` is thrown, wrapping the original `DocumentClientException`.
         /// </summary>
+        /// <param name="x">The broader feed range representing the larger, encompassing logical partition.</param>
+        /// <param name="y">The smaller, more granular feed range that needs to be checked for containment within the broader feed range.</param>
+        /// <param name="cancellationToken">An optional cancellation token to cancel the operation before completion.</param>
+        /// <returns>Returns a boolean indicating whether the y feed range is fully contained within the x feed range.</returns>
         public override async Task<bool> IsFeedRangePartOfAsync(
-            FeedRange parentFeedRange,
-            FeedRange childFeedRange,
+            FeedRange x,
+            FeedRange y,
             CancellationToken cancellationToken = default)
         {
             using (ITrace trace = Tracing.Trace.GetRootTrace("ContainerCore FeedRange IsFeedRangePartOfAsync Async", TraceComponent.Unknown, Tracing.TraceLevel.Info))
             {
-                if (parentFeedRange == null || childFeedRange == null)
+                if (x == null || y == null)
                 {
-                    throw new ArgumentNullException(parentFeedRange == null
-                        ? nameof(parentFeedRange)
-                        : nameof(childFeedRange), $"Argument cannot be null.");
+                    throw new ArgumentNullException(x == null
+                        ? nameof(x)
+                        : nameof(y), $"Argument cannot be null.");
                 }
 
                 try
                 {
-                    if (parentFeedRange is not FeedRangeInternal parentFeedRangeInternal)
-                    {
-                        if (!FeedRangeInternal.TryParse(parentFeedRange.ToJsonString(), out parentFeedRangeInternal))
-                        {
-                            throw new ArgumentException(
-                                string.Format("The provided string, '{0}', for '{1}', does not represent any known format.", parentFeedRange.ToJsonString(), nameof(parentFeedRange)));
-                        }
-                    }
-
-                    if (childFeedRange is not FeedRangeInternal childFeedRangeInternal)
-                    {
-                        if (!FeedRangeInternal.TryParse(childFeedRange.ToJsonString(), out childFeedRangeInternal))
-                        {
-                            throw new ArgumentException(
-                                string.Format("The provided string, '{0}', for '{1}', does not represent any known format.", childFeedRange.ToJsonString(), nameof(childFeedRange)));
-                        }
-                    }
+                    FeedRangeInternal xFeedRangeInternal = ContainerCore.ConvertToFeedRangeInternal(x, nameof(x));
+                    FeedRangeInternal yFeedRangeInternal = ContainerCore.ConvertToFeedRangeInternal(y, nameof(y));
 
                     PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync(cancellationToken);
 
@@ -1331,30 +1320,54 @@ namespace Microsoft.Azure.Cosmos
 
                     IRoutingMapProvider routingMapProvider = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(trace);
 
-                    List<Range<string>> parentEffectiveRanges = await parentFeedRangeInternal.GetEffectiveRangesAsync(
+                    List<Range<string>> xEffectiveRanges = await xFeedRangeInternal.GetEffectiveRangesAsync(
                         routingMapProvider: routingMapProvider,
                         containerRid: containerRId,
                         partitionKeyDefinition: partitionKeyDefinition,
                         trace: trace);
 
-                    List<Range<string>> childEffectiveRanges = await childFeedRangeInternal.GetEffectiveRangesAsync(
+                    List<Range<string>> yEffectiveRanges = await yFeedRangeInternal.GetEffectiveRangesAsync(
                         routingMapProvider: routingMapProvider,
                         containerRid: containerRId,
                         partitionKeyDefinition: partitionKeyDefinition,
                         trace: trace);
 
-                    ContainerCore.EnsureConsistentInclusivity(parentEffectiveRanges);
-                    ContainerCore.EnsureConsistentInclusivity(childEffectiveRanges);
+                    ContainerCore.EnsureConsistentInclusivity(xEffectiveRanges);
+                    ContainerCore.EnsureConsistentInclusivity(yEffectiveRanges);
 
                     return ContainerCore.IsSubset(
-                        parentRange: ContainerCore.MergeRanges(parentEffectiveRanges),
-                        childRange: ContainerCore.MergeRanges(childEffectiveRanges));
+                        ContainerCore.MergeRanges(xEffectiveRanges),
+                        ContainerCore.MergeRanges(yEffectiveRanges));
                 }
                 catch (DocumentClientException dce)
                 {
                     throw CosmosExceptionFactory.Create(dce, trace);
                 }
             }
+        }
+
+        /// <summary>
+        /// Converts a given feed range to its internal representation (FeedRangeInternal).
+        /// If the provided feed range is already of type FeedRangeInternal, it returns it directly.
+        /// Otherwise, it attempts to parse the feed range into a FeedRangeInternal.
+        /// If parsing fails, an <see cref="ArgumentException"/> is thrown.
+        /// </summary>
+        /// <param name="feedRange">The feed range to be converted into an internal representation.</param>
+        /// <param name="paramName">The name of the parameter being converted, used for exception messages.</param>
+        /// <returns>The converted FeedRangeInternal object.</returns>
+        /// <exception cref="ArgumentException">Thrown when the provided feed range cannot be parsed into a known format.</exception>
+        private static FeedRangeInternal ConvertToFeedRangeInternal(FeedRange feedRange, string paramName)
+        {
+            if (feedRange is not FeedRangeInternal feedRangeInternal)
+            {
+                if (!FeedRangeInternal.TryParse(feedRange.ToJsonString(), out feedRangeInternal))
+                {
+                    throw new ArgumentException(
+                        string.Format("The provided string, '{0}', for '{1}', does not represent any known format.", feedRange.ToJsonString(), paramName));
+                }
+            }
+
+            return feedRangeInternal;
         }
 
         /// <summary>
@@ -1384,19 +1397,6 @@ namespace Microsoft.Azure.Cosmos
         /// <exception cref="ArgumentException">
         /// Thrown when the list of ranges is empty.
         /// </exception>
-        /// <example>
-        /// <![CDATA[
-        /// List<Documents.Routing.Range<string>> ranges = new List<Documents.Routing.Range<string>>
-        /// {
-        ///     new Documents.Routing.Range<string>("A", "C", true, false),
-        ///     new Documents.Routing.Range<string>("D", "F", true, true),
-        ///     new Documents.Routing.Range<string>("G", "I", false, true),
-        /// };
-        ///
-        /// Documents.Routing.Range<string> mergedRange = MergeRanges(ranges);
-        /// // The merged range would span from "A" to "I", taking the minimum of the first range and the maximum of the last.
-        /// ]]>
-        /// </example>
         private static Documents.Routing.Range<string> MergeRanges(
             List<Documents.Routing.Range<string>> ranges)
         {
@@ -1475,108 +1475,106 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Feature: Feed Range Subset Verification
-        ///
-        /// Determines whether the specified child range is entirely within the bounds of the parent range.
+        /// Determines whether the specified y range is entirely within the bounds of the x range.
         /// This includes checking both the minimum and maximum boundaries of the ranges for inclusion.
         ///
-        /// The method checks whether the `Min` and `Max` boundaries of `childRange` are within `parentRange`,
+        /// The method checks whether the `Min` and `Max` boundaries of `y` are within `x`,
         /// taking into account whether each boundary is inclusive or exclusive.
         ///
         /// - For the `Max` boundary:
-        ///   - If the parent range's max is exclusive and the child range's max is inclusive, it checks whether the parent range contains the child range's max value.
-        ///   - If the parent range's max is inclusive and the child range's max is exclusive, this combination is not supported and a <see cref="NotSupportedException"/> is thrown.
-        ///   - For all other cases, it checks if the max values are equal or whether the parent range contains the child range's max.
+        ///   - If the x range's max is exclusive and the y range's max is inclusive, it checks whether the x range contains the y range's max value.
+        ///   - If the x range's max is inclusive and the y range's max is exclusive, this combination is not supported and a <see cref="NotSupportedException"/> is thrown.
+        ///   - For all other cases, it checks if the max values are equal or whether the x range contains the y range's max.
         ///   - This applies to the following combinations:
-        ///     - (false, true): Parent max is exclusive, child max is inclusive.
+        ///     - (false, true): x max is exclusive, y max is inclusive.
         ///     - (true, true): Both max values are inclusive.
         ///     - (false, false): Both max values are exclusive.
-        ///     - (true, false): Parent max is inclusive, child max is exclusive.
-        ///       - **NotSupportedException Scenario:** This case is not supported because handling a scenario where the parent range has an inclusive maximum and the child range has an exclusive maximum requires additional logic that is not implemented.
+        ///     - (true, false): x max is inclusive, y max is exclusive.
+        ///       - **NotSupportedException Scenario:** This case is not supported because handling a scenario where the x range has an inclusive maximum and the y range has an exclusive maximum requires additional logic that is not implemented.
         ///       - If encountered, a <see cref="NotSupportedException"/> is thrown with a message explaining that this combination is not supported.
         ///
         /// - For the `Min` boundary:
-        ///   - It checks whether the parent range contains the child range's min value, regardless of inclusivity.
+        ///   - It checks whether the x range contains the y range's min value, regardless of inclusivity.
         ///
-        /// The method ensures the child range is considered a subset only if both its min and max values fall within the parent range.
+        /// The method ensures the y range is considered a subset only if both its min and max values fall within the x range.
         ///
-        /// Summary of combinations for `parentRange.IsMaxInclusive` and `childRange.IsMaxInclusive`:
-        /// 1. parentRange.IsMaxInclusive == false, childRange.IsMaxInclusive == true:
-        ///    - The parent range is exclusive at max, but the child range is inclusive. This is supported and will check if the parent contains the child's max.
-        /// 2. parentRange.IsMaxInclusive == false, childRange.IsMaxInclusive == false:
-        ///    - Both ranges are exclusive at max. This is supported and will check if the parent contains the child's max.
-        /// 3. parentRange.IsMaxInclusive == true, childRange.IsMaxInclusive == true:
-        ///    - Both ranges are inclusive at max. This is supported and will check if the max values are equal or if the parent contains the child's max.
-        /// 4. parentRange.IsMaxInclusive == true, childRange.IsMaxInclusive == false:
-        ///    - The parent range is inclusive at max, but the child range is exclusive. This combination is not supported and will result in a <see cref="NotSupportedException"/> being thrown.
+        /// Summary of combinations for `x.IsMaxInclusive` and `y.IsMaxInclusive`:
+        /// 1. x.IsMaxInclusive == false, y.IsMaxInclusive == true:
+        ///    - The x range is exclusive at max, but the y range is inclusive. This is supported and will check if the x contains the y's max.
+        /// 2. x.IsMaxInclusive == false, y.IsMaxInclusive == false:
+        ///    - Both ranges are exclusive at max. This is supported and will check if the x contains the y's max.
+        /// 3. x.IsMaxInclusive == true, y.IsMaxInclusive == true:
+        ///    - Both ranges are inclusive at max. This is supported and will check if the max values are equal or if the x contains the y's max.
+        /// 4. x.IsMaxInclusive == true, y.IsMaxInclusive == false:
+        ///    - The x range is inclusive at max, but the y range is exclusive. This combination is not supported and will result in a <see cref="NotSupportedException"/> being thrown.
         ///
-        /// The method returns true only if both the min and max boundaries of the child range are within the parent range's boundaries.
+        /// The method returns true only if both the min and max boundaries of the y range are within the x range's boundaries.
         ///
         /// Additionally, the method performs null checks on the parameters:
-        /// - If <paramref name="parentRange"/> is null, an <see cref="ArgumentNullException"/> is thrown.
-        /// - If <paramref name="childRange"/> is null, an <see cref="ArgumentNullException"/> is thrown.
+        /// - If <paramref name="x"/> is null, an <see cref="ArgumentNullException"/> is thrown.
+        /// - If <paramref name="y"/> is null, an <see cref="ArgumentNullException"/> is thrown.
         ///
         /// <exception cref="ArgumentNullException">
-        /// Thrown when <paramref name="parentRange"/> or <paramref name="childRange"/> is <c>null</c>.
+        /// Thrown when <paramref name="x"/> or <paramref name="y"/> is <c>null</c>.
         /// </exception>
         /// <exception cref="NotSupportedException">
-        /// Thrown when <paramref name="parentRange"/> is inclusive at max and <paramref name="childRange"/> is exclusive at max.
+        /// Thrown when <paramref name="x"/> is inclusive at max and <paramref name="y"/> is exclusive at max.
         /// This combination is not supported and requires specific handling.
         /// </exception>
         /// </summary>
         /// <example>
         /// <![CDATA[
-        /// Documents.Routing.Range<string> parentRange = new Documents.Routing.Range<string>("A", "Z", true, true);
-        /// Documents.Routing.Range<string> childRange = new Documents.Routing.Range<string>("B", "Y", true, true);
+        /// Documents.Routing.Range<string> x = new Documents.Routing.Range<string>("A", "Z", true, true);
+        /// Documents.Routing.Range<string> y = new Documents.Routing.Range<string>("B", "Y", true, true);
         ///
-        /// bool isSubset = IsSubset(parentRange, childRange);
-        /// isSubset will be true because the child range (B-Y) is fully contained within the parent range (A-Z).
+        /// bool isSubset = IsSubset(x, y);
+        /// isSubset will be true because the y range (B-Y) is fully contained within the x range (A-Z).
         /// ]]>
         /// </example>
         /// <returns>
-        /// Returns <c>true</c> if the child range is a subset of the parent range, meaning the child range's
-        /// minimum and maximum values fall within the bounds of the parent range. Returns <c>false</c> otherwise.
+        /// Returns <c>true</c> if the y range is a subset of the x range, meaning the y range's
+        /// minimum and maximum values fall within the bounds of the x range. Returns <c>false</c> otherwise.
         /// </returns>
         internal static bool IsSubset(
-            Documents.Routing.Range<string> parentRange,
-            Documents.Routing.Range<string> childRange)
+            Documents.Routing.Range<string> x,
+            Documents.Routing.Range<string> y)
         {
-            if (parentRange is null)
+            if (x is null)
             {
-                throw new ArgumentNullException(nameof(parentRange));
+                throw new ArgumentNullException(nameof(x));
             }
 
-            if (childRange is null)
+            if (y is null)
             {
-                throw new ArgumentNullException(nameof(childRange));
+                throw new ArgumentNullException(nameof(y));
             }
 
-            bool isMaxWithinParent = (parentRange.IsMaxInclusive, childRange.IsMaxInclusive) switch
+            bool isMaxWithinX = (x.IsMaxInclusive, y.IsMaxInclusive) switch
             {
-                (false, true) => parentRange.Contains(childRange.Max),  // Parent max is exclusive, child max is inclusive
-                (true, false) => throw new NotSupportedException("The combination where the parent range's maximum is inclusive and the child range's maximum is exclusive is not supported in the current implementation."),
+                (false, true) => x.Contains(y.Max),  // x max is exclusive, y max is inclusive
+                (true, false) => throw new NotSupportedException("The combination where the x range's maximum is inclusive and the y range's maximum is exclusive is not supported in the current implementation."),
 
-                    _ => ContainerCore.IsChildMaxWithinParent(parentRange, childRange.Max) // Default for the following combinations:
-                                                                                        // (true, true): Both max values are inclusive
-                                                                                        // (false, false): Both max values are exclusive
+                _ => ContainerCore.IsYMaxWithinX(x, y) // Default for the following combinations:
+                                                                              // (true, true): Both max values are inclusive
+                                                                              // (false, false): Both max values are exclusive
             };
 
-            bool isMinWithinParent = parentRange.Contains(childRange.Min);
+            bool isMinWithinX = x.Contains(y.Min);
 
-            return isMinWithinParent && isMaxWithinParent;
+            return isMinWithinX && isMaxWithinX;
         }
 
         /// <summary>
-        /// Determines whether the given maximum value of the child range is either equal to or contained within the parent range.
+        /// Determines whether the given maximum value of the y range is either equal to or contained within the x range.
         /// </summary>
-        /// <param name="parentRange">The parent range to compare against, which defines the boundary.</param>
-        /// <param name="childRangeMax">The maximum value of the child range to be checked.</param>
-        /// <returns>True if the maximum value of the child range is equal to or contained within the parent range; otherwise, false.</returns>
-        private static bool IsChildMaxWithinParent(
-            Documents.Routing.Range<string> parentRange,
-            string childRangeMax)
+        /// <param name="x">The x range to compare against, which defines the boundary.</param>
+        /// <param name="y">The y range to be checked.</param>
+        /// <returns>True if the maximum value of the y range is equal to or contained within the x range; otherwise, false.</returns>
+        private static bool IsYMaxWithinX(
+            Documents.Routing.Range<string> x,
+            Documents.Routing.Range<string> y)
         {
-            return parentRange.Max == childRangeMax || parentRange.Contains(childRangeMax);
+            return x.Max == y.Max || x.Contains(y.Max);
         }
     }
 }

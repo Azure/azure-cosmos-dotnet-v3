@@ -153,8 +153,8 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate);
 
         public abstract Task<bool> IsFeedRangePartOfAsync(
-            Cosmos.FeedRange parentFeedRange,
-            Cosmos.FeedRange childFeedRange,
+            Cosmos.FeedRange x,
+            Cosmos.FeedRange y,
             CancellationToken cancellationToken = default);
 #endif
 

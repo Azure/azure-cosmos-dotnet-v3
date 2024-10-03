@@ -1031,13 +1031,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
 #if SDKPROJECTREF
         public override Task<bool> IsFeedRangePartOfAsync(
-            Cosmos.FeedRange parentFeedRange,
-            Cosmos.FeedRange childFeedRange,
+            Cosmos.FeedRange x,
+            Cosmos.FeedRange y,
             CancellationToken cancellationToken = default)
         {
             return this.container.IsFeedRangePartOfAsync(
-                parentFeedRange,
-                childFeedRange,
+                x,
+                y,
                 cancellationToken);
         }
 #endif

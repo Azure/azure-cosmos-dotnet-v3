@@ -764,8 +764,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         public override Task<bool> IsFeedRangePartOfAsync(
-            Cosmos.FeedRange parentFeedRange,
-            Cosmos.FeedRange childFeedRange,
+            Cosmos.FeedRange x,
+            Cosmos.FeedRange y,
             CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();

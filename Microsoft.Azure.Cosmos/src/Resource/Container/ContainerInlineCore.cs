@@ -679,8 +679,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override Task<bool> IsFeedRangePartOfAsync(
-            FeedRange parentFeedRange,
-            FeedRange childFeedRange,
+            FeedRange x,
+            FeedRange y,
             CancellationToken cancellationToken = default)
         {
             // TODO: The current use of Documents.OperationType.ReadFeed is not a precise fit for this operation.
@@ -693,8 +693,8 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.ReadFeed,
                 requestOptions: null,
                 task: (trace) => base.IsFeedRangePartOfAsync(
-                    parentFeedRange: parentFeedRange,
-                    childFeedRange: childFeedRange,
+                    x,
+                    y,
                     cancellationToken: cancellationToken));
         }
     }
