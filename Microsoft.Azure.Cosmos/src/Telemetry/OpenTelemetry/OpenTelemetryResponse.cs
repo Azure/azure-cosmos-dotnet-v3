@@ -22,7 +22,8 @@ namespace Microsoft.Azure.Cosmos
                   requestMessage: null,
                   subStatusCode: OpenTelemetryResponse.GetHeader(responseMessage)?.SubStatusCode,
                   activityId: OpenTelemetryResponse.GetHeader(responseMessage)?.ActivityId,
-                  correlationId: OpenTelemetryResponse.GetHeader(responseMessage)?.CorrelatedActivityId)
+                  correlationId: OpenTelemetryResponse.GetHeader(responseMessage)?.CorrelatedActivityId,
+                  batchSize: responseMessage.GetBatchSize())
         {
         }
 
@@ -36,9 +37,7 @@ namespace Microsoft.Azure.Cosmos
                   requestMessage: responseMessage.RequestMessage,
                   subStatusCode: OpenTelemetryResponse.GetHeader(responseMessage)?.SubStatusCode,
                   activityId: OpenTelemetryResponse.GetHeader(responseMessage)?.ActivityId,
-                  correlationId: OpenTelemetryResponse.GetHeader(responseMessage)?.CorrelatedActivityId,
-                  operationType: responseMessage is QueryResponse ? Documents.OperationType.Query : Documents.OperationType.Invalid
-                 )
+                  correlationId: OpenTelemetryResponse.GetHeader(responseMessage)?.CorrelatedActivityId)
         {
         }
 
@@ -52,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
             Documents.SubStatusCodes? subStatusCode,
             string activityId,
             string correlationId,
-            Documents.OperationType operationType = Documents.OperationType.Invalid)
+            int? batchSize = null)
             : base(requestMessage)
         {
             this.StatusCode = statusCode;
@@ -63,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
             this.SubStatusCode = (int)(subStatusCode ?? Documents.SubStatusCodes.Unknown);
             this.ActivityId = activityId;
             this.CorrelatedActivityId = correlationId;
-            this.OperationType = operationType;
+            this.BatchSize = batchSize;
         }
 
         private static string GetPayloadSize(ResponseMessage response)

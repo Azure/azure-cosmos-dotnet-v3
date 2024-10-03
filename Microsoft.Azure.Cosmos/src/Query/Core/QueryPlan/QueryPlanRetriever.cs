@@ -28,15 +28,30 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             | QueryFeatures.OrderBy
             | QueryFeatures.Top
             | QueryFeatures.NonValueAggregate
-            | QueryFeatures.DCount;
+            | QueryFeatures.DCount
+            | QueryFeatures.NonStreamingOrderBy;
+
+        private static readonly QueryFeatures SupportedQueryFeaturesWithoutNonStreamingOrderBy =
+            SupportedQueryFeatures & (~QueryFeatures.NonStreamingOrderBy);
 
         private static readonly string SupportedQueryFeaturesString = SupportedQueryFeatures.ToString();
+
+        private static readonly string SupportedQueryFeaturesWithoutNonStreamingOrderByString =
+            SupportedQueryFeaturesWithoutNonStreamingOrderBy.ToString();
+
+        private static string GetSupportedQueryFeaturesString(bool isNonStreamingOrderByQueryFeatureDisabled)
+        {
+            return isNonStreamingOrderByQueryFeatureDisabled ?
+                SupportedQueryFeaturesWithoutNonStreamingOrderByString :
+                SupportedQueryFeaturesString;
+        }
 
         public static async Task<PartitionedQueryExecutionInfo> GetQueryPlanWithServiceInteropAsync(
             CosmosQueryClient queryClient,
             SqlQuerySpec sqlQuerySpec,
             Documents.ResourceType resourceType,
             PartitionKeyDefinition partitionKeyDefinition,
+            VectorEmbeddingPolicy vectorEmbeddingPolicy,
             bool hasLogicalPartitionKey,
             GeospatialType geospatialType,
             bool useSystemPrefix,
@@ -68,6 +83,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                     sqlQuerySpec,
                     resourceType,
                     partitionKeyDefinition,
+                    vectorEmbeddingPolicy,
                     QueryPlanRetriever.SupportedQueryFeatures,
                     hasLogicalPartitionKey,
                     useSystemPrefix,
@@ -95,6 +111,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             SqlQuerySpec sqlQuerySpec,
             string resourceLink,
             PartitionKey? partitionKey,
+            bool isNonStreamingOrderByQueryFeatureDisabled,
             ITrace trace,
             CancellationToken cancellationToken = default)
         {
@@ -130,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                     OperationType.QueryPlan,
                     sqlQuerySpec,
                     partitionKey,
-                    QueryPlanRetriever.SupportedQueryFeaturesString,
+                    GetSupportedQueryFeaturesString(isNonStreamingOrderByQueryFeatureDisabled),
                     trace,
                     cancellationToken);
             }

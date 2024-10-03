@@ -132,7 +132,7 @@
                         (feedRangeState) => new ReadFeedPartitionRangeEnumerator(
                             inMemoryCollection,
                             feedRangeState: feedRangeState,
-                            readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10)),
+                            readFeedPaginationOptions: new ReadFeedExecutionOptions(pageSizeHint: 10)),
                         trace: NoOpTrace.Singleton);
 
                     HashSet<string> resourceIdentifiers = await this.DrainFullyAsync(enumerable);
@@ -155,14 +155,14 @@
                             feedRangeState: new FeedRangeState<ReadFeedState>(
                                 new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                                 ReadFeedState.Beginning()),
-                            readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10))) :
+                            readFeedPaginationOptions: new ReadFeedExecutionOptions(pageSizeHint: 10))) :
                     new BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>(
                         new ReadFeedPartitionRangeEnumerator(
                             inMemoryCollection,
                             feedRangeState: new FeedRangeState<ReadFeedState>(
                                 new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                                 ReadFeedState.Beginning()),
-                            readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10)));
+                            readFeedPaginationOptions: new ReadFeedExecutionOptions(pageSizeHint: 10)));
 
                 int count = 0;
 
@@ -202,14 +202,14 @@
                                 feedRangeState: new FeedRangeState<ReadFeedState>(
                                     new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                                     ReadFeedState.Beginning()),
-                                readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10))) :
+                                readFeedPaginationOptions: new ReadFeedExecutionOptions(pageSizeHint: 10))) :
                         new BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>(
                             new ReadFeedPartitionRangeEnumerator(
                                 inMemoryCollection,
                                 feedRangeState: new FeedRangeState<ReadFeedState>(
                                     new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                                     ReadFeedState.Beginning()),
-                                readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10)));
+                                readFeedPaginationOptions: new ReadFeedExecutionOptions(pageSizeHint: 10)));
 
                     if (exercisePrefetch)
                     {
@@ -248,12 +248,12 @@
                             new ReadFeedPartitionRangeEnumerator(
                                 documentContainer,
                                 feedRangeState: feedRangeState,
-                                readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10))) :
+                                readFeedPaginationOptions: new ReadFeedExecutionOptions(pageSizeHint: 10))) :
                         new BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>(
                             new ReadFeedPartitionRangeEnumerator(
                                 documentContainer,
                                 feedRangeState: feedRangeState,
-                                readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10)));
+                                readFeedPaginationOptions: new ReadFeedExecutionOptions(pageSizeHint: 10)));
 
                     return enumerator;
                 };
@@ -280,14 +280,14 @@
                         feedRangeState: new FeedRangeState<ReadFeedState>(
                             new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                             state ?? ReadFeedState.Beginning()),
-                        readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10))) :
+                        readFeedPaginationOptions: new ReadFeedExecutionOptions(pageSizeHint: 10))) :
                 new BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>(
                     new ReadFeedPartitionRangeEnumerator(
                         inMemoryCollection,
                         feedRangeState: new FeedRangeState<ReadFeedState>(
                             new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                             state ?? ReadFeedState.Beginning()),
-                        readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10)));
+                        readFeedPaginationOptions: new ReadFeedExecutionOptions(pageSizeHint: 10)));
 
                 if (exercisePrefetch)
                 {

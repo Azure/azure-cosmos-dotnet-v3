@@ -35,9 +35,38 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="queryResults"></param>
         /// <param name="dataResults"></param>
         /// <returns></returns>
-        private static bool CompareListOfAnonymousType(List<object> queryResults, List<dynamic> dataResults)
+        private static bool CompareListOfAnonymousType(List<object> queryResults, List<dynamic> dataResults, bool ignoreOrder)
         {
-            return queryResults.SequenceEqual(dataResults);
+            if (!ignoreOrder)
+            {
+                return queryResults.SequenceEqual(dataResults);
+            }
+
+            if (queryResults.Count != dataResults.Count)
+            {
+                return false;
+            }
+
+            bool resultMatched = true;
+            foreach (object obj in queryResults)
+            {
+                if (!dataResults.Any(a => a.Equals(obj)))
+                {
+                    resultMatched = false;
+                    return false;
+                }
+            }
+
+            foreach (dynamic obj in dataResults)
+            {
+                if (!queryResults.Any(a => a.Equals(obj)))
+                {
+                    resultMatched = false;
+                    break;
+                }
+            }
+
+            return resultMatched;
         }
 
         /// <summary>
@@ -186,7 +215,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// </summary>
         /// <param name="queryResultsList"></param>
         /// <param name="dataResultsList"></param>
-        private static void ValidateResults(List<object> queryResultsList, List<dynamic> dataResultsList)
+        private static void ValidateResults(List<object> queryResultsList, List<dynamic> dataResultsList, bool ignoreOrder)
         {
             bool resultMatched = true;
             string actualStr = null;
@@ -204,7 +233,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 }
                 else if (LinqTestsCommon.IsAnonymousType(firstElem.GetType()))
                 {
-                    resultMatched &= CompareListOfAnonymousType(queryResultsList, dataResultsList);
+                    resultMatched &= CompareListOfAnonymousType(queryResultsList, dataResultsList, ignoreOrder);
                 }
                 else if (LinqTestsCommon.IsNumber(firstElem))
                 {
@@ -548,7 +577,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 // we skip unordered query because the LINQ results vs actual query results are non-deterministic
                 if (!input.skipVerification)
                 {
-                    LinqTestsCommon.ValidateResults(queryResults, dataResults);
+                    LinqTestsCommon.ValidateResults(queryResults, dataResults, input.ignoreOrder);
                 }
 
                 string serializedResults = serializeResultsInBaseline ?
@@ -647,16 +676,21 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         //     - scenarios not supported in LINQ, e.g. sequence doesn't contain element.
         internal bool skipVerification;
 
+        // Ignore Ordering for AnonymousType object
+        internal readonly bool ignoreOrder;
+
         internal LinqTestInput(
             string description, 
             Expression<Func<bool, IQueryable>> expr, 
             bool skipVerification = false, 
+            bool ignoreOrderingForAnonymousTypeObject = false,
             string expressionStr = null, 
             string inputData = null)
             : base(description)
         {
             this.Expression = expr ?? throw new ArgumentNullException($"{nameof(expr)} must not be null.");
             this.skipVerification = skipVerification;
+            this.ignoreOrder = ignoreOrderingForAnonymousTypeObject;
             this.expressionStr = expressionStr;
             this.inputData = inputData;
         }

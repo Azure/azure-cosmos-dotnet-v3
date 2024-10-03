@@ -14,6 +14,11 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
     using Microsoft.Azure.Cosmos.Routing;
     using Moq;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Newtonsoft.Json;
+    using System.Text;
+    using System.IO;
+    using System.Net.Http;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class FeedRangeTests
@@ -219,6 +224,148 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             FeedRangePartitionKeyRange feedRangePartitionKeyRangeDeserialized = Cosmos.FeedRange.FromJsonString(representation) as FeedRangePartitionKeyRange;
             Assert.IsNotNull(feedRangePartitionKeyRangeDeserialized);
             Assert.AreEqual(feedRangePartitionKeyRange.PartitionKeyRangeId, feedRangePartitionKeyRangeDeserialized.PartitionKeyRangeId);
+        }
+
+        /// <summary>
+        /// Upon failures in PartitionKeyRanges calls, the failure should be a CosmosException
+        /// </summary>
+        [TestMethod]
+        public async Task GetFeedRangesThrowsCosmosException()
+        {
+            Mock<IHttpHandler> mockHttpHandler = new Mock<IHttpHandler>();
+            Uri endpoint = MockSetupsHelper.SetupSingleRegionAccount(
+                "mockAccountInfo",
+                consistencyLevel: ConsistencyLevel.Session,
+                mockHttpHandler,
+                out string primaryRegionEndpoint);
+
+            string databaseName = "mockDbName";
+            string containerName = "mockContainerName";
+            string containerRid = "ccZ1ANCszwk=";
+            Documents.ResourceId cRid = Documents.ResourceId.Parse(containerRid);
+            MockSetupsHelper.SetupContainerProperties(
+                mockHttpHandler: mockHttpHandler,
+                regionEndpoint: primaryRegionEndpoint,
+                databaseName: databaseName,
+                containerName: containerName,
+                containerRid: containerRid);
+
+            // Return a 503 on PKRange call
+            bool invokedPkRanges = false;
+            Uri partitionKeyUri = new Uri($"{primaryRegionEndpoint}/dbs/{cRid.DatabaseId}/colls/{cRid.DocumentCollectionId}/pkranges");
+            mockHttpHandler.Setup(x => x.SendAsync(It.Is<HttpRequestMessage>(x => x.RequestUri == partitionKeyUri), It.IsAny<CancellationToken>()))
+              .Returns(() => Task.FromResult(new HttpResponseMessage()
+              {
+                  StatusCode = HttpStatusCode.ServiceUnavailable,
+                  Content = new StringContent("ServiceUnavailable")
+              }))
+              .Callback(() => invokedPkRanges = true);
+
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
+                HttpClientFactory = () => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object)),
+            };
+
+            using (CosmosClient customClient = new CosmosClient(
+                   endpoint.ToString(),
+                   Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
+                   cosmosClientOptions))
+            {
+                Container container = customClient.GetContainer(databaseName, containerName);
+                CosmosException ex = await Assert.ThrowsExceptionAsync<CosmosException>(() => container.GetFeedRangesAsync(CancellationToken.None));
+                Assert.AreEqual(HttpStatusCode.ServiceUnavailable, ex.StatusCode);
+                Assert.IsTrue(invokedPkRanges);
+            }
+        }
+
+        /// <summary>
+        /// RangeJsonConverter accepts only (minInclusive=True, maxInclusive=False) combination
+        ///     In its serialization its not including minInclusive, maxInclusive combination 
+        ///     but on deserialization setting them to (true, false
+        ///     
+        /// All other combinations should throw an exception
+        /// </summary>
+        [TestMethod]
+        [DataRow(false, true)]
+        [DataRow(false, false)]
+        [DataRow(true, true)]
+        [DataRow(true, false)]
+        [Owner("kirankk")]
+        public void FeedRangeEpk_SerializationValidation(bool minInclusive, bool maxInclusive)
+        {
+            Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("", "FF", minInclusive, maxInclusive);
+            RangeJsonConverter rangeConverter = new RangeJsonConverter();
+
+            using StringWriter sw = new StringWriter();
+            using JsonWriter writer = new JsonTextWriter(sw);
+            {
+                JsonSerializer jsonSerializer = new JsonSerializer();
+                rangeConverter.WriteJson(writer, range, jsonSerializer);
+                writer.Flush();
+                sw.Flush();
+
+                JObject parsedJson = JObject.Parse(sw.ToString());
+                Assert.AreEqual(true, parsedJson.ContainsKey("min"));
+                Assert.AreEqual(string.Empty, parsedJson["min"]);
+                Assert.AreEqual(true, parsedJson.ContainsKey("max"));
+                Assert.AreEqual("FF", parsedJson["max"]);
+                Assert.AreEqual(!minInclusive, parsedJson.ContainsKey("isMinInclusive"));
+                Assert.AreEqual(maxInclusive, parsedJson.ContainsKey("isMaxInclusive"));
+                if (!minInclusive)
+                {
+                    Assert.AreEqual(false, parsedJson["isMinInclusive"]);
+                }
+
+                if (maxInclusive)
+                {
+                    Assert.AreEqual(true, parsedJson["isMaxInclusive"]);
+                }
+            }
+        }
+
+        [TestMethod]
+        [DataRow(false, true)]
+        [DataRow(false, false)]
+        [DataRow(true, true)]
+        [DataRow(true, false)]
+        [Owner("kirankk")]
+        public void FeedRangeEpk_SerdeValdation(bool minInclusive, bool maxInclusive)
+        {
+            Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("", "FF", minInclusive, maxInclusive);
+            RangeJsonConverter rangeConverter = new RangeJsonConverter();
+
+            using StringWriter sw = new StringWriter();
+            using JsonWriter writer = new JsonTextWriter(sw);
+            {
+                JsonSerializer jsonSerializer = new JsonSerializer();
+
+                rangeConverter.WriteJson(writer, range, jsonSerializer);
+
+                string serializedJson = sw.ToString();
+                System.Diagnostics.Trace.TraceInformation(serializedJson);
+
+                using TextReader reader = new StringReader(serializedJson);
+                using JsonReader jsonReader = new JsonTextReader(reader);
+                Documents.Routing.Range<string> rangeDeserialized = (Documents.Routing.Range<string>)rangeConverter.ReadJson(jsonReader, typeof(Documents.Routing.Range<string>), null, jsonSerializer);
+                Assert.IsTrue(range.Equals(rangeDeserialized), serializedJson);
+            }
+        }
+
+        [TestMethod]
+        [Owner("kirankk")]
+        public void FeedRangeEpk_BackwardComptibility()
+        {
+            string testJson = @"{""min"":"""",""max"":""FF""}";
+            System.Diagnostics.Trace.TraceInformation(testJson);
+            RangeJsonConverter rangeConverter = new RangeJsonConverter();
+
+            using TextReader reader = new StringReader(testJson);
+            using JsonReader jsonReader = new JsonTextReader(reader);
+            Documents.Routing.Range<string> rangeDeserialized = (Documents.Routing.Range<string>)rangeConverter.ReadJson(jsonReader, typeof(Documents.Routing.Range<string>), null, new JsonSerializer());
+
+            Assert.IsTrue(rangeDeserialized.IsMinInclusive);
+            Assert.IsFalse(rangeDeserialized.IsMaxInclusive);
         }
     }
 }

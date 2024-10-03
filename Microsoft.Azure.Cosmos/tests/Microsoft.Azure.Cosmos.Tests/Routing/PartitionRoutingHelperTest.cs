@@ -713,6 +713,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 QueryPartitionProvider.TryGetPartitionedQueryExecutionInfo(
                         querySpecJsonString: JsonConvert.SerializeObject(new SqlQuerySpec(queryText)),
                         partitionKeyDefinition: partitionKeyDefinition,
+                        vectorEmbeddingPolicy: null,
                         requireFormattableOrderByQuery: true,
                         isContinuationExpected: true,
                         allowNonValueAggregateQuery: false,
@@ -863,6 +864,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                         allowNonValueAggregates: true,
                         useSystemPrefix: false,
                         partitionKeyDefinition: new PartitionKeyDefinition { Paths = new Collection<string> { testcase.PartitionKey }, Kind = PartitionKind.Hash },
+                        vectorEmbeddingPolicy: null,
                         queryPartitionProvider: QueryPartitionProviderTestInstance.Object,
                         clientApiVersion: testcase.ClientApiVersion,
                         geospatialType: Cosmos.GeospatialType.Geography,

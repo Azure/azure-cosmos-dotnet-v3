@@ -526,7 +526,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 CrossPartitionReadFeedAsyncEnumerator enumerator = CrossPartitionReadFeedAsyncEnumerator.Create(
                     documentContainer,
                     new CrossFeedRangeState<ReadFeedState>(ReadFeedCrossFeedRangeState.CreateFromBeginning().FeedRangeStates),
-                    new ReadFeedPaginationOptions(pageSizeHint: 10));
+                    new ReadFeedExecutionOptions(pageSizeHint: 10));
 
                 int numChildren = 1; // One extra since we need to read one past the last user page to get the null continuation.
                 TraceForBaselineTesting rootTrace;
@@ -556,7 +556,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                     documentContainer,
                     new CrossFeedRangeState<ChangeFeedState>(
                         ChangeFeedCrossFeedRangeState.CreateFromBeginning().FeedRangeStates),
-                    new ChangeFeedPaginationOptions(
+                    new ChangeFeedExecutionOptions(
                         ChangeFeedMode.Incremental,
                         pageSizeHint: int.MaxValue));
 
@@ -749,13 +749,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
         private static IQueryPipelineStage CreatePipeline(IDocumentContainer documentContainer, string query, int pageSize = 10, CosmosElement state = null)
         {
             TryCatch<IQueryPipelineStage> tryCreatePipeline = PipelineFactory.MonadicCreate(
-                ExecutionEnvironment.Compute,
                 documentContainer,
                 new SqlQuerySpec(query),
                 new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
                 partitionKey: null,
                 GetQueryPlan(query),
-                new QueryPaginationOptions(pageSizeHint: pageSize),
+                new QueryExecutionOptions(pageSizeHint: pageSize),
                 containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
                 maxConcurrency: 10,
                 requestContinuationToken: state);
@@ -770,6 +769,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             TryCatch<PartitionedQueryExecutionInfoInternal> info = QueryPartitionProviderTestInstance.Object.TryGetPartitionedQueryExecutionInfoInternal(
                 Newtonsoft.Json.JsonConvert.SerializeObject(new SqlQuerySpec(query)),
                 partitionKeyDefinition,
+                vectorEmbeddingPolicy: null,
                 requireFormattableOrderByQuery: true,
                 isContinuationExpected: false,
                 allowNonValueAggregateQuery: true,

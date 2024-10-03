@@ -34,9 +34,23 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private static bool isInitialized = false;
         private static AzureVMMetadata azMetadata = null;
-       
+
+        /// <summary>
+        /// Check for environment variable COSMOS_DISABLE_IMDS_ACCESS to decide if VM metadata call should be made or not.
+        /// If environment variable is set to true, then VM metadata call will not be made.
+        /// If environment variable is set to false, then VM metadata call will be made.
+        /// If environment variable is not set, then VM metadata call will be made.
+        /// </summary>.
+        /// <param name="httpClient"></param>
         internal static void TryInitialize(CosmosHttpClient httpClient)
         {
+            bool isVMMetadataAccessDisabled = 
+                ConfigurationManager.GetEnvironmentVariable<bool>("COSMOS_DISABLE_IMDS_ACCESS", false);
+            if (isVMMetadataAccessDisabled)
+            {
+                return;
+            }
+  
             if (VmMetadataApiHandler.isInitialized)
             {
                 return;
@@ -55,7 +69,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                 _ = Task.Run(() => MetadataApiCallAsync(httpClient), default);
             }
-
         }
 
         private static async Task MetadataApiCallAsync(CosmosHttpClient httpClient)
@@ -85,11 +98,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                 azMetadata = await VmMetadataApiHandler.ProcessResponseAsync(response);
 
-                DefaultTrace.TraceInformation($"Succesfully get Instance Metadata Response : {0}", azMetadata.Compute.VMId);
+                DefaultTrace.TraceInformation("Successfully get Instance Metadata Response : {0}", azMetadata.Compute.VMId);
             }
             catch (Exception e)
             {
-                DefaultTrace.TraceInformation($"Azure Environment metadata information not available. {0}", e.Message);
+                DefaultTrace.TraceInformation("Azure Environment metadata information not available. {0}", e.Message);
             }
         }
 
@@ -154,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceWarning($"Error while generating hashed machine name {0}", ex.Message);
+                DefaultTrace.TraceWarning("Error while generating hashed machine name {0}", ex.Message);
             }
 
             return $"{VmMetadataApiHandler.UuidPrefix}{Guid.NewGuid()}";

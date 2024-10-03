@@ -7,15 +7,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
     using System;
     using System.Collections.Generic;
     using System.Threading;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
     /// Stage that is able to aggregate COUNT(DISTINCT) from multiple continuations and partitions.
     /// </summary>
-    internal abstract partial class DCountQueryPipelineStage : QueryPipelineStageBase
+    internal class DCountQueryPipelineStage : QueryPipelineStageBase
     {
         /// <summary>
         /// We need to keep track of whether the projection has the 'VALUE' keyword or an alias.
@@ -46,28 +49,95 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
             this.info = info;
         }
 
+        public override async ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
+            if (this.returnedFinalPage)
+            {
+                return false;
+            }
+
+            double requestCharge = 0;
+            IReadOnlyDictionary<string, string> additionalHeaders = null;
+            while (await this.inputStage.MoveNextAsync(trace, cancellationToken))
+            {
+                TryCatch<QueryPage> tryGetPageFromSource = this.inputStage.Current;
+                if (tryGetPageFromSource.Failed)
+                {
+                    this.Current = tryGetPageFromSource;
+                    return true;
+                }
+
+                QueryPage sourcePage = tryGetPageFromSource.Result;
+
+                requestCharge += sourcePage.RequestCharge;
+                additionalHeaders = sourcePage.AdditionalHeaders;
+
+                cancellationToken.ThrowIfCancellationRequested();
+                this.count += sourcePage.Documents.Count;
+            }
+
+            List<CosmosElement> finalResult = new List<CosmosElement>();
+            CosmosElement aggregationResult = this.GetFinalResult();
+            if (aggregationResult != null)
+            {
+                finalResult.Add(aggregationResult);
+            }
+
+            QueryPage queryPage = new QueryPage(
+                documents: finalResult,
+                requestCharge: requestCharge,
+                activityId: default,
+                cosmosQueryExecutionInfo: default,
+                distributionPlanSpec: default,
+                disallowContinuationTokenMessage: default,
+                additionalHeaders: additionalHeaders,
+                state: default,
+                streaming: default);
+
+            this.Current = TryCatch<QueryPage>.FromResult(queryPage);
+            this.returnedFinalPage = true;
+            return true;
+        }
+
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
-            ExecutionEnvironment executionEnvironment,
             DCountInfo info,
             CosmosElement continuationToken,
-            MonadicCreatePipelineStage monadicCreatePipelineStage) => executionEnvironment switch
+            MonadicCreatePipelineStage monadicCreatePipelineStage)
+        {
+            if (monadicCreatePipelineStage == null)
             {
-                ExecutionEnvironment.Client => ClientDCountQueryPipelineStage.MonadicCreate(
-                    info,
-                    continuationToken,
-                    monadicCreatePipelineStage),
-                ExecutionEnvironment.Compute => ComputeDCountQueryPipelineStage.MonadicCreate(
-                    info,
-                    continuationToken,
-                    monadicCreatePipelineStage),
-                _ => throw new ArgumentException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}."),
-            };
+                throw new ArgumentNullException(nameof(monadicCreatePipelineStage));
+            }
 
-        protected CosmosElement GetFinalResult() => this.info.IsValueAggregate ?
-            CosmosNumber64.Create(this.count) as CosmosElement :
-            CosmosObject.Create(new Dictionary<string, CosmosElement>
+            TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(continuationToken);
+            if (tryCreateSource.Failed)
             {
-                { this.info.DCountAlias, CosmosNumber64.Create(this.count) }
-            });
+                return tryCreateSource;
+            }
+
+            DCountQueryPipelineStage stage = new DCountQueryPipelineStage(
+                source: tryCreateSource.Result,
+                count: 0,
+                info: info);
+
+            return TryCatch<IQueryPipelineStage>.FromResult(stage);
+        }
+
+        protected CosmosElement GetFinalResult()
+        {
+            return this.info.IsValueAggregate ?
+                CosmosNumber64.Create(this.count) as CosmosElement :
+                CosmosObject.Create(new Dictionary<string, CosmosElement>
+                {
+                    { this.info.DCountAlias, CosmosNumber64.Create(this.count) }
+                });
+        }
     }
 }

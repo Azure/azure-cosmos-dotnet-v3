@@ -14,7 +14,7 @@ stages:
   jobs:
     - job:
       pool:
-        vmImage: $(VmImage)
+        name: 'OneES'
     
       steps:
       # Add this Command to Include the .NET 6 SDK

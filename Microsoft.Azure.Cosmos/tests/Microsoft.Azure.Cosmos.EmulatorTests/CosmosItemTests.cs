@@ -1723,9 +1723,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 ContainerQueryProperties containerQueryProperties = new ContainerQueryProperties(
                     containerResponse.Resource.ResourceId,
-                    null,
+                    effectivePartitionKeyRanges: null,
                     //new List<Documents.Routing.Range<string>> { new Documents.Routing.Range<string>("AA", "AA", true, true) },
                     containerResponse.Resource.PartitionKey,
+                    vectorEmbeddingPolicy: null,
                     containerResponse.Resource.GeospatialConfig.GeospatialType);
 
                 // There should only be one range since the EPK option is set.
@@ -3318,6 +3319,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     id: itemIdThatWillNotExist,
                     partitionKey: new Cosmos.PartitionKey(partitionKeyValue),
                     cancellationToken: cancellationToken));
+        }
+
+        [TestMethod]
+        public async Task MalformedChangeFeedContinuationTokenSubStatusCodeTest()
+        {
+            FeedIterator badIterator = this.Container.GetChangeFeedStreamIterator(
+                    ChangeFeedStartFrom.ContinuationToken("AMalformedContinuationToken"),
+                    ChangeFeedMode.Incremental,
+                    new ChangeFeedRequestOptions()
+                    {
+                        PageSizeHint = 100
+                    });
+
+            ResponseMessage response = await badIterator.ReadNextAsync();
+
+            Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.AreEqual(SubStatusCodes.MalformedContinuationToken, response.Headers.SubStatusCode);
         }
 
         private static async Task GivenItemStreamAsyncWhenMissingMemberHandlingIsErrorThenExpectsCosmosExceptionTestAsync(
