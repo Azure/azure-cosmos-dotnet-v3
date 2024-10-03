@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos
         public ActivityScope(Guid activityId)
         {
             this.ambientActivityId = Trace.CorrelationManager.ActivityId;
-
             Trace.CorrelationManager.ActivityId = activityId;
         }
 
