@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             requestChargeHelper?.CompareRequestCharge(testName);
         }
 
-        internal static async Task ResetEmulatorAsync(CosmosClient client, IEnumerable<string> excludeDbIds = null)
+        internal static async Task DeleteAllDatabasesAsync(CosmosClient client, IEnumerable<string> excludeDbIds = null)
         {
             if (client == null)
             {
@@ -146,20 +146,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     foreach (DatabaseProperties database in response)
                     {
                         Cosmos.Database db = client.GetDatabase(database.Id);
-                        if (excludeDbIds == null || !excludeDbIds.Contains(database.Id))
+                        if (excludeDbIds?.Contains(database.Id) != true)
                         {
                             await db.DeleteAsync();
                         }
                         else
                         {
-                            await ResetDatabase(db);
+                            await DeleteAllContainersAsync(db);
                         }
                     }
                 }
             }
         }
 
-        private static async Task ResetDatabase(Cosmos.Database db)
+        private static async Task DeleteAllContainersAsync(Cosmos.Database db)
         {
             using (FeedIterator<ContainerProperties> containerfeedIterator = db.GetContainerQueryIterator<ContainerProperties>())
             {

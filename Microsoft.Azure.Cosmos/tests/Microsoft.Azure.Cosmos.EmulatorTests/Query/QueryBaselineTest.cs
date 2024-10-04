@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
                 })).WithConnectionModeGateway();
             });
 
-            await Util.ResetEmulatorAsync(cosmosClient);
+            await Util.DeleteAllDatabasesAsync(cosmosClient);
             string dbName = $"{nameof(QueryBaselineTest)}-{Guid.NewGuid().ToString("N")}";
             testDb = await cosmosClient.CreateDatabaseAsync(dbName);
         }

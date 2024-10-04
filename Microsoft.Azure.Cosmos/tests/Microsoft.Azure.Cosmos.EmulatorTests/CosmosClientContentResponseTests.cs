@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task TestInit()
         {
             this.cosmosClientWithFlag = this.CreateCosmosClientWithContentResponse(true);
-            await Util.ResetEmulatorAsync(this.cosmosClientWithFlag);
+            await Util.DeleteAllDatabasesAsync(this.cosmosClientWithFlag);
 
             this.databaseWithFlag = await this.cosmosClientWithFlag.CreateDatabaseAsync(
                    id: Guid.NewGuid().ToString());
