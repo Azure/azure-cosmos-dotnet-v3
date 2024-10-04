@@ -13,9 +13,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using Microsoft.Azure.Cosmos.Encryption.Custom.Transformation;
     using Newtonsoft.Json.Linq;
 
-    internal static class MdeEncryptionProcessor
+    internal class MdeEncryptionProcessor
     {
-        public static async Task<Stream> EncryptAsync(
+        internal JObjectSqlSerializer Serializer { get; set; } = new JObjectSqlSerializer();
+
+        internal MdeEncryptor Encryptor { get; set; } = new MdeEncryptor();
+
+        public async Task<Stream> EncryptAsync(
             Stream input,
             Encryptor encryptor,
             EncryptionOptions encryptionOptions,
@@ -43,14 +47,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 }
 
                 byte[] plainText = null;
-                (typeMarker, plainText, int plainTextLength) = JObjectSqlSerializer.Serialize(propertyValue, arrayPoolManager);
+                (typeMarker, plainText, int plainTextLength) = this.Serializer.Serialize(propertyValue, arrayPoolManager);
 
                 if (plainText == null)
                 {
                     continue;
                 }
 
-                (byte[] encryptedBytes, int encryptedLength) = MdeEncryptor.Encrypt(encryptionKey, typeMarker, plainText, plainTextLength, arrayPoolManager);
+                (byte[] encryptedBytes, int encryptedLength) = this.Encryptor.Encrypt(encryptionKey, typeMarker, plainText, plainTextLength, arrayPoolManager);
 
                 itemJObj[propertyName] = encryptedBytes.AsSpan(0, encryptedLength).ToArray();
                 pathsEncrypted.Add(pathToEncrypt);
@@ -68,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
         }
 
-        internal static async Task<DecryptionContext> DecryptObjectAsync(
+        internal async Task<DecryptionContext> DecryptObjectAsync(
             JObject document,
             Encryptor encryptor,
             EncryptionProperties encryptionProperties,
@@ -102,9 +106,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     continue;
                 }
 
-                (byte[] plainText, int decryptedCount) = MdeEncryptor.Decrypt(encryptionKey, cipherTextWithTypeMarker, arrayPoolManager);
+                (byte[] plainText, int decryptedCount) = this.Encryptor.Decrypt(encryptionKey, cipherTextWithTypeMarker, arrayPoolManager);
 
-                JObjectSqlSerializer.DeserializeAndAddProperty(
+                this.Serializer.DeserializeAndAddProperty(
                     (TypeMarker)cipherTextWithTypeMarker[0],
                     plainText.AsSpan(0, decryptedCount),
                     document,

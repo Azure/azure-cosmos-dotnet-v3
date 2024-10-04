@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
-    internal static class JObjectSqlSerializer
+    internal class JObjectSqlSerializer
     {
         private static readonly SqlBitSerializer SqlBoolSerializer = new ();
         private static readonly SqlFloatSerializer SqlDoubleSerializer = new ();
@@ -21,7 +21,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
         private static readonly JsonSerializerSettings JsonSerializerSettings = EncryptionProcessor.JsonSerializerSettings;
 
-        internal static (TypeMarker typeMarker, byte[] serializedBytes, int serializedBytesCount) Serialize(JToken propertyValue, ArrayPoolManager arrayPoolManager)
+#pragma warning disable SA1101 // Prefix local calls with this - false positive on SerializeFixed
+        internal virtual (TypeMarker typeMarker, byte[] serializedBytes, int serializedBytesCount) Serialize(JToken propertyValue, ArrayPoolManager arrayPoolManager)
         {
             byte[] buffer;
             int length;
@@ -69,8 +70,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 return (buffer, length);
             }
         }
+#pragma warning restore SA1101 // Prefix local calls with this
 
-        internal static void DeserializeAndAddProperty(
+        internal virtual void DeserializeAndAddProperty(
             TypeMarker typeMarker,
             ReadOnlySpan<byte> serializedBytes,
             JObject jObject,
@@ -91,17 +93,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     jObject[key] = SqlVarCharSerializer.Deserialize(serializedBytes);
                     break;
                 case TypeMarker.Array:
-                    DeserializeAndAddProperty<JArray>(serializedBytes);
+                    jObject[key] = Deserialize<JArray>(serializedBytes);
                     break;
                 case TypeMarker.Object:
-                    DeserializeAndAddProperty<JObject>(serializedBytes);
+                    jObject[key] = Deserialize<JObject>(serializedBytes);
                     break;
                 default:
                     Debug.Fail(string.Format("Unexpected type marker {0}", typeMarker));
                     break;
             }
 
-            void DeserializeAndAddProperty<T>(ReadOnlySpan<byte> serializedBytes)
+            static T Deserialize<T>(ReadOnlySpan<byte> serializedBytes)
                 where T : JToken
             {
                 using ArrayPoolManager<char> manager = new ();
@@ -114,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 using MemoryTextReader memoryTextReader = new (new Memory<char>(buffer, 0, length));
                 using JsonTextReader reader = new (memoryTextReader);
 
-                jObject[key] = serializer.Deserialize<T>(reader);
+                return serializer.Deserialize<T>(reader);
             }
         }
     }

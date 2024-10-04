@@ -6,9 +6,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 {
     using System;
 
-    internal static class MdeEncryptor
+    internal class MdeEncryptor
     {
-        internal static (byte[] encryptedText, int encryptedLength) Encrypt(DataEncryptionKey encryptionKey, TypeMarker typeMarker, byte[] plainText, int plainTextLength, ArrayPoolManager arrayPoolManager)
+        internal virtual (byte[] encryptedText, int encryptedLength) Encrypt(DataEncryptionKey encryptionKey, TypeMarker typeMarker, byte[] plainText, int plainTextLength, ArrayPoolManager arrayPoolManager)
         {
             int encryptedTextLength = encryptionKey.GetEncryptByteCount(plainTextLength) + 1;
 
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             return (encryptedText, encryptedLength + 1);
         }
 
-        internal static (byte[] plainText, int plainTextLength) Decrypt(DataEncryptionKey encryptionKey, byte[] cipherText, ArrayPoolManager arrayPoolManager)
+        internal virtual (byte[] plainText, int plainTextLength) Decrypt(DataEncryptionKey encryptionKey, byte[] cipherText, ArrayPoolManager arrayPoolManager)
         {
             int plainTextLength = encryptionKey.GetDecryptByteCount(cipherText.Length - 1);
 
