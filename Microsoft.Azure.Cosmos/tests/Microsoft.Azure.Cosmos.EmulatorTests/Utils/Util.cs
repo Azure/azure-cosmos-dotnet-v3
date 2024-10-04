@@ -145,10 +145,30 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     FeedResponse<DatabaseProperties> response = await feedIterator.ReadNextAsync();
                     foreach (DatabaseProperties database in response)
                     {
+                        Cosmos.Database db = client.GetDatabase(database.Id);
                         if (excludeDbIds == null || !excludeDbIds.Contains(database.Id))
                         {
-                            await client.GetDatabase(database.Id).DeleteAsync();
+                            await db.DeleteAsync();
                         }
+                        else
+                        {
+                            await ResetDatabase(db);
+                        }
+                    }
+                }
+            }
+        }
+
+        private static async Task ResetDatabase(Cosmos.Database db)
+        {
+            using (FeedIterator<ContainerProperties> containerfeedIterator = db.GetContainerQueryIterator<ContainerProperties>())
+            {
+                while (containerfeedIterator.HasMoreResults)
+                {
+                    FeedResponse<ContainerProperties> containerResponse = await containerfeedIterator.ReadNextAsync();
+                    foreach (ContainerProperties container in containerResponse)
+                    {
+                        await db.GetContainer(container.Id).DeleteContainerAsync();
                     }
                 }
             }
