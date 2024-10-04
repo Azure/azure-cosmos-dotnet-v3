@@ -31,20 +31,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static readonly string ContainerId = "ContainerBasicQueryTests" + Guid.NewGuid();
 
         [ClassInitialize]
-        public static async Task TestInit(TestContext _)
+        public static void TestInit(TestContext _)
         {
             CosmosBasicQueryTests.DirectCosmosClient = TestCommon.CreateCosmosClient();
             CosmosBasicQueryTests.GatewayCosmosClient = TestCommon.CreateCosmosClient((builder) => builder.WithConnectionModeGateway());
-
-            await Util.DeleteAllDatabasesAsync(CosmosBasicQueryTests.DirectCosmosClient);
-            Database database = await DirectCosmosClient.CreateDatabaseIfNotExistsAsync(DatabaseId);
-            await database.CreateContainerIfNotExistsAsync(ContainerId, "/pk");
         }
 
         [TestInitialize]
         public async Task TestInitialize()
         {
-            await Util.DeleteAllDatabasesAsync(CosmosBasicQueryTests.DirectCosmosClient, excludeDbIds: new string[] { CosmosBasicQueryTests.DatabaseId });
+            await Util.DeleteAllDatabasesAsync(CosmosBasicQueryTests.DirectCosmosClient);
+
+            Database database = await DirectCosmosClient.CreateDatabaseIfNotExistsAsync(DatabaseId);
+            await database.CreateContainerIfNotExistsAsync(ContainerId, "/pk");
         }
 
         [ClassCleanup]
