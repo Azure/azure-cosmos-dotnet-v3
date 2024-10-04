@@ -1028,6 +1028,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 onChangesDelegate);
         }
 #endif
+
+#if SDKPROJECTREF
+        public override Task<bool> IsFeedRangePartOfAsync(
+            Cosmos.FeedRange x,
+            Cosmos.FeedRange y,
+            CancellationToken cancellationToken = default)
+        {
+            return this.container.IsFeedRangePartOfAsync(
+                x,
+                y,
+                cancellationToken);
+        }
+#endif
         private async Task<ResponseMessage> ReadManyItemsHelperAsync(
            IReadOnlyList<(string id, PartitionKey partitionKey)> items,
            ReadManyRequestOptions readManyRequestOptions = null,
