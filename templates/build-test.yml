@@ -19,7 +19,6 @@ parameters:
 jobs:
 - job:
   displayName: Microsoft.Azure.Cosmos.Tests
-  condition: eq(1,2) #and(succeeded(), eq(${{ parameters.IncludePerformance }}, true))
   pool:
     name: 'OneES'
 
@@ -84,7 +83,7 @@ jobs:
 
 - job:
   displayName: PerformanceTests ${{ parameters.BuildConfiguration }}
-  condition: eq(1,2) #and(succeeded(), eq(${{ parameters.IncludePerformance }}, true))
+  condition: and(succeeded(), eq(${{ parameters.IncludePerformance }}, true))
   pool:
     name: 'OneES'
 
