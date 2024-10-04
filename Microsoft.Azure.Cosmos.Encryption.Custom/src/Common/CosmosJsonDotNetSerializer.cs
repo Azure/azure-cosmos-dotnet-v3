@@ -50,8 +50,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 return (T)(object)stream;
             }
 
-            using (StreamReader sr = new StreamReader(stream))
-            using (JsonTextReader jsonTextReader = new JsonTextReader(sr))
+            using (StreamReader sr = new (stream))
+            using (JsonTextReader jsonTextReader = new (sr))
             {
                 jsonTextReader.ArrayPool = JsonArrayPool.Instance;
                 JsonSerializer jsonSerializer = this.GetSerializer();
@@ -67,9 +67,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <returns>An open readable stream containing the JSON of the serialized object</returns>
         public MemoryStream ToStream<T>(T input)
         {
-            MemoryStream streamPayload = new MemoryStream();
-            using (StreamWriter streamWriter = new StreamWriter(streamPayload, encoding: CosmosJsonDotNetSerializer.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
-            using (JsonTextWriter writer = new JsonTextWriter(streamWriter))
+            MemoryStream streamPayload = new ();
+            using (StreamWriter streamWriter = new (streamPayload, encoding: CosmosJsonDotNetSerializer.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
+            using (JsonTextWriter writer = new (streamWriter))
             {
                 writer.ArrayPool = JsonArrayPool.Instance;
                 writer.Formatting = Newtonsoft.Json.Formatting.None;

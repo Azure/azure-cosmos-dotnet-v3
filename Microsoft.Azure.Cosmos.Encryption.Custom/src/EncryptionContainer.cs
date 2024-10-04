@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 throw new ArgumentNullException(nameof(item));
             }
 
-            if (!(requestOptions is EncryptionItemRequestOptions encryptionItemRequestOptions) ||
+            if (requestOptions is not EncryptionItemRequestOptions encryptionItemRequestOptions ||
                 encryptionItemRequestOptions.EncryptionOptions == null)
             {
                 return await this.container.CreateItemAsync<T>(
@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            if (!(requestOptions is EncryptionItemRequestOptions encryptionItemRequestOptions) ||
+            if (requestOptions is not EncryptionItemRequestOptions encryptionItemRequestOptions ||
                 encryptionItemRequestOptions.EncryptionOptions == null)
             {
                 return await this.container.CreateItemStreamAsync(
@@ -230,7 +230,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         diagnosticsContext,
                         cancellationToken);
 
-                    DecryptableItemCore decryptableItem = new DecryptableItemCore(
+                    DecryptableItemCore decryptableItem = new (
                         EncryptionProcessor.BaseSerializer.FromStream<JObject>(responseMessage.Content),
                         this.Encryptor,
                         this.CosmosSerializer);
@@ -314,7 +314,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 throw new ArgumentNullException(nameof(item));
             }
 
-            if (!(requestOptions is EncryptionItemRequestOptions encryptionItemRequestOptions) ||
+            if (requestOptions is not EncryptionItemRequestOptions encryptionItemRequestOptions ||
                 encryptionItemRequestOptions.EncryptionOptions == null)
             {
                 return await this.container.ReplaceItemAsync(
@@ -417,7 +417,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            if (!(requestOptions is EncryptionItemRequestOptions encryptionItemRequestOptions) ||
+            if (requestOptions is not EncryptionItemRequestOptions encryptionItemRequestOptions ||
                     encryptionItemRequestOptions.EncryptionOptions == null)
             {
                 return await this.container.ReplaceItemStreamAsync(
@@ -470,7 +470,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 throw new ArgumentNullException(nameof(item));
             }
 
-            if (!(requestOptions is EncryptionItemRequestOptions encryptionItemRequestOptions) ||
+            if (requestOptions is not EncryptionItemRequestOptions encryptionItemRequestOptions ||
                 encryptionItemRequestOptions.EncryptionOptions == null)
             {
                 return await this.container.UpsertItemAsync(
@@ -562,7 +562,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            if (!(requestOptions is EncryptionItemRequestOptions encryptionItemRequestOptions) ||
+            if (requestOptions is not EncryptionItemRequestOptions encryptionItemRequestOptions ||
                     encryptionItemRequestOptions.EncryptionOptions == null)
             {
                 return await this.container.UpsertItemStreamAsync(
@@ -1050,12 +1050,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             IReadOnlyCollection<JObject> documents,
             CancellationToken cancellationToken)
         {
-            List<T> decryptItems = new List<T>(documents.Count);
+            List<T> decryptItems = new (documents.Count);
             if (typeof(T) == typeof(DecryptableItem))
             {
                 foreach (JToken value in documents)
                 {
-                    DecryptableItemCore item = new DecryptableItemCore(
+                    DecryptableItemCore item = new (
                         value,
                         this.Encryptor,
                         this.CosmosSerializer);

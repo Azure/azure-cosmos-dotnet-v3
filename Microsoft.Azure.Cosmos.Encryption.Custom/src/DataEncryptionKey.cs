@@ -79,10 +79,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <returns>New instance of data encryption key.</returns>
         public static byte[] Generate(string encryptionAlgorithm)
         {
+#pragma warning disable CS0618 // Type or member is obsolete
             if (!string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized))
             {
                 throw new ArgumentException($"Encryption algorithm not supported: {encryptionAlgorithm}. Supported Algorithm is '{CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized}'", nameof(encryptionAlgorithm));
             }
+#pragma warning restore CS0618 // Type or member is obsolete
 
             byte[] rawKey = new byte[32];
             SecurityUtility.GenerateRandomBytes(rawKey);
@@ -105,12 +107,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 throw new ArgumentNullException(nameof(rawKey));
             }
 
+#pragma warning disable CS0618 // Type or member is obsolete
             if (!string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized))
             {
                 throw new ArgumentException($"Encryption algorithm not supported: {encryptionAlgorithm}. Supported Algorithm is '{CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized}'", nameof(encryptionAlgorithm));
             }
+#pragma warning restore CS0618 // Type or member is obsolete
 
-            AeadAes256CbcHmac256EncryptionKey aeKey = new AeadAes256CbcHmac256EncryptionKey(rawKey, AeadAes256CbcHmac256Algorithm.AlgorithmNameConstant);
+            AeadAes256CbcHmac256EncryptionKey aeKey = new (rawKey, AeadAes256CbcHmac256Algorithm.AlgorithmNameConstant);
             return new AeadAes256CbcHmac256Algorithm(aeKey, EncryptionType.Randomized, algorithmVersion: 1);
         }
     }

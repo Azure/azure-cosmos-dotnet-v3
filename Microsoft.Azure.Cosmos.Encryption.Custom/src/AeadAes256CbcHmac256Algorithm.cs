@@ -99,7 +99,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         public override byte[] RawKey => this.dataEncryptionKey.RootKey;
 
+#pragma warning disable CS0618 // Type or member is obsolete
         public override string EncryptionAlgorithm => CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized;
+#pragma warning restore CS0618 // Type or member is obsolete
 
         /// <summary>
         /// Initializes a new instance of AeadAes256CbcHmac256Algorithm algorithm with a given key and encryption type
@@ -212,11 +214,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             outBuffer[0] = this.algorithmVersion;
             Buffer.BlockCopy(iv, 0, outBuffer, ivStartIndex, iv.Length);
 
-            AesCryptoServiceProvider aesAlg;
-
             // Try to get a provider from the pool.
             // If no provider is available, create a new one.
-            if (!this.cryptoProviderPool.TryDequeue(out aesAlg))
+            if (!this.cryptoProviderPool.TryDequeue(out AesCryptoServiceProvider aesAlg))
             {
                 aesAlg = new AesCryptoServiceProvider();
 
@@ -259,7 +259,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
                 if (hasAuthenticationTag)
                 {
-                    using (HMACSHA256 hmac = new HMACSHA256(this.dataEncryptionKey.MACKey))
+                    using (HMACSHA256 hmac = new (this.dataEncryptionKey.MACKey))
                     {
                         Debug.Assert(hmac.CanTransformMultipleBlocks, "HMAC can't transform multiple blocks");
                         hmac.TransformBlock(version, 0, version.Length, version, 0);
@@ -363,11 +363,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Debug.Assert((count + offset) <= cipherText.Length);
 
             byte[] plainText;
-            AesCryptoServiceProvider aesAlg;
 
             // Try to get a provider from the pool.
             // If no provider is available, create a new one.
-            if (!this.cryptoProviderPool.TryDequeue(out aesAlg))
+            if (!this.cryptoProviderPool.TryDequeue(out AesCryptoServiceProvider aesAlg))
             {
                 aesAlg = new AesCryptoServiceProvider();
 
@@ -392,12 +391,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 aesAlg.IV = iv;
 
                 // Create the streams used for decryption.
-                using (MemoryStream msDecrypt = new MemoryStream())
+                using (MemoryStream msDecrypt = new ())
                 {
                     // Create an encryptor to perform the stream transform.
                     using (ICryptoTransform decryptor = aesAlg.CreateDecryptor())
                     {
-                        using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Write))
+                        using (CryptoStream csDecrypt = new (msDecrypt, decryptor, CryptoStreamMode.Write))
                         {
                             // Decrypt the secret message and get the plain text data
                             csDecrypt.Write(cipherText, offset, count);
@@ -432,7 +431,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             //              1 block for IV (16 bytes)
             //              cipherText.Length
             //              1 byte for version byte length
-            using (HMACSHA256 hmac = new HMACSHA256(this.dataEncryptionKey.MACKey))
+            using (HMACSHA256 hmac = new (this.dataEncryptionKey.MACKey))
             {
                 int retVal = 0;
                 retVal = hmac.TransformBlock(version, 0, version.Length, version, 0);
