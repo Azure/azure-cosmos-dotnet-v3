@@ -140,10 +140,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     FeedResponse<DatabaseProperties> response = await feedIterator.ReadNextAsync();
                     foreach (DatabaseProperties database in response)
                     {
-                        if (reset)
-                        {
-                            await client.GetDatabase(database.Id).DeleteAsync();
-                        }
+                        await client.GetDatabase(database.Id).DeleteAsync();
                     }
                 }
             }
