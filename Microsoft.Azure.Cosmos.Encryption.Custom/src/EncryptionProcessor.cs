@@ -141,13 +141,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 #pragma warning disable CS0618 // Type or member is obsolete
             DecryptionContext decryptionContext = encryptionProperties.EncryptionAlgorithm switch
             {
-                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized => await MdeEncryptionProcessor.MdeEncAlgoDecryptObjectAsync(
+                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized => await MdeEncryptionProcessor.DecryptObjectAsync(
                     itemJObj,
                     encryptor,
                     encryptionProperties,
                     diagnosticsContext,
                     cancellationToken),
-                CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized => await AeAesEncryptionProcessor.LegacyEncAlgoDecryptContentAsync(
+                CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized => await AeAesEncryptionProcessor.DecryptContentAsync(
                     itemJObj,
                     encryptionProperties,
                     encryptor,

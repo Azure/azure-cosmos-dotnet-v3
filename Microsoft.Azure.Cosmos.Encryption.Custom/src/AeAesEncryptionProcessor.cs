@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
         }
 
-        internal static async Task<DecryptionContext> LegacyEncAlgoDecryptContentAsync(
+        internal static async Task<DecryptionContext> DecryptContentAsync(
             JObject document,
             EncryptionProperties encryptionProperties,
             Encryptor encryptor,
