@@ -7,10 +7,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Net;
     using System.Reflection;
+    using System.Runtime.CompilerServices;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -70,6 +72,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 DataEncryptionAlgorithm.AeadAes256CbcHmacSha256,
                 revokedKekmetadata);
 
+        }
+
+        [TestInitialize]
+        public async Task TestInitialize()
+        {
             Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath>()
             {
                 new ClientEncryptionIncludedPath()
@@ -181,47 +188,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             encryptionContainerForChangeFeed = await database.CreateContainerAsync(containerPropertiesForChangeFeed, 15000);
             await encryptionContainerForChangeFeed.InitializeEncryptionAsync();
-        }
-
-        [TestInitialize]
-        public async Task TestInitialize()
-        {
-            // await MdeEncryptionTests.InitializeContainers();
 
             // Reset static cache TTL
             Microsoft.Data.Encryption.Cryptography.ProtectedDataEncryptionKey.TimeToLive = TimeSpan.FromHours(2);
             // flag to disable https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3951
             // need to be removed after the fix
             Environment.SetEnvironmentVariable("AZURE_COSMOS_REPLICA_VALIDATION_ENABLED", "False");
-            await this.DumpContainers();
-        }
-
-        public async Task DumpContainers()
-        {
-            using (FeedIterator<DatabaseProperties> feedIterator = MdeEncryptionTests.client.GetDatabaseQueryIterator<DatabaseProperties>())
-            {
-                while (feedIterator.HasMoreResults)
-                {
-                    FeedResponse<DatabaseProperties> response = await feedIterator.ReadNextAsync();
-                    foreach (DatabaseProperties database in response)
-                    {
-                        Console.WriteLine($"{nameof(DumpContainers)}.DatabaseId -> {database.Id}");
-                        using (FeedIterator<ContainerProperties> containerFeedIterator = MdeEncryptionTests.client.GetDatabase(database.Id).GetContainerQueryIterator<ContainerProperties>())
-                        {
-                            while (feedIterator.HasMoreResults)
-                            {
-                                FeedResponse<ContainerProperties> containerResponse = await containerFeedIterator.ReadNextAsync();
-                                foreach (ContainerProperties containerProperties in containerResponse)
-                                {
-                                    Console.WriteLine($"{nameof(DumpContainers)}.ContainerName -> {containerProperties.Id}");
-                                }
-                            }
-                        }
-
-                        //await MdeEncryptionTests.client.GetDatabase(database.Id).DeleteAsync();
-                    }
-                }
-            }
         }
 
         [TestCleanup]
@@ -236,11 +208,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                         FeedResponse<ContainerProperties> containerResponse = await containerFeedIterator.ReadNextAsync();
                         foreach (ContainerProperties containerProperties in containerResponse)
                         {
-                            Console.WriteLine($"{nameof(TestCleanup)}.ContainerName -> {containerProperties.Id}");
-                            if (containerProperties.Id != MdeEncryptionTests.encryptionContainer.Id && containerProperties.Id != MdeEncryptionTests.encryptionContainerForChangeFeed.Id)
-                            {
-                                await MdeEncryptionTests.database.GetContainer(containerProperties.Id).DeleteContainerAsync();
-                            }
+                            Trace.TraceInformation($"{nameof(TestCleanup)}.ContainerName -> {containerProperties.Id}");
+                            await MdeEncryptionTests.database.GetContainer(containerProperties.Id).DeleteContainerAsync();
                         }
                     }
                 }
@@ -364,54 +333,61 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 KeyEncryptionKeyResolverName.AzureKeyVault,
                 TimeSpan.Zero);
 
-            Database database = await encryptionCosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
-
-            ClientEncryptionKeyResponse clientEncrytionKeyResponse = await database.CreateClientEncryptionKeyAsync(
-                    cekId,
-                    DataEncryptionAlgorithm.AeadAes256CbcHmacSha256,
-                    metadata);
-
-            Assert.AreEqual(HttpStatusCode.Created, clientEncrytionKeyResponse.StatusCode);
-
-            metadata = MdeEncryptionTests.CreateEncryptionKeyWrapMetadata(KeyEncryptionKeyResolverName.AzureKeyVault, "key1", "https://testkeyvault.vault.azure.net/keys/testkey/9101112");
-
-            clientEncrytionKeyResponse = await database.RewrapClientEncryptionKeyAsync(
-                  cekId,
-                  metadata);
-
-            Assert.AreEqual(HttpStatusCode.OK, clientEncrytionKeyResponse.StatusCode);
-
-            // complete key identifier not passed
-            metadata = MdeEncryptionTests.CreateEncryptionKeyWrapMetadata(KeyEncryptionKeyResolverName.AzureKeyVault, "key1", "https://testkeyvault.vault.azure.net/keys/testkey");
+            Database database = await encryptionCosmosClient.CreateDatabaseAsync(nameof(EncryptionCreateClientEncryptionKey)+Guid.NewGuid().ToString());
 
             try
             {
-                clientEncrytionKeyResponse = await database.CreateClientEncryptionKeyAsync(
-                   cekId,
-                   DataEncryptionAlgorithm.AeadAes256CbcHmacSha256,
-                   metadata);
+                ClientEncryptionKeyResponse clientEncrytionKeyResponse = await database.CreateClientEncryptionKeyAsync(
+                        cekId,
+                        DataEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                        metadata);
 
-                Assert.Fail("Key creation should have failed.");
+                Assert.AreEqual(HttpStatusCode.Created, clientEncrytionKeyResponse.StatusCode);
 
-            }
-            catch(Exception ex)
-            {
-                Assert.AreEqual(true, ex.Message.Contains("Invalid Key Vault URI"));
-            }
+                metadata = MdeEncryptionTests.CreateEncryptionKeyWrapMetadata(KeyEncryptionKeyResolverName.AzureKeyVault, "key1", "https://testkeyvault.vault.azure.net/keys/testkey/9101112");
 
-            // rewrap old key with new key vault uri without complete key identifier
-            try
-            {
                 clientEncrytionKeyResponse = await database.RewrapClientEncryptionKeyAsync(
-                  cekId,
-                  metadata);
+                      cekId,
+                      metadata);
 
-                Assert.Fail("Key rewrap should have failed.");
+                Assert.AreEqual(HttpStatusCode.OK, clientEncrytionKeyResponse.StatusCode);
 
+                // complete key identifier not passed
+                metadata = MdeEncryptionTests.CreateEncryptionKeyWrapMetadata(KeyEncryptionKeyResolverName.AzureKeyVault, "key1", "https://testkeyvault.vault.azure.net/keys/testkey");
+
+                try
+                {
+                    clientEncrytionKeyResponse = await database.CreateClientEncryptionKeyAsync(
+                       cekId,
+                       DataEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                       metadata);
+
+                    Assert.Fail("Key creation should have failed.");
+
+                }
+            catch(Exception ex)
+                {
+                    Assert.AreEqual(true, ex.Message.Contains("Invalid Key Vault URI"));
+                }
+
+                // rewrap old key with new key vault uri without complete key identifier
+                try
+                {
+                    clientEncrytionKeyResponse = await database.RewrapClientEncryptionKeyAsync(
+                      cekId,
+                      metadata);
+
+                    Assert.Fail("Key rewrap should have failed.");
+
+                }
+                catch (Exception ex)
+                {
+                    Assert.AreEqual(true, ex.Message.Contains("Invalid Key Vault URI"));
+                }
             }
-            catch (Exception ex)
+            finally
             {
-                Assert.AreEqual(true, ex.Message.Contains("Invalid Key Vault URI"));
+                await database.DeleteAsync();
             }
 
             encryptionCosmosClient.Dispose();
@@ -2763,6 +2739,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         [TestMethod]
         public async Task EncryptionStreamIteratorValidation()
         {
+            ContainerProperties properties = await MdeEncryptionTests.encryptionContainer.ReadContainerAsync();
+            Console.WriteLine($"Container: {System.Text.Json.JsonSerializer.Serialize(properties)}");
+
             await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
             await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
 
