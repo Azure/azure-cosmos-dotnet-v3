@@ -48,10 +48,18 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             getQueryFamily = LinqTestsCommon.GenerateFamilyCosmosData(testDb, out _);
         }
 
+        [ClassCleanup]
+        public async static Task Cleanup()
+        {
+            await SDK.EmulatorTests.Util.DeleteAllDatabasesAsync(client);
+        }
+
         [TestInitialize]
         public async Task TestInitialize()
         {
-            await SDK.EmulatorTests.Util.DeleteAllDatabasesAsync(LinqScalarFunctionBaselineTests.client, excludeDbIds: new string[] { LinqScalarFunctionBaselineTests.testDb.Id });
+            await SDK.EmulatorTests.Util.DeleteAllDatabasesAsync(LinqScalarFunctionBaselineTests.client, 
+                excludeDbIds: new string[] { LinqScalarFunctionBaselineTests.testDb.Id },
+                deleteContainersOnExcludedDbs: false);
         }
 
         [TestMethod]

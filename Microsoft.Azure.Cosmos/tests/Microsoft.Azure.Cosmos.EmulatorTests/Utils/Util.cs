@@ -131,7 +131,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             requestChargeHelper?.CompareRequestCharge(testName);
         }
 
-        internal static async Task DeleteAllDatabasesAsync(CosmosClient client, IEnumerable<string> excludeDbIds = null)
+        internal static async Task DeleteAllDatabasesAsync(CosmosClient client,
+            IEnumerable<string> excludeDbIds = null,
+            bool deleteContainersOnExcludedDbs = true)
         {
             if (client == null)
             {
@@ -150,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         {
                             await db.DeleteAsync();
                         }
-                        else
+                        else if(deleteContainersOnExcludedDbs)
                         {
                             await DeleteAllContainersAsync(db);
                         }
@@ -168,6 +170,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     FeedResponse<ContainerProperties> containerResponse = await containerfeedIterator.ReadNextAsync();
                     foreach (ContainerProperties container in containerResponse)
                     {
+                        System.Diagnostics.Trace.TraceInformation($"Deleting container {container.Id}");
                         await db.GetContainer(container.Id).DeleteContainerAsync();
                     }
                 }
