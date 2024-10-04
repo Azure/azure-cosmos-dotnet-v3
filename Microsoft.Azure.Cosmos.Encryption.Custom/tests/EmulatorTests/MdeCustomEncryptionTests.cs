@@ -2601,6 +2601,7 @@ cancellationToken) =>
             dualDekProvider = new CosmosDataEncryptionKeyProvider(legacytestKeyWrapProvider, testKeyStoreProvider);
             await dualDekProvider.InitializeAsync(database, keyContainer.Id);
 
+            _ = await CreateLegacyDekAsync(MdeCustomEncryptionTests.dualDekProvider, MdeCustomEncryptionTests.legacydekId);
             encryptorWithDualWrapProvider = new TestEncryptor(dualDekProvider);
         }
 
