@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Linq;
-    using System.Text;
 
     [TestClass]
     public class AeadAes256CbcHmac256AlgorithmTests
