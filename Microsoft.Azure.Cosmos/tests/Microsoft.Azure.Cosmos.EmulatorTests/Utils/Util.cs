@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             requestChargeHelper?.CompareRequestCharge(testName);
         }
 
-        internal static async Task DumpCollections(CosmosClient client)
+        internal static async Task ResetEmulatorAsync(CosmosClient client)
         {
             using (FeedIterator<DatabaseProperties> feedIterator = client.GetDatabaseQueryIterator<DatabaseProperties>())
             {
@@ -140,17 +140,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     FeedResponse<DatabaseProperties> response = await feedIterator.ReadNextAsync();
                     foreach (DatabaseProperties database in response)
                     {
-                        Console.WriteLine($"{nameof(DumpCollections)}.DatabaseId -> {database.Id}");
-                        using (FeedIterator<ContainerProperties> containerFeedIterator = client.GetDatabase(database.Id).GetContainerQueryIterator<ContainerProperties>())
+                        if (reset)
                         {
-                            while (feedIterator.HasMoreResults)
-                            {
-                                FeedResponse<ContainerProperties> containerResponse = await containerFeedIterator.ReadNextAsync();
-                                foreach (ContainerProperties containerProperties in containerResponse)
-                                {
-                                    Console.WriteLine($"{nameof(DumpCollections)}.ContainerName -> {containerProperties.Id}");
-                                }
-                            }
+                            await client.GetDatabase(database.Id).DeleteAsync();
                         }
                     }
                 }
