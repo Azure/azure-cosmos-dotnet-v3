@@ -23,4 +23,6 @@ jobs:
     VmImage: $(VmImage)
     MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
     IncludeEncryption: true
-    IncludePerformance: false
+    IncludePerformance: true
+    IncludeCoverage: true
+
