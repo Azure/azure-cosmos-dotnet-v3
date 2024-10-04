@@ -38,7 +38,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         private static ContainerProperties containerProperties;
         private static ClientEncryptionPolicy clientEncryptionPolicy;
 
-        public static async Task InitializeContainers()
+        [ClassInitialize]
+        public static async Task InitializeContainers(TestContext _)
         {
             MdeEncryptionTests.client = TestCommon.CreateCosmosClient();
             testKeyEncryptionKeyResolver = new TestKeyEncryptionKeyResolver();
@@ -185,13 +186,42 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         [TestInitialize]
         public async Task TestInitialize()
         {
-            await MdeEncryptionTests.InitializeContainers();
+            // await MdeEncryptionTests.InitializeContainers();
 
             // Reset static cache TTL
             Microsoft.Data.Encryption.Cryptography.ProtectedDataEncryptionKey.TimeToLive = TimeSpan.FromHours(2);
             // flag to disable https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3951
             // need to be removed after the fix
             Environment.SetEnvironmentVariable("AZURE_COSMOS_REPLICA_VALIDATION_ENABLED", "False");
+            await this.DumpContainers();
+        }
+
+        public async Task DumpContainers()
+        {
+            using (FeedIterator<DatabaseProperties> feedIterator = MdeEncryptionTests.client.GetDatabaseQueryIterator<DatabaseProperties>())
+            {
+                while (feedIterator.HasMoreResults)
+                {
+                    FeedResponse<DatabaseProperties> response = await feedIterator.ReadNextAsync();
+                    foreach (DatabaseProperties database in response)
+                    {
+                        Console.WriteLine($"{nameof(DumpContainers)}.DatabaseId -> {database.Id}");
+                        using (FeedIterator<ContainerProperties> containerFeedIterator = MdeEncryptionTests.client.GetDatabase(database.Id).GetContainerQueryIterator<ContainerProperties>())
+                        {
+                            while (feedIterator.HasMoreResults)
+                            {
+                                FeedResponse<ContainerProperties> containerResponse = await containerFeedIterator.ReadNextAsync();
+                                foreach (ContainerProperties containerProperties in containerResponse)
+                                {
+                                    Console.WriteLine($"{nameof(DumpContainers)}.ContainerName -> {containerProperties.Id}");
+                                }
+                            }
+                        }
+
+                        //await MdeEncryptionTests.client.GetDatabase(database.Id).DeleteAsync();
+                    }
+                }
+            }
         }
 
         [TestCleanup]
@@ -199,16 +229,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
             if (MdeEncryptionTests.database != null)
             {
-                await MdeEncryptionTests.database.DeleteAsync();
-
-                MdeEncryptionTests.client = null;
-                MdeEncryptionTests.encryptionCosmosClient = null;
-                MdeEncryptionTests.database = null;
-                MdeEncryptionTests.encryptionContainer = null;
-                MdeEncryptionTests.encryptionContainerForChangeFeed = null;
-                MdeEncryptionTests.testKeyEncryptionKeyResolver = null;
-                MdeEncryptionTests.containerProperties = null;
-                MdeEncryptionTests.clientEncryptionPolicy = null;
+                using (FeedIterator<ContainerProperties> containerFeedIterator = MdeEncryptionTests.database.GetContainerQueryIterator<ContainerProperties>())
+                {
+                    while (containerFeedIterator.HasMoreResults)
+                    {
+                        FeedResponse<ContainerProperties> containerResponse = await containerFeedIterator.ReadNextAsync();
+                        foreach (ContainerProperties containerProperties in containerResponse)
+                        {
+                            Console.WriteLine($"{nameof(TestCleanup)}.ContainerName -> {containerProperties.Id}");
+                            if (containerProperties.Id != MdeEncryptionTests.encryptionContainer.Id && containerProperties.Id != MdeEncryptionTests.encryptionContainerForChangeFeed.Id)
+                            {
+                                await MdeEncryptionTests.database.GetContainer(containerProperties.Id).DeleteContainerAsync();
+                            }
+                        }
+                    }
+                }
             }
         }
 
