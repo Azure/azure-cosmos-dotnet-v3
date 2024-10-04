@@ -41,6 +41,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await database.CreateContainerIfNotExistsAsync(ContainerId, "/pk");
         }
 
+        [TestInitialize]
+        public async Task TestInitialize()
+        {
+            await Util.ResetEmulatorAsync(CosmosBasicQueryTests.DirectCosmosClient, excludeDbIds: new string[] { CosmosBasicQueryTests.DatabaseId });
+        }
+
         [ClassCleanup]
         public static async Task TestCleanup()
         {
