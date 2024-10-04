@@ -133,19 +133,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal static async Task ResetEmulatorAsync(CosmosClient client, IEnumerable<string> excludeDbIds = null)
         {
-            if (client != null)
+            if (client == null)
             {
-                using (FeedIterator<DatabaseProperties> feedIterator = client.GetDatabaseQueryIterator<DatabaseProperties>())
+                return;
+            }
+
+            using (FeedIterator<DatabaseProperties> feedIterator = client.GetDatabaseQueryIterator<DatabaseProperties>())
+            {
+                while (feedIterator.HasMoreResults)
                 {
-                    while (feedIterator.HasMoreResults)
+                    FeedResponse<DatabaseProperties> response = await feedIterator.ReadNextAsync();
+                    foreach (DatabaseProperties database in response)
                     {
-                        FeedResponse<DatabaseProperties> response = await feedIterator.ReadNextAsync();
-                        foreach (DatabaseProperties database in response)
+                        if (excludeDbIds == null || !excludeDbIds.Contains(database.Id))
                         {
-                            if (excludeDbIds == null || !excludeDbIds.Contains(database.Id))
-                            {
-                                await client.GetDatabase(database.Id).DeleteAsync();
-                            }
+                            await client.GetDatabase(database.Id).DeleteAsync();
                         }
                     }
                 }
