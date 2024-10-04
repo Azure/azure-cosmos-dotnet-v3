@@ -762,6 +762,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             throw new NotImplementedException();
         }
+
+        public override Task<bool> IsFeedRangePartOfAsync(
+            Cosmos.FeedRange x,
+            Cosmos.FeedRange y,
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
 #endif
         /// <summary>
         /// This function handles the scenario where a container is deleted(say from different Client) and recreated with same Id but with different client encryption policy.
