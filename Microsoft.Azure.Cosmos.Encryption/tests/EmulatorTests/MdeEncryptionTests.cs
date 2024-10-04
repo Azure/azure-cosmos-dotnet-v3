@@ -41,7 +41,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         private static ClientEncryptionPolicy clientEncryptionPolicy;
 
         [ClassInitialize]
-        public static async Task InitializeContainers(TestContext _)
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "The ClassInitialize method takes a single parameter of type TestContext.")]
+        public static async Task ClassInitialize(TestContext context)
         {
             MdeEncryptionTests.client = TestCommon.CreateCosmosClient();
             testKeyEncryptionKeyResolver = new TestKeyEncryptionKeyResolver();
@@ -2739,9 +2740,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         [TestMethod]
         public async Task EncryptionStreamIteratorValidation()
         {
-            ContainerProperties properties = await MdeEncryptionTests.encryptionContainer.ReadContainerAsync();
-            Console.WriteLine($"Container: {System.Text.Json.JsonSerializer.Serialize(properties)}");
-
             await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
             await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
 
