@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             requestChargeHelper?.CompareRequestCharge(testName);
         }
 
-        internal static async Task ResetEmulatorAsync(CosmosClient client, IEnumerable<string> excludeDbIds)
+        internal static async Task ResetEmulatorAsync(CosmosClient client, IEnumerable<string> excludeDbIds = null)
         {
             if (client != null)
             {
