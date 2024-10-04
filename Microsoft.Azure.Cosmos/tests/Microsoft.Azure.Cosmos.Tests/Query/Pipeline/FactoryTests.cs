@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 partitionKey: null,
                 containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
                 queryInfo: new QueryInfo() { },
+                hybridSearchQueryInfo: null,
                 queryPaginationOptions: new QueryExecutionOptions(pageSizeHint: 10),
                 maxConcurrency: 10,
                 requestContinuationToken: default); ;

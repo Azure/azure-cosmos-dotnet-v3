@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Threading;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -31,8 +30,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             IReadOnlyList<FeedRangeEpk> targetRanges,
             PartitionKey? partitionKey,
             QueryInfo queryInfo,
+            HybridSearchQueryInfo hybridSearchQueryInfo,
             QueryExecutionOptions queryPaginationOptions,
             ContainerQueryProperties containerQueryProperties,
+            IReadOnlyList<FeedRangeEpk> allRanges,
             int maxConcurrency,
             CosmosElement requestContinuationToken)
         {
@@ -56,15 +57,50 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                 throw new ArgumentException($"{nameof(targetRanges)} must not be empty.");
             }
 
-            if (queryInfo == null)
+            if (queryInfo == null && hybridSearchQueryInfo == null)
             {
-                throw new ArgumentNullException(nameof(queryInfo));
+                throw new ArgumentNullException($"{nameof(queryInfo)} and {nameof(hybridSearchQueryInfo)} cannot both be null.");
             }
 
-            sqlQuerySpec = !string.IsNullOrEmpty(queryInfo.RewrittenQuery) ? new SqlQuerySpec(queryInfo.RewrittenQuery, sqlQuerySpec.Parameters) : sqlQuerySpec;
+            if (queryInfo != null && hybridSearchQueryInfo != null)
+            {
+                throw new ArgumentException($"{nameof(queryInfo)} and {nameof(hybridSearchQueryInfo)} cannot both be non-null.");
+            }
 
-            PrefetchPolicy prefetchPolicy = DeterminePrefetchPolicy(queryInfo);
+            if (queryInfo != null)
+            {
+                sqlQuerySpec = !string.IsNullOrEmpty(queryInfo.RewrittenQuery) ? new SqlQuerySpec(queryInfo.RewrittenQuery, sqlQuerySpec.Parameters) : sqlQuerySpec;
 
+                return MonadicCreate(
+                    documentContainer: documentContainer,
+                    sqlQuerySpec: sqlQuerySpec,
+                    targetRanges: targetRanges,
+                    partitionKey: partitionKey,
+                    queryInfo: queryInfo,
+                    prefetchPolicy: DeterminePrefetchPolicy(queryInfo),
+                    queryPaginationOptions: queryPaginationOptions,
+                    containerQueryProperties: containerQueryProperties,
+                    maxConcurrency: maxConcurrency,
+                    requestContinuationToken: requestContinuationToken);
+            }
+            else
+            {
+                return default;
+            }
+        }
+
+        internal static TryCatch<IQueryPipelineStage> MonadicCreate(
+            IDocumentContainer documentContainer,
+            SqlQuerySpec sqlQuerySpec,
+            IReadOnlyList<FeedRangeEpk> targetRanges,
+            PartitionKey? partitionKey,
+            QueryInfo queryInfo,
+            PrefetchPolicy prefetchPolicy,
+            QueryExecutionOptions queryPaginationOptions,
+            ContainerQueryProperties containerQueryProperties,
+            int maxConcurrency,
+            CosmosElement requestContinuationToken)
+        {
             MonadicCreatePipelineStage monadicCreatePipelineStage;
             if (queryInfo.HasOrderBy)
             {

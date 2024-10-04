@@ -754,6 +754,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
                 partitionKey: null,
                 GetQueryPlan(query),
+                hybridSearchQueryInfo: null,
                 new QueryExecutionOptions(pageSizeHint: pageSize),
                 containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
                 maxConcurrency: 10,
