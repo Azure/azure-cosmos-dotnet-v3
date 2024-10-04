@@ -131,6 +131,32 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             requestChargeHelper?.CompareRequestCharge(testName);
         }
 
+        internal static async Task DumpCollections(CosmosClient client)
+        {
+            using (FeedIterator<DatabaseProperties> feedIterator = client.GetDatabaseQueryIterator<DatabaseProperties>())
+            {
+                while (feedIterator.HasMoreResults)
+                {
+                    FeedResponse<DatabaseProperties> response = await feedIterator.ReadNextAsync();
+                    foreach (DatabaseProperties database in response)
+                    {
+                        Console.WriteLine($"{nameof(DumpCollections)}.DatabaseId -> {database.Id}");
+                        using (FeedIterator<ContainerProperties> containerFeedIterator = client.GetDatabase(database.Id).GetContainerQueryIterator<ContainerProperties>())
+                        {
+                            while (feedIterator.HasMoreResults)
+                            {
+                                FeedResponse<ContainerProperties> containerResponse = await containerFeedIterator.ReadNextAsync();
+                                foreach (ContainerProperties containerProperties in containerResponse)
+                                {
+                                    Console.WriteLine($"{nameof(DumpCollections)}.ContainerName -> {containerProperties.Id}");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         /// <summary>
         /// Helper function to run a test scenario for a random client of type DocumentClientType.
         /// </summary>
