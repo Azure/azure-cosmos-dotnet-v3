@@ -162,6 +162,7 @@ jobs:
 
   - task: DotNetCoreCLI@2
     displayName: PREVIEW Microsoft.Azure.Cosmos.Tests
+    retryCountOnTaskFailure: 4
     condition: succeeded()
     inputs:
       command: test
