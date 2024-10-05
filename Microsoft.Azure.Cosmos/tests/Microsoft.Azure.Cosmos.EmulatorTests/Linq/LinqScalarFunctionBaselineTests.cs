@@ -34,6 +34,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         public async static Task Initialize(TestContext textContext)
         {
             client = TestCommon.CreateCosmosClient(true);
+            await SDK.EmulatorTests.Util.DeleteAllDatabasesAsync(client);
 
             // Set a callback to get the handle of the last executed query to do the verification
             // This is neede because aggregate queries return type is a scalar so it can't be used 
@@ -45,6 +46,20 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             getQuery = LinqTestsCommon.GenerateSimpleCosmosData(testDb, useRandomData: false);
             getQueryFamily = LinqTestsCommon.GenerateFamilyCosmosData(testDb, out _);
+        }
+
+        [ClassCleanup]
+        public async static Task Cleanup()
+        {
+            await SDK.EmulatorTests.Util.DeleteAllDatabasesAsync(client);
+        }
+
+        [TestInitialize]
+        public async Task TestInitialize()
+        {
+            await SDK.EmulatorTests.Util.DeleteAllDatabasesAsync(LinqScalarFunctionBaselineTests.client, 
+                excludeDbIds: new string[] { LinqScalarFunctionBaselineTests.testDb.Id },
+                deleteContainersOnExcludedDbs: false);
         }
 
         [TestMethod]
