@@ -139,7 +139,7 @@ jobs:
     inputs:
       command: test
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/*.csproj'
-      arguments: ${{ parameters.Arguments }} --filter "TestCategory!=Flaky" --configuration ${{ parameters.BuildConfiguration }} /p:IsPreview=true /p:OS=${{ parameters.OS }}
+      arguments: ${{ parameters.Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:IsPreview=true /p:OS=${{ parameters.OS }}
       publishTestResults: true
       nugetConfigPath: NuGet.config
       testRunTitle: Microsoft.Azure.Cosmos.Tests
@@ -166,7 +166,7 @@ jobs:
     inputs:
       command: test
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/*.csproj'
-      arguments: ${{ parameters.Arguments }} --filter "TestCategory=Flaky" --configuration ${{ parameters.BuildConfiguration }} /p:IsPreview=true /p:OS=${{ parameters.OS }}
+      arguments: --filter "TestCategory=Flaky" --verbosity normal --configuration ${{ parameters.BuildConfiguration }} /p:IsPreview=true /p:OS=${{ parameters.OS }}
       publishTestResults: true
       nugetConfigPath: NuGet.config
       testRunTitle: Microsoft.Azure.Cosmos.Tests
