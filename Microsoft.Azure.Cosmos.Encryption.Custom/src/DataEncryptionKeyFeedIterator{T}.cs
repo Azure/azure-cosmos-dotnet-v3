@@ -20,8 +20,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             DataEncryptionKeyFeedIterator feedIterator,
             CosmosResponseFactory responseFactory)
         {
-            this.feedIterator = feedIterator;
-            this.responseFactory = responseFactory;
+            this.feedIterator = feedIterator ?? throw new ArgumentNullException(nameof(feedIterator));
+            this.responseFactory = responseFactory ?? throw new ArgumentNullException(nameof(responseFactory));
         }
 
         public override bool HasMoreResults => this.feedIterator.HasMoreResults;
