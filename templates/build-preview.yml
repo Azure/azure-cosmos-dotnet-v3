@@ -145,7 +145,7 @@ jobs:
       testRunTitle: Microsoft.Azure.Cosmos.Tests
 
 - job:
-  displayName: Preview Tests ${{ parameters.BuildConfiguration }}
+  displayName: Preview Tests ${{ parameters.BuildConfiguration }} Flaky
   pool:
     name: 'OneES'
 
