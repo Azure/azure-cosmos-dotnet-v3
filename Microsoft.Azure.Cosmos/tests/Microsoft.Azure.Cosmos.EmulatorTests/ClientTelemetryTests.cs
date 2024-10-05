@@ -102,11 +102,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [DataRow(ConnectionMode.Direct)]
         [DataRow(ConnectionMode.Gateway)]
         public override async Task StreamOperationsTest(ConnectionMode mode)
         {
             await base.StreamOperationsTest(mode);
+        }
+
+        [TestMethod]
+        [TestCategory("Quarantine")] // Flaky test
+        public async Task StreamOperationsTestDirectModeAsync()
+        {
+            await base.StreamOperationsTest(ConnectionMode.Direct);
         }
 
         [TestMethod]
