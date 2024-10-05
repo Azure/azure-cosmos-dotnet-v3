@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     /// If you are making changes in this file please make sure you are adding similar test in <see cref="ClientTelemetryReleaseTests"/> also.
     /// </summary>
     [TestClass]
+    [TestCategory("Flaky")]
     [TestCategory("ClientTelemetryEmulator")]
     public class ClientTelemetryTests : ClientTelemetryTestsBase
     {
@@ -102,17 +103,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [DataRow(ConnectionMode.Direct)]
         [DataRow(ConnectionMode.Gateway)]
         public override async Task StreamOperationsTest(ConnectionMode mode)
         {
             await base.StreamOperationsTest(mode);
-        }
-
-        [TestMethod]
-        [TestCategory("Quarantine")] // Flaky test
-        public async Task StreamOperationsTestDirectModeAsync()
-        {
-            await base.StreamOperationsTest(ConnectionMode.Direct);
         }
 
         [TestMethod]
