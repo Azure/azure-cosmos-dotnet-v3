@@ -1,4 +1,8 @@
-﻿namespace Microsoft.Azure.Cosmos.Encryption.Custom
+﻿// ------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// ------------------------------------------------------------
+
+namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
     using System.Buffers;
     using Newtonsoft.Json;
@@ -7,7 +11,9 @@
     {
         public static readonly JsonArrayPool Instance = new ();
 
-        private JsonArrayPool() { }
+        private JsonArrayPool()
+        {
+        }
 
         public char[] Rent(int minimumLength)
         {
