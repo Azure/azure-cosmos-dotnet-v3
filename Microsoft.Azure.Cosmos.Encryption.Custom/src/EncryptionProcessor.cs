@@ -55,26 +55,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 return input;
             }
 
-            if (!encryptionOptions.PathsToEncrypt.Distinct().SequenceEqual(encryptionOptions.PathsToEncrypt))
+            if (encryptionOptions.PathsToEncrypt.Distinct().Count() != encryptionOptions.PathsToEncrypt.Count())
             {
                 throw new InvalidOperationException("Duplicate paths in PathsToEncrypt passed via EncryptionOptions.");
             }
 
             foreach (string path in encryptionOptions.PathsToEncrypt)
             {
-                if (string.IsNullOrWhiteSpace(path) || path[0] != '/' || path.LastIndexOf('/') != 0)
+                if (string.IsNullOrWhiteSpace(path) || path[0] != '/' || path.IndexOf('/', 1) != -1)
                 {
                     throw new InvalidOperationException($"Invalid path {path ?? string.Empty}, {nameof(encryptionOptions.PathsToEncrypt)}");
                 }
 
-                if (string.Equals(path.Substring(1), "id"))
+                if (path.AsSpan(1).Equals("id".AsSpan(), StringComparison.Ordinal))
                 {
                     throw new InvalidOperationException($"{nameof(encryptionOptions.PathsToEncrypt)} includes a invalid path: '{path}'.");
                 }
             }
 
             JObject itemJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(input);
-            List<string> pathsEncrypted = new List<string>();
+            List<string> pathsEncrypted = new List<string>(encryptionOptions.PathsToEncrypt.Count());
             EncryptionProperties encryptionProperties = null;
             byte[] plainText = null;
             byte[] cipherText = null;
@@ -99,19 +99,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
                         (typeMarker, plainText) = EncryptionProcessor.Serialize(propertyValue);
 
-                        cipherText = await encryptor.EncryptAsync(
-                            plainText,
-                            encryptionOptions.DataEncryptionKeyId,
-                            encryptionOptions.EncryptionAlgorithm);
+                        DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionOptions.DataEncryptionKeyId, encryptionOptions.EncryptionAlgorithm);
 
-                        if (cipherText == null)
+                        int cipherTextLength = encryptionKey.GetEncryptByteCount(plainText.Length);
+
+                        byte[] cipherTextWithTypeMarker = new byte[cipherTextLength + 1];
+                        cipherTextWithTypeMarker[0] = (byte)typeMarker;
+
+                        int encryptedBytesCount = encryptionKey.EncryptData(
+                            plainText,
+                            plainTextOffset: 0,
+                            plainTextLength: plainText.Length,
+                            cipherTextWithTypeMarker,
+                            outputOffset: 1);
+
+                        if (encryptedBytesCount < 0)
                         {
                             throw new InvalidOperationException($"{nameof(Encryptor)} returned null cipherText from {nameof(EncryptAsync)}.");
                         }
 
-                        byte[] cipherTextWithTypeMarker = new byte[cipherText.Length + 1];
-                        cipherTextWithTypeMarker[0] = (byte)typeMarker;
-                        Buffer.BlockCopy(cipherText, 0, cipherTextWithTypeMarker, 1, cipherText.Length);
                         itemJObj[propertyName] = cipherTextWithTypeMarker;
                         pathsEncrypted.Add(pathToEncrypt);
                     }
@@ -347,13 +353,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 cipherText,
                 encryptionProperties.DataEncryptionKeyId,
                 encryptionProperties.EncryptionAlgorithm,
-                cancellationToken);
-
-            if (plainText == null)
-            {
-                throw new InvalidOperationException($"{nameof(Encryptor)} returned null plainText from {nameof(DecryptAsync)}.");
-            }
-
+                cancellationToken) ?? throw new InvalidOperationException($"{nameof(Encryptor)} returned null plainText from {nameof(DecryptAsync)}.");
             return plainText;
         }
 
@@ -373,18 +373,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 encryptionProperties.EncryptedData,
                 encryptionProperties.DataEncryptionKeyId,
                 encryptionProperties.EncryptionAlgorithm,
-                cancellationToken);
-
-            if (plainText == null)
-            {
-                throw new InvalidOperationException($"{nameof(Encryptor)} returned null plainText from {nameof(DecryptAsync)}.");
-            }
-
+                cancellationToken) ?? throw new InvalidOperationException($"{nameof(Encryptor)} returned null plainText from {nameof(DecryptAsync)}.");
             JObject plainTextJObj;
             using (MemoryStream memoryStream = new MemoryStream(plainText))
             using (StreamReader streamReader = new StreamReader(memoryStream))
             using (JsonTextReader jsonTextReader = new JsonTextReader(streamReader))
             {
+                jsonTextReader.ArrayPool = JsonArrayPool.Instance;
                 plainTextJObj = JObject.Load(jsonTextReader);
             }
 
@@ -449,6 +444,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             using (StreamReader sr = new StreamReader(input, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
             using (JsonTextReader jsonTextReader = new JsonTextReader(sr))
             {
+                jsonTextReader.ArrayPool = JsonArrayPool.Instance;
                 JsonSerializerSettings jsonSerializerSettings = new JsonSerializerSettings()
                 {
                     DateParseHandling = DateParseHandling.None,

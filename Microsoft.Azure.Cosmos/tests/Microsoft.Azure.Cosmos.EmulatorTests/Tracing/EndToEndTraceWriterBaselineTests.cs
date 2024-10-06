@@ -481,6 +481,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
         }
 
         [TestMethod]
+        [TestCategory("Flaky")]
         public async Task QueryAsync()
         {
             List<Input> inputs = new List<Input>();

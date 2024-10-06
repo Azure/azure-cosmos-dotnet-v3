@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                            isStable: false),
             isThreadSafe: true);
 
-        public static OpenTelemetryCoreRecorder CreateRecorder(string operationName,
+        public static OpenTelemetryCoreRecorder CreateRecorder(Func<string> getOperationName,
             string containerName,
             string databaseName,
             Documents.OperationType operationType,
@@ -37,6 +37,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             OpenTelemetryCoreRecorder openTelemetryRecorder = default;
             if (clientContext is { ClientOptions.CosmosClientTelemetryOptions.DisableDistributedTracing: false })
             {
+                string operationName = getOperationName();
+
+                // Trace without operation name is not valid trace to create
+                if (string.IsNullOrEmpty(operationName))
+                {
+                    return openTelemetryRecorder;
+                }
+
                 // If there is no source then it will return default otherwise a valid diagnostic scope
                 DiagnosticScope scope = LazyScopeFactory.Value.CreateScope(name: $"{OpenTelemetryAttributeKeys.OperationPrefix}.{operationName}",
                                  kind: clientContext.ClientOptions.ConnectionMode == ConnectionMode.Gateway ? ActivityKind.Internal : ActivityKind.Client);
