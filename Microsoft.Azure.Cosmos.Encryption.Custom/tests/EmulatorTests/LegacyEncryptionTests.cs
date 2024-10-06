@@ -922,7 +922,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await LegacyEncryptionTests.VerifyItemByReadAsync(LegacyEncryptionTests.itemContainer, doc1ToReplace);
         }
 
-         [TestMethod]
+        [TestMethod]
         public async Task VerifyDekOperationWithSystemTextSerializer()
         {
             System.Text.Json.JsonSerializerOptions jsonSerializerOptions = new System.Text.Json.JsonSerializerOptions()
@@ -1037,6 +1037,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 isResultOrderExpected: false,
                 "SELECT * from c",
                 itemCountInPage: 3);
+
+
+            //clean up
+            FeedIterator<TestDocSystemText> iterator = containerWithCosmosSystemTextJsonSerializer.GetItemQueryIterator<TestDocSystemText>();
+
+            while (iterator.HasMoreResults)
+            {
+                FeedResponse<TestDocSystemText> feedResponse = await iterator.ReadNextAsync();
+                foreach (TestDocSystemText testDoc in feedResponse)
+                {
+                    if (testDoc.Id == null)
+                    {
+                        continue;
+                    }
+                    await containerWithCosmosSystemTextJsonSerializer.DeleteItemAsync<TestDocSystemText>(testDoc.Id, new PartitionKey(testDoc.PartitionKey));
+                }
+            }
         }
 
         [TestMethod]
@@ -1750,7 +1767,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     throw new InvalidOperationException($"Null {nameof(DataEncryptionKey)} returned.");
                 }
 
-                DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync(
+                DataEncryptionKey dek = await this.GetEncryptionKeyAsync(
                     dataEncryptionKeyId,
                     encryptionAlgorithm,
                     cancellationToken);
@@ -1769,12 +1786,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 string encryptionAlgorithm,
                 CancellationToken cancellationToken = default)
             {
-                DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync(
+                DataEncryptionKey dek = await this.GetEncryptionKeyAsync(
                     dataEncryptionKeyId,
                     encryptionAlgorithm,
                     cancellationToken);
 
                 return dek.EncryptData(plainText);
+            }
+
+            public override async Task<DataEncryptionKey> GetEncryptionKeyAsync(string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
+            {
+                return await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync(
+                    dataEncryptionKeyId,
+                    encryptionAlgorithm,
+                    cancellationToken);
             }
         }        
 

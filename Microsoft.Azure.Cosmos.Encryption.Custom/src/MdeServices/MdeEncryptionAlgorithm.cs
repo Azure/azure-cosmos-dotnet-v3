@@ -12,6 +12,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// </summary>
     internal sealed class MdeEncryptionAlgorithm : DataEncryptionKey
     {
+        private const byte Version = 1;
+
         private readonly AeadAes256CbcHmac256EncryptionAlgorithm mdeAeadAes256CbcHmac256EncryptionAlgorithm;
 
         private readonly byte[] unwrapKey;
@@ -65,7 +67,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         dekProperties.WrappedDataEncryptionKey);
                 this.mdeAeadAes256CbcHmac256EncryptionAlgorithm = AeadAes256CbcHmac256EncryptionAlgorithm.GetOrCreate(
                     protectedDataEncryptionKey,
-                    encryptionType);
+                    encryptionType,
+                    Version);
             }
             else
             {
@@ -80,11 +83,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 this.RawKey = rawKey;
                 this.mdeAeadAes256CbcHmac256EncryptionAlgorithm = AeadAes256CbcHmac256EncryptionAlgorithm.GetOrCreate(
                     plaintextDataEncryptionKey,
-                    encryptionType);
-
+                    encryptionType,
+                    Version);
             }
-
-
         }
 
         /// <summary>
@@ -103,7 +104,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             this.RawKey = rawkey;
             this.mdeAeadAes256CbcHmac256EncryptionAlgorithm = AeadAes256CbcHmac256EncryptionAlgorithm.GetOrCreate(
                 dataEncryptionKey,
-                encryptionType);
+                encryptionType,
+                Version);
         }
 
         /// <summary>
@@ -124,6 +126,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public override byte[] DecryptData(byte[] cipherText)
         {
             return this.mdeAeadAes256CbcHmac256EncryptionAlgorithm.Decrypt(cipherText);
+        }
+
+        public override int EncryptData(byte[] plainText, int plainTextOffset, int plainTextLength, byte[] output, int outputOffset)
+        {
+            return this.mdeAeadAes256CbcHmac256EncryptionAlgorithm.Encrypt(plainText, plainTextOffset, plainTextLength, output, outputOffset);
+        }
+
+        public override int DecryptData(byte[] cipherText, int cipherTextOffset, int cipherTextLength, byte[] output, int outputOffset)
+        {
+            return this.mdeAeadAes256CbcHmac256EncryptionAlgorithm.Decrypt(cipherText, cipherTextOffset, cipherTextLength, output, outputOffset);
+        }
+
+        public override int GetEncryptByteCount(int plainTextLength)
+        {
+            return this.mdeAeadAes256CbcHmac256EncryptionAlgorithm.GetEncryptByteCount(plainTextLength);
+        }
+
+        public override int GetDecryptByteCount(int cipherTextLength)
+        {
+            return this.mdeAeadAes256CbcHmac256EncryptionAlgorithm.GetDecryptByteCount(cipherTextLength);
         }
     }
 }

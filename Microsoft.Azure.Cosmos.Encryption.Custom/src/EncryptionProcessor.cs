@@ -99,19 +99,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
                         (typeMarker, plainText) = EncryptionProcessor.Serialize(propertyValue);
 
-                        cipherText = await encryptor.EncryptAsync(
-                            plainText,
-                            encryptionOptions.DataEncryptionKeyId,
-                            encryptionOptions.EncryptionAlgorithm);
+                        DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionOptions.DataEncryptionKeyId, encryptionOptions.EncryptionAlgorithm);
 
-                        if (cipherText == null)
+                        int cipherTextLength = encryptionKey.GetEncryptByteCount(plainText.Length);
+
+                        byte[] cipherTextWithTypeMarker = new byte[cipherTextLength + 1];
+                        cipherTextWithTypeMarker[0] = (byte)typeMarker;
+
+                        int encryptedBytesCount = encryptionKey.EncryptData(
+                            plainText,
+                            plainTextOffset: 0,
+                            plainTextLength: plainText.Length,
+                            cipherTextWithTypeMarker,
+                            outputOffset: 1);
+
+                        if (encryptedBytesCount < 0)
                         {
                             throw new InvalidOperationException($"{nameof(Encryptor)} returned null cipherText from {nameof(EncryptAsync)}.");
                         }
 
-                        byte[] cipherTextWithTypeMarker = new byte[cipherText.Length + 1];
-                        cipherTextWithTypeMarker[0] = (byte)typeMarker;
-                        Buffer.BlockCopy(cipherText, 0, cipherTextWithTypeMarker, 1, cipherText.Length);
                         itemJObj[propertyName] = cipherTextWithTypeMarker;
                         pathsEncrypted.Add(pathToEncrypt);
                     }
