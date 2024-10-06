@@ -171,6 +171,13 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public DedicatedGatewayRequestOptions DedicatedGatewayRequestOptions { get; set; }
 
+        /// <summary>
+        /// Enables printing query in Traces db.query.text attribute. By default, query is not printed.
+        /// Users have the option to enable printing parameterized or all queries, 
+        /// but has to beware that customer data may be shown when the later option is chosen. It's the user's responsibility to sanitize the queries if necessary.
+        /// </summary>
+        public QueryTextMode QueryTextMode { get; set; } = QueryTextMode.None;
+
         internal CosmosElement CosmosElementContinuationToken { get; set; }
 
         internal string StartId { get; set; }

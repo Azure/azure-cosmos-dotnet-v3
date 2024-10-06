@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// </summary>
     internal static class EncryptionProcessor
     {
-        private static readonly SqlSerializerFactory SqlSerializerFactory = new SqlSerializerFactory();
+        private static readonly SqlSerializerFactory SqlSerializerFactory = new ();
 
         // UTF-8 encoding.
         private static readonly SqlVarCharSerializer SqlVarCharSerializer = new SqlVarCharSerializer(size: -1, codePageCharacterEncoding: 65001);
@@ -30,12 +30,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         private static readonly SqlFloatSerializer SqlDoubleSerializer = new SqlFloatSerializer();
         private static readonly SqlBigIntSerializer SqlLongSerializer = new SqlBigIntSerializer();
 
-        private static readonly JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings()
+        private static readonly JsonSerializerSettings JsonSerializerSettings = new ()
         {
             DateParseHandling = DateParseHandling.None,
         };
 
-        internal static readonly CosmosJsonDotNetSerializer BaseSerializer = new CosmosJsonDotNetSerializer(JsonSerializerSettings);
+        internal static readonly CosmosJsonDotNetSerializer BaseSerializer = new (JsonSerializerSettings);
 
         /// <remarks>
         /// If there isn't any PathsToEncrypt, input stream will be returned without any modification.
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
 
             JObject itemJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(input);
-            List<string> pathsEncrypted = new List<string>(encryptionOptions.PathsToEncrypt.Count());
+            List<string> pathsEncrypted = new (encryptionOptions.PathsToEncrypt.Count());
             EncryptionProperties encryptionProperties = null;
             byte[] plainText = null;
             byte[] cipherText = null;
@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
                 case CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized:
 
-                    JObject toEncryptJObj = new JObject();
+                    JObject toEncryptJObj = new ();
 
                     foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
                     {
@@ -187,6 +187,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 default:
                     throw new NotSupportedException($"Encryption Algorithm : {encryptionOptions.EncryptionAlgorithm} is not supported.");
             }
+#pragma warning restore CS0618 // Type or member is obsolete
 
             itemJObj.Add(Constants.EncryptedInfo, JObject.FromObject(encryptionProperties));
             input.Dispose();
@@ -223,6 +224,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
 
             EncryptionProperties encryptionProperties = encryptionPropertiesJObj.ToObject<EncryptionProperties>();
+#pragma warning disable CS0618 // Type or member is obsolete
             DecryptionContext decryptionContext = encryptionProperties.EncryptionAlgorithm switch
             {
                 CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized => await EncryptionProcessor.MdeEncAlgoDecryptObjectAsync(
@@ -239,6 +241,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     cancellationToken),
                 _ => throw new NotSupportedException($"Encryption Algorithm : {encryptionProperties.EncryptionAlgorithm} is not supported."),
             };
+#pragma warning restore CS0618 // Type or member is obsolete
 
             input.Dispose();
             return (EncryptionProcessor.BaseSerializer.ToStream(itemJObj), decryptionContext);
@@ -262,6 +265,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
 
             EncryptionProperties encryptionProperties = encryptionPropertiesJObj.ToObject<EncryptionProperties>();
+#pragma warning disable CS0618 // Type or member is obsolete
             DecryptionContext decryptionContext = encryptionProperties.EncryptionAlgorithm switch
             {
                 CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized => await EncryptionProcessor.MdeEncAlgoDecryptObjectAsync(
@@ -278,6 +282,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     cancellationToken),
                 _ => throw new NotSupportedException($"Encryption Algorithm : {encryptionProperties.EncryptionAlgorithm} is not supported."),
             };
+#pragma warning restore CS0618 // Type or member is obsolete
 
             return (document, decryptionContext);
         }
@@ -347,11 +352,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             List<string> pathsDecrypted,
             string dataEncryptionKeyId)
         {
-            DecryptionInfo decryptionInfo = new DecryptionInfo(
+            DecryptionInfo decryptionInfo = new (
                 pathsDecrypted,
                 dataEncryptionKeyId);
 
-            DecryptionContext decryptionContext = new DecryptionContext(
+            DecryptionContext decryptionContext = new (
                 new List<DecryptionInfo>() { decryptionInfo });
 
             return decryptionContext;
@@ -364,14 +369,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             int cipherTextLength,
             byte[] buffer)
         {
-            int decryptedCount = encryptionKey.DecryptData(
-                cipherText,
-                cipherTextOffset,
-                cipherTextLength,
-                buffer,
-                outputOffset: 0);
-
-            if (decryptedCount < 0)
+            if (encryptionProperties.EncryptionFormatVersion != 3)
             {
                 throw new InvalidOperationException($"{nameof(Encryptor)} returned null plainText from {nameof(DecryptAsync)}.");
             }
@@ -399,15 +397,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 encryptionProperties.EncryptionAlgorithm,
                 cancellationToken) ?? throw new InvalidOperationException($"{nameof(Encryptor)} returned null plainText from {nameof(DecryptAsync)}.");
             JObject plainTextJObj;
-            using (MemoryStream memoryStream = new MemoryStream(plainText))
-            using (StreamReader streamReader = new StreamReader(memoryStream))
-            using (JsonTextReader jsonTextReader = new JsonTextReader(streamReader))
+            using (MemoryStream memoryStream = new (plainText))
+            using (StreamReader streamReader = new (memoryStream))
+            using (JsonTextReader jsonTextReader = new (streamReader))
             {
                 jsonTextReader.ArrayPool = JsonArrayPool.Instance;
                 plainTextJObj = JObject.Load(jsonTextReader);
             }
 
-            List<string> pathsDecrypted = new List<string>();
+            List<string> pathsDecrypted = new ();
             foreach (JProperty property in plainTextJObj.Properties())
             {
                 document.Add(property.Name, property.Value);
@@ -465,11 +463,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Debug.Assert(input != null);
 
             JObject itemJObj;
-            using (StreamReader sr = new StreamReader(input, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
-            using (JsonTextReader jsonTextReader = new JsonTextReader(sr))
+            using (StreamReader sr = new (input, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
+            using (JsonTextReader jsonTextReader = new (sr))
             {
                 jsonTextReader.ArrayPool = JsonArrayPool.Instance;
-                JsonSerializerSettings jsonSerializerSettings = new JsonSerializerSettings()
+                JsonSerializerSettings jsonSerializerSettings = new ()
                 {
                     DateParseHandling = DateParseHandling.None,
                     MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
@@ -609,14 +607,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             JObject contentJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(content);
 
-            if (!(contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is JArray documents))
+            if (contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is not JArray documents)
             {
                 throw new InvalidOperationException("Feed Response body contract was violated. Feed response did not have an array of Documents");
             }
 
             foreach (JToken value in documents)
             {
-                if (!(value is JObject document))
+                if (value is not JObject document)
                 {
                     continue;
                 }
