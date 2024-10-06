@@ -21,8 +21,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// </summary>
     internal static class EncryptionProcessor
     {
-        private static readonly SqlSerializerFactory SqlSerializerFactory = new ();
-
         // UTF-8 encoding.
         private static readonly SqlVarCharSerializer SqlVarCharSerializer = new (size: -1, codePageCharacterEncoding: 65001);
         private static readonly SqlBitSerializer SqlBoolSerializer = new ();
@@ -92,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 case CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized:
 
-                    DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionOptions.DataEncryptionKeyId, encryptionOptions.EncryptionAlgorithm);
+                    DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionOptions.DataEncryptionKeyId, encryptionOptions.EncryptionAlgorithm, cancellationToken);
 
                     foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
                     {
@@ -575,7 +573,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     DeserializeAndAddProperty<JObject>(serializedBytes);
                     break;
                 default:
-                    Debug.Fail(string.Format("Unexpected type marker {0}", typeMarker));
+                    Debug.Fail($"Unexpected type marker {typeMarker}");
                     break;
             }
 
