@@ -639,27 +639,5 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             // and corresponding decrypted properties are added back in the documents.
             return BaseSerializer.ToStream(contentJObj);
         }
-
-        internal static int GetOriginalBase64Length(string base64string)
-        {
-            if (string.IsNullOrEmpty(base64string))
-            {
-                return 0;
-            }
-
-            int paddingCount = 0;
-            int characterCount = base64string.Length;
-            if (base64string[characterCount - 1] == '=')
-            {
-                paddingCount++;
-            }
-
-            if (base64string[characterCount - 2] == '=')
-            {
-                paddingCount++;
-            }
-
-            return (3 * (characterCount / 4)) - paddingCount;
-        }
     }
 }
