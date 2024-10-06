@@ -36,13 +36,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// Gets a copy of the plain text key
         /// This is needed for actual encryption/decryption.
         /// </summary>
-        internal virtual byte[] RootKey
-        {
-            get
-            {
-                return this.rootKey;
-            }
-        }
+        internal virtual byte[] RootKey => this.rootKey;
 
         /// <summary>
         /// Computes SHA256 value of the plain text key bytes

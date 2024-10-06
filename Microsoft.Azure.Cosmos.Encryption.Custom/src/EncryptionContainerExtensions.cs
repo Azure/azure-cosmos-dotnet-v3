@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             this Container container,
             IQueryable<T> query)
         {
-            if (!(container is EncryptionContainer encryptionContainer))
+            if (container is not EncryptionContainer encryptionContainer)
             {
                 throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionFeedIterator)} is only supported with {nameof(EncryptionContainer)}.");
             }
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             this Container container,
             IQueryable<T> query)
         {
-            if (!(container is EncryptionContainer encryptionContainer))
+            if (container is not EncryptionContainer encryptionContainer)
             {
                 throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionStreamIterator)} is only supported with {nameof(EncryptionContainer)}.");
             }

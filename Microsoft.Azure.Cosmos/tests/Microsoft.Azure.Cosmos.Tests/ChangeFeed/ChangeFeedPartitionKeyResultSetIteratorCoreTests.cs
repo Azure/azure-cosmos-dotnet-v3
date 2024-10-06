@@ -40,6 +40,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Mock<ContainerInternal> containerMock = new Mock<ContainerInternal>();
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
+#pragma warning disable CA1416 // 'ResourceType' is only supported on: 'windows'
             mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
                 It.Is<string>(str => str.Contains("Change Feed Processor")),
                 It.IsAny<string>(),
@@ -59,6 +60,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                         return func(trace);
                     }
                 });
+#pragma warning restore CA1416
 
             mockContext.Setup(c => c.ProcessResourceOperationStreamAsync(
                 It.IsAny<string>(),
@@ -121,6 +123,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Mock<ContainerInternal> containerMock = new Mock<ContainerInternal>();
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
+#pragma warning disable CA1416 // 'ResourceType' is only supported on: 'windows'
             mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
                 It.Is<string>(str => str.Contains("Change Feed Processor")),
                 It.IsAny<string>(),
@@ -140,6 +143,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                         return func(trace);
                     }
                 });
+#pragma warning restore CA1416
 
             mockContext.SetupSequence(c => c.ProcessResourceOperationStreamAsync(
                 It.IsAny<string>(),
@@ -192,6 +196,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Mock<ContainerInternal> containerMock = new Mock<ContainerInternal>();
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
+#pragma warning disable CA1416 // 'ResourceType' is only supported on: 'windows'
             mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
                 It.Is<string>(str => str.Contains("Change Feed Processor")),
                 It.IsAny<string>(),
@@ -211,6 +216,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                         return func(trace);
                     }
                 });
+#pragma warning restore CA1416
 
             mockContext.Setup(c => c.ProcessResourceOperationStreamAsync(
                 It.IsAny<string>(),

@@ -10,13 +10,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using System.Linq;
     using System.Text;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     internal static class TestCommon
     {
         internal static byte[] GenerateRandomByteArray()
         {
-            Random random = new Random();
+            Random random = new();
             byte[] b = new byte[10];
             random.NextBytes(b);
             return b;
@@ -27,11 +26,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             return plainText.Select(b => (byte)(b + 1)).ToArray();
         }
 
+        internal static int EncryptData(byte[] plainText, int inputOffset, int inputLength, byte[] output, int outputOffset)
+        {
+            byte[] cipherText = EncryptData(plainText.AsSpan(inputOffset, inputLength).ToArray());
+            Buffer.BlockCopy(cipherText, 0, output, outputOffset, cipherText.Length);
+
+            return cipherText.Length;
+        }
+
         internal static byte[] DecryptData(byte[] cipherText)
         {
             return cipherText.Select(b => (byte)(b - 1)).ToArray();
         }
-        
+
+        internal static int DecryptData(byte[] cipherText, int inputOffset, int inputLength, byte[] output, int outputOffset)
+        {
+            byte[] plainText = DecryptData(cipherText.AsSpan(inputOffset, inputLength).ToArray());
+            Buffer.BlockCopy(plainText, 0, output, outputOffset, plainText.Length);
+            return plainText.Length;
+        }
+
         internal static Stream ToStream<T>(T input)
         {
             string s = JsonConvert.SerializeObject(input);
@@ -40,22 +54,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         internal static T FromStream<T>(Stream stream)
         {
-            using (StreamReader sr = new StreamReader(stream))
+            using (StreamReader sr = new(stream))
             using (JsonReader reader = new JsonTextReader(sr))
             {
-                JsonSerializer serializer = new JsonSerializer();
+                JsonSerializer serializer = new();
                 return serializer.Deserialize<T>(reader);
             }
         }
 
-        private static JObject ParseStream(Stream stream)
-        {
-            return JObject.Load(new JsonTextReader(new StreamReader(stream)));
-        }
-
         internal class TestDoc
         {
-            public static List<string> PathsToEncrypt { get; } = new List<string>() { "/SensitiveStr", "/SensitiveInt" };
+            public static List<string> PathsToEncrypt { get; } = new List<string>() { "/SensitiveStr", "/SensitiveInt", "/SensitiveArr", "/SensitiveDict" };
 
             [JsonProperty("id")]
             public string Id { get; set; }
@@ -68,17 +77,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             public int SensitiveInt { get; set; }
 
+            public string[] SensitiveArr { get; set; }
+
+            public Dictionary<string, string> SensitiveDict { get; set; }
+
             public TestDoc()
             {
-            }
-
-            public TestDoc(TestDoc other)
-            {
-                this.Id = other.Id;
-                this.PK = other.PK;
-                this.NonSensitive = other.NonSensitive;
-                this.SensitiveStr = other.SensitiveStr;
-                this.SensitiveInt = other.SensitiveInt;
             }
 
             public override bool Equals(object obj)
@@ -88,7 +92,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                        && this.PK == doc.PK
                        && this.NonSensitive == doc.NonSensitive
                        && this.SensitiveInt == doc.SensitiveInt
-                       && this.SensitiveStr == this.SensitiveStr;
+                       && this.SensitiveStr == doc.SensitiveStr
+                       && this.SensitiveArr?.Equals(doc.SensitiveArr) == true
+                       && this.SensitiveDict?.Equals(doc.SensitiveDict) == true;
             }
 
             public override int GetHashCode()
@@ -99,6 +105,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.NonSensitive);
                 hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.SensitiveStr);
                 hashCode = (hashCode * -1521134295) + EqualityComparer<int>.Default.GetHashCode(this.SensitiveInt);
+                hashCode = (hashCode * -1521134295) + EqualityComparer<string[]>.Default.GetHashCode(this.SensitiveArr);
+                hashCode = (hashCode * -1521134295) + EqualityComparer<Dictionary<string, string>>.Default.GetHashCode(this.SensitiveDict);
                 return hashCode;
             }
 
@@ -110,7 +118,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                     PK = partitionKey ?? Guid.NewGuid().ToString(),
                     NonSensitive = Guid.NewGuid().ToString(),
                     SensitiveStr = Guid.NewGuid().ToString(),
-                    SensitiveInt = new Random().Next()
+                    SensitiveInt = new Random().Next(),
+                    SensitiveArr = new string[]
+                    {
+                        Guid.NewGuid().ToString(),
+                        Guid.NewGuid().ToString(),
+                    },
+                    SensitiveDict = new Dictionary<string, string>
+                    {
+                        { Guid.NewGuid().ToString(), Guid.NewGuid().ToString() },
+                        { Guid.NewGuid().ToString(), Guid.NewGuid().ToString() },
+                        { Guid.NewGuid().ToString(), Guid.NewGuid().ToString() },
+                        { Guid.NewGuid().ToString(), Guid.NewGuid().ToString() },
+                        { Guid.NewGuid().ToString(), Guid.NewGuid().ToString() },
+                    }
                 };
             }
 

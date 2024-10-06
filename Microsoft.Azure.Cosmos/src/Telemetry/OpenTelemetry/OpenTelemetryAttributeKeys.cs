@@ -138,6 +138,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         public const string CorrelatedActivityId = "db.cosmosdb.correlated_activity_id";
 
         /// <summary>
+        /// Represents the Azure Cosmos DB SQL Query.
+        /// </summary>
+        public const string QueryText = "db.query.text";
+
+        /// <summary>
         /// Represents the size of the batch operation.
         /// </summary>
         public const string BatchSize = "db.operation.batch_size";

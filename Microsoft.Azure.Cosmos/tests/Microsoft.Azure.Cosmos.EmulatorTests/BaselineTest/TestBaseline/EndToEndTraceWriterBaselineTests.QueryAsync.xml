@@ -629,6 +629,7 @@
     <ATTRIBUTE key="db.cosmosdb.item_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
@@ -650,6 +651,7 @@
     <ATTRIBUTE key="db.cosmosdb.item_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
@@ -671,6 +673,7 @@
     <ATTRIBUTE key="db.cosmosdb.item_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
@@ -692,6 +695,7 @@
     <ATTRIBUTE key="db.cosmosdb.item_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="ThresholdViolation" />
@@ -2052,6 +2056,7 @@
     <ATTRIBUTE key="db.cosmosdb.item_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
@@ -2073,6 +2078,7 @@
     <ATTRIBUTE key="db.cosmosdb.item_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
@@ -2094,6 +2100,7 @@
     <ATTRIBUTE key="db.cosmosdb.item_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
@@ -2115,6 +2122,7 @@
     <ATTRIBUTE key="db.cosmosdb.item_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="ThresholdViolation" />
@@ -2128,7 +2136,7 @@
       <Description>Query Public API Typed</Description>
       <Setup><![CDATA[
     FeedIterator<JToken> feedIterator = container.GetItemQueryIterator<JToken>(
-        queryText: "SELECT * FROM c",
+        queryDefinition: parameterizedQuery,
         requestOptions: requestOptions);
 
     List<ITrace> traces = new List<ITrace>();
@@ -4281,6 +4289,7 @@
     <ATTRIBUTE key="db.cosmosdb.item_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
@@ -4302,6 +4311,7 @@
     <ATTRIBUTE key="db.cosmosdb.item_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
@@ -4323,6 +4333,7 @@
     <ATTRIBUTE key="db.cosmosdb.item_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
@@ -4344,6 +4355,7 @@
     <ATTRIBUTE key="db.cosmosdb.item_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="ThresholdViolation" />

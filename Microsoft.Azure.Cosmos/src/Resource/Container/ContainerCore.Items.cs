@@ -26,6 +26,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.ReadFeed;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -1252,6 +1253,322 @@ namespace Microsoft.Azure.Cosmos
                 container: this,
                 changeFeedProcessor: changeFeedProcessor,
                 applyBuilderConfiguration: changeFeedProcessor.ApplyBuildConfiguration).WithChangeFeedMode(mode);
+        }
+
+        /// <summary>
+        /// This method is useful for determining if a smaller, more granular feed range (y) is fully contained within a broader feed range (x), which is a common operation in distributed systems to manage partitioned data.
+        ///
+        /// - **x and y Feed Ranges**: Both `x` and `y` are representations of logical partitions or ranges within the Cosmos DB container.
+        ///   - These ranges are typically used for operations such as querying or reading data within a specified range of partition key values.
+        ///
+        /// - **Validation and Parsing**:
+        ///   - The method begins by validating that neither `x` nor `y` is null. If either is null, an `ArgumentNullException` is thrown.
+        ///   - It then checks whether each feed range is of type `FeedRangeInternal`. If not, it attempts to parse the JSON representation of the feed range into the internal format (`FeedRangeInternal`).
+        ///   - If the parsing fails, an `ArgumentException` is thrown, indicating that the feed range is of an unknown or unsupported format.
+        ///
+        /// - **Partition Key and Routing Map Setup**:
+        ///   - The partition key definition for the container is retrieved asynchronously using `GetPartitionKeyDefinitionAsync`, as it is required to identify the partition structure.
+        ///   - The method also retrieves the container's resource ID (`containerRId`) and the partition key range routing map from the `IRoutingMapProvider`. These are essential for determining the actual partition key ranges that correspond to the feed ranges.
+        ///
+        /// - **Effective Ranges**:
+        ///   - The method uses `GetEffectiveRangesAsync` to retrieve the actual ranges of partition keys that each feed range represents.
+        ///   - These effective ranges are returned as lists of `Range`, which represent the partition key boundaries.
+        ///
+        /// - **Inclusivity Consistency**:
+        ///   - Before performing the subset comparison, the method checks that the inclusivity of the boundary conditions (`IsMinInclusive` and `IsMaxInclusive`) is consistent across all ranges in both the x and y feed ranges.
+        ///   - This ensures that the comparison between ranges is logically correct and avoids potential mismatches due to differing boundary conditions.
+        ///
+        /// - **Subset Check**:
+        ///   - Finally, the method calls `ContainerCore.IsSubset`, which checks if the merged effective range of the y feed range is fully contained within the merged effective range of the x feed range.
+        ///   - Merging the ranges ensures that the comparison accounts for multiple ranges and considers the full span of each feed range.
+        ///
+        /// - **Exception Handling**:
+        ///   - Any exceptions related to document client errors are caught, and a `CosmosException` is thrown, wrapping the original `DocumentClientException`.
+        /// </summary>
+        /// <param name="x">The broader feed range representing the larger, encompassing logical partition.</param>
+        /// <param name="y">The smaller, more granular feed range that needs to be checked for containment within the broader feed range.</param>
+        /// <param name="cancellationToken">An optional cancellation token to cancel the operation before completion.</param>
+        /// <returns>Returns a boolean indicating whether the y feed range is fully contained within the x feed range.</returns>
+        public override async Task<bool> IsFeedRangePartOfAsync(
+            FeedRange x,
+            FeedRange y,
+            CancellationToken cancellationToken = default)
+        {
+            using (ITrace trace = Tracing.Trace.GetRootTrace("ContainerCore FeedRange IsFeedRangePartOfAsync Async", TraceComponent.Unknown, Tracing.TraceLevel.Info))
+            {
+                if (x == null || y == null)
+                {
+                    throw new ArgumentNullException(x == null
+                        ? nameof(x)
+                        : nameof(y), $"Argument cannot be null.");
+                }
+
+                try
+                {
+                    FeedRangeInternal xFeedRangeInternal = ContainerCore.ConvertToFeedRangeInternal(x, nameof(x));
+                    FeedRangeInternal yFeedRangeInternal = ContainerCore.ConvertToFeedRangeInternal(y, nameof(y));
+
+                    PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync(cancellationToken);
+
+                    string containerRId = await this.GetCachedRIDAsync(
+                        forceRefresh: false,
+                        trace: trace,
+                        cancellationToken: cancellationToken);
+
+                    Routing.IRoutingMapProvider routingMapProvider = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(trace);
+                    List<Documents.Routing.Range<string>> xEffectiveRanges = await xFeedRangeInternal.GetEffectiveRangesAsync(
+                        routingMapProvider: routingMapProvider,
+                        containerRid: containerRId,
+                        partitionKeyDefinition: partitionKeyDefinition,
+                        trace: trace);
+                    List<Documents.Routing.Range<string>> yEffectiveRanges = await yFeedRangeInternal.GetEffectiveRangesAsync(
+                        routingMapProvider: routingMapProvider,
+                        containerRid: containerRId,
+                        partitionKeyDefinition: partitionKeyDefinition,
+                        trace: trace);
+
+                    ContainerCore.EnsureConsistentInclusivity(xEffectiveRanges);
+                    ContainerCore.EnsureConsistentInclusivity(yEffectiveRanges);
+
+                    return ContainerCore.IsSubset(
+                        ContainerCore.MergeRanges(xEffectiveRanges),
+                        ContainerCore.MergeRanges(yEffectiveRanges));
+                }
+                catch (DocumentClientException dce)
+                {
+                    throw CosmosExceptionFactory.Create(dce, trace);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Converts a given feed range to its internal representation (FeedRangeInternal).
+        /// If the provided feed range is already of type FeedRangeInternal, it returns it directly.
+        /// Otherwise, it attempts to parse the feed range into a FeedRangeInternal.
+        /// If parsing fails, an <see cref="ArgumentException"/> is thrown.
+        /// </summary>
+        /// <param name="feedRange">The feed range to be converted into an internal representation.</param>
+        /// <param name="paramName">The name of the parameter being converted, used for exception messages.</param>
+        /// <returns>The converted FeedRangeInternal object.</returns>
+        /// <exception cref="ArgumentException">Thrown when the provided feed range cannot be parsed into a known format.</exception>
+        private static FeedRangeInternal ConvertToFeedRangeInternal(FeedRange feedRange, string paramName)
+        {
+            if (feedRange is not FeedRangeInternal feedRangeInternal)
+            {
+                if (!FeedRangeInternal.TryParse(feedRange.ToJsonString(), out feedRangeInternal))
+                {
+                    throw new ArgumentException(
+                        string.Format("The provided string, '{0}', for '{1}', does not represent any known format.", feedRange.ToJsonString(), paramName));
+                }
+            }
+
+            return feedRangeInternal;
+        }
+
+        /// <summary>
+        /// Merges a list of feed ranges into a single range by taking the minimum value of the first range and the maximum value of the last range.
+        /// This function ensures that the resulting range covers the entire span of the input ranges.
+        ///
+        /// - The method begins by checking if the list contains only one range:
+        ///   - If there is only one range, it simply returns that range without performing any additional logic.
+        ///
+        /// - If the list contains multiple ranges:
+        ///   - It first sorts the ranges based on the minimum value of each range using a custom comparator (`MinComparer`).
+        ///   - It selects the first range (after sorting) to extract the minimum value, ensuring the merged range starts with the lowest value across all ranges.
+        ///   - It selects the last range (after sorting) to extract the maximum value, ensuring the merged range ends with the highest value across all ranges.
+        ///
+        /// - The inclusivity of the boundaries (`IsMinInclusive` and `IsMaxInclusive`) is inherited from the first range in the list:
+        ///   - `IsMinInclusive` from the first range determines whether the merged range includes its minimum value.
+        ///   - `IsMaxInclusive` from the last range would generally be expected to influence whether the merged range includes its maximum value, but this method uses `IsMaxInclusive` from the first range for both boundaries.
+        ///   - **Note**: This could result in unexpected behavior if inclusivity should differ for the merged max value.
+        ///
+        /// - The merged range spans the minimum value of the first range and the maximum value of the last range, effectively combining multiple ranges into a single, continuous range.
+        /// </summary>
+        /// <param name="ranges">The list of feed ranges to merge. Each range contains a minimum and maximum value along with boundary inclusivity flags (`IsMinInclusive`, `IsMaxInclusive`).</param>
+        /// <returns>
+        /// A new merged range with the minimum value from the first range and the maximum value from the last range.
+        /// If the list contains a single range, it returns that range directly without modification.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        /// Thrown when the list of ranges is empty.
+        /// </exception>
+        private static Documents.Routing.Range<string> MergeRanges(
+            List<Documents.Routing.Range<string>> ranges)
+        {
+            if (ranges.Count == 1)
+            {
+                return ranges.First();
+            }
+
+            ranges.Sort(Documents.Routing.Range<string>.MinComparer.Instance);
+
+            Documents.Routing.Range<string> firstRange = ranges.First();
+            Documents.Routing.Range<string> lastRange = ranges.Last();
+
+            return new Documents.Routing.Range<string>(
+                min: firstRange.Min,
+                max: lastRange.Max,
+                isMinInclusive: firstRange.IsMinInclusive,
+                isMaxInclusive: firstRange.IsMaxInclusive);
+        }
+
+        /// <summary>
+        /// Validates whether all ranges in the list have consistent inclusivity for both `IsMinInclusive` and `IsMaxInclusive` boundaries.
+        /// This ensures that all ranges either have the same inclusivity or exclusivity for their minimum and maximum boundaries.
+        /// If there are any inconsistencies in the inclusivity/exclusivity of the ranges, it throws an `InvalidOperationException`.
+        ///
+        /// The logic works as follows:
+        /// - The method assumes that the `ranges` list is never null.
+        /// - It starts by checking the first range in the list to establish a baseline for comparison.
+        /// - It then iterates over the remaining ranges, comparing their `IsMinInclusive` and `IsMaxInclusive` values with those of the first range.
+        /// - If any range differs from the first in terms of inclusivity or exclusivity (either for the min or max boundary), the method sets a flag (`areAnyDifferent`) and exits the loop early.
+        /// - If any differences are found, the method gathers the distinct `IsMinInclusive` and `IsMaxInclusive` values found across all ranges.
+        /// - It then throws an `InvalidOperationException`, including the distinct values in the exception message to indicate the specific inconsistencies.
+        ///
+        /// This method is useful in scenarios where the ranges need to have uniform inclusivity for boundary conditions.
+        /// </summary>
+        /// <param name="ranges">The list of ranges to validate. Each range has `IsMinInclusive` and `IsMaxInclusive` values that represent the inclusivity of its boundaries.</param>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown when `IsMinInclusive` or `IsMaxInclusive` values are inconsistent across ranges. The exception message includes details of the inconsistencies.
+        /// </exception>
+        /// <example>
+        /// <![CDATA[
+        /// List<Documents.Routing.Range<string>> ranges = new List<Documents.Routing.Range<string>>
+        /// {
+        ///     new Documents.Routing.Range<string> { IsMinInclusive = true, IsMaxInclusive = false },
+        ///     new Documents.Routing.Range<string> { IsMinInclusive = true, IsMaxInclusive = true },
+        ///     new Documents.Routing.Range<string> { IsMinInclusive = true, IsMaxInclusive = false },
+        ///     new Documents.Routing.Range<string> { IsMinInclusive = false, IsMaxInclusive = false }
+        /// };
+        ///
+        /// EnsureConsistentInclusivity(ranges);
+        ///
+        /// // This will throw an InvalidOperationException because there are different inclusivity values for IsMinInclusive and IsMaxInclusive.
+        /// ]]>
+        /// </example>
+        internal static void EnsureConsistentInclusivity(List<Documents.Routing.Range<string>> ranges)
+        {
+            bool areAnyDifferent = false;
+            Documents.Routing.Range<string> firstRange = ranges[0];
+
+            foreach (Documents.Routing.Range<string> range in ranges.Skip(1))
+            {
+                if (range.IsMinInclusive != firstRange.IsMinInclusive || range.IsMaxInclusive != firstRange.IsMaxInclusive)
+                {
+                    areAnyDifferent = true;
+                    break;
+                }
+            }
+
+            if (areAnyDifferent)
+            {
+                string result = $"IsMinInclusive found: {string.Join(", ", ranges.Select(range => range.IsMinInclusive).Distinct())}, IsMaxInclusive found: {string.Join(", ", ranges.Select(range => range.IsMaxInclusive).Distinct())}.";
+
+                throw new InvalidOperationException($"Not all 'IsMinInclusive' or 'IsMaxInclusive' values are the same. {result}");
+            }
+        }
+
+        /// <summary>
+        /// Determines whether the specified y range is entirely within the bounds of the x range.
+        /// This includes checking both the minimum and maximum boundaries of the ranges for inclusion.
+        ///
+        /// The method checks whether the `Min` and `Max` boundaries of `y` are within `x`,
+        /// taking into account whether each boundary is inclusive or exclusive.
+        ///
+        /// - For the `Max` boundary:
+        ///   - If the x range's max is exclusive and the y range's max is inclusive, it checks whether the x range contains the y range's max value.
+        ///   - If the x range's max is inclusive and the y range's max is exclusive, this combination is not supported and a <see cref="NotSupportedException"/> is thrown.
+        ///   - For all other cases, it checks if the max values are equal or whether the x range contains the y range's max.
+        ///   - This applies to the following combinations:
+        ///     - (false, true): x max is exclusive, y max is inclusive.
+        ///     - (true, true): Both max values are inclusive.
+        ///     - (false, false): Both max values are exclusive.
+        ///     - (true, false): x max is inclusive, y max is exclusive.
+        ///       - **NotSupportedException Scenario:** This case is not supported because handling a scenario where the x range has an inclusive maximum and the y range has an exclusive maximum requires additional logic that is not implemented.
+        ///       - If encountered, a <see cref="NotSupportedException"/> is thrown with a message explaining that this combination is not supported.
+        ///
+        /// - For the `Min` boundary:
+        ///   - It checks whether the x range contains the y range's min value, regardless of inclusivity.
+        ///
+        /// The method ensures the y range is considered a subset only if both its min and max values fall within the x range.
+        ///
+        /// Summary of combinations for `x.IsMaxInclusive` and `y.IsMaxInclusive`:
+        /// 1. x.IsMaxInclusive == false, y.IsMaxInclusive == true:
+        ///    - The x range is exclusive at max, but the y range is inclusive. This is supported and will check if the x contains the y's max.
+        /// 2. x.IsMaxInclusive == false, y.IsMaxInclusive == false:
+        ///    - Both ranges are exclusive at max. This is supported and will check if the x contains the y's max.
+        /// 3. x.IsMaxInclusive == true, y.IsMaxInclusive == true:
+        ///    - Both ranges are inclusive at max. This is supported and will check if the max values are equal or if the x contains the y's max.
+        /// 4. x.IsMaxInclusive == true, y.IsMaxInclusive == false:
+        ///    - The x range is inclusive at max, but the y range is exclusive. This combination is not supported and will result in a <see cref="NotSupportedException"/> being thrown.
+        ///
+        /// The method returns true only if both the min and max boundaries of the y range are within the x range's boundaries.
+        ///
+        /// Additionally, the method performs null checks on the parameters:
+        /// - If <paramref name="x"/> is null, an <see cref="ArgumentNullException"/> is thrown.
+        /// - If <paramref name="y"/> is null, an <see cref="ArgumentNullException"/> is thrown.
+        ///
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when <paramref name="x"/> or <paramref name="y"/> is <c>null</c>.
+        /// </exception>
+        /// <exception cref="NotSupportedException">
+        /// Thrown when <paramref name="x"/> is inclusive at max and <paramref name="y"/> is exclusive at max.
+        /// This combination is not supported and requires specific handling.
+        /// </exception>
+        /// </summary>
+        /// <example>
+        /// <![CDATA[
+        /// Documents.Routing.Range<string> x = new Documents.Routing.Range<string>("A", "Z", true, true);
+        /// Documents.Routing.Range<string> y = new Documents.Routing.Range<string>("B", "Y", true, true);
+        ///
+        /// bool isSubset = IsSubset(x, y);
+        /// isSubset will be true because the y range (B-Y) is fully contained within the x range (A-Z).
+        /// ]]>
+        /// </example>
+        /// <returns>
+        /// Returns <c>true</c> if the y range is a subset of the x range, meaning the y range's
+        /// minimum and maximum values fall within the bounds of the x range. Returns <c>false</c> otherwise.
+        /// </returns>
+        internal static bool IsSubset(
+            Documents.Routing.Range<string> x,
+            Documents.Routing.Range<string> y)
+        {
+            if (x is null)
+            {
+                throw new ArgumentNullException(nameof(x));
+            }
+
+            if (y is null)
+            {
+                throw new ArgumentNullException(nameof(y));
+            }
+
+            bool isMaxWithinX = (x.IsMaxInclusive, y.IsMaxInclusive) switch
+            {
+                (false, true) => x.Contains(y.Max),  // x max is exclusive, y max is inclusive
+                (true, false) => throw new NotSupportedException("The combination where the x range's maximum is inclusive and the y range's maximum is exclusive is not supported in the current implementation."),
+
+                _ => ContainerCore.IsYMaxWithinX(x, y) // Default for the following combinations:
+                                                       // (true, true): Both max values are inclusive
+                                                       // (false, false): Both max values are exclusive
+            };
+
+            bool isMinWithinX = x.Contains(y.Min);
+
+            return isMinWithinX && isMaxWithinX;
+        }
+
+        /// <summary>
+        /// Determines whether the given maximum value of the y range is either equal to or contained within the x range.
+        /// </summary>
+        /// <param name="x">The x range to compare against, which defines the boundary.</param>
+        /// <param name="y">The y range to be checked.</param>
+        /// <returns>True if the maximum value of the y range is equal to or contained within the x range; otherwise, false.</returns>
+        private static bool IsYMaxWithinX(
+            Documents.Routing.Range<string> x,
+            Documents.Routing.Range<string> y)
+        {
+            return x.Max == y.Max || x.Contains(y.Max);
         }
     }
 }

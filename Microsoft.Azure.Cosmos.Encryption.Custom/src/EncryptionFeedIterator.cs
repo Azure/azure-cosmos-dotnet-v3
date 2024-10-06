@@ -75,16 +75,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             JObject contentJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(content);
 
-            if (!(contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is JArray documents))
+            if (contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is not JArray documents)
             {
                 throw new InvalidOperationException("Feed Response body contract was violated. Feed Response did not have an array of Documents.");
             }
 
-            List<T> decryptableItems = new List<T>(documents.Count);
+            List<T> decryptableItems = new (documents.Count);
 
             foreach (JToken value in documents)
             {
-                DecryptableItemCore item = new DecryptableItemCore(
+                DecryptableItemCore item = new (
                     value,
                     this.encryptor,
                     this.cosmosSerializer);

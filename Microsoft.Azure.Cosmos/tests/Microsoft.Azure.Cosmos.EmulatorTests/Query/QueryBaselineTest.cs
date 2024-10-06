@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
         private static Container testContainer;
 
         [ClassInitialize]
-        public async static Task Initialize(TestContext textContext)
+        public async static Task Initialize(TestContext _)
         {
             string authKey = Utils.ConfigurationManager.AppSettings["MasterKey"];
             Uri uri = new Uri(Utils.ConfigurationManager.AppSettings["GatewayEndpoint"]);
@@ -40,6 +40,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
                 })).WithConnectionModeGateway();
             });
 
+            await Util.DeleteAllDatabasesAsync(cosmosClient);
             string dbName = $"{nameof(QueryBaselineTest)}-{Guid.NewGuid().ToString("N")}";
             testDb = await cosmosClient.CreateDatabaseAsync(dbName);
         }

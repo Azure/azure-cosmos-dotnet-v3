@@ -113,19 +113,60 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKeyProvider get_DataEncryptionKeyProvider();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Threading.Tasks.Task`1[System.Byte[]] DecryptAsync(Byte[], System.String, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.Custom.CosmosEncryptor+<DecryptAsync>))]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKey] GetEncryptionKeyAsync(System.String, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.Custom.CosmosEncryptor+<GetEncryptionKeyAsync>))]": {
           "Type": "Method",
           "Attributes": [
             "AsyncStateMachineAttribute"
+          ],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKey] GetEncryptionKeyAsync(System.String, System.String, System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Threading.Tasks.Task`1[System.Byte[]] DecryptAsync(Byte[], System.String, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.Custom.CosmosEncryptor+<DecryptAsync>))]-[System.ObsoleteAttribute(\"It is suggested to use GetEncryptionKeyAsync + key.DecryptData to reduce overhead.\")]": {
+          "Type": "Method",
+          "Attributes": [
+            "AsyncStateMachineAttribute",
+            "ObsoleteAttribute"
           ],
           "MethodInfo": "System.Threading.Tasks.Task`1[System.Byte[]] DecryptAsync(Byte[], System.String, System.String, System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Threading.Tasks.Task`1[System.Byte[]] EncryptAsync(Byte[], System.String, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.Custom.CosmosEncryptor+<EncryptAsync>))]": {
+        "System.Threading.Tasks.Task`1[System.Byte[]] EncryptAsync(Byte[], System.String, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.Custom.CosmosEncryptor+<EncryptAsync>))]-[System.ObsoleteAttribute(\"It is suggested to use GetEncryptionKeyAsync + key.EncryptData to reduce overhead.\")]": {
           "Type": "Method",
           "Attributes": [
-            "AsyncStateMachineAttribute"
+            "AsyncStateMachineAttribute",
+            "ObsoleteAttribute"
           ],
           "MethodInfo": "System.Threading.Tasks.Task`1[System.Byte[]] EncryptAsync(Byte[], System.String, System.String, System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Threading.Tasks.Task`1[System.Int32] DecryptAsync(Byte[], Int32, Int32, Byte[], Int32, System.String, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.Custom.CosmosEncryptor+<DecryptAsync>))]-[System.ObsoleteAttribute(\"It is suggested to use GetEncryptionKeyAsync + key.DecryptData to reduce overhead.\")]": {
+          "Type": "Method",
+          "Attributes": [
+            "AsyncStateMachineAttribute",
+            "ObsoleteAttribute"
+          ],
+          "MethodInfo": "System.Threading.Tasks.Task`1[System.Int32] DecryptAsync(Byte[], Int32, Int32, Byte[], Int32, System.String, System.String, System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Threading.Tasks.Task`1[System.Int32] EncryptAsync(Byte[], Int32, Int32, Byte[], Int32, System.String, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.Custom.CosmosEncryptor+<EncryptAsync>))]-[System.ObsoleteAttribute(\"It is suggested to use GetEncryptionKeyAsync + key.EncryptData to reduce overhead.\")]": {
+          "Type": "Method",
+          "Attributes": [
+            "AsyncStateMachineAttribute",
+            "ObsoleteAttribute"
+          ],
+          "MethodInfo": "System.Threading.Tasks.Task`1[System.Int32] EncryptAsync(Byte[], Int32, Int32, Byte[], Int32, System.String, System.String, System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Threading.Tasks.Task`1[System.Int32] GetDecryptBytesCountAsync(Int32, System.String, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.Custom.CosmosEncryptor+<GetDecryptBytesCountAsync>))]-[System.ObsoleteAttribute(\"It is suggested to use GetEncryptionKeyAsync + key.GetDecryptByteCount to reduce overhead.\")]": {
+          "Type": "Method",
+          "Attributes": [
+            "AsyncStateMachineAttribute",
+            "ObsoleteAttribute"
+          ],
+          "MethodInfo": "System.Threading.Tasks.Task`1[System.Int32] GetDecryptBytesCountAsync(Int32, System.String, System.String, System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Threading.Tasks.Task`1[System.Int32] GetEncryptBytesCountAsync(Int32, System.String, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.Custom.CosmosEncryptor+<GetEncryptBytesCountAsync>))]-[System.ObsoleteAttribute(\"It is suggested to use GetEncryptionKeyAsync + key.GetEncryptByteCount to reduce overhead.\")]": {
+          "Type": "Method",
+          "Attributes": [
+            "AsyncStateMachineAttribute",
+            "ObsoleteAttribute"
+          ],
+          "MethodInfo": "System.Threading.Tasks.Task`1[System.Int32] GetEncryptBytesCountAsync(Int32, System.String, System.String, System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKeyProvider)": {
           "Type": "Constructor",
@@ -162,6 +203,26 @@
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": "Byte[] RawKey;CanRead:True;CanWrite:False;Byte[] get_RawKey();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Int32 DecryptData(Byte[], Int32, Int32, Byte[], Int32)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Int32 DecryptData(Byte[], Int32, Int32, Byte[], Int32);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Int32 EncryptData(Byte[], Int32, Int32, Byte[], Int32)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Int32 EncryptData(Byte[], Int32, Int32, Byte[], Int32);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Int32 GetDecryptByteCount(Int32)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Int32 GetDecryptByteCount(Int32);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Int32 GetEncryptByteCount(Int32)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Int32 GetEncryptByteCount(Int32);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKey Create(Byte[], System.String)": {
           "Type": "Method",
@@ -1064,19 +1125,60 @@
               ],
               "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKeyProvider get_DataEncryptionKeyProvider();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
-            "System.Threading.Tasks.Task`1[System.Byte[]] DecryptAsync(Byte[], System.String, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.Custom.CosmosEncryptor+<DecryptAsync>))]": {
+            "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKey] GetEncryptionKeyAsync(System.String, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.Custom.CosmosEncryptor+<GetEncryptionKeyAsync>))]": {
               "Type": "Method",
               "Attributes": [
                 "AsyncStateMachineAttribute"
+              ],
+              "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKey] GetEncryptionKeyAsync(System.String, System.String, System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "System.Threading.Tasks.Task`1[System.Byte[]] DecryptAsync(Byte[], System.String, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.Custom.CosmosEncryptor+<DecryptAsync>))]-[System.ObsoleteAttribute(\"It is suggested to use GetEncryptionKeyAsync + key.DecryptData to reduce overhead.\")]": {
+              "Type": "Method",
+              "Attributes": [
+                "AsyncStateMachineAttribute",
+                "ObsoleteAttribute"
               ],
               "MethodInfo": "System.Threading.Tasks.Task`1[System.Byte[]] DecryptAsync(Byte[], System.String, System.String, System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
-            "System.Threading.Tasks.Task`1[System.Byte[]] EncryptAsync(Byte[], System.String, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.Custom.CosmosEncryptor+<EncryptAsync>))]": {
+            "System.Threading.Tasks.Task`1[System.Byte[]] EncryptAsync(Byte[], System.String, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.Custom.CosmosEncryptor+<EncryptAsync>))]-[System.ObsoleteAttribute(\"It is suggested to use GetEncryptionKeyAsync + key.EncryptData to reduce overhead.\")]": {
               "Type": "Method",
               "Attributes": [
-                "AsyncStateMachineAttribute"
+                "AsyncStateMachineAttribute",
+                "ObsoleteAttribute"
               ],
               "MethodInfo": "System.Threading.Tasks.Task`1[System.Byte[]] EncryptAsync(Byte[], System.String, System.String, System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "System.Threading.Tasks.Task`1[System.Int32] DecryptAsync(Byte[], Int32, Int32, Byte[], Int32, System.String, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.Custom.CosmosEncryptor+<DecryptAsync>))]-[System.ObsoleteAttribute(\"It is suggested to use GetEncryptionKeyAsync + key.DecryptData to reduce overhead.\")]": {
+              "Type": "Method",
+              "Attributes": [
+                "AsyncStateMachineAttribute",
+                "ObsoleteAttribute"
+              ],
+              "MethodInfo": "System.Threading.Tasks.Task`1[System.Int32] DecryptAsync(Byte[], Int32, Int32, Byte[], Int32, System.String, System.String, System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "System.Threading.Tasks.Task`1[System.Int32] EncryptAsync(Byte[], Int32, Int32, Byte[], Int32, System.String, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.Custom.CosmosEncryptor+<EncryptAsync>))]-[System.ObsoleteAttribute(\"It is suggested to use GetEncryptionKeyAsync + key.EncryptData to reduce overhead.\")]": {
+              "Type": "Method",
+              "Attributes": [
+                "AsyncStateMachineAttribute",
+                "ObsoleteAttribute"
+              ],
+              "MethodInfo": "System.Threading.Tasks.Task`1[System.Int32] EncryptAsync(Byte[], Int32, Int32, Byte[], Int32, System.String, System.String, System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "System.Threading.Tasks.Task`1[System.Int32] GetDecryptBytesCountAsync(Int32, System.String, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.Custom.CosmosEncryptor+<GetDecryptBytesCountAsync>))]-[System.ObsoleteAttribute(\"It is suggested to use GetEncryptionKeyAsync + key.GetDecryptByteCount to reduce overhead.\")]": {
+              "Type": "Method",
+              "Attributes": [
+                "AsyncStateMachineAttribute",
+                "ObsoleteAttribute"
+              ],
+              "MethodInfo": "System.Threading.Tasks.Task`1[System.Int32] GetDecryptBytesCountAsync(Int32, System.String, System.String, System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "System.Threading.Tasks.Task`1[System.Int32] GetEncryptBytesCountAsync(Int32, System.String, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.Custom.CosmosEncryptor+<GetEncryptBytesCountAsync>))]-[System.ObsoleteAttribute(\"It is suggested to use GetEncryptionKeyAsync + key.GetEncryptByteCount to reduce overhead.\")]": {
+              "Type": "Method",
+              "Attributes": [
+                "AsyncStateMachineAttribute",
+                "ObsoleteAttribute"
+              ],
+              "MethodInfo": "System.Threading.Tasks.Task`1[System.Int32] GetEncryptBytesCountAsync(Int32, System.String, System.String, System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
             "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKeyProvider)": {
               "Type": "Constructor",
@@ -1088,6 +1190,11 @@
         }
       },
       "Members": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKey] GetEncryptionKeyAsync(System.String, System.String, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKey] GetEncryptionKeyAsync(System.String, System.String, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.Threading.Tasks.Task`1[System.Byte[]] DecryptAsync(Byte[], System.String, System.String, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
@@ -1097,6 +1204,26 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[System.Byte[]] EncryptAsync(Byte[], System.String, System.String, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Threading.Tasks.Task`1[System.Int32] DecryptAsync(Byte[], Int32, Int32, Byte[], Int32, System.String, System.String, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[System.Int32] DecryptAsync(Byte[], Int32, Int32, Byte[], Int32, System.String, System.String, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Threading.Tasks.Task`1[System.Int32] EncryptAsync(Byte[], Int32, Int32, Byte[], Int32, System.String, System.String, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[System.Int32] EncryptAsync(Byte[], Int32, Int32, Byte[], Int32, System.String, System.String, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Threading.Tasks.Task`1[System.Int32] GetDecryptBytesCountAsync(Int32, System.String, System.String, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[System.Int32] GetDecryptBytesCountAsync(Int32, System.String, System.String, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Threading.Tasks.Task`1[System.Int32] GetEncryptBytesCountAsync(Int32, System.String, System.String, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[System.Int32] GetEncryptBytesCountAsync(Int32, System.String, System.String, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}

@@ -20,13 +20,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             DataEncryptionKeyFeedIterator feedIterator,
             CosmosResponseFactory responseFactory)
         {
-            if (!(feedIterator is DataEncryptionKeyFeedIterator))
-            {
-                throw new ArgumentOutOfRangeException($"{nameof(feedIterator)} must be of type {nameof(DataEncryptionKeyFeedIterator)}.");
-            }
-
-            this.feedIterator = feedIterator;
-            this.responseFactory = responseFactory;
+            this.feedIterator = feedIterator ?? throw new ArgumentNullException(nameof(feedIterator));
+            this.responseFactory = responseFactory ?? throw new ArgumentNullException(nameof(responseFactory));
         }
 
         public override bool HasMoreResults => this.feedIterator.HasMoreResults;
@@ -77,12 +72,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             JObject contentJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(content);
 
-            if (!(contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is JArray documents))
+            if (contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is not JArray documents)
             {
                 throw new InvalidOperationException("Feed Response body contract was violated. Feed Response did not have an array of Documents.");
             }
 
-            List<T> dataEncryptionKeyPropertiesList = new List<T>(documents.Count);
+            List<T> dataEncryptionKeyPropertiesList = new (documents.Count);
 
             foreach (JToken value in documents)
             {

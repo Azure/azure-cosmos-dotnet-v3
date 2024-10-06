@@ -48,7 +48,7 @@
                  new CosmosDiagnosticsContext(),
                  CancellationToken.None);
 
-            using MemoryStream memoryStream = new MemoryStream();            
+            using MemoryStream memoryStream = new ();
             encryptedStream.CopyTo(memoryStream);
             this.encryptedData = memoryStream.ToArray();
         }

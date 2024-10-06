@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Common;
 
     internal class DekCache
     {
@@ -75,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         public void SetDekProperties(string dekId, DataEncryptionKeyProperties dekProperties)
         {
-            CachedDekProperties cachedDekProperties = new CachedDekProperties(dekProperties, DateTime.UtcNow + this.dekPropertiesTimeToLive);
+            CachedDekProperties cachedDekProperties = new (dekProperties, DateTime.UtcNow + this.dekPropertiesTimeToLive);
             this.DekPropertiesCache.Set(dekId, cachedDekProperties);
         }
 

@@ -56,6 +56,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 {
                     scope.SetDisplayName($"{operationName} {containerName}");
 
+                    QueryTextMode queryTextMode = GetQueryTextMode(requestOptions, clientContext);
+
                     openTelemetryRecorder = OpenTelemetryCoreRecorder.CreateOperationLevelParentActivity(
                         operationScope: scope,
                         operationName: operationName,
@@ -63,7 +65,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         databaseName: databaseName,
                         operationType: operationType,
                         clientContext: clientContext,
-                        config: requestOptions?.CosmosThresholdOptions ?? clientContext.ClientOptions?.CosmosClientTelemetryOptions.CosmosThresholdOptions);
+                        config: requestOptions?.CosmosThresholdOptions ?? clientContext.ClientOptions?.CosmosClientTelemetryOptions.CosmosThresholdOptions,
+                        queryTextMode: queryTextMode);
                 }
 #if !INTERNAL
                 // If there are no listeners at operation level and no parent activity created.
@@ -82,6 +85,22 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 }
             }
             return openTelemetryRecorder;
+        }
+
+        private static QueryTextMode GetQueryTextMode(RequestOptions requestOptions, CosmosClientContext clientContext)
+        {
+            QueryTextMode? queryTextMode = null;
+            if (requestOptions is QueryRequestOptions queryRequestOptions)
+            {
+                queryTextMode = queryRequestOptions.QueryTextMode;
+            }
+            else if (requestOptions is ChangeFeedRequestOptions changeFeedRequestOptions)
+            {
+                queryTextMode = changeFeedRequestOptions.QueryTextMode;
+            }
+
+            queryTextMode ??= clientContext.ClientOptions?.CosmosClientTelemetryOptions?.QueryTextMode ?? QueryTextMode.None;
+            return queryTextMode.Value;
         }
     }
 }

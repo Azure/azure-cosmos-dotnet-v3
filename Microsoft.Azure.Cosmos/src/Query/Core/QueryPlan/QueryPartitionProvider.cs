@@ -320,8 +320,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                        MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
                    });
 
-            Debug.Assert(!(queryInfoInternal.QueryInfo.HasTop && queryInfoInternal.QueryInfo.HasLimit));
-
             return TryCatch<PartitionedQueryExecutionInfoInternal>.FromResult(queryInfoInternal);
         }
 

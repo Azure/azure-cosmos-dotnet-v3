@@ -4,8 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
-    using System;
-
     /// <summary>
     /// The <see cref="ItemRequestOptions"/> that allows to specify options for encryption / decryption.
     /// </summary>

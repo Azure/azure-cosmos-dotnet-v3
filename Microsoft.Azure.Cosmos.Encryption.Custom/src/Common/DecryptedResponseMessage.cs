@@ -53,10 +53,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     this.decryptedContent = null;
                 }
 
-                if (this.responseMessage != null)
-                {
-                    this.responseMessage.Dispose();
-                }
+                this.responseMessage?.Dispose();
             }
         }
     }

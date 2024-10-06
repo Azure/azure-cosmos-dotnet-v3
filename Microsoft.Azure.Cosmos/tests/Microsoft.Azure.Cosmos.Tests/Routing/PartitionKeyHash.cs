@@ -76,10 +76,12 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return false;
             }
 
+#pragma warning disable CA2013 // value boxing, also this check seems redundant (future todo)
             if (object.ReferenceEquals(this, obj))
             {
                 return true;
             }
+#pragma warning restore CA2013
 
             return this.Equals(effectivePartitionKey);
         }

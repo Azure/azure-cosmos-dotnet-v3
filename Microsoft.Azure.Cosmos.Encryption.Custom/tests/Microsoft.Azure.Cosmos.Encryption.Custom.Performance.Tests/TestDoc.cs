@@ -10,15 +10,15 @@
             public static List<string> PathsToEncrypt { get; } = new List<string>() { "/SensitiveStr", "/SensitiveInt", "/SensitiveDict" };
 
             [JsonProperty("id")]
-            public string Id { get; set; }
+            public string Id { get; set; } = default!;
 
-            public string NonSensitive { get; set; }
+            public string NonSensitive { get; set; } = default!;
 
-            public string SensitiveStr { get; set; }
+            public string SensitiveStr { get; set; } = default!;
 
-            public int SensitiveInt { get; set; }
+            public int SensitiveInt { get; set; } = default!;
 
-            public Dictionary<string, string> SensitiveDict { get; set; }
+            public Dictionary<string, string> SensitiveDict { get; set; } = default!;
 
             public TestDoc()
             {
@@ -46,7 +46,7 @@
 
             private static string GenerateRandomString(int size)
             {
-                Random rnd = new Random();
+                Random rnd = new ();
                 const string characters = "abcdefghijklmnopqrstuvwxyz0123456789";
 
                 StringBuilder sb = new();

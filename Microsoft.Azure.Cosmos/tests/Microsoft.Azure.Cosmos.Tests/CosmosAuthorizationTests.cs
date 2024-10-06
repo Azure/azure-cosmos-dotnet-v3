@@ -246,6 +246,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [TestCategory("Flaky")]
         [Timeout(30000)]
         public async Task TestTokenCredentialBackgroundRefreshAsync()
         {

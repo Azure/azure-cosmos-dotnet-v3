@@ -27,7 +27,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosClientContext clientContext;
         private readonly string resourceLink;
         private readonly ResourceType resourceType;
-        private readonly SqlQuerySpec querySpec;
         private bool hasMoreResultsInternal;
 
         public FeedIteratorCore(

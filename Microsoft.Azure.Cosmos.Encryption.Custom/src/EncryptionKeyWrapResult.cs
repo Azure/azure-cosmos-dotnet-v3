@@ -26,12 +26,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         }
 
         /// <summary>
-        /// Wrapped form of the data encryption key.
+        /// Gets wrapped form of the data encryption key.
         /// </summary>
         public byte[] WrappedDataEncryptionKey { get; }
 
         /// <summary>
-        /// Metadata that can be used by the wrap provider to unwrap the key.
+        /// Gets metadata that can be used by the wrap provider to unwrap the key.
         /// </summary>
         public EncryptionKeyWrapMetadata EncryptionKeyWrapMetadata { get; }
     }

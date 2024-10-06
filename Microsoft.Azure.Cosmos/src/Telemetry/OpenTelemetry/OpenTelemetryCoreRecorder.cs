@@ -26,6 +26,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private readonly OperationType operationType = OperationType.Invalid;
         private readonly string connectionModeCache = null;
 
+        private readonly QueryTextMode? queryTextMode = null;
         private OpenTelemetryAttributes response = null;
 
         /// <summary>
@@ -59,13 +60,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string databaseName,
             OperationType operationType, 
             CosmosClientContext clientContext, 
-            CosmosThresholdOptions config)
+            CosmosThresholdOptions config,
+            QueryTextMode queryTextMode)
         {
             this.scope = scope;
             this.config = config;
 
             this.operationType = operationType;
             this.connectionModeCache = Enum.GetName(typeof(ConnectionMode), clientContext.ClientOptions.ConnectionMode);
+            this.queryTextMode = queryTextMode;
 
             if (scope.IsEnabled)
             {
@@ -107,7 +110,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string databaseName,
             Documents.OperationType operationType,
             CosmosClientContext clientContext,
-            CosmosThresholdOptions config)
+            CosmosThresholdOptions config, 
+            QueryTextMode queryTextMode)
         {
             return new OpenTelemetryCoreRecorder(
                         operationScope,
@@ -116,7 +120,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         databaseName,
                         operationType,
                         clientContext,
-                        config);
+                        config,
+                        queryTextMode);
         }
 
         public bool IsEnabled => this.scope.IsEnabled;
@@ -245,6 +250,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.ActivityId, this.response.ActivityId);
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.CorrelatedActivityId, this.response.CorrelatedActivityId);
 
+                    if (this.response.QuerySpec is not null)
+                    {
+                        if (this.queryTextMode == QueryTextMode.All || 
+                            (this.queryTextMode == QueryTextMode.ParameterizedOnly && this.response.QuerySpec.ShouldSerializeParameters()))
+                        {
+                            this.scope.AddAttribute(OpenTelemetryAttributeKeys.QueryText, this.response.QuerySpec?.QueryText);
+                        }
+                    }
+                    
                     if (this.response.Diagnostics != null)
                     {
                         this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(this.response.Diagnostics.GetContactedRegions()));

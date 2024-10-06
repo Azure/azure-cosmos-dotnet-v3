@@ -25,6 +25,11 @@ namespace Microsoft.Azure.Cosmos
 
         public FeedRangeEpk(Documents.Routing.Range<string> range)
         {
+            if (!range.IsMinInclusive)
+            {
+                throw new ArgumentOutOfRangeException(paramName: nameof(range), message: $"{nameof(range.IsMinInclusive)} must be true.");
+            }
+
             this.Range = range ?? throw new ArgumentNullException(nameof(range));
         }
 

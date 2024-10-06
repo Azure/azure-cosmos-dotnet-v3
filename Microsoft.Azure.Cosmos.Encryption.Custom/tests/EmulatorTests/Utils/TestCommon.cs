@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
+namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests.Utils
 {
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Utils;
@@ -21,18 +21,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
         internal static T FromStream<T>(Stream stream)
         {
-            using (StreamReader sr = new StreamReader(stream))
-            using (JsonReader reader = new JsonTextReader(sr))
-            {
-                JsonSerializer serializer = new JsonSerializer();
-                return serializer.Deserialize<T>(reader);
-            }
+            using StreamReader sr = new(stream);
+            using JsonReader reader = new JsonTextReader(sr);
+            JsonSerializer serializer = new();
+            return serializer.Deserialize<T>(reader);
         }
 
         internal static MemoryStream GenerateStreamFromString(string s)
         {
-            MemoryStream stream = new MemoryStream();
-            StreamWriter writer = new StreamWriter(stream);
+            MemoryStream stream = new();
+            StreamWriter writer = new(stream);
             writer.Write(s);
             writer.Flush();
             stream.Position = 0;
@@ -49,10 +47,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
         internal static CosmosClientBuilder GetClientBuilder(string resourceToken)
         {
-            (string endpoint, string authKey) accountInfo = TestCommon.GetAccountInfo();
-            CosmosClientBuilder clientBuilder = new CosmosClientBuilder(
-                accountEndpoint: accountInfo.endpoint,
-                authKeyOrResourceToken: resourceToken ?? accountInfo.authKey);
+            (string endpoint, string authKey) = GetAccountInfo();
+            CosmosClientBuilder clientBuilder = new(
+                accountEndpoint: endpoint,
+                authKeyOrResourceToken: resourceToken ?? authKey);
 
             return clientBuilder;
         }

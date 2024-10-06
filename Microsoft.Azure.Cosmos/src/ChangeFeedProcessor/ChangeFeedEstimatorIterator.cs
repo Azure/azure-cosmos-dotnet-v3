@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 operationType: Documents.OperationType.ReadFeed,
                 requestOptions: null,
                 task: (trace) => this.ReadNextAsync(trace, cancellationToken),
-                openTelemetry: new (OpenTelemetryConstants.Operations.QueryChangeFeedEstimator, (response) => new OpenTelemetryResponse<ChangeFeedProcessorState>(responseMessage: response)),
+                openTelemetry: new (OpenTelemetryConstants.Operations.QueryChangeFeedEstimator, (response) => new OpenTelemetryResponse<ChangeFeedProcessorState>(responseMessage: response, querySpec: this.querySpec)),
                 traceComponent: TraceComponent.ChangeFeed,
                 traceLevel: TraceLevel.Info);
         }

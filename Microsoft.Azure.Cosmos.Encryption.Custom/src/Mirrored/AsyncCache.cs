@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         public void Set(TKey key, TValue value)
         {
-            AsyncLazy<TValue> lazyValue = new AsyncLazy<TValue>(value);
+            AsyncLazy<TValue> lazyValue = new (value);
 
             // Access it to mark as created+completed, so that further calls to getasync do not overwrite.
 #pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 }
             }
 
-            AsyncLazy<TValue> newLazyValue = new AsyncLazy<TValue>(singleValueInitFunc, cancellationToken);
+            AsyncLazy<TValue> newLazyValue = new (singleValueInitFunc, cancellationToken);
 
             // Update the new task in the cache - compare-and-swap style.
             AsyncLazy<TValue> actualValue = this.values.AddOrUpdate(
@@ -188,7 +188,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         public void Clear()
         {
-            ConcurrentDictionary<TKey, AsyncLazy<TValue>> newValues = new ConcurrentDictionary<TKey, AsyncLazy<TValue>>(this.keyEqualityComparer);
+            ConcurrentDictionary<TKey, AsyncLazy<TValue>> newValues = new (this.keyEqualityComparer);
             ConcurrentDictionary<TKey, AsyncLazy<TValue>> oldValues = Interlocked.Exchange(ref this.values, newValues);
 
             // Ensure all tasks are observed.
