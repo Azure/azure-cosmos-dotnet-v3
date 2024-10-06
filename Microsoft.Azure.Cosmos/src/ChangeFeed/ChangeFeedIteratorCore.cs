@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -49,6 +50,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
             this.changeFeedRequestOptions = changeFeedRequestOptions ?? new ChangeFeedRequestOptions();
             this.changeFeedQuerySpec = changeFeedQuerySpec;
+
+            this.operationName = OpenTelemetryConstants.Operations.QueryChangeFeed;
 
             this.lazyMonadicEnumerator = new AsyncLazy<TryCatch<CrossPartitionChangeFeedAsyncEnumerator>>(
                 valueFactory: async (trace, cancellationToken) =>
@@ -226,7 +229,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                                                 operationType: OperationType.ReadFeed,
                                                 requestOptions: this.changeFeedRequestOptions,
                                                 task: (trace) => this.ReadNextInternalAsync(trace, cancellationToken),
-                                                openTelemetry: (response) => new OpenTelemetryResponse(responseMessage: response),
+                                                openTelemetry: new (OpenTelemetryConstants.Operations.QueryChangeFeed, (response) => new OpenTelemetryResponse(responseMessage: response, querySpecFunc: () => this.changeFeedQuerySpec?.ToSqlQuerySpec())),
                                                 traceComponent: TraceComponent.ChangeFeed,
                                                 traceLevel: TraceLevel.Info);
         }

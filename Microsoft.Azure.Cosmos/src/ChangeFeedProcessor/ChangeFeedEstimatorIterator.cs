@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Newtonsoft.Json.Linq;
 
@@ -106,6 +107,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             this.monitoredContainerFeedCreator = monitoredContainerFeedCreator;
             this.documentServiceLeaseContainer = documentServiceLeaseContainer;
+
+            this.operationName = OpenTelemetryConstants.Operations.QueryChangeFeedEstimator;
         }
 
         public override bool HasMoreResults => this.hasMoreResults;
@@ -119,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 operationType: Documents.OperationType.ReadFeed,
                 requestOptions: null,
                 task: (trace) => this.ReadNextAsync(trace, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<ChangeFeedProcessorState>(responseMessage: response),
+                openTelemetry: new (OpenTelemetryConstants.Operations.QueryChangeFeedEstimator, (response) => new OpenTelemetryResponse<ChangeFeedProcessorState>(responseMessage: response, querySpec: this.querySpec)),
                 traceComponent: TraceComponent.ChangeFeed,
                 traceLevel: TraceLevel.Info);
         }

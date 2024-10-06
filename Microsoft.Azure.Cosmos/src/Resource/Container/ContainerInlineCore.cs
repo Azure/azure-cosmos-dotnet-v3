@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.ReadFeed;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tracing;
 
     // This class acts as a wrapper for environments that use SynchronizationContext.
@@ -42,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Read,
                 requestOptions: requestOptions,
                 task: (trace) => base.ReadContainerAsync(trace, requestOptions, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<ContainerProperties>(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.ReadContainer, (response) => new OpenTelemetryResponse<ContainerProperties>(response)));
         }
 
         public override Task<ResponseMessage> ReadContainerStreamAsync(
@@ -56,7 +57,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Read,
                 requestOptions: requestOptions,
                 task: (trace) => base.ReadContainerStreamAsync(trace, requestOptions, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.ReadContainer, (response) => new OpenTelemetryResponse(response)));
         }
 
         public override Task<ContainerResponse> ReplaceContainerAsync(
@@ -71,7 +72,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Replace,
                 requestOptions: requestOptions,
                 task: (trace) => base.ReplaceContainerAsync(containerProperties, trace, requestOptions, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<ContainerProperties>(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.ReplaceContainer, (response) => new OpenTelemetryResponse<ContainerProperties>(response)));
         }
 
         public override Task<ResponseMessage> ReplaceContainerStreamAsync(
@@ -86,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Replace,
                 requestOptions: requestOptions,
                 task: (trace) => base.ReplaceContainerStreamAsync(containerProperties, trace, requestOptions, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.ReplaceContainer, (response) => new OpenTelemetryResponse(response)));
         }
 
         public override Task<ContainerResponse> DeleteContainerAsync(
@@ -100,7 +101,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Delete,
                 requestOptions: requestOptions,
                 task: (trace) => base.DeleteContainerAsync(trace, requestOptions, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<ContainerProperties>(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.DeleteContainer, (response) => new OpenTelemetryResponse<ContainerProperties>(response)));
         }
 
         public override Task<ResponseMessage> DeleteContainerStreamAsync(
@@ -114,7 +115,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Delete,
                 requestOptions: requestOptions,
                 task: (trace) => base.DeleteContainerStreamAsync(trace, requestOptions, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.DeleteContainer, (response) => new OpenTelemetryResponse(response)));
         }
 
         public override Task<int?> ReadThroughputAsync(CancellationToken cancellationToken = default)
@@ -139,7 +140,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Read,
                 requestOptions: requestOptions,
                 task: (trace) => base.ReadThroughputAsync(requestOptions, trace, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<ThroughputProperties>(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.ReadThroughput, (response) => new OpenTelemetryResponse<ThroughputProperties>(response)));
         }
 
         public override Task<ThroughputResponse> ReplaceThroughputAsync(
@@ -154,7 +155,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Replace,
                 requestOptions: requestOptions,
                 task: (trace) => base.ReplaceThroughputAsync(throughput, trace, requestOptions, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<ThroughputProperties>(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.ReplaceThroughput, (response) => new OpenTelemetryResponse<ThroughputProperties>(response)));
         }
 
         public override Task<ThroughputResponse> ReplaceThroughputAsync(
@@ -169,7 +170,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Replace,
                 requestOptions: requestOptions,
                 task: (trace) => base.ReplaceThroughputAsync(throughputProperties, trace, requestOptions, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<ThroughputProperties>(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.ReplaceThroughput, (response) => new OpenTelemetryResponse<ThroughputProperties>(response)));
         }
 
         public override Task<ThroughputResponse> ReadThroughputIfExistsAsync(RequestOptions requestOptions, CancellationToken cancellationToken)
@@ -181,7 +182,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Read,
                 requestOptions: requestOptions,
                 task: (trace) => base.ReadThroughputIfExistsAsync(requestOptions, trace, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<ThroughputProperties>(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.ReadThroughputIfExists, (response) => new OpenTelemetryResponse<ThroughputProperties>(response)));
         }
 
         public override Task<ThroughputResponse> ReplaceThroughputIfExistsAsync(ThroughputProperties throughput, RequestOptions requestOptions, CancellationToken cancellationToken)
@@ -193,7 +194,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Replace,
                 requestOptions: requestOptions,
                 task: (trace) => base.ReplaceThroughputIfExistsAsync(throughput, trace, requestOptions, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<ThroughputProperties>(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.ReplaceThroughputIfExists, (response) => new OpenTelemetryResponse<ThroughputProperties>(response)));
         }
 
         public override Task<ResponseMessage> CreateItemStreamAsync(
@@ -219,7 +220,8 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Create,
                 requestOptions: requestOptions,
                 task: func,
-                openTelemetry: (response) => new OpenTelemetryResponse(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.CreateItem, (response) => new OpenTelemetryResponse(response)),
+                resourceType: Documents.ResourceType.Document);
         }
 
         public override Task<ItemResponse<T>> CreateItemAsync<T>(T item,
@@ -234,7 +236,8 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Create,
                 requestOptions: requestOptions,
                 task: (trace) => base.CreateItemAsync<T>(item, trace, partitionKey, requestOptions, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<T>(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.CreateItem, (response) => new OpenTelemetryResponse<T>(response)),
+                resourceType: Documents.ResourceType.Document);
         }
 
         public override Task<ResponseMessage> ReadItemStreamAsync(
@@ -250,7 +253,8 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Read,
                 requestOptions: requestOptions,
                 task: (trace) => base.ReadItemStreamAsync(id, partitionKey, trace, requestOptions, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.ReadItem, (response) => new OpenTelemetryResponse(response)),
+                resourceType: Documents.ResourceType.Document);
         }
 
         public override Task<ItemResponse<T>> ReadItemAsync<T>(
@@ -260,13 +264,14 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(ReadItemAsync),
+                operationName: nameof(ReadItemAsync),
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Read,
-                requestOptions,
-                (trace) => base.ReadItemAsync<T>(id, partitionKey, trace, requestOptions, cancellationToken),
-                (response) => new OpenTelemetryResponse<T>(response));
+                requestOptions: requestOptions,
+                task: (trace) => base.ReadItemAsync<T>(id, partitionKey, trace, requestOptions, cancellationToken),
+                openTelemetry: new (OpenTelemetryConstants.Operations.ReadItem, (response) => new OpenTelemetryResponse<T>(response)),
+                resourceType: Documents.ResourceType.Document);
         }
 
         public override Task<ResponseMessage> UpsertItemStreamAsync(
@@ -282,7 +287,8 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Upsert,
                 requestOptions: requestOptions,
                 task: (trace) => base.UpsertItemStreamAsync(streamPayload, partitionKey, trace, requestOptions, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.UpsertItem, (response) => new OpenTelemetryResponse(response)),
+                resourceType: Documents.ResourceType.Document);
         }
 
         public override Task<ItemResponse<T>> UpsertItemAsync<T>(
@@ -298,7 +304,8 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Upsert,
                 requestOptions: requestOptions,
                 task: (trace) => base.UpsertItemAsync<T>(item, trace, partitionKey, requestOptions, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<T>(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.UpsertItem, (response) => new OpenTelemetryResponse<T>(response)),
+                resourceType: Documents.ResourceType.Document);
         }
 
         public override Task<ResponseMessage> ReplaceItemStreamAsync(
@@ -315,7 +322,8 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Replace,
                 requestOptions: requestOptions,
                 task: (trace) => base.ReplaceItemStreamAsync(streamPayload, id, partitionKey, trace, requestOptions, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.ReplaceItem, (response) => new OpenTelemetryResponse(response)),
+                resourceType: Documents.ResourceType.Document);
         }
 
         public override Task<ItemResponse<T>> ReplaceItemAsync<T>(
@@ -332,7 +340,8 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Replace,
                 requestOptions: requestOptions,
                 task: (trace) => base.ReplaceItemAsync<T>(item, id, trace, partitionKey, requestOptions, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<T>(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.ReplaceItem, (response) => new OpenTelemetryResponse<T>(response)),
+                resourceType: Documents.ResourceType.Document);
         }
 
         public override Task<ResponseMessage> DeleteItemStreamAsync(
@@ -348,7 +357,8 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Delete,
                 requestOptions: requestOptions,
                 task: (trace) => base.DeleteItemStreamAsync(id, partitionKey, trace, requestOptions, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.DeleteItem, (response) => new OpenTelemetryResponse(response)),
+                resourceType: Documents.ResourceType.Document);
         }
 
         public override Task<ItemResponse<T>> DeleteItemAsync<T>(
@@ -364,7 +374,8 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Delete,
                 requestOptions: requestOptions,
                 task: (trace) => base.DeleteItemAsync<T>(id, partitionKey, trace, requestOptions, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<T>(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.DeleteItem, (response) => new OpenTelemetryResponse<T>(response)),
+                resourceType: Documents.ResourceType.Document);
         }
 
         public override Task<ResponseMessage> PatchItemStreamAsync(
@@ -381,7 +392,8 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Patch,
                 requestOptions: requestOptions,
                 task: (trace) => base.PatchItemStreamAsync(id, partitionKey, patchOperations, trace, requestOptions, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.PatchItem, (response) => new OpenTelemetryResponse(response)),
+                resourceType: Documents.ResourceType.Document);
         }
 
         public override Task<ResponseMessage> PatchItemStreamAsync(
@@ -398,7 +410,8 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Patch,
                 requestOptions: requestOptions,
                 task: (trace) => base.PatchItemStreamAsync(id, partitionKey, streamPayload, trace, requestOptions, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.PatchItem, (response) => new OpenTelemetryResponse(response)),
+                resourceType: Documents.ResourceType.Document);
         }
 
         public override Task<ItemResponse<T>> PatchItemAsync<T>(
@@ -415,7 +428,8 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Patch,
                 requestOptions: requestOptions,
                 task: (trace) => base.PatchItemAsync<T>(id, partitionKey, patchOperations, trace, requestOptions, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<T>(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.PatchItem, (response) => new OpenTelemetryResponse<T>(response)),
+                resourceType: Documents.ResourceType.Document);
         }
 
         public override Task<ResponseMessage> ReadManyItemsStreamAsync(
@@ -428,9 +442,9 @@ namespace Microsoft.Azure.Cosmos
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Read,
-                requestOptions: null,
+                requestOptions: readManyRequestOptions,
                 task: (trace) => base.ReadManyItemsStreamAsync(items, trace, readManyRequestOptions, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse(responseMessage: response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.ReadManyItems, (response) => new OpenTelemetryResponse(responseMessage: response)));
         }
 
         public override Task<FeedResponse<T>> ReadManyItemsAsync<T>(
@@ -439,13 +453,13 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(ReadManyItemsAsync),
+                operationName: nameof(ReadManyItemsAsync),
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Read,
-                requestOptions: null,
+                requestOptions: readManyRequestOptions,
                 task: (trace) => base.ReadManyItemsAsync<T>(items, trace, readManyRequestOptions, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<T>(responseMessage: response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.ReadManyItems, (response) => new OpenTelemetryResponse<T>(responseMessage: response)));
         }
 
         public override FeedIterator GetItemQueryStreamIterator(
@@ -563,6 +577,9 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default)
         {
+            // TODO: The current use of Documents.OperationType.ReadFeed is not a precise fit for this operation.
+            // A more suitable or generic Documents.OperationType should be created in the future to accurately represent this action.
+
             return this.ClientContext.OperationHelperAsync(
                 operationName: nameof(GetFeedRangesAsync),
                 containerName: this.Id,
@@ -658,7 +675,27 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Delete,
                 requestOptions: requestOptions,
                 task: (trace) => base.DeleteAllItemsByPartitionKeyStreamAsync(partitionKey, trace, requestOptions, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.DeleteAllItemsByPartitionKey, (response) => new OpenTelemetryResponse(response)));
+        }
+
+        public override Task<bool> IsFeedRangePartOfAsync(
+            FeedRange x,
+            FeedRange y,
+            CancellationToken cancellationToken = default)
+        {
+            // TODO: The current use of Documents.OperationType.ReadFeed is not a precise fit for this operation.
+            // A more suitable or generic Documents.OperationType should be created in the future to accurately represent this action.
+
+            return this.ClientContext.OperationHelperAsync(
+                operationName: nameof(IsFeedRangePartOfAsync),
+                containerName: this.Id,
+                databaseName: this.Database.Id,
+                operationType: Documents.OperationType.ReadFeed,
+                requestOptions: null,
+                task: (trace) => base.IsFeedRangePartOfAsync(
+                    x,
+                    y,
+                    cancellationToken: cancellationToken));
         }
     }
 }

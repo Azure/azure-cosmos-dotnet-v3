@@ -12,7 +12,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// <summary>
     /// Provides functionality to wrap (encrypt) and unwrap (decrypt) data encryption keys using Key Encryption Keys (KEKs) via EncryptionKeyStoreProvider.
     /// </summary>
+#pragma warning disable CS0618 // Type or member is obsolete
     internal sealed class MdeKeyWrapProvider : EncryptionKeyWrapProvider
+#pragma warning restore CS0618 // Type or member is obsolete
     {
         public EncryptionKeyStoreProvider EncryptionKeyStoreProvider { get; }
 

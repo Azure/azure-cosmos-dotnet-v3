@@ -28,6 +28,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Retrieve Data Encryption Key.
+        /// </summary>
+        /// <param name="dataEncryptionKeyId">Identifier of the data encryption key.</param>
+        /// <param name="encryptionAlgorithm">Identifier of the encryption algorithm.</param>
+        /// <param name="cancellationToken">Token for cancellation.</param>
+        /// <returns>Data Encryption Key</returns>
+        public abstract Task<DataEncryptionKey> GetEncryptionKeyAsync(string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Decrypts the cipherText using the key and algorithm provided.
         /// </summary>
         /// <param name="cipherText">Ciphertext to be decrypted.</param>

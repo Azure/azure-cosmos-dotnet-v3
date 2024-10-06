@@ -101,25 +101,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <summary>
         /// Gets Encryption key that should be used for encryption and decryption.
         /// </summary>
-        internal byte[] EncryptionKey
-        {
-            get { return this.encryptionKey.RootKey; }
-        }
+        internal byte[] EncryptionKey => this.encryptionKey.RootKey;
 
         /// <summary>
         /// Gets MAC key should be used to compute and validate HMAC.
         /// </summary>
-        internal byte[] MACKey
-        {
-            get { return this.macKey.RootKey; }
-        }
+        internal byte[] MACKey => this.macKey.RootKey;
 
         /// <summary>
         /// Gets IV key should be used to compute synthetic IV from a given plain text.
         /// </summary>
-        internal byte[] IVKey
-        {
-            get { return this.ivKey.RootKey; }
-        }
+        internal byte[] IVKey => this.ivKey.RootKey;
     }
 }

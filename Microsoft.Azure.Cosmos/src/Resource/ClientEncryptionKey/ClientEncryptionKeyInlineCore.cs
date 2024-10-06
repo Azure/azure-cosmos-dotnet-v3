@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
 
     /// <summary>
     /// This class acts as a wrapper over <see cref="ClientEncryptionKeyCore"/> for environments that use SynchronizationContext.
@@ -35,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Read,
                 requestOptions: requestOptions,
                 task: (trace) => base.ReadAsync(requestOptions, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<ClientEncryptionKeyProperties>(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.ReadClientEncryptionKey, (response) => new OpenTelemetryResponse<ClientEncryptionKeyProperties>(response)));
         }
 
         public override Task<ClientEncryptionKeyResponse> ReplaceAsync(
@@ -50,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Replace,
                 requestOptions: requestOptions,
                 task: (trace) => base.ReplaceAsync(clientEncryptionKeyProperties, requestOptions, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<ClientEncryptionKeyProperties>(response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.ReplaceClientEncryptionKey, (response) => new OpenTelemetryResponse<ClientEncryptionKeyProperties>(response)));
         }
     }
 }
