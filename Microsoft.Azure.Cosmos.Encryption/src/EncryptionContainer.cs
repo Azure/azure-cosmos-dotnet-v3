@@ -982,10 +982,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 {
                     throw new NotSupportedException($"The number of partition keys passed in the query exceeds the number of keys initialized on the container. Container Id : {this.Id}");
                 }
+
                 bool isPkEncrypted = false;
 
                 // partitionKeyBuilder expects the paths and values to be in same order.
-                for(counter = 0; counter < jArray.Count(); counter++)
+                for (counter = 0; counter < jArray.Count(); counter++)
                 {
                     string path = encryptionSettings.PartitionKeyPaths[counter];
 
