@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         private const string dekId = "dekId";
 
         [ClassInitialize]
-        public static void ClassInitilize(TestContext testContext)
+        public static void ClassInitialize(TestContext testContext)
         {
             _ = testContext;
             MdeEncryptionProcessorTests.encryptionOptions = new EncryptionOptions()
@@ -34,12 +34,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 PathsToEncrypt = TestDoc.PathsToEncrypt
             };
 
+            var DekMock = new Mock<DataEncryptionKey>();
+            DekMock.Setup(m => m.EncryptData(It.IsAny<byte[]>()))
+                .Returns((byte[] plainText) => TestCommon.EncryptData(plainText));
+            DekMock.Setup(m => m.GetEncryptByteCount(It.IsAny<int>()))
+                .Returns((int plainTextLength) => plainTextLength);
+            DekMock.Setup(m => m.EncryptData(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<byte[]>(), It.IsAny<int>()))
+                .Returns((byte[] plainText, int plainTextOffset, int plainTextLength, byte[] output, int outputOffset) => TestCommon.EncryptData(plainText, plainTextOffset, plainTextLength, output, outputOffset));
+
+
             MdeEncryptionProcessorTests.mockEncryptor = new Mock<Encryptor>();
+            MdeEncryptionProcessorTests.mockEncryptor.Setup(m => m.GetEncryptionKeyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((string dekId, string algorithm, CancellationToken token) =>
+                    dekId == MdeEncryptionProcessorTests.dekId ? DekMock.Object : throw new InvalidOperationException("DEK not found."));
+
             MdeEncryptionProcessorTests.mockEncryptor.Setup(m => m.EncryptAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync((byte[] plainText, string dekId, string algo, CancellationToken t) =>
                     dekId == MdeEncryptionProcessorTests.dekId ? TestCommon.EncryptData(plainText) : throw new InvalidOperationException("DEK not found."));
+
             MdeEncryptionProcessorTests.mockEncryptor.Setup(m => m.DecryptAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((byte[] cipherText, string dekId, string algo, CancellationToken t) => 
+                .ReturnsAsync((byte[] cipherText, string dekId, string algo, CancellationToken t) =>
                     dekId == MdeEncryptionProcessorTests.dekId ? TestCommon.DecryptData(cipherText) : throw new InvalidOperationException("Null DEK was returned."));
         }
 
@@ -108,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [TestMethod]
         public async Task EncryptDecryptPropertyWithNullValue()
-        {        
+        {
             TestDoc testDoc = TestDoc.Create();
             testDoc.SensitiveStr = null;
 
