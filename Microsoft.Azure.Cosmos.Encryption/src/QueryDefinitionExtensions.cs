@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// <summary>
     /// Extension methods for <see cref="QueryDefinition"/> to support client-side encryption.
     /// </summary>
+    [CLSCompliant(false)]
     public static class QueryDefinitionExtensions
     {
         /// <summary>

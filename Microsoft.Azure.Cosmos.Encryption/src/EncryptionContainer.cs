@@ -771,6 +771,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             throw new NotImplementedException();
         }
 #endif
+
         /// <summary>
         /// This function handles the scenario where a container is deleted(say from different Client) and recreated with same Id but with different client encryption policy.
         /// The idea is to have the container Rid cached and sent out as part of RequestOptions with Container Rid set in "x-ms-cosmos-intended-collection-rid" header.

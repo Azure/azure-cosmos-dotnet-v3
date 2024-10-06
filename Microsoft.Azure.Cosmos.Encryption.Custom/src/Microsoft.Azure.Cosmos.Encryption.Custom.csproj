@@ -6,6 +6,7 @@
     <LangVersion>$(LangVersion)</LangVersion>
     <CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</CurrentDate>
     <Version>$(CustomEncryptionVersion)</Version>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <Company>Microsoft Corporation</Company>
     <Authors>Microsoft</Authors>
     <Description>This is an internal library that provides an implementation for client-side encryption for Azure Cosmos DB for NoSQL for multi-tenant use case. For more information, refer to https://aka.ms/CosmosCustomClientEncryption</Description>
@@ -38,6 +39,7 @@
      <PackageReference Include="Azure.Core" Version="1.38.0" />
      <PackageReference Include="Azure.Identity" Version="1.11.4" />
      <PackageReference Include="Microsoft.Data.Encryption.Cryptography" Version="1.2.0" />
+     <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
      <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />     
   </ItemGroup>
 
