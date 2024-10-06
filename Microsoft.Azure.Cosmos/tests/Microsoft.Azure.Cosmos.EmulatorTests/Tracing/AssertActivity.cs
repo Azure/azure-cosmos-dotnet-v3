@@ -60,6 +60,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                      "exception.type",
                      "exception.message",
                      "exception.stacktrace",
+                     "db.query.text",
                      "error.type"
                 };
 
