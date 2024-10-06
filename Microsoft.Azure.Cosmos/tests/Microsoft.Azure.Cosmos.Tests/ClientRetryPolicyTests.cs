@@ -88,6 +88,82 @@
         }
 
         /// <summary>
+        /// Test to validate that when 429.3092 is thrown from the service, write requests on
+        /// a multi master account should be converted to 503 and retried to the next region.
+        /// </summary>
+        [TestMethod]
+        [DataRow(true, DisplayName = "Validate retry policy with multi master write account.")]
+        [DataRow(false, DisplayName = "Validate retry policy with single master write account.")]
+        public async Task ShouldRetryAsync_WhenRequestThrottledWithResourceNotAvailable_ShouldThrow503OnMultiMasterWriteAndRetryOnNextRegion(
+            bool isMultiMasterAccount)
+        {
+            // Arrange.
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: isMultiMasterAccount,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                multimasterMetadataWriteRetryTest: true);
+
+            await endpointManager.RefreshLocationAsync();
+
+            ClientRetryPolicy retryPolicy = new (
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new RetryOptions(),
+                enableEndpointDiscovery,
+                false);
+
+            // Creates a sample write request.
+            DocumentServiceRequest request = this.CreateRequest(
+                isReadRequest: false,
+                isMasterResourceType: false);
+
+            // On first attempt should get (default/non hub) location.
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.AreEqual(request.RequestContext.LocationEndpointToRoute, ClientRetryPolicyTests.Location1Endpoint);
+
+            // Creation of 429.3092 Error.
+            HttpStatusCode throttleException = HttpStatusCode.TooManyRequests;
+            SubStatusCodes resourceNotAvailable = SubStatusCodes.SystemResourceUnavailable;
+
+            Exception innerException = new ();
+            Mock<INameValueCollection> nameValueCollection = new ();
+            DocumentClientException documentClientException = new (
+                message: "SystemResourceUnavailable: 429 with 3092 occurred.",
+                innerException: innerException,
+                statusCode: throttleException,
+                substatusCode: resourceNotAvailable,
+                requestUri: request.RequestContext.LocationEndpointToRoute,
+                responseHeaders: nameValueCollection.Object);
+
+            // Act.
+            Task<ShouldRetryResult> shouldRetry = retryPolicy.ShouldRetryAsync(
+                documentClientException,
+                new CancellationToken());
+
+            // Assert.
+            Assert.IsTrue(shouldRetry.Result.ShouldRetry);
+            retryPolicy.OnBeforeSendRequest(request);
+
+            if (isMultiMasterAccount)
+            {
+                Assert.AreEqual(
+                    expected: ClientRetryPolicyTests.Location2Endpoint,
+                    actual: request.RequestContext.LocationEndpointToRoute,
+                    message: "The request should be routed to the next region, since the accound is a multi master write account and the request" +
+                    "failed with 429.309 which got converted into 503 internally. This should trigger another retry attempt to the next region.");
+            }
+            else
+            {
+                Assert.AreEqual(
+                    expected: ClientRetryPolicyTests.Location1Endpoint,
+                    actual: request.RequestContext.LocationEndpointToRoute,
+                    message: "Since this is asingle master account, the write request should not be retried on the next region.");
+            }
+        }
+
+        /// <summary>
         /// Tests to see if different 503 substatus codes are handeled correctly
         /// </summary>
         /// <param name="testCode">The substatus code being Tested.</param>
@@ -194,54 +270,54 @@
         }
 
         [TestMethod]
-        public Task ClientRetryPolicy_Retry_SingleMaster_Read_PreferredLocations()
+        public async Task ClientRetryPolicy_Retry_SingleMaster_Read_PreferredLocationsAsync()
         {
-            return this.ValidateConnectTimeoutTriggersClientRetryPolicy(isReadRequest: true, useMultipleWriteLocations: false, usesPreferredLocations: true, shouldHaveRetried: true);
+            await this.ValidateConnectTimeoutTriggersClientRetryPolicyAsync(isReadRequest: true, useMultipleWriteLocations: false, usesPreferredLocations: true, shouldHaveRetried: true);
         }
 
         [TestMethod]
-        public Task ClientRetryPolicy_Retry_MultiMaster_Read_PreferredLocations()
+        public async Task ClientRetryPolicy_Retry_MultiMaster_Read_PreferredLocationsAsync()
         {
-            return this.ValidateConnectTimeoutTriggersClientRetryPolicy(isReadRequest: true, useMultipleWriteLocations: true, usesPreferredLocations: true, shouldHaveRetried: true);
+            await this.ValidateConnectTimeoutTriggersClientRetryPolicyAsync(isReadRequest: true, useMultipleWriteLocations: true, usesPreferredLocations: true, shouldHaveRetried: true);
         }
 
         [TestMethod]
-        public Task ClientRetryPolicy_Retry_MultiMaster_Write_PreferredLocations()
+        public async Task ClientRetryPolicy_Retry_MultiMaster_Write_PreferredLocationsAsync()
         {
-            return this.ValidateConnectTimeoutTriggersClientRetryPolicy(isReadRequest: false, useMultipleWriteLocations: true, usesPreferredLocations: true, shouldHaveRetried: true);
+            await this.ValidateConnectTimeoutTriggersClientRetryPolicyAsync(isReadRequest: false, useMultipleWriteLocations: true, usesPreferredLocations: true, shouldHaveRetried: true);
         }
 
         [TestMethod]
-        public Task ClientRetryPolicy_NoRetry_SingleMaster_Write_PreferredLocations()
+        public async Task ClientRetryPolicy_NoRetry_SingleMaster_Write_PreferredLocationsAsync()
         {
-            return this.ValidateConnectTimeoutTriggersClientRetryPolicy(isReadRequest: false, useMultipleWriteLocations: false, usesPreferredLocations: true, shouldHaveRetried: false);
+            await this.ValidateConnectTimeoutTriggersClientRetryPolicyAsync(isReadRequest: false, useMultipleWriteLocations: false, usesPreferredLocations: true, shouldHaveRetried: false);
         }
 
         [TestMethod]
-        public Task ClientRetryPolicy_NoRetry_SingleMaster_Read_NoPreferredLocations()
+        public async Task ClientRetryPolicy_NoRetry_SingleMaster_Read_NoPreferredLocationsAsync()
         {
-            return this.ValidateConnectTimeoutTriggersClientRetryPolicy(isReadRequest: true, useMultipleWriteLocations: false, usesPreferredLocations: false, shouldHaveRetried: false);
+            await this.ValidateConnectTimeoutTriggersClientRetryPolicyAsync(isReadRequest: true, useMultipleWriteLocations: false, usesPreferredLocations: false, shouldHaveRetried: false);
         }
 
         [TestMethod]
-        public Task ClientRetryPolicy_NoRetry_SingleMaster_Write_NoPreferredLocations()
+        public async Task ClientRetryPolicy_NoRetry_SingleMaster_Write_NoPreferredLocationsAsync()
         {
-            return this.ValidateConnectTimeoutTriggersClientRetryPolicy(isReadRequest: false, useMultipleWriteLocations: false, usesPreferredLocations: false, shouldHaveRetried: false);
+            await this.ValidateConnectTimeoutTriggersClientRetryPolicyAsync(isReadRequest: false, useMultipleWriteLocations: false, usesPreferredLocations: false, shouldHaveRetried: false);
         }
 
         [TestMethod]
-        public Task ClientRetryPolicy_NoRetry_MultiMaster_Read_NoPreferredLocations()
+        public async Task ClientRetryPolicy_NoRetry_MultiMaster_Read_NoPreferredLocationsAsync()
         {
-            return this.ValidateConnectTimeoutTriggersClientRetryPolicy(isReadRequest: true, useMultipleWriteLocations: true, usesPreferredLocations: false, false);
+            await this.ValidateConnectTimeoutTriggersClientRetryPolicyAsync(isReadRequest: true, useMultipleWriteLocations: true, usesPreferredLocations: false, false);
         }
 
         [TestMethod]
-        public Task ClientRetryPolicy_NoRetry_MultiMaster_Write_NoPreferredLocations()
+        public async Task ClientRetryPolicy_NoRetry_MultiMaster_Write_NoPreferredLocationsAsync()
         {
-            return this.ValidateConnectTimeoutTriggersClientRetryPolicy(isReadRequest: false, useMultipleWriteLocations: true, usesPreferredLocations: false, false);
+            await this.ValidateConnectTimeoutTriggersClientRetryPolicyAsync(isReadRequest: false, useMultipleWriteLocations: true, usesPreferredLocations: false, false);
         }
 
-        private async Task ValidateConnectTimeoutTriggersClientRetryPolicy(
+        private async Task ValidateConnectTimeoutTriggersClientRetryPolicyAsync(
             bool isReadRequest,
             bool useMultipleWriteLocations,
             bool usesPreferredLocations,

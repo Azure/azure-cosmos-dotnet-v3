@@ -54,5 +54,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         {
             return this.QueryText.Length > 0;
         }
+
+        /// <summary>
+        /// Converts to SQL Query Specs
+        /// </summary>
+        internal SqlQuerySpec ToSqlQuerySpec()
+        {
+            return new SqlQuerySpec(this.QueryText);
+        }
     }
 }

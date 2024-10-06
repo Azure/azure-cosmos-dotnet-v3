@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class FeedIteratorInlineCore<T> : FeedIteratorInternal<T>
@@ -27,8 +28,12 @@ namespace Microsoft.Azure.Cosmos
             this.feedIteratorInternal = feedIteratorInternal;
             this.clientContext = clientContext;
 
+            this.querySpec = feedIterator.querySpec;
             this.container = feedIteratorInternal.container;
             this.databaseName = feedIteratorInternal.databaseName;
+
+            this.operationName = feedIteratorInternal.operationName;
+            this.operationType = feedIteratorInternal.operationType;
         }
 
         internal FeedIteratorInlineCore(
@@ -40,6 +45,9 @@ namespace Microsoft.Azure.Cosmos
 
             this.container = feedIteratorInternal.container;
             this.databaseName = feedIteratorInternal.databaseName;
+
+            this.operationName = feedIteratorInternal.operationName;
+            this.operationType = feedIteratorInternal.operationType;
         }
 
         public override bool HasMoreResults => this.feedIteratorInternal.HasMoreResults;
@@ -53,7 +61,16 @@ namespace Microsoft.Azure.Cosmos
                         operationType: Documents.OperationType.ReadFeed,
                         requestOptions: null,
                         task: trace => this.feedIteratorInternal.ReadNextAsync(trace, cancellationToken),
-                        openTelemetry: (response) => new OpenTelemetryResponse<T>(responseMessage: response));
+                        openTelemetry: new (this.feedIteratorInternal.operationName, (response) =>
+                        {
+                            OpenTelemetryResponse<T> openTelemetryResponse = new OpenTelemetryResponse<T>(responseMessage: response, querySpec: this.querySpec);
+
+                            if (this.operationType.HasValue)
+                            {
+                                openTelemetryResponse.OperationType = this.operationType.Value;
+                            }
+                            return openTelemetryResponse;
+                        }));
         }
 
         public override Task<FeedResponse<T>> ReadNextAsync(ITrace trace, CancellationToken cancellationToken)
