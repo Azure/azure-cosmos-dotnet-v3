@@ -12,7 +12,6 @@
 		<LangVersion>10.0</LangVersion>
 		<AboveDirBuildProps>$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))</AboveDirBuildProps>
 		<DefineConstants Condition=" '$(IsNightly)' == 'true' or '$(IsPreview)' == 'true' ">$(DefineConstants);PREVIEW;ENCRYPTIONPREVIEW</DefineConstants>
-		<NoWarn>NU1903</NoWarn>
 	</PropertyGroup>
 	<Import Project="$(AboveDirBuildProps)" Condition=" '$(AboveDirBuildProps)' != '' " />
 </Project>
