@@ -43,7 +43,8 @@ namespace Microsoft.Azure.Cosmos.Query
             RequestOptions requestOptions,
             CosmosClientContext clientContext,
             Guid correlatedActivityId,
-            ContainerInternal container)
+            ContainerInternal container,
+            SqlQuerySpec sqlQuerySpec)
         {
             this.cosmosQueryContext = cosmosQueryContext ?? throw new ArgumentNullException(nameof(cosmosQueryContext));
             this.queryPipelineStage = cosmosQueryExecutionContext ?? throw new ArgumentNullException(nameof(cosmosQueryExecutionContext));
@@ -53,6 +54,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.hasMoreResults = true;
             this.correlatedActivityId = correlatedActivityId;
 
+            this.querySpec = sqlQuerySpec;
             this.container = container;
             this.operationName = OpenTelemetryConstants.Operations.QueryItems;
             this.operationType = Documents.OperationType.Query;
@@ -119,7 +121,8 @@ namespace Microsoft.Azure.Cosmos.Query
                         queryRequestOptions,
                         clientContext,
                         correlatedActivityId,
-                        containerCore);
+                        containerCore,
+                        sqlQuerySpec);
                 }
 
                 requestContinuationToken = tryParse.Result;
@@ -152,7 +155,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 queryRequestOptions,
                 clientContext,
                 correlatedActivityId,
-                containerCore);
+                containerCore,
+                sqlQuerySpec);
         }
 
         public override bool HasMoreResults => this.hasMoreResults;

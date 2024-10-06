@@ -131,6 +131,52 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             requestChargeHelper?.CompareRequestCharge(testName);
         }
 
+        internal static async Task DeleteAllDatabasesAsync(CosmosClient client,
+            IEnumerable<string> excludeDbIds = null,
+            bool deleteContainersOnExcludedDbs = true)
+        {
+            if (client == null)
+            {
+                return;
+            }
+
+            using (FeedIterator<DatabaseProperties> feedIterator = client.GetDatabaseQueryIterator<DatabaseProperties>())
+            {
+                while (feedIterator.HasMoreResults)
+                {
+                    FeedResponse<DatabaseProperties> response = await feedIterator.ReadNextAsync();
+                    foreach (DatabaseProperties database in response)
+                    {
+                        Cosmos.Database db = client.GetDatabase(database.Id);
+                        if (excludeDbIds?.Contains(database.Id) != true)
+                        {
+                            await db.DeleteAsync();
+                        }
+                        else if(deleteContainersOnExcludedDbs)
+                        {
+                            await DeleteAllContainersAsync(db);
+                        }
+                    }
+                }
+            }
+        }
+
+        private static async Task DeleteAllContainersAsync(Cosmos.Database db)
+        {
+            using (FeedIterator<ContainerProperties> containerfeedIterator = db.GetContainerQueryIterator<ContainerProperties>())
+            {
+                while (containerfeedIterator.HasMoreResults)
+                {
+                    FeedResponse<ContainerProperties> containerResponse = await containerfeedIterator.ReadNextAsync();
+                    foreach (ContainerProperties container in containerResponse)
+                    {
+                        System.Diagnostics.Trace.TraceInformation($"Deleting container {container.Id}");
+                        await db.GetContainer(container.Id).DeleteContainerAsync();
+                    }
+                }
+            }
+        }
+
         /// <summary>
         /// Helper function to run a test scenario for a random client of type DocumentClientType.
         /// </summary>

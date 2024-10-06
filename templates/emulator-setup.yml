@@ -6,11 +6,28 @@ steps:
       Invoke-WebRequest "$env:EMULATORMSIURL" -OutFile "$env:temp\azure-cosmosdb-emulator.msi"
       Write-Host "Finished Downloading Cosmos Emulator - $env:temp\azure-cosmosdb-emulator.msi" -ForegroundColor green 
       dir "$env:temp" 
-      choco install lessmsi
-      choco upgrade lessmsi
-      mkdir "$env:temp\Azure Cosmos DB Emulator"
-      lessmsi x "$env:temp\azure-cosmosdb-emulator.msi" "$env:temp\Azure Cosmos DB Emulator\"
-      Add-MpPreference -ExclusionPath "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator"
+
+      function Remove-DirectoryIfExists {
+          param ([string]$Path)
+
+          if (Test-Path -Path $Path -PathType Container) {
+            Remove-Item -Path $Path -Recurse -Force
+            Write-Output "Folder deleted: $Path"
+          } else {
+            Write-Output "Folder does not exist: $Path"
+          }
+      }
+
+      $lessMsiDir="$env:temp\lessmsi"
+      $emulatorDir="$env:temp\Azure Cosmos DB Emulator\"
+
+      Remove-DirectoryIfExists -Path $lessMsiDir
+      Remove-DirectoryIfExists -Path $emulatorDir
+
+      Expand-Archive -LiteralPath 'tools\lessmsi-v2.1.1.zip' -DestinationPath $lessMsiDir
+      &"$env:temp\lessmsi\lessmsi.exe" x "$env:temp\azure-cosmosdb-emulator.msi" "$emulatorDir"
+
+      Add-MpPreference -ExclusionPath "$emulatorDir\SourceDir\Azure Cosmos DB Emulator"
       Add-MpPreference -ExclusionPath "$env:localappdata\CosmosDBEmulator"
     displayName: Downloading and Installing Cosmos DB Emulator
     failOnStderr: true
@@ -22,8 +39,8 @@ steps:
 
       for ($j=0; $j -lt 3; $j++) {
         Write-Host "Attempt $j"
-        Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=50 /Consistency=Strong /EnablePreview /EnableSqlComputeEndpoint" -Verb RunAs
-        for ($i=0; $i -lt 5; $i++) {
+        Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=10 /Consistency=Strong /EnablePreview /EnableSqlComputeEndpoint" -Verb RunAs
+        for ($i=0; $i -lt (3+2*$j); $i++) {
           $status = Get-CosmosDbEmulatorStatus
           Write-Host "Cosmos DB Emulator Status: $status"
           if ($status -ne "Running") {
