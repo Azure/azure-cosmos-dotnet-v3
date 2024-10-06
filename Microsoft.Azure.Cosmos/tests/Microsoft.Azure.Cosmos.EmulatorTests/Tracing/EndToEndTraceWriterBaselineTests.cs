@@ -65,6 +65,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                         },
                         QueryTextMode = QueryTextMode.All
                     }));
+            await Util.DeleteAllDatabasesAsync(client);
 
             bulkClient = TestCommon.CreateCosmosClient(builder => builder
                 .WithBulkExecution(true)
