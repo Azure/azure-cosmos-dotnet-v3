@@ -8,9 +8,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using System.Buffers;
     using System.Collections.Generic;
 
+#pragma warning disable SA1402 // File may only contain a single type
     internal class ArrayPoolManager<T> : IDisposable
+#pragma warning restore SA1402 // File may only contain a single type
     {
-        private List<T[]> rentedBuffers = new List<T[]>();
+        private List<T[]> rentedBuffers = new ();
         private bool disposedValue;
 
         public T[] Rent(int minimumLength)

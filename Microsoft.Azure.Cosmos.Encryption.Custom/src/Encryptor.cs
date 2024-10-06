@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// </summary>
     public abstract class Encryptor
     {
-
         /// <summary>
         /// Retrieve Data Encryption Key.
         /// </summary>

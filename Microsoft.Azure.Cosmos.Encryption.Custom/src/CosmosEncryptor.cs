@@ -64,6 +64,5 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             return dek.DecryptData(cipherText);
         }
-
     }
 }
