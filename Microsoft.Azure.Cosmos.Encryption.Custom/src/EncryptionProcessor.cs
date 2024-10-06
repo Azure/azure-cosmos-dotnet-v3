@@ -105,16 +105,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                             continue;
                         }
 
-                        (typeMarker, plainText, int plainTextLength) = Serialize(propertyValue, arrayPoolManager);
+                        (typeMarker, plainText, int plainTextLength) = EncryptionProcessor.Serialize(propertyValue, arrayPoolManager);
 
                         if (plainText == null)
                         {
                             continue;
                         }
 
-                        int cipherTextLength = encryptionKey.GetEncryptByteCount(plainText.Length);
+                        int cipherTextLength = encryptionKey.GetEncryptByteCount(plainTextLength);
 
-                        byte[] cipherTextWithTypeMarker = arrayPoolManager.Rent(cipherTextLength + 1);
+                        byte[] cipherTextWithTypeMarker = new byte[cipherTextLength + 1];
 
                         cipherTextWithTypeMarker[0] = (byte)typeMarker;
 
@@ -130,7 +130,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                             throw new InvalidOperationException($"{nameof(Encryptor)} returned null cipherText from {nameof(EncryptAsync)}.");
                         }
 
-                        itemJObj[propertyName] = cipherTextWithTypeMarker.AsSpan(0, encryptedBytesCount + 1).ToArray();
+                        itemJObj[propertyName] = cipherTextWithTypeMarker;
                         pathsEncrypted.Add(pathToEncrypt);
                     }
 
@@ -212,8 +212,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Debug.Assert(encryptor != null);
             Debug.Assert(diagnosticsContext != null);
 
-            JObject itemJObj = RetrieveItem(input);
-            JObject encryptionPropertiesJObj = RetrieveEncryptionProperties(itemJObj);
+            JObject itemJObj = EncryptionProcessor.RetrieveItem(input);
+            JObject encryptionPropertiesJObj = EncryptionProcessor.RetrieveEncryptionProperties(itemJObj);
 
             if (encryptionPropertiesJObj == null)
             {
@@ -225,13 +225,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 #pragma warning disable CS0618 // Type or member is obsolete
             DecryptionContext decryptionContext = encryptionProperties.EncryptionAlgorithm switch
             {
-                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized => await MdeEncAlgoDecryptObjectAsync(
+                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized => await EncryptionProcessor.MdeEncAlgoDecryptObjectAsync(
                     itemJObj,
                     encryptor,
                     encryptionProperties,
                     diagnosticsContext,
                     cancellationToken),
-                CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized => await LegacyEncAlgoDecryptContentAsync(
+                CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized => await EncryptionProcessor.LegacyEncAlgoDecryptContentAsync(
                     itemJObj,
                     encryptionProperties,
                     encryptor,
@@ -255,7 +255,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             Debug.Assert(encryptor != null);
 
-            JObject encryptionPropertiesJObj = RetrieveEncryptionProperties(document);
+            JObject encryptionPropertiesJObj = EncryptionProcessor.RetrieveEncryptionProperties(document);
 
             if (encryptionPropertiesJObj == null)
             {
@@ -266,13 +266,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 #pragma warning disable CS0618 // Type or member is obsolete
             DecryptionContext decryptionContext = encryptionProperties.EncryptionAlgorithm switch
             {
-                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized => await MdeEncAlgoDecryptObjectAsync(
+                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized => await EncryptionProcessor.MdeEncAlgoDecryptObjectAsync(
                     document,
                     encryptor,
                     encryptionProperties,
                     diagnosticsContext,
                     cancellationToken),
-                CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized => await LegacyEncAlgoDecryptContentAsync(
+                CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized => await EncryptionProcessor.LegacyEncAlgoDecryptContentAsync(
                     document,
                     encryptionProperties,
                     encryptor,
@@ -322,14 +322,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
                 byte[] plainText = arrayPoolManager.Rent(plainTextLength);
 
-                int decryptedCount = MdeEncAlgoDecryptProperty(
+                int decryptedCount = EncryptionProcessor.MdeEncAlgoDecryptProperty(
                     encryptionKey,
                     cipherTextWithTypeMarker,
                     cipherTextOffset: 1,
                     cipherTextWithTypeMarker.Length - 1,
                     plainText);
 
-                DeserializeAndAddProperty(
+                EncryptionProcessor.DeserializeAndAddProperty(
                     (TypeMarker)cipherTextWithTypeMarker[0],
                     plainText.AsSpan(0, decryptedCount),
                     document,
@@ -338,7 +338,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 pathsDecrypted.Add(path);
             }
 
-            DecryptionContext decryptionContext = CreateDecryptionContext(
+            DecryptionContext decryptionContext = EncryptionProcessor.CreateDecryptionContext(
                 pathsDecrypted,
                 encryptionProperties.DataEncryptionKeyId);
 
@@ -417,7 +417,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 pathsDecrypted.Add("/" + property.Name);
             }
 
-            DecryptionContext decryptionContext = CreateDecryptionContext(
+            DecryptionContext decryptionContext = EncryptionProcessor.CreateDecryptionContext(
                 pathsDecrypted,
                 encryptionProperties.DataEncryptionKeyId);
 
@@ -627,7 +627,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(null);
                 using (diagnosticsContext.CreateScope("EncryptionProcessor.DeserializeAndDecryptResponseAsync"))
                 {
-                    await DecryptAsync(
+                    await EncryptionProcessor.DecryptAsync(
                         document,
                         encryptor,
                         diagnosticsContext,
@@ -637,7 +637,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             // the contents of contentJObj get decrypted in place for MDE algorithm model, and for legacy model _ei property is removed
             // and corresponding decrypted properties are added back in the documents.
-            return BaseSerializer.ToStream(contentJObj);
+            return EncryptionProcessor.BaseSerializer.ToStream(contentJObj);
         }
     }
 }

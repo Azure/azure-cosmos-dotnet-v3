@@ -32,9 +32,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     {
                         ArrayPool<T>.Shared.Return(buffer, clearArray: true);
                     }
+
+                    this.rentedBuffers = null;
                 }
 
-                this.rentedBuffers = null;
                 this.disposedValue = true;
             }
         }
