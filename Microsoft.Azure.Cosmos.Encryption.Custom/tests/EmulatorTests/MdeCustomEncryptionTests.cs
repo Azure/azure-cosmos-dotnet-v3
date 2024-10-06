@@ -65,12 +65,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             testKeyStoreProvider = new TestEncryptionKeyStoreProvider();
             await LegacyClassInitializeAsync();
 
-            encryptor = new TestEncryptor(dekProvider);
-            encryptionContainer = itemContainer.WithEncryptor(encryptor);
-            encryptionContainerForChangeFeed = itemContainerForChangeFeed.WithEncryptor(encryptor);
-
-            await dekProvider.InitializeAsync(database, keyContainer.Id);
-            dekProperties = await CreateDekAsync(dekProvider, dekId);
+            MdeCustomEncryptionTests.encryptor = new TestEncryptor(MdeCustomEncryptionTests.dekProvider);
+            MdeCustomEncryptionTests.encryptionContainer = MdeCustomEncryptionTests.itemContainer.WithEncryptor(encryptor);
+            MdeCustomEncryptionTests.encryptionContainerForChangeFeed = MdeCustomEncryptionTests.itemContainerForChangeFeed.WithEncryptor(encryptor);
+            
+            await MdeCustomEncryptionTests.dekProvider.InitializeAsync(MdeCustomEncryptionTests.database, MdeCustomEncryptionTests.keyContainer.Id);
+            MdeCustomEncryptionTests.dekProperties = await MdeCustomEncryptionTests.CreateDekAsync(MdeCustomEncryptionTests.dekProvider, MdeCustomEncryptionTests.dekId);
         }
 
         [ClassCleanup]
