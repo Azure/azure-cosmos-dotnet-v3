@@ -28,6 +28,7 @@ namespace Microsoft.Azure.Cosmos
             this.feedIteratorInternal = feedIteratorInternal;
             this.clientContext = clientContext;
 
+            this.querySpec = feedIteratorInternal.querySpec;
             this.container = feedIteratorInternal.container;
             this.databaseName = feedIteratorInternal.databaseName;
 
@@ -62,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
                         task: (trace) => this.feedIteratorInternal.ReadNextAsync(trace, cancellationToken),
                         openTelemetry: new (this.operationName, (response) =>
                         {
-                            OpenTelemetryResponse openTelemetryResponse = new OpenTelemetryResponse(responseMessage: response);
+                            OpenTelemetryResponse openTelemetryResponse = new OpenTelemetryResponse(responseMessage: response, querySpecFunc: () => this.querySpec);
 
                             if (this.operationType.HasValue)
                             {

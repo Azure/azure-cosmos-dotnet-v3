@@ -10,13 +10,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using System.Linq;
     using System.Text;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     internal static class TestCommon
     {
         internal static byte[] GenerateRandomByteArray()
         {
-            Random random = new Random();
+            Random random = new();
             byte[] b = new byte[10];
             random.NextBytes(b);
             return b;
@@ -55,10 +54,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         internal static T FromStream<T>(Stream stream)
         {
-            using (StreamReader sr = new StreamReader(stream))
+            using (StreamReader sr = new(stream))
             using (JsonReader reader = new JsonTextReader(sr))
             {
-                JsonSerializer serializer = new JsonSerializer();
+                JsonSerializer serializer = new();
                 return serializer.Deserialize<T>(reader);
             }
         }

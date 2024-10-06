@@ -78,6 +78,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             EncryptionKeyWrapMetadata updatedMetadata = null;
             InMemoryRawDek inMemoryRawDek = null;
 
+#pragma warning disable CS0618 // Type or member is obsolete
             if (string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized, StringComparison.Ordinal))
             {
                 (wrappedDek, updatedMetadata, inMemoryRawDek) = await this.GenerateAndWrapRawDekForLegacyEncAlgoAsync(
@@ -91,8 +92,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 (wrappedDek, updatedMetadata) = this.GenerateAndWrapPdekForMdeEncAlgo(id, encryptionKeyWrapMetadata);
             }
+#pragma warning restore CS0618 // Type or member is obsolete
 
-            DataEncryptionKeyProperties dekProperties = new DataEncryptionKeyProperties(
+            DataEncryptionKeyProperties dekProperties = new (
                     id,
                     encryptionAlgorithm,
                     wrappedDek,
@@ -118,10 +120,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             this.DekProvider.DekCache.SetDekProperties(id, dekProperties);
 
+#pragma warning disable CS0618 // Type or member is obsolete
             if (string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized, StringComparison.Ordinal))
             {
                 this.DekProvider.DekCache.SetRawDek(id, inMemoryRawDek);
             }
+#pragma warning restore CS0618 // Type or member is obsolete
 
             return new EncryptionItemResponse<DataEncryptionKeyProperties>(dekResponse, dekProperties);
         }
@@ -165,6 +169,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             byte[] rawkey = null;
 
+#pragma warning disable CS0618 // Type or member is obsolete
             if (string.Equals(dekProperties.EncryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized, StringComparison.Ordinal))
             {
                 InMemoryRawDek inMemoryRawDek = await this.FetchUnwrappedAsync(
@@ -183,15 +188,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
                 rawkey = encryptionKeyUnwrapResult.DataEncryptionKey;
             }
+#pragma warning restore CS0618 // Type or member is obsolete
 
             if (!string.IsNullOrEmpty(encryptionAlgorithm))
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 if (string.Equals(dekProperties.EncryptionAlgorithm, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized, StringComparison.Ordinal)
                     && string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized, StringComparison.Ordinal))
                 {
                     throw new InvalidOperationException($"Rewrap operation with EncryptionAlgorithm '{encryptionAlgorithm}' is not supported on Data Encryption Keys" +
                         $" which are configured with '{CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized}'. ");
                 }
+#pragma warning restore CS0618 // Type or member is obsolete
 
                 dekProperties.EncryptionAlgorithm = encryptionAlgorithm;
             }
@@ -204,14 +212,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 diagnosticsContext,
                 cancellationToken);
 
-            if (requestOptions == null)
-            {
-                requestOptions = new ItemRequestOptions();
-            }
+            requestOptions ??= new ItemRequestOptions();
 
             requestOptions.IfMatchEtag = dekProperties.ETag;
 
-            DataEncryptionKeyProperties newDekProperties = new DataEncryptionKeyProperties(dekProperties)
+            DataEncryptionKeyProperties newDekProperties = new (dekProperties)
             {
                 WrappedDataEncryptionKey = wrappedDek,
                 EncryptionKeyWrapMetadata = updatedMetadata,
@@ -264,10 +269,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             this.DekProvider.DekCache.SetDekProperties(id, dekProperties);
 
+#pragma warning disable CS0618 // Type or member is obsolete
             if (string.Equals(newDekProperties.EncryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized, StringComparison.Ordinal))
             {
                 this.DekProvider.DekCache.SetRawDek(id, updatedRawDek);
             }
+#pragma warning restore CS0618 // Type or member is obsolete
 
             return new EncryptionItemResponse<DataEncryptionKeyProperties>(dekResponse, dekProperties);
         }
@@ -308,8 +315,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             if (this.DekProvider.EncryptionKeyWrapProvider == null)
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 throw new InvalidOperationException($"For use of '{CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized}' algorithm based DEK, " +
                     "Encryptor or CosmosDataEncryptionKeyProvider needs to be initialized with EncryptionKeyWrapProvider.");
+#pragma warning restore CS0618 // Type or member is obsolete
             }
 
             EncryptionKeyUnwrapResult unwrapResult;
@@ -330,7 +339,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             // Init PlainDataEncryptionKey and then Init MDE Algorithm using PlaintextDataEncryptionKey.
             // PlaintextDataEncryptionKey derives DataEncryptionkey to Init a Raw Root Key received via Legacy WrapProvider Unwrap result.
-            PlaintextDataEncryptionKey plaintextDataEncryptionKey = new PlaintextDataEncryptionKey(
+            PlaintextDataEncryptionKey plaintextDataEncryptionKey = new (
                 dekProperties.Id,
                 unwrapResult.DataEncryptionKey);
 
@@ -419,6 +428,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             using (diagnosticsContext.CreateScope("WrapDataEncryptionKey"))
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 if (string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized, StringComparison.Ordinal) && this.DekProvider.EncryptionKeyWrapProvider != null)
                 {
                     keyWrapResponse = await this.DekProvider.EncryptionKeyWrapProvider.WrapKeyAsync(key, metadata, cancellationToken);
@@ -434,10 +444,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                             " Please initialize the Encryptor or CosmosDataEncryptionKeyProvider with an implementation of the EncryptionKeyStoreProvider / EncryptionKeyWrapProvider.",
                             encryptionAlgorithm));
                 }
+#pragma warning restore CS0618 // Type or member is obsolete
             }
 
             // Verify
-            DataEncryptionKeyProperties tempDekProperties = new DataEncryptionKeyProperties(
+            DataEncryptionKeyProperties tempDekProperties = new (
                 id,
                 encryptionAlgorithm,
                 keyWrapResponse.WrappedDataEncryptionKey,
@@ -446,6 +457,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             byte[] rawKey = null;
             InMemoryRawDek roundTripResponse = null;
+#pragma warning disable CS0618 // Type or member is obsolete
             if (string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized, StringComparison.Ordinal))
             {
                 roundTripResponse = await this.UnwrapAsync(tempDekProperties, diagnosticsContext, cancellationToken);
@@ -460,6 +472,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
                 rawKey = unwrapResult.DataEncryptionKey;
             }
+#pragma warning restore CS0618 // Type or member is obsolete
 
             if (!rawKey.SequenceEqual(key))
             {
@@ -478,8 +491,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             if (this.DekProvider.EncryptionKeyWrapProvider == null)
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 throw new InvalidOperationException($"For use of '{CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized}' algorithm, " +
                     "Encryptor or CosmosDataEncryptionKeyProvider needs to be initialized with EncryptionKeyWrapProvider.");
+#pragma warning restore CS0618 // Type or member is obsolete
             }
 
             using (diagnosticsContext.CreateScope("UnwrapDataEncryptionKey"))
@@ -506,8 +521,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             if (this.DekProvider.EncryptionKeyWrapProvider == null)
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 throw new InvalidOperationException($"For use of '{CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized}' algorithm, " +
                     "Encryptor or CosmosDataEncryptionKeyProvider needs to be initialized with EncryptionKeyWrapProvider.");
+#pragma warning restore CS0618 // Type or member is obsolete
             }
 
             byte[] rawDek = DataEncryptionKey.Generate(encryptionAlgorithm);
@@ -534,7 +551,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 encryptionKeyWrapMetadata.Value,
                 this.DekProvider.MdeKeyWrapProvider.EncryptionKeyStoreProvider);
 
-            ProtectedDataEncryptionKey protectedDataEncryptionKey = new ProtectedDataEncryptionKey(
+            ProtectedDataEncryptionKey protectedDataEncryptionKey = new (
                 id,
                 keyEncryptionKey);
 

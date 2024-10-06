@@ -37,13 +37,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync(
                 dataEncryptionKeyId,
                 encryptionAlgorithm,
-                cancellationToken);
-
-            if (dek == null)
-            {
-                throw new InvalidOperationException($"Null {nameof(DataEncryptionKey)} returned from {nameof(this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync)}.");
-            }
-
+                cancellationToken) ?? throw new InvalidOperationException($"Null {nameof(DataEncryptionKey)} returned from {nameof(this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync)}.");
             return dek;
         }
 
