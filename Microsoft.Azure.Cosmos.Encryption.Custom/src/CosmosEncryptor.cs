@@ -29,8 +29,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         }
 
         /// <inheritdoc/>
-        public override async Task<byte[]> DecryptAsync(
-            byte[] cipherText,
+        public override async Task<DataEncryptionKey> GetEncryptionKeyAsync(
             string dataEncryptionKeyId,
             string encryptionAlgorithm,
             CancellationToken cancellationToken = default)
@@ -45,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 throw new InvalidOperationException($"Null {nameof(DataEncryptionKey)} returned from {nameof(this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync)}.");
             }
 
-            return dek.DecryptData(cipherText);
+            return dek;
         }
 
         /// <inheritdoc/>
@@ -55,17 +54,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             string encryptionAlgorithm,
             CancellationToken cancellationToken = default)
         {
-            DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync(
-                dataEncryptionKeyId,
-                encryptionAlgorithm,
-                cancellationToken);
-
-            if (dek == null)
-            {
-                throw new InvalidOperationException($"Null {nameof(DataEncryptionKey)} returned from {nameof(this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync)}.");
-            }
+            DataEncryptionKey dek = await this.GetEncryptionKeyAsync(dataEncryptionKeyId, encryptionAlgorithm, cancellationToken);
 
             return dek.EncryptData(plainText);
+        }
+
+        /// <inheritdoc/>
+        public override async Task<byte[]> DecryptAsync(
+            byte[] cipherText,
+            string dataEncryptionKeyId,
+            string encryptionAlgorithm,
+            CancellationToken cancellationToken = default)
+        {
+            DataEncryptionKey dek = await this.GetEncryptionKeyAsync(dataEncryptionKeyId, encryptionAlgorithm, cancellationToken);
+
+            return dek.DecryptData(cipherText);
         }
     }
 }

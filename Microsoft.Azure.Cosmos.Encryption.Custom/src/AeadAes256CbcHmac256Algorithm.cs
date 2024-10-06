@@ -27,9 +27,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         private const int KeySizeInBytes = AeadAes256CbcHmac256EncryptionKey.KeySize / 8;
 
         /// <summary>
+        /// Authentication tag size in bytes
+        /// </summary>
+        private const int AuthenticationTagSizeInBytes = KeySizeInBytes;
+
+        /// <summary>
         /// Block size in bytes. AES uses 16 byte blocks.
         /// </summary>
         private const int BlockSizeInBytes = 16;
+
+        /// <summary>
+        /// Size of Initialization Vector in bytes.
+        /// </summary>
+        private const int IvSizeInBytes = 16;
 
         /// <summary>
         /// Minimum Length of cipherText without authentication tag. This value is 1 (version byte) + 16 (IV) + 16 (minimum of 1 block of cipher Text)
@@ -141,6 +151,28 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// Encryption Algorithm
         /// cell_iv = HMAC_SHA-2-256(iv_key, cell_data) truncated to 128 bits
         /// cell_ciphertext = AES-CBC-256(enc_key, cell_iv, cell_data) with PKCS7 padding.
+        /// cell_tag = HMAC_SHA-2-256(mac_key, versionbyte + cell_iv + cell_ciphertext + versionbyte_length)
+        /// cell_blob = versionbyte + cell_tag + cell_iv + cell_ciphertext
+        /// </summary>
+        /// <param name="plainText">Plaintext data to be encrypted</param>
+        /// <returns>Returns the ciphertext corresponding to the plaintext.</returns>
+        public override int EncryptData(byte[] plainText, int plainTextOffset, int plainTextLength, byte[] output, int outputOffset)
+        {
+            byte[] buffer = this.EncryptData(plainText.AsSpan(plainTextOffset, plainTextLength).ToArray());
+
+            if (buffer.Length > output.Length - outputOffset)
+            {
+                throw new ArgumentOutOfRangeException($"Output buffer is shorter than required {buffer.Length} bytes.");
+            }
+
+            buffer.CopyTo(output, outputOffset);
+            return buffer.Length;
+        }
+
+        /// <summary>
+        /// Encryption Algorithm
+        /// cell_iv = HMAC_SHA-2-256(iv_key, cell_data) truncated to 128 bits
+        /// cell_ciphertext = AES-CBC-256(enc_key, cell_iv, cell_data) with PKCS7 padding.
         /// (optional) cell_tag = HMAC_SHA-2-256(mac_key, versionbyte + cell_iv + cell_ciphertext + versionbyte_length)
         /// cell_blob = versionbyte + [cell_tag] + cell_iv + cell_ciphertext
         /// </summary>
@@ -169,12 +201,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             // Final blob we return = version + HMAC + iv + cipherText
             const int hmacStartIndex = 1;
-            int authenticationTagLen = hasAuthenticationTag ? KeySizeInBytes : 0;
+            int authenticationTagLen = hasAuthenticationTag ? AuthenticationTagSizeInBytes : 0;
             int ivStartIndex = hmacStartIndex + authenticationTagLen;
             int cipherStartIndex = ivStartIndex + BlockSizeInBytes; // this is where hmac starts.
 
-            // Output buffer size = size of VersionByte + Authentication Tag + IV + cipher Text blocks.
-            int outputBufSize = sizeof(byte) + authenticationTagLen + iv.Length + (numBlocks * BlockSizeInBytes);
+            int outputBufSize = this.GetEncryptByteCount(plainText.Length) - (hasAuthenticationTag ? 0 : authenticationTagLen);
             byte[] outBuffer = new byte[outputBufSize];
 
             // Store the version and IV rightaway
@@ -417,6 +448,41 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Debug.Assert(computedHash.Length >= authenticationTag.Length);
             Buffer.BlockCopy(computedHash, 0, authenticationTag, 0, authenticationTag.Length);
             return authenticationTag;
+        }
+
+        public override int DecryptData(byte[] cipherText, int cipherTextOffset, int cipherTextLength, byte[] output, int outputOffset)
+        {
+            byte[] buffer = this.DecryptData(cipherText.AsSpan(cipherTextOffset, cipherTextLength).ToArray(), true);
+
+            if (buffer.Length > output.Length - outputOffset)
+            {
+                throw new ArgumentOutOfRangeException($"Output buffer is shorter than required {buffer.Length} bytes");
+            }
+
+            buffer.CopyTo(output, outputOffset);
+            return buffer.Length;
+        }
+
+        public override int GetEncryptByteCount(int plainTextLength)
+        {
+            // Output buffer size = size of VersionByte + Authentication Tag + IV + cipher Text blocks.
+            return sizeof(byte) + AuthenticationTagSizeInBytes + IvSizeInBytes + GetCipherTextLength(plainTextLength);
+        }
+
+        public override int GetDecryptByteCount(int cipherTextLength)
+        {
+            int value = cipherTextLength - (sizeof(byte) + AuthenticationTagSizeInBytes + IvSizeInBytes);
+            if (value < BlockSizeInBytes)
+            {
+                throw new ArgumentOutOfRangeException(nameof(cipherTextLength), $"Cipher text length is too short.");
+            }
+
+            return value;
+        }
+
+        private static int GetCipherTextLength(int inputSize)
+        {
+            return ((inputSize / BlockSizeInBytes) + 1) * BlockSizeInBytes;
         }
     }
 }
