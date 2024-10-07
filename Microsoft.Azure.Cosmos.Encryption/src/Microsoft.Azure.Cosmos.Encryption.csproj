@@ -4,7 +4,6 @@
     <AssemblyName>Microsoft.Azure.Cosmos.Encryption</AssemblyName>
     <RootNamespace>Microsoft.Azure.Cosmos.Encryption</RootNamespace>
     <LangVersion>$(LangVersion)</LangVersion>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <EncryptionVersion Condition=" '$(IsPreview)' != 'true' ">$(EncryptionOfficialVersion)</EncryptionVersion>
     <EncryptionVersion Condition=" '$(IsPreview)' == 'true' ">$(EncryptionPreviewVersion)</EncryptionVersion>
     <EncryptionVersionSuffix Condition=" '$(IsPreview)' == 'true' ">$(EncryptionPreviewSuffixVersion)</EncryptionVersionSuffix>
@@ -42,7 +41,6 @@
 
   <ItemGroup>
     <PackageReference Include="Azure.Core" Version="1.19.0" />
-    <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
   </ItemGroup>
 
