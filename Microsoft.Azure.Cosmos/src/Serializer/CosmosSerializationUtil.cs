@@ -57,9 +57,10 @@ namespace Microsoft.Azure.Cosmos
                 inputStream,
                 shouldDisposeInnerStream: false))
             {
-                if (bufferedStream != null
-                    && bufferedStream.CanRead
-                    && bufferedStream.GetJsonSerializationFormat() != targetSerializationFormat)
+                JsonSerializationFormat sourceSerializationFormat = bufferedStream.GetJsonSerializationFormat();
+
+                if (sourceSerializationFormat != JsonSerializationFormat.HybridRow
+                    && sourceSerializationFormat != targetSerializationFormat)
                 {
                     byte[] targetContent = await bufferedStream.ReadAllAsync();
 
