@@ -116,6 +116,16 @@ namespace Microsoft.Azure.Cosmos
         public const string CanadaCentral = "Canada Central";
 
         /// <summary>
+        /// Name of the Azure Germany Central region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string GermanyCentral = "Germany Central";
+
+        /// <summary>
+        /// Name of the Azure Germany Northeast region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string GermanyNortheast = "Germany Northeast";
+
+        /// <summary>
         /// Name of the Azure China North region in the Azure Cosmos DB service.
         /// </summary>
         public const string ChinaNorth = "China North";
