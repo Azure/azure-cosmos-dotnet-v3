@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Encryption.Custom.Transformation;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 

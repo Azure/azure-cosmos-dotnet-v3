@@ -2,7 +2,9 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Encryption.Custom
+#if !IS_PREVIEW
+
+namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 {
     using System;
     using System.Collections.Generic;
@@ -10,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Encryption.Custom.Transformation;
     using Newtonsoft.Json.Linq;
 
     internal class MdeEncryptionProcessor
@@ -29,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             List<string> pathsEncrypted = new ();
             TypeMarker typeMarker;
 
-            using ArrayPoolManager arrayPoolManager = new ();
+            using ArrayPoolManager arrayPoolManager = new();
 
             DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionOptions.DataEncryptionKeyId, encryptionOptions.EncryptionAlgorithm, token);
 
@@ -47,14 +48,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 }
 
                 byte[] plainText = null;
-                (typeMarker, plainText, int plainTextLength) = this.Serializer.Serialize(propertyValue, arrayPoolManager);
+                (typeMarker, plainText) = this.Serializer.Serialize(propertyValue);
 
                 if (plainText == null)
                 {
                     continue;
                 }
 
-                (byte[] encryptedBytes, int encryptedLength) = this.Encryptor.Encrypt(encryptionKey, typeMarker, plainText, plainTextLength, arrayPoolManager);
+                (byte[] encryptedBytes, int encryptedLength) = this.Encryptor.Encrypt(encryptionKey, typeMarker, plainText, plainText.Length, arrayPoolManager);
 
                 itemJObj[propertyName] = encryptedBytes.AsSpan(0, encryptedLength).ToArray();
                 pathsEncrypted.Add(pathToEncrypt);
@@ -86,11 +87,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 throw new NotSupportedException($"Unknown encryption format version: {encryptionProperties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
             }
 
-            using ArrayPoolManager arrayPoolManager = new ();
+            using ArrayPoolManager arrayPoolManager = new();
 
             DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionProperties.DataEncryptionKeyId, encryptionProperties.EncryptionAlgorithm, cancellationToken);
 
-            List<string> pathsDecrypted = new (encryptionProperties.EncryptedPaths.Count());
+            List<string> pathsDecrypted = new(encryptionProperties.EncryptedPaths.Count());
             foreach (string path in encryptionProperties.EncryptedPaths)
             {
                 string propertyName = path.Substring(1);
@@ -110,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
                 this.Serializer.DeserializeAndAddProperty(
                     (TypeMarker)cipherTextWithTypeMarker[0],
-                    plainText.AsSpan(0, decryptedCount),
+                    plainText.AsSpan(0, decryptedCount).ToArray(),
                     document,
                     propertyName);
 
@@ -126,3 +127,4 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         }
     }
 }
+#endif
