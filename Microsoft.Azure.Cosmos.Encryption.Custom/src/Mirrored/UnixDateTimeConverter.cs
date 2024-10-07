@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// </summary>
     internal sealed class UnixDateTimeConverter : DateTimeConverterBase
     {
-        private static readonly DateTime UnixStartTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+        private static readonly DateTime UnixStartTime = new (1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 
         /// <summary>
         /// Writes the JSON representation of the DateTime object.
@@ -27,9 +27,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <param name="serializer">The calling serializer.</param>
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
-            if (value is DateTime)
+            if (value is DateTime time)
             {
-                long totalSeconds = (long)((DateTime)value - UnixStartTime).TotalSeconds;
+                long totalSeconds = (long)(time - UnixStartTime).TotalSeconds;
                 writer.WriteValue(totalSeconds);
             }
             else

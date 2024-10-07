@@ -135,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 char ch = this.chars.Span[i];
                 if (ch == '\r' || ch == '\n')
                 {
-                    string result = new string(this.chars.Slice(this.pos, i - this.pos).ToArray());
+                    string result = new (this.chars.Slice(this.pos, i - this.pos).ToArray());
                     this.pos = i + 1;
                     if (ch == '\r' && this.pos < this.length && this.chars.Span[this.pos] == '\n')
                     {
@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             if (i > this.pos)
             {
-                string result = new string(this.chars.Slice(this.pos, i - this.pos).ToArray());
+                string result = new (this.chars.Slice(this.pos, i - this.pos).ToArray());
                 this.pos = i;
                 return result;
             }

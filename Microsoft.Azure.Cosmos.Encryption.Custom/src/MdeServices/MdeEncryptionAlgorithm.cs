@@ -16,8 +16,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         private readonly AeadAes256CbcHmac256EncryptionAlgorithm mdeAeadAes256CbcHmac256EncryptionAlgorithm;
 
-        private readonly byte[] unwrapKey;
-
         // unused for MDE Algorithm.
         public override byte[] RawKey { get; }
 
@@ -37,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Data.Encryption.Cryptography.EncryptionType encryptionType,
             EncryptionKeyStoreProvider encryptionKeyStoreProvider,
             TimeSpan? cacheTimeToLive,
-            bool withRawKey=false)
+            bool withRawKey = false)
         {
             if (dekProperties == null)
             {
