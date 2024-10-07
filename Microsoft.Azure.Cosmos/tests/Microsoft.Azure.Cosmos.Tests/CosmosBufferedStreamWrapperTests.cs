@@ -46,12 +46,44 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void TestReadAllAfterFirstByteRead()
+        {
+            byte[] data = Encoding.UTF8.GetBytes("Hello, World!");
+            using (MemoryStream memoryStream = new(data))
+            using (CosmosBufferedStreamWrapper bufferedStream = new(memoryStream, true))
+            {
+                bufferedStream.GetJsonSerializationFormat(); // This will trigger the first byte read.
+                byte[] result = bufferedStream.ReadAll();
+
+                Assert.IsNotNull(result);
+                Assert.AreEqual(data.Length, result.Length);
+                CollectionAssert.AreEqual(data, result);
+            }
+        }
+
+        [TestMethod]
         public async Task TestReadAllAsync()
         {
             byte[] data = Encoding.UTF8.GetBytes("Hello, World!");
             using (MemoryStream memoryStream = new (data))
             using (CosmosBufferedStreamWrapper bufferedStream = new (memoryStream, true))
             {
+                byte[] result = await bufferedStream.ReadAllAsync();
+
+                Assert.IsNotNull(result);
+                Assert.AreEqual(data.Length, result.Length);
+                CollectionAssert.AreEqual(data, result);
+            }
+        }
+
+        [TestMethod]
+        public async Task TestReadAllAsyncAfterFirstByteRead()
+        {
+            byte[] data = Encoding.UTF8.GetBytes("Hello, World!");
+            using (MemoryStream memoryStream = new(data))
+            using (CosmosBufferedStreamWrapper bufferedStream = new(memoryStream, true))
+            {
+                bufferedStream.GetJsonSerializationFormat(); // This will trigger the first byte read.
                 byte[] result = await bufferedStream.ReadAllAsync();
 
                 Assert.IsNotNull(result);
@@ -93,6 +125,45 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNotNull(result);
             Assert.AreEqual(bytes, result.Length);
             Assert.AreEqual(data.Length, result.Length);
+            CollectionAssert.AreEqual(data, result);
+        }
+
+        [TestMethod]
+        public async Task TestReadWithNonSeekableStreamAndSmallerOffset()
+        {
+            byte[] data = Encoding.UTF8.GetBytes("Hello, World! This is a sample test.");
+
+            using NonSeekableMemoryStream memoryStream = new(data);
+            using Documents.CloneableStream clonableStream = await Documents.StreamExtension.AsClonableStreamAsync(memoryStream);
+            using CosmosBufferedStreamWrapper bufferedStream = new(clonableStream, true);
+
+            Assert.IsTrue(bufferedStream.CanSeek);
+            JsonSerializationFormat format = bufferedStream.GetJsonSerializationFormat();
+
+            Assert.AreEqual(JsonSerializationFormat.Text, format);
+
+            byte[] result = new byte[bufferedStream.Length];
+
+            int count = 0, chunk = 4, offset = 0, length = (int)bufferedStream.Length, totalBytes = 0;
+            while ((count = bufferedStream.Read(result, offset, chunk)) > 0)
+            {
+                offset += count;
+                totalBytes += count;
+            }
+
+            int count2 = 0, chunk2 = 3, offset2 = 0, length2 = (int)bufferedStream.Length, totalBytes2 = 0;
+            byte[] result2 = new byte[bufferedStream.Length];
+            while ((count2 = bufferedStream.Read(result2, offset2, chunk2)) > 0)
+            {
+                offset2 += count2;
+                totalBytes2 += count2;
+            }
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual(totalBytes, result.Length);
+            Assert.AreEqual(data.Length, result.Length);
+            Assert.AreEqual(0, totalBytes2);
+            Assert.AreEqual(0, count2);
             CollectionAssert.AreEqual(data, result);
         }
 

@@ -99,15 +99,19 @@ namespace Microsoft.Azure.Cosmos.Serializer
                 throw new ArgumentNullException(nameof(buffer));
             }
 
-            if (offset < 0 || count < 0 || (buffer.Length - offset) < count)
+            if (offset < 0
+                || count < 0
+                || (buffer.Length - offset) < count
+                || this.innerStream.Position == this.innerStream.Length)
             {
-                throw new ArgumentOutOfRangeException();
+                return 0;
             }
 
             int bytesRead = 0;
             if (this.hasReadFirstByte
-                && buffer[0] == 0
-                && offset == 0 && count > 0)
+                && this.innerStream.Position == 1
+                && offset == 0
+                && count > 0)
             {
                 buffer[0] = this.firstByteBuffer[0];
                 bytesRead = 1;
