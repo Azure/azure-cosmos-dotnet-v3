@@ -7,12 +7,12 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Net;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Telemetry;
 
     internal sealed class OpenTelemetryResponse<T> : OpenTelemetryAttributes
     {
-        internal OpenTelemetryResponse(FeedResponse<T> responseMessage)
+        internal OpenTelemetryResponse(FeedResponse<T> responseMessage, SqlQuerySpec querySpec = null)
         : this(
                statusCode: responseMessage.StatusCode,
                requestCharge: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.RequestCharge,
@@ -22,11 +22,12 @@ namespace Microsoft.Azure.Cosmos
                requestMessage: responseMessage.RequestMessage,
                subStatusCode: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.SubStatusCode,
                activityId: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.ActivityId,
-               correlatedActivityId: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.CorrelatedActivityId)
+               correlatedActivityId: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.CorrelatedActivityId,
+               querySpec: querySpec)
         {
         }
 
-        internal OpenTelemetryResponse(Response<T> responseMessage)
+        internal OpenTelemetryResponse(Response<T> responseMessage, SqlQuerySpec querySpec = null)
            : this(
                   statusCode: responseMessage.StatusCode,
                   requestCharge: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.RequestCharge,
@@ -36,7 +37,8 @@ namespace Microsoft.Azure.Cosmos
                   requestMessage: responseMessage.RequestMessage,
                   subStatusCode: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.SubStatusCode,
                   activityId: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.ActivityId,
-                  correlatedActivityId: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.CorrelatedActivityId)
+                  correlatedActivityId: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.CorrelatedActivityId,
+                  querySpec: querySpec)
         {
         }
 
@@ -49,7 +51,8 @@ namespace Microsoft.Azure.Cosmos
            RequestMessage requestMessage,
            Documents.SubStatusCodes? subStatusCode,
            string activityId,
-           string correlatedActivityId)
+           string correlatedActivityId,
+           SqlQuerySpec querySpec)
            : base(requestMessage)
         {
             this.StatusCode = statusCode;
@@ -60,6 +63,7 @@ namespace Microsoft.Azure.Cosmos
             this.SubStatusCode = (int)(subStatusCode ?? Documents.SubStatusCodes.Unknown);
             this.ActivityId = activityId;
             this.CorrelatedActivityId = correlatedActivityId;
+            this.QuerySpec = querySpec;
         }
 
         private static Headers GetHeader(FeedResponse<T> responseMessage)

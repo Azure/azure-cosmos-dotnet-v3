@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1649:File name should match first type name", Justification = "Mirrored file.")]
     internal class ShouldRetryResult
     {
-        private static readonly ShouldRetryResult EmptyNoRetry = new ShouldRetryResult { ShouldRetry = false };
+        private static readonly ShouldRetryResult EmptyNoRetry = new () { ShouldRetry = false };
 
         protected ShouldRetryResult()
         {

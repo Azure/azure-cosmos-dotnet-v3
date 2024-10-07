@@ -69,10 +69,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 this.isDisposed = true;
 
-                if (this.response != null)
-                {
-                    this.response.Dispose();
-                }
+                this.response?.Dispose();
             }
         }
     }

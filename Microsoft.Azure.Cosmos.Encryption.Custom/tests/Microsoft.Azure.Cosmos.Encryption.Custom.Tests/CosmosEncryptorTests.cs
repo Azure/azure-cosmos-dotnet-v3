@@ -24,21 +24,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         public static void ClassInitialize(TestContext testContext)
         {
             _ = testContext;
-            CosmosEncryptorTests.mockDataEncryptionKey = new Mock<DataEncryptionKey>();
-            CosmosEncryptorTests.mockDataEncryptionKey
+            mockDataEncryptionKey = new Mock<DataEncryptionKey>();
+            mockDataEncryptionKey
                 .Setup(m => m.EncryptData(It.IsAny<byte[]>()))
                 .Returns((byte[] plainText) => TestCommon.EncryptData(plainText));
-            CosmosEncryptorTests.mockDataEncryptionKey
+            mockDataEncryptionKey
                 .Setup(m => m.DecryptData(It.IsAny<byte[]>()))
                 .Returns((byte[] cipherText) => TestCommon.DecryptData(cipherText));
 
-            CosmosEncryptorTests.mockDataEncryptionKeyProvider = new Mock<DataEncryptionKeyProvider>();
-            CosmosEncryptorTests.mockDataEncryptionKeyProvider
+            mockDataEncryptionKeyProvider = new Mock<DataEncryptionKeyProvider>();
+            mockDataEncryptionKeyProvider
                 .Setup(m => m.FetchDataEncryptionKeyWithoutRawKeyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync((string dekId, string algo, CancellationToken cancellationToken) =>
-                    dekId == CosmosEncryptorTests.dekId ? CosmosEncryptorTests.mockDataEncryptionKey.Object : null);
+                    dekId == CosmosEncryptorTests.dekId ? mockDataEncryptionKey.Object : null);
 
-            CosmosEncryptorTests.cosmosEncryptor = new CosmosEncryptor(CosmosEncryptorTests.mockDataEncryptionKeyProvider.Object);
+            cosmosEncryptor = new CosmosEncryptor(mockDataEncryptionKeyProvider.Object);
         }
 
         [TestMethod]
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         {
             try
             {
-                await CosmosEncryptorTests.cosmosEncryptor.EncryptAsync(
+                await cosmosEncryptor.EncryptAsync(
                     TestCommon.GenerateRandomByteArray(),
                     "unknownDek",
                     CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized);
@@ -63,27 +63,27 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         public async Task ValidateEncryptDecrypt()
         {
             byte[] plainText = TestCommon.GenerateRandomByteArray();
-            byte[] cipherText = await CosmosEncryptorTests.cosmosEncryptor.EncryptAsync(
+            byte[] cipherText = await cosmosEncryptor.EncryptAsync(
                 plainText,
-                CosmosEncryptorTests.dekId,
+                dekId,
                 CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized);
 
-            CosmosEncryptorTests.mockDataEncryptionKey.Verify(
+            mockDataEncryptionKey.Verify(
                 m => m.EncryptData(plainText),
                 Times.Once);
             
-            byte[] decryptedText = await CosmosEncryptorTests.cosmosEncryptor.DecryptAsync(
+            byte[] decryptedText = await cosmosEncryptor.DecryptAsync(
                 cipherText,
-                CosmosEncryptorTests.dekId,
+                dekId,
                 CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized);
 
-            CosmosEncryptorTests.mockDataEncryptionKey.Verify(
+            mockDataEncryptionKey.Verify(
                 m => m.DecryptData(cipherText),
                 Times.Once);
 
-            CosmosEncryptorTests.mockDataEncryptionKeyProvider.Verify(
+            mockDataEncryptionKeyProvider.Verify(
                 m => m.FetchDataEncryptionKeyWithoutRawKeyAsync(
-                    CosmosEncryptorTests.dekId,
+                    dekId,
                     CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
                     It.IsAny<CancellationToken>()), Times.Exactly(2));
 
