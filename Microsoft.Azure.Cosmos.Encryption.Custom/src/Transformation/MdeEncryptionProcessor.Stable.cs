@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             List<string> pathsEncrypted = new ();
             TypeMarker typeMarker;
 
-            using ArrayPoolManager arrayPoolManager = new();
+            using ArrayPoolManager arrayPoolManager = new ();
 
             DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionOptions.DataEncryptionKeyId, encryptionOptions.EncryptionAlgorithm, token);
 
@@ -87,11 +87,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 throw new NotSupportedException($"Unknown encryption format version: {encryptionProperties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
             }
 
-            using ArrayPoolManager arrayPoolManager = new();
+            using ArrayPoolManager arrayPoolManager = new ();
 
             DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionProperties.DataEncryptionKeyId, encryptionProperties.EncryptionAlgorithm, cancellationToken);
 
-            List<string> pathsDecrypted = new(encryptionProperties.EncryptedPaths.Count());
+            List<string> pathsDecrypted = new (encryptionProperties.EncryptedPaths.Count());
             foreach (string path in encryptionProperties.EncryptedPaths)
             {
                 string propertyName = path.Substring(1);

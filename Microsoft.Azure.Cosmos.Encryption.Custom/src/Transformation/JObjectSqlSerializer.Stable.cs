@@ -14,10 +14,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
     internal class JObjectSqlSerializer
     {
-        private static readonly SqlSerializerFactory SqlSerializerFactory = new();
+        private static readonly SqlSerializerFactory SqlSerializerFactory = new ();
 
         // UTF-8 encoding.
-        private static readonly SqlVarCharSerializer SqlVarCharSerializer = new(size: -1, codePageCharacterEncoding: 65001);
+        private static readonly SqlVarCharSerializer SqlVarCharSerializer = new (size: -1, codePageCharacterEncoding: 65001);
 
         private static readonly JsonSerializerSettings JsonSerializerSettings = EncryptionProcessor.JsonSerializerSettings;
 
