@@ -8,11 +8,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
     internal class MdeEncryptor
     {
-        internal virtual (byte[] encryptedText, int encryptedLength) Encrypt(DataEncryptionKey encryptionKey, TypeMarker typeMarker, byte[] plainText, int plainTextLength, ArrayPoolManager arrayPoolManager)
+        internal virtual byte[] Encrypt(DataEncryptionKey encryptionKey, TypeMarker typeMarker, byte[] plainText, int plainTextLength)
         {
             int encryptedTextLength = encryptionKey.GetEncryptByteCount(plainTextLength) + 1;
 
-            byte[] encryptedText = arrayPoolManager.Rent(encryptedTextLength);
+            byte[] encryptedText = new byte[encryptedTextLength];
 
             encryptedText[0] = (byte)typeMarker;
 
@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 throw new InvalidOperationException($"{nameof(DataEncryptionKey)} returned null cipherText from {nameof(DataEncryptionKey.EncryptData)}.");
             }
 
-            return (encryptedText, encryptedLength + 1);
+            return encryptedText;
         }
 
         internal virtual (byte[] plainText, int plainTextLength) Decrypt(DataEncryptionKey encryptionKey, byte[] cipherText, ArrayPoolManager arrayPoolManager)

@@ -55,9 +55,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     continue;
                 }
 
-                (byte[] encryptedBytes, int encryptedLength) = this.Encryptor.Encrypt(encryptionKey, typeMarker, plainText, plainTextLength, arrayPoolManager);
+                byte[] encryptedBytes = this.Encryptor.Encrypt(encryptionKey, typeMarker, plainText, plainTextLength);
 
-                itemJObj[propertyName] = encryptedBytes.AsSpan(0, encryptedLength).ToArray();
+                itemJObj[propertyName] = encryptedBytes;
                 pathsEncrypted.Add(pathToEncrypt);
             }
 
